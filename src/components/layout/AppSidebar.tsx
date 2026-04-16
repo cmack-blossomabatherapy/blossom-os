@@ -58,7 +58,7 @@ export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="w-60 min-h-screen bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
+    <aside className="w-60 h-screen sticky top-0 bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
       {/* Logo */}
       <div className="h-14 flex items-center gap-2.5 px-5 border-b border-sidebar-border">
         <img src={logo} alt="Blossom ABA" className="h-6" />
