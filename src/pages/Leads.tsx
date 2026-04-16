@@ -71,22 +71,15 @@ export default function Leads() {
       {viewMode === "table" && (
         <LeadTableView
           leads={filteredLeads}
-          onSelectLead={setSelectedLead}
-          selectedLeadId={selectedLead?.id}
+          onSelectLead={(lead) => navigate(`/leads/${lead.id}`)}
         />
       )}
       {viewMode === "pipeline" && (
-        <LeadPipelineView leads={filteredLeads} onSelectLead={setSelectedLead} />
+        <LeadPipelineView leads={filteredLeads} onSelectLead={(lead) => navigate(`/leads/${lead.id}`)} />
       )}
       {viewMode === "queue" && (
-        <LeadQueueView leads={filteredLeads} onSelectLead={setSelectedLead} />
+        <LeadQueueView leads={filteredLeads} onSelectLead={(lead) => navigate(`/leads/${lead.id}`)} />
       )}
-
-      <LeadDetailPanel
-        lead={selectedLead}
-        open={!!selectedLead}
-        onClose={() => setSelectedLead(null)}
-      />
     </PageShell>
   );
 }
