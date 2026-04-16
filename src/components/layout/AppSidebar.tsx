@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
-  CheckSquare, BarChart3, Zap, UsersRound, Settings
+  CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ const navSections = [
   {
     title: "Operations",
     items: [
+      { label: "Operations", icon: Workflow, path: "/operations" },
       { label: "Scheduling", icon: Calendar, path: "/scheduling" },
       { label: "Staffing", icon: UserPlus, path: "/staffing" },
       { label: "QA", icon: ClipboardCheck, path: "/qa" },
