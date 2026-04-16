@@ -15,6 +15,8 @@ import Scheduling from "./pages/Scheduling";
 import Staffing from "./pages/Staffing";
 import RBTDetail from "./pages/RBTDetail";
 import QA from "./pages/QA";
+import QADetail from "./pages/QADetail";
+import Operations from "./pages/Operations";
 import Clinics from "./pages/Clinics";
 import PhoneCalls from "./pages/PhoneCalls";
 import Documents from "./pages/Documents";
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/staffing" element={<Staffing />} />
             <Route path="/staffing/:id" element={<RBTDetail />} />
             <Route path="/qa" element={<QA />} />
+            <Route path="/qa/:id" element={<QADetail />} />
+            <Route path="/operations" element={<Operations />} />
             <Route path="/clinics" element={<Clinics />} />
             <Route path="/phone-calls" element={<PhoneCalls />} />
             <Route path="/documents" element={<Documents />} />
