@@ -3,8 +3,23 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { AppLayout } from "@/components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import Leads from "./pages/Leads";
+import Clients from "./pages/Clients";
+import Authorizations from "./pages/Authorizations";
+import Scheduling from "./pages/Scheduling";
+import Staffing from "./pages/Staffing";
+import QA from "./pages/QA";
+import Clinics from "./pages/Clinics";
+import PhoneCalls from "./pages/PhoneCalls";
+import Documents from "./pages/Documents";
+import Tasks from "./pages/Tasks";
+import Reports from "./pages/Reports";
+import Automations from "./pages/Automations";
+import Team from "./pages/Team";
+import SettingsPage from "./pages/Settings";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +30,23 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/authorizations" element={<Authorizations />} />
+            <Route path="/scheduling" element={<Scheduling />} />
+            <Route path="/staffing" element={<Staffing />} />
+            <Route path="/qa" element={<QA />} />
+            <Route path="/clinics" element={<Clinics />} />
+            <Route path="/phone-calls" element={<PhoneCalls />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/automations" element={<Automations />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
