@@ -1,6 +1,7 @@
-import { Search, Plus, Bell, Filter, CalendarDays, User } from "lucide-react";
+import { Search, Plus, Filter, CalendarDays, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NotificationBell } from "./NotificationBell";
 
 interface TopBarProps {
   title: string;
@@ -38,10 +39,7 @@ export function TopBar({ title }: TopBarProps) {
           Create
         </Button>
 
-        <Button size="icon" variant="ghost" className="h-8 w-8 relative">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <NotificationBell />
 
         <Button size="icon" variant="ghost" className="h-8 w-8">
           <User className="h-4 w-4 text-muted-foreground" />
