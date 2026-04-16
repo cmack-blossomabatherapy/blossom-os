@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
 import { Users } from "lucide-react";
 import { LeadControlBar, ViewMode } from "@/components/leads/LeadControlBar";
@@ -9,10 +10,10 @@ import { LeadDetailPanel } from "@/components/leads/LeadDetailPanel";
 import { mockLeads, Lead } from "@/data/leads";
 
 export default function Leads() {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const filteredLeads = useMemo(() => {
     let result = mockLeads;
@@ -70,22 +71,15 @@ export default function Leads() {
       {viewMode === "table" && (
         <LeadTableView
           leads={filteredLeads}
-          onSelectLead={setSelectedLead}
-          selectedLeadId={selectedLead?.id}
+          onSelectLead={(lead) => navigate(`/leads/${lead.id}`)}
         />
       )}
       {viewMode === "pipeline" && (
-        <LeadPipelineView leads={filteredLeads} onSelectLead={setSelectedLead} />
+        <LeadPipelineView leads={filteredLeads} onSelectLead={(lead) => navigate(`/leads/${lead.id}`)} />
       )}
       {viewMode === "queue" && (
-        <LeadQueueView leads={filteredLeads} onSelectLead={setSelectedLead} />
+        <LeadQueueView leads={filteredLeads} onSelectLead={(lead) => navigate(`/leads/${lead.id}`)} />
       )}
-
-      <LeadDetailPanel
-        lead={selectedLead}
-        open={!!selectedLead}
-        onClose={() => setSelectedLead(null)}
-      />
     </PageShell>
   );
 }

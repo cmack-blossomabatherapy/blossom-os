@@ -5,10 +5,9 @@ import { AlertCircle, AlertTriangle } from "lucide-react";
 interface LeadTableViewProps {
   leads: Lead[];
   onSelectLead: (lead: Lead) => void;
-  selectedLeadId?: string;
 }
 
-export function LeadTableView({ leads, onSelectLead, selectedLeadId }: LeadTableViewProps) {
+export function LeadTableView({ leads, onSelectLead }: LeadTableViewProps) {
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
       <div className="overflow-x-auto">
@@ -36,11 +35,7 @@ export function LeadTableView({ leads, onSelectLead, selectedLeadId }: LeadTable
                 <tr
                   key={lead.id}
                   onClick={() => onSelectLead(lead)}
-                  className={`border-b border-border/40 cursor-pointer transition-colors ${
-                    selectedLeadId === lead.id
-                      ? "bg-primary/5"
-                      : "hover:bg-muted/20"
-                  }`}
+                  className="border-b border-border/40 cursor-pointer transition-colors hover:bg-muted/20"
                 >
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{lead.id}</td>
                   <td className="px-3 py-2.5">
