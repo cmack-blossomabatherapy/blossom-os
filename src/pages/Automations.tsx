@@ -1,35 +1,78 @@
-import { PageShell } from "@/components/shared/PageShell";
+import { useMemo, useState } from "react";
 import { Zap } from "lucide-react";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-
-const automations = [
-  { name: "Auto-assign new leads by state", trigger: "New Lead Created", status: "Active", lastRun: "2 min ago", runs: 342 },
-  { name: "Send follow-up after 48h no contact", trigger: "Timer: 48h", status: "Active", lastRun: "1h ago", runs: 189 },
-  { name: "Alert on auth expiring <30 days", trigger: "Daily Check", status: "Active", lastRun: "6h ago", runs: 56 },
-  { name: "Notify QA when treatment plan uploaded", trigger: "Document Upload", status: "Active", lastRun: "3h ago", runs: 124 },
-  { name: "Escalate can't-reach after 5 attempts", trigger: "Call Status", status: "Paused", lastRun: "2d ago", runs: 31 },
-];
+import { PageShell } from "@/components/shared/PageShell";
+import {
+  AutomationControlBar,
+  type AutomationViewMode,
+} from "@/components/automations/AutomationControlBar";
+import { AutomationListView } from "@/components/automations/AutomationListView";
+import { AutomationFlowView } from "@/components/automations/AutomationFlowView";
+import { AutomationLogsView } from "@/components/automations/AutomationLogsView";
+import { AutomationDetailPanel } from "@/components/automations/AutomationDetailPanel";
+import {
+  mockAutomations,
+  filterAutomationsByView,
+  findAutomation,
+  type AutomationSavedView,
+} from "@/data/automations";
 
 export default function Automations() {
+  const [viewMode, setViewMode] = useState<AutomationViewMode>("list");
+  const [activeView, setActiveView] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(mockAutomations[0]?.id ?? null);
+  const [selectedNode, setSelectedNode] = useState<string | null>("auth");
+
+  const filtered = useMemo(() => {
+    let list = filterAutomationsByView(mockAutomations, activeView as AutomationSavedView);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.triggerLabel.toLowerCase().includes(q) ||
+          a.actions.some((act) => act.detail.toLowerCase().includes(q)) ||
+          a.id.toLowerCase().includes(q) ||
+          a.owner.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [activeView, searchQuery]);
+
+  const selected = selectedId ? findAutomation(selectedId) ?? null : null;
+
   return (
-    <PageShell title="Automations" description="Workflow automation control center" icon={Zap}>
-      <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-border bg-muted/30">
-            {["Automation","Trigger","Status","Last Run","Total Runs"].map(h =>
-              <th key={h} className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">{h}</th>
-            )}
-          </tr></thead>
-          <tbody>{automations.map((a, i) => (
-            <tr key={i} className="border-b border-border/40 hover:bg-muted/20 cursor-pointer transition-colors">
-              <td className="px-4 py-2.5 font-medium text-foreground">{a.name}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{a.trigger}</td>
-              <td className="px-4 py-2.5"><StatusBadge status={a.status} variant={a.status === "Active" ? "success" : "muted"} /></td>
-              <td className="px-4 py-2.5 text-muted-foreground">{a.lastRun}</td>
-              <td className="px-4 py-2.5 text-muted-foreground">{a.runs}</td>
-            </tr>
-          ))}</tbody>
-        </table>
+    <PageShell
+      title="Automations"
+      description="Control center · triggers, actions, failsafes, and full execution logs"
+      icon={Zap}
+    >
+      <AutomationControlBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeView={activeView}
+        onActiveViewChange={setActiveView}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-4">
+        <div className="min-w-0">
+          {viewMode === "list" && (
+            <AutomationListView automations={filtered} selectedId={selectedId} onSelect={setSelectedId} />
+          )}
+          {viewMode === "flow" && (
+            <AutomationFlowView
+              selectedNode={selectedNode}
+              onSelectNode={setSelectedNode}
+              onSelectAutomation={setSelectedId}
+            />
+          )}
+          {viewMode === "logs" && <AutomationLogsView onSelectAutomation={setSelectedId} />}
+        </div>
+        <div>
+          <AutomationDetailPanel automation={selected} onClose={() => setSelectedId(null)} />
+        </div>
       </div>
     </PageShell>
   );
