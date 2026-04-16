@@ -12,14 +12,15 @@ interface Props {
 
 const savedViews = [
   { id: "all", label: "All Operations" },
-  { id: "intake", label: "Intake Pipeline" },
+  { id: "intake", label: "Intake" },
   { id: "initial-auth", label: "Initial Auth" },
   { id: "assessment", label: "Assessment" },
-  { id: "qa", label: "QA Queue" },
+  { id: "qa", label: "QA" },
   { id: "treatment-auth", label: "Treatment Auth" },
-  { id: "staffing", label: "Staffing Needed" },
+  { id: "staffing", label: "Staffing" },
   { id: "start", label: "Ready to Start" },
   { id: "blocked", label: "Blocked Items" },
+  { id: "clinics", label: "Clinics" },
 ];
 
 export function OperationsControlBar({ activeView, onActiveViewChange, searchQuery, onSearchChange }: Props) {

@@ -17,6 +17,7 @@ import RBTDetail from "./pages/RBTDetail";
 import QA from "./pages/QA";
 import QADetail from "./pages/QADetail";
 import Operations from "./pages/Operations";
+import ClinicDetail from "./pages/ClinicDetail";
 import Clinics from "./pages/Clinics";
 import PhoneCalls from "./pages/PhoneCalls";
 import Documents from "./pages/Documents";
