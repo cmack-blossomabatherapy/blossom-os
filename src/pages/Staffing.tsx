@@ -1,36 +1,32 @@
-import { PageShell } from "@/components/shared/PageShell";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useState } from "react";
 import { UserPlus } from "lucide-react";
-
-const requests = [
-  { client: "Aiden Patel", state: "TX", hours: "20hr/wk", urgency: "High", daysOpen: 12, status: "Staffing Needed" },
-  { client: "Liam Chen", state: "AZ", hours: "15hr/wk", urgency: "Medium", daysOpen: 5, status: "Staffing Needed" },
-  { client: "Olivia Brown", state: "GA", hours: "25hr/wk", urgency: "High", daysOpen: 18, status: "Restaffing" },
-  { client: "Marcus J.", state: "TX", hours: "10hr/wk", urgency: "Low", daysOpen: 2, status: "Staffing Needed" },
-];
+import { PageShell } from "@/components/shared/PageShell";
+import { StaffingControlBar, type StaffingViewMode } from "@/components/staffing/StaffingControlBar";
+import { StaffingQueueView } from "@/components/staffing/StaffingQueueView";
+import { StaffingMatchingView } from "@/components/staffing/StaffingMatchingView";
+import { StaffingDirectoryView } from "@/components/staffing/StaffingDirectoryView";
+import { StaffingCapacityView } from "@/components/staffing/StaffingCapacityView";
 
 export default function Staffing() {
+  const [viewMode, setViewMode] = useState<StaffingViewMode>("queue");
+  const [activeView, setActiveView] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   return (
     <PageShell title="Staffing" description="Match client demand to RBT supply" icon={UserPlus}>
-      <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b border-border bg-muted/30">
-            {["Client","State","Hours","Urgency","Days Open","Status"].map(h =>
-              <th key={h} className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">{h}</th>
-            )}
-          </tr></thead>
-          <tbody>{requests.map((r, i) => (
-            <tr key={i} className="border-b border-border/40 hover:bg-muted/20 cursor-pointer transition-colors">
-              <td className="px-4 py-2.5 font-medium text-foreground">{r.client}</td>
-              <td className="px-4 py-2.5"><StatusBadge status={r.state} variant="muted" /></td>
-              <td className="px-4 py-2.5 text-muted-foreground">{r.hours}</td>
-              <td className="px-4 py-2.5"><StatusBadge status={r.urgency} variant={r.urgency === "High" ? "destructive" : r.urgency === "Medium" ? "warning" : "muted"} /></td>
-              <td className="px-4 py-2.5 text-muted-foreground">{r.daysOpen}d</td>
-              <td className="px-4 py-2.5"><StatusBadge status={r.status} variant={r.status === "Restaffing" ? "warning" : "info"} /></td>
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
+      <StaffingControlBar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        activeView={activeView}
+        onActiveViewChange={setActiveView}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      {viewMode === "queue" && <StaffingQueueView searchQuery={searchQuery} />}
+      {viewMode === "matching" && <StaffingMatchingView searchQuery={searchQuery} />}
+      {viewMode === "directory" && <StaffingDirectoryView searchQuery={searchQuery} activeView={activeView} />}
+      {viewMode === "capacity" && <StaffingCapacityView />}
     </PageShell>
   );
 }

@@ -13,6 +13,7 @@ import Authorizations from "./pages/Authorizations";
 import AuthDetail from "./pages/AuthDetail";
 import Scheduling from "./pages/Scheduling";
 import Staffing from "./pages/Staffing";
+import RBTDetail from "./pages/RBTDetail";
 import QA from "./pages/QA";
 import Clinics from "./pages/Clinics";
 import PhoneCalls from "./pages/PhoneCalls";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/authorizations/:id" element={<AuthDetail />} />
             <Route path="/scheduling" element={<Scheduling />} />
             <Route path="/staffing" element={<Staffing />} />
+            <Route path="/staffing/:id" element={<RBTDetail />} />
             <Route path="/qa" element={<QA />} />
             <Route path="/clinics" element={<Clinics />} />
             <Route path="/phone-calls" element={<PhoneCalls />} />
