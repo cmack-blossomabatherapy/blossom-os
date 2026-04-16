@@ -1,8 +1,9 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, User, Home, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, User, Home, AlertTriangle, FileText, Mail, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   findClinic,
@@ -176,7 +177,7 @@ export default function ClinicDetail() {
         <TabsContent value="pending" className="mt-4">
           <ClientTable
             clients={pendingStarts}
-            columns={["Client", "BCBA", "Blockers", "Days Waiting"]}
+            columns={["Client", "BCBA", "Blockers", "Days Waiting", "Actions"]}
             renderRow={(c) => (
               <>
                 <td className="px-4 py-2.5 font-medium text-foreground">{c.childName}</td>
@@ -190,6 +191,37 @@ export default function ClinicDetail() {
                 </td>
                 <td className={cn("px-4 py-2.5 font-medium", c.daysInStage > 7 ? "text-destructive" : "text-muted-foreground")}>
                   {c.daysInStage}d
+                </td>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <ActionBtn
+                      icon={FileText}
+                      label="Generate Case Coordination Doc"
+                      onClick={() =>
+                        toast.success("Case coordination doc generated", {
+                          description: `${c.childName} · sent to clinical team`,
+                        })
+                      }
+                    />
+                    <ActionBtn
+                      icon={Mail}
+                      label="Send Pairing Email"
+                      onClick={() =>
+                        toast.success("Pairing email sent", {
+                          description: `${c.childName} · ${c.parentName}`,
+                        })
+                      }
+                    />
+                    <ActionBtn
+                      icon={CalendarPlus}
+                      label="Set Start Date"
+                      onClick={() =>
+                        toast("Set start date", {
+                          description: `Open scheduler for ${c.childName}`,
+                        })
+                      }
+                    />
+                  </div>
                 </td>
               </>
             )}
@@ -365,6 +397,27 @@ function Kpi({
       <p className={cn("text-2xl font-semibold mt-1 tabular-nums", toneClass)}>{value}</p>
       {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
     </div>
+  );
+}
+
+function ActionBtn({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof FileText;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
