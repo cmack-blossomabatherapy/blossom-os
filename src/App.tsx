@@ -10,6 +10,7 @@ import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Authorizations from "./pages/Authorizations";
+import AuthDetail from "./pages/AuthDetail";
 import Scheduling from "./pages/Scheduling";
 import Staffing from "./pages/Staffing";
 import QA from "./pages/QA";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/clients" element={<Clients />} />
             <Route path="/clients/:id" element={<ClientDetail />} />
             <Route path="/authorizations" element={<Authorizations />} />
+            <Route path="/authorizations/:id" element={<AuthDetail />} />
             <Route path="/scheduling" element={<Scheduling />} />
             <Route path="/staffing" element={<Staffing />} />
             <Route path="/qa" element={<QA />} />
