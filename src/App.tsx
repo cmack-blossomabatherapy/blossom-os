@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
+import ClientDetail from "./pages/ClientDetail";
 import Authorizations from "./pages/Authorizations";
 import Scheduling from "./pages/Scheduling";
 import Staffing from "./pages/Staffing";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/leads" element={<Leads />} />
             <Route path="/leads/:id" element={<LeadDetail />} />
             <Route path="/clients" element={<Clients />} />
+            <Route path="/clients/:id" element={<ClientDetail />} />
             <Route path="/authorizations" element={<Authorizations />} />
             <Route path="/scheduling" element={<Scheduling />} />
             <Route path="/staffing" element={<Staffing />} />
