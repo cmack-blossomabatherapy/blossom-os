@@ -2,8 +2,9 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
-  CheckSquare, BarChart3, Zap, UsersRound, Settings, Flower2
+  CheckSquare, BarChart3, Zap, UsersRound, Settings
 } from "lucide-react";
+import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
 
 const navSections = [
