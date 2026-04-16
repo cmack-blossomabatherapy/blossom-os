@@ -6,8 +6,7 @@ import { LeadControlBar, ViewMode } from "@/components/leads/LeadControlBar";
 import { LeadTableView } from "@/components/leads/LeadTableView";
 import { LeadPipelineView } from "@/components/leads/LeadPipelineView";
 import { LeadQueueView } from "@/components/leads/LeadQueueView";
-import { LeadDetailPanel } from "@/components/leads/LeadDetailPanel";
-import { mockLeads, Lead } from "@/data/leads";
+import { mockLeads } from "@/data/leads";
 
 export default function Leads() {
   const navigate = useNavigate();
