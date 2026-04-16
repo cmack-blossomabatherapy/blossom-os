@@ -173,7 +173,7 @@ export function TaskDetailPanel({ task, onClose }: Props) {
               {linkedClient && (
                 <>
                   <ContextRow label="Stage" value={linkedClient.stage} />
-                  <ContextRow label="Auth" value={linkedClient.treatmentAuth?.status ?? linkedClient.initialAuth?.status ?? "—"} />
+                  <ContextRow label="Auth" value={linkedClient.authStatus} />
                   <ContextRow label="Staffing" value={linkedClient.staffingStatus} />
                 </>
               )}
