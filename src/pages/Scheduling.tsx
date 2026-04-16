@@ -1,62 +1,96 @@
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
-import { Calendar, Clock } from "lucide-react";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-
-const assessments = [
-  { client: "Aiden Patel", bcba: "Dr. Lee", state: "TX", status: "Unscheduled", requestDate: "2026-04-12" },
-  { client: "Noah Williams", bcba: "Dr. Kim", state: "TX", status: "Unscheduled", requestDate: "2026-04-14" },
-  { client: "Liam Chen", bcba: "Dr. Patel", state: "AZ", status: "Scheduled", requestDate: "2026-04-08", date: "2026-04-22" },
-  { client: "Olivia Brown", bcba: "Dr. Lee", state: "GA", status: "Scheduled", requestDate: "2026-04-05", date: "2026-04-18" },
-];
-
-const pendingStarts = [
-  { client: "Emma Thompson", state: "GA", clinic: "Peachtree Corners", rbt: "Taylor S.", targetDate: "2026-04-28" },
-  { client: "Sofia Garcia", state: "GA", clinic: "Riverdale", rbt: "Jordan M.", targetDate: "2026-05-02" },
-];
+import { CalendarDays } from "lucide-react";
+import { SchedulingControlBar, type SchedulingViewMode } from "@/components/scheduling/SchedulingControlBar";
+import { SchedulingQueueView } from "@/components/scheduling/SchedulingQueueView";
+import { SchedulingCalendarView } from "@/components/scheduling/SchedulingCalendarView";
+import { SchedulingGridView } from "@/components/scheduling/SchedulingGridView";
+import { SchedulingMatchingView } from "@/components/scheduling/SchedulingMatchingView";
+import { allSchedulingClients, mockAssessments } from "@/data/scheduling";
 
 export default function Scheduling() {
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<SchedulingViewMode>("queue");
+  const [activeView, setActiveView] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const allItems = useMemo(() => allSchedulingClients(), []);
+
+  const filteredItems = useMemo(() => {
+    let result = allItems;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (i) =>
+          i.client.childName.toLowerCase().includes(q) ||
+          (i.client.bcba?.toLowerCase().includes(q) ?? false) ||
+          (i.client.rbt?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    switch (activeView) {
+      case "unscheduled":
+        result = result.filter((i) => i.status === "Unscheduled Assessment");
+        break;
+      case "scheduled":
+        result = result.filter((i) => i.status === "Assessment Scheduled");
+        break;
+      case "pending-start":
+        result = result.filter((i) => i.client.stage === "Pending Start Date");
+        break;
+      case "staffing":
+        result = result.filter(
+          (i) => i.client.stage === "Staffing Needed" || i.client.stage === "Restaffing Needed",
+        );
+        break;
+      case "ready":
+        result = result.filter((i) => i.status === "Ready to Schedule");
+        break;
+      case "week":
+        result = result.filter((i) => i.client.schedule.length > 0);
+        break;
+    }
+    return result;
+  }, [allItems, searchQuery, activeView]);
+
+  const filteredAssessments = useMemo(() => {
+    let result = mockAssessments;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (a) => a.clientName.toLowerCase().includes(q) || a.bcba.toLowerCase().includes(q),
+      );
+    }
+    if (activeView === "unscheduled") result = result.filter((a) => a.status === "Unscheduled");
+    if (activeView === "scheduled") result = result.filter((a) => a.status === "Scheduled");
+    return result;
+  }, [searchQuery, activeView]);
+
+  const handleSelect = (clientId: string) => navigate(`/clients/${clientId}`);
+
   return (
-    <PageShell title="Scheduling" description="Assessments, start dates, and client schedules" icon={Calendar}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-border/60 p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Clock className="h-4 w-4 text-primary" /> Assessment Scheduling
-          </h3>
-          <div className="space-y-2">
-            {assessments.map((a, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/40">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{a.client}</p>
-                  <p className="text-xs text-muted-foreground">{a.bcba} · {a.state}</p>
-                </div>
-                <div className="text-right">
-                  <StatusBadge status={a.status} variant={a.status === "Scheduled" ? "success" : "warning"} />
-                  {a.date && <p className="text-xs text-muted-foreground mt-1">{a.date}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bg-card rounded-xl border border-border/60 p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-accent" /> Pending Start Dates
-          </h3>
-          <div className="space-y-2">
-            {pendingStarts.map((p, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/40">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{p.client}</p>
-                  <p className="text-xs text-muted-foreground">{p.clinic} · {p.state}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-foreground">{p.targetDate}</p>
-                  <p className="text-xs text-muted-foreground">{p.rbt}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <PageShell
+      title="Scheduling"
+      description="Scheduling command center — assessments, weekly grids, and staff matching"
+      icon={CalendarDays}
+    >
+      <SchedulingControlBar
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        activeView={activeView}
+        onActiveViewChange={setActiveView}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      {viewMode === "queue" && (
+        <SchedulingQueueView items={filteredItems} assessments={filteredAssessments} onSelect={handleSelect} />
+      )}
+      {viewMode === "calendar" && (
+        <SchedulingCalendarView items={filteredItems} assessments={filteredAssessments} onSelect={handleSelect} />
+      )}
+      {viewMode === "grid" && <SchedulingGridView items={filteredItems} onSelect={handleSelect} />}
+      {viewMode === "matching" && <SchedulingMatchingView items={filteredItems} onSelect={handleSelect} />}
     </PageShell>
   );
 }
