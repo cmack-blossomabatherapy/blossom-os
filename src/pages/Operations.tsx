@@ -1,27 +1,29 @@
 import { useState } from "react";
-import { Workflow, Layers, ListTodo } from "lucide-react";
+import { Workflow, Layers, ListTodo, Building2 } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { OperationsControlBar } from "@/components/operations/OperationsControlBar";
 import { OperationsPipelineView } from "@/components/operations/OperationsPipelineView";
 import { QAQueueView } from "@/components/operations/QAQueueView";
+import { ClinicsOverviewView } from "@/components/operations/ClinicsOverviewView";
 import { cn } from "@/lib/utils";
 import type { OpsLaneId } from "@/data/operations";
 
-type ViewMode = "pipeline" | "qa-queue";
+type ViewMode = "pipeline" | "qa-queue" | "clinics";
 
 export default function Operations() {
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("pipeline");
 
-  // When user picks a saved view, also auto-switch view mode for QA queue
   const handleViewChange = (v: string) => {
     setActiveView(v);
-    setViewMode(v === "qa" ? "qa-queue" : "pipeline");
+    if (v === "qa") setViewMode("qa-queue");
+    else if (v === "clinics") setViewMode("clinics");
+    else setViewMode("pipeline");
   };
 
   const highlightLane: OpsLaneId | "blocked" | "all" =
-    activeView === "all" ? "all" : (activeView as OpsLaneId | "blocked");
+    activeView === "all" || activeView === "clinics" ? "all" : (activeView as OpsLaneId | "blocked");
 
   return (
     <PageShell
@@ -32,6 +34,7 @@ export default function Operations() {
         <div className="flex items-center gap-1 bg-muted rounded-md p-1">
           <ModeButton mode="pipeline" current={viewMode} onClick={setViewMode} icon={Layers} label="Pipeline" />
           <ModeButton mode="qa-queue" current={viewMode} onClick={setViewMode} icon={ListTodo} label="QA Queue" />
+          <ModeButton mode="clinics" current={viewMode} onClick={setViewMode} icon={Building2} label="Clinics" />
         </div>
       }
     >
@@ -46,6 +49,7 @@ export default function Operations() {
         <OperationsPipelineView searchQuery={searchQuery} highlightLane={highlightLane} />
       )}
       {viewMode === "qa-queue" && <QAQueueView searchQuery={searchQuery} />}
+      {viewMode === "clinics" && <ClinicsOverviewView searchQuery={searchQuery} />}
     </PageShell>
   );
 }
