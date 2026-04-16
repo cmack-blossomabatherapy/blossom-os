@@ -2,8 +2,9 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
-  CheckSquare, BarChart3, Zap, UsersRound, Settings, Flower2
+  CheckSquare, BarChart3, Zap, UsersRound, Settings
 } from "lucide-react";
+import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
 
 const navSections = [
@@ -60,8 +61,7 @@ export function AppSidebar() {
     <aside className="w-60 min-h-screen bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
       {/* Logo */}
       <div className="h-14 flex items-center gap-2.5 px-5 border-b border-sidebar-border">
-        <Flower2 className="h-6 w-6 text-sidebar-primary" />
-        <span className="text-base font-semibold text-sidebar-accent-foreground tracking-tight">Blossom ABA</span>
+        <img src={logo} alt="Blossom ABA" className="h-6" />
       </div>
 
       {/* Navigation */}
