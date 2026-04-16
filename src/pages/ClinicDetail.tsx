@@ -400,6 +400,27 @@ function Kpi({
   );
 }
 
+function ActionBtn({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof FileText;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
 function ClientTable<T extends { id: string }>({
   clients,
   columns,
