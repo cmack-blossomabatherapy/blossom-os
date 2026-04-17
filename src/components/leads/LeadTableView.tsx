@@ -42,7 +42,7 @@ export function LeadTableView({ leads, onSelectLead, selectedIds, onSelectionCha
             <tr className="border-b border-border">
               <th className="w-10 px-3 py-2.5">
                 <Checkbox
-                  checked={allSelected || (someSelected && "indeterminate")}
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
                   onCheckedChange={toggleAll}
                   aria-label="Select all"
                 />
