@@ -532,16 +532,7 @@ export default function ClientDetail() {
                 <Separator className="my-3" />
                 <Button
                   variant="outline" size="sm" className="gap-1.5 text-xs"
-                  onClick={() => {
-                    const name = window.prompt("Document name:");
-                    if (!name?.trim()) return;
-                    const type = window.prompt("Type (PDF, DOCX, IMG):", "PDF") ?? "PDF";
-                    updateClient(client.id, {
-                      documents: [...client.documents, { name: name.trim(), type: type.trim() || "PDF" }],
-                    });
-                    appendTimeline(client.id, `Document uploaded: ${name.trim()}`, "note");
-                    toast.success("Document added");
-                  }}
+                  onClick={() => setUploadDocOpen(true)}
                 >
                   <FileText className="h-3 w-3" /> Upload Document
                 </Button>
