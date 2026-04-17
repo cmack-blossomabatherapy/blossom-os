@@ -1,37 +1,81 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
 import { Users } from "lucide-react";
 import { LeadControlBar, ViewMode } from "@/components/leads/LeadControlBar";
-import { LeadTableView } from "@/components/leads/LeadTableView";
+import { LeadTableView, SortField, SortDir } from "@/components/leads/LeadTableView";
 import { LeadPipelineView } from "@/components/leads/LeadPipelineView";
 import { LeadQueueView } from "@/components/leads/LeadQueueView";
 import { LeadKpiStrip } from "@/components/leads/LeadKpiStrip";
 import { LeadBulkActionBar } from "@/components/leads/LeadBulkActionBar";
 import { LeadFilters } from "@/components/leads/LeadFilterPopover";
-import { mockLeads, kpiFilters, KpiKey } from "@/data/leads";
+import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
+import { kpiFilters, KpiKey, LeadStatus } from "@/data/leads";
+import { useLeads } from "@/contexts/LeadsContext";
+import { toast } from "sonner";
 
 const emptyFilters: LeadFilters = { states: [], sources: [], owners: [], insurances: [], priorities: [] };
 
+const exportToCsv = (rows: Record<string, unknown>[], filename: string) => {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [
+    headers.join(","),
+    ...rows.map((r) => headers.map((h) => {
+      const v = String(r[h] ?? "").replace(/"/g, '""');
+      return `"${v}"`;
+    }).join(",")),
+  ].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function Leads() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { leads, moveStage, assignOwner, addTag, deleteLeads } = useLeads();
+
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [activeView, setActiveView] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [filters, setFilters] = useState<LeadFilters>(emptyFilters);
   const [activeKpi, setActiveKpi] = useState<KpiKey | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  // Sync external ?q= into search input (e.g. from TopBar global search)
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null && q !== searchQuery) setSearchQuery(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Sync local search → URL (debounced via state)
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (searchQuery) next.set("q", searchQuery);
+    else next.delete("q");
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const filterOptions = useMemo(() => ({
-    states: Array.from(new Set(mockLeads.map((l) => l.state))).sort(),
-    sources: Array.from(new Set(mockLeads.map((l) => l.source))).sort(),
-    owners: Array.from(new Set(mockLeads.map((l) => l.owner))).sort(),
-    insurances: Array.from(new Set(mockLeads.map((l) => l.insurance))).sort(),
+    states: Array.from(new Set(leads.map((l) => l.state))).sort(),
+    sources: Array.from(new Set(leads.map((l) => l.source))).sort(),
+    owners: Array.from(new Set(leads.map((l) => l.owner))).sort(),
+    insurances: Array.from(new Set(leads.map((l) => l.insurance))).sort(),
     priorities: ["Hot", "Warm", "Cold"],
-  }), []);
+  }), [leads]);
 
   const filteredLeads = useMemo(() => {
-    let result = mockLeads;
+    let result = leads;
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -45,14 +89,12 @@ export default function Leads() {
       );
     }
 
-    // Multi-select filters
     if (filters.states.length) result = result.filter((l) => filters.states.includes(l.state));
     if (filters.sources.length) result = result.filter((l) => filters.sources.includes(l.source));
     if (filters.owners.length) result = result.filter((l) => filters.owners.includes(l.owner));
     if (filters.insurances.length) result = result.filter((l) => filters.insurances.includes(l.insurance));
     if (filters.priorities.length) result = result.filter((l) => filters.priorities.includes(l.priority));
 
-    // KPI filter (overrides saved view when active)
     if (activeKpi) {
       result = result.filter(kpiFilters[activeKpi]);
     } else {
@@ -67,8 +109,32 @@ export default function Leads() {
       }
     }
 
+    if (sortField) {
+      const dir = sortDir === "asc" ? 1 : -1;
+      const priorityOrder: Record<string, number> = { Hot: 0, Warm: 1, Cold: 2 };
+      result = [...result].sort((a, b) => {
+        let av: string | number = "", bv: string | number = "";
+        switch (sortField) {
+          case "id": av = a.id; bv = b.id; break;
+          case "childName": av = a.childName; bv = b.childName; break;
+          case "state": av = a.state; bv = b.state; break;
+          case "status": av = a.status; bv = b.status; break;
+          case "owner": av = a.owner; bv = b.owner; break;
+          case "priority": av = priorityOrder[a.priority]; bv = priorityOrder[b.priority]; break;
+          case "daysInStage": av = a.daysInStage; bv = b.daysInStage; break;
+          case "lastContacted":
+            av = a.lastContacted ? new Date(a.lastContacted).getTime() : 0;
+            bv = b.lastContacted ? new Date(b.lastContacted).getTime() : 0;
+            break;
+        }
+        if (av < bv) return -1 * dir;
+        if (av > bv) return 1 * dir;
+        return 0;
+      });
+    }
+
     return result;
-  }, [searchQuery, activeView, filters, activeKpi]);
+  }, [leads, searchQuery, activeView, filters, activeKpi, sortField, sortDir]);
 
   const handleKpiClick = (key: KpiKey) => {
     setActiveKpi(activeKpi === key ? null : key);
@@ -80,13 +146,40 @@ export default function Leads() {
     setActiveKpi(null);
   };
 
+  const handleSort = (field: SortField) => {
+    if (!field) return;
+    if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortField(field); setSortDir("asc"); }
+  };
+
+  const exportLeads = (ids?: string[]) => {
+    const target = ids?.length
+      ? leads.filter((l) => ids.includes(l.id))
+      : filteredLeads;
+    if (!target.length) {
+      toast.info("Nothing to export");
+      return;
+    }
+    exportToCsv(
+      target.map((l) => ({
+        id: l.id, childName: l.childName, parentName: l.parentName,
+        phone: l.phone, email: l.email, state: l.state, source: l.source,
+        status: l.status, owner: l.owner, priority: l.priority,
+        insurance: l.insurance, formStatus: l.formStatus, vobStatus: l.vobStatus,
+        daysInStage: l.daysInStage, nextAction: l.nextAction,
+      })),
+      `leads-${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    toast.success(`Exported ${target.length} leads`);
+  };
+
   return (
     <PageShell
       title="Leads"
       description="Lead command center — track intake pipeline from first contact to VOB"
       icon={Users}
     >
-      <LeadKpiStrip leads={mockLeads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />
+      <LeadKpiStrip leads={leads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />
 
       <LeadControlBar
         viewMode={viewMode}
@@ -98,9 +191,42 @@ export default function Leads() {
         filters={filters}
         onFiltersChange={setFilters}
         filterOptions={filterOptions}
+        onNewLead={() => setNewLeadOpen(true)}
+        onExport={() => exportLeads()}
       />
 
-      <LeadBulkActionBar count={selectedIds.length} onClear={() => setSelectedIds([])} />
+      <LeadBulkActionBar
+        count={selectedIds.length}
+        selectedIds={selectedIds}
+        onClear={() => setSelectedIds([])}
+        owners={filterOptions.owners}
+        onAssign={(owner) => {
+          assignOwner(selectedIds, owner);
+          toast.success(`Assigned ${selectedIds.length} leads to ${owner}`);
+        }}
+        onMoveStage={(status: LeadStatus) => {
+          moveStage(selectedIds, status);
+          toast.success(`Moved ${selectedIds.length} leads to ${status}`);
+          setSelectedIds([]);
+        }}
+        onSendFollowUp={() => toast.success(`Follow-up sequence queued for ${selectedIds.length} leads`)}
+        onTag={() => {
+          const tag = window.prompt("Tag name:");
+          if (tag) {
+            addTag(selectedIds, tag);
+            toast.success(`Tagged ${selectedIds.length} leads with "${tag}"`);
+          }
+        }}
+        onCreateTask={() => toast.success(`Task created for ${selectedIds.length} leads`)}
+        onExport={() => exportLeads(selectedIds)}
+        onDelete={() => {
+          if (window.confirm(`Delete ${selectedIds.length} leads? This cannot be undone.`)) {
+            deleteLeads(selectedIds);
+            toast.success(`Deleted ${selectedIds.length} leads`);
+            setSelectedIds([]);
+          }
+        }}
+      />
 
       {viewMode === "table" && (
         <LeadTableView
@@ -108,6 +234,9 @@ export default function Leads() {
           onSelectLead={(lead) => navigate(`/leads/${lead.id}`)}
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
+          sortField={sortField}
+          sortDir={sortDir}
+          onSort={handleSort}
         />
       )}
       {viewMode === "pipeline" && (
@@ -116,6 +245,12 @@ export default function Leads() {
       {viewMode === "queue" && (
         <LeadQueueView leads={filteredLeads} onSelectLead={(lead) => navigate(`/leads/${lead.id}`)} />
       )}
+
+      <NewLeadDialog
+        open={newLeadOpen}
+        onOpenChange={setNewLeadOpen}
+        onCreated={(lead) => navigate(`/leads/${lead.id}`)}
+      />
     </PageShell>
   );
 }

@@ -1,22 +1,33 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { mockLeads, statusVariant, priorityVariant, getInlineAlert } from "@/data/leads";
+import { statusVariant, priorityVariant, getInlineAlert, pipelineStages, LeadStatus } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Phone, Mail, MessageSquare, FileText, ArrowRight, UserPlus,
   CheckCircle2, Circle, Clock, Zap, FileIcon, Shield, Calendar,
   AlertCircle, MoreHorizontal, Copy, ExternalLink, Send, Upload,
-  CreditCard, FileCheck2, PhoneCall, StickyNote,
+  CreditCard, FileCheck2, PhoneCall, StickyNote, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLeads } from "@/contexts/LeadsContext";
+import { toast } from "sonner";
+
+const COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const lead = mockLeads.find((l) => l.id === id);
+  const { getLead, updateLead, moveStage, assignOwner, deleteLeads } = useLeads();
+  const lead = id ? getLead(id) : undefined;
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied`);
+  };
 
   if (!lead) {
     return (
@@ -77,7 +88,32 @@ export default function LeadDetail() {
         <div className="flex items-center gap-2">
           <StatusBadge status={lead.priority} variant={priorityVariant(lead.priority)} />
           <StatusBadge status={lead.status} variant={statusVariant(lead.status)} />
-          <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => copy(`${window.location.origin}/leads/${lead.id}`, "Lead link")}>
+                <Copy className="h-3.5 w-3.5 mr-2" /> Copy lead link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => updateLead(lead.id, { priority: lead.priority === "Hot" ? "Warm" : "Hot" })}>
+                <AlertCircle className="h-3.5 w-3.5 mr-2" /> Toggle priority
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete ${lead.childName}? This cannot be undone.`)) {
+                    deleteLeads([lead.id]);
+                    toast.success("Lead deleted");
+                    navigate("/leads");
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -94,20 +130,85 @@ export default function LeadDetail() {
 
       {/* Quick Actions bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {[
-          { icon: Phone, label: "Call", variant: "outline" as const },
-          { icon: MessageSquare, label: "Text", variant: "outline" as const },
-          { icon: Mail, label: "Email", variant: "outline" as const },
-          { icon: FileText, label: "Send Form", variant: "outline" as const },
-          { icon: Shield, label: "Send Consent", variant: "outline" as const },
-          { icon: ArrowRight, label: "Move Stage", variant: "default" as const },
-          { icon: UserPlus, label: "Assign Owner", variant: "outline" as const },
-          { icon: Calendar, label: "Schedule", variant: "outline" as const },
-        ].map(({ icon: Icon, label, variant }) => (
-          <Button key={label} variant={variant} size="sm" className="gap-1.5 text-xs h-8">
-            <Icon className="h-3.5 w-3.5" /> {label}
-          </Button>
-        ))}
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Calling " + lead.phone); }}>
+          <Phone className="h-3.5 w-3.5" /> Call
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `sms:${lead.phone}`; toast.success("Opening SMS"); }}>
+          <MessageSquare className="h-3.5 w-3.5" /> Text
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `mailto:${lead.email}`; toast.success("Opening email"); }}>
+          <Mail className="h-3.5 w-3.5" /> Email
+        </Button>
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateLead(lead.id, {
+              formStatus: "Sent",
+              status: lead.status === "In Contact" || lead.status === "New Lead" ? "Sent Form" : lead.status,
+              automationLog: [...lead.automationLog, "Intake form sent via PandaDoc"],
+            });
+            toast.success("Intake form sent", { description: "Lead moved to Sent Form" });
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" /> Send Form
+        </Button>
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateLead(lead.id, {
+              consentStatus: "Sent",
+              automationLog: [...lead.automationLog, "Consent forms sent"],
+            });
+            toast.success("Consent forms sent");
+          }}
+        >
+          <Shield className="h-3.5 w-3.5" /> Send Consent
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" size="sm" className="gap-1.5 text-xs h-8">
+              <ArrowRight className="h-3.5 w-3.5" /> Move Stage
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-[400px] overflow-y-auto">
+            <DropdownMenuLabel className="text-[10px]">Move to stage</DropdownMenuLabel>
+            {pipelineStages.map((s) => (
+              <DropdownMenuItem
+                key={s.name}
+                onClick={() => {
+                  moveStage([lead.id], s.name as LeadStatus);
+                  toast.success(`Moved to ${s.name}`);
+                }}
+              >
+                {s.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <UserPlus className="h-3.5 w-3.5" /> Assign Owner
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel className="text-[10px]">Assign to</DropdownMenuLabel>
+            {COORDINATORS.map((o) => (
+              <DropdownMenuItem
+                key={o}
+                onClick={() => {
+                  assignOwner([lead.id], o);
+                  toast.success(`Assigned to ${o}`);
+                }}
+              >
+                {o}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => navigate("/scheduling")}>
+          <Calendar className="h-3.5 w-3.5" /> Schedule
+        </Button>
       </div>
 
       {/* Main grid */}
@@ -179,10 +280,10 @@ export default function LeadDetail() {
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
                   <h4 className="text-sm font-semibold">Communication log</h4>
                   <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><PhoneCall className="h-3 w-3" /> Log call</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><MessageSquare className="h-3 w-3" /> Send SMS</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><Mail className="h-3 w-3" /> Email</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><StickyNote className="h-3 w-3" /> Note</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Logging call to " + lead.phone); }}><PhoneCall className="h-3 w-3" /> Log call</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `sms:${lead.phone}`; }}><MessageSquare className="h-3 w-3" /> Send SMS</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `mailto:${lead.email}`; }}><Mail className="h-3 w-3" /> Email</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { const note = window.prompt("Add note:"); if (note) { updateLead(lead.id, { notes: (lead.notes ? lead.notes + "\n" : "") + note }); toast.success("Note added"); } }}><StickyNote className="h-3 w-3" /> Note</Button>
                   </div>
                 </div>
                 <div className="divide-y divide-border/40">
@@ -233,7 +334,11 @@ export default function LeadDetail() {
                 ) : (
                   <div className="divide-y divide-border/40">
                     {lead.tasks.map((task) => (
-                      <div key={task.id} className="px-5 py-3 flex items-start gap-3 hover:bg-muted/20">
+                      <div
+                        key={task.id}
+                        onClick={() => updateLead(lead.id, { tasks: lead.tasks.map((t) => t.id === task.id ? { ...t, completed: !t.completed } : t) })}
+                        className="px-5 py-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer"
+                      >
                         {task.completed
                           ? <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
                           : <Circle className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 mt-0.5" />}
@@ -284,7 +389,7 @@ export default function LeadDetail() {
                     })}
                   </div>
                   <Separator className="my-3" />
-                  <Button size="sm" className="w-full gap-1.5"><Send className="h-3 w-3" /> {lead.formStatus === "Not Sent" ? "Send Form" : "Resend Form"}</Button>
+                  <Button size="sm" className="w-full gap-1.5" onClick={() => { updateLead(lead.id, { formStatus: "Sent", status: lead.status === "In Contact" || lead.status === "New Lead" ? "Sent Form" : lead.status, automationLog: [...lead.automationLog, "Intake form sent"] }); toast.success("Intake form sent"); }}><Send className="h-3 w-3" /> {lead.formStatus === "Not Sent" ? "Send Form" : "Resend Form"}</Button>
                 </div>
 
                 <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm">
@@ -297,7 +402,7 @@ export default function LeadDetail() {
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">HIPAA, Treatment, Telehealth, and Financial Responsibility forms.</p>
                   <Separator className="my-3" />
-                  <Button size="sm" className="w-full gap-1.5"><Send className="h-3 w-3" /> {lead.consentStatus === "Not Sent" ? "Send Consent Forms" : "Resend Consent"}</Button>
+                  <Button size="sm" className="w-full gap-1.5" onClick={() => { updateLead(lead.id, { consentStatus: "Sent", automationLog: [...lead.automationLog, "Consent forms sent"] }); toast.success("Consent forms sent"); }}><Send className="h-3 w-3" /> {lead.consentStatus === "Not Sent" ? "Send Consent Forms" : "Resend Consent"}</Button>
                 </div>
 
                 <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm col-span-2">
