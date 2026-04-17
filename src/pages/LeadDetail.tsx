@@ -1,22 +1,33 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { mockLeads, statusVariant, priorityVariant, getInlineAlert } from "@/data/leads";
+import { statusVariant, priorityVariant, getInlineAlert, pipelineStages, LeadStatus } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Phone, Mail, MessageSquare, FileText, ArrowRight, UserPlus,
   CheckCircle2, Circle, Clock, Zap, FileIcon, Shield, Calendar,
   AlertCircle, MoreHorizontal, Copy, ExternalLink, Send, Upload,
-  CreditCard, FileCheck2, PhoneCall, StickyNote,
+  CreditCard, FileCheck2, PhoneCall, StickyNote, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLeads } from "@/contexts/LeadsContext";
+import { toast } from "sonner";
+
+const COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const lead = mockLeads.find((l) => l.id === id);
+  const { getLead, updateLead, moveStage, assignOwner, deleteLeads } = useLeads();
+  const lead = id ? getLead(id) : undefined;
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied`);
+  };
 
   if (!lead) {
     return (
