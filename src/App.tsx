@@ -14,6 +14,8 @@ import AuthDetail from "./pages/AuthDetail";
 import Scheduling from "./pages/Scheduling";
 import Staffing from "./pages/Staffing";
 import RBTDetail from "./pages/RBTDetail";
+import Recruiting from "./pages/Recruiting";
+import CandidateDetail from "./pages/CandidateDetail";
 import QA from "./pages/QA";
 import QADetail from "./pages/QADetail";
 import Operations from "./pages/Operations";
@@ -48,6 +50,8 @@ const App = () => (
             <Route path="/scheduling" element={<Scheduling />} />
             <Route path="/staffing" element={<Staffing />} />
             <Route path="/staffing/:id" element={<RBTDetail />} />
+            <Route path="/recruiting" element={<Recruiting />} />
+            <Route path="/recruiting/:id" element={<CandidateDetail />} />
             <Route path="/qa" element={<QA />} />
             <Route path="/qa/:id" element={<QADetail />} />
             <Route path="/operations" element={<Operations />} />
