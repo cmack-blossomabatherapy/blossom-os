@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
@@ -10,12 +11,21 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft, Phone, Mail, MessageSquare, ArrowRight, UserPlus, CheckCircle2, Circle,
   Clock, Zap, FileIcon, Shield, Calendar, AlertCircle, MoreHorizontal, ExternalLink,
   FileText, MapPin, Briefcase, Users as UsersIcon, Trash2, Send,
 } from "lucide-react";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import {
+  AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
+} from "@/components/clients/ClientDetailDialogs";
+
+type ScheduleDay = ScheduleSlot["day"];
 
 const BCBAS = ["Dr. Kim", "Dr. Lee", "Dr. Patel"];
 const RBTS = ["Taylor S.", "Jordan M.", "Casey R.", "Alex T."];
