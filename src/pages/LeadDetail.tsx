@@ -334,7 +334,11 @@ export default function LeadDetail() {
                 ) : (
                   <div className="divide-y divide-border/40">
                     {lead.tasks.map((task) => (
-                      <div key={task.id} className="px-5 py-3 flex items-start gap-3 hover:bg-muted/20">
+                      <div
+                        key={task.id}
+                        onClick={() => updateLead(lead.id, { tasks: lead.tasks.map((t) => t.id === task.id ? { ...t, completed: !t.completed } : t) })}
+                        className="px-5 py-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer"
+                      >
                         {task.completed
                           ? <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
                           : <Circle className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 mt-0.5" />}
@@ -385,7 +389,7 @@ export default function LeadDetail() {
                     })}
                   </div>
                   <Separator className="my-3" />
-                  <Button size="sm" className="w-full gap-1.5"><Send className="h-3 w-3" /> {lead.formStatus === "Not Sent" ? "Send Form" : "Resend Form"}</Button>
+                  <Button size="sm" className="w-full gap-1.5" onClick={() => { updateLead(lead.id, { formStatus: "Sent", status: lead.status === "In Contact" || lead.status === "New Lead" ? "Sent Form" : lead.status, automationLog: [...lead.automationLog, "Intake form sent"] }); toast.success("Intake form sent"); }}><Send className="h-3 w-3" /> {lead.formStatus === "Not Sent" ? "Send Form" : "Resend Form"}</Button>
                 </div>
 
                 <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm">
@@ -398,7 +402,7 @@ export default function LeadDetail() {
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">HIPAA, Treatment, Telehealth, and Financial Responsibility forms.</p>
                   <Separator className="my-3" />
-                  <Button size="sm" className="w-full gap-1.5"><Send className="h-3 w-3" /> {lead.consentStatus === "Not Sent" ? "Send Consent Forms" : "Resend Consent"}</Button>
+                  <Button size="sm" className="w-full gap-1.5" onClick={() => { updateLead(lead.id, { consentStatus: "Sent", automationLog: [...lead.automationLog, "Consent forms sent"] }); toast.success("Consent forms sent"); }}><Send className="h-3 w-3" /> {lead.consentStatus === "Not Sent" ? "Send Consent Forms" : "Resend Consent"}</Button>
                 </div>
 
                 <div className="bg-card rounded-xl border border-border/60 p-5 shadow-sm col-span-2">
