@@ -1,18 +1,24 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  mockClients, stageVariant, authVariant, staffingVariant, qaVariant,
-  getClientAlert, getLifecycleProgress, lifecycleSteps,
+  stageVariant, authVariant, staffingVariant, qaVariant,
+  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage,
 } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, Phone, Mail, MessageSquare, ArrowRight, UserPlus, CheckCircle2, Circle,
   Clock, Zap, FileIcon, Shield, Calendar, AlertCircle, MoreHorizontal, ExternalLink,
-  FileText, MapPin, Briefcase, Users as UsersIcon,
+  FileText, MapPin, Briefcase, Users as UsersIcon, Trash2, Send,
 } from "lucide-react";
+import { useClients } from "@/contexts/ClientsContext";
+import { toast } from "sonner";
+
+const BCBAS = ["Dr. Kim", "Dr. Lee", "Dr. Patel"];
+const RBTS = ["Taylor S.", "Jordan M.", "Casey R.", "Alex T."];
 
 const tlIcons: Record<string, React.ReactNode> = {
   system: <Zap className="h-3.5 w-3.5" />,
