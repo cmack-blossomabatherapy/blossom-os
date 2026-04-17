@@ -48,6 +48,16 @@ export default function ClientDetail() {
   const { getClient, updateClient, moveStage, assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline, appendAutomation, deleteClients } = useClients();
   const client = id ? getClient(id) : undefined;
 
+  // Dialog state
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [uploadDocOpen, setUploadDocOpen] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [assessmentDateOpen, setAssessmentDateOpen] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState<ScheduleDay | null>(null);
+  const [removeScheduleDay, setRemoveScheduleDay] = useState<ScheduleDay | null>(null);
+  const [removeDocIdx, setRemoveDocIdx] = useState<number | null>(null);
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
