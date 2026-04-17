@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
-  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage,
+  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage, ScheduleSlot,
 } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
