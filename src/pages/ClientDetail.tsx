@@ -112,13 +112,7 @@ export default function ClientDetail() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive"
-                onClick={() => {
-                  if (window.confirm(`Delete ${client.childName}? This cannot be undone.`)) {
-                    deleteClients([client.id]);
-                    toast.success("Client deleted");
-                    navigate("/clients");
-                  }
-                }}
+                onSelect={(e) => { e.preventDefault(); setConfirmDeleteClient(true); }}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete client
               </DropdownMenuItem>
