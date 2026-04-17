@@ -472,23 +472,8 @@ export default function ClientDetail() {
                         <button
                           key={day}
                           onClick={() => {
-                            if (slot) {
-                              if (window.confirm(`Remove ${day} block?`)) {
-                                updateClient(client.id, { schedule: client.schedule.filter((s) => s.day !== day) });
-                                appendTimeline(client.id, `${day} schedule block removed`, "schedule");
-                                toast.success(`${day} cleared`);
-                              }
-                              return;
-                            }
-                            const start = window.prompt(`${day} start time (HH:MM):`, "09:00");
-                            if (!start) return;
-                            const end = window.prompt(`${day} end time (HH:MM):`, "12:00");
-                            if (!end) return;
-                            updateClient(client.id, {
-                              schedule: [...client.schedule, { day, start, end, rbt: client.rbt ?? undefined }],
-                            });
-                            appendTimeline(client.id, `${day} ${start}–${end} added to schedule`, "schedule");
-                            toast.success(`${day} added`);
+                            if (slot) setRemoveScheduleDay(day);
+                            else setScheduleDay(day);
                           }}
                           className={`rounded-lg p-3 text-center text-xs transition-colors ${slot ? "bg-primary/5 border border-primary/20 hover:bg-primary/10" : "bg-muted/30 hover:bg-muted/50 border border-transparent"}`}
                         >
