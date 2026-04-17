@@ -1,14 +1,20 @@
 import { Lead, statusVariant, priorityVariant, getInlineAlert } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+export type SortField = "id" | "childName" | "state" | "status" | "owner" | "priority" | "daysInStage" | "lastContacted" | null;
+export type SortDir = "asc" | "desc";
 
 interface LeadTableViewProps {
   leads: Lead[];
   onSelectLead: (lead: Lead) => void;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  sortField: SortField;
+  sortDir: SortDir;
+  onSort: (field: SortField) => void;
 }
 
 const formVariant = (s: Lead["formStatus"]) =>
@@ -23,15 +29,40 @@ const vobVariant = (s: Lead["vobStatus"]) =>
   s === "Payment Plan Required" ? "warning" :
   s === "Sent" || s === "Received" ? "warning" : "muted";
 
-export function LeadTableView({ leads, onSelectLead, selectedIds, onSelectionChange }: LeadTableViewProps) {
+export function LeadTableView({
+  leads, onSelectLead, selectedIds, onSelectionChange,
+  sortField, sortDir, onSort,
+}: LeadTableViewProps) {
   const allSelected = leads.length > 0 && selectedIds.length === leads.length;
   const someSelected = selectedIds.length > 0 && !allSelected;
 
-  const toggleAll = () => {
-    onSelectionChange(allSelected ? [] : leads.map((l) => l.id));
-  };
-  const toggleOne = (id: string) => {
+  const toggleAll = () => onSelectionChange(allSelected ? [] : leads.map((l) => l.id));
+  const toggleOne = (id: string) =>
     onSelectionChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
+
+  const headers: { label: string; field: SortField; w?: string }[] = [
+    { label: "ID", field: "id", w: "w-[70px]" },
+    { label: "Lead / Parent", field: "childName" },
+    { label: "Phone", field: null },
+    { label: "State", field: "state", w: "w-[55px]" },
+    { label: "Source", field: null, w: "w-[80px]" },
+    { label: "Status", field: "status" },
+    { label: "Coordinator", field: "owner" },
+    { label: "Form", field: null },
+    { label: "Consent", field: null },
+    { label: "Review", field: null },
+    { label: "VOB", field: null },
+    { label: "Priority", field: "priority", w: "w-[70px]" },
+    { label: "Days", field: "daysInStage", w: "w-[55px]" },
+    { label: "Last Contact", field: "lastContacted", w: "w-[90px]" },
+    { label: "Next Action", field: null },
+    { label: "Alerts", field: null, w: "w-[40px]" },
+  ];
+
+  const renderSortIcon = (field: SortField) => {
+    if (!field) return null;
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 opacity-30" />;
+    return sortDir === "asc" ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />;
   };
 
   return (
@@ -47,36 +78,19 @@ export function LeadTableView({ leads, onSelectLead, selectedIds, onSelectionCha
                   aria-label="Select all"
                 />
               </th>
-              {[
-                { label: "ID", w: "w-[70px]" },
-                { label: "Lead / Parent" },
-                { label: "Phone" },
-                { label: "State", w: "w-[55px]" },
-                { label: "Source", w: "w-[80px]" },
-                { label: "Status" },
-                { label: "Coordinator" },
-                { label: "Form" },
-                { label: "Consent" },
-                { label: "Review" },
-                { label: "VOB" },
-                { label: "Priority", w: "w-[70px]" },
-                { label: "Days", w: "w-[55px]" },
-                { label: "Last Contact", w: "w-[90px]" },
-                { label: "Next Action" },
-                { label: "Alerts", w: "w-[40px]" },
-              ].map(({ label, w }) => (
+              {headers.map(({ label, field, w }) => (
                 <th
                   key={label}
+                  onClick={() => field && onSort(field)}
                   className={cn(
                     "text-left px-3 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider whitespace-nowrap",
+                    field && "cursor-pointer hover:text-foreground select-none",
                     w,
                   )}
                 >
                   <span className="inline-flex items-center gap-1">
                     {label}
-                    {["Status", "Days", "Priority"].includes(label) && (
-                      <ArrowUpDown className="h-3 w-3 opacity-30" />
-                    )}
+                    {renderSortIcon(field)}
                   </span>
                 </th>
               ))}
