@@ -208,10 +208,7 @@ export default function ClientDetail() {
 
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
-          onClick={() => {
-            const d = window.prompt("Start date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
-            if (d) { setStartDate([client.id], d); toast.success("Start date set"); }
-          }}
+          onClick={() => setStartDateOpen(true)}
         >
           <Calendar className="h-3.5 w-3.5" /> Set Start Date
         </Button>
