@@ -72,7 +72,38 @@ export default function ClientDetail() {
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={client.stage} variant={stageVariant(client.stage)} />
-          <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/clients/${client.id}`); toast.success("Client link copied"); }}>
+                <ExternalLink className="h-3.5 w-3.5 mr-2" /> Copy client link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { moveStage([client.id], "Flaked"); toast.success("Marked as Flaked"); }}>
+                <AlertCircle className="h-3.5 w-3.5 mr-2" /> Mark as Flaked
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { moveStage([client.id], "Services on Pause"); toast.success("Services paused"); }}>
+                <Clock className="h-3.5 w-3.5 mr-2" /> Pause services
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { moveStage([client.id], "Discharged"); toast.success("Client discharged"); }}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Discharge
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete ${client.childName}? This cannot be undone.`)) {
+                    deleteClients([client.id]);
+                    toast.success("Client deleted");
+                    navigate("/clients");
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete client
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -98,20 +129,121 @@ export default function ClientDetail() {
 
       {/* Quick Actions */}
       <div className="flex items-center gap-2 flex-wrap">
-        {[
-          { icon: ArrowRight, label: "Move Stage", variant: "default" as const },
-          { icon: UserPlus, label: "Assign BCBA", variant: "outline" as const },
-          { icon: UsersIcon, label: "Assign RBT", variant: "outline" as const },
-          { icon: Calendar, label: "Schedule Assessment", variant: "outline" as const },
-          { icon: Shield, label: "Submit Auth", variant: "outline" as const },
-          { icon: Phone, label: "Call Parent", variant: "outline" as const },
-          { icon: MessageSquare, label: "Text", variant: "outline" as const },
-          { icon: Mail, label: "Email", variant: "outline" as const },
-        ].map(({ icon: Icon, label, variant }) => (
-          <Button key={label} variant={variant} size="sm" className="gap-1.5 text-xs h-8">
-            <Icon className="h-3.5 w-3.5" /> {label}
-          </Button>
-        ))}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" size="sm" className="gap-1.5 text-xs h-8">
+              <ArrowRight className="h-3.5 w-3.5" /> Move Stage
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-[400px] overflow-y-auto">
+            <DropdownMenuLabel className="text-[10px]">Move to stage</DropdownMenuLabel>
+            {clientStages.map((s) => (
+              <DropdownMenuItem key={s.name} onClick={() => { moveStage([client.id], s.name as ClientStage); toast.success(`Moved to ${s.name}`); }}>
+                {s.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <UserPlus className="h-3.5 w-3.5" /> Assign BCBA
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel className="text-[10px]">Assign BCBA</DropdownMenuLabel>
+            {BCBAS.map((b) => (
+              <DropdownMenuItem key={b} onClick={() => { assignBcba([client.id], b); toast.success(`${b} assigned`); }}>{b}</DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <UsersIcon className="h-3.5 w-3.5" /> Assign RBT
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel className="text-[10px]">Assign RBT</DropdownMenuLabel>
+            {RBTS.map((r) => (
+              <DropdownMenuItem key={r} onClick={() => { assignRbt([client.id], r); toast.success(`${r} assigned`); }}>{r}</DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            const d = window.prompt("Assessment date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
+            if (d) {
+              updateClient(client.id, { assessmentDate: d, stage: "Assessment Scheduled" });
+              appendTimeline(client.id, `Assessment scheduled for ${d}`, "schedule");
+              appendAutomation(client.id, `Assessment scheduled (${d})`);
+              toast.success("Assessment scheduled");
+            }
+          }}
+        >
+          <Calendar className="h-3.5 w-3.5" /> Schedule Assessment
+        </Button>
+
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateClient(client.id, { authStatus: "Submitted" });
+            appendTimeline(client.id, "Authorization submitted to payor", "auth");
+            appendAutomation(client.id, "Auth submitted");
+            toast.success("Authorization submitted");
+          }}
+        >
+          <Shield className="h-3.5 w-3.5" /> Submit Auth
+        </Button>
+
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            const d = window.prompt("Start date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
+            if (d) { setStartDate([client.id], d); toast.success("Start date set"); }
+          }}
+        >
+          <Calendar className="h-3.5 w-3.5" /> Set Start Date
+        </Button>
+
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateClient(client.id, {
+              documents: [...client.documents, { name: `Case Coordination – ${client.childName}`, type: "PDF" }],
+            });
+            appendAutomation(client.id, "Case Coordination document generated");
+            appendTimeline(client.id, "Case Coordination document generated", "system");
+            toast.success("Case Coordination document generated");
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" /> Case Coord Doc
+        </Button>
+
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            appendAutomation(client.id, `Pairing email sent (BCBA: ${client.bcba || "—"}, RBT: ${client.rbt || "—"})`);
+            appendTimeline(client.id, "Pairing email sent to BCBA & RBT", "staffing");
+            toast.success("Pairing email sent");
+          }}
+        >
+          <Send className="h-3.5 w-3.5" /> Send Pairing Email
+        </Button>
+
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => toast.success(`Calling ${client.parentName}…`)}>
+          <Phone className="h-3.5 w-3.5" /> Call Parent
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => toast.success("Opening text composer")}>
+          <MessageSquare className="h-3.5 w-3.5" /> Text
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => toast.success("Opening email composer")}>
+          <Mail className="h-3.5 w-3.5" /> Email
+        </Button>
       </div>
 
       {/* Blocker alert */}
