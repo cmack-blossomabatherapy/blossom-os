@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
+import { ClientsProvider } from "@/contexts/ClientsContext";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -41,6 +42,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <LeadsProvider>
+          <ClientsProvider>
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
@@ -70,6 +72,7 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </ClientsProvider>
         </LeadsProvider>
       </BrowserRouter>
     </TooltipProvider>
