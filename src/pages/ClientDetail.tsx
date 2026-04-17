@@ -189,15 +189,7 @@ export default function ClientDetail() {
 
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
-          onClick={() => {
-            const d = window.prompt("Assessment date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
-            if (d) {
-              updateClient(client.id, { assessmentDate: d, stage: "Assessment Scheduled" });
-              appendTimeline(client.id, `Assessment scheduled for ${d}`, "schedule");
-              appendAutomation(client.id, `Assessment scheduled (${d})`);
-              toast.success("Assessment scheduled");
-            }
-          }}
+          onClick={() => setAssessmentDateOpen(true)}
         >
           <Calendar className="h-3.5 w-3.5" /> Schedule Assessment
         </Button>
