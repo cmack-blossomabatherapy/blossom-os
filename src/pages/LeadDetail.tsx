@@ -280,10 +280,10 @@ export default function LeadDetail() {
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
                   <h4 className="text-sm font-semibold">Communication log</h4>
                   <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><PhoneCall className="h-3 w-3" /> Log call</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><MessageSquare className="h-3 w-3" /> Send SMS</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><Mail className="h-3 w-3" /> Email</Button>
-                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1"><StickyNote className="h-3 w-3" /> Note</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Logging call to " + lead.phone); }}><PhoneCall className="h-3 w-3" /> Log call</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `sms:${lead.phone}`; }}><MessageSquare className="h-3 w-3" /> Send SMS</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { window.location.href = `mailto:${lead.email}`; }}><Mail className="h-3 w-3" /> Email</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => { const note = window.prompt("Add note:"); if (note) { updateLead(lead.id, { notes: (lead.notes ? lead.notes + "\n" : "") + note }); toast.success("Note added"); } }}><StickyNote className="h-3 w-3" /> Note</Button>
                   </div>
                 </div>
                 <div className="divide-y divide-border/40">
