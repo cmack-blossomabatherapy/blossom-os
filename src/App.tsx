@@ -32,41 +32,45 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+import { LeadsProvider } from "@/contexts/LeadsContext";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/leads/:id" element={<LeadDetail />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/clients/:id" element={<ClientDetail />} />
-            <Route path="/authorizations" element={<Authorizations />} />
-            <Route path="/authorizations/:id" element={<AuthDetail />} />
-            <Route path="/scheduling" element={<Scheduling />} />
-            <Route path="/staffing" element={<Staffing />} />
-            <Route path="/staffing/:id" element={<RBTDetail />} />
-            <Route path="/recruiting" element={<Recruiting />} />
-            <Route path="/recruiting/:id" element={<CandidateDetail />} />
-            <Route path="/qa" element={<QA />} />
-            <Route path="/qa/:id" element={<QADetail />} />
-            <Route path="/operations" element={<Operations />} />
-            <Route path="/operations/clinics/:id" element={<ClinicDetail />} />
-            <Route path="/clinics" element={<Clinics />} />
-            <Route path="/phone-calls" element={<PhoneCalls />} />
-            <Route path="/documents" element={<Documents />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/automations" element={<Automations />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <LeadsProvider>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/leads" element={<Leads />} />
+              <Route path="/leads/:id" element={<LeadDetail />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/clients/:id" element={<ClientDetail />} />
+              <Route path="/authorizations" element={<Authorizations />} />
+              <Route path="/authorizations/:id" element={<AuthDetail />} />
+              <Route path="/scheduling" element={<Scheduling />} />
+              <Route path="/staffing" element={<Staffing />} />
+              <Route path="/staffing/:id" element={<RBTDetail />} />
+              <Route path="/recruiting" element={<Recruiting />} />
+              <Route path="/recruiting/:id" element={<CandidateDetail />} />
+              <Route path="/qa" element={<QA />} />
+              <Route path="/qa/:id" element={<QADetail />} />
+              <Route path="/operations" element={<Operations />} />
+              <Route path="/operations/clinics/:id" element={<ClinicDetail />} />
+              <Route path="/clinics" element={<Clinics />} />
+              <Route path="/phone-calls" element={<PhoneCalls />} />
+              <Route path="/documents" element={<Documents />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/automations" element={<Automations />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </LeadsProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
