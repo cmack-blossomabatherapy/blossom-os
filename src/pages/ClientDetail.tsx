@@ -35,7 +35,8 @@ const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const client = mockClients.find((c) => c.id === id);
+  const { getClient, updateClient, moveStage, assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline, appendAutomation, deleteClients } = useClients();
+  const client = id ? getClient(id) : undefined;
 
   if (!client) {
     return (
