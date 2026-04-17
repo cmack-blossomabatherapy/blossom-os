@@ -627,6 +627,151 @@ export default function ClientDetail() {
           </div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <AddTaskDialog
+        open={addTaskOpen}
+        onOpenChange={setAddTaskOpen}
+        onConfirm={(title, dueDate) => {
+          addTask(client.id, { id: `ct-${Date.now()}`, title, completed: false, dueDate });
+          appendTimeline(client.id, `Task added: ${title}`, "note");
+          toast.success("Task added");
+        }}
+      />
+
+      <DatePickerDialog
+        open={startDateOpen}
+        onOpenChange={setStartDateOpen}
+        title="Set start date"
+        description="When does this client begin services?"
+        label="Start date"
+        defaultDate={client.startDate ?? undefined}
+        confirmLabel="Set start date"
+        onConfirm={(d) => { setStartDate([client.id], d); toast.success("Start date set"); }}
+      />
+
+      <DatePickerDialog
+        open={assessmentDateOpen}
+        onOpenChange={setAssessmentDateOpen}
+        title="Schedule assessment"
+        description="Choose the assessment date — the client will move to Assessment Scheduled."
+        label="Assessment date"
+        defaultDate={client.assessmentDate ?? undefined}
+        confirmLabel="Schedule"
+        onConfirm={(d) => {
+          updateClient(client.id, { assessmentDate: d, stage: "Assessment Scheduled" });
+          appendTimeline(client.id, `Assessment scheduled for ${d}`, "schedule");
+          appendAutomation(client.id, `Assessment scheduled (${d})`);
+          toast.success("Assessment scheduled");
+        }}
+      />
+
+      <ScheduleBlockDialog
+        open={scheduleDay !== null}
+        onOpenChange={(o) => { if (!o) setScheduleDay(null); }}
+        day={scheduleDay}
+        defaultRbt={client.rbt ?? undefined}
+        onConfirm={(start, end) => {
+          if (!scheduleDay) return;
+          updateClient(client.id, {
+            schedule: [...client.schedule, { day: scheduleDay, start, end, rbt: client.rbt ?? undefined }],
+          });
+          appendTimeline(client.id, `${scheduleDay} ${start}–${end} added to schedule`, "schedule");
+          toast.success(`${scheduleDay} added`);
+          setScheduleDay(null);
+        }}
+      />
+
+      <UploadDocumentDialog
+        open={uploadDocOpen}
+        onOpenChange={setUploadDocOpen}
+        onConfirm={(name, type) => {
+          updateClient(client.id, { documents: [...client.documents, { name, type }] });
+          appendTimeline(client.id, `Document uploaded: ${name}`, "note");
+          toast.success("Document added");
+        }}
+      />
+
+      {/* Confirm: remove schedule block */}
+      <AlertDialog open={removeScheduleDay !== null} onOpenChange={(o) => { if (!o) setRemoveScheduleDay(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {removeScheduleDay} block?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear the {removeScheduleDay} session from the weekly schedule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!removeScheduleDay) return;
+                updateClient(client.id, { schedule: client.schedule.filter((s) => s.day !== removeScheduleDay) });
+                appendTimeline(client.id, `${removeScheduleDay} schedule block removed`, "schedule");
+                toast.success(`${removeScheduleDay} cleared`);
+                setRemoveScheduleDay(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: remove document */}
+      <AlertDialog open={removeDocIdx !== null} onOpenChange={(o) => { if (!o) setRemoveDocIdx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeDocIdx !== null && client.documents[removeDocIdx]
+                ? `“${client.documents[removeDocIdx].name}” will be removed from this client.`
+                : "This document will be removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (removeDocIdx === null) return;
+                const doc = client.documents[removeDocIdx];
+                updateClient(client.id, { documents: client.documents.filter((_, j) => j !== removeDocIdx) });
+                appendTimeline(client.id, `Document removed: ${doc.name}`, "note");
+                toast.success("Document removed");
+                setRemoveDocIdx(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: delete client */}
+      <AlertDialog open={confirmDeleteClient} onOpenChange={setConfirmDeleteClient}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {client.childName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the client record. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                deleteClients([client.id]);
+                toast.success("Client deleted");
+                navigate("/clients");
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
