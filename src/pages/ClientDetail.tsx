@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
-  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage,
+  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage, ScheduleSlot,
 } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -334,8 +334,18 @@ export default function ClientDetail() {
             {/* Tasks */}
             <TabsContent value="tasks" className="mt-4">
               <div className="bg-card rounded-xl border border-border/60 p-5 space-y-3">
+                {client.tasks.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No tasks yet</p>
+                )}
                 {client.tasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between py-1">
+                  <button
+                    key={task.id}
+                    onClick={() => {
+                      toggleTask(client.id, task.id);
+                      toast.success(task.completed ? "Task reopened" : "Task completed");
+                    }}
+                    className="w-full flex items-center justify-between py-1.5 px-2 -mx-2 rounded-md hover:bg-muted/40 transition-colors text-left"
+                  >
                     <div className="flex items-center gap-3">
                       {task.completed
                         ? <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
@@ -349,10 +359,25 @@ export default function ClientDetail() {
                         <Clock className="h-3 w-3" /> {task.dueDate}
                       </span>
                     )}
-                  </div>
+                  </button>
                 ))}
                 <Separator />
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Button
+                  variant="outline" size="sm" className="gap-1.5 text-xs"
+                  onClick={() => {
+                    const title = window.prompt("Task title:");
+                    if (!title?.trim()) return;
+                    const due = window.prompt("Due date (YYYY-MM-DD, optional):", "") ?? "";
+                    addTask(client.id, {
+                      id: `ct-${Date.now()}`,
+                      title: title.trim(),
+                      completed: false,
+                      dueDate: due.trim() || undefined,
+                    });
+                    appendTimeline(client.id, `Task added: ${title.trim()}`, "note");
+                    toast.success("Task added");
+                  }}
+                >
                   <Circle className="h-3 w-3" /> Add Task
                 </Button>
               </div>
@@ -433,30 +458,63 @@ export default function ClientDetail() {
                 </div>
                 <Separator />
                 <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Weekly Schedule</h4>
-                  {client.schedule.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No recurring schedule yet</p>
-                  ) : (
-                    <div className="grid grid-cols-6 gap-2">
-                      {dayOrder.map((day) => {
-                        const slot = client.schedule.find((s) => s.day === day);
-                        return (
-                          <div key={day} className={`rounded-lg p-3 text-center text-xs ${slot ? "bg-primary/5 border border-primary/20" : "bg-muted/30"}`}>
-                            <p className="font-semibold text-foreground mb-1">{day}</p>
-                            {slot ? (
-                              <>
-                                <p className="text-foreground">{slot.start}</p>
-                                <p className="text-muted-foreground">{slot.end}</p>
-                                {slot.rbt && <p className="mt-1 text-[10px] text-primary font-medium truncate">{slot.rbt}</p>}
-                              </>
-                            ) : (
-                              <p className="text-muted-foreground">—</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Weekly Schedule</h4>
+                    <Button
+                      variant="outline" size="sm" className="h-7 text-xs gap-1"
+                      onClick={() => {
+                        const seed: ScheduleSlot[] = dayOrder.slice(0, 5).map((d) => ({
+                          day: d, start: "09:00", end: "12:00", rbt: client.rbt ?? undefined,
+                        }));
+                        updateClient(client.id, { schedule: seed });
+                        appendTimeline(client.id, "Default M–F schedule generated (9–12)", "schedule");
+                        toast.success("Default schedule generated");
+                      }}
+                    >
+                      <Calendar className="h-3 w-3" /> Generate M–F
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-6 gap-2">
+                    {dayOrder.map((day) => {
+                      const slot = client.schedule.find((s) => s.day === day);
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => {
+                            if (slot) {
+                              if (window.confirm(`Remove ${day} block?`)) {
+                                updateClient(client.id, { schedule: client.schedule.filter((s) => s.day !== day) });
+                                appendTimeline(client.id, `${day} schedule block removed`, "schedule");
+                                toast.success(`${day} cleared`);
+                              }
+                              return;
+                            }
+                            const start = window.prompt(`${day} start time (HH:MM):`, "09:00");
+                            if (!start) return;
+                            const end = window.prompt(`${day} end time (HH:MM):`, "12:00");
+                            if (!end) return;
+                            updateClient(client.id, {
+                              schedule: [...client.schedule, { day, start, end, rbt: client.rbt ?? undefined }],
+                            });
+                            appendTimeline(client.id, `${day} ${start}–${end} added to schedule`, "schedule");
+                            toast.success(`${day} added`);
+                          }}
+                          className={`rounded-lg p-3 text-center text-xs transition-colors ${slot ? "bg-primary/5 border border-primary/20 hover:bg-primary/10" : "bg-muted/30 hover:bg-muted/50 border border-transparent"}`}
+                        >
+                          <p className="font-semibold text-foreground mb-1">{day}</p>
+                          {slot ? (
+                            <>
+                              <p className="text-foreground">{slot.start}</p>
+                              <p className="text-muted-foreground">{slot.end}</p>
+                              {slot.rbt && <p className="mt-1 text-[10px] text-primary font-medium truncate">{slot.rbt}</p>}
+                            </>
+                          ) : (
+                            <p className="text-muted-foreground">+ add</p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -469,7 +527,7 @@ export default function ClientDetail() {
                 ) : (
                   <div className="space-y-2">
                     {client.documents.map((doc, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors">
+                      <div key={i} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/30 transition-colors group">
                         <div className="flex items-center gap-3">
                           <FileIcon className="h-4 w-4 text-muted-foreground" />
                           <div>
@@ -477,13 +535,43 @@ export default function ClientDetail() {
                             <p className="text-xs text-muted-foreground">{doc.type}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm"><ExternalLink className="h-3.5 w-3.5" /></Button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => toast.info(`Opening ${doc.name}…`, { description: "Document preview coming soon" })}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
+                            onClick={() => {
+                              if (!window.confirm(`Remove ${doc.name}?`)) return;
+                              updateClient(client.id, { documents: client.documents.filter((_, j) => j !== i) });
+                              appendTimeline(client.id, `Document removed: ${doc.name}`, "note");
+                              toast.success("Document removed");
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
                 <Separator className="my-3" />
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Button
+                  variant="outline" size="sm" className="gap-1.5 text-xs"
+                  onClick={() => {
+                    const name = window.prompt("Document name:");
+                    if (!name?.trim()) return;
+                    const type = window.prompt("Type (PDF, DOCX, IMG):", "PDF") ?? "PDF";
+                    updateClient(client.id, {
+                      documents: [...client.documents, { name: name.trim(), type: type.trim() || "PDF" }],
+                    });
+                    appendTimeline(client.id, `Document uploaded: ${name.trim()}`, "note");
+                    toast.success("Document added");
+                  }}
+                >
                   <FileText className="h-3 w-3" /> Upload Document
                 </Button>
               </div>
