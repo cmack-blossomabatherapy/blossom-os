@@ -367,19 +367,7 @@ export default function ClientDetail() {
                 <Separator />
                 <Button
                   variant="outline" size="sm" className="gap-1.5 text-xs"
-                  onClick={() => {
-                    const title = window.prompt("Task title:");
-                    if (!title?.trim()) return;
-                    const due = window.prompt("Due date (YYYY-MM-DD, optional):", "") ?? "";
-                    addTask(client.id, {
-                      id: `ct-${Date.now()}`,
-                      title: title.trim(),
-                      completed: false,
-                      dueDate: due.trim() || undefined,
-                    });
-                    appendTimeline(client.id, `Task added: ${title.trim()}`, "note");
-                    toast.success("Task added");
-                  }}
+                  onClick={() => setAddTaskOpen(true)}
                 >
                   <Circle className="h-3 w-3" /> Add Task
                 </Button>
