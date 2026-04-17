@@ -88,7 +88,32 @@ export default function LeadDetail() {
         <div className="flex items-center gap-2">
           <StatusBadge status={lead.priority} variant={priorityVariant(lead.priority)} />
           <StatusBadge status={lead.status} variant={statusVariant(lead.status)} />
-          <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => copy(`${window.location.origin}/leads/${lead.id}`, "Lead link")}>
+                <Copy className="h-3.5 w-3.5 mr-2" /> Copy lead link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => updateLead(lead.id, { priority: lead.priority === "Hot" ? "Warm" : "Hot" })}>
+                <AlertCircle className="h-3.5 w-3.5 mr-2" /> Toggle priority
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete ${lead.childName}? This cannot be undone.`)) {
+                    deleteLeads([lead.id]);
+                    toast.success("Lead deleted");
+                    navigate("/leads");
+                  }
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -105,20 +130,85 @@ export default function LeadDetail() {
 
       {/* Quick Actions bar */}
       <div className="flex items-center gap-2 flex-wrap">
-        {[
-          { icon: Phone, label: "Call", variant: "outline" as const },
-          { icon: MessageSquare, label: "Text", variant: "outline" as const },
-          { icon: Mail, label: "Email", variant: "outline" as const },
-          { icon: FileText, label: "Send Form", variant: "outline" as const },
-          { icon: Shield, label: "Send Consent", variant: "outline" as const },
-          { icon: ArrowRight, label: "Move Stage", variant: "default" as const },
-          { icon: UserPlus, label: "Assign Owner", variant: "outline" as const },
-          { icon: Calendar, label: "Schedule", variant: "outline" as const },
-        ].map(({ icon: Icon, label, variant }) => (
-          <Button key={label} variant={variant} size="sm" className="gap-1.5 text-xs h-8">
-            <Icon className="h-3.5 w-3.5" /> {label}
-          </Button>
-        ))}
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `tel:${lead.phone}`; toast.success("Calling " + lead.phone); }}>
+          <Phone className="h-3.5 w-3.5" /> Call
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `sms:${lead.phone}`; toast.success("Opening SMS"); }}>
+          <MessageSquare className="h-3.5 w-3.5" /> Text
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => { window.location.href = `mailto:${lead.email}`; toast.success("Opening email"); }}>
+          <Mail className="h-3.5 w-3.5" /> Email
+        </Button>
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateLead(lead.id, {
+              formStatus: "Sent",
+              status: lead.status === "In Contact" || lead.status === "New Lead" ? "Sent Form" : lead.status,
+              automationLog: [...lead.automationLog, "Intake form sent via PandaDoc"],
+            });
+            toast.success("Intake form sent", { description: "Lead moved to Sent Form" });
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" /> Send Form
+        </Button>
+        <Button
+          variant="outline" size="sm" className="gap-1.5 text-xs h-8"
+          onClick={() => {
+            updateLead(lead.id, {
+              consentStatus: "Sent",
+              automationLog: [...lead.automationLog, "Consent forms sent"],
+            });
+            toast.success("Consent forms sent");
+          }}
+        >
+          <Shield className="h-3.5 w-3.5" /> Send Consent
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" size="sm" className="gap-1.5 text-xs h-8">
+              <ArrowRight className="h-3.5 w-3.5" /> Move Stage
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-[400px] overflow-y-auto">
+            <DropdownMenuLabel className="text-[10px]">Move to stage</DropdownMenuLabel>
+            {pipelineStages.map((s) => (
+              <DropdownMenuItem
+                key={s.name}
+                onClick={() => {
+                  moveStage([lead.id], s.name as LeadStatus);
+                  toast.success(`Moved to ${s.name}`);
+                }}
+              >
+                {s.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <UserPlus className="h-3.5 w-3.5" /> Assign Owner
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuLabel className="text-[10px]">Assign to</DropdownMenuLabel>
+            {COORDINATORS.map((o) => (
+              <DropdownMenuItem
+                key={o}
+                onClick={() => {
+                  assignOwner([lead.id], o);
+                  toast.success(`Assigned to ${o}`);
+                }}
+              >
+                {o}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => navigate("/scheduling")}>
+          <Calendar className="h-3.5 w-3.5" /> Schedule
+        </Button>
       </div>
 
       {/* Main grid */}
