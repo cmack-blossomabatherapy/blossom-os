@@ -558,3 +558,50 @@ export const mockClients: Client[] = [
     staffingHistory: [],
   },
 ];
+
+// ---------- KPI helpers ----------
+export type ClientKpiKey =
+  | "bcbaAssignment"
+  | "pendingInitialAuth"
+  | "waitingConsent"
+  | "assessmentScheduled"
+  | "inQa"
+  | "pendingTreatmentAuth"
+  | "staffingNeeded"
+  | "pendingStart"
+  | "active";
+
+export const clientKpiFilters: Record<ClientKpiKey, (c: Client) => boolean> = {
+  bcbaAssignment: (c) => c.stage === "BCBA Assignment",
+  pendingInitialAuth: (c) => c.stage === "Pending Initial Auth",
+  waitingConsent: (c) => c.stage === "Waiting on Consent Forms",
+  assessmentScheduled: (c) => c.stage === "Assessment Scheduled",
+  inQa: (c) => c.stage === "In QA",
+  pendingTreatmentAuth: (c) => c.stage === "Pending Treatment Auth",
+  staffingNeeded: (c) => c.stage === "Staffing Needed" || c.stage === "Restaffing Needed",
+  pendingStart: (c) => c.stage === "Pending Start Date",
+  active: (c) => c.stage === "Active",
+};
+
+export const calculateClientKpis = (clients: Client[]) => {
+  const inStage = (s: ClientStage) => clients.filter((c) => c.stage === s).length;
+  const avgDaysIn = (filter: (c: Client) => boolean) => {
+    const xs = clients.filter(filter);
+    if (!xs.length) return 0;
+    return Math.round(xs.reduce((sum, c) => sum + c.daysInStage, 0) / xs.length);
+  };
+  return {
+    bcbaAssignment: inStage("BCBA Assignment"),
+    pendingInitialAuth: inStage("Pending Initial Auth"),
+    waitingConsent: inStage("Waiting on Consent Forms"),
+    assessmentScheduled: inStage("Assessment Scheduled"),
+    inQa: inStage("In QA"),
+    pendingTreatmentAuth: inStage("Pending Treatment Auth"),
+    staffingNeeded: inStage("Staffing Needed") + inStage("Restaffing Needed"),
+    pendingStart: inStage("Pending Start Date"),
+    active: inStage("Active"),
+    avgTimeToStart: avgDaysIn((c) => c.daysToStart !== null) || 18,
+    avgTimeInQa: avgDaysIn((c) => c.stage === "In QA") || 0,
+    avgTimeInStaffing: avgDaysIn((c) => c.stage === "Staffing Needed") || 0,
+  };
+};
