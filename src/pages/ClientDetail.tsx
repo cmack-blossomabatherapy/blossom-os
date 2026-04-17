@@ -520,12 +520,7 @@ export default function ClientDetail() {
                           </Button>
                           <Button
                             variant="ghost" size="sm"
-                            onClick={() => {
-                              if (!window.confirm(`Remove ${doc.name}?`)) return;
-                              updateClient(client.id, { documents: client.documents.filter((_, j) => j !== i) });
-                              appendTimeline(client.id, `Document removed: ${doc.name}`, "note");
-                              toast.success("Document removed");
-                            }}
+                            onClick={() => setRemoveDocIdx(i)}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
