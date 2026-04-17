@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
@@ -10,12 +11,21 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft, Phone, Mail, MessageSquare, ArrowRight, UserPlus, CheckCircle2, Circle,
   Clock, Zap, FileIcon, Shield, Calendar, AlertCircle, MoreHorizontal, ExternalLink,
   FileText, MapPin, Briefcase, Users as UsersIcon, Trash2, Send,
 } from "lucide-react";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import {
+  AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
+} from "@/components/clients/ClientDetailDialogs";
+
+type ScheduleDay = ScheduleSlot["day"];
 
 const BCBAS = ["Dr. Kim", "Dr. Lee", "Dr. Patel"];
 const RBTS = ["Taylor S.", "Jordan M.", "Casey R.", "Alex T."];
@@ -37,6 +47,16 @@ export default function ClientDetail() {
   const navigate = useNavigate();
   const { getClient, updateClient, moveStage, assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline, appendAutomation, deleteClients } = useClients();
   const client = id ? getClient(id) : undefined;
+
+  // Dialog state
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [uploadDocOpen, setUploadDocOpen] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [assessmentDateOpen, setAssessmentDateOpen] = useState(false);
+  const [scheduleDay, setScheduleDay] = useState<ScheduleDay | null>(null);
+  const [removeScheduleDay, setRemoveScheduleDay] = useState<ScheduleDay | null>(null);
+  const [removeDocIdx, setRemoveDocIdx] = useState<number | null>(null);
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
 
   if (!client) {
     return (
@@ -92,13 +112,7 @@ export default function ClientDetail() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive"
-                onClick={() => {
-                  if (window.confirm(`Delete ${client.childName}? This cannot be undone.`)) {
-                    deleteClients([client.id]);
-                    toast.success("Client deleted");
-                    navigate("/clients");
-                  }
-                }}
+                onSelect={(e) => { e.preventDefault(); setConfirmDeleteClient(true); }}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete client
               </DropdownMenuItem>
@@ -175,15 +189,7 @@ export default function ClientDetail() {
 
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
-          onClick={() => {
-            const d = window.prompt("Assessment date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
-            if (d) {
-              updateClient(client.id, { assessmentDate: d, stage: "Assessment Scheduled" });
-              appendTimeline(client.id, `Assessment scheduled for ${d}`, "schedule");
-              appendAutomation(client.id, `Assessment scheduled (${d})`);
-              toast.success("Assessment scheduled");
-            }
-          }}
+          onClick={() => setAssessmentDateOpen(true)}
         >
           <Calendar className="h-3.5 w-3.5" /> Schedule Assessment
         </Button>
@@ -202,10 +208,7 @@ export default function ClientDetail() {
 
         <Button
           variant="outline" size="sm" className="gap-1.5 text-xs h-8"
-          onClick={() => {
-            const d = window.prompt("Start date (YYYY-MM-DD):", new Date().toISOString().split("T")[0]);
-            if (d) { setStartDate([client.id], d); toast.success("Start date set"); }
-          }}
+          onClick={() => setStartDateOpen(true)}
         >
           <Calendar className="h-3.5 w-3.5" /> Set Start Date
         </Button>
@@ -364,19 +367,7 @@ export default function ClientDetail() {
                 <Separator />
                 <Button
                   variant="outline" size="sm" className="gap-1.5 text-xs"
-                  onClick={() => {
-                    const title = window.prompt("Task title:");
-                    if (!title?.trim()) return;
-                    const due = window.prompt("Due date (YYYY-MM-DD, optional):", "") ?? "";
-                    addTask(client.id, {
-                      id: `ct-${Date.now()}`,
-                      title: title.trim(),
-                      completed: false,
-                      dueDate: due.trim() || undefined,
-                    });
-                    appendTimeline(client.id, `Task added: ${title.trim()}`, "note");
-                    toast.success("Task added");
-                  }}
+                  onClick={() => setAddTaskOpen(true)}
                 >
                   <Circle className="h-3 w-3" /> Add Task
                 </Button>
@@ -481,23 +472,8 @@ export default function ClientDetail() {
                         <button
                           key={day}
                           onClick={() => {
-                            if (slot) {
-                              if (window.confirm(`Remove ${day} block?`)) {
-                                updateClient(client.id, { schedule: client.schedule.filter((s) => s.day !== day) });
-                                appendTimeline(client.id, `${day} schedule block removed`, "schedule");
-                                toast.success(`${day} cleared`);
-                              }
-                              return;
-                            }
-                            const start = window.prompt(`${day} start time (HH:MM):`, "09:00");
-                            if (!start) return;
-                            const end = window.prompt(`${day} end time (HH:MM):`, "12:00");
-                            if (!end) return;
-                            updateClient(client.id, {
-                              schedule: [...client.schedule, { day, start, end, rbt: client.rbt ?? undefined }],
-                            });
-                            appendTimeline(client.id, `${day} ${start}–${end} added to schedule`, "schedule");
-                            toast.success(`${day} added`);
+                            if (slot) setRemoveScheduleDay(day);
+                            else setScheduleDay(day);
                           }}
                           className={`rounded-lg p-3 text-center text-xs transition-colors ${slot ? "bg-primary/5 border border-primary/20 hover:bg-primary/10" : "bg-muted/30 hover:bg-muted/50 border border-transparent"}`}
                         >
@@ -544,12 +520,7 @@ export default function ClientDetail() {
                           </Button>
                           <Button
                             variant="ghost" size="sm"
-                            onClick={() => {
-                              if (!window.confirm(`Remove ${doc.name}?`)) return;
-                              updateClient(client.id, { documents: client.documents.filter((_, j) => j !== i) });
-                              appendTimeline(client.id, `Document removed: ${doc.name}`, "note");
-                              toast.success("Document removed");
-                            }}
+                            onClick={() => setRemoveDocIdx(i)}
                           >
                             <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
@@ -561,16 +532,7 @@ export default function ClientDetail() {
                 <Separator className="my-3" />
                 <Button
                   variant="outline" size="sm" className="gap-1.5 text-xs"
-                  onClick={() => {
-                    const name = window.prompt("Document name:");
-                    if (!name?.trim()) return;
-                    const type = window.prompt("Type (PDF, DOCX, IMG):", "PDF") ?? "PDF";
-                    updateClient(client.id, {
-                      documents: [...client.documents, { name: name.trim(), type: type.trim() || "PDF" }],
-                    });
-                    appendTimeline(client.id, `Document uploaded: ${name.trim()}`, "note");
-                    toast.success("Document added");
-                  }}
+                  onClick={() => setUploadDocOpen(true)}
                 >
                   <FileText className="h-3 w-3" /> Upload Document
                 </Button>
@@ -665,6 +627,151 @@ export default function ClientDetail() {
           </div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <AddTaskDialog
+        open={addTaskOpen}
+        onOpenChange={setAddTaskOpen}
+        onConfirm={(title, dueDate) => {
+          addTask(client.id, { id: `ct-${Date.now()}`, title, completed: false, dueDate });
+          appendTimeline(client.id, `Task added: ${title}`, "note");
+          toast.success("Task added");
+        }}
+      />
+
+      <DatePickerDialog
+        open={startDateOpen}
+        onOpenChange={setStartDateOpen}
+        title="Set start date"
+        description="When does this client begin services?"
+        label="Start date"
+        defaultDate={client.startDate ?? undefined}
+        confirmLabel="Set start date"
+        onConfirm={(d) => { setStartDate([client.id], d); toast.success("Start date set"); }}
+      />
+
+      <DatePickerDialog
+        open={assessmentDateOpen}
+        onOpenChange={setAssessmentDateOpen}
+        title="Schedule assessment"
+        description="Choose the assessment date — the client will move to Assessment Scheduled."
+        label="Assessment date"
+        defaultDate={client.assessmentDate ?? undefined}
+        confirmLabel="Schedule"
+        onConfirm={(d) => {
+          updateClient(client.id, { assessmentDate: d, stage: "Assessment Scheduled" });
+          appendTimeline(client.id, `Assessment scheduled for ${d}`, "schedule");
+          appendAutomation(client.id, `Assessment scheduled (${d})`);
+          toast.success("Assessment scheduled");
+        }}
+      />
+
+      <ScheduleBlockDialog
+        open={scheduleDay !== null}
+        onOpenChange={(o) => { if (!o) setScheduleDay(null); }}
+        day={scheduleDay}
+        defaultRbt={client.rbt ?? undefined}
+        onConfirm={(start, end) => {
+          if (!scheduleDay) return;
+          updateClient(client.id, {
+            schedule: [...client.schedule, { day: scheduleDay, start, end, rbt: client.rbt ?? undefined }],
+          });
+          appendTimeline(client.id, `${scheduleDay} ${start}–${end} added to schedule`, "schedule");
+          toast.success(`${scheduleDay} added`);
+          setScheduleDay(null);
+        }}
+      />
+
+      <UploadDocumentDialog
+        open={uploadDocOpen}
+        onOpenChange={setUploadDocOpen}
+        onConfirm={(name, type) => {
+          updateClient(client.id, { documents: [...client.documents, { name, type }] });
+          appendTimeline(client.id, `Document uploaded: ${name}`, "note");
+          toast.success("Document added");
+        }}
+      />
+
+      {/* Confirm: remove schedule block */}
+      <AlertDialog open={removeScheduleDay !== null} onOpenChange={(o) => { if (!o) setRemoveScheduleDay(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {removeScheduleDay} block?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear the {removeScheduleDay} session from the weekly schedule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!removeScheduleDay) return;
+                updateClient(client.id, { schedule: client.schedule.filter((s) => s.day !== removeScheduleDay) });
+                appendTimeline(client.id, `${removeScheduleDay} schedule block removed`, "schedule");
+                toast.success(`${removeScheduleDay} cleared`);
+                setRemoveScheduleDay(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: remove document */}
+      <AlertDialog open={removeDocIdx !== null} onOpenChange={(o) => { if (!o) setRemoveDocIdx(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {removeDocIdx !== null && client.documents[removeDocIdx]
+                ? `“${client.documents[removeDocIdx].name}” will be removed from this client.`
+                : "This document will be removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (removeDocIdx === null) return;
+                const doc = client.documents[removeDocIdx];
+                updateClient(client.id, { documents: client.documents.filter((_, j) => j !== removeDocIdx) });
+                appendTimeline(client.id, `Document removed: ${doc.name}`, "note");
+                toast.success("Document removed");
+                setRemoveDocIdx(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: delete client */}
+      <AlertDialog open={confirmDeleteClient} onOpenChange={setConfirmDeleteClient}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {client.childName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the client record. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                deleteClients([client.id]);
+                toast.success("Client deleted");
+                navigate("/clients");
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
