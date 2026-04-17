@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { LeadFilterPopover, LeadFilters } from "./LeadFilterPopover";
+import { toast } from "sonner";
 
 export type ViewMode = "table" | "pipeline" | "queue";
 
@@ -32,15 +33,17 @@ interface LeadControlBarProps {
   filters: LeadFilters;
   onFiltersChange: (f: LeadFilters) => void;
   filterOptions: { states: string[]; sources: string[]; owners: string[]; insurances: string[]; priorities: string[] };
+  onNewLead: () => void;
+  onExport: () => void;
 }
 
 export function LeadControlBar({
   viewMode, onViewModeChange, activeView, onActiveViewChange,
   searchQuery, onSearchChange, filters, onFiltersChange, filterOptions,
+  onNewLead, onExport,
 }: LeadControlBarProps) {
   return (
     <div className="space-y-3 sticky top-0 z-30 bg-background/85 backdrop-blur-xl pt-1 pb-3 -mx-1 px-1 border-b border-border/40">
-      {/* Row 1 */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -77,18 +80,20 @@ export function LeadControlBar({
           ))}
         </div>
 
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+        <Button
+          variant="outline" size="sm" className="h-9 gap-1.5 text-xs"
+          onClick={() => toast.info("Import from CSV", { description: "Drag a CSV here or pick a file (coming soon)" })}
+        >
           <Upload className="h-3 w-3" /> Import
         </Button>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" onClick={onExport}>
           <Download className="h-3 w-3" /> Export
         </Button>
-        <Button size="sm" className="h-9 gap-1.5">
+        <Button size="sm" className="h-9 gap-1.5" onClick={onNewLead}>
           <Plus className="h-3.5 w-3.5" /> New Lead
         </Button>
       </div>
 
-      {/* Row 2: Saved views */}
       <div className="flex items-center gap-1.5 overflow-x-auto">
         <Sparkles className="h-3 w-3 text-muted-foreground flex-shrink-0" />
         {savedViews.map((v) => (
