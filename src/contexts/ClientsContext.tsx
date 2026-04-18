@@ -301,13 +301,12 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const moveStage = useCallback(async (ids: string[], stage: ClientStage) => {
     if (!ids.length) return;
-    // Update each so we can append automation log per client
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
       const nextLog = [...(c?.automationLog ?? []), `Stage moved to ${stage} (manual)`];
       await supabase.from("clients").update({
         stage, stage_entered_at: new Date().toISOString(), automation_log: nextLog,
-      }).eq("id", id);
+      } as never).eq("id", id);
       await insertTimeline(id, `Moved to ${stage}`, "stage");
     }
   }, [clients, user]);
@@ -320,7 +319,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       await supabase.from("clients").update({
         bcba, automation_log: nextLog,
         ...(advance ? { stage: "Pending Initial Auth" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
-      }).eq("id", id);
+      } as never).eq("id", id);
       await insertTimeline(id, `BCBA ${bcba} assigned`, "staffing");
     }
   }, [clients, user]);
@@ -333,7 +332,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       await supabase.from("clients").update({
         rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog,
         ...(advance ? { stage: "Pending Start Date" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
-      }).eq("id", id);
+      } as never).eq("id", id);
       await insertTimeline(id, `${rbt} assigned as RBT`, "staffing");
     }
   }, [clients, user]);
@@ -342,7 +341,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
       const nextLog = [...(c?.automationLog ?? []), `Start date set to ${date}`];
-      await supabase.from("clients").update({ start_date: date, automation_log: nextLog }).eq("id", id);
+      await supabase.from("clients").update({ start_date: date, automation_log: nextLog } as never).eq("id", id);
       await insertTimeline(id, `Start date set to ${date}`, "schedule");
     }
   }, [clients, user]);
@@ -351,7 +350,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     const c = clients.find((x) => x.id === clientId);
     const t = c?.tasks.find((x) => x.id === taskId);
     if (!t) return;
-    await supabase.from("client_tasks").update({ completed: !t.completed }).eq("id", taskId);
+    await supabase.from("client_tasks").update({ completed: !t.completed } as never).eq("id", taskId);
   }, [clients]);
 
   const addTask = useCallback(async (clientId: string, task: ClientTask) => {
@@ -360,7 +359,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     await supabase.from("client_tasks").insert({
       client_id: clientId, title: task.title, completed: task.completed,
       due_date: task.dueDate ?? null, position,
-    });
+    } as never);
   }, [clients]);
 
   const appendTimeline = useCallback(async (
@@ -381,7 +380,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addDocument = useCallback(async (clientId: string, name: string, type: string) => {
     await supabase.from("client_documents").insert({
       client_id: clientId, name, type, uploaded_by: user?.id,
-    });
+    } as never);
   }, [user]);
 
   const removeDocument = useCallback(async (clientId: string, documentId: string) => {
@@ -391,7 +390,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const addScheduleSlot = useCallback(async (clientId: string, slot: ScheduleSlot) => {
     await supabase.from("client_schedule_slots").insert({
       client_id: clientId, day: slot.day, start_time: slot.start, end_time: slot.end, rbt: slot.rbt ?? null,
-    });
+    } as never);
   }, []);
 
   const removeScheduleSlot = useCallback(async (clientId: string, day: ScheduleSlot["day"]) => {
@@ -404,7 +403,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       await supabase.from("client_schedule_slots").insert(
         slots.map((s) => ({
           client_id: clientId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null,
-        })),
+        })) as never,
       );
     }
   }, []);
