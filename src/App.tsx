@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
@@ -29,6 +31,7 @@ import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/Auth";
 
 const queryClient = new QueryClient();
 
@@ -41,39 +44,42 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <LeadsProvider>
-          <ClientsProvider>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leads" element={<Leads />} />
-              <Route path="/leads/:id" element={<LeadDetail />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/clients/:id" element={<ClientDetail />} />
-              <Route path="/authorizations" element={<Authorizations />} />
-              <Route path="/authorizations/:id" element={<AuthDetail />} />
-              <Route path="/scheduling" element={<Scheduling />} />
-              <Route path="/staffing" element={<Staffing />} />
-              <Route path="/staffing/:id" element={<RBTDetail />} />
-              <Route path="/recruiting" element={<Recruiting />} />
-              <Route path="/recruiting/:id" element={<CandidateDetail />} />
-              <Route path="/qa" element={<QA />} />
-              <Route path="/qa/:id" element={<QADetail />} />
-              <Route path="/operations" element={<Operations />} />
-              <Route path="/operations/clinics/:id" element={<ClinicDetail />} />
-              <Route path="/clinics" element={<Clinics />} />
-              <Route path="/phone-calls" element={<PhoneCalls />} />
-              <Route path="/documents" element={<Documents />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/automations" element={<Automations />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </ClientsProvider>
-        </LeadsProvider>
+        <AuthProvider>
+          <LeadsProvider>
+            <ClientsProvider>
+              <Routes>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/leads" element={<Leads />} />
+                  <Route path="/leads/:id" element={<LeadDetail />} />
+                  <Route path="/clients" element={<Clients />} />
+                  <Route path="/clients/:id" element={<ClientDetail />} />
+                  <Route path="/authorizations" element={<Authorizations />} />
+                  <Route path="/authorizations/:id" element={<AuthDetail />} />
+                  <Route path="/scheduling" element={<Scheduling />} />
+                  <Route path="/staffing" element={<Staffing />} />
+                  <Route path="/staffing/:id" element={<RBTDetail />} />
+                  <Route path="/recruiting" element={<Recruiting />} />
+                  <Route path="/recruiting/:id" element={<CandidateDetail />} />
+                  <Route path="/qa" element={<QA />} />
+                  <Route path="/qa/:id" element={<QADetail />} />
+                  <Route path="/operations" element={<Operations />} />
+                  <Route path="/operations/clinics/:id" element={<ClinicDetail />} />
+                  <Route path="/clinics" element={<Clinics />} />
+                  <Route path="/phone-calls" element={<PhoneCalls />} />
+                  <Route path="/documents" element={<Documents />} />
+                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/automations" element={<Automations />} />
+                  <Route path="/team" element={<Team />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ClientsProvider>
+          </LeadsProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

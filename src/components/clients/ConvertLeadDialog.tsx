@@ -50,13 +50,12 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
     setClinic("Peachtree Corners");
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!selectedLead) {
       toast.error("Pick a lead to convert");
       return;
     }
     const lead: Lead = selectedLead;
-    const id = `C-${lead.id.replace("L-", "")}`;
     const now = new Date().toISOString();
     const paymentPlan = lead.vobStatus === "Payment Plan Required" || lead.paymentPlanNeeded;
 
@@ -70,8 +69,7 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
           { id: "ct-bcba", title: "Confirm Assigned BCBA", completed: false },
         ];
 
-    const newClient: Client = {
-      id,
+    const draft: Omit<Client, "id"> = {
       childName: lead.childName,
       parentName: lead.parentName,
       childAge: lead.childAge,
@@ -113,9 +111,10 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
       staffingHistory: [],
     };
 
-    addClient(newClient);
-    toast.success(`Client created: ${newClient.childName}`, { description: `${newClient.id} · BCBA Assignment stage` });
-    onCreated?.(newClient);
+    const created = await addClient(draft);
+    if (!created) { toast.error("Failed to create client"); return; }
+    toast.success(`Client created: ${created.childName}`, { description: `BCBA Assignment stage` });
+    onCreated?.(created);
     onOpenChange(false);
     reset();
   };
