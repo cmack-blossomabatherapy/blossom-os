@@ -432,12 +432,12 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ClientsContextValue>(() => ({
     clients, loading, getClient,
-    addClient, updateClient, bulkUpdate, moveStage,
+    addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate,
     toggleTask, addTask, appendTimeline, appendAutomation, deleteClients,
     addDocument, removeDocument, addScheduleSlot, removeScheduleSlot, setSchedule,
   }), [
-    clients, loading, getClient, addClient, updateClient, bulkUpdate, moveStage,
+    clients, loading, getClient, addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline,
     appendAutomation, deleteClients, addDocument, removeDocument, addScheduleSlot,
     removeScheduleSlot, setSchedule,
