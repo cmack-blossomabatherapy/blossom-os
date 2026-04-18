@@ -332,6 +332,8 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     } as never).eq("id", clientId);
     await insertTimeline(clientId, `Move undone — restored to ${previousStage}`, "stage");
   }, [clients, user]);
+
+  const assignBcba = useCallback(async (ids: string[], bcba: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
       const advance = c?.stage === "BCBA Assignment";
