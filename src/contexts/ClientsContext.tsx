@@ -16,6 +16,7 @@ interface ClientsContextValue {
   updateClient: (id: string, patch: Partial<Client>) => Promise<void>;
   bulkUpdate: (ids: string[], patch: Partial<Client>) => Promise<void>;
   moveStage: (ids: string[], stage: ClientStage) => Promise<void>;
+  revertStage: (clientId: string, previousStage: ClientStage, previousStageEnteredAt: string, automationLogEntry: string) => Promise<void>;
   assignBcba: (ids: string[], bcba: string) => Promise<void>;
   assignRbt: (ids: string[], rbt: string) => Promise<void>;
   setStartDate: (ids: string[], date: string) => Promise<void>;
