@@ -231,7 +231,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const appendAutomationLog = async (clientId: string, message: string) => {
     const c = clients.find((x) => x.id === clientId);
     const next = [...(c?.automationLog ?? []), message];
-    await supabase.from("clients").update({ automation_log: next }).eq("id", clientId);
+    await supabase.from("clients").update({ automation_log: next } as never).eq("id", clientId);
   };
 
   const addClient = useCallback(async (client: Omit<Client, "id"> & { id?: string }) => {
