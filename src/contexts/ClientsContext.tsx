@@ -16,6 +16,7 @@ interface ClientsContextValue {
   updateClient: (id: string, patch: Partial<Client>) => Promise<void>;
   bulkUpdate: (ids: string[], patch: Partial<Client>) => Promise<void>;
   moveStage: (ids: string[], stage: ClientStage) => Promise<void>;
+  revertStage: (clientId: string, previousStage: ClientStage, previousStageEnteredAt: string, automationLogEntry: string) => Promise<void>;
   assignBcba: (ids: string[], bcba: string) => Promise<void>;
   assignRbt: (ids: string[], rbt: string) => Promise<void>;
   setStartDate: (ids: string[], date: string) => Promise<void>;
@@ -311,6 +312,27 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     }
   }, [clients, user]);
 
+  const revertStage = useCallback(async (
+    clientId: string,
+    previousStage: ClientStage,
+    previousStageEnteredAt: string,
+    automationLogEntry: string,
+  ) => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c) return;
+    // Strip the most recent occurrence of the original automation log entry
+    const log = [...(c.automationLog ?? [])];
+    const idx = log.lastIndexOf(automationLogEntry);
+    if (idx >= 0) log.splice(idx, 1);
+    log.push(`Stage move undone — restored to ${previousStage}`);
+    await supabase.from("clients").update({
+      stage: previousStage,
+      stage_entered_at: previousStageEnteredAt,
+      automation_log: log,
+    } as never).eq("id", clientId);
+    await insertTimeline(clientId, `Move undone — restored to ${previousStage}`, "stage");
+  }, [clients, user]);
+
   const assignBcba = useCallback(async (ids: string[], bcba: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
@@ -410,12 +432,12 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ClientsContextValue>(() => ({
     clients, loading, getClient,
-    addClient, updateClient, bulkUpdate, moveStage,
+    addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate,
     toggleTask, addTask, appendTimeline, appendAutomation, deleteClients,
     addDocument, removeDocument, addScheduleSlot, removeScheduleSlot, setSchedule,
   }), [
-    clients, loading, getClient, addClient, updateClient, bulkUpdate, moveStage,
+    clients, loading, getClient, addClient, updateClient, bulkUpdate, moveStage, revertStage,
     assignBcba, assignRbt, setStartDate, toggleTask, addTask, appendTimeline,
     appendAutomation, deleteClients, addDocument, removeDocument, addScheduleSlot,
     removeScheduleSlot, setSchedule,
