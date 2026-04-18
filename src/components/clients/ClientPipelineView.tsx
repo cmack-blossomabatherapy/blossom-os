@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function ClientPipelineView({ clients, onSelect }: Props) {
-  const { moveStage } = useClients();
+  const { moveStage, revertStage } = useClients();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
@@ -53,11 +53,24 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
     if (!id) return;
     const client = clients.find((c) => c.id === id);
     if (!client || client.stage === stage) return;
+
+    // Snapshot what we need to undo BEFORE the move
+    const previousStage = client.stage;
+    const previousStageEnteredAt = new Date(Date.now() - client.daysInStage * 86400000).toISOString();
+    const automationLogEntry = `Stage moved to ${stage} (manual)`;
+
     // Optimistic update via context (synchronous setState — UI updates immediately).
     // moveStage already appends an automation log entry + timeline event.
     moveStage([id], stage);
     toast.success(`${client.childName} moved to ${stage}`, {
-      description: `From ${client.stage}`,
+      description: `From ${previousStage}`,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void revertStage(id, previousStage, previousStageEnteredAt, automationLogEntry);
+          toast.success(`Reverted ${client.childName} to ${previousStage}`);
+        },
+      },
     });
   };
 
