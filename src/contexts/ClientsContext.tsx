@@ -241,21 +241,21 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       vob_completed_at: new Date().toISOString(),
       created_by: user.id,
     };
-    const { data, error } = await supabase.from("clients").insert(insertPayload).select("*").single();
+    const { data, error } = await supabase.from("clients").insert(insertPayload as never).select("*").single();
     if (error || !data) { console.error(error); return null; }
-    const newId = (data as DbClient).id;
+    const newId = (data as unknown as DbClient).id;
 
     // Seed tasks / docs / timeline / auths / schedule
     if (client.tasks?.length) {
       await supabase.from("client_tasks").insert(
         client.tasks.map((t, i) => ({
           client_id: newId, title: t.title, completed: t.completed, due_date: t.dueDate ?? null, position: i,
-        })),
+        })) as never,
       );
     }
     if (client.documents?.length) {
       await supabase.from("client_documents").insert(
-        client.documents.map((d) => ({ client_id: newId, name: d.name, type: d.type })),
+        client.documents.map((d) => ({ client_id: newId, name: d.name, type: d.type })) as never,
       );
     }
     if (client.authorizations?.length) {
@@ -264,21 +264,21 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
           client_id: newId, kind: a.type, status: a.status,
           submitted_date: a.submittedDate ?? null, approved_date: a.approvedDate ?? null,
           expiration_date: a.expirationDate ?? null, hours: a.hours ?? null, notes: a.notes ?? null,
-        })),
+        })) as never,
       );
     }
     if (client.schedule?.length) {
       await supabase.from("client_schedule_slots").insert(
         client.schedule.map((s) => ({
           client_id: newId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null,
-        })),
+        })) as never,
       );
     }
     if (client.timeline?.length) {
       await supabase.from("client_timeline").insert(
         client.timeline.map((t) => ({
           client_id: newId, event_type: t.type, description: t.description, user_name: t.user ?? null, created_by: user.id,
-        })),
+        })) as never,
       );
     } else {
       await insertTimeline(newId, "Client created from lead", "system");
@@ -290,13 +290,13 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const updateClient = useCallback(async (id: string, patch: Partial<Client>) => {
     const dbPatch = clientPatchToDb(patch);
     if (Object.keys(dbPatch).length === 0) return;
-    await supabase.from("clients").update(dbPatch).eq("id", id);
+    await supabase.from("clients").update(dbPatch as never).eq("id", id);
   }, []);
 
   const bulkUpdate = useCallback(async (ids: string[], patch: Partial<Client>) => {
     const dbPatch = clientPatchToDb(patch);
     if (Object.keys(dbPatch).length === 0 || !ids.length) return;
-    await supabase.from("clients").update(dbPatch).in("id", ids);
+    await supabase.from("clients").update(dbPatch as never).in("id", ids);
   }, []);
 
   const moveStage = useCallback(async (ids: string[], stage: ClientStage) => {
