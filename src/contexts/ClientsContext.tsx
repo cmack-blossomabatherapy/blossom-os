@@ -177,12 +177,12 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const dbClients = (c.data ?? []) as DbClient[];
-    const tasks = (t.data ?? []) as DbTask[];
-    const docs = (d.data ?? []) as DbDocument[];
-    const timeline = (tl.data ?? []) as DbTimeline[];
-    const auths = (a.data ?? []) as DbAuth[];
-    const slots = (s.data ?? []) as DbSlot[];
+    const dbClients = (c.data ?? []) as unknown as DbClient[];
+    const tasks = (t.data ?? []) as unknown as DbTask[];
+    const docs = (d.data ?? []) as unknown as DbDocument[];
+    const timeline = (tl.data ?? []) as unknown as DbTimeline[];
+    const auths = (a.data ?? []) as unknown as DbAuth[];
+    const slots = (s.data ?? []) as unknown as DbSlot[];
 
     const built = dbClients.map((row) =>
       buildClient(
