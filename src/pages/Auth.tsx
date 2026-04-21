@@ -45,11 +45,8 @@ export default function Auth() {
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
 
-        <div className="relative flex items-center gap-3 text-white">
-          <div className="h-9 w-9 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-            <div className="h-2.5 w-2.5 rounded-full bg-white" />
-          </div>
-          <span className="font-semibold tracking-tight">Blossom Operations</span>
+        <div className="relative">
+          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
         </div>
 
         <div className="relative flex flex-col items-center text-center text-white max-w-md mx-auto">
