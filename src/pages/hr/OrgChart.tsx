@@ -313,6 +313,16 @@ export default function OrgChart() {
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={focusSelected}
+            disabled={!selectedId}
+            title={selectedId ? "Pan & zoom to selected employee" : "Select an employee first"}
+          >
+            <Crosshair className="h-3.5 w-3.5 mr-1.5" /> Focus selected
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 text-xs" disabled={exporting}>
