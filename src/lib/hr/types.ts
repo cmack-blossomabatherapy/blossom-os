@@ -454,3 +454,95 @@ export function formatMoney(n: number | null | undefined): string {
   if (n == null) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
+
+// ============================================================
+// Phase 4 — Communication, Resources, Reports, Settings
+// ============================================================
+
+export type AnnouncementPriority = "info" | "important" | "urgent";
+export type AnnouncementAudience = "all" | "by_state" | "by_clinic" | "by_department" | "by_role";
+
+export type ResourceKind = "document" | "link" | "video" | "policy" | "form" | "folder";
+export type ResourceCategory =
+  | "handbook" | "payroll" | "training" | "clinical" | "it" | "benefits" | "onboarding" | "general";
+
+export const ANNOUNCEMENT_PRIORITY_META: Record<AnnouncementPriority, { label: string; tone: string }> = {
+  info:      { label: "Info",      tone: "bg-info/15 text-info border-info/30" },
+  important: { label: "Important", tone: "bg-warning/15 text-warning border-warning/30" },
+  urgent:    { label: "Urgent",    tone: "bg-destructive/15 text-destructive border-destructive/30" },
+};
+
+export const RESOURCE_CATEGORY_LABEL: Record<ResourceCategory, string> = {
+  handbook: "Handbook",
+  payroll: "Payroll",
+  training: "Training",
+  clinical: "Clinical",
+  it: "IT & Equipment",
+  benefits: "Benefits",
+  onboarding: "Onboarding",
+  general: "General",
+};
+
+export const RESOURCE_KIND_LABEL: Record<ResourceKind, string> = {
+  document: "Document", link: "Link", video: "Video",
+  policy: "Policy", form: "Form", folder: "Folder",
+};
+
+export interface HRAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  priority: AnnouncementPriority;
+  audience: AnnouncementAudience;
+  audience_states: string[];
+  audience_clinics: string[];
+  audience_departments: string[];
+  audience_roles: string[];
+  pinned: boolean;
+  publish_at: string;
+  expires_at: string | null;
+  author_id: string | null;
+  author_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HRResource {
+  id: string;
+  title: string;
+  description: string | null;
+  kind: ResourceKind;
+  category: ResourceCategory;
+  url: string | null;
+  storage_path: string | null;
+  parent_id: string | null;
+  visibility_states: string[];
+  visibility_clinics: string[];
+  visibility_roles: string[];
+  is_pinned: boolean;
+  is_active: boolean;
+  position: number;
+  uploaded_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HRSavedReport {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  config: Record<string, unknown>;
+  is_shared: boolean;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HRSetting {
+  key: string;
+  value: Record<string, unknown>;
+  description: string | null;
+  updated_by_name: string | null;
+  updated_at: string;
+}
