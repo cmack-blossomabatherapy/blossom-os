@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
-  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText,
+  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText, Crosshair,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
@@ -262,6 +262,41 @@ export default function OrgChart() {
     setCollapsed(all);
   };
 
+  // Find ancestors of a node (for auto-expanding the path)
+  const ancestorsOf = (targetId: string): string[] => {
+    const path: string[] = [];
+    const find = (n: Node, trail: string[]): boolean => {
+      if (n.emp.id === targetId) { path.push(...trail); return true; }
+      for (const c of n.reports) if (find(c, [...trail, n.emp.id])) return true;
+      return false;
+    };
+    tree.roots.forEach((r) => find(r, []));
+    return path;
+  };
+
+  const focusSelected = () => {
+    if (!selectedId) return;
+    if (view !== "hierarchy") setView("hierarchy");
+    // Expand ancestors so the node is visible
+    const path = ancestorsOf(selectedId);
+    if (path.length > 0) {
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        path.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+    // Wait for layout, then pan/zoom to the node
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-node-id="${selectedId}"]`) as HTMLElement | null;
+        if (el && zoomRef.current) {
+          zoomRef.current.zoomToElement(el, 1.1, 400);
+        }
+      });
+    });
+  };
+
   // KPI counts
   const counts = useMemo(() => {
     const byLevel: Record<Level, number> = { ceo: 0, c_suite: 0, director: 0, manager: 0, lead: 0, ic: 0 };
@@ -278,6 +313,16 @@ export default function OrgChart() {
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={focusSelected}
+            disabled={!selectedId}
+            title={selectedId ? "Pan & zoom to selected employee" : "Select an employee first"}
+          >
+            <Crosshair className="h-3.5 w-3.5 mr-1.5" /> Focus selected
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 text-xs" disabled={exporting}>
@@ -526,6 +571,7 @@ function NodeCard({
   return (
     <button
       onClick={() => onSelect(node.emp.id)}
+      data-node-id={node.emp.id}
       className={cn(
         "group flex items-center gap-2.5 p-2 pr-3 rounded-lg ring-1 transition-all min-w-[260px] text-left",
         meta.ring,
