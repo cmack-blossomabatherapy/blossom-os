@@ -372,6 +372,71 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_bonuses: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          bonus_type: Database["public"]["Enums"]["bonus_type"]
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          paid_date: string | null
+          payroll_run_id: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["bonus_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          bonus_type?: Database["public"]["Enums"]["bonus_type"]
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          payroll_run_id?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["bonus_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          bonus_type?: Database["public"]["Enums"]["bonus_type"]
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          paid_date?: string | null
+          payroll_run_id?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["bonus_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_bonuses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_cases: {
         Row: {
           case_type: Database["public"]["Enums"]["hr_case_type"]
@@ -650,6 +715,83 @@ export type Database = {
           },
         ]
       }
+      employee_pay_changes: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          created_by: string | null
+          effective_date: string
+          employee_id: string
+          id: string
+          kind: Database["public"]["Enums"]["pay_change_kind"]
+          new_pay_type: Database["public"]["Enums"]["pay_type"] | null
+          new_rate: number
+          new_title: string | null
+          notes: string | null
+          previous_pay_type: Database["public"]["Enums"]["pay_type"] | null
+          previous_rate: number | null
+          previous_title: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["pay_change_status"]
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date: string
+          employee_id: string
+          id?: string
+          kind?: Database["public"]["Enums"]["pay_change_kind"]
+          new_pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          new_rate: number
+          new_title?: string | null
+          notes?: string | null
+          previous_pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          previous_rate?: number | null
+          previous_title?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["pay_change_status"]
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string
+          employee_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["pay_change_kind"]
+          new_pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          new_rate?: number
+          new_title?: string | null
+          notes?: string | null
+          previous_pay_type?: Database["public"]["Enums"]["pay_type"] | null
+          previous_rate?: number | null
+          previous_title?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["pay_change_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_pay_changes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_relationships: {
         Row: {
           created_at: string
@@ -683,6 +825,93 @@ export type Database = {
           {
             foreignKeyName: "employee_relationships_related_employee_id_fkey"
             columns: ["related_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_reviews: {
+        Row: {
+          acknowledged_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          employee_comments: string | null
+          employee_id: string
+          goals: string | null
+          growth_areas: string | null
+          id: string
+          manager_comments: string | null
+          overall_rating: Database["public"]["Enums"]["review_rating"] | null
+          period_end: string | null
+          period_start: string | null
+          review_type: Database["public"]["Enums"]["review_type"]
+          reviewer_id: string | null
+          reviewer_name: string | null
+          scheduled_for: string | null
+          status: Database["public"]["Enums"]["review_status"]
+          strengths: string | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          employee_comments?: string | null
+          employee_id: string
+          goals?: string | null
+          growth_areas?: string | null
+          id?: string
+          manager_comments?: string | null
+          overall_rating?: Database["public"]["Enums"]["review_rating"] | null
+          period_end?: string | null
+          period_start?: string | null
+          review_type?: Database["public"]["Enums"]["review_type"]
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["review_status"]
+          strengths?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          employee_comments?: string | null
+          employee_id?: string
+          goals?: string | null
+          growth_areas?: string | null
+          id?: string
+          manager_comments?: string | null
+          overall_rating?: Database["public"]["Enums"]["review_rating"] | null
+          period_end?: string | null
+          period_start?: string | null
+          review_type?: Database["public"]["Enums"]["review_type"]
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+          scheduled_for?: string | null
+          status?: Database["public"]["Enums"]["review_status"]
+          strengths?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_reviews_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
@@ -723,6 +952,75 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employee_timeline_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_trainings: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          certificate_url: string | null
+          completed_at: string | null
+          course_id: string
+          created_at: string
+          due_date: string | null
+          employee_id: string
+          expires_on: string | null
+          id: string
+          notes: string | null
+          score: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["training_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_id: string
+          created_at?: string
+          due_date?: string | null
+          employee_id: string
+          expires_on?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["training_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          certificate_url?: string | null
+          completed_at?: string | null
+          course_id?: string
+          created_at?: string
+          due_date?: string | null
+          employee_id?: string
+          expires_on?: string | null
+          id?: string
+          notes?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["training_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_trainings_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_trainings_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -1086,6 +1384,148 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_run_items: {
+        Row: {
+          bonus_total: number
+          created_at: string
+          employee_id: string
+          gross_pay: number
+          id: string
+          notes: string | null
+          overtime_hours: number
+          payroll_run_id: string
+          pto_hours: number
+          regular_hours: number
+          status: string
+          timesheet_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bonus_total?: number
+          created_at?: string
+          employee_id: string
+          gross_pay?: number
+          id?: string
+          notes?: string | null
+          overtime_hours?: number
+          payroll_run_id: string
+          pto_hours?: number
+          regular_hours?: number
+          status?: string
+          timesheet_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bonus_total?: number
+          created_at?: string
+          employee_id?: string
+          gross_pay?: number
+          id?: string
+          notes?: string | null
+          overtime_hours?: number
+          payroll_run_id?: string
+          pto_hours?: number
+          regular_hours?: number
+          status?: string
+          timesheet_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_run_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_run_items_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_run_items_timesheet_id_fkey"
+            columns: ["timesheet_id"]
+            isOneToOne: false
+            referencedRelation: "hours_timesheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_runs: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          employee_count: number
+          id: string
+          name: string
+          notes: string | null
+          pay_date: string | null
+          period_end: string
+          period_start: string
+          posted_at: string | null
+          posted_by: string | null
+          status: Database["public"]["Enums"]["payroll_run_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          submitted_by_name: string | null
+          total_gross: number
+          total_hours: number
+          updated_at: string
+          viventium_batch_id: string | null
+          viventium_synced_at: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number
+          id?: string
+          name: string
+          notes?: string | null
+          pay_date?: string | null
+          period_end: string
+          period_start: string
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: Database["public"]["Enums"]["payroll_run_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          total_gross?: number
+          total_hours?: number
+          updated_at?: string
+          viventium_batch_id?: string | null
+          viventium_synced_at?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          pay_date?: string | null
+          period_end?: string
+          period_start?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          status?: Database["public"]["Enums"]["payroll_run_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          total_gross?: number
+          total_hours?: number
+          updated_at?: string
+          viventium_batch_id?: string | null
+          viventium_synced_at?: string | null
+        }
+        Relationships: []
+      }
       permissions: {
         Row: {
           created_at: string
@@ -1261,6 +1701,51 @@ export type Database = {
           },
         ]
       }
+      training_courses: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          external_url: string | null
+          id: string
+          is_active: boolean
+          name: string
+          provider: string | null
+          renewal_months: number | null
+          required_for_roles: string[]
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          provider?: string | null
+          renewal_months?: number | null
+          required_for_roles?: string[]
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider?: string | null
+          renewal_months?: number | null
+          required_for_roles?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1350,6 +1835,15 @@ export type Database = {
         | "Approved"
         | "Denied"
         | "Expired"
+      bonus_status: "pending_approval" | "approved" | "paid" | "cancelled"
+      bonus_type:
+        | "signing"
+        | "retention"
+        | "referral"
+        | "performance"
+        | "spot"
+        | "holiday"
+        | "other"
       client_stage:
         | "BCBA Assignment"
         | "Pending Initial Auth"
@@ -1422,11 +1916,45 @@ export type Database = {
         | "clinic_leader"
         | "onboarding_owner"
         | "operational_owner"
+      pay_change_kind:
+        | "raise"
+        | "promotion"
+        | "demotion"
+        | "adjustment"
+        | "rate_correction"
+        | "title_change"
+      pay_change_status: "proposed" | "approved" | "effective" | "reverted"
       pay_type: "hourly" | "salaried"
+      payroll_run_status:
+        | "open"
+        | "ready"
+        | "submitted"
+        | "posted"
+        | "closed"
+        | "rejected"
       punch_kind: "clock_in" | "clock_out" | "break_start" | "break_end"
       punch_source: "kiosk" | "manual" | "manager_edit" | "import"
       punch_status: "pending" | "approved" | "rejected" | "locked"
       qa_status: "Not Started" | "In Review" | "Complete"
+      review_rating:
+        | "exceeds"
+        | "meets"
+        | "developing"
+        | "needs_improvement"
+        | "unsatisfactory"
+      review_status:
+        | "draft"
+        | "manager_review"
+        | "employee_acknowledge"
+        | "completed"
+        | "cancelled"
+      review_type:
+        | "30_day"
+        | "60_day"
+        | "90_day"
+        | "annual"
+        | "probationary"
+        | "ad_hoc"
       schedule_day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
       timeline_event_type:
@@ -1443,6 +1971,12 @@ export type Database = {
         | "approved"
         | "rejected"
         | "locked"
+      training_status:
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "expired"
+        | "waived"
       work_setting: "clinic" | "home" | "hybrid" | "admin" | "field"
     }
     CompositeTypes: {
@@ -1619,6 +2153,16 @@ export const Constants = {
         "Denied",
         "Expired",
       ],
+      bonus_status: ["pending_approval", "approved", "paid", "cancelled"],
+      bonus_type: [
+        "signing",
+        "retention",
+        "referral",
+        "performance",
+        "spot",
+        "holiday",
+        "other",
+      ],
       client_stage: [
         "BCBA Assignment",
         "Pending Initial Auth",
@@ -1698,11 +2242,50 @@ export const Constants = {
         "onboarding_owner",
         "operational_owner",
       ],
+      pay_change_kind: [
+        "raise",
+        "promotion",
+        "demotion",
+        "adjustment",
+        "rate_correction",
+        "title_change",
+      ],
+      pay_change_status: ["proposed", "approved", "effective", "reverted"],
       pay_type: ["hourly", "salaried"],
+      payroll_run_status: [
+        "open",
+        "ready",
+        "submitted",
+        "posted",
+        "closed",
+        "rejected",
+      ],
       punch_kind: ["clock_in", "clock_out", "break_start", "break_end"],
       punch_source: ["kiosk", "manual", "manager_edit", "import"],
       punch_status: ["pending", "approved", "rejected", "locked"],
       qa_status: ["Not Started", "In Review", "Complete"],
+      review_rating: [
+        "exceeds",
+        "meets",
+        "developing",
+        "needs_improvement",
+        "unsatisfactory",
+      ],
+      review_status: [
+        "draft",
+        "manager_review",
+        "employee_acknowledge",
+        "completed",
+        "cancelled",
+      ],
+      review_type: [
+        "30_day",
+        "60_day",
+        "90_day",
+        "annual",
+        "probationary",
+        "ad_hoc",
+      ],
       schedule_day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
       timeline_event_type: [
@@ -1720,6 +2303,13 @@ export const Constants = {
         "approved",
         "rejected",
         "locked",
+      ],
+      training_status: [
+        "assigned",
+        "in_progress",
+        "completed",
+        "expired",
+        "waived",
       ],
       work_setting: ["clinic", "home", "hybrid", "admin", "field"],
     },
