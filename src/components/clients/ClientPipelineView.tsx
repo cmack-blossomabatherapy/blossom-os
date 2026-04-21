@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   clients: Client[];
@@ -13,6 +14,7 @@ interface Props {
 
 export function ClientPipelineView({ clients, onSelect }: Props) {
   const { moveStage, revertStage } = useClients();
+  const { ownsClientStage, hasPerm } = useAuth();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
@@ -53,6 +55,17 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
     if (!id) return;
     const client = clients.find((c) => c.id === id);
     if (!client || client.stage === stage) return;
+
+    if (!hasPerm("clients.edit")) {
+      toast.error("You don't have permission to edit clients");
+      return;
+    }
+    if (!ownsClientStage(stage)) {
+      toast.error(`Your role doesn't own the "${stage}" stage`, {
+        description: "Ask an admin or operations manager to make this move.",
+      });
+      return;
+    }
 
     // Snapshot what we need to undo BEFORE the move
     const previousStage = client.stage;

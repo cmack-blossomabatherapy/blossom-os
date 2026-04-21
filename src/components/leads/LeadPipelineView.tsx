@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadPipelineViewProps {
   leads: Lead[];
@@ -12,6 +13,7 @@ interface LeadPipelineViewProps {
 
 export function LeadPipelineView({ leads, onSelectLead }: LeadPipelineViewProps) {
   const { moveStage, revertStage } = useLeads();
+  const { ownsLeadStage, hasPerm } = useAuth();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<LeadStatus | null>(null);
 
@@ -51,6 +53,17 @@ export function LeadPipelineView({ leads, onSelectLead }: LeadPipelineViewProps)
     if (!id) return;
     const lead = leads.find((l) => l.id === id);
     if (!lead || lead.status === stage) return;
+
+    if (!hasPerm("leads.edit")) {
+      toast.error("You don't have permission to edit leads");
+      return;
+    }
+    if (!ownsLeadStage(stage)) {
+      toast.error(`Your role doesn't own the "${stage}" stage`, {
+        description: "Ask an admin or operations manager to make this move.",
+      });
+      return;
+    }
 
     // Snapshot for Undo
     const previousStatus = lead.status;
