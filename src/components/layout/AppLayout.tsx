@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
 import { useLocation } from "react-router-dom";
+import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -34,6 +35,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <ForcePasswordChange />
     </div>
   );
 }
