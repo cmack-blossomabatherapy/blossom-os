@@ -153,19 +153,43 @@ function descendantsOf(node: Node): Node[] {
   return out;
 }
 
+const STORAGE_KEY = "blossom.orgchart.state.v1";
+type PersistedState = {
+  view: "hierarchy" | "department" | "state";
+  collapsed: string[];
+  transform: { scale: number; positionX: number; positionY: number } | null;
+};
+function loadPersisted(): Partial<PersistedState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function savePersisted(patch: Partial<PersistedState>) {
+  try {
+    const current = loadPersisted();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
+  } catch { /* ignore */ }
+}
+
 // ---------- Component ----------
 
 export default function OrgChart() {
+  const persisted = useMemo(() => loadPersisted(), []);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [depts, setDepts] = useState<DeptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(persisted.collapsed ?? []));
+  const [view, setView] = useState<"hierarchy" | "department" | "state">(persisted.view ?? "hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Persist view + collapsed
+  useEffect(() => { savePersisted({ view }); }, [view]);
+  useEffect(() => { savePersisted({ collapsed: Array.from(collapsed) }); }, [collapsed]);
 
   const handleExport = async (format: "png" | "pdf") => {
     if (!exportRef.current) return;
