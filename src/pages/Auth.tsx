@@ -46,7 +46,7 @@ export default function Auth() {
         <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
 
         <div className="relative">
-          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-20 w-auto object-contain" />
+          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-40 w-auto object-contain" />
         </div>
 
         <div className="relative flex flex-col items-center text-center text-white max-w-md mx-auto">
