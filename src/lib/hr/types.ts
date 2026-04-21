@@ -239,3 +239,218 @@ export function startOfWeek(d = new Date()): Date {
   x.setHours(0, 0, 0, 0);
   return x;
 }
+
+// ============================================================
+// Phase 3 — Reviews, Bonuses, Pay Changes, Training, Payroll
+// ============================================================
+
+export type ReviewType = "30_day" | "60_day" | "90_day" | "annual" | "probationary" | "ad_hoc";
+export type ReviewStatus = "draft" | "manager_review" | "employee_acknowledge" | "completed" | "cancelled";
+export type ReviewRating = "exceeds" | "meets" | "developing" | "needs_improvement" | "unsatisfactory";
+
+export type BonusType = "signing" | "retention" | "referral" | "performance" | "spot" | "holiday" | "other";
+export type BonusStatus = "pending_approval" | "approved" | "paid" | "cancelled";
+
+export type PayChangeKind = "raise" | "promotion" | "demotion" | "adjustment" | "rate_correction" | "title_change";
+export type PayChangeStatus = "proposed" | "approved" | "effective" | "reverted";
+
+export type TrainingStatus = "assigned" | "in_progress" | "completed" | "expired" | "waived";
+
+export type PayrollRunStatus = "open" | "ready" | "submitted" | "posted" | "closed" | "rejected";
+
+export const REVIEW_TYPE_LABEL: Record<ReviewType, string> = {
+  "30_day": "30-Day", "60_day": "60-Day", "90_day": "90-Day",
+  annual: "Annual", probationary: "Probationary", ad_hoc: "Ad-hoc",
+};
+
+export const REVIEW_STATUS_META: Record<ReviewStatus, { label: string; tone: string }> = {
+  draft:                 { label: "Draft",                tone: "bg-muted text-muted-foreground border-border" },
+  manager_review:        { label: "Manager Review",       tone: "bg-info/15 text-info border-info/30" },
+  employee_acknowledge:  { label: "Awaiting Acknowledge", tone: "bg-warning/15 text-warning border-warning/30" },
+  completed:             { label: "Completed",            tone: "bg-success/15 text-success border-success/30" },
+  cancelled:             { label: "Cancelled",            tone: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+export const REVIEW_RATING_META: Record<ReviewRating, { label: string; tone: string }> = {
+  exceeds:            { label: "Exceeds Expectations",    tone: "bg-success/15 text-success border-success/30" },
+  meets:              { label: "Meets Expectations",      tone: "bg-info/15 text-info border-info/30" },
+  developing:         { label: "Developing",              tone: "bg-warning/15 text-warning border-warning/30" },
+  needs_improvement:  { label: "Needs Improvement",       tone: "bg-warning/20 text-warning border-warning/40" },
+  unsatisfactory:     { label: "Unsatisfactory",          tone: "bg-destructive/15 text-destructive border-destructive/30" },
+};
+
+export const BONUS_TYPE_LABEL: Record<BonusType, string> = {
+  signing: "Signing", retention: "Retention", referral: "Referral",
+  performance: "Performance", spot: "Spot", holiday: "Holiday", other: "Other",
+};
+
+export const BONUS_STATUS_META: Record<BonusStatus, { label: string; tone: string }> = {
+  pending_approval: { label: "Pending Approval", tone: "bg-warning/15 text-warning border-warning/30" },
+  approved:         { label: "Approved",         tone: "bg-info/15 text-info border-info/30" },
+  paid:             { label: "Paid",              tone: "bg-success/15 text-success border-success/30" },
+  cancelled:        { label: "Cancelled",        tone: "bg-muted text-muted-foreground border-border" },
+};
+
+export const PAY_CHANGE_KIND_LABEL: Record<PayChangeKind, string> = {
+  raise: "Raise", promotion: "Promotion", demotion: "Demotion",
+  adjustment: "Adjustment", rate_correction: "Rate Correction", title_change: "Title Change",
+};
+
+export const PAY_CHANGE_STATUS_META: Record<PayChangeStatus, { label: string; tone: string }> = {
+  proposed:  { label: "Proposed",  tone: "bg-warning/15 text-warning border-warning/30" },
+  approved:  { label: "Approved",  tone: "bg-info/15 text-info border-info/30" },
+  effective: { label: "Effective", tone: "bg-success/15 text-success border-success/30" },
+  reverted:  { label: "Reverted",  tone: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+export const TRAINING_STATUS_META: Record<TrainingStatus, { label: string; tone: string }> = {
+  assigned:    { label: "Assigned",    tone: "bg-info/15 text-info border-info/30" },
+  in_progress: { label: "In Progress", tone: "bg-warning/15 text-warning border-warning/30" },
+  completed:   { label: "Completed",   tone: "bg-success/15 text-success border-success/30" },
+  expired:     { label: "Expired",     tone: "bg-destructive/15 text-destructive border-destructive/30" },
+  waived:      { label: "Waived",      tone: "bg-muted text-muted-foreground border-border" },
+};
+
+export const PAYROLL_RUN_STATUS_META: Record<PayrollRunStatus, { label: string; tone: string }> = {
+  open:      { label: "Open",      tone: "bg-muted text-muted-foreground border-border" },
+  ready:     { label: "Ready",     tone: "bg-info/15 text-info border-info/30" },
+  submitted: { label: "Submitted", tone: "bg-warning/15 text-warning border-warning/30" },
+  posted:    { label: "Posted",    tone: "bg-success/15 text-success border-success/30" },
+  closed:    { label: "Closed",    tone: "bg-primary/15 text-primary border-primary/30" },
+  rejected:  { label: "Rejected",  tone: "bg-destructive/15 text-destructive border-destructive/30" },
+};
+
+export interface EmployeeReview {
+  id: string;
+  employee_id: string;
+  reviewer_id: string | null;
+  reviewer_name: string | null;
+  review_type: ReviewType;
+  status: ReviewStatus;
+  overall_rating: ReviewRating | null;
+  period_start: string | null;
+  period_end: string | null;
+  due_date: string | null;
+  scheduled_for: string | null;
+  strengths: string | null;
+  growth_areas: string | null;
+  goals: string | null;
+  manager_comments: string | null;
+  employee_comments: string | null;
+  acknowledged_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeBonus {
+  id: string;
+  employee_id: string;
+  bonus_type: BonusType;
+  status: BonusStatus;
+  amount: number;
+  reason: string | null;
+  notes: string | null;
+  effective_date: string | null;
+  paid_date: string | null;
+  payroll_run_id: string | null;
+  approved_by_name: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeePayChange {
+  id: string;
+  employee_id: string;
+  kind: PayChangeKind;
+  status: PayChangeStatus;
+  previous_rate: number | null;
+  new_rate: number;
+  previous_title: string | null;
+  new_title: string | null;
+  previous_pay_type: PayType | null;
+  new_pay_type: PayType | null;
+  effective_date: string;
+  reason: string | null;
+  notes: string | null;
+  approved_by_name: string | null;
+  approved_at: string | null;
+  applied_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrainingCourse {
+  id: string;
+  name: string;
+  description: string | null;
+  provider: string | null;
+  category: string | null;
+  required_for_roles: string[];
+  renewal_months: number | null;
+  duration_minutes: number | null;
+  is_active: boolean;
+  external_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeTraining {
+  id: string;
+  employee_id: string;
+  course_id: string;
+  status: TrainingStatus;
+  assigned_at: string;
+  due_date: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  expires_on: string | null;
+  score: number | null;
+  certificate_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  name: string;
+  period_start: string;
+  period_end: string;
+  pay_date: string | null;
+  status: PayrollRunStatus;
+  total_hours: number;
+  total_gross: number;
+  employee_count: number;
+  viventium_batch_id: string | null;
+  viventium_synced_at: string | null;
+  notes: string | null;
+  submitted_by_name: string | null;
+  submitted_at: string | null;
+  posted_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollRunItem {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  timesheet_id: string | null;
+  regular_hours: number;
+  overtime_hours: number;
+  pto_hours: number;
+  bonus_total: number;
+  gross_pay: number;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function formatMoney(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
