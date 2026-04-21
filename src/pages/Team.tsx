@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { UsersRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { UsersRound, UserPlus } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { TeamControlBar, type TeamViewMode } from "@/components/team/TeamControlBar";
 import { TeamDirectoryView } from "@/components/team/TeamDirectoryView";
@@ -8,19 +8,30 @@ import { TeamOrgChart } from "@/components/team/TeamOrgChart";
 import { TeamPerformanceView } from "@/components/team/TeamPerformanceView";
 import { TeamDetailPanel } from "@/components/team/TeamDetailPanel";
 import { TeamAdminPanel } from "@/components/team/TeamAdminPanel";
-import { mockTeam, filterTeamByView, findMember, type TeamSavedView } from "@/data/team";
+import { BulkProvisionDialog } from "@/components/team/BulkProvisionDialog";
+import { filterTeamByView, type TeamSavedView } from "@/data/team";
+import { useLiveTeam } from "@/hooks/useLiveTeam";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShieldCheck } from "lucide-react";
 
 export default function Team() {
   const { isAdmin } = useAuth();
+  const { members: liveTeam, loading: teamLoading, reload } = useLiveTeam();
   const [viewMode, setViewMode] = useState<TeamViewMode>("directory");
   const [activeView, setActiveView] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(mockTeam[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [provisionOpen, setProvisionOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedId && liveTeam.length > 0) {
+      setSelectedId(liveTeam[0].id);
+    }
+  }, [liveTeam, selectedId]);
 
   const filtered = useMemo(() => {
-    let list = filterTeamByView(mockTeam, activeView as TeamSavedView);
+    let list = filterTeamByView(liveTeam, activeView as TeamSavedView);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -32,9 +43,9 @@ export default function Team() {
       );
     }
     return list;
-  }, [activeView, searchQuery]);
+  }, [activeView, searchQuery, liveTeam]);
 
-  const selected = selectedId ? findMember(selectedId) ?? null : null;
+  const selected = selectedId ? liveTeam.find((m) => m.id === selectedId) ?? null : null;
 
   return (
     <PageShell
@@ -44,10 +55,15 @@ export default function Team() {
     >
       {isAdmin && (
         <section className="space-y-2 pb-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold uppercase tracking-wider text-foreground">Admin · Live members & roles</span>
-            <span className="opacity-70">— assign roles, invite new team members</span>
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              <span className="font-semibold uppercase tracking-wider text-foreground">Admin · Live members & roles</span>
+              <span className="opacity-70">— assign roles, invite new team members</span>
+            </div>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setProvisionOpen(true)}>
+              <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Provision real employees
+            </Button>
           </div>
           <TeamAdminPanel />
         </section>
@@ -71,7 +87,7 @@ export default function Team() {
             <TeamWorkloadView members={filtered} selectedId={selectedId} onSelect={setSelectedId} />
           )}
           {viewMode === "org" && (
-            <TeamOrgChart selectedId={selectedId} onSelect={setSelectedId} />
+            <TeamOrgChart members={liveTeam} selectedId={selectedId} onSelect={setSelectedId} />
           )}
           {viewMode === "performance" && (
             <TeamPerformanceView members={filtered} selectedId={selectedId} onSelect={setSelectedId} />
@@ -81,6 +97,14 @@ export default function Team() {
           <TeamDetailPanel member={selected} onClose={() => setSelectedId(null)} />
         </div>
       </div>
+
+      <BulkProvisionDialog
+        open={provisionOpen}
+        onOpenChange={setProvisionOpen}
+        onComplete={() => {
+          void reload();
+        }}
+      />
     </PageShell>
   );
 }

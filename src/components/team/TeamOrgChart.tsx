@@ -3,24 +3,29 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import {
   type TeamMember,
-  mockTeam,
   departmentVariant,
   workloadVariant,
 } from "@/data/team";
 
 interface Props {
+  members: TeamMember[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
 
-export function TeamOrgChart({ selectedId, onSelect }: Props) {
-  const roots = mockTeam.filter((m) => !m.reportsTo);
+export function TeamOrgChart({ members, selectedId, onSelect }: Props) {
+  const roots = members.filter((m) => !m.reportsTo);
 
   return (
     <div className="bg-card rounded-xl border border-border/60 p-6 overflow-x-auto">
       <div className="flex flex-col items-center gap-6 min-w-fit">
+        {roots.length === 0 && (
+          <p className="text-sm text-muted-foreground py-8">
+            No org structure yet — assign reporting relationships to build the chart.
+          </p>
+        )}
         {roots.map((root) => (
-          <Branch key={root.id} member={root} all={mockTeam} selectedId={selectedId} onSelect={onSelect} />
+          <Branch key={root.id} member={root} all={members} selectedId={selectedId} onSelect={onSelect} />
         ))}
       </div>
     </div>
