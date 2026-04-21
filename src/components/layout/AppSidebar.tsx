@@ -105,8 +105,8 @@ export function AppSidebar() {
   return (
     <aside className="w-60 h-screen sticky top-0 bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
       {/* Logo */}
-      <div className="h-14 flex items-center justify-center px-4 border-b border-sidebar-border bg-primary">
-        <img src={logo} alt="Blossom ABA Therapy" className="h-9 w-auto object-contain" />
+      <div className="h-20 flex items-center justify-center px-3 border-b border-sidebar-border bg-primary">
+        <img src={logo} alt="Blossom ABA Therapy" className="max-h-16 w-auto object-contain" />
       </div>
 
       {/* Navigation */}
