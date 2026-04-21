@@ -77,6 +77,15 @@ export default {
           DEFAULT: "hsl(var(--surface))",
           raised: "hsl(var(--surface-raised))",
         },
+        petal: {
+          orange: "hsl(var(--petal-orange))",
+          yellow: "hsl(var(--petal-yellow))",
+          green: "hsl(var(--petal-green))",
+          sage: "hsl(var(--petal-sage))",
+          purple: "hsl(var(--petal-purple))",
+          pink: "hsl(var(--petal-pink))",
+          red: "hsl(var(--petal-red))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
