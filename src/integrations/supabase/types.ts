@@ -473,6 +473,13 @@ export type Database = {
         | "finance"
         | "hr"
         | "phone_support"
+        | "hr_admin"
+        | "hr_manager"
+        | "recruiting_assistant"
+        | "payroll_admin"
+        | "state_director"
+        | "clinic_director"
+        | "dept_manager"
       auth_kind: "Initial" | "Treatment"
       auth_status:
         | "Not Submitted"
@@ -648,6 +655,13 @@ export const Constants = {
         "finance",
         "hr",
         "phone_support",
+        "hr_admin",
+        "hr_manager",
+        "recruiting_assistant",
+        "payroll_admin",
+        "state_director",
+        "clinic_director",
+        "dept_manager",
       ],
       auth_kind: ["Initial", "Treatment"],
       auth_status: [
