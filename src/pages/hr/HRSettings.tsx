@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import type { HRSetting } from "@/lib/hr/types";
+import type { Json } from "@/integrations/supabase/types";
 
 export default function HRSettings() {
   const { hasPerm, user } = useAuth();
@@ -38,7 +39,7 @@ export default function HRSettings() {
 
   async function save(key: string) {
     const { error } = await supabase.from("hr_settings").update({
-      value: draft[key],
+      value: draft[key] as Json,
       updated_by: user?.id ?? null,
       updated_by_name: user?.email ?? null,
       updated_at: new Date().toISOString(),

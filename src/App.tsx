@@ -44,6 +44,10 @@ import TimeClockKiosk from "./pages/hr/TimeClockKiosk";
 import Reviews from "./pages/hr/Reviews";
 import Training from "./pages/hr/Training";
 import Payroll from "./pages/hr/Payroll";
+import Announcements from "./pages/hr/Announcements";
+import ResourceHub from "./pages/hr/ResourceHub";
+import HRReports from "./pages/hr/HRReports";
+import HRSettings from "./pages/hr/HRSettings";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +101,10 @@ const App = () => (
                   <Route path="/hr/reviews" element={<PermissionRoute permission="hr.reviews.view"><Reviews /></PermissionRoute>} />
                   <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view"><Training /></PermissionRoute>} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
+                  <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
+                  <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
+                  <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
+                  <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
