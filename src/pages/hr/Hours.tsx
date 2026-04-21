@@ -79,9 +79,12 @@ export default function Hours() {
   });
 
   async function setStatus(id: string, status: TimesheetStatus) {
-    const patch: Record<string, unknown> = { status };
-    if (status === "approved") patch.approved_at = new Date().toISOString();
-    if (status === "locked")   patch.locked_at   = new Date().toISOString();
+    const nowIso = new Date().toISOString();
+    const patch = {
+      status,
+      ...(status === "approved" ? { approved_at: nowIso } : {}),
+      ...(status === "locked"   ? { locked_at:   nowIso } : {}),
+    };
     const { error } = await supabase.from("hours_timesheets").update(patch).eq("id", id);
     if (error) { toast.error("Could not update timesheet."); return; }
     toast.success(`Timesheet ${status}.`);
