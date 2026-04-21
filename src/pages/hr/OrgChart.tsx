@@ -171,6 +171,9 @@ export default function OrgChart() {
     if (!exportRef.current) return;
     setExporting(true);
     try {
+      // Reset zoom/pan so the full chart is captured at 1:1 in the hierarchy view
+      zoomRef.current?.resetTransform(0);
+      await new Promise((r) => setTimeout(r, 50));
       const { toPng } = await import("html-to-image");
       const node = exportRef.current;
       const dataUrl = await toPng(node, {
