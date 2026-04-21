@@ -581,6 +581,187 @@ export default function OrgChart() {
           <DetailPanel node={selected} tree={tree} onSelect={setSelectedId} />
         </div>
       )}
+
+      {/* ===== Off-screen export render (always present so the ref is stable) ===== */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: "-10000px",
+          left: "-10000px",
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <div
+          ref={offscreenExportRef}
+          className="bg-background"
+          style={{ width: "1400px", padding: "32px" }}
+        >
+          <ExportHeader
+            view={view}
+            scope={exportScope}
+            search={search}
+            selected={selected}
+          />
+          <div className="mt-4">
+            {view === "hierarchy" && (
+              <div className="min-w-fit">
+                {(exportScope === "subtree" && selected ? [selected] : tree.roots).map((root) => (
+                  <TreeNode
+                    key={root.emp.id}
+                    node={root}
+                    depth={0}
+                    collapsed={new Set()}
+                    onToggle={() => {}}
+                    selectedId={null}
+                    onSelect={() => {}}
+                    matches={null}
+                  />
+                ))}
+              </div>
+            )}
+            {view === "department" && (
+              <DepartmentView
+                employees={
+                  exportScope === "subtree" && selected
+                    ? [selected.emp, ...descendantsOf(selected).map((n) => n.emp)]
+                    : employees
+                }
+                depts={depts}
+                selectedId={null}
+                onSelect={() => {}}
+                matches={null}
+              />
+            )}
+            {view === "state" && (
+              <StateView
+                employees={
+                  exportScope === "subtree" && selected
+                    ? [selected.emp, ...descendantsOf(selected).map((n) => n.emp)]
+                    : employees
+                }
+                depts={depts}
+                selectedId={null}
+                onSelect={() => {}}
+                matches={null}
+              />
+            )}
+          </div>
+          {exportLegend && <ExportLegend />}
+        </div>
+      </div>
+
+      {/* ===== Export options dialog ===== */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export org chart</DialogTitle>
+            <DialogDescription>
+              Choose what to export and how. PDFs auto-paginate when the chart is too tall for one page.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Format
+              </Label>
+              <RadioGroup
+                value={exportFormat}
+                onValueChange={(v) => setExportFormat(v as "png" | "pdf")}
+                className="mt-2 grid grid-cols-2 gap-2"
+              >
+                <Label
+                  htmlFor="fmt-pdf"
+                  className="flex items-center gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="pdf" id="fmt-pdf" />
+                  <FileText className="h-4 w-4" /> PDF (multi-page)
+                </Label>
+                <Label
+                  htmlFor="fmt-png"
+                  className="flex items-center gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="png" id="fmt-png" />
+                  <FileImage className="h-4 w-4" /> PNG image
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Scope
+              </Label>
+              <RadioGroup
+                value={exportScope}
+                onValueChange={(v) => setExportScope(v as "full" | "subtree")}
+                className="mt-2 space-y-2"
+              >
+                <Label
+                  htmlFor="scope-full"
+                  className="flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="full" id="scope-full" className="mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-medium text-foreground">Full chart</p>
+                    <p className="text-muted-foreground">Everyone in the current view.</p>
+                  </div>
+                </Label>
+                <Label
+                  htmlFor="scope-subtree"
+                  className={cn(
+                    "flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                    !selected && "opacity-50 cursor-not-allowed",
+                  )}
+                >
+                  <RadioGroupItem
+                    value="subtree"
+                    id="scope-subtree"
+                    className="mt-0.5"
+                    disabled={!selected}
+                  />
+                  <div className="text-xs">
+                    <p className="font-medium text-foreground">
+                      Selected employee &amp; direct reports
+                    </p>
+                    <p className="text-muted-foreground">
+                      {selected
+                        ? `Centers on ${employeeFullName(selected.emp)} and their team.`
+                        : "Select an employee first to enable this."}
+                    </p>
+                  </div>
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div className="flex items-center justify-between border border-border rounded-md p-3">
+              <div>
+                <Label htmlFor="export-legend" className="text-sm font-medium">
+                  Include legend
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Color &amp; title key matching the on-screen chart.
+                </p>
+              </div>
+              <Switch
+                id="export-legend"
+                checked={exportLegend}
+                onCheckedChange={setExportLegend}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(false)} disabled={exporting}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={runExport} disabled={exporting}>
+              {exporting ? "Exporting…" : `Export ${exportFormat.toUpperCase()}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
