@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Copy, CheckCircle2, UserPlus } from "lucide-react";
+import { ROLE_META, type AppRole } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
@@ -14,18 +16,16 @@ interface Props {
   onCreated?: () => void;
 }
 
-type Role = "admin" | "staff" | "viewer";
-
 interface InviteResult {
   email: string;
   tempPassword: string;
-  role: Role;
+  roles: AppRole[];
 }
 
 export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<Role>("staff");
+  const [selectedRoles, setSelectedRoles] = useState<Set<AppRole>>(new Set(["intake"]));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<InviteResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -33,7 +33,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
   const reset = () => {
     setEmail("");
     setDisplayName("");
-    setRole("staff");
+    setSelectedRoles(new Set(["intake"]));
     setResult(null);
     setCopied(false);
   };
@@ -43,11 +43,28 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
     onOpenChange(next);
   };
 
+  const toggleRole = (key: AppRole) => {
+    setSelectedRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedRoles.size === 0) {
+      toast.error("Pick at least one role");
+      return;
+    }
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("admin-invite-user", {
-      body: { email: email.trim().toLowerCase(), displayName: displayName.trim() || undefined, role },
+      body: {
+        email: email.trim().toLowerCase(),
+        displayName: displayName.trim() || undefined,
+        roles: Array.from(selectedRoles),
+      },
     });
     setBusy(false);
     if (error) {
@@ -58,14 +75,14 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
       toast.error(data?.error ?? "Failed to invite team member");
       return;
     }
-    setResult({ email: data.email, tempPassword: data.tempPassword, role: data.role });
+    setResult({ email: data.email, tempPassword: data.tempPassword, roles: data.roles ?? [] });
     toast.success("Team member invited");
     onCreated?.();
   };
 
   const copy = async () => {
     if (!result) return;
-    const text = `Email: ${result.email}\nTemporary password: ${result.tempPassword}\nRole: ${result.role}\n\nSign in at ${window.location.origin}/auth and you'll be asked to set a new password.`;
+    const text = `Email: ${result.email}\nTemporary password: ${result.tempPassword}\nRoles: ${result.roles.join(", ")}\n\nSign in at ${window.location.origin}/auth and you'll be asked to set a new password.`;
     await navigator.clipboard.writeText(text);
     setCopied(true);
     toast.success("Copied to clipboard");
@@ -74,7 +91,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {!result ? (
           <>
             <DialogHeader>
@@ -83,34 +100,60 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
               <DialogTitle>Add team member</DialogTitle>
               <DialogDescription>
-                Create a new account. You'll get a one-time password to share with them —
-                they'll be asked to set their own password on first sign-in.
+                Create a new account with one or more roles. You'll get a one-time
+                password to share — they'll set their own on first sign-in.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-name">Full name</Label>
-                <Input id="invite-name" placeholder="Sarah Martinez"
-                  value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-name">Full name</Label>
+                  <Input id="invite-name" placeholder="Sarah Martinez"
+                    value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="invite-email">Work email</Label>
+                  <Input id="invite-email" type="email" required autoComplete="off"
+                    placeholder="sarah@blossomabatherapy.com"
+                    value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-email">Work email</Label>
-                <Input id="invite-email" type="email" required autoComplete="off"
-                  placeholder="sarah@blossomabatherapy.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-role">Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as Role)}>
-                  <SelectTrigger id="invite-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin — full access, manages team</SelectItem>
-                    <SelectItem value="staff">Staff — can edit records</SelectItem>
-                    <SelectItem value="viewer">Viewer — read-only</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <Label>Roles</Label>
+                  <span className="text-[11px] text-muted-foreground">
+                    {selectedRoles.size} selected · pick one or more
+                  </span>
+                </div>
+                <div className="rounded-lg border border-border/60 max-h-[320px] overflow-y-auto divide-y divide-border/40">
+                  {ROLE_META.filter((r) => r.group !== "Legacy").map((r) => {
+                    const checked = selectedRoles.has(r.key);
+                    return (
+                      <label
+                        key={r.key}
+                        className={cn(
+                          "flex items-start gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors",
+                          checked && "bg-primary/5",
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleRole(r.key)}
+                          className="mt-0.5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">{r.label}</span>
+                            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              {r.group}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button type="button" variant="ghost" onClick={() => handleClose(false)}>Cancel</Button>
@@ -137,7 +180,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
               <div className="rounded-lg border border-border/60 bg-muted/40 p-3 space-y-2">
                 <InfoRow label="Email" value={result.email} />
                 <InfoRow label="Temporary password" value={result.tempPassword} mono />
-                <InfoRow label="Role" value={result.role} />
+                <InfoRow label="Roles" value={result.roles.join(", ")} />
               </div>
               <Button variant="outline" className="w-full" onClick={copy}>
                 <Copy className="h-3.5 w-3.5 mr-2" />
@@ -158,7 +201,7 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className={mono ? "font-mono text-foreground" : "text-foreground capitalize"}>{value}</span>
+      <span className={mono ? "font-mono text-foreground" : "text-foreground"}>{value}</span>
     </div>
   );
 }

@@ -7,9 +7,13 @@ import { TeamWorkloadView } from "@/components/team/TeamWorkloadView";
 import { TeamOrgChart } from "@/components/team/TeamOrgChart";
 import { TeamPerformanceView } from "@/components/team/TeamPerformanceView";
 import { TeamDetailPanel } from "@/components/team/TeamDetailPanel";
+import { TeamAdminPanel } from "@/components/team/TeamAdminPanel";
 import { mockTeam, filterTeamByView, findMember, type TeamSavedView } from "@/data/team";
+import { useAuth } from "@/contexts/AuthContext";
+import { ShieldCheck } from "lucide-react";
 
 export default function Team() {
+  const { isAdmin } = useAuth();
   const [viewMode, setViewMode] = useState<TeamViewMode>("directory");
   const [activeView, setActiveView] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +42,17 @@ export default function Team() {
       description="Directory · workload · org structure · performance"
       icon={UsersRound}
     >
+      {isAdmin && (
+        <section className="space-y-2 pb-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold uppercase tracking-wider text-foreground">Admin · Live members & roles</span>
+            <span className="opacity-70">— assign roles, invite new team members</span>
+          </div>
+          <TeamAdminPanel />
+        </section>
+      )}
+
       <TeamControlBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

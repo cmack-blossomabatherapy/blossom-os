@@ -9,7 +9,26 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type Role = "admin" | "staff" | "viewer";
+type Role =
+  | "admin"
+  | "exec"
+  | "ops_manager"
+  | "intake"
+  | "auth_team"
+  | "qa"
+  | "scheduling"
+  | "staffing"
+  | "clinic"
+  | "finance"
+  | "hr"
+  | "phone_support"
+  | "staff"
+  | "viewer";
+
+const VALID_ROLES: readonly Role[] = [
+  "admin","exec","ops_manager","intake","auth_team","qa","scheduling",
+  "staffing","clinic","finance","hr","phone_support","staff","viewer",
+];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -61,7 +80,15 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const email: string | undefined = body.email?.trim().toLowerCase();
   const displayName: string | undefined = body.displayName?.trim() || undefined;
-  const role: Role = (["admin", "staff", "viewer"].includes(body.role) ? body.role : "staff") as Role;
+  // Accept either `roles: string[]` (preferred, multi-role) or legacy single `role`.
+  const incoming: unknown[] = Array.isArray(body.roles)
+    ? body.roles
+    : body.role
+      ? [body.role]
+      : ["staff"];
+  const roles = incoming.filter((r): r is Role => typeof r === "string" && (VALID_ROLES as readonly string[]).includes(r));
+  if (roles.length === 0) roles.push("staff");
+  const primaryRole = roles[0];
   let tempPassword: string = body.tempPassword?.trim() || "";
 
   if (!email) {
@@ -91,7 +118,7 @@ Deno.serve(async (req) => {
     email_confirm: true,
     user_metadata: {
       display_name: displayName,
-      invited_role: role,
+      invited_role: primaryRole,
       must_change_password: "true",
     },
   });
@@ -103,12 +130,20 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Insert any additional roles beyond the primary one (which the trigger inserted).
+  const extraRoles = roles.slice(1);
+  if (extraRoles.length > 0) {
+    await admin.from("user_roles").insert(
+      extraRoles.map((r) => ({ user_id: created.user!.id, role: r })),
+    );
+  }
+
   return new Response(
     JSON.stringify({
       ok: true,
       userId: created.user.id,
       email,
-      role,
+      roles,
       tempPassword,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AdminRoute } from "@/components/auth/AdminRoute";
+import { PermissionRoute } from "@/components/auth/PermissionRoute";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
@@ -73,8 +73,8 @@ const App = () => (
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/automations" element={<Automations />} />
-                  <Route path="/team" element={<AdminRoute><Team /></AdminRoute>} />
-                  <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
+                  <Route path="/team" element={<PermissionRoute permission="team.view"><Team /></PermissionRoute>} />
+                  <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
