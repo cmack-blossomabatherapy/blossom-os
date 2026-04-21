@@ -1778,28 +1778,43 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
+          job_title: string | null
           must_change_password: boolean
+          responsibilities: string | null
           updated_at: string
           user_id: string
+          welcome_sent_at: string | null
+          welcome_sent_by: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          job_title?: string | null
           must_change_password?: boolean
+          responsibilities?: string | null
           updated_at?: string
           user_id: string
+          welcome_sent_at?: string | null
+          welcome_sent_by?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
+          job_title?: string | null
           must_change_password?: boolean
+          responsibilities?: string | null
           updated_at?: string
           user_id?: string
+          welcome_sent_at?: string | null
+          welcome_sent_by?: string | null
         }
         Relationships: []
       }
