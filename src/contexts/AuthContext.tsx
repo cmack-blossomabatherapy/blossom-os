@@ -1,14 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-
-type AppRole = "admin" | "staff" | "viewer";
+import type { AppRole } from "@/lib/roles";
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
   roles: AppRole[];
+  permissions: Set<string>;
+  ownedClientStages: Set<string>;
+  ownedLeadStages: Set<string>;
+  hasPerm: (key: string) => boolean;
+  ownsClientStage: (stage: string) => boolean;
+  ownsLeadStage: (stage: string) => boolean;
   isAdmin: boolean;
   canEdit: boolean;
   mustChangePassword: boolean;
@@ -23,6 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [permissions, setPermissions] = useState<Set<string>>(new Set());
+  const [ownedClientStages, setOwnedClientStages] = useState<Set<string>>(new Set());
+  const [ownedLeadStages, setOwnedLeadStages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
@@ -34,11 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Defer Supabase calls outside the callback to avoid deadlocks
       if (s?.user) {
         setTimeout(() => {
-          void loadRoles(s.user.id);
+          void loadRolesAndAccess(s.user.id);
           void loadProfileFlag(s.user.id);
         }, 0);
       } else {
         setRoles([]);
+          setPermissions(new Set());
+          setOwnedClientStages(new Set());
+          setOwnedLeadStages(new Set());
         setMustChangePassword(false);
       }
     });
@@ -48,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        Promise.all([loadRoles(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
+        Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
           setLoading(false),
         );
       } else setLoading(false);
@@ -57,12 +68,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const loadRoles = async (userId: string) => {
-    const { data, error } = await supabase
+  const loadRolesAndAccess = async (userId: string) => {
+    const { data: roleRows, error: roleErr } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    if (!error && data) setRoles(data.map((r) => r.role as AppRole));
+    if (roleErr || !roleRows) return;
+    const userRoles = roleRows.map((r) => r.role as AppRole);
+    setRoles(userRoles);
+    if (userRoles.length === 0) {
+      setPermissions(new Set());
+      setOwnedClientStages(new Set());
+      setOwnedLeadStages(new Set());
+      return;
+    }
+    // Permissions for these roles. Admins implicitly get all (resolved by hasPerm).
+    const { data: permRows } = await supabase
+      .from("role_permissions")
+      .select("permission_key")
+      .in("role", userRoles);
+    setPermissions(new Set((permRows ?? []).map((r) => r.permission_key)));
+
+    const { data: stageRows } = await supabase
+      .from("stage_ownership")
+      .select("stage_kind, stage_value")
+      .in("role", userRoles);
+    const clientStages = new Set<string>();
+    const leadStages = new Set<string>();
+    (stageRows ?? []).forEach((r) => {
+      if (r.stage_kind === "client") clientStages.add(r.stage_value);
+      else if (r.stage_kind === "lead") leadStages.add(r.stage_value);
+    });
+    setOwnedClientStages(clientStages);
+    setOwnedLeadStages(leadStages);
   };
 
   const loadProfileFlag = async (userId: string) => {
@@ -100,11 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AuthContextValue>(() => ({
-    session, user, loading, roles, mustChangePassword,
+    session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword,
     isAdmin: roles.includes("admin"),
-    canEdit: roles.includes("admin") || roles.includes("staff"),
+    canEdit:
+      roles.includes("admin") ||
+      roles.includes("ops_manager") ||
+      roles.includes("staff"),
+    hasPerm: (key: string) => roles.includes("admin") || permissions.has(key),
+    ownsClientStage: (stage: string) =>
+      roles.includes("admin") ||
+      roles.includes("exec") ||
+      roles.includes("ops_manager") ||
+      ownedClientStages.has(stage),
+    ownsLeadStage: (stage: string) =>
+      roles.includes("admin") ||
+      roles.includes("exec") ||
+      roles.includes("ops_manager") ||
+      ownedLeadStages.has(stage),
     signIn, signOut, updatePassword,
-  }), [session, user, loading, roles, mustChangePassword]);
+  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
