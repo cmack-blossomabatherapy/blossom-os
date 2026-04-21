@@ -33,6 +33,11 @@ import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
+import HRDashboard from "./pages/hr/HRDashboard";
+import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
+import EmployeeProfile from "./pages/hr/EmployeeProfile";
+import OrgChart from "./pages/hr/OrgChart";
+import OnboardingCenter from "./pages/hr/OnboardingCenter";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +80,11 @@ const App = () => (
                   <Route path="/automations" element={<Automations />} />
                   <Route path="/team" element={<PermissionRoute permission="team.view"><Team /></PermissionRoute>} />
                   <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
+                  <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
+                  <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
+                  <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
+                  <Route path="/hr/org-chart" element={<PermissionRoute permission="hr.employees.view"><OrgChart /></PermissionRoute>} />
+                  <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
