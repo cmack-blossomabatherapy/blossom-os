@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
+  ZoomIn, ZoomOut, Maximize, RotateCcw,
 } from "lucide-react";
+import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { useRef } from "react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
