@@ -426,7 +426,9 @@ export default function OrgChart() {
               <div className="relative h-[680px] w-full bg-muted/20 rounded-md overflow-hidden">
                 <TransformWrapper
                   ref={zoomRef}
-                  initialScale={1}
+                  initialScale={persisted.transform?.scale ?? 1}
+                  initialPositionX={persisted.transform?.positionX ?? 0}
+                  initialPositionY={persisted.transform?.positionY ?? 0}
                   minScale={0.3}
                   maxScale={2.5}
                   limitToBounds={false}
@@ -434,6 +436,15 @@ export default function OrgChart() {
                   wheel={{ step: 0.1 }}
                   doubleClick={{ disabled: true }}
                   panning={{ excluded: ["button", "a", "input"] }}
+                  onTransformed={(_ref, state) => {
+                    savePersisted({
+                      transform: {
+                        scale: state.scale,
+                        positionX: state.positionX,
+                        positionY: state.positionY,
+                      },
+                    });
+                  }}
                 >
                   {({ zoomIn, zoomOut, resetTransform, centerView }) => (
                     <>
