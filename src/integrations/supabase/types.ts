@@ -373,7 +373,21 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "staff" | "viewer"
+      app_role:
+        | "admin"
+        | "staff"
+        | "viewer"
+        | "exec"
+        | "ops_manager"
+        | "intake"
+        | "auth_team"
+        | "qa"
+        | "scheduling"
+        | "staffing"
+        | "clinic"
+        | "finance"
+        | "hr"
+        | "phone_support"
       auth_kind: "Initial" | "Treatment"
       auth_status:
         | "Not Submitted"
@@ -534,7 +548,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "viewer"],
+      app_role: [
+        "admin",
+        "staff",
+        "viewer",
+        "exec",
+        "ops_manager",
+        "intake",
+        "auth_team",
+        "qa",
+        "scheduling",
+        "staffing",
+        "clinic",
+        "finance",
+        "hr",
+        "phone_support",
+      ],
       auth_kind: ["Initial", "Treatment"],
       auth_status: [
         "Not Submitted",
