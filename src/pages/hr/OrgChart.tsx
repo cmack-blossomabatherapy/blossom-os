@@ -159,6 +159,7 @@ export default function OrgChart() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
+  const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
 
   useEffect(() => {
     void (async () => {
