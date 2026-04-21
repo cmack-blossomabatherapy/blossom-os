@@ -289,22 +289,60 @@ export default function OrgChart() {
         <div className="grid lg:grid-cols-[1fr_320px] gap-4">
           <Card className="p-4 overflow-hidden">
             {view === "hierarchy" && (
-              <ScrollArea className="h-[680px] w-full">
-                <div className="min-w-fit pb-4 pr-4">
-                  {tree.roots.map((root) => (
-                    <TreeNode
-                      key={root.emp.id}
-                      node={root}
-                      depth={0}
-                      collapsed={collapsed}
-                      onToggle={toggle}
-                      selectedId={selectedId}
-                      onSelect={setSelectedId}
-                      matches={matches}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="relative h-[680px] w-full bg-muted/20 rounded-md overflow-hidden">
+                <TransformWrapper
+                  ref={zoomRef}
+                  initialScale={1}
+                  minScale={0.3}
+                  maxScale={2.5}
+                  limitToBounds={false}
+                  centerOnInit={false}
+                  wheel={{ step: 0.1 }}
+                  doubleClick={{ disabled: true }}
+                  panning={{ excluded: ["button", "a", "input"] }}
+                >
+                  {({ zoomIn, zoomOut, resetTransform, centerView }) => (
+                    <>
+                      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 bg-card border border-border/60 rounded-md p-1 shadow-sm">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in">
+                          <ZoomIn className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomOut()} title="Zoom out">
+                          <ZoomOut className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => centerView(1)} title="Fit to view">
+                          <Maximize className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => resetTransform()} title="Reset">
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="absolute bottom-2 left-2 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur px-2 py-1 rounded border border-border/60">
+                        Drag to pan · Scroll to zoom
+                      </div>
+                      <TransformComponent
+                        wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing"
+                        contentClass="!p-6"
+                      >
+                        <div className="min-w-fit">
+                          {tree.roots.map((root) => (
+                            <TreeNode
+                              key={root.emp.id}
+                              node={root}
+                              depth={0}
+                              collapsed={collapsed}
+                              onToggle={toggle}
+                              selectedId={selectedId}
+                              onSelect={setSelectedId}
+                              matches={matches}
+                            />
+                          ))}
+                        </div>
+                      </TransformComponent>
+                    </>
+                  )}
+                </TransformWrapper>
+              </div>
             )}
 
             {view === "department" && (
