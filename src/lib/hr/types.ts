@@ -112,3 +112,130 @@ export function employeeFullName(e: Pick<Employee, "first_name" | "last_name" | 
 export function employeeInitials(e: Pick<Employee, "first_name" | "last_name">) {
   return `${e.first_name[0] ?? ""}${e.last_name[0] ?? ""}`.toUpperCase();
 }
+
+// ============================================================
+// Phase 2 — Time Clock + Hours
+// ============================================================
+
+export type PunchKind = "clock_in" | "clock_out" | "break_start" | "break_end";
+export type PunchSource = "kiosk" | "manual" | "manager_edit" | "import";
+export type PunchStatus = "pending" | "approved" | "rejected" | "locked";
+
+export type AttendanceExceptionKind =
+  | "missed_clock_in" | "missed_clock_out" | "late_arrival" | "early_departure"
+  | "long_break" | "overtime_risk" | "manual_edit_pending" | "duplicate_punch" | "outside_clinic";
+export type AttendanceExceptionStatus = "open" | "acknowledged" | "resolved" | "dismissed";
+
+export type TimesheetStatus = "draft" | "submitted" | "approved" | "rejected" | "locked";
+
+export interface TimeClockPunch {
+  id: string;
+  employee_id: string;
+  clinic: string | null;
+  kind: PunchKind;
+  source: PunchSource;
+  status: PunchStatus;
+  punch_at: string;
+  scheduled_at: string | null;
+  recorded_by: string | null;
+  recorded_by_name: string | null;
+  edited_by: string | null;
+  edited_at: string | null;
+  edit_reason: string | null;
+  pay_period_start: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceException {
+  id: string;
+  employee_id: string;
+  clinic: string | null;
+  kind: AttendanceExceptionKind;
+  status: AttendanceExceptionStatus;
+  occurred_on: string;
+  related_punch_id: string | null;
+  detail: string | null;
+  resolution: string | null;
+  resolved_by: string | null;
+  resolved_by_name: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HoursTimesheet {
+  id: string;
+  employee_id: string;
+  period_start: string;
+  period_end: string;
+  status: TimesheetStatus;
+  total_hours: number;
+  overtime_hours: number;
+  submitted_at: string | null;
+  submitted_by: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  approved_by_name: string | null;
+  locked_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HoursTimesheetEntry {
+  id: string;
+  timesheet_id: string;
+  work_date: string;
+  clinic: string | null;
+  hours: number;
+  category: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const PUNCH_KIND_META: Record<PunchKind, { label: string; tone: string; short: string }> = {
+  clock_in:    { label: "Clock In",    tone: "bg-success/15 text-success border-success/30",    short: "In" },
+  clock_out:   { label: "Clock Out",   tone: "bg-info/15 text-info border-info/30",             short: "Out" },
+  break_start: { label: "Break Start", tone: "bg-warning/15 text-warning border-warning/30",    short: "Brk" },
+  break_end:   { label: "Break End",   tone: "bg-warning/10 text-warning border-warning/20",    short: "End" },
+};
+
+export const EXCEPTION_KIND_META: Record<AttendanceExceptionKind, { label: string; tone: string }> = {
+  missed_clock_in:      { label: "Missed clock-in",  tone: "bg-destructive/15 text-destructive border-destructive/30" },
+  missed_clock_out:     { label: "Missed clock-out", tone: "bg-destructive/15 text-destructive border-destructive/30" },
+  late_arrival:         { label: "Late arrival",     tone: "bg-warning/15 text-warning border-warning/30" },
+  early_departure:      { label: "Early departure",  tone: "bg-warning/15 text-warning border-warning/30" },
+  long_break:           { label: "Long break",       tone: "bg-warning/10 text-warning border-warning/20" },
+  overtime_risk:        { label: "Overtime risk",    tone: "bg-info/15 text-info border-info/30" },
+  manual_edit_pending:  { label: "Edit pending",     tone: "bg-info/15 text-info border-info/30" },
+  duplicate_punch:      { label: "Duplicate punch",  tone: "bg-muted text-muted-foreground border-border" },
+  outside_clinic:       { label: "Outside clinic",   tone: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+export const TIMESHEET_STATUS_META: Record<TimesheetStatus, { label: string; tone: string }> = {
+  draft:     { label: "Draft",     tone: "bg-muted text-muted-foreground border-border" },
+  submitted: { label: "Submitted", tone: "bg-info/15 text-info border-info/30" },
+  approved:  { label: "Approved",  tone: "bg-success/15 text-success border-success/30" },
+  rejected:  { label: "Rejected",  tone: "bg-destructive/15 text-destructive border-destructive/30" },
+  locked:    { label: "Locked",    tone: "bg-primary/15 text-primary border-primary/30" },
+};
+
+/** Determine the next legal punch kind given the latest punch for the day. */
+export function nextPunchKind(latest: PunchKind | null): PunchKind {
+  if (!latest || latest === "clock_out") return "clock_in";
+  if (latest === "clock_in" || latest === "break_end") return "break_start";
+  if (latest === "break_start") return "break_end";
+  return "clock_out";
+}
+
+/** Get monday-of-week (ISO) for a date. */
+export function startOfWeek(d = new Date()): Date {
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7; // monday = 0
+  x.setDate(x.getDate() - day);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}

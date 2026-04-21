@@ -38,6 +38,9 @@ import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
 import OnboardingCenter from "./pages/hr/OnboardingCenter";
+import TimeClock from "./pages/hr/TimeClock";
+import Hours from "./pages/hr/Hours";
+import TimeClockKiosk from "./pages/hr/TimeClockKiosk";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +88,9 @@ const App = () => (
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute permission="hr.employees.view"><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
+                  <Route path="/hr/time-clock" element={<PermissionRoute permission="hr.timeclock.view"><TimeClock /></PermissionRoute>} />
+                  <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
+                  <Route path="/hr/kiosk" element={<PermissionRoute permission="hr.timeclock.kiosk"><TimeClockKiosk /></PermissionRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

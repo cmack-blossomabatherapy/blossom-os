@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_exceptions: {
+        Row: {
+          clinic: string | null
+          created_at: string
+          detail: string | null
+          employee_id: string
+          id: string
+          kind: Database["public"]["Enums"]["attendance_exception_kind"]
+          occurred_on: string
+          related_punch_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_by_name: string | null
+          status: Database["public"]["Enums"]["attendance_exception_status"]
+          updated_at: string
+        }
+        Insert: {
+          clinic?: string | null
+          created_at?: string
+          detail?: string | null
+          employee_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["attendance_exception_kind"]
+          occurred_on?: string
+          related_punch_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          status?: Database["public"]["Enums"]["attendance_exception_status"]
+          updated_at?: string
+        }
+        Update: {
+          clinic?: string | null
+          created_at?: string
+          detail?: string | null
+          employee_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["attendance_exception_kind"]
+          occurred_on?: string
+          related_punch_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          status?: Database["public"]["Enums"]["attendance_exception_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_exceptions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exceptions_related_punch_id_fkey"
+            columns: ["related_punch_id"]
+            isOneToOne: false
+            referencedRelation: "time_clock_punches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_authorizations: {
         Row: {
           approved_date: string | null
@@ -780,6 +846,115 @@ export type Database = {
           },
         ]
       }
+      hours_timesheet_entries: {
+        Row: {
+          category: string | null
+          clinic: string | null
+          created_at: string
+          hours: number
+          id: string
+          notes: string | null
+          timesheet_id: string
+          updated_at: string
+          work_date: string
+        }
+        Insert: {
+          category?: string | null
+          clinic?: string | null
+          created_at?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          timesheet_id: string
+          updated_at?: string
+          work_date: string
+        }
+        Update: {
+          category?: string | null
+          clinic?: string | null
+          created_at?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          timesheet_id?: string
+          updated_at?: string
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hours_timesheet_entries_timesheet_id_fkey"
+            columns: ["timesheet_id"]
+            isOneToOne: false
+            referencedRelation: "hours_timesheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hours_timesheets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          locked_at: string | null
+          notes: string | null
+          overtime_hours: number
+          period_end: string
+          period_start: string
+          status: Database["public"]["Enums"]["timesheet_status"]
+          submitted_at: string | null
+          submitted_by: string | null
+          total_hours: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          overtime_hours?: number
+          period_end: string
+          period_start: string
+          status?: Database["public"]["Enums"]["timesheet_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          overtime_hours?: number
+          period_end?: string
+          period_start?: string
+          status?: Database["public"]["Enums"]["timesheet_status"]
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hours_timesheets_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_audit_logs: {
         Row: {
           action: string
@@ -1018,6 +1193,74 @@ export type Database = {
         }
         Relationships: []
       }
+      time_clock_punches: {
+        Row: {
+          clinic: string | null
+          created_at: string
+          edit_reason: string | null
+          edited_at: string | null
+          edited_by: string | null
+          employee_id: string
+          id: string
+          kind: Database["public"]["Enums"]["punch_kind"]
+          notes: string | null
+          pay_period_start: string | null
+          punch_at: string
+          recorded_by: string | null
+          recorded_by_name: string | null
+          scheduled_at: string | null
+          source: Database["public"]["Enums"]["punch_source"]
+          status: Database["public"]["Enums"]["punch_status"]
+          updated_at: string
+        }
+        Insert: {
+          clinic?: string | null
+          created_at?: string
+          edit_reason?: string | null
+          edited_at?: string | null
+          edited_by?: string | null
+          employee_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["punch_kind"]
+          notes?: string | null
+          pay_period_start?: string | null
+          punch_at?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          scheduled_at?: string | null
+          source?: Database["public"]["Enums"]["punch_source"]
+          status?: Database["public"]["Enums"]["punch_status"]
+          updated_at?: string
+        }
+        Update: {
+          clinic?: string | null
+          created_at?: string
+          edit_reason?: string | null
+          edited_at?: string | null
+          edited_by?: string | null
+          employee_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["punch_kind"]
+          notes?: string | null
+          pay_period_start?: string | null
+          punch_at?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          scheduled_at?: string | null
+          source?: Database["public"]["Enums"]["punch_source"]
+          status?: Database["public"]["Enums"]["punch_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_clock_punches_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1085,6 +1328,21 @@ export type Database = {
         | "state_director"
         | "clinic_director"
         | "dept_manager"
+      attendance_exception_kind:
+        | "missed_clock_in"
+        | "missed_clock_out"
+        | "late_arrival"
+        | "early_departure"
+        | "long_break"
+        | "overtime_risk"
+        | "manual_edit_pending"
+        | "duplicate_punch"
+        | "outside_clinic"
+      attendance_exception_status:
+        | "open"
+        | "acknowledged"
+        | "resolved"
+        | "dismissed"
       auth_kind: "Initial" | "Treatment"
       auth_status:
         | "Not Submitted"
@@ -1165,6 +1423,9 @@ export type Database = {
         | "onboarding_owner"
         | "operational_owner"
       pay_type: "hourly" | "salaried"
+      punch_kind: "clock_in" | "clock_out" | "break_start" | "break_end"
+      punch_source: "kiosk" | "manual" | "manager_edit" | "import"
+      punch_status: "pending" | "approved" | "rejected" | "locked"
       qa_status: "Not Started" | "In Review" | "Complete"
       schedule_day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
@@ -1176,6 +1437,12 @@ export type Database = {
         | "qa"
         | "note"
         | "stage"
+      timesheet_status:
+        | "draft"
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "locked"
       work_setting: "clinic" | "home" | "hybrid" | "admin" | "field"
     }
     CompositeTypes: {
@@ -1327,6 +1594,23 @@ export const Constants = {
         "clinic_director",
         "dept_manager",
       ],
+      attendance_exception_kind: [
+        "missed_clock_in",
+        "missed_clock_out",
+        "late_arrival",
+        "early_departure",
+        "long_break",
+        "overtime_risk",
+        "manual_edit_pending",
+        "duplicate_punch",
+        "outside_clinic",
+      ],
+      attendance_exception_status: [
+        "open",
+        "acknowledged",
+        "resolved",
+        "dismissed",
+      ],
       auth_kind: ["Initial", "Treatment"],
       auth_status: [
         "Not Submitted",
@@ -1415,6 +1699,9 @@ export const Constants = {
         "operational_owner",
       ],
       pay_type: ["hourly", "salaried"],
+      punch_kind: ["clock_in", "clock_out", "break_start", "break_end"],
+      punch_source: ["kiosk", "manual", "manager_edit", "import"],
+      punch_status: ["pending", "approved", "rejected", "locked"],
       qa_status: ["Not Started", "In Review", "Complete"],
       schedule_day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
@@ -1426,6 +1713,13 @@ export const Constants = {
         "qa",
         "note",
         "stage",
+      ],
+      timesheet_status: [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected",
+        "locked",
       ],
       work_setting: ["clinic", "home", "hybrid", "admin", "field"],
     },
