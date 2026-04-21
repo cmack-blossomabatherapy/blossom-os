@@ -1,4 +1,4 @@
-import { Search, Plus, CalendarDays, User, UserPlus, FileText, ListPlus, Phone } from "lucide-react";
+import { Search, Plus, CalendarDays, User, UserPlus, FileText, ListPlus, Phone, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "./NotificationBell";
@@ -7,6 +7,7 @@ import { useState, KeyboardEvent } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TopBarProps {
   title: string;
@@ -16,6 +17,15 @@ export function TopBar({ title }: TopBarProps) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const { user, roles, isAdmin, signOut } = useAuth();
+  const primaryRole = roles[0] ?? "viewer";
+  const initials = (user?.user_metadata?.display_name ?? user?.email ?? "U")
+    .toString()
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p: string) => p[0]?.toUpperCase())
+    .join("");
 
   const submitSearch = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && q.trim()) {
@@ -83,9 +93,38 @@ export function TopBar({ title }: TopBarProps) {
 
         <NotificationBell />
 
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => navigate("/team")} aria-label="Profile">
-          <User className="h-4 w-4 text-muted-foreground" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Profile">
+              {initials ? (
+                <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
+                  {initials}
+                </span>
+              ) : (
+                <User className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground truncate">{user?.email ?? "Signed in"}</span>
+                <span className="text-[11px] text-muted-foreground capitalize flex items-center gap-1">
+                  <Shield className="h-3 w-3" /> {primaryRole}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => navigate("/team")}>
+                <UserPlus className="h-3.5 w-3.5 mr-2" /> Manage team
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => signOut()}>
+              <LogOut className="h-3.5 w-3.5 mr-2" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} onCreated={(lead) => navigate(`/leads/${lead.id}`)} />
