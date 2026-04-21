@@ -4,21 +4,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logoBrand from "@/assets/blossom-logo.png";
 
 export default function Auth() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/clients", { replace: true });
+    if (!loading && user) navigate("/", { replace: true });
   }, [user, loading, navigate]);
 
   if (loading) {
@@ -28,90 +26,100 @@ export default function Auth() {
       </div>
     );
   }
-  if (user) return <Navigate to="/clients" replace />;
+  if (user) return <Navigate to="/" replace />;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim(), password);
     setSubmitting(false);
     if (error) toast.error(error);
     else toast.success("Welcome back");
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const { error } = await signUp(email, password, displayName.trim() || undefined);
-    setSubmitting(false);
-    if (error) toast.error(error);
-    else toast.success("Account created — signing you in…");
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="w-full max-w-[420px] bg-card rounded-2xl border border-border/60 p-8 shadow-sm">
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3">
-            <Sparkles className="h-6 w-6" />
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      {/* Brand panel */}
+      <div className="relative hidden lg:flex flex-col justify-between p-10 overflow-hidden"
+        style={{ backgroundColor: "hsl(188 45% 45%)" }}>
+        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
+
+        <div className="relative flex items-center gap-3 text-white">
+          <div className="h-9 w-9 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
+            <div className="h-2.5 w-2.5 rounded-full bg-white" />
           </div>
-          <h1 className="text-xl font-semibold text-foreground">Blossom ABA Therapy OS</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to access the operations console</p>
+          <span className="font-semibold tracking-tight">Blossom Operations</span>
         </div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
-          <TabsList className="grid grid-cols-2 w-full mb-4">
-            <TabsTrigger value="signin">Sign in</TabsTrigger>
-            <TabsTrigger value="signup">Create account</TabsTrigger>
-          </TabsList>
+        <div className="relative flex flex-col items-center text-center text-white max-w-md mx-auto">
+          <img src={logoBrand} alt="Blossom ABA Therapy" className="w-60 h-60 object-contain drop-shadow-xl rounded-3xl" />
+          <h2 className="mt-6 text-2xl font-semibold tracking-tight">Helping families bloom.</h2>
+          <p className="mt-2 text-white/80 text-sm leading-relaxed">
+            The operations hub for intake, authorizations, scheduling, and care delivery —
+            built for the Blossom ABA Therapy team.
+          </p>
+        </div>
 
-          <TabsContent value="signin">
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signin-email">Email</Label>
-                <Input id="signin-email" type="email" required autoComplete="email"
-                  value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signin-password">Password</Label>
-                <Input id="signin-password" type="password" required autoComplete="current-password"
-                  value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Sign in
-              </Button>
-            </form>
-          </TabsContent>
+        <div className="relative text-xs text-white/60">
+          © {new Date().getFullYear()} Blossom ABA Therapy
+        </div>
+      </div>
 
-          <TabsContent value="signup">
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">Name <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                <Input id="signup-name" placeholder="Sarah Martinez"
-                  value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Work email</Label>
-                <Input id="signup-email" type="email" required autoComplete="email"
-                  value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input id="signup-password" type="password" required minLength={8} autoComplete="new-password"
-                  value={password} onChange={(e) => setPassword(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground">Minimum 8 characters. Leaked passwords are blocked.</p>
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Create account
-              </Button>
-              <p className="text-[11px] text-muted-foreground text-center">
-                The first account becomes admin. All others are staff by default.
-              </p>
-            </form>
-          </TabsContent>
-        </Tabs>
+      {/* Sign-in panel */}
+      <div className="flex items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-[380px]">
+          <div className="lg:hidden flex items-center justify-center mb-8">
+            <img src={logoBrand} alt="Blossom ABA Therapy" className="h-20 w-20 rounded-2xl object-contain" />
+          </div>
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Sign in</h1>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              Welcome back. Use your Blossom team account to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="signin-email">Email</Label>
+              <Input
+                id="signin-email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@blossomabatherapy.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="signin-password">Password</Label>
+              <Input
+                id="signin-password"
+                type="password"
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-10"
+              />
+            </div>
+            <Button type="submit" className="w-full h-10" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Sign in
+            </Button>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-border/60">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Need an account? Team accounts are created by your administrator.
+              Contact your Blossom admin to get access.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
