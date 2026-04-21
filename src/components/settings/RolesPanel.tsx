@@ -1,89 +1,203 @@
-import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Loader2 } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { cn } from "@/lib/utils";
-import { mockRoles, permissionLabels, type Role, type PermissionKey } from "@/data/settings";
+import { supabase } from "@/integrations/supabase/client";
+import { ROLE_META, type AppRole } from "@/lib/roles";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
+interface PermRow {
+  key: string;
+  module: string;
+  label: string;
+  description: string | null;
+}
+
+/** Live editor of role → permission matrix. Backed by `permissions` and `role_permissions` tables. */
 export function RolesPanel() {
-  const [activeRoleId, setActiveRoleId] = useState<string>(mockRoles[0]?.id ?? "");
-  const role = mockRoles.find((r) => r.id === activeRoleId)!;
+  const [perms, setPerms] = useState<PermRow[]>([]);
+  const [matrix, setMatrix] = useState<Map<string, Set<AppRole>>>(new Map()); // perm_key -> roles granting it
+  const [memberCount, setMemberCount] = useState<Map<AppRole, number>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [activeRole, setActiveRole] = useState<AppRole>("ops_manager");
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const [pRes, rpRes, urRes] = await Promise.all([
+        supabase.from("permissions").select("key, module, label, description").order("module"),
+        supabase.from("role_permissions").select("role, permission_key"),
+        supabase.from("user_roles").select("role"),
+      ]);
+      setPerms((pRes.data ?? []) as PermRow[]);
+      const m = new Map<string, Set<AppRole>>();
+      (rpRes.data ?? []).forEach((r) => {
+        const set = m.get(r.permission_key) ?? new Set<AppRole>();
+        set.add(r.role as AppRole);
+        m.set(r.permission_key, set);
+      });
+      setMatrix(m);
+      const counts = new Map<AppRole, number>();
+      (urRes.data ?? []).forEach((r) => {
+        counts.set(r.role as AppRole, (counts.get(r.role as AppRole) ?? 0) + 1);
+      });
+      setMemberCount(counts);
+      setLoading(false);
+    };
+    void load();
+  }, []);
+
+  const grouped = useMemo(() => {
+    const byModule = new Map<string, PermRow[]>();
+    perms.forEach((p) => {
+      const list = byModule.get(p.module) ?? [];
+      list.push(p);
+      byModule.set(p.module, list);
+    });
+    return Array.from(byModule.entries());
+  }, [perms]);
+
+  const togglePerm = async (permKey: string) => {
+    if (activeRole === "admin") {
+      toast.info("Admin always has every permission");
+      return;
+    }
+    setSavingKey(permKey);
+    const granted = matrix.get(permKey)?.has(activeRole) ?? false;
+    if (granted) {
+      const { error } = await supabase
+        .from("role_permissions")
+        .delete()
+        .eq("role", activeRole)
+        .eq("permission_key", permKey);
+      if (error) {
+        toast.error(error.message);
+        setSavingKey(null);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("role_permissions")
+        .insert({ role: activeRole, permission_key: permKey });
+      if (error) {
+        toast.error(error.message);
+        setSavingKey(null);
+        return;
+      }
+    }
+    setMatrix((prev) => {
+      const next = new Map(prev);
+      const set = new Set(next.get(permKey) ?? []);
+      if (granted) set.delete(activeRole);
+      else set.add(activeRole);
+      next.set(permKey, set);
+      return next;
+    });
+    setSavingKey(null);
+  };
+
+  if (loading) {
+    return (
+      <SettingsPanel title="Roles & Permissions" description="Loading…">
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      </SettingsPanel>
+    );
+  }
 
   return (
     <SettingsPanel
       title="Roles & Permissions"
-      description="Define what each role can see and do across the system"
-      primaryAction={{ label: "Add Role" }}
+      description="Pick a role on the left, toggle the permissions it grants on the right. Changes save instantly."
     >
-      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4">
-        <div className="space-y-1">
-          {mockRoles.map((r) => (
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+        <div className="space-y-1 max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
+          {ROLE_META.map((r) => (
             <button
-              key={r.id}
-              onClick={() => setActiveRoleId(r.id)}
+              key={r.key}
+              onClick={() => setActiveRole(r.key)}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md border transition-colors",
-                activeRoleId === r.id
+                activeRole === r.key
                   ? "bg-primary/10 border-primary/30"
                   : "bg-card border-border/60 hover:bg-muted/30",
               )}
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{r.name}</span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">{r.memberCount}</span>
+                <span className="text-sm font-medium text-foreground">{r.label}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {memberCount.get(r.key) ?? 0}
+                </span>
               </div>
               <p className="text-[11px] text-muted-foreground truncate mt-0.5">{r.description}</p>
             </button>
           ))}
         </div>
 
-        <RolePermissions role={role} />
+        <div className="bg-secondary/20 rounded-lg border border-border/40 p-4 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                {ROLE_META.find((r) => r.key === activeRole)?.label}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {ROLE_META.find((r) => r.key === activeRole)?.description}
+              </p>
+            </div>
+            {activeRole === "admin" && (
+              <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded">
+                Always all permissions
+              </span>
+            )}
+          </div>
+
+          {grouped.map(([module, items]) => (
+            <div key={module}>
+              <h4 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">
+                {module}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {items.map((p) => {
+                  const granted = activeRole === "admin" || (matrix.get(p.key)?.has(activeRole) ?? false);
+                  return (
+                    <label
+                      key={p.key}
+                      className={cn(
+                        "flex items-start gap-2 rounded-md border px-2.5 py-1.5 cursor-pointer transition-colors",
+                        granted
+                          ? "border-success/30 bg-success/5"
+                          : "border-border/40 bg-card hover:bg-muted/30",
+                        activeRole === "admin" && "cursor-not-allowed opacity-90",
+                      )}
+                    >
+                      <Checkbox
+                        checked={granted}
+                        disabled={activeRole === "admin" || savingKey === p.key}
+                        onCheckedChange={() => togglePerm(p.key)}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0">
+                        <span className={cn("text-xs", granted ? "text-foreground" : "text-muted-foreground")}>
+                          {p.label}
+                        </span>
+                        {p.description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-1">{p.description}</p>
+                        )}
+                      </div>
+                      {savingKey === p.key && (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </SettingsPanel>
-  );
-}
-
-function RolePermissions({ role }: { role: Role }) {
-  const groups: { title: string; keys: PermissionKey[] }[] = [
-    { title: "Leads", keys: ["view-leads", "edit-leads"] },
-    { title: "Clients", keys: ["view-clients", "edit-clients"] },
-    { title: "Authorizations", keys: ["view-auths", "edit-auths"] },
-    { title: "QA", keys: ["view-qa", "edit-qa"] },
-    { title: "System", keys: ["run-automations", "access-reports", "manage-team", "manage-settings"] },
-  ];
-
-  return (
-    <div className="bg-secondary/20 rounded-lg border border-border/40 p-4 space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">{role.name}</h3>
-        <p className="text-xs text-muted-foreground">{role.description}</p>
-      </div>
-      {groups.map((g) => (
-        <div key={g.title}>
-          <h4 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1.5">{g.title}</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {g.keys.map((k) => (
-              <PermRow key={k} label={permissionLabels[k]} granted={role.permissions[k]} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PermRow({ label, granted }: { label: string; granted: boolean }) {
-  return (
-    <div className={cn(
-      "flex items-center gap-2 rounded-md border px-2.5 py-1.5",
-      granted ? "border-success/30 bg-success/5" : "border-border/40 bg-card",
-    )}>
-      <div className={cn(
-        "h-4 w-4 rounded inline-flex items-center justify-center shrink-0",
-        granted ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground",
-      )}>
-        {granted ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : <X className="h-2.5 w-2.5" strokeWidth={3} />}
-      </div>
-      <span className={cn("text-xs", granted ? "text-foreground" : "text-muted-foreground")}>{label}</span>
-    </div>
   );
 }
