@@ -2,7 +2,8 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
-  CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase
+  CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
+  HeartHandshake, IdCard, Network, GraduationCap, Clock
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
@@ -64,11 +65,27 @@ const navSections: { title?: string; items: NavItem[] }[] = [
   },
 ];
 
+const hrSection: { title: string; items: NavItem[] } = {
+  title: "HR Suite",
+  items: [
+    { label: "HR Dashboard", icon: HeartHandshake, path: "/hr", perm: "hr.view" },
+    { label: "Employees",    icon: IdCard,         path: "/hr/directory", perm: "hr.employees.view" },
+    { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
+    { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
+  ],
+};
+
 export function AppSidebar() {
   const location = useLocation();
   const { hasPerm } = useAuth();
 
-  const sections = navSections
+  const allSections = [...navSections];
+  // Insert HR Suite before Admin so it sits with the operations modules
+  const adminIndex = allSections.findIndex((s) => s.title === "Admin");
+  if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
+  else allSections.push(hrSection);
+
+  const sections = allSections
     .map((s) => ({
       ...s,
       items: s.items.filter((item) => hasPerm(item.perm)),
