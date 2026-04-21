@@ -561,6 +561,7 @@ function NodeCard({
   return (
     <button
       onClick={() => onSelect(node.emp.id)}
+      data-node-id={node.emp.id}
       className={cn(
         "group flex items-center gap-2.5 p-2 pr-3 rounded-lg ring-1 transition-all min-w-[260px] text-left",
         meta.ring,
