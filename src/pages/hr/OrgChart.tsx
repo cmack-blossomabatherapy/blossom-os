@@ -191,7 +191,12 @@ export default function OrgChart() {
   const [view, setView] = useState<"hierarchy" | "department" | "state">(persisted.view ?? "hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const offscreenExportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"png" | "pdf">("pdf");
+  const [exportScope, setExportScope] = useState<"full" | "subtree">("full");
+  const [exportLegend, setExportLegend] = useState(true);
 
   // Persist view + collapsed
   useEffect(() => { savePersisted({ view }); }, [view]);
