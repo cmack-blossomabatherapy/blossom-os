@@ -16,8 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmployeeAvatar } from "@/components/hr/EmployeeAvatar";
@@ -172,6 +175,62 @@ function savePersisted(patch: Partial<PersistedState>) {
   } catch { /* ignore */ }
 }
 
+// ---------- Multi-page PDF export helper ----------
+// Splits a tall PNG dataUrl into Letter-landscape pages and saves the PDF.
+async function exportPaginatedPdf(dataUrl: string, filename: string) {
+  const { jsPDF } = await import("jspdf");
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((res) => { img.onload = res; });
+
+  // Letter landscape in pt (792 x 612), use 36pt margin
+  const PAGE_W = 792;
+  const PAGE_H = 612;
+  const MARGIN = 24;
+  const innerW = PAGE_W - MARGIN * 2;
+  const innerH = PAGE_H - MARGIN * 2;
+
+  // Scale image so its WIDTH fits on a page; paginate vertically.
+  const scale = innerW / img.width;
+  const scaledH = img.height * scale;
+
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+
+  // If single page is enough, just place it
+  if (scaledH <= innerH) {
+    pdf.addImage(dataUrl, "PNG", MARGIN, MARGIN, innerW, scaledH);
+    pdf.save(filename);
+    return;
+  }
+
+  // Otherwise tile vertically using a slicing canvas
+  const sliceHeightPx = innerH / scale; // source-pixel height per page
+  const totalPages = Math.ceil(img.height / sliceHeightPx);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+
+  for (let i = 0; i < totalPages; i++) {
+    const sy = Math.floor(i * sliceHeightPx);
+    const sh = Math.min(Math.ceil(sliceHeightPx), img.height - sy);
+    canvas.width = img.width;
+    canvas.height = sh;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, sy, img.width, sh, 0, 0, img.width, sh);
+    const sliceDataUrl = canvas.toDataURL("image/png");
+
+    if (i > 0) pdf.addPage("letter", "landscape");
+    pdf.addImage(sliceDataUrl, "PNG", MARGIN, MARGIN, innerW, sh * scale);
+
+    // Page footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(140);
+    pdf.text(`Page ${i + 1} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 10, { align: "right" });
+  }
+
+  pdf.save(filename);
+}
+
 // ---------- Component ----------
 
 export default function OrgChart() {
@@ -185,47 +244,50 @@ export default function OrgChart() {
   const [view, setView] = useState<"hierarchy" | "department" | "state">(persisted.view ?? "hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const offscreenExportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"png" | "pdf">("pdf");
+  const [exportScope, setExportScope] = useState<"full" | "subtree">("full");
+  const [exportLegend, setExportLegend] = useState(true);
 
   // Persist view + collapsed
   useEffect(() => { savePersisted({ view }); }, [view]);
   useEffect(() => { savePersisted({ collapsed: Array.from(collapsed) }); }, [collapsed]);
 
-  const handleExport = async (format: "png" | "pdf") => {
-    if (!exportRef.current) return;
+  const runExport = async () => {
     setExporting(true);
     try {
-      // Reset zoom/pan so the full chart is captured at 1:1 in the hierarchy view
-      zoomRef.current?.resetTransform(0);
-      await new Promise((r) => setTimeout(r, 50));
+      // Wait for the offscreen export node to render with the chosen options
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => setTimeout(r, 80));
+      const node = offscreenExportRef.current;
+      if (!node) throw new Error("Export node not ready");
+
       const { toPng } = await import("html-to-image");
-      const node = exportRef.current;
       const dataUrl = await toPng(node, {
         cacheBust: true,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
-        style: { transform: "none" },
+        width: node.scrollWidth,
+        height: node.scrollHeight,
       });
-      const stamp = new Date().toISOString().slice(0, 10);
-      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
-      const base = `org-chart-${view}${filterTag}-${stamp}`;
 
-      if (format === "png") {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const scopeTag = exportScope === "subtree" && selected ? `-${selected.emp.last_name.toLowerCase()}` : "";
+      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
+      const base = `org-chart-${view}${scopeTag}${filterTag}-${stamp}`;
+
+      if (exportFormat === "png") {
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = `${base}.png`;
         a.click();
       } else {
-        const { jsPDF } = await import("jspdf");
-        const img = new Image();
-        img.src = dataUrl;
-        await new Promise((res) => { img.onload = res; });
-        const orientation = img.width >= img.height ? "landscape" : "portrait";
-        const pdf = new jsPDF({ orientation, unit: "px", format: [img.width, img.height] });
-        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
-        pdf.save(`${base}.pdf`);
+        await exportPaginatedPdf(dataUrl, `${base}.pdf`);
       }
-      toast.success(`Exported as ${format.toUpperCase()}`);
+      toast.success(`Exported as ${exportFormat.toUpperCase()}`);
+      setExportOpen(false);
     } catch (err) {
       console.error(err);
       toast.error("Export failed");
@@ -347,22 +409,16 @@ export default function OrgChart() {
           >
             <Crosshair className="h-3.5 w-3.5 mr-1.5" /> Focus selected
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={exporting}>
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                {exporting ? "Exporting…" : "Export chart"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => handleExport("png")}>
-                <FileImage className="h-3.5 w-3.5 mr-2" /> PNG image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                <FileText className="h-3.5 w-3.5 mr-2" /> PDF document
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            disabled={exporting}
+            onClick={() => setExportOpen(true)}
+          >
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            {exporting ? "Exporting…" : "Export chart"}
+          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="h-8 text-xs">
             <Maximize2 className="h-3.5 w-3.5 mr-1.5" /> Expand all
           </Button>
@@ -522,6 +578,187 @@ export default function OrgChart() {
           <DetailPanel node={selected} tree={tree} onSelect={setSelectedId} />
         </div>
       )}
+
+      {/* ===== Off-screen export render (always present so the ref is stable) ===== */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: "-10000px",
+          left: "-10000px",
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <div
+          ref={offscreenExportRef}
+          className="bg-background"
+          style={{ width: "1400px", padding: "32px" }}
+        >
+          <ExportHeader
+            view={view}
+            scope={exportScope}
+            search={search}
+            selected={selected}
+          />
+          <div className="mt-4">
+            {view === "hierarchy" && (
+              <div className="min-w-fit">
+                {(exportScope === "subtree" && selected ? [selected] : tree.roots).map((root) => (
+                  <TreeNode
+                    key={root.emp.id}
+                    node={root}
+                    depth={0}
+                    collapsed={new Set()}
+                    onToggle={() => {}}
+                    selectedId={null}
+                    onSelect={() => {}}
+                    matches={null}
+                  />
+                ))}
+              </div>
+            )}
+            {view === "department" && (
+              <DepartmentView
+                employees={
+                  exportScope === "subtree" && selected
+                    ? [selected.emp, ...descendantsOf(selected).map((n) => n.emp)]
+                    : employees
+                }
+                depts={depts}
+                selectedId={null}
+                onSelect={() => {}}
+                matches={null}
+              />
+            )}
+            {view === "state" && (
+              <StateView
+                employees={
+                  exportScope === "subtree" && selected
+                    ? [selected.emp, ...descendantsOf(selected).map((n) => n.emp)]
+                    : employees
+                }
+                depts={depts}
+                selectedId={null}
+                onSelect={() => {}}
+                matches={null}
+              />
+            )}
+          </div>
+          {exportLegend && <ExportLegend />}
+        </div>
+      </div>
+
+      {/* ===== Export options dialog ===== */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export org chart</DialogTitle>
+            <DialogDescription>
+              Choose what to export and how. PDFs auto-paginate when the chart is too tall for one page.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Format
+              </Label>
+              <RadioGroup
+                value={exportFormat}
+                onValueChange={(v) => setExportFormat(v as "png" | "pdf")}
+                className="mt-2 grid grid-cols-2 gap-2"
+              >
+                <Label
+                  htmlFor="fmt-pdf"
+                  className="flex items-center gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="pdf" id="fmt-pdf" />
+                  <FileText className="h-4 w-4" /> PDF (multi-page)
+                </Label>
+                <Label
+                  htmlFor="fmt-png"
+                  className="flex items-center gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="png" id="fmt-png" />
+                  <FileImage className="h-4 w-4" /> PNG image
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Scope
+              </Label>
+              <RadioGroup
+                value={exportScope}
+                onValueChange={(v) => setExportScope(v as "full" | "subtree")}
+                className="mt-2 space-y-2"
+              >
+                <Label
+                  htmlFor="scope-full"
+                  className="flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                >
+                  <RadioGroupItem value="full" id="scope-full" className="mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-medium text-foreground">Full chart</p>
+                    <p className="text-muted-foreground">Everyone in the current view.</p>
+                  </div>
+                </Label>
+                <Label
+                  htmlFor="scope-subtree"
+                  className={cn(
+                    "flex items-start gap-2 border border-border rounded-md p-2 cursor-pointer hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5",
+                    !selected && "opacity-50 cursor-not-allowed",
+                  )}
+                >
+                  <RadioGroupItem
+                    value="subtree"
+                    id="scope-subtree"
+                    className="mt-0.5"
+                    disabled={!selected}
+                  />
+                  <div className="text-xs">
+                    <p className="font-medium text-foreground">
+                      Selected employee &amp; direct reports
+                    </p>
+                    <p className="text-muted-foreground">
+                      {selected
+                        ? `Centers on ${employeeFullName(selected.emp)} and their team.`
+                        : "Select an employee first to enable this."}
+                    </p>
+                  </div>
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div className="flex items-center justify-between border border-border rounded-md p-3">
+              <div>
+                <Label htmlFor="export-legend" className="text-sm font-medium">
+                  Include legend
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Color &amp; title key matching the on-screen chart.
+                </p>
+              </div>
+              <Switch
+                id="export-legend"
+                checked={exportLegend}
+                onCheckedChange={setExportLegend}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(false)} disabled={exporting}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={runExport} disabled={exporting}>
+              {exporting ? "Exporting…" : `Export ${exportFormat.toUpperCase()}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
@@ -934,6 +1171,75 @@ function KpiTile({
         )}
       </div>
       <p className={cn("text-lg font-bold mt-1", accentClass[accent].split(" ")[0])}>{value}</p>
+    </div>
+  );
+}
+
+// ---------- Export header & legend ----------
+
+function ExportHeader({
+  view, scope, search, selected,
+}: {
+  view: "hierarchy" | "department" | "state";
+  scope: "full" | "subtree";
+  search: string;
+  selected: Node | null;
+}) {
+  const stamp = new Date().toLocaleString();
+  const viewLabel = view === "hierarchy" ? "Hierarchy" : view === "department" ? "By Department" : "By State";
+  const scopeLabel = scope === "subtree" && selected
+    ? `${employeeFullName(selected.emp)} & direct reports`
+    : "Full organization";
+  return (
+    <div className="flex items-end justify-between border-b border-border pb-3">
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          Blossom ABA Therapy
+        </p>
+        <h1 className="text-xl font-bold text-foreground">Organizational Chart</h1>
+        <p className="text-xs text-muted-foreground mt-1">
+          {viewLabel} · {scopeLabel}
+          {search.trim() && ` · Filter: "${search.trim()}"`}
+        </p>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Generated {stamp}</p>
+    </div>
+  );
+}
+
+function ExportLegend() {
+  const items: { level: Level }[] = [
+    { level: "ceo" },
+    { level: "c_suite" },
+    { level: "director" },
+    { level: "manager" },
+    { level: "lead" },
+    { level: "ic" },
+  ];
+  return (
+    <div className="mt-6 border-t border-border pt-3">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+        Legend
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map(({ level }) => {
+          const meta = LEVEL_META[level];
+          return (
+            <span
+              key={level}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border",
+                meta.chip,
+              )}
+            >
+              <span className={cn("h-2 w-2 rounded-full", meta.chip.split(" ").find((c) => c.startsWith("text-")))}>
+                <span className="sr-only">{meta.label}</span>
+              </span>
+              {meta.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
