@@ -6,58 +6,79 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 10%;
+    /* Blossom ABA Therapy brand palette
+       Primary teal #3999AA = hsl(189 50% 45%)
+       Petals: orange, yellow, green, sage, purple, pink, red */
+    --background: 190 25% 98%;
+    --foreground: 200 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 200 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 200 30% 12%;
 
-    --primary: 211 70% 45%;
+    /* Brand teal */
+    --primary: 189 50% 45%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 189 55% 58%;
 
-    --secondary: 210 20% 95%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 189 30% 94%;
+    --secondary-foreground: 200 35% 20%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 190 20% 94%;
+    --muted-foreground: 200 12% 45%;
 
-    --accent: 170 55% 42%;
+    /* Accent uses warm petal orange for contrast */
+    --accent: 25 69% 50%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 65% 55%;
+    --destructive: 358 59% 56%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 18% 90%;
-    --input: 214 18% 90%;
-    --ring: 211 70% 45%;
+    --border: 190 20% 88%;
+    --input: 190 20% 88%;
+    --ring: 189 50% 45%;
 
     --radius: 0.625rem;
 
-    /* Custom tokens */
-    --sidebar-background: 220 20% 12%;
-    --sidebar-foreground: 210 15% 75%;
-    --sidebar-primary: 211 70% 55%;
+    /* Sidebar — deep teal-tinted navy that pairs with the brand */
+    --sidebar-background: 195 35% 15%;
+    --sidebar-foreground: 190 20% 78%;
+    --sidebar-primary: 189 55% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 18% 18%;
-    --sidebar-accent-foreground: 210 15% 90%;
-    --sidebar-border: 220 15% 20%;
-    --sidebar-ring: 211 70% 55%;
-    --sidebar-muted: 220 12% 40%;
+    --sidebar-accent: 195 30% 22%;
+    --sidebar-accent-foreground: 190 25% 95%;
+    --sidebar-border: 195 30% 22%;
+    --sidebar-ring: 189 55% 55%;
+    --sidebar-muted: 195 15% 50%;
 
     --topbar-height: 3.5rem;
 
-    --success: 152 55% 42%;
+    /* Status colors derived from the petal palette */
+    --success: 117 32% 45%;          /* sage green petal */
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 211 70% 55%;
+    --warning: 51 75% 48%;            /* yellow petal (slightly darker for contrast) */
+    --warning-foreground: 200 30% 15%;
+    --info: 189 50% 45%;              /* brand teal */
     --info-foreground: 0 0% 100%;
 
     --surface: 0 0% 100%;
-    --surface-raised: 210 20% 99%;
+    --surface-raised: 190 25% 99%;
+
+    /* Petal accents — available for charts, badges, illustrations */
+    --petal-orange: 25 69% 50%;
+    --petal-yellow: 51 75% 50%;
+    --petal-green:  72 52% 47%;
+    --petal-sage:   117 27% 51%;
+    --petal-purple: 256 35% 38%;
+    --petal-pink:   332 47% 64%;
+    --petal-red:    358 59% 56%;
+
+    /* Brand gradients & shadows */
+    --gradient-brand: linear-gradient(135deg, hsl(189 50% 45%), hsl(189 55% 58%));
+    --gradient-petal: linear-gradient(135deg, hsl(25 69% 50%), hsl(332 47% 64%));
+    --shadow-brand: 0 10px 30px -10px hsl(189 50% 45% / 0.35);
   }
 }
 
