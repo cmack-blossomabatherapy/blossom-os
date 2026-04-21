@@ -164,6 +164,48 @@ export default function OrgChart() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (format: "png" | "pdf") => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const node = exportRef.current;
+      const dataUrl = await toPng(node, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        style: { transform: "none" },
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
+      const base = `org-chart-${view}${filterTag}-${stamp}`;
+
+      if (format === "png") {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${base}.png`;
+        a.click();
+      } else {
+        const { jsPDF } = await import("jspdf");
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((res) => { img.onload = res; });
+        const orientation = img.width >= img.height ? "landscape" : "portrait";
+        const pdf = new jsPDF({ orientation, unit: "px", format: [img.width, img.height] });
+        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
+        pdf.save(`${base}.pdf`);
+      }
+      toast.success(`Exported as ${format.toUpperCase()}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     void (async () => {
