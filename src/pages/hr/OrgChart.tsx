@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
-  ZoomIn, ZoomOut, Maximize, RotateCcw,
+  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
@@ -15,6 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmployeeAvatar } from "@/components/hr/EmployeeAvatar";
 import { EmployeeStatusBadge } from "@/components/hr/HRStatusBadge";
@@ -160,6 +164,51 @@ export default function OrgChart() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (format: "png" | "pdf") => {
+    if (!exportRef.current) return;
+    setExporting(true);
+    try {
+      // Reset zoom/pan so the full chart is captured at 1:1 in the hierarchy view
+      zoomRef.current?.resetTransform(0);
+      await new Promise((r) => setTimeout(r, 50));
+      const { toPng } = await import("html-to-image");
+      const node = exportRef.current;
+      const dataUrl = await toPng(node, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        style: { transform: "none" },
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
+      const base = `org-chart-${view}${filterTag}-${stamp}`;
+
+      if (format === "png") {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `${base}.png`;
+        a.click();
+      } else {
+        const { jsPDF } = await import("jspdf");
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((res) => { img.onload = res; });
+        const orientation = img.width >= img.height ? "landscape" : "portrait";
+        const pdf = new jsPDF({ orientation, unit: "px", format: [img.width, img.height] });
+        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
+        pdf.save(`${base}.pdf`);
+      }
+      toast.success(`Exported as ${format.toUpperCase()}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     void (async () => {
@@ -229,6 +278,22 @@ export default function OrgChart() {
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={exporting}>
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                {exporting ? "Exporting…" : "Export chart"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={() => handleExport("png")}>
+                <FileImage className="h-3.5 w-3.5 mr-2" /> PNG image
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                <FileText className="h-3.5 w-3.5 mr-2" /> PDF document
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" size="sm" onClick={expandAll} className="h-8 text-xs">
             <Maximize2 className="h-3.5 w-3.5 mr-1.5" /> Expand all
           </Button>
@@ -324,7 +389,7 @@ export default function OrgChart() {
                         wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing"
                         contentClass="!p-6"
                       >
-                        <div className="min-w-fit">
+                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit bg-background p-4">
                           {tree.roots.map((root) => (
                             <TreeNode
                               key={root.emp.id}
@@ -347,25 +412,29 @@ export default function OrgChart() {
 
             {view === "department" && (
               <ScrollArea className="h-[680px]">
-                <DepartmentView
-                  employees={employees}
-                  depts={depts}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  matches={matches}
-                />
+                <div ref={view === "department" ? exportRef : undefined} className="bg-background p-2">
+                  <DepartmentView
+                    employees={employees}
+                    depts={depts}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    matches={matches}
+                  />
+                </div>
               </ScrollArea>
             )}
 
             {view === "state" && (
               <ScrollArea className="h-[680px]">
-                <StateView
-                  employees={employees}
-                  depts={depts}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  matches={matches}
-                />
+                <div ref={view === "state" ? exportRef : undefined} className="bg-background p-2">
+                  <StateView
+                    employees={employees}
+                    depts={depts}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    matches={matches}
+                  />
+                </div>
               </ScrollArea>
             )}
           </Card>
