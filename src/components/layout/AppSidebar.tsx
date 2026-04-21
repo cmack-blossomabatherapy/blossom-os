@@ -6,7 +6,7 @@ import {
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen,
 } from "lucide-react";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
