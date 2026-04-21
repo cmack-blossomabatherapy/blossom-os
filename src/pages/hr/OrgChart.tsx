@@ -178,6 +178,62 @@ function savePersisted(patch: Partial<PersistedState>) {
   } catch { /* ignore */ }
 }
 
+// ---------- Multi-page PDF export helper ----------
+// Splits a tall PNG dataUrl into Letter-landscape pages and saves the PDF.
+async function exportPaginatedPdf(dataUrl: string, filename: string) {
+  const { jsPDF } = await import("jspdf");
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((res) => { img.onload = res; });
+
+  // Letter landscape in pt (792 x 612), use 36pt margin
+  const PAGE_W = 792;
+  const PAGE_H = 612;
+  const MARGIN = 24;
+  const innerW = PAGE_W - MARGIN * 2;
+  const innerH = PAGE_H - MARGIN * 2;
+
+  // Scale image so its WIDTH fits on a page; paginate vertically.
+  const scale = innerW / img.width;
+  const scaledH = img.height * scale;
+
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "letter" });
+
+  // If single page is enough, just place it
+  if (scaledH <= innerH) {
+    pdf.addImage(dataUrl, "PNG", MARGIN, MARGIN, innerW, scaledH);
+    pdf.save(filename);
+    return;
+  }
+
+  // Otherwise tile vertically using a slicing canvas
+  const sliceHeightPx = innerH / scale; // source-pixel height per page
+  const totalPages = Math.ceil(img.height / sliceHeightPx);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+
+  for (let i = 0; i < totalPages; i++) {
+    const sy = Math.floor(i * sliceHeightPx);
+    const sh = Math.min(Math.ceil(sliceHeightPx), img.height - sy);
+    canvas.width = img.width;
+    canvas.height = sh;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, sy, img.width, sh, 0, 0, img.width, sh);
+    const sliceDataUrl = canvas.toDataURL("image/png");
+
+    if (i > 0) pdf.addPage("letter", "landscape");
+    pdf.addImage(sliceDataUrl, "PNG", MARGIN, MARGIN, innerW, sh * scale);
+
+    // Page footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(140);
+    pdf.text(`Page ${i + 1} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 10, { align: "right" });
+  }
+
+  pdf.save(filename);
+}
+
 // ---------- Component ----------
 
 export default function OrgChart() {
