@@ -202,41 +202,39 @@ export default function OrgChart() {
   useEffect(() => { savePersisted({ view }); }, [view]);
   useEffect(() => { savePersisted({ collapsed: Array.from(collapsed) }); }, [collapsed]);
 
-  const handleExport = async (format: "png" | "pdf") => {
-    if (!exportRef.current) return;
+  const runExport = async () => {
     setExporting(true);
     try {
-      // Reset zoom/pan so the full chart is captured at 1:1 in the hierarchy view
-      zoomRef.current?.resetTransform(0);
-      await new Promise((r) => setTimeout(r, 50));
+      // Wait for the offscreen export node to render with the chosen options
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => setTimeout(r, 80));
+      const node = offscreenExportRef.current;
+      if (!node) throw new Error("Export node not ready");
+
       const { toPng } = await import("html-to-image");
-      const node = exportRef.current;
       const dataUrl = await toPng(node, {
         cacheBust: true,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
-        style: { transform: "none" },
+        width: node.scrollWidth,
+        height: node.scrollHeight,
       });
-      const stamp = new Date().toISOString().slice(0, 10);
-      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
-      const base = `org-chart-${view}${filterTag}-${stamp}`;
 
-      if (format === "png") {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const scopeTag = exportScope === "subtree" && selected ? `-${selected.emp.last_name.toLowerCase()}` : "";
+      const filterTag = search.trim() ? `-${search.trim().replace(/\s+/g, "_").slice(0, 24)}` : "";
+      const base = `org-chart-${view}${scopeTag}${filterTag}-${stamp}`;
+
+      if (exportFormat === "png") {
         const a = document.createElement("a");
         a.href = dataUrl;
         a.download = `${base}.png`;
         a.click();
       } else {
-        const { jsPDF } = await import("jspdf");
-        const img = new Image();
-        img.src = dataUrl;
-        await new Promise((res) => { img.onload = res; });
-        const orientation = img.width >= img.height ? "landscape" : "portrait";
-        const pdf = new jsPDF({ orientation, unit: "px", format: [img.width, img.height] });
-        pdf.addImage(dataUrl, "PNG", 0, 0, img.width, img.height);
-        pdf.save(`${base}.pdf`);
+        await exportPaginatedPdf(dataUrl, `${base}.pdf`);
       }
-      toast.success(`Exported as ${format.toUpperCase()}`);
+      toast.success(`Exported as ${exportFormat.toUpperCase()}`);
+      setExportOpen(false);
     } catch (err) {
       console.error(err);
       toast.error("Export failed");
