@@ -21,6 +21,9 @@ import { AccessTab } from "@/components/hr/profile/AccessTab";
 import { CasesTab } from "@/components/hr/profile/CasesTab";
 import { PlaceholderTab } from "@/components/hr/profile/PlaceholderTab";
 import { TimeClockTab } from "@/components/hr/profile/TimeClockTab";
+import { ReviewsTab } from "@/components/hr/profile/ReviewsTab";
+import { TrainingTab } from "@/components/hr/profile/TrainingTab";
+import { PayrollTab } from "@/components/hr/profile/PayrollTab";
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
@@ -65,6 +68,9 @@ export default function EmployeeProfile() {
   const showNotes = hasPerm("hr.notes.view");
   const showCases = hasPerm("hr.cases.view");
   const showTimeClock = hasPerm("hr.timeclock.view");
+  const showReviews = hasPerm("hr.reviews.view");
+  const showTraining = hasPerm("hr.training.view");
+  const showCompensation = hasPerm("hr.bonuses.view") || hasPerm("hr.paychanges.view") || hasPerm("hr.payroll.view");
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -100,7 +106,7 @@ export default function EmployeeProfile() {
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="reviews">Reviews</TabsTrigger>
           <TabsTrigger value="training">Training</TabsTrigger>
-          {showPayroll && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
+          {showCompensation && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
           {showTimeClock && <TabsTrigger value="timeclock">Time / Hours</TabsTrigger>}
           <TabsTrigger value="documents">Documents</TabsTrigger>
           {showNotes && <TabsTrigger value="notes">Notes</TabsTrigger>}
@@ -114,9 +120,11 @@ export default function EmployeeProfile() {
         <TabsContent value="employment"><EmploymentTab employee={employee} department={department} onChange={() => load(employee.id)} /></TabsContent>
         <TabsContent value="hierarchy"><HierarchyTab employee={employee} /></TabsContent>
         <TabsContent value="tasks"><TasksTab employee={employee} /></TabsContent>
-        <TabsContent value="reviews"><PlaceholderTab title="Reviews + Performance" message="3-month, 6-month, BCBA support meetings, ratings, signatures, bonus triggers — coming in Phase 3." /></TabsContent>
-        <TabsContent value="training"><PlaceholderTab title="Training + Compliance" message="Onboarding modules, role/state-specific training, recurring requirements, expiration alerts — coming in Phase 3." /></TabsContent>
-        {showPayroll && <TabsContent value="payroll"><PlaceholderTab title="Payroll" message={`Pay rate: ${employee.pay_rate ? `$${employee.pay_rate}` : "not set"}. Viventium status: ${employee.viventium_sync_status ?? "not connected"}. Full workflows coming in Phase 3.`} /></TabsContent>}
+        {showReviews && <TabsContent value="reviews"><ReviewsTab employee={employee} /></TabsContent>}
+        {!showReviews && <TabsContent value="reviews"><PlaceholderTab title="Reviews" message="You don't have permission to view performance reviews." /></TabsContent>}
+        {showTraining && <TabsContent value="training"><TrainingTab employee={employee} /></TabsContent>}
+        {!showTraining && <TabsContent value="training"><PlaceholderTab title="Training" message="You don't have permission to view training assignments." /></TabsContent>}
+        {showCompensation && <TabsContent value="payroll"><PayrollTab employee={employee} onChange={() => load(employee.id)} /></TabsContent>}
         {showTimeClock && <TabsContent value="timeclock"><TimeClockTab employee={employee} /></TabsContent>}
         <TabsContent value="documents"><DocumentsTab employee={employee} /></TabsContent>
         {showNotes && <TabsContent value="notes"><NotesTab employee={employee} /></TabsContent>}
