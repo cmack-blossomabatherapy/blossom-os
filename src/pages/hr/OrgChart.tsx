@@ -436,7 +436,7 @@ export default function OrgChart() {
                   wheel={{ step: 0.1 }}
                   doubleClick={{ disabled: true }}
                   panning={{ excluded: ["button", "a", "input"] }}
-                  onTransformed={(_ref, state) => {
+                  onTransform={(_ref, state) => {
                     savePersisted({
                       transform: {
                         scale: state.scale,
