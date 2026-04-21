@@ -22,12 +22,22 @@ type Role =
   | "finance"
   | "hr"
   | "phone_support"
+  | "hr_admin"
+  | "hr_manager"
+  | "recruiting_assistant"
+  | "payroll_admin"
+  | "state_director"
+  | "clinic_director"
+  | "dept_manager"
   | "staff"
   | "viewer";
 
 const VALID_ROLES: readonly Role[] = [
   "admin","exec","ops_manager","intake","auth_team","qa","scheduling",
-  "staffing","clinic","finance","hr","phone_support","staff","viewer",
+  "staffing","clinic","finance","hr","phone_support",
+  "hr_admin","hr_manager","recruiting_assistant","payroll_admin",
+  "state_director","clinic_director","dept_manager",
+  "staff","viewer",
 ];
 
 Deno.serve(async (req) => {
