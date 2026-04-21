@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
-  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText,
+  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText, Crosshair,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
