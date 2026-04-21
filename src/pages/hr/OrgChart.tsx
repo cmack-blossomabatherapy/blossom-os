@@ -412,25 +412,29 @@ export default function OrgChart() {
 
             {view === "department" && (
               <ScrollArea className="h-[680px]">
-                <DepartmentView
-                  employees={employees}
-                  depts={depts}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  matches={matches}
-                />
+                <div ref={view === "department" ? exportRef : undefined} className="bg-background p-2">
+                  <DepartmentView
+                    employees={employees}
+                    depts={depts}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    matches={matches}
+                  />
+                </div>
               </ScrollArea>
             )}
 
             {view === "state" && (
               <ScrollArea className="h-[680px]">
-                <StateView
-                  employees={employees}
-                  depts={depts}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                  matches={matches}
-                />
+                <div ref={view === "state" ? exportRef : undefined} className="bg-background p-2">
+                  <StateView
+                    employees={employees}
+                    depts={depts}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    matches={matches}
+                  />
+                </div>
               </ScrollArea>
             )}
           </Card>
