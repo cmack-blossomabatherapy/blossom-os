@@ -8,65 +8,70 @@ import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
-const navSections = [
+interface NavItem {
+  label: string;
+  icon: typeof LayoutDashboard;
+  path: string;
+  perm: string;
+}
+
+const navSections: { title?: string; items: NavItem[] }[] = [
   {
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/" },
+      { label: "Dashboard", icon: LayoutDashboard, path: "/", perm: "dashboard.view" },
     ],
   },
   {
     title: "Pipeline",
     items: [
-      { label: "Leads", icon: Users, path: "/leads" },
-      { label: "Clients", icon: UserCheck, path: "/clients" },
-      { label: "Authorizations", icon: ShieldCheck, path: "/authorizations" },
+      { label: "Leads", icon: Users, path: "/leads", perm: "leads.view" },
+      { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
+      { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "auth.view" },
     ],
   },
   {
     title: "Operations",
     items: [
-      { label: "Operations", icon: Workflow, path: "/operations" },
-      { label: "Scheduling", icon: Calendar, path: "/scheduling" },
-      { label: "Recruiting", icon: Briefcase, path: "/recruiting" },
-      { label: "Staffing", icon: UserPlus, path: "/staffing" },
-      { label: "QA", icon: ClipboardCheck, path: "/qa" },
-      { label: "Clinics", icon: Building2, path: "/clinics" },
+      { label: "Operations", icon: Workflow, path: "/operations", perm: "operations.view" },
+      { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "scheduling.view" },
+      { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
+      { label: "Staffing", icon: UserPlus, path: "/staffing", perm: "staffing.view" },
+      { label: "QA", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
+      { label: "Clinics", icon: Building2, path: "/clinics", perm: "clinics.view" },
     ],
   },
   {
     title: "Records",
     items: [
-      { label: "Phone Calls", icon: Phone, path: "/phone-calls" },
-      { label: "Documents", icon: FileText, path: "/documents" },
-      { label: "Tasks", icon: CheckSquare, path: "/tasks" },
+      { label: "Phone Calls", icon: Phone, path: "/phone-calls", perm: "phone.view" },
+      { label: "Documents", icon: FileText, path: "/documents", perm: "documents.view" },
+      { label: "Tasks", icon: CheckSquare, path: "/tasks", perm: "tasks.view" },
     ],
   },
   {
     title: "Intelligence",
     items: [
-      { label: "Reports", icon: BarChart3, path: "/reports" },
-      { label: "Automations", icon: Zap, path: "/automations" },
+      { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
+      { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
     ],
   },
   {
     title: "Admin",
     items: [
-      { label: "Team", icon: UsersRound, path: "/team" },
-      { label: "Settings", icon: Settings, path: "/settings" },
+      { label: "Team", icon: UsersRound, path: "/team", perm: "team.view" },
+      { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
     ],
   },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { hasPerm } = useAuth();
 
   const sections = navSections
     .map((s) => ({
       ...s,
-      items: s.items.filter((item) =>
-        item.path === "/team" || item.path === "/settings" ? isAdmin : true,
-      ),
+      items: s.items.filter((item) => hasPerm(item.perm)),
     }))
     .filter((s) => s.items.length > 0);
 
