@@ -389,7 +389,7 @@ export default function OrgChart() {
                         wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing"
                         contentClass="!p-6"
                       >
-                        <div className="min-w-fit">
+                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit bg-background p-4">
                           {tree.roots.map((root) => (
                             <TreeNode
                               key={root.emp.id}
