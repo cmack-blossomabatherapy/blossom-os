@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
-  ZoomIn, ZoomOut, Maximize, RotateCcw,
+  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
@@ -15,6 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmployeeAvatar } from "@/components/hr/EmployeeAvatar";
 import { EmployeeStatusBadge } from "@/components/hr/HRStatusBadge";
