@@ -46,7 +46,7 @@ export default function Auth() {
         <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
 
         <div className="relative">
-          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-20 w-auto object-contain" />
         </div>
 
         <div className="relative flex flex-col items-center text-center text-white max-w-md mx-auto">
@@ -104,7 +104,12 @@ export default function Auth() {
                 className="h-10"
               />
             </div>
-            <Button type="submit" className="w-full h-10" disabled={submitting}>
+            <Button
+              type="submit"
+              className="w-full h-10 text-white"
+              style={{ backgroundColor: "hsl(188 45% 45%)" }}
+              disabled={submitting}
+            >
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Sign in
             </Button>
