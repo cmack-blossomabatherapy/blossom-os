@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navSections = [
   {
@@ -58,6 +59,16 @@ const navSections = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { isAdmin } = useAuth();
+
+  const sections = navSections
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((item) =>
+        item.path === "/team" || item.path === "/settings" ? isAdmin : true,
+      ),
+    }))
+    .filter((s) => s.items.length > 0);
 
   return (
     <aside className="w-60 h-screen sticky top-0 bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
@@ -68,7 +79,7 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
-        {navSections.map((section, i) => (
+        {sections.map((section, i) => (
           <div key={i}>
             {section.title && (
               <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted">
