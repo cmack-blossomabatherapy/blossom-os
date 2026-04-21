@@ -1177,3 +1177,72 @@ function KpiTile({
     </div>
   );
 }
+
+// ---------- Export header & legend ----------
+
+function ExportHeader({
+  view, scope, search, selected,
+}: {
+  view: "hierarchy" | "department" | "state";
+  scope: "full" | "subtree";
+  search: string;
+  selected: Node | null;
+}) {
+  const stamp = new Date().toLocaleString();
+  const viewLabel = view === "hierarchy" ? "Hierarchy" : view === "department" ? "By Department" : "By State";
+  const scopeLabel = scope === "subtree" && selected
+    ? `${employeeFullName(selected.emp)} & direct reports`
+    : "Full organization";
+  return (
+    <div className="flex items-end justify-between border-b border-border pb-3">
+      <div>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          Blossom ABA Therapy
+        </p>
+        <h1 className="text-xl font-bold text-foreground">Organizational Chart</h1>
+        <p className="text-xs text-muted-foreground mt-1">
+          {viewLabel} · {scopeLabel}
+          {search.trim() && ` · Filter: "${search.trim()}"`}
+        </p>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Generated {stamp}</p>
+    </div>
+  );
+}
+
+function ExportLegend() {
+  const items: { level: Level }[] = [
+    { level: "ceo" },
+    { level: "c_suite" },
+    { level: "director" },
+    { level: "manager" },
+    { level: "lead" },
+    { level: "ic" },
+  ];
+  return (
+    <div className="mt-6 border-t border-border pt-3">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+        Legend
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map(({ level }) => {
+          const meta = LEVEL_META[level];
+          return (
+            <span
+              key={level}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border",
+                meta.chip,
+              )}
+            >
+              <span className={cn("h-2 w-2 rounded-full", meta.chip.split(" ").find((c) => c.startsWith("text-")))}>
+                <span className="sr-only">{meta.label}</span>
+              </span>
+              {meta.label}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
