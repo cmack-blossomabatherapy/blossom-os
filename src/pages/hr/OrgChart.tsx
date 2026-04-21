@@ -412,22 +412,16 @@ export default function OrgChart() {
           >
             <Crosshair className="h-3.5 w-3.5 mr-1.5" /> Focus selected
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={exporting}>
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                {exporting ? "Exporting…" : "Export chart"}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => handleExport("png")}>
-                <FileImage className="h-3.5 w-3.5 mr-2" /> PNG image
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport("pdf")}>
-                <FileText className="h-3.5 w-3.5 mr-2" /> PDF document
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            disabled={exporting}
+            onClick={() => setExportOpen(true)}
+          >
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            {exporting ? "Exporting…" : "Export chart"}
+          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="h-8 text-xs">
             <Maximize2 className="h-3.5 w-3.5 mr-1.5" /> Expand all
           </Button>
