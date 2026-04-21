@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminRoute } from "@/components/auth/AdminRoute";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
@@ -72,8 +73,8 @@ const App = () => (
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/automations" element={<Automations />} />
-                  <Route path="/team" element={<Team />} />
-                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/team" element={<AdminRoute><Team /></AdminRoute>} />
+                  <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

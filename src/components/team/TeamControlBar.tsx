@@ -2,6 +2,8 @@ import { Search, Filter, Plus, Settings2, Users, Activity, Network, BarChart3 } 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 
 export type TeamViewMode = "directory" | "workload" | "org" | "performance";
 
@@ -29,6 +31,7 @@ interface Props {
 export function TeamControlBar({
   searchQuery, onSearchChange, activeView, onActiveViewChange, viewMode, onViewModeChange,
 }: Props) {
+  const [inviteOpen, setInviteOpen] = useState(false);
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -54,7 +57,7 @@ export function TeamControlBar({
           <Button variant="outline" size="sm" className="h-8 text-xs">
             <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Bulk Actions
           </Button>
-          <Button size="sm" className="h-8 text-xs">
+          <Button size="sm" className="h-8 text-xs" onClick={() => setInviteOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Team Member
           </Button>
         </div>
@@ -76,6 +79,7 @@ export function TeamControlBar({
           </button>
         ))}
       </div>
+      <AddTeamMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </div>
   );
 }
