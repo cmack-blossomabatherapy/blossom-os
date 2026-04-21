@@ -163,9 +163,9 @@ export default function TimeClock() {
 
         {/* LIVE PRESENCE */}
         <TabsContent value="live" className="space-y-3">
-          <PresenceColumn title="On the clock"  rows={presence.in.filter(matchesFilters)} tone="success" loading={loading} />
-          <PresenceColumn title="On break"      rows={presence.onBreak.filter(matchesFilters)} tone="warning" loading={loading} />
-          <PresenceColumn title="Clocked out today" rows={presence.out.filter(matchesFilters)} tone="muted" loading={loading} />
+          <PresenceColumn title="On the clock"  rows={presence.in.filter((r) => matchesFilters(r.punch))} tone="success" loading={loading} />
+          <PresenceColumn title="On break"      rows={presence.onBreak.filter((r) => matchesFilters(r.punch))} tone="warning" loading={loading} />
+          <PresenceColumn title="Clocked out today" rows={presence.out.filter((r) => matchesFilters(r.punch))} tone="muted" loading={loading} />
         </TabsContent>
 
         {/* EXCEPTIONS */}
