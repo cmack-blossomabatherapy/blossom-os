@@ -1253,6 +1253,92 @@ export type Database = {
           },
         ]
       }
+      hr_announcement_reads: {
+        Row: {
+          announcement_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "hr_announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_announcements: {
+        Row: {
+          audience: Database["public"]["Enums"]["hr_announcement_audience"]
+          audience_clinics: string[]
+          audience_departments: string[]
+          audience_roles: string[]
+          audience_states: string[]
+          author_id: string | null
+          author_name: string | null
+          body: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          pinned: boolean
+          priority: Database["public"]["Enums"]["hr_announcement_priority"]
+          publish_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["hr_announcement_audience"]
+          audience_clinics?: string[]
+          audience_departments?: string[]
+          audience_roles?: string[]
+          audience_states?: string[]
+          author_id?: string | null
+          author_name?: string | null
+          body: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pinned?: boolean
+          priority?: Database["public"]["Enums"]["hr_announcement_priority"]
+          publish_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["hr_announcement_audience"]
+          audience_clinics?: string[]
+          audience_departments?: string[]
+          audience_roles?: string[]
+          audience_states?: string[]
+          author_id?: string | null
+          author_name?: string | null
+          body?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pinned?: boolean
+          priority?: Database["public"]["Enums"]["hr_announcement_priority"]
+          publish_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_audit_logs: {
         Row: {
           action: string
@@ -1307,6 +1393,143 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      hr_resources: {
+        Row: {
+          category: Database["public"]["Enums"]["hr_resource_category"]
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_pinned: boolean
+          kind: Database["public"]["Enums"]["hr_resource_kind"]
+          parent_id: string | null
+          position: number
+          storage_path: string | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          url: string | null
+          visibility_clinics: string[]
+          visibility_roles: string[]
+          visibility_states: string[]
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["hr_resource_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_pinned?: boolean
+          kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          parent_id?: string | null
+          position?: number
+          storage_path?: string | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          url?: string | null
+          visibility_clinics?: string[]
+          visibility_roles?: string[]
+          visibility_states?: string[]
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["hr_resource_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_pinned?: boolean
+          kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          parent_id?: string | null
+          position?: number
+          storage_path?: string | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          url?: string | null
+          visibility_clinics?: string[]
+          visibility_roles?: string[]
+          visibility_states?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_resources_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "hr_resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_saved_reports: {
+        Row: {
+          category: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          description: string | null
+          id: string
+          is_shared: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_settings: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+          value?: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -1867,6 +2090,13 @@ export type Database = {
         | "terminated"
         | "resigned"
       employment_type: "full_time" | "part_time" | "contractor" | "prn"
+      hr_announcement_audience:
+        | "all"
+        | "by_state"
+        | "by_clinic"
+        | "by_department"
+        | "by_role"
+      hr_announcement_priority: "info" | "important" | "urgent"
       hr_case_priority: "low" | "medium" | "high" | "urgent"
       hr_case_status:
         | "new"
@@ -1916,6 +2146,22 @@ export type Database = {
         | "clinic_leader"
         | "onboarding_owner"
         | "operational_owner"
+      hr_resource_category:
+        | "handbook"
+        | "payroll"
+        | "training"
+        | "clinical"
+        | "it"
+        | "benefits"
+        | "onboarding"
+        | "general"
+      hr_resource_kind:
+        | "document"
+        | "link"
+        | "video"
+        | "policy"
+        | "form"
+        | "folder"
       pay_change_kind:
         | "raise"
         | "promotion"
@@ -2188,6 +2434,14 @@ export const Constants = {
         "resigned",
       ],
       employment_type: ["full_time", "part_time", "contractor", "prn"],
+      hr_announcement_audience: [
+        "all",
+        "by_state",
+        "by_clinic",
+        "by_department",
+        "by_role",
+      ],
+      hr_announcement_priority: ["info", "important", "urgent"],
       hr_case_priority: ["low", "medium", "high", "urgent"],
       hr_case_status: [
         "new",
@@ -2241,6 +2495,24 @@ export const Constants = {
         "clinic_leader",
         "onboarding_owner",
         "operational_owner",
+      ],
+      hr_resource_category: [
+        "handbook",
+        "payroll",
+        "training",
+        "clinical",
+        "it",
+        "benefits",
+        "onboarding",
+        "general",
+      ],
+      hr_resource_kind: [
+        "document",
+        "link",
+        "video",
+        "policy",
+        "form",
+        "folder",
       ],
       pay_change_kind: [
         "raise",
