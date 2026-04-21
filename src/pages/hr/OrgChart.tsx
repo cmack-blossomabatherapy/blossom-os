@@ -153,19 +153,43 @@ function descendantsOf(node: Node): Node[] {
   return out;
 }
 
+const STORAGE_KEY = "blossom.orgchart.state.v1";
+type PersistedState = {
+  view: "hierarchy" | "department" | "state";
+  collapsed: string[];
+  transform: { scale: number; positionX: number; positionY: number } | null;
+};
+function loadPersisted(): Partial<PersistedState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function savePersisted(patch: Partial<PersistedState>) {
+  try {
+    const current = loadPersisted();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...patch }));
+  } catch { /* ignore */ }
+}
+
 // ---------- Component ----------
 
 export default function OrgChart() {
+  const persisted = useMemo(() => loadPersisted(), []);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [depts, setDepts] = useState<DeptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(persisted.collapsed ?? []));
+  const [view, setView] = useState<"hierarchy" | "department" | "state">(persisted.view ?? "hierarchy");
   const zoomRef = useRef<ReactZoomPanPinchRef | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Persist view + collapsed
+  useEffect(() => { savePersisted({ view }); }, [view]);
+  useEffect(() => { savePersisted({ collapsed: Array.from(collapsed) }); }, [collapsed]);
 
   const handleExport = async (format: "png" | "pdf") => {
     if (!exportRef.current) return;
@@ -402,7 +426,9 @@ export default function OrgChart() {
               <div className="relative h-[680px] w-full bg-muted/20 rounded-md overflow-hidden">
                 <TransformWrapper
                   ref={zoomRef}
-                  initialScale={1}
+                  initialScale={persisted.transform?.scale ?? 1}
+                  initialPositionX={persisted.transform?.positionX ?? 0}
+                  initialPositionY={persisted.transform?.positionY ?? 0}
                   minScale={0.3}
                   maxScale={2.5}
                   limitToBounds={false}
@@ -410,6 +436,15 @@ export default function OrgChart() {
                   wheel={{ step: 0.1 }}
                   doubleClick={{ disabled: true }}
                   panning={{ excluded: ["button", "a", "input"] }}
+                  onTransform={(_ref, state) => {
+                    savePersisted({
+                      transform: {
+                        scale: state.scale,
+                        positionX: state.positionX,
+                        positionY: state.positionY,
+                      },
+                    });
+                  }}
                 >
                   {({ zoomIn, zoomOut, resetTransform, centerView }) => (
                     <>
