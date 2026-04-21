@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Copy, CheckCircle2, UserPlus } from "lucide-react";
+import { Loader2, Copy, CheckCircle2, UserPlus, Mail } from "lucide-react";
 import { ROLE_META, type AppRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +87,26 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
     setCopied(true);
     toast.success("Copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openWelcomeDraft = () => {
+    if (!result) return;
+    const loginUrl = `${window.location.origin}/auth`;
+    const subject = `Welcome to Blossom — your account is ready`;
+    const body = [
+      `Hi,`,
+      ``,
+      `Your Blossom account has been created. Sign in here:`,
+      `${loginUrl}`,
+      ``,
+      `Email: ${result.email}`,
+      `Temporary password: ${result.tempPassword}`,
+      `(You'll be asked to set a new password the first time you sign in.)`,
+      ``,
+      `Welcome aboard,`,
+      `The Blossom team`,
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(result.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
@@ -182,10 +202,19 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
                 <InfoRow label="Temporary password" value={result.tempPassword} mono />
                 <InfoRow label="Roles" value={result.roles.join(", ")} />
               </div>
-              <Button variant="outline" className="w-full" onClick={copy}>
-                <Copy className="h-3.5 w-3.5 mr-2" />
-                {copied ? "Copied" : "Copy credentials"}
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button variant="outline" onClick={copy}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />
+                  {copied ? "Copied" : "Copy credentials"}
+                </Button>
+                <Button variant="outline" onClick={openWelcomeDraft}>
+                  <Mail className="h-3.5 w-3.5 mr-2" />
+                  Draft welcome email
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground text-center">
+                The welcome draft opens in your mail app — nothing is sent until you click Send there.
+              </p>
             </div>
             <DialogFooter>
               <Button onClick={() => handleClose(false)}>Done</Button>
