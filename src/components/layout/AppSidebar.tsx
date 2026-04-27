@@ -89,6 +89,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     title: "Admin",
     items: [
       { label: "Team", icon: UsersRound, path: "/team", perm: "team.view" },
+      { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
     ],
   },
@@ -102,7 +103,6 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews",      icon: Star,           path: "/hr/reviews",   perm: "hr.reviews.view" },
-    { label: "Training Dashboard", icon: GraduationCap, path: "/hr/training-dashboard", perm: "hr.training.view" },
     { label: "Training Admin", icon: GraduationCap, path: "/hr/training", perm: "hr.training.view" },
     { label: "Time Clock",   icon: Timer,          path: "/hr/time-clock", perm: "hr.timeclock.view" },
     { label: "Hours",        icon: FileSpreadsheet,path: "/hr/hours",      perm: "hr.hours.view" },

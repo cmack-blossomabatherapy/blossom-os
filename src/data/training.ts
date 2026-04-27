@@ -29,31 +29,57 @@ export const trainingDepartments: TrainingDepartment[] = [
   { id: "general", slug: "general-blossom-training", name: "General Blossom Training", shortName: "General", icon: "Sparkles", accent: "bg-accent/10 text-accent", sort: 13, description: "Company mission, HIPAA awareness, communication standards, systems overview, and help paths." },
 ];
 
-const courseTitles: Record<string, [string, string, TrainingType, Difficulty, number][]> = {
-  exec: [["Blossom OS Leadership Overview", "Navigate executive views, accountability signals, and department scorecards.", "Workflow", "Beginner", 18], ["KPI Dashboard Training", "Read growth, pipeline, auth, staffing, QA, and service delivery KPIs.", "Video", "Intermediate", 25], ["Multi-State Operations Overview", "Understand how Blossom scales oversight across GA, NC, TN, VA, and MD.", "SOP", "Advanced", 30], ["Escalation Standards", "Know when and how leaders escalate operational risk.", "Policy", "Intermediate", 15]],
-  ops: [["Operations Workflow Overview", "Learn how daily operations move work across teams.", "Workflow", "Beginner", 20], ["Department Handoff Standards", "Clarify ownership and required handoff details.", "Checklist", "Intermediate", 18], ["Monday.com Task Ownership", "Use boards, owners, dates, and comments consistently.", "Tango", "Beginner", 16], ["Internal Communication Standards", "Set expectations for Slack, email, comments, and escalation threads.", "Policy", "Beginner", 12]],
-  systems: [["Blossom OS Navigation", "Find clients, dashboards, tasks, records, and team workflows fast.", "Video", "Beginner", 18], ["Monday.com Board Basics", "Understand boards, groups, automations, and status fields.", "Tango", "Beginner", 20], ["Automation Basics", "Learn what automations do and when to request changes.", "SOP", "Intermediate", 20], ["SharePoint / Resource Library Basics", "Locate SOPs, templates, and shared resources.", "Checklist", "Beginner", 12], ["CentralReach Access Overview", "Understand access requests, login expectations, and basic navigation.", "Video", "Beginner", 22]],
-  hr: [["Recruiting Pipeline Overview", "Follow candidate stages from application to offer.", "Workflow", "Beginner", 20], ["Apploi Candidate Flow", "Review candidates, notes, interviews, and handoffs.", "Tango", "Beginner", 16], ["Interview Process", "Run consistent interviews and document feedback.", "SOP", "Intermediate", 25], ["Offer Letter to Onboarding", "Move accepted candidates into onboarding with clean ownership.", "Workflow", "Intermediate", 22], ["Viventium Onboarding", "Prepare employee profiles, documents, and payroll basics.", "Video", "Intermediate", 25], ["Background Check Process", "Track background checks and resolve blockers.", "Checklist", "Beginner", 12]],
-  finance: [["Viventium Payroll Basics", "Understand payroll review cycles, edits, and approvals.", "SOP", "Intermediate", 28], ["EOB / Payment Plan Overview", "Read EOB signals and identify payment plan needs.", "Workflow", "Intermediate", 22], ["Client Financial Responsibility", "Explain responsibility and escalation paths.", "Policy", "Beginner", 15], ["Payment Plan Escalations", "Escalate unresolved payment plan risks cleanly.", "Checklist", "Intermediate", 18]],
-  intake: [["Phone Calls & Leads Workflow", "Learn how new leads enter Blossom, contact attempts are tracked, and leads move through intake.", "SOP", "Beginner", 20], ["New Lead Process", "Create, qualify, and route a lead with complete details.", "Workflow", "Beginner", 18], ["Initial Form Process", "Send, review, and follow up on initial forms.", "Tango", "Beginner", 16], ["Missing Information Process", "Resolve missing details before VOB handoff.", "Checklist", "Intermediate", 15], ["Sent to VOB Process", "Understand insurance handoff and next actions.", "Workflow", "Intermediate", 20], ["Handoff to Clients Board", "Move ready families into the client lifecycle with clean notes.", "SOP", "Intermediate", 18]],
-  auth: [["Authorization Lifecycle", "Understand awaiting submission, submitted, approved, denied, expiring soon, and QA review.", "Workflow", "Intermediate", 25], ["Awaiting Submission", "Prepare clean packets and identify missing documentation.", "Checklist", "Beginner", 18], ["Submitted / Approved / Denied", "Track payer responses, approvals, denials, and appeals.", "SOP", "Intermediate", 24], ["Expiring Soon", "Manage reauth windows and progress report timing.", "Workflow", "Advanced", 25], ["QA Review", "Coordinate QA readiness before submission.", "Policy", "Intermediate", 18], ["Missing Documentation Process", "Request, log, and escalate missing documents.", "Checklist", "Beginner", 14]],
-  clients: [["Client Journey from BCBA Assignment to Active", "Learn how a client moves through pending auth, assessment, treatment auth, staffing, and active status.", "Workflow", "Intermediate", 30], ["BCBA Assignment", "Assign and document BCBA ownership.", "SOP", "Beginner", 14], ["Pending Initial Auth", "Understand auth readiness before assessment scheduling.", "SOP", "Intermediate", 16], ["Schedule Assessment", "Coordinate family, BCBA, and clinic scheduling.", "Checklist", "Beginner", 18], ["In QA", "Read QA blockers and support clean movement.", "Policy", "Intermediate", 20], ["Pending Treatment Auth", "Connect assessment outcomes to treatment authorization.", "Workflow", "Intermediate", 20], ["Staffing Needed", "Prepare clients for matching and scheduling.", "Checklist", "Intermediate", 18], ["Active Client Process", "Understand activation and steady-state service signals.", "SOP", "Beginner", 20]],
-  qa: [["QA Review Basics", "Review what QA owns and how blockers are documented.", "SOP", "Beginner", 20], ["Treatment Plan Review", "Validate plan completeness and clinical requirements.", "Checklist", "Intermediate", 25], ["Documentation Standards", "Apply Blossom documentation expectations consistently.", "Policy", "Intermediate", 18], ["Compliance Checklists", "Use QA checklists before approving movement.", "Checklist", "Beginner", 14], ["Progress Report Process", "Track progress report status and handoff to auth.", "Workflow", "Advanced", 25]],
-  clinic: [["Georgia Clinic Operations Overview", "Understand clinic standards and daily operating rhythms.", "SOP", "Beginner", 20], ["Clinic Scheduling", "Coordinate clinic rooms, staff, and client sessions.", "Workflow", "Intermediate", 22], ["Staff Coordination", "Support BCBA/RBT communication and coverage needs.", "Checklist", "Intermediate", 18], ["Daily Clinic Standards", "Apply opening, closing, safety, and environment standards.", "Policy", "Beginner", 16]],
-  state: [["State Director Responsibilities", "Own state performance, escalations, and accountability.", "SOP", "Advanced", 30], ["Authorization Follow-Up", "Monitor auth risk and unblock state-level items.", "Workflow", "Intermediate", 20], ["Staffing Escalations", "Escalate staffing risk and monitor open matches.", "Checklist", "Intermediate", 18], ["BCBA Communication", "Set communication expectations with clinical leaders.", "Policy", "Intermediate", 16], ["Progress Report Accountability", "Track reauth and progress report ownership.", "Workflow", "Advanced", 24]],
-  clinical: [["CentralReach Basics", "Navigate schedules, sessions, notes, and clinical basics.", "Video", "Beginner", 25], ["Parent Communication", "Document and manage family communication respectfully.", "Policy", "Beginner", 16], ["Progress Reports", "Understand timing, content, and handoff expectations.", "SOP", "Intermediate", 25], ["Treatment Plan Expectations", "Know what complete treatment plans require.", "Checklist", "Intermediate", 20], ["RBT Support Resources", "Find resources and escalation paths for RBTs.", "SOP", "Beginner", 15], ["BCBA Workflow Basics", "Review common BCBA workflow expectations.", "Workflow", "Intermediate", 22]],
-  general: [["Welcome to Blossom", "Learn the mission, values, and how Blossom works.", "Video", "Beginner", 12], ["Company Mission", "Understand Blossom’s clinical and operational promise.", "SOP", "Beginner", 10], ["Communication Standards", "Use clear, respectful, timely communication.", "Policy", "Beginner", 12], ["HIPAA Awareness Placeholder", "A starter HIPAA awareness module until formal training is connected.", "Policy", "Beginner", 18], ["Systems Overview", "See the core systems Blossom staff use daily.", "Workflow", "Beginner", 16], ["How to Ask for Help", "Find the right owner, channel, and escalation path.", "Checklist", "Beginner", 8]],
+export const TRAINING_STORAGE_KEY = "blossom-training-courses";
+export const TRAINING_UPDATED_EVENT = "blossom-training-courses-updated";
+
+export const trainingCourses: TrainingCourse[] = [];
+
+export type CreateTrainingInput = Pick<TrainingCourse, "departmentId" | "title" | "description" | "type" | "difficulty" | "minutes" | "required" | "roleVisibility" | "owner"> & {
+  dueDate?: string;
+  requiredBy?: string;
+  resources?: string[];
 };
 
-const roleMap: Record<string, string[]> = { intake: ["intake"], auth: ["auth_team"], hr: ["hr", "hr_admin", "hr_manager", "recruiting_assistant"], finance: ["finance", "payroll_admin"], qa: ["qa"], clinic: ["clinic", "clinic_director"], state: ["state_director"], clinical: ["staff", "clinic", "viewer"], exec: ["admin", "exec", "ops_manager"], ops: ["ops_manager", "dept_manager"], systems: ["admin", "ops_manager", "staff", "viewer"], clients: ["ops_manager", "staffing", "scheduling", "clinic"], general: [] };
-const statuses: TrainingStatus[] = ["In Progress", "Not Started", "Completed", "Overdue"];
+export function getStoredTrainingCourses(): TrainingCourse[] {
+  if (typeof window === "undefined") return trainingCourses;
+  try {
+    const stored = window.localStorage.getItem(TRAINING_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as TrainingCourse[]) : trainingCourses;
+  } catch {
+    return trainingCourses;
+  }
+}
 
-export const trainingCourses: TrainingCourse[] = Object.entries(courseTitles).flatMap(([departmentId, rows]) => rows.map(([title, description, type, difficulty, minutes], index) => {
-  const id = `${departmentId}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
-  const status = statuses[(index + departmentId.length) % statuses.length];
-  const progress = status === "Completed" ? 100 : status === "In Progress" ? [35, 48, 62, 74][index % 4] : 0;
-  return { id, departmentId, title, description, type, difficulty, minutes, required: index < 2 || departmentId === "general", status, progress, dueDate: index < 2 ? `2026-05-${String(6 + index * 3).padStart(2, "0")}` : undefined, requiredBy: index < 2 ? "Role onboarding path" : undefined, lastOpened: progress > 0 && progress < 100 ? `2026-04-${String(20 + index).padStart(2, "0")}` : undefined, startedAt: progress > 0 ? "2026-04-18" : undefined, quizScore: status === "Completed" ? 88 + (index % 9) : undefined, popular: ["Monday.com Board Basics", "CentralReach Basics", "Phone Calls & Leads Workflow", "Authorization Lifecycle", "Client Journey from BCBA Assignment to Active"].includes(title), recentlyAdded: index === rows.length - 1, roleVisibility: roleMap[departmentId] ?? [], owner: departmentId === "clinical" ? "Clinical Education" : departmentId === "hr" ? "People Ops" : "Operations Enablement", resources: [`${title} SOP`, `${title} Checklist`, type === "Tango" ? "Tango walkthrough" : "Related policy", "Team FAQ"], lessons: makeLessons(id, title, type, minutes), quiz: makeQuiz(title) };
-}));
+export function saveStoredTrainingCourses(courses: TrainingCourse[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRAINING_STORAGE_KEY, JSON.stringify(courses));
+  window.dispatchEvent(new Event(TRAINING_UPDATED_EVENT));
+}
+
+export function createTrainingCourse(input: CreateTrainingInput): TrainingCourse {
+  const slug = input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "training";
+  const id = `${input.departmentId}-${slug}-${Date.now()}`;
+  return {
+    id,
+    departmentId: input.departmentId,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    type: input.type,
+    difficulty: input.difficulty,
+    minutes: input.minutes,
+    required: input.required,
+    status: "Not Started",
+    progress: 0,
+    dueDate: input.dueDate || undefined,
+    requiredBy: input.requiredBy || undefined,
+    recentlyAdded: true,
+    roleVisibility: input.roleVisibility,
+    owner: input.owner.trim() || "Training Admin",
+    resources: input.resources?.filter(Boolean) ?? [],
+    lessons: makeLessons(id, input.title.trim(), input.type, input.minutes),
+    quiz: makeQuiz(input.title.trim()),
+  };
+}
 
 function makeLessons(courseId: string, title: string, type: TrainingType, minutes: number): TrainingLesson[] {
   return [

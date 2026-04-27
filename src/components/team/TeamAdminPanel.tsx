@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
+const TEAM_DEPARTMENTS = ["Exec", "Intake", "Auth", "QA", "Scheduling", "Staffing", "Clinics"];
+
 interface ProfileRow {
   user_id: string;
   display_name: string | null;
@@ -386,6 +388,11 @@ function MemberRow({
             {member.roles.length === 0 && (
               <span className="text-[11px] text-muted-foreground italic">No roles assigned</span>
             )}
+            {!member.department && (
+              <span className="text-[10px] uppercase tracking-wider text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
+                Department needed
+              </span>
+            )}
             {member.roles.map((r) => (
               <span
                 key={r}
@@ -465,7 +472,13 @@ function MemberRow({
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">Department</Label>
-                  <Input value={draftDepartment} onChange={(e) => setDraftDepartment(e.target.value)} placeholder="Intake" className="h-8 text-sm" />
+                  <Select value={draftDepartment || "none"} onValueChange={(value) => setDraftDepartment(value === "none" ? "" : value)}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Select department</SelectItem>
+                      {TEAM_DEPARTMENTS.map((dept) => <SelectItem key={dept} value={dept}>{dept}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">State</Label>
