@@ -117,12 +117,45 @@
     @apply bg-card rounded-xl border border-border/60 p-4 shadow-sm hover:shadow-md transition-shadow;
   }
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    @apply flex min-h-11 items-center justify-center gap-1 rounded-lg px-2 py-2 text-center text-[11px] font-medium transition-colors md:min-h-0 md:justify-start md:gap-3 md:px-3 md:text-sm;
   }
   .nav-item-active {
     @apply bg-sidebar-accent text-sidebar-accent-foreground;
   }
   .nav-item-inactive {
     @apply text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground;
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  @media (max-width: 767px) {
+    .mobile-page :is(section, header, article, div) {
+      max-width: 100%;
+    }
+
+    .mobile-page :is(table) {
+      min-width: 720px;
+    }
+
+    .mobile-page :is(.rounded-2xl) {
+      border-radius: var(--radius);
+    }
+
+    .mobile-page :is(.grid) {
+      min-width: 0;
+    }
+
+    .mobile-page :is(button, a, input, [role="button"]) {
+      min-height: 40px;
+    }
   }
 }
