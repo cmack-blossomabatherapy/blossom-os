@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -18,6 +19,12 @@ interface ProfileRow {
   job_title: string | null;
   responsibilities: string | null;
   welcome_sent_at: string | null;
+  department: string | null;
+  state: string | null;
+  clinic: string | null;
+  part_of_leadership: boolean | null;
+  dashboard_access: string | null;
+  active: boolean | null;
 }
 interface RoleRow {
   user_id: string;
@@ -31,6 +38,12 @@ interface Member {
   responsibilities: string;
   welcome_sent_at: string | null;
   roles: AppRole[];
+  department: string;
+  state: string;
+  clinic: string;
+  part_of_leadership: boolean;
+  dashboard_access: string;
+  active: boolean;
 }
 
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
@@ -46,7 +59,7 @@ export function TeamAdminPanel() {
     const [profilesRes, rolesRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at"),
+        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
@@ -65,6 +78,12 @@ export function TeamAdminPanel() {
       responsibilities: p.responsibilities ?? "",
       welcome_sent_at: p.welcome_sent_at,
       roles: byUser.get(p.user_id) ?? [],
+      department: p.department ?? "",
+      state: p.state ?? "",
+      clinic: p.clinic ?? "",
+      part_of_leadership: !!p.part_of_leadership,
+      dashboard_access: p.dashboard_access ?? "department",
+      active: p.active ?? true,
     }));
     combined.sort((a, b) => a.display_name.localeCompare(b.display_name));
     setMembers(combined);
@@ -130,15 +149,22 @@ export function TeamAdminPanel() {
 
   const saveInfo = async (
     member: Member,
-    next: { display_name: string; job_title: string; responsibilities: string },
+    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean },
   ) => {
     setSavingId(member.user_id);
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: next.display_name.trim() || null,
+        email: next.email.trim() || null,
         job_title: next.job_title.trim() || null,
         responsibilities: next.responsibilities.trim() || null,
+        department: next.department.trim() || null,
+        state: next.state.trim() || null,
+        clinic: next.clinic.trim() || null,
+        part_of_leadership: next.part_of_leadership,
+        dashboard_access: next.dashboard_access,
+        active: next.active,
       })
       .eq("user_id", member.user_id);
     setSavingId(null);
@@ -148,8 +174,15 @@ export function TeamAdminPanel() {
     }
     updateMember(member.user_id, {
       display_name: next.display_name.trim() || "(no name)",
+      email: next.email.trim(),
       job_title: next.job_title.trim(),
       responsibilities: next.responsibilities.trim(),
+      department: next.department.trim(),
+      state: next.state.trim(),
+      clinic: next.clinic.trim(),
+      part_of_leadership: next.part_of_leadership,
+      dashboard_access: next.dashboard_access,
+      active: next.active,
     });
     toast.success("Saved");
     return true;
@@ -254,7 +287,7 @@ function MemberRow({
 }: {
   member: Member;
   onToggleRole: (role: AppRole) => void;
-  onSaveInfo: (next: { display_name: string; job_title: string; responsibilities: string }) => Promise<boolean>;
+  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
   saving: boolean;
   isCurrentUser: boolean;
@@ -262,29 +295,57 @@ function MemberRow({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(member.display_name === "(no name)" ? "" : member.display_name);
+  const [draftEmail, setDraftEmail] = useState(member.email);
   const [draftTitle, setDraftTitle] = useState(member.job_title);
   const [draftResp, setDraftResp] = useState(member.responsibilities);
+  const [draftDepartment, setDraftDepartment] = useState(member.department);
+  const [draftState, setDraftState] = useState(member.state);
+  const [draftClinic, setDraftClinic] = useState(member.clinic);
+  const [draftLeadership, setDraftLeadership] = useState(member.part_of_leadership);
+  const [draftDashboard, setDraftDashboard] = useState(member.dashboard_access);
+  const [draftActive, setDraftActive] = useState(member.active);
 
   // Re-sync draft when member changes (e.g. after refresh)
   useEffect(() => {
     setDraftName(member.display_name === "(no name)" ? "" : member.display_name);
+    setDraftEmail(member.email);
     setDraftTitle(member.job_title);
     setDraftResp(member.responsibilities);
-  }, [member.display_name, member.job_title, member.responsibilities]);
+    setDraftDepartment(member.department);
+    setDraftState(member.state);
+    setDraftClinic(member.clinic);
+    setDraftLeadership(member.part_of_leadership);
+    setDraftDashboard(member.dashboard_access);
+    setDraftActive(member.active);
+  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.active]);
 
   const handleSave = async () => {
     const ok = await onSaveInfo({
       display_name: draftName,
+      email: draftEmail,
       job_title: draftTitle,
       responsibilities: draftResp,
+      department: draftDepartment,
+      state: draftState,
+      clinic: draftClinic,
+      part_of_leadership: draftLeadership,
+      dashboard_access: draftDashboard,
+      active: draftActive,
     });
     if (ok) setEditing(false);
   };
 
   const handleCancelEdit = () => {
     setDraftName(member.display_name === "(no name)" ? "" : member.display_name);
+    setDraftEmail(member.email);
     setDraftTitle(member.job_title);
     setDraftResp(member.responsibilities);
+    setDraftDepartment(member.department);
+    setDraftState(member.state);
+    setDraftClinic(member.clinic);
+    setDraftLeadership(member.part_of_leadership);
+    setDraftDashboard(member.dashboard_access);
+    setDraftActive(member.active);
     setEditing(false);
   };
 
@@ -390,6 +451,10 @@ function MemberRow({
                   />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Email</Label>
+                  <Input value={draftEmail} onChange={(e) => setDraftEmail(e.target.value)} placeholder="name@blossomaba.com" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">Job title</Label>
                   <Input
                     value={draftTitle}
@@ -398,6 +463,35 @@ function MemberRow({
                     className="h-8 text-sm"
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Department</Label>
+                  <Input value={draftDepartment} onChange={(e) => setDraftDepartment(e.target.value)} placeholder="Intake" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">State</Label>
+                  <Input value={draftState} onChange={(e) => setDraftState(e.target.value)} placeholder="GA" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Clinic</Label>
+                  <Input value={draftClinic} onChange={(e) => setDraftClinic(e.target.value)} placeholder="Riverdale" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Dashboard Access</Label>
+                  <Select value={draftDashboard} onValueChange={setDraftDashboard}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[["department", "Department-specific"], ["ceo", "CEO & Leadership"], ["intake", "Intake"], ["authorizations", "Authorizations"], ["scheduling", "Scheduling"], ["staffing", "Staffing"], ["clinic", "Clinic"], ["qa", "QA"], ["finance", "Finance"], ["hr", "HR"], ["recruiting", "Recruiting"]].map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
+                  <Checkbox checked={draftLeadership} onCheckedChange={(checked) => setDraftLeadership(checked === true)} />
+                  <span><strong>Part of Leadership</strong><br /><span className="text-muted-foreground">Leadership users can access the CEO & Leadership Dashboard.</span></span>
+                </label>
+                <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
+                  <Checkbox checked={draftActive} onCheckedChange={(checked) => setDraftActive(checked === true)} />
+                  <span><strong>Active</strong><br /><span className="text-muted-foreground">Inactive users remain visible for admin review.</span></span>
+                </label>
                 <div className="sm:col-span-2 space-y-1">
                   <Label className="text-[11px] text-muted-foreground">
                     Responsibilities
@@ -415,6 +509,12 @@ function MemberRow({
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                 <InfoLine label="Email" value={member.email || "—"} mono />
                 <InfoLine label="Job title" value={member.job_title || "—"} />
+                <InfoLine label="Department" value={member.department || "—"} />
+                <InfoLine label="State" value={member.state || "—"} />
+                <InfoLine label="Clinic" value={member.clinic || "—"} />
+                <InfoLine label="Part of Leadership" value={member.part_of_leadership ? "Yes" : "No"} />
+                <InfoLine label="Dashboard Access" value={member.dashboard_access || "Department-specific"} />
+                <InfoLine label="Status" value={member.active ? "Active" : "Inactive"} />
                 <div className="sm:col-span-2">
                   <InfoLine
                     label="Responsibilities"

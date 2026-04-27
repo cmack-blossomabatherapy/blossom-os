@@ -48,6 +48,7 @@ import Announcements from "./pages/hr/Announcements";
 import ResourceHub from "./pages/hr/ResourceHub";
 import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
+import LeadershipDashboard from "./pages/LeadershipDashboard";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,8 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
+                  <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leads" element={<Leads />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/clients" element={<Clients />} />

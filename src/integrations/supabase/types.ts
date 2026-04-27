@@ -1775,42 +1775,60 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           avatar_url: string | null
+          clinic: string | null
           created_at: string
+          dashboard_access: string
+          department: string | null
           display_name: string | null
           email: string | null
           id: string
           job_title: string | null
           must_change_password: boolean
+          part_of_leadership: boolean
           responsibilities: string | null
+          state: string | null
           updated_at: string
           user_id: string
           welcome_sent_at: string | null
           welcome_sent_by: string | null
         }
         Insert: {
+          active?: boolean
           avatar_url?: string | null
+          clinic?: string | null
           created_at?: string
+          dashboard_access?: string
+          department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          part_of_leadership?: boolean
           responsibilities?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
           welcome_sent_at?: string | null
           welcome_sent_by?: string | null
         }
         Update: {
+          active?: boolean
           avatar_url?: string | null
+          clinic?: string | null
           created_at?: string
+          dashboard_access?: string
+          department?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          part_of_leadership?: boolean
           responsibilities?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
           welcome_sent_at?: string | null
