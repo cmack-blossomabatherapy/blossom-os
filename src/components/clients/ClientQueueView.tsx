@@ -17,9 +17,11 @@ export function ClientQueueView({ clients, onSelect }: Props) {
       tone: "destructive" as const,
       filter: (c: Client) =>
         !c.bcba ||
+        c.blockers.length > 0 ||
+        c.qaStatus === "In Review" ||
         (canonicalPipelineStage(c.stage) === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted") ||
         canonicalPipelineStage(c.stage) === "Waiting on Consent" ||
-        (c.stage === "Schedule Assessment" && c.daysInStage >= 3),
+        (canonicalPipelineStage(c.stage) === "Schedule Assessment" && c.daysInStage >= 3),
     },
     {
       title: "Bottlenecks",
@@ -27,6 +29,7 @@ export function ClientQueueView({ clients, onSelect }: Props) {
       tone: "warning" as const,
       filter: (c: Client) =>
         canonicalPipelineStage(c.stage).startsWith("Treatment Auth") ||
+        c.authorizations.some((auth) => auth.qaStatus === "In Review" || auth.status === "Submitted") ||
         ["Staffing Needed", "Matching in Progress", "Restaffing Needed", "QA Review", "QA Issues / Fix Required"].includes(canonicalPipelineStage(c.stage)),
     },
     {
@@ -75,7 +78,7 @@ export function ClientQueueView({ clients, onSelect }: Props) {
                         <StatusBadge status={canonicalPipelineStage(c.stage)} variant={stageVariant(c.stage)} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {c.bcba || "No BCBA"} {c.rbt && `· ${c.rbt}`} · {c.state} · {c.nextAction}
+                        {c.bcba || "No BCBA"} {c.rbt && `· ${c.rbt}`} · {c.state} · {c.authorizations.length} auth · {c.schedule.length} schedule · {c.nextAction}
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">{c.daysInStage}d in stage</span>
