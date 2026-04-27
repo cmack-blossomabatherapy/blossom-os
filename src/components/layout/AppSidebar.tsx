@@ -174,18 +174,21 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="right" className="mobile-menu-sheet w-[84vw] max-w-[330px] overflow-y-auto border-0 bg-background p-0 shadow-2xl md:hidden">
-          <div className="sticky top-0 z-10 bg-sidebar px-4 pb-3 pt-[calc(0.5rem+env(safe-area-inset-top))] shadow-[0_14px_30px_-22px_hsl(var(--sidebar-background))]">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-h-11 flex-1 items-center rounded-lg bg-sidebar-accent/55 px-3 ring-1 ring-sidebar-border/70">
-                <img src={logo} alt="Blossom ABA Therapy" className="h-7 w-auto object-contain" />
+        <SheetContent side="right" className="mobile-menu-sheet w-[86vw] max-w-[340px] overflow-y-auto border-0 bg-background p-0 shadow-2xl md:hidden">
+          <div className="sticky top-0 z-10 bg-sidebar px-3 pb-3 pt-[env(safe-area-inset-top)] shadow-[0_14px_30px_-22px_hsl(var(--sidebar-background))]">
+            <div className="rounded-b-xl border border-sidebar-border/70 border-t-0 bg-sidebar-accent/45 p-2.5 shadow-sm">
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex min-h-10 flex-1 items-center rounded-lg bg-sidebar/35 px-2.5 ring-1 ring-sidebar-border/70">
+                  <img src={logo} alt="Blossom ABA Therapy" className="h-6 w-auto object-contain" />
+                </div>
+                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full bg-sidebar/35 text-sidebar-foreground ring-1 ring-sidebar-border/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full bg-sidebar-accent/55 text-sidebar-foreground ring-1 ring-sidebar-border/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-3 text-sidebar-foreground/85">
-              <p className="text-[11px] font-semibold uppercase tracking-wider">Operating System</p>
+              <div className="mt-2 flex items-center justify-between gap-3 px-1 text-sidebar-foreground/85">
+                <p className="text-[10px] font-semibold uppercase tracking-wider">Operating System</p>
+                <span className="text-[10px] font-medium text-sidebar-muted">Mobile Navigation</span>
+              </div>
             </div>
           </div>
           <nav className="px-4 py-3" aria-label="Mobile navigation">

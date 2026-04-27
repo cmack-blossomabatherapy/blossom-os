@@ -68,7 +68,19 @@ import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
-  const { roles, isAdmin, hasPerm } = useAuth();
+  const { roles, isAdmin, hasPerm, partOfLeadership, dashboardAccess } = useAuth();
+  const dashboardRoutes: Record<string, string> = {
+    ceo: "/leadership-dashboard",
+    intake: "/intake-dashboard",
+    authorizations: "/authorizations-dashboard",
+    scheduling: "/scheduling-dashboard",
+    staffing: "/staffing-dashboard",
+    clinic: "/clinic-dashboard",
+    qa: "/qa-dashboard",
+    finance: "/finance-dashboard",
+    hr: "/hr",
+    recruiting: "/leadership-dashboard?dashboard=recruiting",
+  };
   const roleRoutes: Array<[string, string]> = [
     ["intake", "/intake-dashboard"],
     ["auth_team", "/authorizations-dashboard"],
@@ -85,9 +97,10 @@ function RoleDashboardRedirect() {
     ["payroll_admin", "/hr/payroll"],
     ["phone_support", "/phone-calls"],
   ];
-  const route = isAdmin || roles.includes("exec") || roles.includes("ops_manager") || roles.includes("state_director")
+  const profileRoute = dashboardAccess ? dashboardRoutes[dashboardAccess] : undefined;
+  const route = profileRoute ?? (isAdmin || partOfLeadership || roles.includes("exec") || roles.includes("ops_manager") || roles.includes("state_director")
     ? "/leadership-dashboard"
-    : roleRoutes.find(([role]) => roles.includes(role as never))?.[1];
+    : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
   return <Navigate to={route ?? (hasPerm("clients.view") ? "/clients" : "/training")} replace />;
 }
