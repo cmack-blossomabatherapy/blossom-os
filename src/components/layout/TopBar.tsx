@@ -36,38 +36,38 @@ export function TopBar({ title }: TopBarProps) {
   const todayIso = new Date().toISOString().split("T")[0];
 
   return (
-    <header className="h-14 border-b border-border bg-card/60 backdrop-blur-sm flex items-center justify-between px-6 shrink-0">
-      <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+    <header className="min-h-14 shrink-0 border-b border-border bg-card/80 px-3 py-2 backdrop-blur-sm md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
+      <h1 className="truncate text-base font-semibold text-foreground md:text-lg">{title}</h1>
 
-      <div className="flex items-center gap-2">
-        <div className="relative">
+      <div className="mt-2 flex items-center gap-1.5 md:mt-0 md:gap-2">
+        <div className="relative min-w-0 flex-1 md:flex-none">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={submitSearch}
             placeholder="Search leads, clients, calls…"
-            className="w-64 h-8 pl-8 text-sm bg-secondary/50 border-border/50 focus:bg-card"
+            className="h-8 w-full bg-secondary/50 pl-8 text-sm focus:bg-card md:w-64"
           />
         </div>
 
         <Button
           size="sm"
           variant="outline"
-          className="h-8 gap-1.5 text-xs"
+          className="hidden h-8 gap-1.5 text-xs sm:inline-flex"
           onClick={() => navigate("/scheduling")}
         >
           <CalendarDays className="h-3 w-3" />
           Schedule
         </Button>
 
-        <div className="w-px h-5 bg-border mx-1" />
+        <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="h-8 gap-1.5 text-xs">
+            <Button size="sm" className="h-8 gap-1.5 px-2 text-xs sm:px-3">
               <Plus className="h-3.5 w-3.5" />
-              Create
+              <span className="hidden sm:inline">Create</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">

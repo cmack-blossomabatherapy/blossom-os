@@ -162,14 +162,14 @@ export function AppSidebar() {
   };
 
   return (
-    <aside className="w-60 h-screen sticky top-0 bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
+    <aside className="fixed inset-x-0 bottom-0 z-40 flex max-h-[42vh] shrink-0 flex-col border-t border-sidebar-border bg-sidebar shadow-2xl md:sticky md:top-0 md:h-screen md:w-60 md:max-h-none md:border-r md:border-t-0 md:shadow-none">
       {/* Logo */}
-      <div className="h-20 flex items-center justify-center px-4 border-b border-sidebar-border bg-sidebar">
+      <div className="hidden h-20 items-center justify-center border-b border-sidebar-border bg-sidebar px-4 md:flex">
         <img src={logo} alt="Blossom ABA Therapy" className="max-h-14 w-full object-contain" />
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
+      <nav className="flex-1 space-y-3 overflow-y-auto px-2 py-2 md:space-y-5 md:px-3 md:py-3">
         {sections.map((section, i) => {
           const activeInSection = section.items.some((item) => isItemActive(item.path));
           const sectionOpen = !section.title || activeInSection || openSections.has(section.title);
@@ -179,14 +179,14 @@ export function AppSidebar() {
               <button
                 type="button"
                 onClick={() => toggleSection(section.title!)}
-                className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:mb-1.5 md:px-3 md:text-[11px]"
                 aria-expanded={sectionOpen}
               >
                 <span>{section.title}</span>
                 <ChevronDown className={cn("h-3 w-3 transition-transform", !sectionOpen && "-rotate-90")} />
               </button>
             )}
-            {sectionOpen && <div className="space-y-0.5">
+            {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5">
               {section.items.map((item) => (
                 <NavLink
                   key={item.path}
