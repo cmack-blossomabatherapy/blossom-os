@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { canAdvanceToStage } from "@/data/pipeline";
 
 interface Props {
   clients: Client[];
@@ -59,6 +60,13 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
     if (!id) return;
     const client = clients.find((c) => c.id === id);
     if (!client || canonicalPipelineStage(client.stage) === stage) return;
+
+    if (!canAdvanceToStage(client.stage, stage)) {
+      toast.error("Pipeline stages must advance in order", {
+        description: `Move from ${canonicalPipelineStage(client.stage)} to the next stage first.`,
+      });
+      return;
+    }
 
     if (!hasPerm("clients.edit")) {
       toast.error("You don't have permission to edit clients");
