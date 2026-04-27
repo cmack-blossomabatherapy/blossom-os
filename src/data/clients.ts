@@ -58,6 +58,10 @@ export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" |
 export type StaffingStatus = "Not Needed" | "Needed" | "In Progress" | "Assigned";
 export type QAStatus = "Not Started" | "In Review" | "Complete";
 export type ClientSchedulingStatus = "Pending Schedule" | "Schedule Created" | "Pending Start" | "Active";
+export type ActiveServiceStatus = "Active" | "Services on Pause" | "Flaked" | "Discharged";
+export type ActiveStaffingStatus = "Stable" | "Needs Restaffing" | "In Transition";
+export type NotesComplianceStatus = "Compliant" | "Needs Review" | "Flagged" | "Repeated Errors";
+export type BillingClaimStatus = "Current" | "Missing Sessions" | "Claims Issue" | "Delayed Billing";
 
 export interface ClientTask {
   id: string;
@@ -145,6 +149,25 @@ export interface Client {
   pairingEmailSent?: boolean;
   schedulingNotes?: string | null;
   centralReachSyncStatus?: string;
+  activeServiceStatus?: ActiveServiceStatus;
+  activeStaffingStatus?: ActiveStaffingStatus;
+  approvedWeeklyHours?: number;
+  scheduledWeeklyHours?: number;
+  deliveredWeeklyHours?: number;
+  serviceLocation?: string;
+  notesComplianceStatus?: NotesComplianceStatus;
+  noteguardFlags?: number;
+  amerigroupStatus?: string;
+  sessionsLogged?: number;
+  claimsSubmitted?: number;
+  claimsIssues?: number;
+  billingStatus?: BillingClaimStatus;
+  newRbtStartDate?: string | null;
+  rbtCheckInStatus?: string;
+  earlyRbtIssues?: string[];
+  nextReauthDate?: string | null;
+  activeAlerts?: string[];
+  activeNotes?: string | null;
   nextAction: string;
   nextTaskDue: string | null;
   lastActivity: string;

@@ -307,6 +307,51 @@ export type Database = {
           },
         ]
       }
+      client_compliance_flags: {
+        Row: {
+          client_id: string
+          created_at: string
+          detail: string | null
+          due_date: string | null
+          id: string
+          owner: string | null
+          resolved_at: string | null
+          severity: Database["public"]["Enums"]["compliance_flag_severity"]
+          source: Database["public"]["Enums"]["compliance_flag_source"]
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          detail?: string | null
+          due_date?: string | null
+          id?: string
+          owner?: string | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["compliance_flag_severity"]
+          source: Database["public"]["Enums"]["compliance_flag_source"]
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          detail?: string | null
+          due_date?: string | null
+          id?: string
+          owner?: string | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["compliance_flag_severity"]
+          source?: Database["public"]["Enums"]["compliance_flag_source"]
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_documents: {
         Row: {
           client_id: string
@@ -461,6 +506,60 @@ export type Database = {
           },
         ]
       }
+      client_service_sessions: {
+        Row: {
+          bcba: string | null
+          billing_issue: string | null
+          claim_status: Database["public"]["Enums"]["service_claim_status"]
+          client_id: string
+          created_at: string
+          delivered_hours: number
+          delivery_status: Database["public"]["Enums"]["session_delivery_status"]
+          id: string
+          location: string
+          note_status: Database["public"]["Enums"]["service_note_status"]
+          notes: string | null
+          rbt: string | null
+          scheduled_hours: number
+          session_date: string
+          updated_at: string
+        }
+        Insert: {
+          bcba?: string | null
+          billing_issue?: string | null
+          claim_status?: Database["public"]["Enums"]["service_claim_status"]
+          client_id: string
+          created_at?: string
+          delivered_hours?: number
+          delivery_status?: Database["public"]["Enums"]["session_delivery_status"]
+          id?: string
+          location?: string
+          note_status?: Database["public"]["Enums"]["service_note_status"]
+          notes?: string | null
+          rbt?: string | null
+          scheduled_hours?: number
+          session_date?: string
+          updated_at?: string
+        }
+        Update: {
+          bcba?: string | null
+          billing_issue?: string | null
+          claim_status?: Database["public"]["Enums"]["service_claim_status"]
+          client_id?: string
+          created_at?: string
+          delivered_hours?: number
+          delivery_status?: Database["public"]["Enums"]["session_delivery_status"]
+          id?: string
+          location?: string
+          note_status?: Database["public"]["Enums"]["service_note_status"]
+          notes?: string | null
+          rbt?: string | null
+          scheduled_hours?: number
+          session_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_tasks: {
         Row: {
           client_id: string
@@ -542,27 +641,42 @@ export type Database = {
       }
       clients: {
         Row: {
+          active_alerts: string[]
+          active_notes: string | null
+          active_service_status: Database["public"]["Enums"]["active_service_status"]
+          active_staffing_status: Database["public"]["Enums"]["active_staffing_status"]
+          amerigroup_status: string
+          approved_weekly_hours: number
           assessment_date: string | null
           auth_status: Database["public"]["Enums"]["auth_status"]
           automation_log: string[]
           bcba: string | null
+          billing_status: Database["public"]["Enums"]["billing_claim_status"]
           blockers: string[]
           case_coordination_document_generated: boolean
           centralreach_sync_status: string
           child_age: string | null
           child_name: string
+          claims_issues: number
+          claims_submitted: number
           clinic: string
           consent_complete: boolean
           consent_required: boolean
           created_at: string
           created_by: string | null
+          delivered_weekly_hours: number
+          early_rbt_issues: string[]
           email: string | null
           id: string
           insurance: string | null
           intake_owner: string | null
           lead_id: string | null
+          new_rbt_start_date: string | null
           next_action: string | null
+          next_reauth_date: string | null
           next_task_due: string | null
+          noteguard_flags: number
+          notes_compliance_status: Database["public"]["Enums"]["notes_compliance_status"]
           pairing_email_sent: boolean
           parent_name: string
           payment_plan_required: boolean
@@ -572,9 +686,13 @@ export type Database = {
           phone: string | null
           qa_status: Database["public"]["Enums"]["qa_status"]
           rbt: string | null
+          rbt_check_in_status: string
           ready_for_auth: boolean
+          scheduled_weekly_hours: number
           scheduling_notes: string | null
           scheduling_status: Database["public"]["Enums"]["scheduling_status"]
+          service_location: string
+          sessions_logged: number
           staffing_history: Json
           staffing_status: Database["public"]["Enums"]["staffing_status"]
           stage: Database["public"]["Enums"]["client_stage"]
@@ -585,27 +703,42 @@ export type Database = {
           vob_completed_at: string | null
         }
         Insert: {
+          active_alerts?: string[]
+          active_notes?: string | null
+          active_service_status?: Database["public"]["Enums"]["active_service_status"]
+          active_staffing_status?: Database["public"]["Enums"]["active_staffing_status"]
+          amerigroup_status?: string
+          approved_weekly_hours?: number
           assessment_date?: string | null
           auth_status?: Database["public"]["Enums"]["auth_status"]
           automation_log?: string[]
           bcba?: string | null
+          billing_status?: Database["public"]["Enums"]["billing_claim_status"]
           blockers?: string[]
           case_coordination_document_generated?: boolean
           centralreach_sync_status?: string
           child_age?: string | null
           child_name: string
+          claims_issues?: number
+          claims_submitted?: number
           clinic: string
           consent_complete?: boolean
           consent_required?: boolean
           created_at?: string
           created_by?: string | null
+          delivered_weekly_hours?: number
+          early_rbt_issues?: string[]
           email?: string | null
           id?: string
           insurance?: string | null
           intake_owner?: string | null
           lead_id?: string | null
+          new_rbt_start_date?: string | null
           next_action?: string | null
+          next_reauth_date?: string | null
           next_task_due?: string | null
+          noteguard_flags?: number
+          notes_compliance_status?: Database["public"]["Enums"]["notes_compliance_status"]
           pairing_email_sent?: boolean
           parent_name: string
           payment_plan_required?: boolean
@@ -615,9 +748,13 @@ export type Database = {
           phone?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
+          rbt_check_in_status?: string
           ready_for_auth?: boolean
+          scheduled_weekly_hours?: number
           scheduling_notes?: string | null
           scheduling_status?: Database["public"]["Enums"]["scheduling_status"]
+          service_location?: string
+          sessions_logged?: number
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -628,27 +765,42 @@ export type Database = {
           vob_completed_at?: string | null
         }
         Update: {
+          active_alerts?: string[]
+          active_notes?: string | null
+          active_service_status?: Database["public"]["Enums"]["active_service_status"]
+          active_staffing_status?: Database["public"]["Enums"]["active_staffing_status"]
+          amerigroup_status?: string
+          approved_weekly_hours?: number
           assessment_date?: string | null
           auth_status?: Database["public"]["Enums"]["auth_status"]
           automation_log?: string[]
           bcba?: string | null
+          billing_status?: Database["public"]["Enums"]["billing_claim_status"]
           blockers?: string[]
           case_coordination_document_generated?: boolean
           centralreach_sync_status?: string
           child_age?: string | null
           child_name?: string
+          claims_issues?: number
+          claims_submitted?: number
           clinic?: string
           consent_complete?: boolean
           consent_required?: boolean
           created_at?: string
           created_by?: string | null
+          delivered_weekly_hours?: number
+          early_rbt_issues?: string[]
           email?: string | null
           id?: string
           insurance?: string | null
           intake_owner?: string | null
           lead_id?: string | null
+          new_rbt_start_date?: string | null
           next_action?: string | null
+          next_reauth_date?: string | null
           next_task_due?: string | null
+          noteguard_flags?: number
+          notes_compliance_status?: Database["public"]["Enums"]["notes_compliance_status"]
           pairing_email_sent?: boolean
           parent_name?: string
           payment_plan_required?: boolean
@@ -658,9 +810,13 @@ export type Database = {
           phone?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
+          rbt_check_in_status?: string
           ready_for_auth?: boolean
+          scheduled_weekly_hours?: number
           scheduling_notes?: string | null
           scheduling_status?: Database["public"]["Enums"]["scheduling_status"]
+          service_location?: string
+          sessions_logged?: number
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -2789,6 +2945,12 @@ export type Database = {
       }
     }
     Enums: {
+      active_service_status:
+        | "Active"
+        | "Services on Pause"
+        | "Flaked"
+        | "Discharged"
+      active_staffing_status: "Stable" | "Needs Restaffing" | "In Transition"
       app_role:
         | "admin"
         | "staff"
@@ -2843,6 +3005,11 @@ export type Database = {
         | "Denied"
         | "Expired"
         | "Expiring Soon"
+      billing_claim_status:
+        | "Current"
+        | "Missing Sessions"
+        | "Claims Issue"
+        | "Delayed Billing"
       bonus_status: "pending_approval" | "approved" | "paid" | "cancelled"
       bonus_type:
         | "signing"
@@ -2905,6 +3072,14 @@ export type Database = {
         | "Reauth Approved"
         | "Pending Initial Authorization"
         | "Can Not Submit Auth"
+      compliance_flag_severity: "Yellow" | "Red"
+      compliance_flag_source:
+        | "NoteGuard"
+        | "Amerigroup"
+        | "Billing"
+        | "Staffing"
+        | "Utilization"
+        | "Reauth"
       employee_status:
         | "pending_start"
         | "active"
@@ -3045,6 +3220,11 @@ export type Database = {
         | "Received"
         | "Approved"
         | "Payment Plan Required"
+      notes_compliance_status:
+        | "Compliant"
+        | "Needs Review"
+        | "Flagged"
+        | "Repeated Errors"
       pay_change_kind:
         | "raise"
         | "promotion"
@@ -3115,6 +3295,13 @@ export type Database = {
         | "Schedule Created"
         | "Pending Start"
         | "Active"
+      service_claim_status: "Not Submitted" | "Submitted" | "Paid" | "Issue"
+      service_note_status: "Pending" | "Submitted" | "Flagged" | "Corrected"
+      session_delivery_status:
+        | "Scheduled"
+        | "Delivered"
+        | "Missed"
+        | "Cancelled"
       staffing_match_status: "Suggested" | "Pending" | "Assigned" | "Rejected"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
       timeline_event_type:
@@ -3265,6 +3452,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      active_service_status: [
+        "Active",
+        "Services on Pause",
+        "Flaked",
+        "Discharged",
+      ],
+      active_staffing_status: ["Stable", "Needs Restaffing", "In Transition"],
       app_role: [
         "admin",
         "staff",
@@ -3323,6 +3517,12 @@ export const Constants = {
         "Denied",
         "Expired",
         "Expiring Soon",
+      ],
+      billing_claim_status: [
+        "Current",
+        "Missing Sessions",
+        "Claims Issue",
+        "Delayed Billing",
       ],
       bonus_status: ["pending_approval", "approved", "paid", "cancelled"],
       bonus_type: [
@@ -3387,6 +3587,15 @@ export const Constants = {
         "Reauth Approved",
         "Pending Initial Authorization",
         "Can Not Submit Auth",
+      ],
+      compliance_flag_severity: ["Yellow", "Red"],
+      compliance_flag_source: [
+        "NoteGuard",
+        "Amerigroup",
+        "Billing",
+        "Staffing",
+        "Utilization",
+        "Reauth",
       ],
       employee_status: [
         "pending_start",
@@ -3543,6 +3752,12 @@ export const Constants = {
         "Approved",
         "Payment Plan Required",
       ],
+      notes_compliance_status: [
+        "Compliant",
+        "Needs Review",
+        "Flagged",
+        "Repeated Errors",
+      ],
       pay_change_kind: [
         "raise",
         "promotion",
@@ -3621,6 +3836,14 @@ export const Constants = {
         "Schedule Created",
         "Pending Start",
         "Active",
+      ],
+      service_claim_status: ["Not Submitted", "Submitted", "Paid", "Issue"],
+      service_note_status: ["Pending", "Submitted", "Flagged", "Corrected"],
+      session_delivery_status: [
+        "Scheduled",
+        "Delivered",
+        "Missed",
+        "Cancelled",
       ],
       staffing_match_status: ["Suggested", "Pending", "Assigned", "Rejected"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
