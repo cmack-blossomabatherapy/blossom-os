@@ -21,6 +21,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
   {
     items: [
       { label: "Dashboard", icon: LayoutDashboard, path: "/", perm: "dashboard.view" },
+      { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view" },
     ],
   },
   {
