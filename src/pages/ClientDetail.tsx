@@ -352,17 +352,28 @@ export default function ClientDetail() {
             {/* Timeline */}
             <TabsContent value="timeline" className="mt-4">
               <div className="bg-card rounded-xl border border-border/60 p-5">
-                <div className="space-y-4">
-                  {client.timeline.map((event, i) => (
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Unified Client Timeline</h3>
+                    <p className="text-xs text-muted-foreground">Scheduling, staffing, QA, auth, calls, documents, tasks, and automation</p>
+                  </div>
+                  <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">{unifiedTimeline.length}</span>
+                </div>
+                <div className="max-h-[620px] space-y-4 overflow-y-auto pr-2">
+                  {unifiedTimeline.map((event, i) => (
                     <div key={event.id} className="flex gap-4">
                       <div className="flex flex-col items-center">
                         <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-muted-foreground">
                           {tlIcons[event.type]}
                         </div>
-                        {i < client.timeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                        {i < unifiedTimeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
                       </div>
                       <div className="flex-1 pb-4">
-                        <p className="text-sm text-foreground">{event.description}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm text-foreground">{event.title}</p>
+                          <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{event.type}</span>
+                        </div>
+                        {event.detail && <p className="mt-1 text-xs text-muted-foreground">{event.detail}</p>}
                         <p className="text-xs text-muted-foreground mt-1">
                           {new Date(event.timestamp).toLocaleDateString("en-US", {
                             weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
