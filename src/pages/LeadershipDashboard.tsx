@@ -242,9 +242,9 @@ export default function LeadershipDashboard() {
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Company-wide operational scorecard for clinics, staffing, authorizations, utilization, and client flow.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Last Updated: {live.lastUpdated.toLocaleString()}</span>
+            <span className="text-xs text-muted-foreground">{loading ? "Initializing live data…" : `Last Updated: ${live.lastUpdated.toLocaleString()}`}</span>
             <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>
-            <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />Refresh</Button>
           </div>
         </div>
 
@@ -267,7 +267,7 @@ export default function LeadershipDashboard() {
         )}
       </header>
 
-      {loading ? <Section title="Loading live data"><p className="text-sm text-muted-foreground">Loading records from Blossom OS…</p></Section> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
+      {loadError ? <DashboardErrorState message={loadError} onRetry={load} /> : loading ? <DashboardLoadingState /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
     </div>
   );
 }
