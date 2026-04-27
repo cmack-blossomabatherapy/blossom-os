@@ -240,6 +240,8 @@ export default function QA() {
 
       <div className="flex flex-wrap items-center gap-2">
         <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search client, parent, QA owner, BCBA…" className="max-w-md" />
+        <Select value={ownerFilter} onValueChange={setOwnerFilter}><SelectTrigger className="w-[170px]"><SelectValue placeholder="QA owner" /></SelectTrigger><SelectContent><SelectItem value={ALL}>All owners</SelectItem>{ownerOptions.map((owner) => <SelectItem key={owner} value={owner}>{owner}</SelectItem>)}</SelectContent></Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}><SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger><SelectContent><SelectItem value={ALL}>All states</SelectItem>{stateOptions.map((state) => <SelectItem key={state} value={state}>{state}</SelectItem>)}</SelectContent></Select>
         <Button variant="outline" onClick={() => setView("all")}>All</Button>
         <Button variant="outline" onClick={() => createMonitoring("NoteGuard")}>NoteGuard</Button>
         <Button variant="outline" onClick={() => createMonitoring("Amerigroup")}>Amerigroup Daily</Button>
@@ -247,15 +249,10 @@ export default function QA() {
       </div>
 
       {view === "monitoring" ? <MonitoringDashboard monitors={monitors} onResolve={resolveMonitor} /> : view === "performance" ? <PerformanceDashboard rows={rows} monitors={monitors} /> : (
-        <>
-          <section className="grid gap-4 xl:grid-cols-4">
-            <QALane title="Awaiting Review" items={filtered.filter((row) => row.missingRecord || row.review?.status === "Awaiting Review")} onOpen={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} />
-            <QALane title="In Review" items={filtered.filter((row) => row.review?.status === "In Review")} onOpen={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} />
-            <QALane title="Issues Found" items={filtered.filter((row) => row.review?.status === "Issues Found")} onOpen={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} />
-            <QALane title="Ready for Submission" items={filtered.filter((row) => row.review?.status === "Ready for Submission" || row.review?.status === "Submitted to Auth")} onOpen={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} />
-          </section>
-          <QATable items={filtered} onOpen={(client) => navigate(`/clients/${client.id}`)} />
-        </>
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <QAQueueTable items={filtered} selectedId={selectedItem?.client.id ?? null} onSelect={setSelectedId} />
+          <QAActionsPanel item={selectedItem} note={qaNote} onNote={setQaNote} onOpenClient={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} onWriteBack={writeClientQANote} />
+        </section>
       )}
     </PageShell>
   );
