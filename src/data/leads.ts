@@ -280,10 +280,12 @@ export const getInlineAlert = (lead: Lead): { type: "red" | "yellow"; message: s
   if (lead.status === "New Lead" && !lead.lastContacted) return { type: "red", message: "No contact yet" };
   if (lead.status === "Missing Information" && lead.daysInStage >= 3) return { type: "red", message: "Missing info blocking VOB" };
   if (lead.status === "Sent Form" && lead.daysInStage >= 3) return { type: "yellow", message: "Form not completed in " + lead.daysInStage + "d" };
-  if (["Sent to VOB"].includes(lead.status) && lead.daysInStage >= 3) return { type: "yellow", message: "VOB pending " + lead.daysInStage + "d" };
+  if (lead.status === "Form Received" && lead.vobStatus === "Not Sent") return { type: "red", message: "VOB not sent" };
+  if (lead.status === "Sent to VOB" && lead.daysInStage >= 3) return { type: "yellow", message: "VOB pending " + lead.daysInStage + "d" };
   if (lead.status === "Can't Reach" && lead.daysInStage >= 5) return { type: "red", message: "Can't reach — " + lead.daysInStage + "d" };
   if (lead.status === "Can Not Submit Auth") return { type: "red", message: "Auth blocked — missing docs" };
   if (lead.status === "VOB Completed" && (lead.vobStatus === "Approved" || lead.vobStatus === "Payment Plan Required")) return { type: "yellow", message: "Ready to move to Clients" };
+  if (lead.daysInStage > 5 && !["VOB Completed", "Non-Qualified", "Non-qualified Lead"].includes(lead.status)) return { type: "red", message: `Stuck in stage ${lead.daysInStage}d` };
   return null;
 };
 
