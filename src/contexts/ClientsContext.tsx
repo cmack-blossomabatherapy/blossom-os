@@ -4,6 +4,7 @@ import {
   Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
   ScheduleSlot, AuthStatus, StaffingStatus, QAStatus,
 } from "@/data/clients";
+import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Row<T> = T & Record<string, unknown>;
@@ -304,6 +305,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     if (!ids.length) return;
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
+      if (c && !canAdvanceToStage(c.stage, stage)) {
+        throw new Error(`Pipeline stages must advance in order. Move from ${canonicalPipelineStage(c.stage)} to the next stage before ${stage}.`);
+      }
       const nextLog = [...(c?.automationLog ?? []), `Stage moved to ${stage} (manual)`];
       await supabase.from("clients").update({
         stage, stage_entered_at: new Date().toISOString(), automation_log: nextLog,
