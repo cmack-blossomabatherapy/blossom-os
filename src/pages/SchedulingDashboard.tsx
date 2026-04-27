@@ -67,6 +67,13 @@ const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
 const stages: ScheduleStatus[] = ["Pending Schedule", "Schedule In Progress", "Schedule Created", "Pending Start Date", "Ready to Activate", "Active", "Delayed"];
 const schedulers = ["Nina Patel", "Jordan Miles", "Avery Brooks", "Sam Rivera", "Taylor Quinn"];
 
+const shortDate = (date?: string | null) => date ? new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
+const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+const pct = (value: number, total: number) => total ? Math.round((value / total) * 100) : 0;
+const daysUntil = (date?: string | null) => date ? Math.ceil((new Date(`${date}T12:00:00Z`).getTime() - today.getTime()) / 86400000) : null;
+const isThisWeek = (date?: string | null) => { const days = daysUntil(date); return days !== null && days >= 0 && days <= 6; };
+const statusVariant = (status: ScheduleStatus) => status === "Active" || status === "Ready to Activate" ? "success" : status === "Delayed" ? "destructive" : status === "Pending Start Date" || status === "Schedule In Progress" ? "warning" : "info";
+
 function makeRecord(base: Omit<SchedulingRecord, "tasks" | "documents" | "communications" | "timeline">): SchedulingRecord {
   const gap = Math.max(0, base.approvedHours - base.scheduledHours);
   return {
@@ -114,13 +121,6 @@ const schedulingSeed: SchedulingRecord[] = [
   makeRecord({ id: "SCH-4113", client: "Harper Allen", parent: "Monica Allen", state: "TN", clinic: "Nashville East", location: "Home", bcba: "Dr. Hayes", rbt: "Morgan K.", scheduler: "Avery Brooks", status: "Pending Start Date", approvedHours: 24, scheduledHours: 24, startDate: null, rbtAssignedAt: "2026-04-22", daysWaiting: 5, centralReachStatus: "Verified", crEnteredDate: "2026-04-26", crVerifiedBy: "Avery Brooks", crNotes: "Schedule entered and verified; start date pending family call.", pairingEmail: "Sent", caseCoordinationDoc: "Generated", nextAction: "Call family to choose first service day", clientAvailability: ["Mon/Wed/Fri PM"], rbtAvailability: ["Mon/Wed/Fri PM"], bcbaAvailability: ["Fri 1p"], schedule: [block("Mon", "12:00", "20:00", 8, "Home"), block("Wed", "12:00", "20:00", 8, "Home"), block("Fri", "12:00", "20:00", 8, "Home")] }),
   makeRecord({ id: "SCH-4114", client: "Benjamin Hall", parent: "Tara Hall", state: "VA", clinic: "Richmond West", location: "Clinic", bcba: "Dr. Stone", rbt: "Casey P.", scheduler: "Sam Rivera", status: "Schedule Created", approvedHours: 12, scheduledHours: 12, startDate: "2026-05-03", rbtAssignedAt: "2026-04-26", daysWaiting: 1, centralReachStatus: "Missing", crEnteredDate: null, crVerifiedBy: null, crNotes: "Newly finalized schedule awaiting CR entry.", pairingEmail: "Sent", caseCoordinationDoc: "Generated", nextAction: "Mark CentralReach entered", clientAvailability: ["Weekend AM"], rbtAvailability: ["Sat/Sun AM"], bcbaAvailability: ["Sun 10a"], schedule: [block("Sat", "08:00", "14:00", 6, "Clinic"), block("Sun", "08:00", "14:00", 6, "Clinic")] }),
 ];
-
-const shortDate = (date?: string | null) => date ? new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
-const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
-const pct = (value: number, total: number) => total ? Math.round((value / total) * 100) : 0;
-const daysUntil = (date?: string | null) => date ? Math.ceil((new Date(`${date}T12:00:00Z`).getTime() - today.getTime()) / 86400000) : null;
-const isThisWeek = (date?: string | null) => { const days = daysUntil(date); return days !== null && days >= 0 && days <= 6; };
-const statusVariant = (status: ScheduleStatus) => status === "Active" || status === "Ready to Activate" ? "success" : status === "Delayed" ? "destructive" : status === "Pending Start Date" || status === "Schedule In Progress" ? "warning" : "info";
 
 function HealthDot({ health }: { health: Health }) {
   return <span className={cn("h-2.5 w-2.5 rounded-full", health === "green" && "bg-success", health === "yellow" && "bg-warning", health === "red" && "bg-destructive")} />;
