@@ -93,6 +93,24 @@ export default function ClientDetail() {
   const lifecycle = getLifecycleProgress(client);
   const lifecyclePercent = Math.round((lifecycle.filter(Boolean).length / lifecycle.length) * 100);
   const nextStage = getNextPipelineStage(client.stage) as ClientStage | null;
+  const linkedCalls = mockPhoneCalls.filter((call) => call.linkedClientId === client.id || call.callerName === client.parentName);
+  const unifiedTimeline: UnifiedTimelineEvent[] = [
+    ...client.timeline.map((event) => ({ id: `timeline-${event.id}`, type: event.type, title: event.description, timestamp: event.timestamp, user: event.user })),
+    ...client.authorizations.flatMap((auth, index) => [
+      auth.submittedDate ? { id: `auth-submitted-${index}`, type: "auth" as const, title: `${auth.type} authorization submitted`, detail: auth.payor ?? client.payor, timestamp: dateToIso(auth.submittedDate, 30 + index), user: auth.assignedAuthCoordinator } : null,
+      auth.approvedDate ? { id: `auth-approved-${index}`, type: "auth" as const, title: `${auth.type} authorization approved`, detail: auth.hours ?? auth.frequency ?? undefined, timestamp: dateToIso(auth.approvedDate, 20 + index), user: auth.assignedAuthCoordinator } : null,
+      auth.expirationDate ? { id: `auth-expiration-${index}`, type: "auth" as const, title: `${auth.type} authorization expires`, detail: auth.expirationDate, timestamp: dateToIso(auth.expirationDate, 10 + index), user: auth.assignedAuthCoordinator } : null,
+    ].filter(Boolean) as UnifiedTimelineEvent[]),
+    ...client.staffingHistory.map((item, index) => ({ id: `staffing-${index}`, type: "staffing" as const, title: item.event, timestamp: dateToIso(item.date, 60 + index), user: client.rbt ?? undefined })),
+    ...client.schedule.map((slot, index) => ({ id: `schedule-${index}`, type: "schedule" as const, title: `${slot.day} schedule block`, detail: `${slot.start}–${slot.end}${slot.rbt ? ` · ${slot.rbt}` : ""}${slot.location ? ` · ${slot.location}` : ""}`, timestamp: dateToIso(client.startDate ?? client.assessmentDate, 90 + index), user: slot.rbt })),
+    ...client.documents.map((doc, index) => ({ id: `document-${index}`, type: "document" as const, title: `Document added: ${doc.name}`, detail: doc.type, timestamp: dateToIso(client.timeline[index]?.timestamp, 120 + index) })),
+    ...client.tasks.map((task, index) => ({ id: `task-${task.id}`, type: "task" as const, title: task.completed ? `Task completed: ${task.title}` : `Task created: ${task.title}`, detail: task.dueDate ? `Due ${task.dueDate}` : undefined, timestamp: dateToIso(task.dueDate, 150 + index) })),
+    ...client.automationLog.map((log, index) => ({ id: `automation-${index}`, type: "system" as const, title: log, detail: "Automation", timestamp: dateToIso(client.timeline[index]?.timestamp, 180 + index), user: "System" })),
+    ...linkedCalls.flatMap((call) => [
+      { id: `call-${call.id}`, type: "call" as const, title: `${call.direction} call · ${call.status}`, detail: call.outcome !== "—" ? call.outcome : call.lastAction, timestamp: call.callTime, user: call.assignedTo ?? undefined },
+      ...call.timeline.map((event) => ({ id: `call-${call.id}-${event.id}`, type: "call" as const, title: event.description, detail: call.notes || undefined, timestamp: event.timestamp, user: event.user })),
+    ]),
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   const moveClientStage = (stage: ClientStage) => {
     void moveStage([client.id], stage)
       .then(() => toast.success(`Moved to ${stage}`))
