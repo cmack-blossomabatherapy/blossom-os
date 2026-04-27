@@ -91,8 +91,11 @@ export interface ScheduleSlot {
 
 export interface Client {
   id: string;
+  leadId?: string;
   childName: string;
   parentName: string;
+  phone?: string;
+  email?: string;
   childAge: string;
   state: string;
   clinic: string;
@@ -113,6 +116,13 @@ export interface Client {
   nextTaskDue: string | null;
   lastActivity: string;
   payor: string;
+  insurance?: string;
+  paymentPlanStatus?: string;
+  paymentPlanRequired?: boolean;
+  paymentPlanSigned?: boolean;
+  readyForAuth?: boolean;
+  consentRequired?: boolean;
+  consentComplete?: boolean;
   blockers: string[];
   authorizations: AuthorizationRecord[];
   schedule: ScheduleSlot[];
@@ -166,7 +176,11 @@ export const qaVariant = (s: QAStatus): "default" | "success" | "warning" | "mut
 
 export const getClientAlert = (c: Client): { type: "red" | "yellow"; message: string } | null => {
   const stage = canonicalPipelineStage(c.stage);
+  if (c.paymentPlanRequired && !c.paymentPlanSigned) return { type: "red", message: "Payment plan not signed" };
+  if ((stage === "BCBA Assignment" || stage === "Converted to Client") && !c.bcba) return { type: "red", message: "No BCBA assigned" };
+  if ((stage === "Waiting on Consent" || stage === "Waiting on Consent Forms") && c.consentRequired !== false && !c.consentComplete) return { type: "red", message: "Missing consent forms" };
   if (!c.bcba && getLifecycleProgress(c).some(Boolean)) return { type: "red", message: "No BCBA assigned" };
+  if (stage === "Pending Initial Authorization" && c.authStatus === "Not Submitted") return { type: "yellow", message: "Auth not submitted" };
   if (stage === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted") return { type: "red", message: "Auth not submitted" };
   if (c.stage === "Schedule Assessment" && c.daysInStage >= 5) return { type: "yellow", message: "Assessment not scheduled" };
   if (c.stage === "Staffing Needed" && c.daysInStage >= 5) return { type: "red", message: `Staffing needed ${c.daysInStage}d` };
