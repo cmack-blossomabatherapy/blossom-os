@@ -38,7 +38,7 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   items: [
     { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
     { label: "Intake Dashboard", icon: Users, path: "/intake-dashboard", perm: "leads.view", superAdminOnly: true },
-    { label: "Authorizations Dashboard", icon: ShieldCheck, path: "/leadership-dashboard?dashboard=authorizations", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Authorizations Dashboard", icon: ShieldCheck, path: "/authorizations-dashboard", perm: "dashboard.view", superAdminOnly: true },
     { label: "Scheduling Dashboard", icon: Calendar, path: "/leadership-dashboard?dashboard=scheduling", perm: "dashboard.view", superAdminOnly: true },
     { label: "Staffing Dashboard", icon: UserPlus, path: "/leadership-dashboard?dashboard=staffing", perm: "dashboard.view", superAdminOnly: true },
     { label: "Clinic Dashboard", icon: Building2, path: "/leadership-dashboard?dashboard=clinic", perm: "dashboard.view", superAdminOnly: true },
