@@ -1,18 +1,57 @@
+import { canonicalPipelineStage, masterPipelineSections, masterPipelineStages, type PipelineStageVariant } from "@/data/pipeline";
+
 export type ClientStage =
+  | "New Lead"
+  | "In Contact"
+  | "Sent Form"
+  | "Missing Information"
+  | "Form Received"
+  | "Sent to VOB"
+  | "VOB Pending"
+  | "VOB Received"
+  | "Financial Review"
+  | "Payment Plan Required"
+  | "Payment Plan Received"
+  | "Approved for Services"
+  | "Not Qualified"
+  | "Converted to Client"
   | "BCBA Assignment"
+  | "Pending Initial Authorization"
   | "Pending Initial Auth"
+  | "Initial Auth – Awaiting Submission"
+  | "Initial Auth – Submitted"
+  | "Initial Auth – Approved"
+  | "Waiting on Consent"
   | "Waiting on Consent Forms"
   | "Schedule Assessment"
   | "Assessment Scheduled"
+  | "Assessment Completed"
+  | "Treatment Plan Pending"
+  | "QA Review"
+  | "QA Issues / Fix Required"
+  | "QA Approved"
   | "In QA"
+  | "Treatment Auth – Awaiting Submission"
+  | "Treatment Auth – Submitted"
+  | "Treatment Auth – Approved"
+  | "Treatment Auth – Denied"
   | "Pending Treatment Auth"
   | "Staffing Needed"
+  | "Matching in Progress"
+  | "RBT Assigned"
   | "Restaffing Needed"
+  | "Pending Schedule"
+  | "Schedule Created"
   | "Pending Start Date"
   | "Active"
   | "Flaked"
   | "Discharged"
-  | "Services on Pause";
+  | "Services on Pause"
+  | "Reauth Triggered"
+  | "Progress Report Needed"
+  | "Progress Report Received"
+  | "Reauth Submitted"
+  | "Reauth Approved";
 
 export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" | "Expired";
 export type StaffingStatus = "Not Needed" | "Needed" | "In Progress" | "Assigned";
@@ -84,25 +123,15 @@ export interface Client {
   staffingHistory: { date: string; event: string }[];
 }
 
-export const clientStages: { name: ClientStage; variant: "default" | "success" | "warning" | "destructive" | "info" | "muted" }[] = [
-  { name: "BCBA Assignment", variant: "info" },
-  { name: "Pending Initial Auth", variant: "warning" },
-  { name: "Waiting on Consent Forms", variant: "warning" },
-  { name: "Schedule Assessment", variant: "info" },
-  { name: "Assessment Scheduled", variant: "default" },
-  { name: "In QA", variant: "default" },
-  { name: "Pending Treatment Auth", variant: "warning" },
-  { name: "Staffing Needed", variant: "destructive" },
-  { name: "Restaffing Needed", variant: "warning" },
-  { name: "Pending Start Date", variant: "info" },
-  { name: "Active", variant: "success" },
-  { name: "Flaked", variant: "muted" },
-  { name: "Discharged", variant: "muted" },
-  { name: "Services on Pause", variant: "muted" },
-];
+export const pipelineSections = masterPipelineSections as { title: string; summary: string; stages: { name: ClientStage; variant: PipelineStageVariant; owner: string }[] }[];
+
+export const clientStages: { name: ClientStage; variant: PipelineStageVariant }[] = masterPipelineStages.map((stage) => ({
+  name: stage.name as ClientStage,
+  variant: stage.variant,
+}));
 
 export const stageVariant = (stage: string): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
-  return clientStages.find((s) => s.name === stage)?.variant || "muted";
+  return clientStages.find((s) => s.name === canonicalPipelineStage(stage))?.variant || "muted";
 };
 
 export const authVariant = (s: AuthStatus): "default" | "success" | "warning" | "destructive" | "muted" => {
