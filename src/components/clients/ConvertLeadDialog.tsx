@@ -29,10 +29,10 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
   const [clinic, setClinic] = useState("Peachtree Corners");
 
   const eligible = useMemo(() => {
-    const existingLeadIds = new Set(clients.map((c) => c.id.replace("C-", "L-")));
+    const existingLeadIds = new Set(clients.map((c) => c.leadId ?? c.id.replace("C-", "L-")));
     return leads
       .filter((l) =>
-        (l.vobStatus === "Approved" || l.vobStatus === "Completed" || l.vobStatus === "Payment Plan Required" || l.status === "VOB Completed")
+        (l.financialStatus === "Approved" || l.paymentPlanSigned)
         && !existingLeadIds.has(l.id),
       )
       .filter((l) => {
@@ -57,7 +57,20 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
     }
     const lead: Lead = selectedLead;
     const now = new Date().toISOString();
-    const paymentPlan = lead.vobStatus === "Payment Plan Required" || lead.paymentPlanNeeded;
+    const paymentPlan = lead.financialStatus === "Payment Plan Required" || lead.vobStatus === "Payment Plan Required" || lead.paymentPlanNeeded;
+    const approved = lead.financialStatus === "Approved" || lead.paymentPlanSigned;
+    const missingRequired = [lead.childName, lead.parentName, lead.phone, lead.email, lead.state, lead.insurance || lead.payor].some((value) => !value);
+
+    if (!approved && !lead.paymentPlanSigned) {
+      toast.error("Lead is not qualified for conversion", { description: "Financial approval or a signed payment plan is required." });
+      return;
+    }
+    if (missingRequired) {
+      toast.error("Missing lead data", { description: "Send this record back to Intake before conversion." });
+      return;
+    }
+    const duplicate = clients.find((client) => client.childName.toLowerCase() === lead.childName.toLowerCase() || client.phone === lead.phone || client.email === lead.email);
+    if (duplicate && !window.confirm(`Possible duplicate: ${duplicate.childName}. Create a new client anyway?`)) return;
 
     const tasks = paymentPlan
       ? [
@@ -70,8 +83,11 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
         ];
 
     const draft: Omit<Client, "id"> = {
+      leadId: lead.id,
       childName: lead.childName,
       parentName: lead.parentName,
+      phone: lead.phone,
+      email: lead.email,
       childAge: lead.childAge,
       state: lead.state,
       clinic,
@@ -92,7 +108,14 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
       nextTaskDue: now.split("T")[0],
       lastActivity: "Converted from Leads",
       payor: lead.payor || lead.insurance,
-      blockers: ["No BCBA assigned"],
+      insurance: lead.primaryInsurance || lead.insurance,
+      paymentPlanStatus: lead.paymentPlanStatus,
+      paymentPlanRequired: paymentPlan,
+      paymentPlanSigned: lead.paymentPlanSigned,
+      readyForAuth: false,
+      consentRequired: true,
+      consentComplete: lead.consentStatus === "Complete" || lead.consentStatus === "Completed",
+      blockers: ["No BCBA assigned", ...(paymentPlan && !lead.paymentPlanSigned ? ["Payment plan not signed"] : []), ...((lead.consentStatus === "Complete" || lead.consentStatus === "Completed") ? [] : ["Missing consent forms"])],
       authorizations: [
         { type: "Initial", status: "Not Submitted" },
         { type: "Treatment", status: "Not Submitted" },
@@ -102,9 +125,13 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
       timeline: [
         { id: "ct-tl1", type: "system", description: `Converted from lead ${lead.id} (VOB ${lead.vobStatus})`, timestamp: now, user: "You" },
       ],
-      documents: [],
+      documents: [
+        ...lead.documents.map((document) => ({ name: document.name, type: document.type })),
+        ...(lead.vobFile ? [{ name: lead.vobFile.name, type: "VOB File" }] : []),
+      ],
       automationLog: [
         `Converted from lead ${lead.id}`,
+        "Lead archived as source record",
         paymentPlan ? "Payment plan tasks created" : "Standard intake tasks created",
         "Awaiting BCBA assignment",
       ],
@@ -125,7 +152,7 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
         <DialogHeader>
           <DialogTitle>Convert lead → client</DialogTitle>
           <DialogDescription>
-            Per SOP, clients are created from leads with VOB Approved, Completed, or Payment Plan Required.
+            Per SOP, clients are created only after financial approval or a signed payment plan.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +174,7 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
             <div className="bg-muted/30 rounded-lg border border-border/60 p-6 text-center">
               <AlertCircle className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No eligible leads.</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">A lead needs VOB Approved, Completed, or Payment Plan Required before it can convert.</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">A lead needs financial approval or a signed payment plan before it can convert.</p>
             </div>
           ) : (
             <ScrollArea className="h-[260px] rounded-lg border border-border/60">
