@@ -7,6 +7,7 @@ import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/leads": "Leads",
+  "/intake-dashboard": "Intake Dashboard",
   "/clients": "Clients",
   "/authorizations": "Authorizations",
   "/scheduling": "Scheduling",
