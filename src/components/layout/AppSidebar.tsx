@@ -64,7 +64,7 @@ const pipelineSection: { title: string; items: NavItem[] } = {
   items: masterPipelineSections.map((section) => ({
     label: section.title,
     icon: pipelineIcons[section.key],
-    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations" : section.key === "assessment" ? "/assessments" : `/clients?pipeline=${section.key}&view=pipeline`,
+    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations?type=initial" : section.key === "assessment" ? "/assessments" : section.key === "treatmentAuth" ? "/authorizations?type=treatment" : `/clients?pipeline=${section.key}&view=pipeline`,
     perm: section.key === "intake" || section.key === "financial" ? "leads.view" : "clients.view",
   })),
 };
@@ -167,8 +167,10 @@ export function AppSidebar() {
     if (path.startsWith("/leads?")) {
       return location.pathname === "/leads";
     }
-    if (path === "/authorizations") {
-      return location.pathname.startsWith("/authorizations");
+    if (path.startsWith("/authorizations?")) {
+      const itemType = new URLSearchParams(path.split("?")[1]).get("type");
+      const currentType = new URLSearchParams(location.search).get("type") ?? "initial";
+      return location.pathname.startsWith("/authorizations") && itemType === currentType;
     }
     if (path === "/assessments") {
       return location.pathname.startsWith("/assessments");
