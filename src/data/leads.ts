@@ -48,6 +48,33 @@ export const createIntakeTask = (title: LeadTask["title"], owner = INTAKE_COORDI
   };
 };
 
+export const FINANCIAL_OWNER = "Gabi";
+
+export const defaultFinancialFields = (insurance = "") => ({
+  primaryInsurance: insurance,
+  secondaryInsurance: "",
+  inNetwork: true,
+  outOfNetwork: false,
+  deductibleAmount: 3000,
+  deductibleRemaining: 1200,
+  coinsurancePercent: 20,
+  copay: 35,
+  maxOutOfPocket: 8500,
+  estimatedInsuranceCoveragePercent: 80,
+  estimatedClientResponsibility: 620,
+  expectedWeeklyHours: 20,
+  estimatedMonthlyRevenue: 6400,
+  financialStatus: "Pending Review" as FinancialStatus,
+  financialDecisionNotes: "",
+  financialOwner: FINANCIAL_OWNER,
+  daysInFinancialStage: 0,
+  financialBlockers: [] as string[],
+  paymentPlanSent: false,
+  paymentPlanSigned: false,
+  paymentPlanAmount: 0,
+  paymentPlanStatus: "Not Required" as PaymentPlanStatus,
+});
+
 export interface TimelineEvent {
   id: string;
   type: "call" | "email" | "sms" | "form" | "system" | "note";
