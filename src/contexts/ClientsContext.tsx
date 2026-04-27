@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
+  Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord, mockClients,
   ScheduleSlot, AuthStatus, StaffingStatus, QAStatus, ClientSchedulingStatus,
   ActiveServiceStatus, ActiveStaffingStatus, NotesComplianceStatus, BillingClaimStatus,
   ReauthCycle, ReauthCycleStatus, ReauthQAStatus, ReauthSubmissionStatus,
@@ -313,7 +313,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
-    if (!user) { setClients([]); setLoading(false); return; }
+    if (!user) { setClients(mockClients); setLoading(false); return; }
     setLoading(true);
     const [c, t, d, tl, a, s, r] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
@@ -326,11 +326,16 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     ]);
     if (c.error || t.error || d.error || tl.error || a.error || s.error || r.error) {
       console.error("Clients fetch error", { c: c.error, t: t.error, d: d.error, tl: tl.error, a: a.error, s: s.error, r: r.error });
-      setClients([]);
+      setClients(mockClients);
       setLoading(false);
       return;
     }
     const dbClients = (c.data ?? []) as unknown as DbClient[];
+    if (dbClients.length === 0) {
+      setClients(mockClients);
+      setLoading(false);
+      return;
+    }
     const tasks = (t.data ?? []) as unknown as DbTask[];
     const docs = (d.data ?? []) as unknown as DbDocument[];
     const timeline = (tl.data ?? []) as unknown as DbTimeline[];
