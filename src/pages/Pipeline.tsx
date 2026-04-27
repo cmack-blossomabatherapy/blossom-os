@@ -243,6 +243,107 @@ function getStageContext(client: Client, sectionKey: string) {
   return [...base, { label: "Service status", value: client.activeServiceStatus ?? "Active" }, { label: "Delivered hours", value: String(client.deliveredWeeklyHours ?? 0) }, { label: "Billing", value: client.billingStatus ?? "—" }, { label: "Next reauth", value: client.nextReauthDate ?? "—" }];
 }
 
+function getRelatedRecords(client: Client, sectionKey: string) {
+  if (["initialAuth", "treatmentAuth"].includes(sectionKey)) {
+    const type = sectionKey === "initialAuth" ? "Initial" : "Treatment";
+    const auths = client.authorizations.filter((auth) => auth.type === type);
+    return (auths.length ? auths : client.authorizations.slice(0, 1)).map((auth) => ({
+      title: `${auth.type} authorization`,
+      description: auth.nextAction ?? auth.notes ?? "Authorization record",
+      details: [
+        { label: "Status", value: auth.status },
+        { label: "Payor", value: auth.payor ?? client.payor },
+        { label: "Hours", value: String(auth.approvedHours ?? auth.hours ?? client.approvedWeeklyHours ?? "—") },
+        { label: "Expires", value: auth.expirationDate ?? "—" },
+      ],
+    }));
+  }
+  if (sectionKey === "reauth") {
+    return (client.reauthCycles?.length ? client.reauthCycles : []).map((cycle) => ({
+      title: `Reauth cycle · ${cycle.payor}`,
+      description: cycle.notes ?? cycle.alerts[0] ?? "Reauthorization tracking",
+      details: [
+        { label: "Status", value: cycle.status },
+        { label: "QA", value: cycle.qaStatus },
+        { label: "Due", value: cycle.progressReportDueDate ?? "—" },
+        { label: "Expires", value: cycle.currentAuthExpirationDate },
+      ],
+    }));
+  }
+  if (sectionKey === "qa") {
+    return [
+      {
+        title: "QA review",
+        description: client.activeNotes ?? client.blockers[0] ?? "Quality and compliance review",
+        details: [
+          { label: "Status", value: client.qaStatus },
+          { label: "Owner", value: client.authorizations[0]?.qaOwner ?? "QA Team" },
+          { label: "Documents", value: String(client.documents.length) },
+          { label: "Flags", value: client.blockers.length ? client.blockers.join(", ") : "None" },
+        ],
+      },
+      ...client.documents.slice(0, 2).map((document) => ({
+        title: document.name,
+        description: "Document event",
+        details: [
+          { label: "Type", value: document.type },
+          { label: "Review", value: client.qaStatus },
+          { label: "Client", value: client.childName },
+          { label: "State", value: client.state },
+        ],
+      })),
+    ];
+  }
+  if (sectionKey === "staffing") {
+    return [
+      {
+        title: "Staffing assignment",
+        description: client.staffingHistory[0]?.event ?? "Current staffing record",
+        details: [
+          { label: "Status", value: client.staffingStatus },
+          { label: "BCBA", value: client.bcba || "Unassigned" },
+          { label: "RBT", value: client.rbt || "Unassigned" },
+          { label: "Hours", value: String(client.approvedWeeklyHours ?? "—") },
+        ],
+      },
+      ...client.staffingHistory.slice(0, 2).map((event) => ({
+        title: event.event,
+        description: "Staffing history",
+        details: [
+          { label: "Date", value: event.date },
+          { label: "BCBA", value: client.bcba || "—" },
+          { label: "RBT", value: client.rbt || "—" },
+          { label: "Status", value: client.staffingStatus },
+        ],
+      })),
+    ];
+  }
+  if (["scheduling", "assessment", "activeServices"].includes(sectionKey)) {
+    return (client.schedule.length ? client.schedule : []).map((slot) => ({
+      title: `${slot.day} · ${slot.start}–${slot.end}`,
+      description: slot.notes ?? `${slot.location ?? "Session"} scheduling block`,
+      details: [
+        { label: "RBT", value: slot.rbt ?? client.rbt ?? "Unassigned" },
+        { label: "Location", value: slot.location ?? client.serviceLocation ?? "—" },
+        { label: "Schedule", value: client.schedulingStatus ?? "—" },
+        { label: "CR sync", value: client.centralReachSyncStatus ?? "—" },
+      ],
+    }));
+  }
+  return [
+    {
+      title: "Client setup record",
+      description: client.nextAction || "Lifecycle context",
+      details: [
+        { label: "Parent", value: client.parentName },
+        { label: "Payor", value: client.payor },
+        { label: "Owner", value: client.intakeOwner },
+        { label: "Blockers", value: client.blockers.length ? client.blockers.join(", ") : "None" },
+      ],
+    },
+  ];
+}
+
 function getWorkspacePath(sectionKey: string) {
   if (sectionKey === "intake") return "/leads?view=queue";
   if (["initialAuth", "treatmentAuth", "reauth"].includes(sectionKey)) return "/authorizations";
