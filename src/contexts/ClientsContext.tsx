@@ -107,7 +107,7 @@ interface DbClient {
 interface DbTask { id: string; client_id: string; title: string; completed: boolean; due_date: string | null; position: number; }
 interface DbDocument { id: string; client_id: string; name: string; type: string; }
 interface DbTimeline { id: string; client_id: string; event_type: ClientTimelineEvent["type"]; description: string; user_name: string | null; created_at: string; }
-interface DbAuth { id: string; client_id: string; kind: "Initial" | "Treatment"; status: AuthStatus; submitted_date: string | null; approved_date: string | null; expiration_date: string | null; hours: string | null; notes: string | null; stage_entered_at?: string | null; }
+interface DbAuth { id: string; client_id: string; kind: "Initial" | "Treatment" | "Reauth"; status: AuthStatus; submitted_date: string | null; approved_date: string | null; expiration_date: string | null; hours: string | null; notes: string | null; stage_entered_at?: string | null; }
 interface DbSlot { id: string; client_id: string; day: ScheduleSlot["day"]; start_time: string; end_time: string; rbt: string | null; }
 
 const buildClient = (
@@ -250,6 +250,25 @@ const clientPatchToDb = (patch: Partial<Client>): Record<string, unknown> => {
   if (patch.pairingEmailSent !== undefined) out.pairing_email_sent = patch.pairingEmailSent;
   if (patch.schedulingNotes !== undefined) out.scheduling_notes = patch.schedulingNotes;
   if (patch.centralReachSyncStatus !== undefined) out.centralreach_sync_status = patch.centralReachSyncStatus;
+  if (patch.activeServiceStatus !== undefined) out.active_service_status = patch.activeServiceStatus;
+  if (patch.activeStaffingStatus !== undefined) out.active_staffing_status = patch.activeStaffingStatus;
+  if (patch.approvedWeeklyHours !== undefined) out.approved_weekly_hours = patch.approvedWeeklyHours;
+  if (patch.scheduledWeeklyHours !== undefined) out.scheduled_weekly_hours = patch.scheduledWeeklyHours;
+  if (patch.deliveredWeeklyHours !== undefined) out.delivered_weekly_hours = patch.deliveredWeeklyHours;
+  if (patch.serviceLocation !== undefined) out.service_location = patch.serviceLocation;
+  if (patch.notesComplianceStatus !== undefined) out.notes_compliance_status = patch.notesComplianceStatus;
+  if (patch.noteguardFlags !== undefined) out.noteguard_flags = patch.noteguardFlags;
+  if (patch.amerigroupStatus !== undefined) out.amerigroup_status = patch.amerigroupStatus;
+  if (patch.sessionsLogged !== undefined) out.sessions_logged = patch.sessionsLogged;
+  if (patch.claimsSubmitted !== undefined) out.claims_submitted = patch.claimsSubmitted;
+  if (patch.claimsIssues !== undefined) out.claims_issues = patch.claimsIssues;
+  if (patch.billingStatus !== undefined) out.billing_status = patch.billingStatus;
+  if (patch.newRbtStartDate !== undefined) out.new_rbt_start_date = patch.newRbtStartDate;
+  if (patch.rbtCheckInStatus !== undefined) out.rbt_check_in_status = patch.rbtCheckInStatus;
+  if (patch.earlyRbtIssues !== undefined) out.early_rbt_issues = patch.earlyRbtIssues;
+  if (patch.nextReauthDate !== undefined) out.next_reauth_date = patch.nextReauthDate;
+  if (patch.activeAlerts !== undefined) out.active_alerts = patch.activeAlerts;
+  if (patch.activeNotes !== undefined) out.active_notes = patch.activeNotes;
   if (patch.blockers !== undefined) out.blockers = patch.blockers;
   if (patch.automationLog !== undefined) out.automation_log = patch.automationLog;
   if (patch.staffingHistory !== undefined) out.staffing_history = patch.staffingHistory;
