@@ -73,6 +73,7 @@ export interface ClientTimelineEvent {
 }
 
 export interface AuthorizationRecord {
+  id?: string;
   type: "Initial" | "Treatment";
   status: AuthStatus;
   submittedDate?: string;
@@ -80,6 +81,18 @@ export interface AuthorizationRecord {
   expirationDate?: string;
   hours?: string;
   notes?: string;
+  payor?: string;
+  state?: string;
+  assignedAuthCoordinator?: string;
+  qaOwner?: string | null;
+  qaStatus?: QAStatus;
+  treatmentPlanReceived?: boolean;
+  requiredDocsReceived?: boolean;
+  missingDocs?: string[];
+  nextAction?: string;
+  blockers?: string[];
+  daysInStage?: number;
+  progressReportStatus?: "Not Started" | "In Progress" | "Received";
 }
 
 export interface ScheduleSlot {
