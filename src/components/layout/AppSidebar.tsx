@@ -10,7 +10,7 @@ import {
 import logo from "@/assets/blossom-logo-full.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
+import { type DashboardKey } from "@/data/leadershipDashboard";
 
 interface NavItem {
   label: string;
@@ -35,13 +35,18 @@ const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
 
 const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   title: "Dashboards",
-  items: dashboardDefinitions.map((dashboard) => ({
-    label: dashboard.name.replace(" Dashboard", ""),
-    icon: dashboardIcons[dashboard.key],
-    path: `/leadership-dashboard?dashboard=${dashboard.key}`,
-    perm: "dashboard.view",
-    superAdminOnly: true,
-  })),
+  items: [
+    { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Intake Dashboard", icon: Users, path: "/intake-dashboard", perm: "leads.view", superAdminOnly: true },
+    { label: "Authorizations Dashboard", icon: ShieldCheck, path: "/leadership-dashboard?dashboard=authorizations", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Scheduling Dashboard", icon: Calendar, path: "/leadership-dashboard?dashboard=scheduling", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Staffing Dashboard", icon: UserPlus, path: "/leadership-dashboard?dashboard=staffing", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Clinic Dashboard", icon: Building2, path: "/leadership-dashboard?dashboard=clinic", perm: "dashboard.view", superAdminOnly: true },
+    { label: "QA Dashboard", icon: ClipboardCheck, path: "/leadership-dashboard?dashboard=qa", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Finance Dashboard", icon: Wallet, path: "/leadership-dashboard?dashboard=finance", perm: "dashboard.view", superAdminOnly: true },
+    { label: "HR Dashboard", icon: HeartHandshake, path: "/leadership-dashboard?dashboard=hr", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Recruiting Dashboard", icon: Briefcase, path: "/leadership-dashboard?dashboard=recruiting", perm: "dashboard.view", superAdminOnly: true },
+  ],
 };
 
 const navSections: { title?: string; items: NavItem[] }[] = [
@@ -128,7 +133,7 @@ export function AppSidebar() {
   const isItemActive = (path: string) => {
     if (path.startsWith("/leadership-dashboard?")) {
       const itemDashboard = new URLSearchParams(path.split("?")[1]).get("dashboard");
-      const currentDashboard = new URLSearchParams(location.search).get("dashboard") ?? "ceo";
+      const currentDashboard = new URLSearchParams(location.search).get("dashboard");
       return location.pathname === "/leadership-dashboard" && itemDashboard === currentDashboard;
     }
     if (path.startsWith("/leads?")) {
