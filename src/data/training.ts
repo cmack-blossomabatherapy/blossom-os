@@ -7,7 +7,7 @@ export type LessonType = "Written SOP" | "Video" | "Tango" | "Checklist" | "Quiz
 
 export interface TrainingLesson { id: string; title: string; description: string; type: LessonType; minutes: number; required: boolean; content: string; resourceUrl?: string; tangoUrl?: string; completed?: boolean; }
 export interface QuizQuestion { id: string; question: string; type: "Multiple choice" | "True / false" | "Short answer"; options?: string[]; answer: string; }
-export interface TrainingCourse { id: string; departmentId: string; title: string; description: string; type: TrainingType; difficulty: Difficulty; minutes: number; required: boolean; status: TrainingStatus; progress: number; dueDate?: string; requiredBy?: string; lastOpened?: string; startedAt?: string; quizScore?: number; popular?: boolean; recentlyAdded?: boolean; roleVisibility: string[]; lessons: TrainingLesson[]; quiz?: { passingScore: number; questions: QuizQuestion[] }; resources: string[]; owner: string; }
+export interface TrainingCourse { id: string; departmentId: string; title: string; description: string; type: TrainingType; difficulty: Difficulty; minutes: number; required: boolean; status: TrainingStatus; progress: number; dueDate?: string; requiredBy?: string; lastOpened?: string; startedAt?: string; quizScore?: number; popular?: boolean; recentlyAdded?: boolean; archived?: boolean; roleVisibility: string[]; lessons: TrainingLesson[]; quiz?: { passingScore: number; questions: QuizQuestion[] }; resources: string[]; owner: string; }
 export interface TrainingDepartment { id: string; slug: string; name: string; shortName: string; description: string; icon: keyof typeof iconMap; accent: string; sort: number; }
 export interface TrainingProgressRecord { userId: string; trainingId: string; department: string; startedDate?: string; lastOpenedDate?: string; completedDate?: string; progressPercentage: number; lessonsCompleted: string[]; quizScore?: number; status: TrainingStatus; timeSpentMinutes: number; required: boolean; dueDate?: string; assignedBy?: string; }
 
@@ -73,6 +73,7 @@ export function createTrainingCourse(input: CreateTrainingInput): TrainingCourse
     dueDate: input.dueDate || undefined,
     requiredBy: input.requiredBy || undefined,
     recentlyAdded: true,
+    archived: false,
     roleVisibility: input.roleVisibility,
     owner: input.owner.trim() || "Training Admin",
     resources: input.resources?.filter(Boolean) ?? [],
