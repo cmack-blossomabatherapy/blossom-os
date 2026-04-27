@@ -161,15 +161,34 @@ export function AppSidebar() {
     });
   };
 
+  const mobileItems = sections.flatMap((section) => section.items);
+
   return (
-    <aside className="fixed inset-x-0 bottom-0 z-40 flex max-h-[42vh] shrink-0 flex-col border-t border-sidebar-border bg-sidebar shadow-2xl md:sticky md:top-0 md:h-screen md:w-60 md:max-h-none md:border-r md:border-t-0 md:shadow-none">
+    <aside className="fixed inset-x-0 bottom-0 z-40 shrink-0 border-t border-border bg-card/95 shadow-lg backdrop-blur-xl md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-sidebar-border md:border-t-0 md:bg-sidebar md:shadow-none md:backdrop-blur-none">
       {/* Logo */}
       <div className="hidden h-20 items-center justify-center border-b border-sidebar-border bg-sidebar px-4 md:flex">
         <img src={logo} alt="Blossom ABA Therapy" className="max-h-14 w-full object-contain" />
       </div>
 
+      <nav className="mobile-tabbar md:hidden" aria-label="Primary mobile navigation">
+        {mobileItems.map((item) => {
+          const active = isItemActive(item.path);
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === "/"}
+              className={cn("mobile-tabbar-item", active && "mobile-tabbar-item-active")}
+            >
+              <item.icon className="h-5 w-5 shrink-0" />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
+
       {/* Navigation */}
-      <nav className="flex-1 space-y-3 overflow-y-auto px-2 py-2 md:space-y-5 md:px-3 md:py-3">
+      <nav className="hidden flex-1 space-y-5 overflow-y-auto px-3 py-3 md:block">
         {sections.map((section, i) => {
           const activeInSection = section.items.some((item) => isItemActive(item.path));
           const sectionOpen = !section.title || activeInSection || openSections.has(section.title);
