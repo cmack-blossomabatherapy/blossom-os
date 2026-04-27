@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCircle, LinkIcon, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
-import { trainingCourses, trainingDepartments } from "@/data/training";
+import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT } from "@/data/training";
 
 export default function TrainingCourse() {
   const { courseId } = useParams();
-  const course = trainingCourses.find((c) => c.id === courseId) ?? trainingCourses[0];
+  const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
+  useEffect(() => {
+    const refresh = () => setTrainingCourses(getStoredTrainingCourses());
+    window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const course = trainingCourses.find((c) => c.id === courseId);
+  if (!course) return <Navigate to="/training" replace />;
   const dept = trainingDepartments.find((d) => d.id === course.departmentId)!;
   const [completed, setCompleted] = useState<Set<string>>(new Set(course.lessons.filter((l) => l.completed).map((l) => l.id)));
   const [activeLessonId, setActiveLessonId] = useState(course.lessons[0]?.id);
