@@ -424,6 +424,8 @@ export type Database = {
           day: Database["public"]["Enums"]["schedule_day"]
           end_time: string
           id: string
+          location: string
+          notes: string | null
           rbt: string | null
           start_time: string
         }
@@ -433,6 +435,8 @@ export type Database = {
           day: Database["public"]["Enums"]["schedule_day"]
           end_time: string
           id?: string
+          location?: string
+          notes?: string | null
           rbt?: string | null
           start_time: string
         }
@@ -442,6 +446,8 @@ export type Database = {
           day?: Database["public"]["Enums"]["schedule_day"]
           end_time?: string
           id?: string
+          location?: string
+          notes?: string | null
           rbt?: string | null
           start_time?: string
         }
@@ -541,6 +547,8 @@ export type Database = {
           automation_log: string[]
           bcba: string | null
           blockers: string[]
+          case_coordination_document_generated: boolean
+          centralreach_sync_status: string
           child_age: string | null
           child_name: string
           clinic: string
@@ -555,6 +563,7 @@ export type Database = {
           lead_id: string | null
           next_action: string | null
           next_task_due: string | null
+          pairing_email_sent: boolean
           parent_name: string
           payment_plan_required: boolean
           payment_plan_signed: boolean
@@ -564,6 +573,8 @@ export type Database = {
           qa_status: Database["public"]["Enums"]["qa_status"]
           rbt: string | null
           ready_for_auth: boolean
+          scheduling_notes: string | null
+          scheduling_status: Database["public"]["Enums"]["scheduling_status"]
           staffing_history: Json
           staffing_status: Database["public"]["Enums"]["staffing_status"]
           stage: Database["public"]["Enums"]["client_stage"]
@@ -579,6 +590,8 @@ export type Database = {
           automation_log?: string[]
           bcba?: string | null
           blockers?: string[]
+          case_coordination_document_generated?: boolean
+          centralreach_sync_status?: string
           child_age?: string | null
           child_name: string
           clinic: string
@@ -593,6 +606,7 @@ export type Database = {
           lead_id?: string | null
           next_action?: string | null
           next_task_due?: string | null
+          pairing_email_sent?: boolean
           parent_name: string
           payment_plan_required?: boolean
           payment_plan_signed?: boolean
@@ -602,6 +616,8 @@ export type Database = {
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
           ready_for_auth?: boolean
+          scheduling_notes?: string | null
+          scheduling_status?: Database["public"]["Enums"]["scheduling_status"]
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -617,6 +633,8 @@ export type Database = {
           automation_log?: string[]
           bcba?: string | null
           blockers?: string[]
+          case_coordination_document_generated?: boolean
+          centralreach_sync_status?: string
           child_age?: string | null
           child_name?: string
           clinic?: string
@@ -631,6 +649,7 @@ export type Database = {
           lead_id?: string | null
           next_action?: string | null
           next_task_due?: string | null
+          pairing_email_sent?: boolean
           parent_name?: string
           payment_plan_required?: boolean
           payment_plan_signed?: boolean
@@ -640,6 +659,8 @@ export type Database = {
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
           ready_for_auth?: boolean
+          scheduling_notes?: string | null
+          scheduling_status?: Database["public"]["Enums"]["scheduling_status"]
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -3089,6 +3110,11 @@ export type Database = {
         | "probationary"
         | "ad_hoc"
       schedule_day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+      scheduling_status:
+        | "Pending Schedule"
+        | "Schedule Created"
+        | "Pending Start"
+        | "Active"
       staffing_match_status: "Suggested" | "Pending" | "Assigned" | "Rejected"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
       timeline_event_type:
@@ -3590,6 +3616,12 @@ export const Constants = {
         "ad_hoc",
       ],
       schedule_day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      scheduling_status: [
+        "Pending Schedule",
+        "Schedule Created",
+        "Pending Start",
+        "Active",
+      ],
       staffing_match_status: ["Suggested", "Pending", "Assigned", "Rejected"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
       timeline_event_type: [

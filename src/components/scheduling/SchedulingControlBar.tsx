@@ -15,12 +15,12 @@ interface Props {
 }
 
 const savedViews = [
-  { id: "unscheduled", label: "Unscheduled Assessments" },
-  { id: "scheduled", label: "Assessments Scheduled" },
-  { id: "pending-start", label: "Pending Start Dates" },
-  { id: "staffing", label: "Staffing Needed" },
-  { id: "ready", label: "Ready to Schedule" },
-  { id: "week", label: "This Week" },
+  { id: "ready", label: "Needs Scheduling" },
+  { id: "pending-start", label: "Ready for Start" },
+  { id: "starting-soon", label: "Starting Soon" },
+  { id: "delayed", label: "Delayed" },
+  { id: "week", label: "Schedule Created" },
+  { id: "active", label: "Active" },
 ];
 
 const viewModes: { id: SchedulingViewMode; label: string; icon: typeof ListTodo }[] = [

@@ -3,9 +3,11 @@ import { mockClients, type Client } from "./clients";
 export type SchedulingStatus =
   | "Unscheduled Assessment"
   | "Assessment Scheduled"
-  | "Ready to Schedule"
+  | "Pending Schedule"
   | "Schedule Built"
-  | "Pending Start Date"
+  | "Pending Start"
+  | "Starting Soon"
+  | "Delayed"
   | "Active"
   | "Blocked";
 
@@ -100,19 +102,47 @@ export type SchedulingClientStatus = {
   client: Client;
   status: SchedulingStatus;
   blockers: string[];
+  alerts: string[];
+  weeklyHours: number;
+  approvedHours: number;
+  daysUntilStart: number | null;
+  caseCoordinationDocumentGenerated: boolean;
+  pairingEmailSent: boolean;
+  centralReachSyncStatus: string;
   readinessChecklist: { label: string; done: boolean }[];
+};
+
+export const calculateWeeklyHours = (client: Client): number => client.schedule.reduce((sum, slot) => {
+  const [startH, startM] = slot.start.split(":").map(Number);
+  const [endH, endM] = slot.end.split(":").map(Number);
+  return sum + Math.max(0, (endH * 60 + endM - startH * 60 - startM) / 60);
+}, 0);
+
+export const getApprovedWeeklyHours = (client: Client): number => {
+  const auth = client.authorizations.find((a) => a.type === "Treatment" || a.type === "Reauth");
+  return auth?.approvedHours ?? (Number.parseInt(auth?.hours ?? "20", 10) || 20);
 };
 
 export const getSchedulingStatus = (c: Client): SchedulingClientStatus => {
   const blockers: string[] = [];
+  const alerts: string[] = [];
+  const weeklyHours = calculateWeeklyHours(c);
+  const approvedHours = getApprovedWeeklyHours(c);
+  const daysUntilStart = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
   if (!c.bcba) blockers.push("No BCBA assigned");
   if (c.staffingStatus === "Needed" || c.stage === "Staffing Needed") blockers.push("No RBT assigned");
   if (c.stage === "Pending Treatment Auth") blockers.push("Awaiting auth approval");
-  if (!c.assessmentDate && c.stage === "Schedule Assessment") blockers.push("Assessment not scheduled");
+  if (c.rbt && c.schedule.length === 0) alerts.push("No schedule created");
+  if (c.schedule.length > 0 && weeklyHours > approvedHours) blockers.push("Schedule exceeds approved hours");
+  if (c.schedule.length > 0 && weeklyHours < approvedHours) alerts.push("Schedule below approved hours");
+  if (c.schedule.length > 0 && !c.startDate) alerts.push("Start date missing");
+  if (daysUntilStart !== null && daysUntilStart < 0 && c.stage !== "Active") alerts.push("Delayed start");
 
-  let status: SchedulingStatus = "Ready to Schedule";
+  let status: SchedulingStatus = "Pending Schedule";
   if (c.stage === "Active") status = "Active";
-  else if (c.stage === "Pending Start Date") status = "Pending Start Date";
+  else if (daysUntilStart !== null && daysUntilStart < 0) status = "Delayed";
+  else if (daysUntilStart !== null && daysUntilStart <= 7) status = "Starting Soon";
+  else if (c.startDate) status = "Pending Start";
   else if (c.stage === "Schedule Assessment") status = "Unscheduled Assessment";
   else if (c.stage === "Assessment Scheduled") status = "Assessment Scheduled";
   else if (c.schedule.length > 0) status = "Schedule Built";
@@ -124,26 +154,30 @@ export const getSchedulingStatus = (c: Client): SchedulingClientStatus => {
     { label: "RBT Assigned", done: !!c.rbt },
     { label: "Schedule Completed", done: c.schedule.length > 0 },
     { label: "Start Date Set", done: !!c.startDate },
+    { label: "Case Coordination Doc", done: !!c.caseCoordinationDocumentGenerated },
+    { label: "Pairing Email Sent", done: !!c.pairingEmailSent },
   ];
 
-  return { client: c, status, blockers, readinessChecklist };
+  return { client: c, status, blockers, alerts, weeklyHours, approvedHours, daysUntilStart, caseCoordinationDocumentGenerated: !!c.caseCoordinationDocumentGenerated, pairingEmailSent: !!c.pairingEmailSent, centralReachSyncStatus: c.centralReachSyncStatus ?? "Not Synced", readinessChecklist };
 };
 
 export const schedulingVariant = (s: SchedulingStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   const m: Record<SchedulingStatus, "default" | "success" | "warning" | "destructive" | "info" | "muted"> = {
     "Unscheduled Assessment": "warning",
     "Assessment Scheduled": "info",
-    "Ready to Schedule": "info",
+    "Pending Schedule": "info",
     "Schedule Built": "default",
-    "Pending Start Date": "warning",
+    "Pending Start": "warning",
+    "Starting Soon": "success",
+    "Delayed": "destructive",
     "Active": "success",
     "Blocked": "destructive",
   };
   return m[s];
 };
 
-export const allSchedulingClients = (): SchedulingClientStatus[] =>
-  mockClients.map(getSchedulingStatus);
+export const allSchedulingClients = (clients: Client[] = mockClients): SchedulingClientStatus[] =>
+  clients.map(getSchedulingStatus);
 
 // Suggest matches for an unstaffed client
 export const suggestMatches = (client: Client): RBT[] => {

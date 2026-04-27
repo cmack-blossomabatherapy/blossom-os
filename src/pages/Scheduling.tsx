@@ -8,14 +8,16 @@ import { SchedulingCalendarView } from "@/components/scheduling/SchedulingCalend
 import { SchedulingGridView } from "@/components/scheduling/SchedulingGridView";
 import { SchedulingMatchingView } from "@/components/scheduling/SchedulingMatchingView";
 import { allSchedulingClients, mockAssessments } from "@/data/scheduling";
+import { useClients } from "@/contexts/ClientsContext";
 
 export default function Scheduling() {
   const navigate = useNavigate();
+  const { clients } = useClients();
   const [viewMode, setViewMode] = useState<SchedulingViewMode>("queue");
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allItems = useMemo(() => allSchedulingClients(), []);
+  const allItems = useMemo(() => allSchedulingClients(clients), [clients]);
 
   const filteredItems = useMemo(() => {
     let result = allItems;
@@ -36,18 +38,22 @@ export default function Scheduling() {
         result = result.filter((i) => i.status === "Assessment Scheduled");
         break;
       case "pending-start":
-        result = result.filter((i) => i.client.stage === "Pending Start Date");
+        result = result.filter((i) => i.status === "Pending Start" || (i.status === "Schedule Built" && !i.client.startDate));
         break;
-      case "staffing":
-        result = result.filter(
-          (i) => i.client.stage === "Staffing Needed" || i.client.stage === "Restaffing Needed",
-        );
+      case "starting-soon":
+        result = result.filter((i) => i.status === "Starting Soon");
+        break;
+      case "delayed":
+        result = result.filter((i) => i.status === "Delayed");
         break;
       case "ready":
-        result = result.filter((i) => i.status === "Ready to Schedule");
+        result = result.filter((i) => i.status === "Pending Schedule");
         break;
       case "week":
         result = result.filter((i) => i.client.schedule.length > 0);
+        break;
+      case "active":
+        result = result.filter((i) => i.status === "Active");
         break;
     }
     return result;
