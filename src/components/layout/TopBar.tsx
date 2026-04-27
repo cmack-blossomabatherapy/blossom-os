@@ -38,9 +38,9 @@ export function TopBar({ title, onOpenMobileMenu }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/85 px-4 py-2.5 backdrop-blur-xl md:static md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
-      <div className="flex items-center justify-between gap-3 md:block">
+      <div className="flex items-center justify-between gap-3 pr-12 md:block md:pr-0">
         <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
-        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full md:hidden" onClick={onOpenMobileMenu} aria-label="Open navigation menu">
+        <Button size="icon" className="fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-50 h-11 w-11 rounded-full bg-sidebar text-sidebar-foreground shadow-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden" onClick={onOpenMobileMenu} aria-label="Open navigation menu">
           <Menu className="h-4 w-4" />
         </Button>
       </div>
