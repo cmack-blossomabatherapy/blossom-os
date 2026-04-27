@@ -57,6 +57,7 @@ export type ClientStage =
 export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" | "Expired" | "Expiring Soon";
 export type StaffingStatus = "Not Needed" | "Needed" | "In Progress" | "Assigned";
 export type QAStatus = "Not Started" | "In Review" | "Complete";
+export type ClientSchedulingStatus = "Pending Schedule" | "Schedule Created" | "Pending Start" | "Active";
 
 export interface ClientTask {
   id: string;
@@ -112,6 +113,8 @@ export interface ScheduleSlot {
   start: string;
   end: string;
   rbt?: string;
+  location?: "Home" | "School" | "Clinic";
+  notes?: string;
 }
 
 export interface Client {
@@ -137,6 +140,11 @@ export interface Client {
   daysToStart: number | null;
   assessmentDate: string | null;
   startDate: string | null;
+  schedulingStatus?: ClientSchedulingStatus;
+  caseCoordinationDocumentGenerated?: boolean;
+  pairingEmailSent?: boolean;
+  schedulingNotes?: string | null;
+  centralReachSyncStatus?: string;
   nextAction: string;
   nextTaskDue: string | null;
   lastActivity: string;
