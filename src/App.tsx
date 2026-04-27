@@ -1,13 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
-import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -66,6 +66,31 @@ const queryClient = new QueryClient();
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
+function RoleDashboardRedirect() {
+  const { roles, isAdmin, hasPerm } = useAuth();
+  const roleRoutes: Array<[string, string]> = [
+    ["intake", "/intake-dashboard"],
+    ["auth_team", "/authorizations-dashboard"],
+    ["scheduling", "/scheduling-dashboard"],
+    ["staffing", "/staffing-dashboard"],
+    ["clinic", "/clinic-dashboard"],
+    ["clinic_director", "/clinic-dashboard"],
+    ["qa", "/qa-dashboard"],
+    ["finance", "/leadership-dashboard?dashboard=finance"],
+    ["hr", "/hr"],
+    ["hr_admin", "/hr"],
+    ["hr_manager", "/hr"],
+    ["recruiting_assistant", "/leadership-dashboard?dashboard=recruiting"],
+    ["payroll_admin", "/hr/payroll"],
+    ["phone_support", "/phone-calls"],
+  ];
+  const route = isAdmin || roles.includes("exec") || roles.includes("ops_manager") || roles.includes("state_director")
+    ? "/leadership-dashboard"
+    : roleRoutes.find(([role]) => roles.includes(role as never))?.[1];
+
+  return <Navigate to={route ?? (hasPerm("clients.view") ? "/clients" : "/training")} replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -78,7 +103,7 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<RoleDashboardRedirect />} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
