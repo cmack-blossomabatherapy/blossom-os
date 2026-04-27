@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
-import { Users } from "lucide-react";
+import { ClipboardCheck, FileWarning, ShieldCheck, Users } from "lucide-react";
 import { LeadControlBar, ViewMode } from "@/components/leads/LeadControlBar";
 import { LeadTableView, SortField, SortDir } from "@/components/leads/LeadTableView";
 import { LeadPipelineView } from "@/components/leads/LeadPipelineView";
@@ -13,6 +13,7 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { kpiFilters, KpiKey, LeadStatus } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
+import { useClients } from "@/contexts/ClientsContext";
 
 const emptyFilters: LeadFilters = { states: [], sources: [], owners: [], insurances: [], priorities: [] };
 
@@ -48,6 +49,7 @@ export default function Leads() {
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const { clients } = useClients();
 
   // Sync external ?q= into search input (e.g. from TopBar global search)
   useEffect(() => {
@@ -156,6 +158,13 @@ export default function Leads() {
     else { setSortField(field); setSortDir("asc"); }
   };
 
+  const intakeSignals = useMemo(() => [
+    { label: "Financial review", value: leads.filter((lead) => lead.financialStatus === "Pending Review" || lead.paymentPlanNeeded).length, icon: FileWarning },
+    { label: "Ready for pipeline", value: leads.filter((lead) => lead.status === "VOB Completed" || lead.paymentPlanSigned).length, icon: ClipboardCheck },
+    { label: "Converted clients", value: clients.filter((client) => client.leadId || ["Converted to Client", "BCBA Assignment", "Pending Initial Authorization"].includes(client.stage)).length, icon: Users },
+    { label: "Auth handoffs", value: clients.filter((client) => client.readyForAuth || client.authorizations.some((auth) => auth.type === "Initial")).length, icon: ShieldCheck },
+  ], [clients, leads]);
+
   const exportLeads = (ids?: string[]) => {
     const target = ids?.length
       ? leads.filter((l) => ids.includes(l.id))
@@ -184,6 +193,16 @@ export default function Leads() {
       icon={Users}
     >
       <LeadKpiStrip leads={leads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />
+
+      <section className="grid gap-3 md:grid-cols-4">
+        {intakeSignals.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-lg border border-border/60 bg-card p-3">
+            <Icon className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-xl font-semibold text-foreground">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+          </div>
+        ))}
+      </section>
 
       <LeadControlBar
         viewMode={viewMode}

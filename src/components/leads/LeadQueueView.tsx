@@ -32,7 +32,7 @@ export function LeadQueueView({ leads, onSelectLead }: LeadQueueViewProps) {
       title: "Ready to Process",
       icon: <CheckCircle2 className="h-4 w-4 text-success" />,
       color: "border-l-success",
-      leads: leads.filter((l) => ["Form Received", "VOB Completed"].includes(l.status)),
+      leads: leads.filter((l) => ["Form Received", "Sent to VOB", "VOB Completed"].includes(l.status) || l.financialStatus === "Approved" || l.paymentPlanSigned),
     },
     {
       title: "Problem Leads",
@@ -85,6 +85,9 @@ export function LeadQueueView({ leads, onSelectLead }: LeadQueueViewProps) {
                         </div>
                       )}
                     </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {lead.formStatus} form · {lead.vobStatus} VOB · {lead.financialStatus} · {lead.paymentPlanStatus}
+                    </p>
                   </button>
                 );
               })}
