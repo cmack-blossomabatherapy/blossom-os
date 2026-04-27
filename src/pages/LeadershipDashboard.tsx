@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardDefinitions, pipelineStageOrder, type ClientRecord, type ClinicPerformance, type DashboardKey, type HealthStatus, type RiskLevel, type ServiceSetting } from "@/data/leadershipDashboard";
+import { mockClients } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -149,6 +150,34 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
     }));
 
   return { clientRecords, clinics, pipelineStages, redFlags, lastUpdated: new Date() };
+}
+
+function demoLeadershipRows() {
+  const clients = mockClients.map((client, index) => ({
+    id: client.id,
+    child_name: client.childName,
+    stage: client.stage,
+    state: client.state,
+    clinic: client.clinic,
+    bcba: client.bcba,
+    rbt: client.rbt,
+    staffing_status: client.staffingStatus,
+    auth_status: client.authStatus,
+    payor: client.payor,
+    start_date: client.startDate,
+    next_action: client.nextAction,
+    blockers: client.blockers,
+    stage_entered_at: new Date(Date.now() - client.daysInStage * dayMs).toISOString(),
+  })) as unknown as ClientRow[];
+  const auths = mockClients.flatMap((client) => client.authorizations.map((auth, index) => ({
+    id: `${client.id}-auth-${index}`,
+    client_id: client.id,
+    kind: auth.type,
+    status: auth.status,
+    hours: auth.hours ?? (auth.approvedHours ? `${auth.approvedHours}/wk` : null),
+  }))) as unknown as AuthRow[];
+  const timesheets = mockClients.filter((client) => client.stage === "Active").map((client, index) => ({ id: `demo-ts-${index}`, total_hours: client.deliveredWeeklyHours ?? 18 })) as unknown as TimesheetRow[];
+  return { clients, auths, timesheets };
 }
 
 export default function LeadershipDashboard() {
