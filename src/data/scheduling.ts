@@ -176,8 +176,8 @@ export const schedulingVariant = (s: SchedulingStatus): "default" | "success" | 
   return m[s];
 };
 
-export const allSchedulingClients = (): SchedulingClientStatus[] =>
-  mockClients.map(getSchedulingStatus);
+export const allSchedulingClients = (clients: Client[] = mockClients): SchedulingClientStatus[] =>
+  clients.map(getSchedulingStatus);
 
 // Suggest matches for an unstaffed client
 export const suggestMatches = (client: Client): RBT[] => {
