@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Filter, Search, Workflow, ExternalLink, Clock, AlertCircle, UserCheck, ShieldCheck, Calendar, Users } from "lucide-react";
+import { Filter, Search, Workflow, ExternalLink, Clock, AlertCircle, UserCheck, ShieldCheck, Calendar, Users, ClipboardCheck } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,12 +153,30 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-foreground">{value}</p></div>;
 }
 
+function ReadOnlyRecord({ title, description, details }: { title: string; description?: string; details: { label: string; value: string }[] }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-background p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{title}</p>
+          {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
+        </div>
+        <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+        {details.map((detail) => <Info key={`${title}-${detail.label}`} label={detail.label} value={detail.value} />)}
+      </div>
+    </div>
+  );
+}
+
 function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drilldown: Drilldown; onOpenClient: () => void; onOpenWorkspace: (path: string) => void }) {
   const { client, stage } = drilldown;
   const sectionKey = stageToSection.get(stage) ?? "clientSetup";
   const openTasks = client.tasks.filter((task) => !task.completed);
   const alert = getClientAlert(client);
   const context = getStageContext(client, sectionKey);
+  const relatedRecords = getRelatedRecords(client, sectionKey);
 
   return (
     <div className="mt-6 space-y-4">
@@ -184,6 +202,16 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
         <MiniStat label="Open tasks" value={openTasks.length} icon={Clock} />
         <MiniStat label="Documents" value={client.documents.length} icon={ExternalLink} />
         <MiniStat label="Timeline" value={client.timeline.length} icon={Workflow} />
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-foreground">Key related records</h3>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground"><ClipboardCheck className="h-3.5 w-3.5" /> Read-only</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {relatedRecords.map((record) => <ReadOnlyRecord key={record.title} {...record} />)}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card p-4">
@@ -213,6 +241,107 @@ function getStageContext(client: Client, sectionKey: string) {
   if (sectionKey === "staffing") return [...base, { label: "Staffing status", value: client.staffingStatus }, { label: "BCBA", value: client.bcba || "Unassigned" }, { label: "RBT", value: client.rbt || "Unassigned" }, { label: "Approved hours", value: String(client.approvedWeeklyHours ?? "—") }];
   if (sectionKey === "scheduling") return [...base, { label: "Scheduling status", value: client.schedulingStatus ?? "—" }, { label: "Schedule blocks", value: String(client.schedule.length) }, { label: "Start date", value: client.startDate ?? "Not set" }, { label: "CR sync", value: client.centralReachSyncStatus ?? "—" }];
   return [...base, { label: "Service status", value: client.activeServiceStatus ?? "Active" }, { label: "Delivered hours", value: String(client.deliveredWeeklyHours ?? 0) }, { label: "Billing", value: client.billingStatus ?? "—" }, { label: "Next reauth", value: client.nextReauthDate ?? "—" }];
+}
+
+function getRelatedRecords(client: Client, sectionKey: string) {
+  if (["initialAuth", "treatmentAuth"].includes(sectionKey)) {
+    const type = sectionKey === "initialAuth" ? "Initial" : "Treatment";
+    const auths = client.authorizations.filter((auth) => auth.type === type);
+    return (auths.length ? auths : client.authorizations.slice(0, 1)).map((auth) => ({
+      title: `${auth.type} authorization`,
+      description: auth.nextAction ?? auth.notes ?? "Authorization record",
+      details: [
+        { label: "Status", value: auth.status },
+        { label: "Payor", value: auth.payor ?? client.payor },
+        { label: "Hours", value: String(auth.approvedHours ?? auth.hours ?? client.approvedWeeklyHours ?? "—") },
+        { label: "Expires", value: auth.expirationDate ?? "—" },
+      ],
+    }));
+  }
+  if (sectionKey === "reauth") {
+    return (client.reauthCycles?.length ? client.reauthCycles : []).map((cycle) => ({
+      title: `Reauth cycle · ${cycle.payor}`,
+      description: cycle.notes ?? cycle.alerts[0] ?? "Reauthorization tracking",
+      details: [
+        { label: "Status", value: cycle.status },
+        { label: "QA", value: cycle.qaStatus },
+        { label: "Due", value: cycle.progressReportDueDate ?? "—" },
+        { label: "Expires", value: cycle.currentAuthExpirationDate },
+      ],
+    }));
+  }
+  if (sectionKey === "qa") {
+    return [
+      {
+        title: "QA review",
+        description: client.activeNotes ?? client.blockers[0] ?? "Quality and compliance review",
+        details: [
+          { label: "Status", value: client.qaStatus },
+          { label: "Owner", value: client.authorizations[0]?.qaOwner ?? "QA Team" },
+          { label: "Documents", value: String(client.documents.length) },
+          { label: "Flags", value: client.blockers.length ? client.blockers.join(", ") : "None" },
+        ],
+      },
+      ...client.documents.slice(0, 2).map((document) => ({
+        title: document.name,
+        description: "Document event",
+        details: [
+          { label: "Type", value: document.type },
+          { label: "Review", value: client.qaStatus },
+          { label: "Client", value: client.childName },
+          { label: "State", value: client.state },
+        ],
+      })),
+    ];
+  }
+  if (sectionKey === "staffing") {
+    return [
+      {
+        title: "Staffing assignment",
+        description: client.staffingHistory[0]?.event ?? "Current staffing record",
+        details: [
+          { label: "Status", value: client.staffingStatus },
+          { label: "BCBA", value: client.bcba || "Unassigned" },
+          { label: "RBT", value: client.rbt || "Unassigned" },
+          { label: "Hours", value: String(client.approvedWeeklyHours ?? "—") },
+        ],
+      },
+      ...client.staffingHistory.slice(0, 2).map((event) => ({
+        title: event.event,
+        description: "Staffing history",
+        details: [
+          { label: "Date", value: event.date },
+          { label: "BCBA", value: client.bcba || "—" },
+          { label: "RBT", value: client.rbt || "—" },
+          { label: "Status", value: client.staffingStatus },
+        ],
+      })),
+    ];
+  }
+  if (["scheduling", "assessment", "activeServices"].includes(sectionKey)) {
+    return (client.schedule.length ? client.schedule : []).map((slot) => ({
+      title: `${slot.day} · ${slot.start}–${slot.end}`,
+      description: slot.notes ?? `${slot.location ?? "Session"} scheduling block`,
+      details: [
+        { label: "RBT", value: slot.rbt ?? client.rbt ?? "Unassigned" },
+        { label: "Location", value: slot.location ?? client.serviceLocation ?? "—" },
+        { label: "Schedule", value: client.schedulingStatus ?? "—" },
+        { label: "CR sync", value: client.centralReachSyncStatus ?? "—" },
+      ],
+    }));
+  }
+  return [
+    {
+      title: "Client setup record",
+      description: client.nextAction || "Lifecycle context",
+      details: [
+        { label: "Parent", value: client.parentName },
+        { label: "Payor", value: client.payor },
+        { label: "Owner", value: client.intakeOwner },
+        { label: "Blockers", value: client.blockers.length ? client.blockers.join(", ") : "None" },
+      ],
+    },
+  ];
 }
 
 function getWorkspacePath(sectionKey: string) {
