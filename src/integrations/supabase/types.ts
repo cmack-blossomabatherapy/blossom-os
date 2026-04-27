@@ -83,41 +83,80 @@ export type Database = {
       client_authorizations: {
         Row: {
           approved_date: string | null
+          assigned_auth_coordinator: string | null
+          blockers: string[]
           client_id: string
           created_at: string
           expiration_date: string | null
           hours: string | null
           id: string
           kind: Database["public"]["Enums"]["auth_kind"]
+          missing_docs: string[]
+          next_action: string
           notes: string | null
+          payor: string | null
+          progress_report_status: Database["public"]["Enums"]["progress_report_status"]
+          qa_owner: string | null
+          qa_status: Database["public"]["Enums"]["qa_status"]
+          reauth_source_id: string | null
+          required_docs_received: boolean
+          stage_entered_at: string
+          state: string | null
           status: Database["public"]["Enums"]["auth_status"]
           submitted_date: string | null
+          treatment_plan_received: boolean
           updated_at: string
         }
         Insert: {
           approved_date?: string | null
+          assigned_auth_coordinator?: string | null
+          blockers?: string[]
           client_id: string
           created_at?: string
           expiration_date?: string | null
           hours?: string | null
           id?: string
           kind: Database["public"]["Enums"]["auth_kind"]
+          missing_docs?: string[]
+          next_action?: string
           notes?: string | null
+          payor?: string | null
+          progress_report_status?: Database["public"]["Enums"]["progress_report_status"]
+          qa_owner?: string | null
+          qa_status?: Database["public"]["Enums"]["qa_status"]
+          reauth_source_id?: string | null
+          required_docs_received?: boolean
+          stage_entered_at?: string
+          state?: string | null
           status?: Database["public"]["Enums"]["auth_status"]
           submitted_date?: string | null
+          treatment_plan_received?: boolean
           updated_at?: string
         }
         Update: {
           approved_date?: string | null
+          assigned_auth_coordinator?: string | null
+          blockers?: string[]
           client_id?: string
           created_at?: string
           expiration_date?: string | null
           hours?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["auth_kind"]
+          missing_docs?: string[]
+          next_action?: string
           notes?: string | null
+          payor?: string | null
+          progress_report_status?: Database["public"]["Enums"]["progress_report_status"]
+          qa_owner?: string | null
+          qa_status?: Database["public"]["Enums"]["qa_status"]
+          reauth_source_id?: string | null
+          required_docs_received?: boolean
+          stage_entered_at?: string
+          state?: string | null
           status?: Database["public"]["Enums"]["auth_status"]
           submitted_date?: string | null
+          treatment_plan_received?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -2442,13 +2481,14 @@ export type Database = {
         | "acknowledged"
         | "resolved"
         | "dismissed"
-      auth_kind: "Initial" | "Treatment"
+      auth_kind: "Initial" | "Treatment" | "Reauth"
       auth_status:
         | "Not Submitted"
         | "Submitted"
         | "Approved"
         | "Denied"
         | "Expired"
+        | "Expiring Soon"
       bonus_status: "pending_approval" | "approved" | "paid" | "cancelled"
       bonus_type:
         | "signing"
@@ -2674,6 +2714,7 @@ export type Database = {
         | "posted"
         | "closed"
         | "rejected"
+      progress_report_status: "Not Started" | "In Progress" | "Received"
       punch_kind: "clock_in" | "clock_out" | "break_start" | "break_end"
       punch_source: "kiosk" | "manual" | "manager_edit" | "import"
       punch_status: "pending" | "approved" | "rejected" | "locked"
@@ -2887,13 +2928,14 @@ export const Constants = {
         "resolved",
         "dismissed",
       ],
-      auth_kind: ["Initial", "Treatment"],
+      auth_kind: ["Initial", "Treatment", "Reauth"],
       auth_status: [
         "Not Submitted",
         "Submitted",
         "Approved",
         "Denied",
         "Expired",
+        "Expiring Soon",
       ],
       bonus_status: ["pending_approval", "approved", "paid", "cancelled"],
       bonus_type: [
@@ -3140,6 +3182,7 @@ export const Constants = {
         "closed",
         "rejected",
       ],
+      progress_report_status: ["Not Started", "In Progress", "Received"],
       punch_kind: ["clock_in", "clock_out", "break_start", "break_end"],
       punch_source: ["kiosk", "manual", "manager_edit", "import"],
       punch_status: ["pending", "approved", "rejected", "locked"],
