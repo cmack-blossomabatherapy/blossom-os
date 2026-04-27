@@ -9,18 +9,17 @@ import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 
 interface TopBarProps {
   title: string;
   onOpenMobileMenu?: () => void;
+  mobileMenuFloating?: boolean;
 }
 
-export function TopBar({ title, onOpenMobileMenu }: TopBarProps) {
+export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: TopBarProps) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [newLeadOpen, setNewLeadOpen] = useState(false);
-  const [menuIsFloating, setMenuIsFloating] = useState(false);
   const { user, roles, isAdmin, signOut } = useAuth();
   const primaryRole = roles[0] ?? "viewer";
   const initials = (user?.user_metadata?.display_name ?? user?.email ?? "U")
@@ -39,25 +38,17 @@ export function TopBar({ title, onOpenMobileMenu }: TopBarProps) {
 
   const todayIso = new Date().toISOString().split("T")[0];
 
-  useEffect(() => {
-    const updateMenuPosition = () => setMenuIsFloating(window.scrollY > 56);
-
-    updateMenuPosition();
-    window.addEventListener("scroll", updateMenuPosition, { passive: true });
-    return () => window.removeEventListener("scroll", updateMenuPosition);
-  }, []);
-
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/85 px-4 py-2.5 backdrop-blur-xl md:static md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
-      <div className="flex items-center justify-between gap-3 pr-12 md:block md:pr-0">
+      <div className="flex items-center justify-between gap-3 md:block md:pr-0">
         <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
         <Button
           size="icon"
           className={cn(
             "z-50 h-10 w-10 shrink-0 rounded-full bg-sidebar text-sidebar-foreground shadow-md transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden",
-            menuIsFloating
+            mobileMenuFloating
               ? "fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top))] h-11 w-11 shadow-lg ring-1 ring-sidebar-border/70"
-              : "absolute right-4 top-[calc(0.625rem+env(safe-area-inset-top))]"
+              : "relative right-auto top-auto shadow-sm"
           )}
           onClick={onOpenMobileMenu}
           aria-label="Open navigation menu"
