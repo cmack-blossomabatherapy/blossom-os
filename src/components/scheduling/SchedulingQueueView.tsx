@@ -13,11 +13,9 @@ export function SchedulingQueueView({ items, assessments, onSelect }: Props) {
   const needsScheduling = items.filter(
     (i) => i.status === "Unscheduled Assessment" || (i.status === "Pending Schedule" && i.client.schedule.length === 0),
   );
-  const readyToStart = items.filter(
-    (i) => i.client.authStatus === "Approved" && i.client.rbt && i.client.schedule.length === 0 && i.client.stage !== "Active",
-  );
-  const blocked = items.filter((i) => i.status === "Blocked");
-  const upcoming = assessments.filter((a) => a.status === "Scheduled" && a.date);
+  const readyToStart = items.filter((i) => i.client.schedule.length > 0 && !i.client.startDate && i.client.stage !== "Active");
+  const startingSoon = items.filter((i) => i.status === "Starting Soon" || i.status === "Pending Start");
+  const delayed = items.filter((i) => i.status === "Delayed" || i.alerts.some((alert) => alert.includes("Delayed")) || i.blockers.length > 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -36,7 +34,7 @@ export function SchedulingQueueView({ items, assessments, onSelect }: Props) {
         )}
       </Section>
 
-      <Section title="Ready to Start" icon={CheckCircle2} tone="success" count={readyToStart.length}>
+      <Section title="Ready for Start" icon={CheckCircle2} tone="success" count={readyToStart.length}>
         {readyToStart.length === 0 ? (
           <Empty label="No clients ready" />
         ) : (
@@ -45,43 +43,28 @@ export function SchedulingQueueView({ items, assessments, onSelect }: Props) {
               key={i.client.id}
               item={i}
               onSelect={onSelect}
-              subtitle={`Auth approved · RBT ${i.client.rbt} · No schedule`}
+              subtitle={`Schedule done · ${i.weeklyHours}h/wk · start date missing`}
             />
           ))
         )}
       </Section>
 
-      <Section title="Blocked Scheduling" icon={AlertTriangle} tone="warning" count={blocked.length}>
-        {blocked.length === 0 ? (
-          <Empty label="No blockers" />
+      <Section title="Starting Soon" icon={Clock} tone="info" count={startingSoon.length}>
+        {startingSoon.length === 0 ? (
+          <Empty label="No upcoming starts" />
         ) : (
-          blocked.map((i) => (
-            <Row key={i.client.id} item={i} onSelect={onSelect} subtitle={i.blockers.join(" · ")} />
+          startingSoon.map((i) => (
+            <Row key={i.client.id} item={i} onSelect={onSelect} subtitle={`${i.client.startDate ?? "No date"} · ${i.daysUntilStart ?? "—"}d until start`} />
           ))
         )}
       </Section>
 
-      <Section title="Upcoming Assessments" icon={Clock} tone="info" count={upcoming.length}>
-        {upcoming.length === 0 ? (
-          <Empty label="No upcoming assessments" />
+      <Section title="Delayed / Blocked" icon={AlertTriangle} tone="warning" count={delayed.length}>
+        {delayed.length === 0 ? (
+          <Empty label="No delayed starts" />
         ) : (
-          upcoming.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => onSelect(a.clientId)}
-              className="w-full flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/40 hover:border-primary/40 transition-colors text-left"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{a.clientName}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {a.bcba} · {a.state}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-medium text-foreground">{a.date}</p>
-                <p className="text-xs text-muted-foreground">{a.time}</p>
-              </div>
-            </button>
+          delayed.map((i) => (
+            <Row key={i.client.id} item={i} onSelect={onSelect} subtitle={[...i.blockers, ...i.alerts].join(" · ")} />
           ))
         )}
       </Section>
@@ -133,6 +116,7 @@ function Row({
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{item.client.childName}</p>
         <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground truncate">{item.client.bcba ?? "No BCBA"} · {item.client.rbt ?? "No RBT"} · {item.weeklyHours}/{item.approvedHours}h</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <StatusBadge status={item.status} variant={schedulingVariant(item.status)} />
