@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,8 +182,7 @@ function demoLeadershipRows() {
 
 export default function LeadershipDashboard() {
   const { clinicId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { isAdmin, roles, partOfLeadership, dashboardAccess } = useAuth();
+  const { roles, partOfLeadership, dashboardAccess } = useAuth();
   const [clientRows, setClientRows] = useState<ClientRow[]>([]);
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
   const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
@@ -198,12 +197,6 @@ export default function LeadershipDashboard() {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<keyof ClientRecord>("daysInStatus");
 
-  const assignedDashboard = useMemo<DashboardKey>(() => {
-    if (dashboardAccess && dashboardAccess !== "department") return dashboardAccess as DashboardKey;
-    return roles.map((role) => roleDashboardMap[role]).find(Boolean) ?? "clinic";
-  }, [dashboardAccess, roles]);
-  const [selectedDashboard, setSelectedDashboard] = useState<DashboardKey>(isAdmin || partOfLeadership ? "ceo" : assignedDashboard);
-  const requestedDashboard = searchParams.get("dashboard") as DashboardKey | null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -247,14 +240,8 @@ export default function LeadershipDashboard() {
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
   const clinicNames = ["All Clinics", ...Array.from(new Set(live.clinics.map((clinic) => clinic.clinic))).filter(Boolean)];
   const insuranceNames = ["All Insurance", ...Array.from(new Set(live.clientRecords.map((client) => client.insurance))).filter((item) => item && item !== "—")];
-  const allowedDashboards = isAdmin ? dashboardDefinitions : partOfLeadership ? dashboardDefinitions.filter((d) => d.key === "ceo") : dashboardDefinitions.filter((d) => d.key === assignedDashboard);
-  const activeDashboard = requestedDashboard && allowedDashboards.some((d) => d.key === requestedDashboard) ? requestedDashboard : allowedDashboards.some((d) => d.key === selectedDashboard) ? selectedDashboard : allowedDashboards[0]?.key ?? "clinic";
+  const activeDashboard: DashboardKey = "ceo";
   const selectedClinic = clinicId ? live.clinics.find((clinic) => clinic.id === clinicId) : null;
-
-  const handleDashboardSelect = (dashboard: DashboardKey) => {
-    setSelectedDashboard(dashboard);
-    setSearchParams({ dashboard });
-  };
 
   const filteredClients = useMemo(() => {
     const q = query.toLowerCase();
@@ -293,9 +280,6 @@ export default function LeadershipDashboard() {
           </div>
         </div>
 
-        {isAdmin && <DashboardSelector activeDashboard={activeDashboard} onSelect={handleDashboardSelect} />}
-        {!isAdmin && !partOfLeadership && activeDashboard !== "ceo" && <DepartmentDashboardNotice dashboard={allowedDashboards[0]} />}
-
         {activeDashboard === "ceo" && (
           <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Filter className="h-4 w-4 text-primary" />Dashboard Filters</div>
@@ -316,10 +300,6 @@ export default function LeadershipDashboard() {
       {loading ? <DashboardLoadingState /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
     </div>
   );
-}
-
-function DashboardSelector({ activeDashboard, onSelect }: { activeDashboard: DashboardKey; onSelect: (key: DashboardKey) => void }) {
-  return <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-3 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold text-foreground">Super Admin Dashboard Selector</h2></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">{dashboardDefinitions.map((dashboard) => <button key={dashboard.key} onClick={() => onSelect(dashboard.key)} className={cn("rounded-lg border p-3 text-left transition-colors", activeDashboard === dashboard.key ? "border-primary/40 bg-primary/5" : "border-border/60 bg-background hover:bg-muted/40")}><p className="text-sm font-semibold text-foreground">{dashboard.name}</p><p className="mt-1 text-[11px] text-muted-foreground">Access: {dashboard.access}</p><p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{dashboard.description}</p></button>)}</div></section>;
 }
 
 function DashboardLoadingState({ isSyncingFirstData = false }: { isSyncingFirstData?: boolean }) {
