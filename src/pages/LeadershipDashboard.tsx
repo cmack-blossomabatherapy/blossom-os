@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,6 +182,7 @@ function demoLeadershipRows() {
 
 export default function LeadershipDashboard() {
   const { clinicId } = useParams();
+  const [searchParams] = useSearchParams();
   const { roles, partOfLeadership, dashboardAccess } = useAuth();
   const [clientRows, setClientRows] = useState<ClientRow[]>([]);
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
@@ -240,7 +241,10 @@ export default function LeadershipDashboard() {
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
   const clinicNames = ["All Clinics", ...Array.from(new Set(live.clinics.map((clinic) => clinic.clinic))).filter(Boolean)];
   const insuranceNames = ["All Insurance", ...Array.from(new Set(live.clientRecords.map((client) => client.insurance))).filter((item) => item && item !== "—")];
-  const activeDashboard: DashboardKey = "ceo";
+  const requestedDashboard = searchParams.get("dashboard") as DashboardKey | null;
+  const roleDashboard = roles.map((role) => roleDashboardMap[role]).find(Boolean);
+  const profileDashboard = dashboardAccess && dashboardAccess in dashboardDefinitions ? dashboardAccess as DashboardKey : null;
+  const activeDashboard: DashboardKey = requestedDashboard && requestedDashboard in dashboardDefinitions ? requestedDashboard : profileDashboard ?? roleDashboard ?? "ceo";
   const selectedClinic = clinicId ? live.clinics.find((clinic) => clinic.id === clinicId) : null;
 
   const filteredClients = useMemo(() => {
