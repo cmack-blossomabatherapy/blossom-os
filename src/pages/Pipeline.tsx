@@ -377,6 +377,43 @@ function getRelatedRecords(client: Client, sectionKey: string) {
   ];
 }
 
+function getStageActivity(client: Client, sectionKey: string) {
+  const stageTypes: Record<string, string[]> = {
+    initialAuth: ["auth", "stage"],
+    treatmentAuth: ["auth", "stage"],
+    reauth: ["auth", "qa", "stage"],
+    qa: ["qa", "note", "stage"],
+    staffing: ["staffing", "stage"],
+    scheduling: ["schedule", "stage"],
+    assessment: ["schedule", "stage", "note"],
+    activeServices: ["schedule", "staffing", "note", "stage"],
+  };
+  const matchingTypes = stageTypes[sectionKey] ?? ["system", "note", "stage"];
+  const timelineEvents = client.timeline
+    .filter((event) => matchingTypes.includes(event.type))
+    .map((event) => ({ title: event.description, timestamp: event.timestamp, type: event.type, description: event.user ? `By ${event.user}` : undefined }));
+  const blockerEvents = client.blockers.map((blocker, index) => ({
+    title: blocker,
+    timestamp: client.nextTaskDue ?? client.lastActivity,
+    type: "blocker",
+    description: "Current stage blocker",
+    isBlocker: true,
+  }));
+  const taskEvents = client.tasks
+    .filter((task) => !task.completed)
+    .map((task) => ({ title: task.title, timestamp: task.dueDate ?? client.lastActivity, type: "task", description: "Open task" }));
+
+  return [...blockerEvents, ...timelineEvents, ...taskEvents]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5);
+}
+
+function formatTimelineDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function getWorkspacePath(sectionKey: string) {
   if (sectionKey === "intake") return "/leads?view=queue";
   if (["initialAuth", "treatmentAuth", "reauth"].includes(sectionKey)) return "/authorizations";
