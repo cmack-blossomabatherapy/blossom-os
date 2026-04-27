@@ -509,6 +509,12 @@ function MemberRow({
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                 <InfoLine label="Email" value={member.email || "—"} mono />
                 <InfoLine label="Job title" value={member.job_title || "—"} />
+                <InfoLine label="Department" value={member.department || "—"} />
+                <InfoLine label="State" value={member.state || "—"} />
+                <InfoLine label="Clinic" value={member.clinic || "—"} />
+                <InfoLine label="Part of Leadership" value={member.part_of_leadership ? "Yes" : "No"} />
+                <InfoLine label="Dashboard Access" value={member.dashboard_access || "Department-specific"} />
+                <InfoLine label="Status" value={member.active ? "Active" : "Inactive"} />
                 <div className="sm:col-span-2">
                   <InfoLine
                     label="Responsibilities"
