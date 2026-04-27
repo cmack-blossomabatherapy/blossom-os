@@ -22,8 +22,9 @@ const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Qu
 const difficultyLevels: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
 type LibraryView = "active" | "archived" | "all";
 type RequirementFilter = "all" | "required" | "optional";
+type AssignmentStatus = "assigned" | "in_progress" | "completed" | "overdue";
 
-interface AssignmentRecord { id: string; courseId: string; courseTitle: string; target: string; department: string; role: string; dueDate: string; required: boolean; assignedAt: string; }
+interface AssignmentRecord { id: string; courseId: string; courseTitle: string; target: string; department: string; role: string; dueDate: string; required: boolean; assignedAt: string; employeeId: string; employeeName: string; status: AssignmentStatus; progress: number; startedAt?: string; completedAt?: string; }
 
 
 type TrainingSnapshot = Omit<TrainingCourse, "versions">;
@@ -35,6 +36,8 @@ const snapshotCourse = (course: TrainingCourse): TrainingSnapshot => {
 
 const listText = (items: string[]) => items.length ? items.join(", ") : "None";
 const formatDateTime = (value: string) => new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+const assignmentStatusLabel = (status: AssignmentStatus) => ({ assigned: "Enrolled", in_progress: "In progress", completed: "Completed", overdue: "Overdue" }[status]);
+const assignmentStatusVariant = (status: AssignmentStatus) => status === "completed" ? "success" : status === "overdue" ? "danger" : status === "in_progress" ? "info" : "muted";
 
 const describeTrainingChanges = (before: TrainingSnapshot, after: TrainingCourse) => {
   const changes: string[] = [];
