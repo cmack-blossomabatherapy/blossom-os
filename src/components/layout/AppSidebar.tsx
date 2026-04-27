@@ -174,28 +174,28 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="right" className="mobile-menu-sheet w-[88vw] max-w-sm overflow-y-auto border-l border-border bg-card p-0 md:hidden">
-          <div className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-lg">
+        <SheetContent side="right" className="mobile-menu-sheet w-[82vw] max-w-[320px] overflow-y-auto border-l border-border bg-background p-0 shadow-2xl md:hidden">
+          <div className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar p-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-lg">
             <div className="flex items-center justify-between gap-3">
               <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
-                <X className="h-4 w-4" />
+              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+                <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-3 text-xs font-medium text-sidebar-foreground/80">Blossom OS navigation</p>
+            <p className="mt-3 text-[11px] font-medium text-sidebar-foreground/80">Blossom OS navigation</p>
           </div>
-          <nav className="space-y-3 px-4 py-4" aria-label="Mobile navigation">
+          <nav className="px-4 py-3" aria-label="Mobile navigation">
             {sections.map((section, i) => {
               const title = section.title ?? `Section ${i + 1}`;
               const activeInSection = section.items.some((item) => isItemActive(item.path));
               const sectionOpen = mobileOpenSections.has(title);
               return (
-              <div key={title} className="rounded-2xl border border-border/60 bg-background/60 p-2 shadow-sm">
-                <button type="button" onClick={() => toggleMobileSection(title)} className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left" aria-expanded={sectionOpen}>
+              <div key={title} className="border-b border-border/70 py-3 last:border-b-0">
+                <button type="button" onClick={() => toggleMobileSection(title)} className="flex min-h-10 w-full items-center justify-between rounded-lg px-2 text-left transition-colors hover:bg-secondary" aria-expanded={sectionOpen}>
                   <span className={cn("text-[11px] font-semibold uppercase tracking-wider", activeInSection ? "text-primary" : "text-muted-foreground")}>{section.title}</span>
                   <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", !sectionOpen && "-rotate-90")} />
                 </button>
-                {sectionOpen && <div className="grid gap-2 pt-1">
+                {sectionOpen && <div className="space-y-0.5 pt-1">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
                     return (
