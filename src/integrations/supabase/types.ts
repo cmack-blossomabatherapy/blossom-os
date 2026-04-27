@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_documents: {
+        Row: {
+          assessment_id: string
+          client_id: string
+          created_at: string
+          document_type: Database["public"]["Enums"]["assessment_document_type"]
+          id: string
+          name: string
+          qa_visible: boolean
+          storage_path: string | null
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version: number
+        }
+        Insert: {
+          assessment_id: string
+          client_id: string
+          created_at?: string
+          document_type: Database["public"]["Enums"]["assessment_document_type"]
+          id?: string
+          name: string
+          qa_visible?: boolean
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Update: {
+          assessment_id?: string
+          client_id?: string
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["assessment_document_type"]
+          id?: string
+          name?: string
+          qa_visible?: boolean
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       attendance_exceptions: {
         Row: {
           clinic: string | null
@@ -79,6 +121,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      client_assessments: {
+        Row: {
+          alerts: string[]
+          assessment_type: Database["public"]["Enums"]["assessment_type"]
+          assigned_bcba: string | null
+          blockers: string[]
+          client_id: string
+          completed_date: string | null
+          created_at: string
+          id: string
+          location: Database["public"]["Enums"]["assessment_location"]
+          next_action: string
+          notes: string | null
+          qa_owner: string | null
+          scheduled_date: string | null
+          scheduler: string | null
+          stage_entered_at: string
+          status: Database["public"]["Enums"]["assessment_status"]
+          treatment_plan_completed_date: string | null
+          treatment_plan_due_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          alerts?: string[]
+          assessment_type?: Database["public"]["Enums"]["assessment_type"]
+          assigned_bcba?: string | null
+          blockers?: string[]
+          client_id: string
+          completed_date?: string | null
+          created_at?: string
+          id?: string
+          location?: Database["public"]["Enums"]["assessment_location"]
+          next_action?: string
+          notes?: string | null
+          qa_owner?: string | null
+          scheduled_date?: string | null
+          scheduler?: string | null
+          stage_entered_at?: string
+          status?: Database["public"]["Enums"]["assessment_status"]
+          treatment_plan_completed_date?: string | null
+          treatment_plan_due_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alerts?: string[]
+          assessment_type?: Database["public"]["Enums"]["assessment_type"]
+          assigned_bcba?: string | null
+          blockers?: string[]
+          client_id?: string
+          completed_date?: string | null
+          created_at?: string
+          id?: string
+          location?: Database["public"]["Enums"]["assessment_location"]
+          next_action?: string
+          notes?: string | null
+          qa_owner?: string | null
+          scheduled_date?: string | null
+          scheduler?: string | null
+          stage_entered_at?: string
+          status?: Database["public"]["Enums"]["assessment_status"]
+          treatment_plan_completed_date?: string | null
+          treatment_plan_due_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       client_authorizations: {
         Row: {
@@ -2466,6 +2574,15 @@ export type Database = {
         | "state_director"
         | "clinic_director"
         | "dept_manager"
+      assessment_document_type: "Assessment Notes" | "Treatment Plan"
+      assessment_location: "Home" | "School" | "Clinic"
+      assessment_status:
+        | "Needs Scheduling"
+        | "Scheduled"
+        | "Completed"
+        | "Treatment Plan Pending"
+        | "Treatment Plan Submitted"
+      assessment_type: "Initial" | "Reassessment" | "Update"
       attendance_exception_kind:
         | "missed_clock_in"
         | "missed_clock_out"
@@ -2912,6 +3029,16 @@ export const Constants = {
         "clinic_director",
         "dept_manager",
       ],
+      assessment_document_type: ["Assessment Notes", "Treatment Plan"],
+      assessment_location: ["Home", "School", "Clinic"],
+      assessment_status: [
+        "Needs Scheduling",
+        "Scheduled",
+        "Completed",
+        "Treatment Plan Pending",
+        "Treatment Plan Submitted",
+      ],
+      assessment_type: ["Initial", "Reassessment", "Update"],
       attendance_exception_kind: [
         "missed_clock_in",
         "missed_clock_out",
