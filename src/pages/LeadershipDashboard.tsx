@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,7 @@ export default function LeadershipDashboard() {
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
   const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("This Month");
   const [stateFilter, setStateFilter] = useState("All States");
   const [clinicFilter, setClinicFilter] = useState("All Clinics");
@@ -172,22 +173,37 @@ export default function LeadershipDashboard() {
   }, [dashboardAccess, roles]);
   const [selectedDashboard, setSelectedDashboard] = useState<DashboardKey>(isAdmin || partOfLeadership ? "ceo" : assignedDashboard);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    const [clientsRes, authsRes, timesheetsRes] = await Promise.all([
-      supabase.from("clients").select("*"),
-      supabase.from("client_authorizations").select("*"),
-      supabase.from("hours_timesheets").select("*"),
-    ]);
-    setClientRows((clientsRes.data ?? []) as ClientRow[]);
-    setAuthRows((authsRes.data ?? []) as AuthRow[]);
-    setTimesheetRows((timesheetsRes.data ?? []) as TimesheetRow[]);
-    setLoading(false);
-  };
+    setLoadError(null);
+
+    try {
+      const [clientsRes, authsRes, timesheetsRes] = await Promise.all([
+        supabase.from("clients").select("*"),
+        supabase.from("client_authorizations").select("*"),
+        supabase.from("hours_timesheets").select("*"),
+      ]);
+
+      const queryError = clientsRes.error ?? authsRes.error ?? timesheetsRes.error;
+      if (queryError) throw queryError;
+
+      setClientRows((clientsRes.data ?? []) as ClientRow[]);
+      setAuthRows((authsRes.data ?? []) as AuthRow[]);
+      setTimesheetRows((timesheetsRes.data ?? []) as TimesheetRow[]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Live dashboard data could not be loaded.";
+      setLoadError(message);
+      setClientRows([]);
+      setAuthRows([]);
+      setTimesheetRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const live = useMemo(() => buildLiveDashboard(clientRows, authRows, timesheetRows), [authRows, clientRows, timesheetRows]);
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
@@ -226,9 +242,9 @@ export default function LeadershipDashboard() {
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Company-wide operational scorecard for clinics, staffing, authorizations, utilization, and client flow.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Last Updated: {live.lastUpdated.toLocaleString()}</span>
+            <span className="text-xs text-muted-foreground">{loading ? "Initializing live data…" : `Last Updated: ${live.lastUpdated.toLocaleString()}`}</span>
             <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>
-            <Button variant="outline" size="sm" onClick={load}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />Refresh</Button>
           </div>
         </div>
 
@@ -251,13 +267,21 @@ export default function LeadershipDashboard() {
         )}
       </header>
 
-      {loading ? <Section title="Loading live data"><p className="text-sm text-muted-foreground">Loading records from Blossom OS…</p></Section> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
+      {loadError ? <DashboardErrorState message={loadError} onRetry={load} /> : loading ? <DashboardLoadingState /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
     </div>
   );
 }
 
 function DashboardSelector({ activeDashboard, onSelect }: { activeDashboard: DashboardKey; onSelect: (key: DashboardKey) => void }) {
   return <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-3 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold text-foreground">Super Admin Dashboard Selector</h2></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">{dashboardDefinitions.map((dashboard) => <button key={dashboard.key} onClick={() => onSelect(dashboard.key)} className={cn("rounded-lg border p-3 text-left transition-colors", activeDashboard === dashboard.key ? "border-primary/40 bg-primary/5" : "border-border/60 bg-background hover:bg-muted/40")}><p className="text-sm font-semibold text-foreground">{dashboard.name}</p><p className="mt-1 text-[11px] text-muted-foreground">Access: {dashboard.access}</p><p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{dashboard.description}</p></button>)}</div></section>;
+}
+
+function DashboardLoadingState() {
+  return <Section title="Loading live dashboard"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{["Clients", "Authorizations", "Service Hours", "Leadership KPIs"].map((label) => <div key={label} className="rounded-lg border border-border/60 bg-background p-4"><div className="mb-3 h-4 w-24 animate-pulse rounded bg-muted" /><div className="h-8 w-16 animate-pulse rounded bg-muted" /><p className="mt-3 text-xs text-muted-foreground">Initializing {label.toLowerCase()}…</p></div>)}</div><p className="mt-4 text-sm text-muted-foreground">Connecting to live Blossom OS records. The dashboard will appear as soon as the queries finish.</p></Section>;
+}
+
+function DashboardErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <Section title="Live dashboard unavailable"><div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><p className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />Unable to load live leadership data</p><p className="mt-2 max-w-3xl text-sm text-muted-foreground">The dashboard is safe, but one or more live queries failed while initializing. Try refreshing; if it continues, check that the current account has access to Clients, Authorizations, and Timesheets.</p><p className="mt-3 rounded-md bg-background px-3 py-2 text-xs text-muted-foreground">Error: {message}</p></div><Button variant="outline" size="sm" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></div></div></Section>;
 }
 
 function LeadershipScorecard({ live, filteredClients, query, setQuery, sortBy, setSortBy }: { live: ReturnType<typeof buildLiveDashboard>; filteredClients: ClientRecord[]; query: string; setQuery: (value: string) => void; sortBy: keyof ClientRecord; setSortBy: (value: keyof ClientRecord) => void }) {
