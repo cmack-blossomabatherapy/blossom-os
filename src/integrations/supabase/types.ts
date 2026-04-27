@@ -315,6 +315,78 @@ export type Database = {
           },
         ]
       }
+      client_qa_reviews: {
+        Row: {
+          alerts: string[]
+          assessment_id: string | null
+          assigned_bcba: string | null
+          assigned_qa_owner: string | null
+          blockers: string[]
+          client_id: string
+          created_at: string
+          documentation_complete: boolean
+          error_types: Database["public"]["Enums"]["qa_error_type"][]
+          errors_found: boolean
+          id: string
+          next_action: string
+          notes: string | null
+          notes_verified: boolean
+          qa_completed_date: string | null
+          qa_start_date: string | null
+          stage_entered_at: string
+          status: Database["public"]["Enums"]["qa_review_status"]
+          treatment_plan_received: boolean
+          treatment_plan_submitted_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          alerts?: string[]
+          assessment_id?: string | null
+          assigned_bcba?: string | null
+          assigned_qa_owner?: string | null
+          blockers?: string[]
+          client_id: string
+          created_at?: string
+          documentation_complete?: boolean
+          error_types?: Database["public"]["Enums"]["qa_error_type"][]
+          errors_found?: boolean
+          id?: string
+          next_action?: string
+          notes?: string | null
+          notes_verified?: boolean
+          qa_completed_date?: string | null
+          qa_start_date?: string | null
+          stage_entered_at?: string
+          status?: Database["public"]["Enums"]["qa_review_status"]
+          treatment_plan_received?: boolean
+          treatment_plan_submitted_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alerts?: string[]
+          assessment_id?: string | null
+          assigned_bcba?: string | null
+          assigned_qa_owner?: string | null
+          blockers?: string[]
+          client_id?: string
+          created_at?: string
+          documentation_complete?: boolean
+          error_types?: Database["public"]["Enums"]["qa_error_type"][]
+          errors_found?: boolean
+          id?: string
+          next_action?: string
+          notes?: string | null
+          notes_verified?: boolean
+          qa_completed_date?: string | null
+          qa_start_date?: string | null
+          stage_entered_at?: string
+          status?: Database["public"]["Enums"]["qa_review_status"]
+          treatment_plan_received?: boolean
+          treatment_plan_submitted_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_schedule_slots: {
         Row: {
           client_id: string
@@ -2341,6 +2413,69 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_note_monitoring: {
+        Row: {
+          alerts: string[]
+          bcba_name: string | null
+          check_in_due: string | null
+          client_id: string | null
+          created_at: string
+          errors_found: number
+          flagged_notes: number
+          id: string
+          monitoring_type: Database["public"]["Enums"]["qa_monitoring_type"]
+          new_rbt_monitoring: boolean
+          next_action: string
+          notes: string | null
+          notes_checked: number
+          owner: string | null
+          rbt_name: string | null
+          repeat_issue: boolean
+          status: Database["public"]["Enums"]["qa_monitoring_status"]
+          updated_at: string
+        }
+        Insert: {
+          alerts?: string[]
+          bcba_name?: string | null
+          check_in_due?: string | null
+          client_id?: string | null
+          created_at?: string
+          errors_found?: number
+          flagged_notes?: number
+          id?: string
+          monitoring_type?: Database["public"]["Enums"]["qa_monitoring_type"]
+          new_rbt_monitoring?: boolean
+          next_action?: string
+          notes?: string | null
+          notes_checked?: number
+          owner?: string | null
+          rbt_name?: string | null
+          repeat_issue?: boolean
+          status?: Database["public"]["Enums"]["qa_monitoring_status"]
+          updated_at?: string
+        }
+        Update: {
+          alerts?: string[]
+          bcba_name?: string | null
+          check_in_due?: string | null
+          client_id?: string | null
+          created_at?: string
+          errors_found?: number
+          flagged_notes?: number
+          id?: string
+          monitoring_type?: Database["public"]["Enums"]["qa_monitoring_type"]
+          new_rbt_monitoring?: boolean
+          next_action?: string
+          notes?: string | null
+          notes_checked?: number
+          owner?: string | null
+          rbt_name?: string | null
+          repeat_issue?: boolean
+          status?: Database["public"]["Enums"]["qa_monitoring_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -2836,6 +2971,22 @@ export type Database = {
       punch_kind: "clock_in" | "clock_out" | "break_start" | "break_end"
       punch_source: "kiosk" | "manual" | "manager_edit" | "import"
       punch_status: "pending" | "approved" | "rejected" | "locked"
+      qa_error_type:
+        | "Missing Treatment Plan"
+        | "Missing Supporting Docs"
+        | "Formatting Error"
+        | "Clinical Accuracy"
+        | "Incomplete Notes"
+        | "Billing Risk"
+        | "Other"
+      qa_monitoring_status: "Open" | "In Progress" | "Resolved"
+      qa_monitoring_type: "NoteGuard" | "Amerigroup" | "RBT Check-In"
+      qa_review_status:
+        | "Awaiting Review"
+        | "In Review"
+        | "Issues Found"
+        | "Ready for Submission"
+        | "Submitted to Auth"
       qa_status: "Not Started" | "In Review" | "Complete"
       review_rating:
         | "exceeds"
@@ -3315,6 +3466,24 @@ export const Constants = {
       punch_kind: ["clock_in", "clock_out", "break_start", "break_end"],
       punch_source: ["kiosk", "manual", "manager_edit", "import"],
       punch_status: ["pending", "approved", "rejected", "locked"],
+      qa_error_type: [
+        "Missing Treatment Plan",
+        "Missing Supporting Docs",
+        "Formatting Error",
+        "Clinical Accuracy",
+        "Incomplete Notes",
+        "Billing Risk",
+        "Other",
+      ],
+      qa_monitoring_status: ["Open", "In Progress", "Resolved"],
+      qa_monitoring_type: ["NoteGuard", "Amerigroup", "RBT Check-In"],
+      qa_review_status: [
+        "Awaiting Review",
+        "In Review",
+        "Issues Found",
+        "Ready for Submission",
+        "Submitted to Auth",
+      ],
       qa_status: ["Not Started", "In Review", "Complete"],
       review_rating: [
         "exceeds",
