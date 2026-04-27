@@ -8,14 +8,16 @@ import { SchedulingCalendarView } from "@/components/scheduling/SchedulingCalend
 import { SchedulingGridView } from "@/components/scheduling/SchedulingGridView";
 import { SchedulingMatchingView } from "@/components/scheduling/SchedulingMatchingView";
 import { allSchedulingClients, mockAssessments } from "@/data/scheduling";
+import { useClients } from "@/contexts/ClientsContext";
 
 export default function Scheduling() {
   const navigate = useNavigate();
+  const { clients } = useClients();
   const [viewMode, setViewMode] = useState<SchedulingViewMode>("queue");
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const allItems = useMemo(() => allSchedulingClients(), []);
+  const allItems = useMemo(() => allSchedulingClients(clients), [clients]);
 
   const filteredItems = useMemo(() => {
     let result = allItems;
