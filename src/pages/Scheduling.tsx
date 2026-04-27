@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
-import { CalendarDays } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock, Users } from "lucide-react";
 import { SchedulingControlBar, type SchedulingViewMode } from "@/components/scheduling/SchedulingControlBar";
 import { SchedulingQueueView } from "@/components/scheduling/SchedulingQueueView";
 import { SchedulingCalendarView } from "@/components/scheduling/SchedulingCalendarView";
@@ -18,6 +18,13 @@ export default function Scheduling() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const allItems = useMemo(() => allSchedulingClients(clients), [clients]);
+
+  const schedulingSignals = useMemo(() => [
+    { label: "Schedule blocks", value: clients.reduce((sum, client) => sum + client.schedule.length, 0), icon: CalendarDays },
+    { label: "Pending starts", value: allItems.filter((item) => item.status === "Pending Start" || item.status === "Starting Soon").length, icon: Clock },
+    { label: "Staffing gaps", value: allItems.filter((item) => item.blockers.some((blocker) => blocker.includes("RBT") || blocker.includes("Staffing"))).length, icon: Users },
+    { label: "Blocked", value: allItems.filter((item) => item.blockers.length > 0 || item.alerts.length > 0).length, icon: AlertTriangle },
+  ], [allItems, clients]);
 
   const filteredItems = useMemo(() => {
     let result = allItems;
@@ -80,6 +87,16 @@ export default function Scheduling() {
       description="Scheduling command center — assessments, weekly grids, and staff matching"
       icon={CalendarDays}
     >
+      <section className="grid gap-3 md:grid-cols-4">
+        {schedulingSignals.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-lg border border-border/60 bg-card p-3">
+            <Icon className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-xl font-semibold text-foreground">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+          </div>
+        ))}
+      </section>
+
       <SchedulingControlBar
         viewMode={viewMode}
         onViewModeChange={setViewMode}
