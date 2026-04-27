@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
@@ -35,13 +36,14 @@ const pageTitles: Record<string, string> = {
 export function AppLayout() {
   const location = useLocation();
   const title = pageTitles[location.pathname] || "Blossom ABA";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:flex-row">
-      <AppSidebar />
+      <AppSidebar mobileOpen={mobileMenuOpen} onMobileOpenChange={setMobileMenuOpen} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} />
-        <main className="mobile-page flex-1 overflow-auto px-3 pb-20 pt-3 md:p-6">
+        <TopBar title={title} onOpenMobileMenu={() => setMobileMenuOpen(true)} />
+        <main className="mobile-page flex-1 overflow-auto px-3 pb-6 pt-3 md:p-6">
           <Outlet />
         </main>
       </div>
