@@ -602,19 +602,19 @@ export type ClientKpiKey =
   | "active";
 
 export const clientKpiFilters: Record<ClientKpiKey, (c: Client) => boolean> = {
-  bcbaAssignment: (c) => c.stage === "BCBA Assignment",
-  pendingInitialAuth: (c) => c.stage === "Pending Initial Auth",
-  waitingConsent: (c) => c.stage === "Waiting on Consent Forms",
+  bcbaAssignment: (c) => canonicalPipelineStage(c.stage) === "BCBA Assignment",
+  pendingInitialAuth: (c) => canonicalPipelineStage(c.stage) === "Initial Auth – Awaiting Submission",
+  waitingConsent: (c) => canonicalPipelineStage(c.stage) === "Waiting on Consent",
   assessmentScheduled: (c) => c.stage === "Assessment Scheduled",
-  inQa: (c) => c.stage === "In QA",
-  pendingTreatmentAuth: (c) => c.stage === "Pending Treatment Auth",
-  staffingNeeded: (c) => c.stage === "Staffing Needed" || c.stage === "Restaffing Needed",
+  inQa: (c) => canonicalPipelineStage(c.stage) === "QA Review",
+  pendingTreatmentAuth: (c) => canonicalPipelineStage(c.stage) === "Treatment Auth – Awaiting Submission",
+  staffingNeeded: (c) => ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c.stage)),
   pendingStart: (c) => c.stage === "Pending Start Date",
   active: (c) => c.stage === "Active",
 };
 
 export const calculateClientKpis = (clients: Client[]) => {
-  const inStage = (s: ClientStage) => clients.filter((c) => c.stage === s).length;
+  const inStage = (s: ClientStage) => clients.filter((c) => canonicalPipelineStage(c.stage) === s).length;
   const avgDaysIn = (filter: (c: Client) => boolean) => {
     const xs = clients.filter(filter);
     if (!xs.length) return 0;
@@ -622,16 +622,16 @@ export const calculateClientKpis = (clients: Client[]) => {
   };
   return {
     bcbaAssignment: inStage("BCBA Assignment"),
-    pendingInitialAuth: inStage("Pending Initial Auth"),
-    waitingConsent: inStage("Waiting on Consent Forms"),
+    pendingInitialAuth: inStage("Initial Auth – Awaiting Submission"),
+    waitingConsent: inStage("Waiting on Consent"),
     assessmentScheduled: inStage("Assessment Scheduled"),
-    inQa: inStage("In QA"),
-    pendingTreatmentAuth: inStage("Pending Treatment Auth"),
-    staffingNeeded: inStage("Staffing Needed") + inStage("Restaffing Needed"),
+    inQa: inStage("QA Review"),
+    pendingTreatmentAuth: inStage("Treatment Auth – Awaiting Submission"),
+    staffingNeeded: inStage("Staffing Needed") + inStage("Matching in Progress") + inStage("Restaffing Needed"),
     pendingStart: inStage("Pending Start Date"),
     active: inStage("Active"),
     avgTimeToStart: avgDaysIn((c) => c.daysToStart !== null) || 18,
-    avgTimeInQa: avgDaysIn((c) => c.stage === "In QA") || 0,
-    avgTimeInStaffing: avgDaysIn((c) => c.stage === "Staffing Needed") || 0,
+    avgTimeInQa: avgDaysIn((c) => canonicalPipelineStage(c.stage) === "QA Review") || 0,
+    avgTimeInStaffing: avgDaysIn((c) => ["Staffing Needed", "Matching in Progress"].includes(canonicalPipelineStage(c.stage))) || 0,
   };
 };
