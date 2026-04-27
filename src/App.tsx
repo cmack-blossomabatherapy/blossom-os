@@ -53,6 +53,7 @@ import BenefitsFinancial from "./pages/BenefitsFinancial";
 import ClientOnboarding from "./pages/ClientOnboarding";
 import Assessments from "./pages/Assessments";
 import ActiveServices from "./pages/ActiveServices";
+import ReauthLoop from "./pages/ReauthLoop";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
                   <Route path="/authorizations/:id" element={<AuthDetail />} />
                   <Route path="/scheduling" element={<Scheduling />} />
                   <Route path="/active-services" element={<ActiveServices />} />
+                  <Route path="/reauth-loop" element={<ReauthLoop />} />
                   <Route path="/staffing" element={<Staffing />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/recruiting" element={<Recruiting />} />

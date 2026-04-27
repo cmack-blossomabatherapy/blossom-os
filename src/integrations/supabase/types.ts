@@ -462,6 +462,96 @@ export type Database = {
         }
         Relationships: []
       }
+      client_reauth_cycles: {
+        Row: {
+          alerts: string[]
+          approval_date: string | null
+          assigned_bcba: string | null
+          authorization_coordinator: string | null
+          bcba_6_week_notification_date: string | null
+          bcba_9_week_notification_date: string | null
+          blockers: string[]
+          client_id: string
+          created_at: string
+          current_auth_expiration_date: string
+          id: string
+          linked_authorization_id: string | null
+          notes: string | null
+          payor: string
+          progress_report_due_date: string | null
+          progress_report_received_date: string | null
+          qa_completed_date: string | null
+          qa_owner: string | null
+          qa_review_started_date: string | null
+          qa_status: Database["public"]["Enums"]["reauth_qa_status"]
+          reauth_trigger_date: string
+          stage_entered_at: string
+          state_director: string | null
+          status: Database["public"]["Enums"]["reauth_cycle_status"]
+          submission_date: string | null
+          submission_status: Database["public"]["Enums"]["reauth_submission_status"]
+          updated_at: string
+        }
+        Insert: {
+          alerts?: string[]
+          approval_date?: string | null
+          assigned_bcba?: string | null
+          authorization_coordinator?: string | null
+          bcba_6_week_notification_date?: string | null
+          bcba_9_week_notification_date?: string | null
+          blockers?: string[]
+          client_id: string
+          created_at?: string
+          current_auth_expiration_date: string
+          id?: string
+          linked_authorization_id?: string | null
+          notes?: string | null
+          payor?: string
+          progress_report_due_date?: string | null
+          progress_report_received_date?: string | null
+          qa_completed_date?: string | null
+          qa_owner?: string | null
+          qa_review_started_date?: string | null
+          qa_status?: Database["public"]["Enums"]["reauth_qa_status"]
+          reauth_trigger_date: string
+          stage_entered_at?: string
+          state_director?: string | null
+          status?: Database["public"]["Enums"]["reauth_cycle_status"]
+          submission_date?: string | null
+          submission_status?: Database["public"]["Enums"]["reauth_submission_status"]
+          updated_at?: string
+        }
+        Update: {
+          alerts?: string[]
+          approval_date?: string | null
+          assigned_bcba?: string | null
+          authorization_coordinator?: string | null
+          bcba_6_week_notification_date?: string | null
+          bcba_9_week_notification_date?: string | null
+          blockers?: string[]
+          client_id?: string
+          created_at?: string
+          current_auth_expiration_date?: string
+          id?: string
+          linked_authorization_id?: string | null
+          notes?: string | null
+          payor?: string
+          progress_report_due_date?: string | null
+          progress_report_received_date?: string | null
+          qa_completed_date?: string | null
+          qa_owner?: string | null
+          qa_review_started_date?: string | null
+          qa_status?: Database["public"]["Enums"]["reauth_qa_status"]
+          reauth_trigger_date?: string
+          stage_entered_at?: string
+          state_director?: string | null
+          status?: Database["public"]["Enums"]["reauth_cycle_status"]
+          submission_date?: string | null
+          submission_status?: Database["public"]["Enums"]["reauth_submission_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_schedule_slots: {
         Row: {
           client_id: string
@@ -3270,6 +3360,22 @@ export type Database = {
         | "Ready for Submission"
         | "Submitted to Auth"
       qa_status: "Not Started" | "In Review" | "Complete"
+      reauth_cycle_status:
+        | "Not Started"
+        | "BCBA Notified"
+        | "In Progress"
+        | "Report Received"
+        | "QA Review"
+        | "Submitted"
+        | "Approved"
+        | "Failed / Delayed"
+      reauth_qa_status: "Not Started" | "In Review" | "Passed" | "Failed"
+      reauth_submission_status:
+        | "Not Submitted"
+        | "Ready"
+        | "Submitted"
+        | "Approved"
+        | "Denied"
       review_rating:
         | "exceeds"
         | "meets"
@@ -3808,6 +3914,24 @@ export const Constants = {
         "Submitted to Auth",
       ],
       qa_status: ["Not Started", "In Review", "Complete"],
+      reauth_cycle_status: [
+        "Not Started",
+        "BCBA Notified",
+        "In Progress",
+        "Report Received",
+        "QA Review",
+        "Submitted",
+        "Approved",
+        "Failed / Delayed",
+      ],
+      reauth_qa_status: ["Not Started", "In Review", "Passed", "Failed"],
+      reauth_submission_status: [
+        "Not Submitted",
+        "Ready",
+        "Submitted",
+        "Approved",
+        "Denied",
+      ],
       review_rating: [
         "exceeds",
         "meets",
