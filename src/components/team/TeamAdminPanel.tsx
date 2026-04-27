@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -18,6 +19,12 @@ interface ProfileRow {
   job_title: string | null;
   responsibilities: string | null;
   welcome_sent_at: string | null;
+  department: string | null;
+  state: string | null;
+  clinic: string | null;
+  part_of_leadership: boolean | null;
+  dashboard_access: string | null;
+  active: boolean | null;
 }
 interface RoleRow {
   user_id: string;
@@ -31,6 +38,12 @@ interface Member {
   responsibilities: string;
   welcome_sent_at: string | null;
   roles: AppRole[];
+  department: string;
+  state: string;
+  clinic: string;
+  part_of_leadership: boolean;
+  dashboard_access: string;
+  active: boolean;
 }
 
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
