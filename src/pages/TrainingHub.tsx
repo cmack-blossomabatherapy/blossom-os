@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, GraduationCap, Play, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { featuredResources, iconMap, trainingBadges, trainingCourses, trainingDepartments } from "@/data/training";
+import { featuredResources, getStoredTrainingCourses, iconMap, trainingBadges, trainingDepartments, TRAINING_UPDATED_EVENT, type TrainingCourse } from "@/data/training";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 
@@ -15,6 +15,16 @@ export default function TrainingHub() {
   const { user, roles } = useAuth();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
+  useEffect(() => {
+    const refresh = () => setTrainingCourses(getStoredTrainingCourses());
+    window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Blossom teammate";
   const roleSet = new Set(roles);
   const visibleCourses = useMemo(() => trainingCourses.filter((course) => course.roleVisibility.length === 0 || course.roleVisibility.some((role) => roleSet.has(role as never)) || roles.length === 0), [roleSet, roles.length]);
@@ -49,7 +59,7 @@ export default function TrainingHub() {
 
       <section className="space-y-3"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-foreground">Continue Learning</h2><p className="text-sm text-muted-foreground">Started trainings that are waiting for you.</p></div><Flame className="h-5 w-5 text-warning" /></div>{continueCourses.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{continueCourses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <EmptyState text="No trainings are in progress yet. Start a required course or browse the Training Library below." />}</section>
 
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Required Training</h2><p className="text-sm text-muted-foreground">Personalized by role, department, and assignments.</p></div><Clock className="h-5 w-5 text-primary" /></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Training", "Required by", "Due date", "Status", "Progress", "Action"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{requiredCourses.map((course) => <tr key={course.id} className="border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><p className="font-medium text-foreground">{course.title}</p><p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{course.dueDate ?? "—"}</td><td className="px-4 py-3"><StatusBadge status={course.status} variant={statusVariant(course.status)} /></td><td className="px-4 py-3 min-w-[150px]"><Progress value={course.progress} className="h-2" /><span className="mt-1 block text-[11px] text-muted-foreground">{course.progress}%</span></td><td className="px-4 py-3"><Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{course.progress ? "Continue" : "Start"}</Button></td></tr>)}</tbody></table></div></section>
+      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Required Training</h2><p className="text-sm text-muted-foreground">Personalized by role, department, and assignments.</p></div><Clock className="h-5 w-5 text-primary" /></div>{requiredCourses.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Training", "Required by", "Due date", "Status", "Progress", "Action"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{requiredCourses.map((course) => <tr key={course.id} className="border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><p className="font-medium text-foreground">{course.title}</p><p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{course.dueDate ?? "—"}</td><td className="px-4 py-3"><StatusBadge status={course.status} variant={statusVariant(course.status)} /></td><td className="px-4 py-3 min-w-[150px]"><Progress value={course.progress} className="h-2" /><span className="mt-1 block text-[11px] text-muted-foreground">{course.progress}%</span></td><td className="px-4 py-3"><Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{course.progress ? "Continue" : "Start"}</Button></td></tr>)}</tbody></table></div> : <EmptyState text="No required trainings have been assigned yet." />}</section>
 
       <section className="space-y-3"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-foreground">Department Training Library</h2><p className="text-sm text-muted-foreground">Choose a department path and build confidence step by step.</p></div><BookOpen className="h-5 w-5 text-primary" /></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{trainingDepartments.map((dept) => { const Icon = iconMap[dept.icon]; const courses = visibleCourses.filter((c) => c.departmentId === dept.id); const completion = courses.length ? Math.round(courses.reduce((sum, c) => sum + c.progress, 0) / courses.length) : 0; return <Link key={dept.id} to={`/training/department/${dept.slug}`} className="group rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", dept.accent)}><Icon className="h-5 w-5" /></div><ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" /></div><h3 className="mt-4 text-base font-semibold text-foreground">{dept.name}</h3><p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{dept.description}</p><div className="mt-4 flex items-center justify-between text-xs text-muted-foreground"><span>{courses.length} trainings</span><span>{completion}% complete</span></div><Progress value={completion} className="mt-2 h-2" /><Button variant="outline" size="sm" className="mt-4 w-full">View Training</Button></Link>; })}</div></section>
 
@@ -58,7 +68,7 @@ export default function TrainingHub() {
   );
 }
 
-function CourseCard({ course, compact = false }: { course: typeof trainingCourses[number]; compact?: boolean }) {
+function CourseCard({ course, compact = false }: { course: TrainingCourse; compact?: boolean }) {
   const dept = trainingDepartments.find((d) => d.id === course.departmentId);
   return <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foreground">{course.title}</p><p className="mt-1 text-xs text-muted-foreground">{dept?.name} · {course.minutes} min</p></div><StatusBadge status={course.status} variant={statusVariant(course.status)} /></div>{!compact && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{course.description}</p>}<div className="mt-4"><div className="mb-1 flex items-center justify-between text-xs text-muted-foreground"><span>{course.progress}% complete</span><span>{course.progress ? `${Math.max(3, Math.round((100 - course.progress) / 100 * course.minutes))} min left` : `${course.minutes} min`}</span></div><Progress value={course.progress} className="h-2" /></div><div className="mt-4 flex items-center justify-between gap-3"><span className="text-xs text-muted-foreground">Last opened {course.lastOpened ?? "—"}</span><Button asChild size="sm"><Link to={`/training/course/${course.id}`}><Play className="mr-1 h-3.5 w-3.5" />{course.progress ? "Continue" : "Start"}</Link></Button></div></div>;
 }
