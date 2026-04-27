@@ -178,15 +178,14 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           <div className="sticky top-0 z-10 bg-sidebar px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-[0_14px_30px_-22px_hsl(var(--sidebar-background))]">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-h-12 flex-1 items-center rounded-xl bg-sidebar-accent/55 px-3 ring-1 ring-sidebar-border/70">
-                <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+                <img src={logo} alt="Blossom ABA Therapy" className="h-8 w-auto object-contain" />
               </div>
               <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full bg-sidebar-accent/55 text-sidebar-foreground ring-1 ring-sidebar-border/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
                 <X className="h-5 w-5" />
               </Button>
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 text-sidebar-foreground/85">
-              <p className="text-[11px] font-semibold uppercase tracking-wider">Navigation</p>
-              <span className="h-1.5 w-1.5 rounded-full bg-sidebar-primary" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider">Operating System</p>
             </div>
           </div>
           <nav className="px-4 py-3" aria-label="Mobile navigation">
