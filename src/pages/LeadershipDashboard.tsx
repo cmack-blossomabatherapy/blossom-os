@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -158,6 +158,7 @@ export default function LeadershipDashboard() {
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
   const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("This Month");
   const [stateFilter, setStateFilter] = useState("All States");
   const [clinicFilter, setClinicFilter] = useState("All Clinics");
@@ -172,22 +173,37 @@ export default function LeadershipDashboard() {
   }, [dashboardAccess, roles]);
   const [selectedDashboard, setSelectedDashboard] = useState<DashboardKey>(isAdmin || partOfLeadership ? "ceo" : assignedDashboard);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    const [clientsRes, authsRes, timesheetsRes] = await Promise.all([
-      supabase.from("clients").select("*"),
-      supabase.from("client_authorizations").select("*"),
-      supabase.from("hours_timesheets").select("*"),
-    ]);
-    setClientRows((clientsRes.data ?? []) as ClientRow[]);
-    setAuthRows((authsRes.data ?? []) as AuthRow[]);
-    setTimesheetRows((timesheetsRes.data ?? []) as TimesheetRow[]);
-    setLoading(false);
-  };
+    setLoadError(null);
+
+    try {
+      const [clientsRes, authsRes, timesheetsRes] = await Promise.all([
+        supabase.from("clients").select("*"),
+        supabase.from("client_authorizations").select("*"),
+        supabase.from("hours_timesheets").select("*"),
+      ]);
+
+      const queryError = clientsRes.error ?? authsRes.error ?? timesheetsRes.error;
+      if (queryError) throw queryError;
+
+      setClientRows((clientsRes.data ?? []) as ClientRow[]);
+      setAuthRows((authsRes.data ?? []) as AuthRow[]);
+      setTimesheetRows((timesheetsRes.data ?? []) as TimesheetRow[]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Live dashboard data could not be loaded.";
+      setLoadError(message);
+      setClientRows([]);
+      setAuthRows([]);
+      setTimesheetRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const live = useMemo(() => buildLiveDashboard(clientRows, authRows, timesheetRows), [authRows, clientRows, timesheetRows]);
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
