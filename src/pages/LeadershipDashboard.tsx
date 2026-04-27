@@ -59,7 +59,7 @@ function parseHours(value: string | null | undefined) {
 function riskFor(client: ClientRow, authorizedHours: number, deliveredHours: number): RiskLevel {
   const days = daysSince(client.stage_entered_at);
   const utilization = authorizedHours > 0 ? Math.round((deliveredHours / authorizedHours) * 100) : null;
-  if (client.stage === "Staffing" || days > 21 || (utilization !== null && utilization < 70)) return "Critical";
+  if (client.stage === "Staffing Needed" || days > 21 || (utilization !== null && utilization < 70)) return "Critical";
   if (days > 14 || client.staffing_status === "Needed") return "High";
   if (days > 7) return "Medium";
   return "Low";
@@ -100,7 +100,7 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
   const clinics: ClinicPerformance[] = Array.from(clinicMap.entries()).map(([clinicName, rows]) => {
     const activeClients = rows.filter((row) => row.status === "Active").length;
     const pipelineClients = rows.filter((row) => !["Active", "Discharged"].includes(row.status)).length;
-    const staffingNeeded = rows.filter((row) => row.status === "Staffing" || row.rbt === "Needed").length;
+    const staffingNeeded = rows.filter((row) => row.status === "Staffing Needed" || row.rbt === "Needed").length;
     const authorizedHours = rows.reduce((sum, row) => sum + row.authorizedHours, 0);
     const deliveredHours = rows.reduce((sum, row) => sum + row.deliveredHours, 0);
     const utilization = authorizedHours > 0 ? Math.round((deliveredHours / authorizedHours) * 100) : null;
@@ -140,7 +140,7 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
     .filter((row) => row.riskLevel === "Critical" || row.riskLevel === "High")
     .slice(0, 12)
     .map((row) => ({
-      type: row.status === "Staffing" || row.rbt === "Needed" ? "Staffing Needed" : row.daysInStatus > 21 ? "Client stuck in status" : "Operational risk",
+      type: row.status === "Staffing Needed" || row.rbt === "Needed" ? "Staffing Needed" : row.daysInStatus > 21 ? "Client stuck in status" : "Operational risk",
       target: row.name,
       owner: row.bcba !== "—" ? row.bcba : "Unassigned",
       daysOpen: row.daysInStatus,
@@ -266,7 +266,7 @@ function LeadershipScorecard({ live, filteredClients, query, setQuery, sortBy, s
   const utilization = totalAuthorized > 0 ? Math.round((totalDelivered / totalAuthorized) * 100) : null;
   const activeClients = live.clientRecords.filter((client) => client.status === "Active").length;
   const pipelineClients = live.clientRecords.filter((client) => !["Active", "Discharged"].includes(client.status)).length;
-  const staffingNeeded = live.clientRecords.filter((client) => client.status === "Staffing" || client.rbt === "Needed").length;
+  const staffingNeeded = live.clientRecords.filter((client) => client.status === "Staffing Needed" || client.rbt === "Needed").length;
   const avgDaysToStartRows = live.clientRecords.filter((client) => client.startDate !== "—");
   const avgDaysToStart = avgDaysToStartRows.length ? Math.round(avgDaysToStartRows.reduce((sum, client) => sum + client.daysInStatus, 0) / avgDaysToStartRows.length) : null;
 
@@ -279,7 +279,7 @@ function buildSnapshot(live: ReturnType<typeof buildLiveDashboard>) {
   if (highestPipeline) items.push(`${highestPipeline.clinic} has ${highestPipeline.pipelineClients} clients in pipeline and ${highestPipeline.activeClients} active.`);
   const stuck = live.clientRecords.filter((client) => client.daysInStatus > 14).length;
   if (stuck) items.push(`${stuck} clients have been in their current status for more than 14 days.`);
-  const staffing = live.clientRecords.filter((client) => client.status === "Staffing" || client.rbt === "Needed").length;
+  const staffing = live.clientRecords.filter((client) => client.status === "Staffing Needed" || client.rbt === "Needed").length;
   if (staffing) items.push(`${staffing} clients currently need staffing support.`);
   if (!items.length && live.clientRecords.length) items.push("No major live red flags are currently detected from available records.");
   return items;
@@ -294,11 +294,11 @@ function PipelineFunnel({ stages, total }: { stages: ReturnType<typeof buildLive
 }
 
 function ServiceSettingPerformance({ clients }: { clients: ClientRecord[] }) {
-  return <Section title="Service Setting Performance"><div className="grid gap-3">{(["Home", "School", "Clinic", "Unknown"] as ServiceSetting[]).map((setting) => { const rows = clients.filter((client) => client.serviceSetting === setting); const authorized = rows.reduce((sum, row) => sum + row.authorizedHours, 0); const delivered = rows.reduce((sum, row) => sum + row.deliveredHours, 0); const utilization = authorized ? Math.round((delivered / authorized) * 100) : null; return <div key={setting} className="rounded-lg border border-border/60 bg-background p-4"><div className="flex items-center justify-between"><p className="font-semibold text-foreground">{setting} Clients</p><StatusPill label={pct(utilization)} status={utilization !== null && utilization >= 85 ? "Healthy" : utilization !== null && utilization < 70 ? "Critical" : "Watch"} /></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground"><span>Active: {rows.filter((r) => r.status === "Active").length}</span><span>Authorized: {authorized}</span><span>Delivered: {delivered}</span><span>Staffing Needed: {rows.filter((r) => r.rbt === "Needed" || r.status === "Staffing").length}</span></div></div>; })}</div></Section>;
+  return <Section title="Service Setting Performance"><div className="grid gap-3">{(["Home", "School", "Clinic", "Unknown"] as ServiceSetting[]).map((setting) => { const rows = clients.filter((client) => client.serviceSetting === setting); const authorized = rows.reduce((sum, row) => sum + row.authorizedHours, 0); const delivered = rows.reduce((sum, row) => sum + row.deliveredHours, 0); const utilization = authorized ? Math.round((delivered / authorized) * 100) : null; return <div key={setting} className="rounded-lg border border-border/60 bg-background p-4"><div className="flex items-center justify-between"><p className="font-semibold text-foreground">{setting} Clients</p><StatusPill label={pct(utilization)} status={utilization !== null && utilization >= 85 ? "Healthy" : utilization !== null && utilization < 70 ? "Critical" : "Watch"} /></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground"><span>Active: {rows.filter((r) => r.status === "Active").length}</span><span>Authorized: {authorized}</span><span>Delivered: {delivered}</span><span>Staffing Needed: {rows.filter((r) => r.rbt === "Needed" || r.status === "Staffing Needed").length}</span></div></div>; })}</div></Section>;
 }
 
 function OperationalSections({ live }: { live: ReturnType<typeof buildLiveDashboard> }) {
-  const staffingRows = live.clientRecords.filter((c) => c.rbt === "Needed" || c.status === "Staffing").map((c) => [c.name, `${c.clinic} / ${c.state}`, c.rbt === "Needed" ? "RBT" : "Staffing", String(c.daysInStatus), c.bcba, c.rbt, c.riskLevel, c.notes, "—"]);
+  const staffingRows = live.clientRecords.filter((c) => c.rbt === "Needed" || c.status === "Staffing Needed").map((c) => [c.name, `${c.clinic} / ${c.state}`, c.rbt === "Needed" ? "RBT" : "Staffing", String(c.daysInStatus), c.bcba, c.rbt, c.riskLevel, c.notes, "—"]);
   const authRows = live.clientRecords.filter((c) => c.authStatus !== "Approved" && c.authStatus !== "Not Submitted").map((c) => [c.name, c.state, c.insurance, c.authStatus, c.status, "—", String(c.daysInStatus), "—", "—", c.riskLevel]);
   return <div className="grid gap-6 xl:grid-cols-2"><MetricSection title="Staffing Health" metrics={[`Clients Needing RBT: ${staffingRows.length}`, `Open Staffing Gaps: ${staffingRows.length}`, `Clients at Risk Due to Staffing: ${staffingRows.filter((r) => ["High", "Critical"].includes(r[6])).length}`]} tableHeaders={["Client", "Clinic/State", "Needed Role", "Days Waiting", "BCBA", "RBT", "Priority", "Notes", "Owner"]} rows={staffingRows} /><MetricSection title="Authorization Health" metrics={[`Pending Auths: ${authRows.length}`, `Auths Approved: ${live.clientRecords.filter((c) => c.authStatus === "Approved").length}`, `Avg Days Waiting: ${authRows.length ? Math.round(authRows.reduce((s, r) => s + Number(r[6]), 0) / authRows.length) : 0}`]} tableHeaders={["Client", "State", "Payor", "Auth Type", "Current Status", "Submitted Date", "Days Waiting", "Expiration Date", "Owner", "Risk Level"]} rows={authRows} /><MetricSection title="Intake & Conversion" metrics={[`Pipeline Clients: ${live.clientRecords.filter((c) => c.status !== "Active").length}`, `Missing Info: ${live.clientRecords.filter((c) => c.status === "Missing Info").length}`, `Active: ${live.clientRecords.filter((c) => c.status === "Active").length}`]} tableHeaders={["Stage", "Count", "Avg Days"]} rows={live.pipelineStages.map((s) => [s.stage, String(s.count), String(s.avgDays ?? "—")])} /><MetricSection title="QA & Clinical Readiness" metrics={[`In QA: ${live.clientRecords.filter((c) => c.status === "In QA").length}`, `QA Over 14 Days: ${live.clientRecords.filter((c) => c.status === "In QA" && c.daysInStatus > 14).length}`]} tableHeaders={["Client", "BCBA", "Status", "Days in QA", "Notes"]} rows={live.clientRecords.filter((c) => c.status === "In QA").map((c) => [c.name, c.bcba, c.status, String(c.daysInStatus), c.notes])} /><MetricSection title="Finance Snapshot" metrics={[`Estimated Revenue: ${currency.format(live.clinics.reduce((s, c) => s + (c.revenueEstimate ?? 0), 0))}`, `Delivered Billable Hours: ${live.clinics.reduce((s, c) => s + c.deliveredHours, 0)}`, `Financial Risk Clients: ${live.clientRecords.filter((c) => c.riskLevel === "High" || c.riskLevel === "Critical").length}`]} tableHeaders={["Risk", "Count", "Action"]} rows={[["Live billing risk rules", "—", "Add finance-specific fields to calculate more precisely."]]} /></div>;
 }
