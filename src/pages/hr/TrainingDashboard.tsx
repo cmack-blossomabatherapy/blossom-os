@@ -75,7 +75,7 @@ const makeAuditEntry = (course: TrainingCourse, action: TrainingAuditAction, act
 
 export default function TrainingDashboard() {
   const { members, loading } = useLiveTeam();
-  const { hasPerm, roles: currentRoles } = useAuth();
+  const { hasPerm, roles: currentRoles, user } = useAuth();
   const canManageTrainings = hasPerm("hr.training.manage") || hasPerm("hr.training.assign");
   const canAssignTraining = canManageTrainings;
   const roleSummary = currentRoles.length ? currentRoles.map(roleLabel).join(", ") : "No role assigned";
@@ -97,6 +97,7 @@ export default function TrainingDashboard() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
+  const [auditLog, setAuditLog] = useState<TrainingAuditEntry[]>(() => getStoredTrainingAuditLog());
 
   useEffect(() => {
     const refresh = () => setCourses(getStoredTrainingCourses());
@@ -105,7 +106,16 @@ export default function TrainingDashboard() {
     return () => { window.removeEventListener(TRAINING_UPDATED_EVENT, refresh); window.removeEventListener("storage", refresh); };
   }, []);
 
+  useEffect(() => {
+    const refreshAudit = () => setAuditLog(getStoredTrainingAuditLog());
+    window.addEventListener(TRAINING_AUDIT_UPDATED_EVENT, refreshAudit);
+    window.addEventListener("storage", refreshAudit);
+    return () => { window.removeEventListener(TRAINING_AUDIT_UPDATED_EVENT, refreshAudit); window.removeEventListener("storage", refreshAudit); };
+  }, []);
+
   const persistCourses = (next: TrainingCourse[]) => { setCourses(next); saveStoredTrainingCourses(next); };
+  const actorName = user?.email ?? roleSummary.split(", ")[0] ?? "Training Admin";
+  const recordAudit = (entry: TrainingAuditEntry) => { const next = [entry, ...auditLog].slice(0, 250); setAuditLog(next); saveStoredTrainingAuditLog(next); };
   const activeCourses = courses.filter((course) => !course.archived);
   const roles = useMemo(() => Array.from(new Set(members.map((m) => m.role).filter(Boolean))).sort(), [members]);
   const states = useMemo(() => Array.from(new Set(members.flatMap((m) => m.states).filter(Boolean))).sort(), [members]);
