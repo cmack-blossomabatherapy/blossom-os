@@ -60,6 +60,7 @@ import SchedulingDashboard from "./pages/SchedulingDashboard";
 import StaffingDashboard from "./pages/StaffingDashboard";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import QADashboard from "./pages/QADashboard";
+import FinanceDashboard from "./pages/FinanceDashboard";
 
 const queryClient = new QueryClient();
 
@@ -76,7 +77,7 @@ function RoleDashboardRedirect() {
     ["clinic", "/clinic-dashboard"],
     ["clinic_director", "/clinic-dashboard"],
     ["qa", "/qa-dashboard"],
-    ["finance", "/leadership-dashboard?dashboard=finance"],
+    ["finance", "/finance-dashboard"],
     ["hr", "/hr"],
     ["hr_admin", "/hr"],
     ["hr_manager", "/hr"],
@@ -111,6 +112,7 @@ const App = () => (
                   <Route path="/staffing-dashboard" element={<PermissionRoute permission="dashboard.view"><StaffingDashboard /></PermissionRoute>} />
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
                   <Route path="/qa-dashboard" element={<PermissionRoute permission="dashboard.view"><QADashboard /></PermissionRoute>} />
+                  <Route path="/finance-dashboard" element={<PermissionRoute permission="dashboard.view"><FinanceDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leads" element={<Leads />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
