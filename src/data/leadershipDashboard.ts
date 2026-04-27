@@ -149,7 +149,7 @@ export const clients: ClientRecord[] = [
       deliveredHours: i < 3 ? 24 + (i % 2) * 4 : 0,
       daysInStatus: 4 + clinicIndex * 2 + i,
       startDate: i < 3 ? "2026-04-01" : "—",
-      riskLevel: i === 4 ? "High" : clinic.healthStatus === "Critical" ? "High" : "Medium",
+      riskLevel: (i === 4 ? "High" : clinic.healthStatus === "Critical" ? "High" : "Medium") as RiskLevel,
       notes: "Mock client for dashboard drilldown.",
     })),
   ),
