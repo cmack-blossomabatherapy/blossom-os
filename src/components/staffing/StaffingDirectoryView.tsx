@@ -22,7 +22,7 @@ export function StaffingDirectoryView({ searchQuery, activeView }: Props) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/30">
-            {["RBT Name", "Status", "Location", "Clients", "Hours / Capacity", "Utilization", "Availability", "Tags"].map((h) => (
+            {["RBT Name", "Status", "Location", "Travel", "Clients", "Hours / Capacity", "Workload", "Availability", "Tags"].map((h) => (
               <th key={h} className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wide">
                 {h}
               </th>
@@ -43,8 +43,9 @@ export function StaffingDirectoryView({ searchQuery, activeView }: Props) {
                   <StatusBadge status={r.status} variant={statusVariant(r.status)} />
                 </td>
                 <td className="px-4 py-2.5 text-muted-foreground">
-                  {r.state} · {r.clinic}
+                  {r.region} · {r.zip}
                 </td>
+                <td className="px-4 py-2.5 text-muted-foreground">{r.travelRadius} mi</td>
                 <td className="px-4 py-2.5 text-muted-foreground">{r.assignedClientIds.length}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">
                   {r.assignedHours}h / {r.capacityHours}h
@@ -64,6 +65,7 @@ export function StaffingDirectoryView({ searchQuery, activeView }: Props) {
                       {Math.round(util)}%
                     </span>
                   </div>
+                  <p className={cn("mt-1 text-[10px] font-medium", util >= 95 ? "text-destructive" : util >= 75 ? "text-warning" : "text-success")}>{util >= 95 ? "Overloaded" : util >= 75 ? "Near capacity" : "Available"}</p>
                 </td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-1">
@@ -88,7 +90,7 @@ export function StaffingDirectoryView({ searchQuery, activeView }: Props) {
           })}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-xs text-muted-foreground italic">
+              <td colSpan={9} className="px-4 py-8 text-center text-xs text-muted-foreground italic">
                 No staff match the current filters
               </td>
             </tr>

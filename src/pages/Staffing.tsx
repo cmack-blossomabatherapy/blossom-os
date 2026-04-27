@@ -23,7 +23,7 @@ export default function Staffing() {
         onSearchChange={setSearchQuery}
       />
 
-      {viewMode === "queue" && <StaffingQueueView searchQuery={searchQuery} />}
+      {viewMode === "queue" && <StaffingQueueView searchQuery={searchQuery} onStartMatching={() => setViewMode("matching")} />}
       {viewMode === "matching" && <StaffingMatchingView searchQuery={searchQuery} />}
       {viewMode === "directory" && <StaffingDirectoryView searchQuery={searchQuery} activeView={activeView} />}
       {viewMode === "capacity" && <StaffingCapacityView />}

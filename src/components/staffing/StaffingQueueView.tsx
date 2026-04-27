@@ -1,9 +1,10 @@
-import { AlertCircle, Clock, CheckCircle2, MapPin, ArrowRight } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle2, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
+import { useClients } from "@/contexts/ClientsContext";
 
 const sections: {
   id: StaffingClientNeed["reason"];
@@ -27,21 +28,30 @@ const sections: {
     description: "Lost RBT · Needs replacement",
   },
   {
-    id: "Ready to Assign",
-    title: "Ready to Assign",
+    id: "Matching",
+    title: "Matching",
+    icon: Sparkles,
+    iconClass: "text-warning",
+    description: "Staffing team is comparing RBT options",
+  },
+  {
+    id: "RBT Assigned",
+    title: "RBT Assigned",
     icon: CheckCircle2,
     iconClass: "text-success",
-    description: "Auth ✔ · Schedule ✔ · Just need RBT",
+    description: "Ready for scheduling handoff",
   },
 ];
 
 interface Props {
   searchQuery: string;
+  onStartMatching?: () => void;
 }
 
-export function StaffingQueueView({ searchQuery }: Props) {
+export function StaffingQueueView({ searchQuery, onStartMatching }: Props) {
   const navigate = useNavigate();
-  const all = getClientStaffingNeeds();
+  const { clients, assignRbt } = useClients();
+  const all = getClientStaffingNeeds(clients);
   const filtered = all.filter((n) =>
     !searchQuery ||
     n.client.childName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,7 +83,7 @@ export function StaffingQueueView({ searchQuery }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/40 bg-muted/10">
-                    {["Client", "Location", "Required Hours", "BCBA", "Priority", "Days Waiting", ""].map((h) => (
+                    {["Client", "Location", "Required Hours", "Availability", "Assigned RBT", "Priority", "Alerts", "Days Waiting", ""].map((h) => (
                       <th key={h} className="text-left px-4 py-2 font-medium text-muted-foreground text-[11px] uppercase tracking-wide">
                         {h}
                       </th>
@@ -91,24 +101,29 @@ export function StaffingQueueView({ searchQuery }: Props) {
                       <td className="px-4 py-2.5 text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          {n.client.state} · {n.client.clinic}
+                          {n.region} · {n.zip}
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-muted-foreground">{n.requiredHours} hr/wk</td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{n.client.bcba ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground capitalize">{n.availability.join(", ")}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{n.client.rbt ?? "—"}</td>
                       <td className="px-4 py-2.5">
                         <StatusBadge
                           status={n.priority}
                           variant={n.priority === "High" ? "destructive" : n.priority === "Medium" ? "warning" : "muted"}
                         />
                       </td>
+                      <td className="px-4 py-2.5">
+                        {n.alert ? <StatusBadge status={n.alert} variant={n.alert.includes("No available") || n.alert.includes("urgent") ? "destructive" : "warning"} /> : <span className="text-xs text-muted-foreground">—</span>}
+                      </td>
                       <td className={cn("px-4 py-2.5 font-medium", n.daysWaiting > 5 ? "text-destructive" : "text-muted-foreground")}>
                         {n.daysWaiting}d
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <Button size="sm" variant="ghost" className="h-7 text-xs">
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); onStartMatching?.(); }}>
                           Assign <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
+                        {n.client.rbt && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); assignRbt([n.client.id], n.client.rbt ?? ""); }}>Confirm</Button>}
                       </td>
                     </tr>
                   ))}

@@ -2535,6 +2535,57 @@ export type Database = {
           },
         ]
       }
+      staffing_matches: {
+        Row: {
+          availability_overlap: string[]
+          capacity_remaining: number | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          distance_miles: number | null
+          id: string
+          match_score: number
+          notes: string | null
+          rbt_id: string
+          rbt_name: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["staffing_match_status"]
+          updated_at: string
+        }
+        Insert: {
+          availability_overlap?: string[]
+          capacity_remaining?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          distance_miles?: number | null
+          id?: string
+          match_score?: number
+          notes?: string | null
+          rbt_id: string
+          rbt_name: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["staffing_match_status"]
+          updated_at?: string
+        }
+        Update: {
+          availability_overlap?: string[]
+          capacity_remaining?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          distance_miles?: number | null
+          id?: string
+          match_score?: number
+          notes?: string | null
+          rbt_id?: string
+          rbt_name?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["staffing_match_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stage_ownership: {
         Row: {
           created_at: string
@@ -3038,6 +3089,7 @@ export type Database = {
         | "probationary"
         | "ad_hoc"
       schedule_day: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun"
+      staffing_match_status: "Suggested" | "Pending" | "Assigned" | "Rejected"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
       timeline_event_type:
         | "system"
@@ -3538,6 +3590,7 @@ export const Constants = {
         "ad_hoc",
       ],
       schedule_day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      staffing_match_status: ["Suggested", "Pending", "Assigned", "Rejected"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
       timeline_event_type: [
         "system",

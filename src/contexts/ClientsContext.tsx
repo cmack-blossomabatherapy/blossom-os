@@ -426,11 +426,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const assignRbt = useCallback(async (ids: string[], rbt: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
-      const advance = ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c?.stage ?? ""));
-      const nextLog = [...(c?.automationLog ?? []), `RBT assigned: ${rbt}`];
+      const advance = ["Staffing Needed", "Matching in Progress", "Restaffing Needed", "RBT Assigned"].includes(canonicalPipelineStage(c?.stage ?? ""));
+      const nextLog = [...(c?.automationLog ?? []), `RBT assigned: ${rbt}`, ...(advance ? ["Moved to Pending Start Date"] : [])];
       await supabase.from("clients").update({
-        rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog,
-        ...(advance ? { stage: "RBT Assigned" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog, next_action: "Confirm schedule",
+        ...(advance ? { stage: "Pending Start Date" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
       } as never).eq("id", id);
       await insertTimeline(id, `${rbt} assigned as RBT`, "staffing");
     }
