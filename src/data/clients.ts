@@ -54,7 +54,7 @@ export type ClientStage =
   | "Reauth Submitted"
   | "Reauth Approved";
 
-export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" | "Expired";
+export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" | "Expired" | "Expiring Soon";
 export type StaffingStatus = "Not Needed" | "Needed" | "In Progress" | "Assigned";
 export type QAStatus = "Not Started" | "In Review" | "Complete";
 
@@ -75,12 +75,16 @@ export interface ClientTimelineEvent {
 
 export interface AuthorizationRecord {
   id?: string;
-  type: "Initial" | "Treatment";
+  type: "Initial" | "Treatment" | "Reauth";
   status: AuthStatus;
   submittedDate?: string;
   approvedDate?: string;
   expirationDate?: string;
   hours?: string;
+  approvedHours?: number | null;
+  frequency?: string | null;
+  serviceType?: string | null;
+  authorizationPeriod?: string | null;
   notes?: string;
   payor?: string;
   state?: string;
@@ -88,10 +92,17 @@ export interface AuthorizationRecord {
   qaOwner?: string | null;
   qaStatus?: QAStatus;
   treatmentPlanReceived?: boolean;
+  treatmentPlanLinked?: boolean;
   requiredDocsReceived?: boolean;
+  approvalLetterReceived?: boolean;
+  partialApproval?: boolean;
   missingDocs?: string[];
   nextAction?: string;
   blockers?: string[];
+  qaNotes?: string | null;
+  escalationOwner?: string | null;
+  submissionHistory?: { status?: string; date?: string; note?: string }[];
+  reauthSourceId?: string | null;
   daysInStage?: number;
   progressReportStatus?: "Not Started" | "In Progress" | "Received";
 }
@@ -165,6 +176,7 @@ export const authVariant = (s: AuthStatus): "default" | "success" | "warning" | 
     "Approved": "success",
     "Denied": "destructive",
     "Expired": "destructive",
+    "Expiring Soon": "warning",
   };
   return m[s];
 };
