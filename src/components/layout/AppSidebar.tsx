@@ -5,13 +5,12 @@ import {
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen, ChevronDown, RefreshCw,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
-import { masterPipelineSections, type PipelineSectionKey } from "@/data/pipeline";
 
 interface NavItem {
   label: string;
@@ -34,20 +33,6 @@ const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   recruiting: Briefcase,
 };
 
-const pipelineIcons: Record<PipelineSectionKey, typeof LayoutDashboard> = {
-  intake: Users,
-  financial: Wallet,
-  clientSetup: UserCheck,
-  initialAuth: ShieldCheck,
-  assessment: ClipboardCheck,
-  qa: ClipboardCheck,
-  treatmentAuth: ShieldCheck,
-  staffing: UserPlus,
-  scheduling: Calendar,
-  activeServices: HeartHandshake,
-  reauth: Workflow,
-};
-
 const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   title: "Dashboards",
   items: dashboardDefinitions.map((dashboard) => ({
@@ -59,16 +44,6 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   })),
 };
 
-const pipelineSection: { title: string; items: NavItem[] } = {
-  title: "Pipeline",
-  items: masterPipelineSections.map((section) => ({
-    label: section.title,
-    icon: pipelineIcons[section.key],
-    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations?type=initial" : section.key === "assessment" ? "/assessments" : section.key === "treatmentAuth" ? "/authorizations?type=treatment" : section.key === "activeServices" ? "/active-services" : section.key === "reauth" ? "/reauth-loop" : `/clients?pipeline=${section.key}&view=pipeline`,
-    perm: section.key === "intake" || section.key === "financial" ? "leads.view" : "clients.view",
-  })),
-};
-
 const navSections: { title?: string; items: NavItem[] }[] = [
   {
     items: [
@@ -77,20 +52,22 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: "Pipeline",
-    items: pipelineSection.items,
+    title: "Operate",
+    items: [
+      { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
+      { label: "Intake", icon: Users, path: "/leads?view=queue", perm: "leads.view" },
+      { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "auth.view" },
+      { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "scheduling.view" },
+      { label: "Staffing", icon: UserPlus, path: "/staffing", perm: "staffing.view" },
+      { label: "QA & Compliance", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
+      { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
+      { label: "Clinics", icon: Building2, path: "/clinics", perm: "clinics.view" },
+    ],
   },
   {
-    title: "Operations",
+    title: "Pipeline",
     items: [
-      { label: "Operations", icon: Workflow, path: "/operations", perm: "operations.view" },
-      { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "scheduling.view" },
-      { label: "Active Services", icon: HeartHandshake, path: "/active-services", perm: "clients.view" },
-      { label: "Reauth Loop", icon: RefreshCw, path: "/reauth-loop", perm: "auth.view" },
-      { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
-      { label: "Staffing", icon: UserPlus, path: "/staffing", perm: "staffing.view" },
-      { label: "QA", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
-      { label: "Clinics", icon: Building2, path: "/clinics", perm: "clinics.view" },
+      { label: "Pipeline", icon: Workflow, path: "/pipeline", perm: "clients.view" },
     ],
   },
   {
