@@ -47,7 +47,7 @@ interface QARecord {
   amerigroupIssue: boolean;
   noteGuardIssues: number;
   checklist: Record<string, boolean>;
-  tasks: { title: string; owner: string; due: string; status: "Open" | "Done" }[];
+  tasks: { title: string; owner: string; due: string; status: "Open" | "Done"; linkedRecordId?: string; createdFrom?: string }[];
   documents: string[];
   comments: string[];
   timeline: { label: string; date: string; detail: string }[];
@@ -161,6 +161,17 @@ export default function QADashboard() {
   };
 
   const markReady = (r: QARecord) => updateRecord(r.id, { qaStatus: "Ready for Submission", authStatus: "Awaiting Submission", authReadiness: "Ready", stage: "Pending Treatment Auth", nextAction: "Submit treatment authorization", alerts: r.alerts.filter((a) => !a.includes("blocking") && !a.includes("Missing")), checklist: { ...r.checklist, ready: true } }, "Marked ready for submission");
+
+  const createFixTask = (r: QARecord) => {
+    const owner = r.issueType.toLowerCase().includes("note") || r.newRbt ? r.rbt : r.bcba;
+    const due = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(Date.now() + (r.qaStatus === "Overdue" || r.authReadiness === "Blocked" ? 24 : 48) * 60 * 60 * 1000));
+    const task = { title: `QA fix: ${r.issueType === "None" ? "Documentation follow-up" : r.issueType}`, owner, due, status: "Open" as const, linkedRecordId: r.id, createdFrom: "QA Dashboard" };
+    const timelineEvent = { label: "Fix task created", date: "Now", detail: `${task.title} assigned to ${owner}, due ${due}. Linked to ${r.id}.` };
+    const patch = { tasks: [...r.tasks, task], nextAction: `Complete fix task with ${owner}`, alerts: Array.from(new Set([...r.alerts, "Fix task open"])) };
+    setRecords((current) => current.map((record) => record.id === r.id ? { ...record, ...patch, timeline: [...record.timeline, timelineEvent] } : record));
+    setSelected((current) => current?.id === r.id ? { ...current, ...patch, timeline: [...current.timeline, timelineEvent] } : current);
+    toast.success(`Fix task assigned to ${owner} · due ${due}`);
+  };
 
   const kpis: { key: KpiKey; label: string; value: string | number; sub: string; icon: typeof ClipboardCheck; tone: Health }[] = [
     { key: "awaiting", label: "Awaiting QA Review", value: metrics.awaiting, sub: "New plans waiting", icon: ClipboardCheck, tone: "warning" as Health },
