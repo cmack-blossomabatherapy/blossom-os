@@ -4,6 +4,7 @@ import {
   Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
   ScheduleSlot, AuthStatus, StaffingStatus, QAStatus, ClientSchedulingStatus,
   ActiveServiceStatus, ActiveStaffingStatus, NotesComplianceStatus, BillingClaimStatus,
+  ReauthCycle, ReauthCycleStatus, ReauthQAStatus, ReauthSubmissionStatus,
 } from "@/data/clients";
 import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
@@ -109,6 +110,7 @@ interface DbDocument { id: string; client_id: string; name: string; type: string
 interface DbTimeline { id: string; client_id: string; event_type: ClientTimelineEvent["type"]; description: string; user_name: string | null; created_at: string; }
 interface DbAuth { id: string; client_id: string; kind: "Initial" | "Treatment" | "Reauth"; status: AuthStatus; submitted_date: string | null; approved_date: string | null; expiration_date: string | null; hours: string | null; notes: string | null; stage_entered_at?: string | null; }
 interface DbSlot { id: string; client_id: string; day: ScheduleSlot["day"]; start_time: string; end_time: string; rbt: string | null; }
+interface DbReauth { id: string; client_id: string; linked_authorization_id: string | null; payor: string; current_auth_expiration_date: string; reauth_trigger_date: string; bcba_9_week_notification_date: string | null; bcba_6_week_notification_date: string | null; progress_report_due_date: string | null; progress_report_received_date: string | null; qa_review_started_date: string | null; qa_completed_date: string | null; submission_date: string | null; approval_date: string | null; status: ReauthCycleStatus; qa_status: ReauthQAStatus; submission_status: ReauthSubmissionStatus; assigned_bcba: string | null; qa_owner: string | null; authorization_coordinator: string | null; state_director: string | null; blockers: string[]; alerts: string[]; notes: string | null; stage_entered_at?: string | null; }
 
 const buildClient = (
   c: DbClient,
@@ -117,6 +119,7 @@ const buildClient = (
   timeline: DbTimeline[],
   auths: DbAuth[],
   slots: DbSlot[],
+  reauths: DbReauth[] = [],
 ): Client => ({
   id: c.id,
   childName: c.child_name,
@@ -208,6 +211,33 @@ const buildClient = (
     daysInStage: daysBetween(a.stage_entered_at),
     progressReportStatus: (((a as Row<DbAuth>).progress_report_status as "Not Started" | "In Progress" | "Received" | undefined) ?? "Not Started"),
   })) as AuthorizationRecord[],
+  reauthCycles: reauths.map((r): ReauthCycle => ({
+    id: r.id,
+    clientId: r.client_id,
+    linkedAuthorizationId: r.linked_authorization_id,
+    payor: r.payor,
+    currentAuthExpirationDate: r.current_auth_expiration_date,
+    reauthTriggerDate: r.reauth_trigger_date,
+    bcba9WeekNotificationDate: r.bcba_9_week_notification_date,
+    bcba6WeekNotificationDate: r.bcba_6_week_notification_date,
+    progressReportDueDate: r.progress_report_due_date,
+    progressReportReceivedDate: r.progress_report_received_date,
+    qaReviewStartedDate: r.qa_review_started_date,
+    qaCompletedDate: r.qa_completed_date,
+    submissionDate: r.submission_date,
+    approvalDate: r.approval_date,
+    status: r.status,
+    qaStatus: r.qa_status,
+    submissionStatus: r.submission_status,
+    assignedBcba: r.assigned_bcba,
+    qaOwner: r.qa_owner,
+    authorizationCoordinator: r.authorization_coordinator,
+    stateDirector: r.state_director,
+    blockers: r.blockers ?? [],
+    alerts: r.alerts ?? [],
+    notes: r.notes,
+    daysInStage: daysBetween(r.stage_entered_at),
+  })),
   schedule: slots.map((s) => ({ day: s.day, start: s.start_time, end: s.end_time, rbt: s.rbt ?? undefined, location: ((s as Row<typeof s>).location as ScheduleSlot["location"] | undefined) ?? "Clinic", notes: ((s as Row<typeof s>).notes as string | undefined) })),
   tasks: tasks.map((t) => ({ id: t.id, title: t.title, completed: t.completed, dueDate: t.due_date ?? undefined })),
   timeline: timeline.map((t) => ({ id: t.id, type: t.event_type, description: t.description, timestamp: t.created_at, user: t.user_name ?? undefined })),
