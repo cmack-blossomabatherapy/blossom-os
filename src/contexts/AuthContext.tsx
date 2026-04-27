@@ -45,18 +45,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       // Defer Supabase calls outside the callback to avoid deadlocks
       if (s?.user) {
+        setLoading(true);
         setTimeout(() => {
-          void loadRolesAndAccess(s.user.id);
-          void loadProfileFlag(s.user.id);
+          Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
+            setLoading(false),
+          );
         }, 0);
       } else {
         setRoles([]);
-          setPermissions(new Set());
-          setOwnedClientStages(new Set());
-          setOwnedLeadStages(new Set());
+        setPermissions(new Set());
+        setOwnedClientStages(new Set());
+        setOwnedLeadStages(new Set());
         setMustChangePassword(false);
         setPartOfLeadership(false);
         setDashboardAccess(null);
+        setLoading(false);
       }
     });
 
