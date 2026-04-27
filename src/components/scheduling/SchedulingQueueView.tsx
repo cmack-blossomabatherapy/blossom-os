@@ -11,7 +11,7 @@ interface Props {
 
 export function SchedulingQueueView({ items, assessments, onSelect }: Props) {
   const needsScheduling = items.filter(
-    (i) => i.status === "Unscheduled Assessment" || (i.status === "Ready to Schedule" && i.client.schedule.length === 0),
+    (i) => i.status === "Unscheduled Assessment" || (i.status === "Pending Schedule" && i.client.schedule.length === 0),
   );
   const readyToStart = items.filter(
     (i) => i.client.authStatus === "Approved" && i.client.rbt && i.client.schedule.length === 0 && i.client.stage !== "Active",
