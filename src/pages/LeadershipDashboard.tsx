@@ -290,7 +290,7 @@ function ClinicPerformanceTable({ clinics }: { clinics: ClinicPerformance[] }) {
 }
 
 function PipelineFunnel({ stages, total }: { stages: ReturnType<typeof buildLiveDashboard>["pipelineStages"]; total: number }) {
-  return <Section title="Pipeline Funnel"><div className="space-y-2">{stages.map((stage) => <div key={stage.stage} className="grid grid-cols-[180px_1fr_120px] items-center gap-3 text-sm"><span className="font-medium text-foreground">{stage.stage}</span><div className="h-8 overflow-hidden rounded-md bg-muted"><div className={cn("h-full rounded-md", stage.stuckTooLong ? "bg-destructive/70" : "bg-primary/70")} style={{ width: `${Math.max(0, (stage.count / total) * 100)}%` }} /></div><span className="text-xs text-muted-foreground">{stage.count} · {Math.round((stage.count / total) * 100)}% · {stage.avgDays ?? "—"}d</span></div>))}</div></Section>;
+  return <Section title="Pipeline Funnel"><div className="space-y-2">{stages.map((stage) => <div key={stage.stage} className="grid grid-cols-[180px_1fr_120px] items-center gap-3 text-sm"><span className="font-medium text-foreground">{stage.stage}</span><div className="h-8 overflow-hidden rounded-md bg-muted"><div className={cn("h-full rounded-md", stage.stuckTooLong ? "bg-destructive/70" : "bg-primary/70")} style={{ width: `${Math.max(0, (stage.count / total) * 100)}%` }} /></div><span className="text-xs text-muted-foreground">{stage.count} · {Math.round((stage.count / total) * 100)}% · {stage.avgDays ?? "—"}d</span></div>)}</div></Section>;
 }
 
 function ServiceSettingPerformance({ clients }: { clients: ClientRecord[] }) {
