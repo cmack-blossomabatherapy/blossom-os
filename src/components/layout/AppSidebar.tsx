@@ -10,7 +10,6 @@ import {
 import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
 
 interface NavItem {
   label: string;
@@ -20,37 +19,7 @@ interface NavItem {
   superAdminOnly?: boolean;
 }
 
-const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
-  ceo: BarChart3,
-  intake: Users,
-  authorizations: ShieldCheck,
-  scheduling: Calendar,
-  staffing: UserPlus,
-  clinic: Building2,
-  qa: ClipboardCheck,
-  finance: Wallet,
-  hr: HeartHandshake,
-  recruiting: Briefcase,
-};
-
-const superAdminDashboardSection: { title: string; items: NavItem[] } = {
-  title: "Dashboards",
-  items: dashboardDefinitions.map((dashboard) => ({
-    label: dashboard.name.replace(" Dashboard", ""),
-    icon: dashboardIcons[dashboard.key],
-    path: `/leadership-dashboard?dashboard=${dashboard.key}`,
-    perm: "dashboard.view",
-    superAdminOnly: true,
-  })),
-};
-
 const navSections: { title?: string; items: NavItem[] }[] = [
-  {
-    items: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/", perm: "dashboard.view" },
-      { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view" },
-    ],
-  },
   {
     title: "Operate",
     items: [
