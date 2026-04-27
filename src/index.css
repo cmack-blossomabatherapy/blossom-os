@@ -125,33 +125,20 @@
   .nav-item-inactive {
     @apply text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground;
   }
-  .mobile-tabbar {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(4rem, 1fr);
-    gap: 0.125rem;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    padding: 0.45rem max(0.5rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-right));
-    scrollbar-width: none;
+  .mobile-menu-item {
+    @apply flex min-h-12 items-center gap-3 rounded-2xl border border-border/60 bg-background/70 px-3 text-sm font-medium text-foreground shadow-sm transition-colors;
   }
-  .mobile-tabbar::-webkit-scrollbar {
-    display: none;
+  .mobile-menu-icon {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground;
   }
-  .mobile-tabbar-item {
-    @apply flex h-12 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-[10px] font-medium text-muted-foreground transition-colors;
+  .mobile-menu-item-active {
+    @apply border-primary/30 bg-primary/10 text-primary;
   }
-  .mobile-tabbar-item svg {
-    @apply text-muted-foreground;
+  .mobile-menu-item-active .mobile-menu-icon {
+    @apply bg-primary text-primary-foreground;
   }
-  .mobile-tabbar-item-active {
-    @apply bg-primary/10 text-primary;
-  }
-  .mobile-tabbar-item-active svg {
-    @apply text-primary;
-  }
-  .mobile-tabbar-item span {
-    @apply max-w-full truncate leading-none;
+  .mobile-menu-sheet > button {
+    @apply hidden;
   }
 }
 

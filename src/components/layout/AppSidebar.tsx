@@ -5,12 +5,14 @@ import {
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen, ChevronDown,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown, X,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 interface NavItem {
   label: string;
@@ -115,7 +117,7 @@ const hrSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-export function AppSidebar() {
+export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
   const location = useLocation();
   const { hasPerm, isAdmin } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
@@ -161,34 +163,48 @@ export function AppSidebar() {
     });
   };
 
-  const mobileItems = sections.flatMap((section) => section.items);
-
   return (
-    <aside className="fixed inset-x-0 bottom-0 z-40 shrink-0 border-t border-border bg-card/95 shadow-lg backdrop-blur-xl md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-sidebar-border md:border-t-0 md:bg-sidebar md:shadow-none md:backdrop-blur-none">
+    <>
+      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+        <SheetContent side="right" className="mobile-menu-sheet w-[88vw] max-w-sm overflow-y-auto border-l border-border bg-card p-0 md:hidden">
+          <div className="sticky top-0 z-10 border-b border-border bg-card/95 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3">
+              <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="mt-3 text-xs font-medium text-muted-foreground">Blossom OS navigation</p>
+          </div>
+          <nav className="space-y-5 px-4 py-4" aria-label="Mobile navigation">
+            {sections.map((section, i) => (
+              <div key={section.title ?? i}>
+                {section.title && <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{section.title}</p>}
+                <div className="grid gap-2">
+                  {section.items.map((item) => {
+                    const active = isItemActive(item.path);
+                    return (
+                      <NavLink key={item.path} to={item.path} end={item.path === "/"} onClick={() => onMobileOpenChange?.(false)} className={cn("mobile-menu-item", active && "mobile-menu-item-active")}>
+                        <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+      <aside className="hidden shrink-0 md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-sidebar-border md:bg-sidebar">
       {/* Logo */}
       <div className="hidden h-20 items-center justify-center border-b border-sidebar-border bg-sidebar px-4 md:flex">
         <img src={logo} alt="Blossom ABA Therapy" className="max-h-14 w-full object-contain" />
       </div>
 
-      <nav className="mobile-tabbar md:hidden" aria-label="Primary mobile navigation">
-        {mobileItems.map((item) => {
-          const active = isItemActive(item.path);
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === "/"}
-              className={cn("mobile-tabbar-item", active && "mobile-tabbar-item-active")}
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
 
       {/* Navigation */}
-      <nav className="hidden flex-1 space-y-5 overflow-y-auto px-3 py-3 md:block">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
         {sections.map((section, i) => {
           const activeInSection = section.items.some((item) => isItemActive(item.path));
           const sectionOpen = !section.title || activeInSection || openSections.has(section.title);
@@ -225,6 +241,7 @@ export function AppSidebar() {
         );
         })}
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }
