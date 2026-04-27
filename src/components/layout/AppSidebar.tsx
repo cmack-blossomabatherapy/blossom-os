@@ -174,15 +174,20 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="right" className="mobile-menu-sheet w-[82vw] max-w-[320px] overflow-y-auto border-l border-border bg-background p-0 shadow-2xl md:hidden">
-          <div className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar p-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-lg">
+        <SheetContent side="right" className="mobile-menu-sheet w-[84vw] max-w-[330px] overflow-y-auto border-0 bg-background p-0 shadow-2xl md:hidden">
+          <div className="sticky top-0 z-10 bg-sidebar px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-[0_14px_30px_-22px_hsl(var(--sidebar-background))]">
             <div className="flex items-center justify-between gap-3">
-              <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
-              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+              <div className="flex min-h-12 flex-1 items-center rounded-xl bg-sidebar-accent/55 px-3 ring-1 ring-sidebar-border/70">
+                <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+              </div>
+              <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full bg-sidebar-accent/55 text-sidebar-foreground ring-1 ring-sidebar-border/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-3 text-[11px] font-medium text-sidebar-foreground/80">Blossom OS navigation</p>
+            <div className="mt-3 flex items-center justify-between gap-3 text-sidebar-foreground/85">
+              <p className="text-[11px] font-semibold uppercase tracking-wider">Navigation</p>
+              <span className="h-1.5 w-1.5 rounded-full bg-sidebar-primary" />
+            </div>
           </div>
           <nav className="px-4 py-3" aria-label="Mobile navigation">
             {sections.map((section, i) => {
