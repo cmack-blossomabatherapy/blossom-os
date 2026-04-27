@@ -114,9 +114,10 @@ const hrSection: { title: string; items: NavItem[] } = {
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPerm } = useAuth();
+  const { hasPerm, isAdmin } = useAuth();
 
   const allSections = [...navSections];
+  if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
   // Insert HR Suite before Admin so it sits with the operations modules
   const adminIndex = allSections.findIndex((s) => s.title === "Admin");
   if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
@@ -125,7 +126,7 @@ export function AppSidebar() {
   const sections = allSections
     .map((s) => ({
       ...s,
-      items: s.items.filter((item) => hasPerm(item.perm)),
+      items: s.items.filter((item) => (!item.superAdminOnly || isAdmin) && hasPerm(item.perm)),
     }))
     .filter((s) => s.items.length > 0);
 
@@ -152,7 +153,7 @@ export function AppSidebar() {
                   to={item.path}
                   end={item.path === "/"}
                   className={({ isActive }) =>
-                    cn("nav-item", isActive ? "nav-item-active" : "nav-item-inactive")
+                    cn("nav-item", isActive || `${location.pathname}${location.search}` === item.path ? "nav-item-active" : "nav-item-inactive")
                   }
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
