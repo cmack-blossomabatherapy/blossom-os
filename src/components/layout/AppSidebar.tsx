@@ -116,7 +116,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { hasPerm, isAdmin } = useAuth();
 
-  const allSections = [...navSections];
+  const allSections = isAdmin ? navSections.filter((section) => section.title || !section.items.some((item) => item.path === "/" || item.path === "/leadership-dashboard")) : [...navSections];
   if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
   // Insert HR Suite before Admin so it sits with the operations modules
   const adminIndex = allSections.findIndex((s) => s.title === "Admin");
