@@ -116,7 +116,7 @@ const hrSection: { title: string; items: NavItem[] } = {
 export function AppSidebar() {
   const location = useLocation();
   const { hasPerm, isAdmin } = useAuth();
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Pipeline", "Operations", "Records", "Intelligence", "HR Suite", "Admin"]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
 
   const allSections = isAdmin ? navSections.filter((section) => section.title || !section.items.some((item) => item.path === "/" || item.path === "/leadership-dashboard")) : [...navSections];
   if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
@@ -137,11 +137,6 @@ export function AppSidebar() {
       const itemDashboard = new URLSearchParams(path.split("?")[1]).get("dashboard");
       const currentDashboard = new URLSearchParams(location.search).get("dashboard") ?? "ceo";
       return location.pathname === "/leadership-dashboard" && itemDashboard === currentDashboard;
-    }
-    if (path.startsWith("/clients?pipeline=")) {
-      const itemPipeline = new URLSearchParams(path.split("?")[1]).get("pipeline");
-      const currentPipeline = new URLSearchParams(location.search).get("pipeline");
-      return location.pathname === "/clients" && itemPipeline === currentPipeline;
     }
     if (path.startsWith("/leads?")) {
       return location.pathname === "/leads";
