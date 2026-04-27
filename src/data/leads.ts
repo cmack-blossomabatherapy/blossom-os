@@ -10,14 +10,16 @@ export type LeadStatus =
   | "Can Not Submit Auth"
   | "Sent Packet - Can't Reach"
   | "Non-qualified Lead"
-  | "Getting DX";
+  | "Getting DX"
+  | "Non-Qualified"
+  | "Needs DX";
 
 export type Priority = "Hot" | "Warm" | "Cold";
 export type LeadSource = "Website" | "Phone" | "Facebook" | "Referral" | "Ads" | "Organic" | "Digital" | "Insurance";
-export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Completed";
-export type ConsentStatus = "Not Sent" | "Sent" | "Completed";
-export type VobStatus = "Not Started" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
-export type FormReviewStatus = "Pending" | "Complete" | "Missing Information";
+export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete" | "Completed";
+export type ConsentStatus = "Not Sent" | "Sent" | "Complete" | "Completed";
+export type VobStatus = "Not Started" | "Not Sent" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
+export type FormReviewStatus = "Pending" | "Complete" | "Missing Info" | "Missing Information";
 
 export interface LeadTask {
   id: string;
@@ -28,6 +30,21 @@ export interface LeadTask {
   workflowStep?: string;
   comments?: number;
 }
+
+export const INTAKE_COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
+
+export const createIntakeTask = (title: LeadTask["title"], owner = INTAKE_COORDINATORS[0], dueOffsetDays = 0): LeadTask => {
+  const due = new Date();
+  due.setDate(due.getDate() + dueOffsetDays);
+  return {
+    id: `tk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    completed: false,
+    owner,
+    dueDate: due.toISOString().split("T")[0],
+    workflowStep: title,
+  };
+};
 
 export interface TimelineEvent {
   id: string;
@@ -102,8 +119,8 @@ export const pipelineStages: { name: LeadStatus; color: string }[] = [
   { name: "Can't Reach", color: "destructive" },
   { name: "Can Not Submit Auth", color: "destructive" },
   { name: "Sent Packet - Can't Reach", color: "warning" },
-  { name: "Non-qualified Lead", color: "muted" },
-  { name: "Getting DX", color: "default" },
+  { name: "Non-Qualified", color: "muted" },
+  { name: "Needs DX", color: "default" },
 ];
 
 const makeTimeline = (status: LeadStatus): TimelineEvent[] => {
@@ -114,7 +131,7 @@ const makeTimeline = (status: LeadStatus): TimelineEvent[] => {
     base.push({ id: "t2", type: "call", description: "Call attempt #1 — no answer", timestamp: "2025-04-10T10:30:00Z", user: "Sarah M." });
     base.push({ id: "t3", type: "sms", description: "Intro SMS sent", timestamp: "2025-04-10T10:32:00Z", user: "Sarah M." });
   }
-  if (["Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed", "Getting DX"].includes(status)) {
+  if (["Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed", "Needs DX", "Getting DX"].includes(status)) {
     base.push({ id: "t4", type: "call", description: "Connected — parent interested", timestamp: "2025-04-11T14:00:00Z", user: "Sarah M." });
     base.push({ id: "t5", type: "form", description: "Intake form sent via PandaDoc", timestamp: "2025-04-11T14:15:00Z", user: "Sarah M." });
   }
@@ -249,6 +266,8 @@ export const statusVariant = (status: string): "default" | "success" | "warning"
     "Sent Packet - Can't Reach": "warning",
     "Non-qualified Lead": "muted",
     "Getting DX": "default",
+    "Non-Qualified": "muted",
+    "Needs DX": "default",
   };
   return map[status] || "muted";
 };
@@ -261,10 +280,12 @@ export const getInlineAlert = (lead: Lead): { type: "red" | "yellow"; message: s
   if (lead.status === "New Lead" && !lead.lastContacted) return { type: "red", message: "No contact yet" };
   if (lead.status === "Missing Information" && lead.daysInStage >= 3) return { type: "red", message: "Missing info blocking VOB" };
   if (lead.status === "Sent Form" && lead.daysInStage >= 3) return { type: "yellow", message: "Form not completed in " + lead.daysInStage + "d" };
-  if (["Sent to VOB"].includes(lead.status) && lead.daysInStage >= 3) return { type: "yellow", message: "VOB pending " + lead.daysInStage + "d" };
+  if (lead.status === "Form Received" && lead.vobStatus === "Not Sent") return { type: "red", message: "VOB not sent" };
+  if (lead.status === "Sent to VOB" && lead.daysInStage >= 3) return { type: "yellow", message: "VOB pending " + lead.daysInStage + "d" };
   if (lead.status === "Can't Reach" && lead.daysInStage >= 5) return { type: "red", message: "Can't reach — " + lead.daysInStage + "d" };
   if (lead.status === "Can Not Submit Auth") return { type: "red", message: "Auth blocked — missing docs" };
   if (lead.status === "VOB Completed" && (lead.vobStatus === "Approved" || lead.vobStatus === "Payment Plan Required")) return { type: "yellow", message: "Ready to move to Clients" };
+  if (lead.daysInStage > 5 && !["VOB Completed", "Non-Qualified", "Non-qualified Lead"].includes(lead.status)) return { type: "red", message: `Stuck in stage ${lead.daysInStage}d` };
   return null;
 };
 

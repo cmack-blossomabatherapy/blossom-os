@@ -38,7 +38,8 @@ export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { leads, moveStage, assignOwner, addTag, deleteLeads } = useLeads();
 
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const initialView = searchParams.get("view") as ViewMode | null;
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView === "table" || initialView === "pipeline" || initialView === "queue" ? initialView : "queue");
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [filters, setFilters] = useState<LeadFilters>(emptyFilters);
@@ -52,6 +53,8 @@ export default function Leads() {
   useEffect(() => {
     const q = searchParams.get("q");
     if (q !== null && q !== searchQuery) setSearchQuery(q);
+    const view = searchParams.get("view") as ViewMode | null;
+    if ((view === "table" || view === "pipeline" || view === "queue") && view !== viewMode) setViewMode(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -60,11 +63,12 @@ export default function Leads() {
     const next = new URLSearchParams(searchParams);
     if (searchQuery) next.set("q", searchQuery);
     else next.delete("q");
+    next.set("view", viewMode);
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, viewMode]);
 
   const filterOptions = useMemo(() => ({
     states: Array.from(new Set(leads.map((l) => l.state))).sort(),
@@ -175,8 +179,8 @@ export default function Leads() {
 
   return (
     <PageShell
-      title="Leads"
-      description="Lead command center — track intake pipeline from first contact to VOB"
+      title="Intake"
+      description="Action queue for intake leads from first contact through VOB readiness"
       icon={Users}
     >
       <LeadKpiStrip leads={leads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />

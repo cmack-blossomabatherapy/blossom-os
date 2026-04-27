@@ -1533,6 +1533,268 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_communications: {
+        Row: {
+          call_outcome: Database["public"]["Enums"]["intake_call_status"] | null
+          communication_type: Database["public"]["Enums"]["intake_communication_type"]
+          created_at: string
+          direction: string
+          duration_seconds: number | null
+          id: string
+          lead_id: string
+          logged_by: string | null
+          logged_by_name: string | null
+          preview: string
+          subject: string | null
+        }
+        Insert: {
+          call_outcome?:
+            | Database["public"]["Enums"]["intake_call_status"]
+            | null
+          communication_type: Database["public"]["Enums"]["intake_communication_type"]
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id: string
+          logged_by?: string | null
+          logged_by_name?: string | null
+          preview: string
+          subject?: string | null
+        }
+        Update: {
+          call_outcome?:
+            | Database["public"]["Enums"]["intake_call_status"]
+            | null
+          communication_type?: Database["public"]["Enums"]["intake_communication_type"]
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string
+          logged_by?: string | null
+          logged_by_name?: string | null
+          preview?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_communications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_documents: {
+        Row: {
+          created_at: string
+          document_type: Database["public"]["Enums"]["intake_document_type"]
+          id: string
+          lead_id: string
+          missing_flag: boolean
+          name: string
+          storage_path: string | null
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          document_type: Database["public"]["Enums"]["intake_document_type"]
+          id?: string
+          lead_id: string
+          missing_flag?: boolean
+          name: string
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["intake_document_type"]
+          id?: string
+          lead_id?: string
+          missing_flag?: boolean
+          name?: string
+          storage_path?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_leads: {
+        Row: {
+          assigned_intake_coordinator: string | null
+          blockers: string[]
+          call_status: Database["public"]["Enums"]["intake_call_status"]
+          child_name: string
+          consent_form_status: Database["public"]["Enums"]["intake_consent_status"]
+          contact_attempts_count: number
+          created_at: string
+          created_by: string | null
+          email: string
+          email_sent: boolean
+          form_review_status: Database["public"]["Enums"]["intake_form_review_status"]
+          form_status: Database["public"]["Enums"]["intake_form_status"]
+          id: string
+          initial_form_link: string | null
+          insurance: string | null
+          insurance_type: string | null
+          last_contacted_at: string | null
+          lead_source: string
+          next_action: string
+          next_task_due: string | null
+          non_qualified_reason: string | null
+          notes: string | null
+          parent_name: string
+          payment_plan_needed: boolean
+          phone: string
+          pipeline_stage: Database["public"]["Enums"]["intake_pipeline_stage"]
+          priority: Database["public"]["Enums"]["intake_priority"]
+          ready_for_client_conversion: boolean
+          sms_sent: boolean
+          stage_entered_at: string
+          state: string
+          updated_at: string
+          vob_file_path: string | null
+          vob_status: Database["public"]["Enums"]["intake_vob_status"]
+        }
+        Insert: {
+          assigned_intake_coordinator?: string | null
+          blockers?: string[]
+          call_status?: Database["public"]["Enums"]["intake_call_status"]
+          child_name: string
+          consent_form_status?: Database["public"]["Enums"]["intake_consent_status"]
+          contact_attempts_count?: number
+          created_at?: string
+          created_by?: string | null
+          email: string
+          email_sent?: boolean
+          form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
+          form_status?: Database["public"]["Enums"]["intake_form_status"]
+          id?: string
+          initial_form_link?: string | null
+          insurance?: string | null
+          insurance_type?: string | null
+          last_contacted_at?: string | null
+          lead_source?: string
+          next_action?: string
+          next_task_due?: string | null
+          non_qualified_reason?: string | null
+          notes?: string | null
+          parent_name: string
+          payment_plan_needed?: boolean
+          phone: string
+          pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          priority?: Database["public"]["Enums"]["intake_priority"]
+          ready_for_client_conversion?: boolean
+          sms_sent?: boolean
+          stage_entered_at?: string
+          state: string
+          updated_at?: string
+          vob_file_path?: string | null
+          vob_status?: Database["public"]["Enums"]["intake_vob_status"]
+        }
+        Update: {
+          assigned_intake_coordinator?: string | null
+          blockers?: string[]
+          call_status?: Database["public"]["Enums"]["intake_call_status"]
+          child_name?: string
+          consent_form_status?: Database["public"]["Enums"]["intake_consent_status"]
+          contact_attempts_count?: number
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          email_sent?: boolean
+          form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
+          form_status?: Database["public"]["Enums"]["intake_form_status"]
+          id?: string
+          initial_form_link?: string | null
+          insurance?: string | null
+          insurance_type?: string | null
+          last_contacted_at?: string | null
+          lead_source?: string
+          next_action?: string
+          next_task_due?: string | null
+          non_qualified_reason?: string | null
+          notes?: string | null
+          parent_name?: string
+          payment_plan_needed?: boolean
+          phone?: string
+          pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          priority?: Database["public"]["Enums"]["intake_priority"]
+          ready_for_client_conversion?: boolean
+          sms_sent?: boolean
+          stage_entered_at?: string
+          state?: string
+          updated_at?: string
+          vob_file_path?: string | null
+          vob_status?: Database["public"]["Enums"]["intake_vob_status"]
+        }
+        Relationships: []
+      }
+      intake_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          lead_id: string
+          notes: string | null
+          owner: string | null
+          status: Database["public"]["Enums"]["intake_task_status"]
+          task_type: Database["public"]["Enums"]["intake_task_type"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          owner?: string | null
+          status?: Database["public"]["Enums"]["intake_task_status"]
+          task_type: Database["public"]["Enums"]["intake_task_type"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          owner?: string | null
+          status?: Database["public"]["Enums"]["intake_task_status"]
+          task_type?: Database["public"]["Enums"]["intake_task_type"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "intake_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
@@ -2231,6 +2493,57 @@ export type Database = {
         | "policy"
         | "form"
         | "folder"
+      intake_call_status:
+        | "Not Attempted"
+        | "Attempted"
+        | "Contacted"
+        | "Connected"
+        | "Left Voicemail"
+        | "Wrong Number"
+        | "Final Attempt"
+      intake_communication_type: "call" | "sms" | "email" | "note"
+      intake_consent_status: "Not Sent" | "Sent" | "Complete"
+      intake_document_type:
+        | "Initial Form"
+        | "Insurance Card"
+        | "VOB File"
+        | "Consent Form"
+        | "DX Document"
+        | "Other"
+      intake_form_review_status: "Pending" | "Complete" | "Missing Info"
+      intake_form_status: "Not Sent" | "Sent" | "Viewed" | "Complete"
+      intake_pipeline_stage:
+        | "New Lead"
+        | "In Contact"
+        | "Sent Form"
+        | "Missing Information"
+        | "Form Received"
+        | "Sent to VOB"
+        | "VOB Completed"
+        | "Can't Reach"
+        | "Can Not Submit Auth"
+        | "Sent Packet - Can't Reach"
+        | "Non-Qualified"
+        | "Needs DX"
+      intake_priority: "Hot" | "Warm" | "Cold"
+      intake_task_status: "Open" | "In Progress" | "Completed" | "Blocked"
+      intake_task_type:
+        | "Contact Lead"
+        | "Follow Up"
+        | "Send Form"
+        | "Collect Missing Info"
+        | "Review Intake Packet"
+        | "Set Insurance"
+        | "Set Form Review Status"
+        | "Add to Eligipro"
+        | "Add to CentralReach"
+        | "Collect Missing Documentation"
+      intake_vob_status:
+        | "Not Sent"
+        | "Sent"
+        | "Received"
+        | "Approved"
+        | "Payment Plan Required"
       pay_change_kind:
         | "raise"
         | "promotion"
@@ -2618,6 +2931,62 @@ export const Constants = {
         "policy",
         "form",
         "folder",
+      ],
+      intake_call_status: [
+        "Not Attempted",
+        "Attempted",
+        "Contacted",
+        "Connected",
+        "Left Voicemail",
+        "Wrong Number",
+        "Final Attempt",
+      ],
+      intake_communication_type: ["call", "sms", "email", "note"],
+      intake_consent_status: ["Not Sent", "Sent", "Complete"],
+      intake_document_type: [
+        "Initial Form",
+        "Insurance Card",
+        "VOB File",
+        "Consent Form",
+        "DX Document",
+        "Other",
+      ],
+      intake_form_review_status: ["Pending", "Complete", "Missing Info"],
+      intake_form_status: ["Not Sent", "Sent", "Viewed", "Complete"],
+      intake_pipeline_stage: [
+        "New Lead",
+        "In Contact",
+        "Sent Form",
+        "Missing Information",
+        "Form Received",
+        "Sent to VOB",
+        "VOB Completed",
+        "Can't Reach",
+        "Can Not Submit Auth",
+        "Sent Packet - Can't Reach",
+        "Non-Qualified",
+        "Needs DX",
+      ],
+      intake_priority: ["Hot", "Warm", "Cold"],
+      intake_task_status: ["Open", "In Progress", "Completed", "Blocked"],
+      intake_task_type: [
+        "Contact Lead",
+        "Follow Up",
+        "Send Form",
+        "Collect Missing Info",
+        "Review Intake Packet",
+        "Set Insurance",
+        "Set Form Review Status",
+        "Add to Eligipro",
+        "Add to CentralReach",
+        "Collect Missing Documentation",
+      ],
+      intake_vob_status: [
+        "Not Sent",
+        "Sent",
+        "Received",
+        "Approved",
+        "Payment Plan Required",
       ],
       pay_change_kind: [
         "raise",
