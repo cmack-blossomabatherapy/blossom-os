@@ -87,8 +87,7 @@ export function AppSidebar() {
   const { hasPerm, isAdmin } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
 
-  const allSections = isAdmin ? navSections.filter((section) => section.title || !section.items.some((item) => item.path === "/" || item.path === "/leadership-dashboard")) : [...navSections];
-  if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
+  const allSections = [...navSections];
   // Insert HR Suite before Admin so it sits with the operations modules
   const adminIndex = allSections.findIndex((s) => s.title === "Admin");
   if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
