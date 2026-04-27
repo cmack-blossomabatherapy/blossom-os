@@ -1640,30 +1640,52 @@ export type Database = {
           blockers: string[]
           call_status: Database["public"]["Enums"]["intake_call_status"]
           child_name: string
+          coinsurance_percent: number
           consent_form_status: Database["public"]["Enums"]["intake_consent_status"]
           contact_attempts_count: number
+          copay: number
           created_at: string
           created_by: string | null
+          deductible_amount: number
+          deductible_remaining: number
           email: string
           email_sent: boolean
+          estimated_client_responsibility: number
+          estimated_insurance_coverage_percent: number
+          estimated_monthly_revenue: number
+          expected_weekly_hours: number
+          financial_blockers: string[]
+          financial_decision_notes: string | null
+          financial_owner: string
+          financial_stage_entered_at: string
+          financial_status: Database["public"]["Enums"]["financial_review_status"]
           form_review_status: Database["public"]["Enums"]["intake_form_review_status"]
           form_status: Database["public"]["Enums"]["intake_form_status"]
           id: string
+          in_network: boolean
           initial_form_link: string | null
           insurance: string | null
           insurance_type: string | null
           last_contacted_at: string | null
           lead_source: string
+          max_out_of_pocket: number
           next_action: string
           next_task_due: string | null
           non_qualified_reason: string | null
           notes: string | null
+          out_of_network: boolean
           parent_name: string
+          payment_plan_amount: number
           payment_plan_needed: boolean
+          payment_plan_sent: boolean
+          payment_plan_signed: boolean
+          payment_plan_status: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
           pipeline_stage: Database["public"]["Enums"]["intake_pipeline_stage"]
+          primary_insurance: string | null
           priority: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion: boolean
+          secondary_insurance: string | null
           sms_sent: boolean
           stage_entered_at: string
           state: string
@@ -1676,30 +1698,52 @@ export type Database = {
           blockers?: string[]
           call_status?: Database["public"]["Enums"]["intake_call_status"]
           child_name: string
+          coinsurance_percent?: number
           consent_form_status?: Database["public"]["Enums"]["intake_consent_status"]
           contact_attempts_count?: number
+          copay?: number
           created_at?: string
           created_by?: string | null
+          deductible_amount?: number
+          deductible_remaining?: number
           email: string
           email_sent?: boolean
+          estimated_client_responsibility?: number
+          estimated_insurance_coverage_percent?: number
+          estimated_monthly_revenue?: number
+          expected_weekly_hours?: number
+          financial_blockers?: string[]
+          financial_decision_notes?: string | null
+          financial_owner?: string
+          financial_stage_entered_at?: string
+          financial_status?: Database["public"]["Enums"]["financial_review_status"]
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
           id?: string
+          in_network?: boolean
           initial_form_link?: string | null
           insurance?: string | null
           insurance_type?: string | null
           last_contacted_at?: string | null
           lead_source?: string
+          max_out_of_pocket?: number
           next_action?: string
           next_task_due?: string | null
           non_qualified_reason?: string | null
           notes?: string | null
+          out_of_network?: boolean
           parent_name: string
+          payment_plan_amount?: number
           payment_plan_needed?: boolean
+          payment_plan_sent?: boolean
+          payment_plan_signed?: boolean
+          payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone: string
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          primary_insurance?: string | null
           priority?: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion?: boolean
+          secondary_insurance?: string | null
           sms_sent?: boolean
           stage_entered_at?: string
           state: string
@@ -1712,30 +1756,52 @@ export type Database = {
           blockers?: string[]
           call_status?: Database["public"]["Enums"]["intake_call_status"]
           child_name?: string
+          coinsurance_percent?: number
           consent_form_status?: Database["public"]["Enums"]["intake_consent_status"]
           contact_attempts_count?: number
+          copay?: number
           created_at?: string
           created_by?: string | null
+          deductible_amount?: number
+          deductible_remaining?: number
           email?: string
           email_sent?: boolean
+          estimated_client_responsibility?: number
+          estimated_insurance_coverage_percent?: number
+          estimated_monthly_revenue?: number
+          expected_weekly_hours?: number
+          financial_blockers?: string[]
+          financial_decision_notes?: string | null
+          financial_owner?: string
+          financial_stage_entered_at?: string
+          financial_status?: Database["public"]["Enums"]["financial_review_status"]
           form_review_status?: Database["public"]["Enums"]["intake_form_review_status"]
           form_status?: Database["public"]["Enums"]["intake_form_status"]
           id?: string
+          in_network?: boolean
           initial_form_link?: string | null
           insurance?: string | null
           insurance_type?: string | null
           last_contacted_at?: string | null
           lead_source?: string
+          max_out_of_pocket?: number
           next_action?: string
           next_task_due?: string | null
           non_qualified_reason?: string | null
           notes?: string | null
+          out_of_network?: boolean
           parent_name?: string
+          payment_plan_amount?: number
           payment_plan_needed?: boolean
+          payment_plan_sent?: boolean
+          payment_plan_signed?: boolean
+          payment_plan_status?: Database["public"]["Enums"]["payment_plan_status"]
           phone?: string
           pipeline_stage?: Database["public"]["Enums"]["intake_pipeline_stage"]
+          primary_insurance?: string | null
           priority?: Database["public"]["Enums"]["intake_priority"]
           ready_for_client_conversion?: boolean
+          secondary_insurance?: string | null
           sms_sent?: boolean
           stage_entered_at?: string
           state?: string
@@ -2421,6 +2487,11 @@ export type Database = {
         | "terminated"
         | "resigned"
       employment_type: "full_time" | "part_time" | "contractor" | "prn"
+      financial_review_status:
+        | "Pending Review"
+        | "Approved"
+        | "Payment Plan Required"
+        | "Not Viable"
       hr_announcement_audience:
         | "all"
         | "by_state"
@@ -2538,6 +2609,10 @@ export type Database = {
         | "Add to Eligipro"
         | "Add to CentralReach"
         | "Collect Missing Documentation"
+        | "Submit to Solum"
+        | "Send Payment Plan"
+        | "Follow Up with Family"
+        | "Confirm Payment Plan Signed"
       intake_vob_status:
         | "Not Sent"
         | "Sent"
@@ -2553,6 +2628,14 @@ export type Database = {
         | "title_change"
       pay_change_status: "proposed" | "approved" | "effective" | "reverted"
       pay_type: "hourly" | "salaried"
+      payment_plan_status:
+        | "Not Required"
+        | "Sent"
+        | "Awaiting Signature"
+        | "Signed"
+        | "Approved"
+        | "Declined"
+        | "Not Qualified"
       payroll_run_status:
         | "open"
         | "ready"
@@ -2852,6 +2935,12 @@ export const Constants = {
         "resigned",
       ],
       employment_type: ["full_time", "part_time", "contractor", "prn"],
+      financial_review_status: [
+        "Pending Review",
+        "Approved",
+        "Payment Plan Required",
+        "Not Viable",
+      ],
       hr_announcement_audience: [
         "all",
         "by_state",
@@ -2980,6 +3069,10 @@ export const Constants = {
         "Add to Eligipro",
         "Add to CentralReach",
         "Collect Missing Documentation",
+        "Submit to Solum",
+        "Send Payment Plan",
+        "Follow Up with Family",
+        "Confirm Payment Plan Signed",
       ],
       intake_vob_status: [
         "Not Sent",
@@ -2998,6 +3091,15 @@ export const Constants = {
       ],
       pay_change_status: ["proposed", "approved", "effective", "reverted"],
       pay_type: ["hourly", "salaried"],
+      payment_plan_status: [
+        "Not Required",
+        "Sent",
+        "Awaiting Signature",
+        "Signed",
+        "Approved",
+        "Declined",
+        "Not Qualified",
+      ],
       payroll_run_status: [
         "open",
         "ready",

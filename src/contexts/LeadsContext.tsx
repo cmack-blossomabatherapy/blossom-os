@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
-import { createIntakeTask, INTAKE_COORDINATORS, Lead, LeadStatus, mockLeads, TimelineEvent } from "@/data/leads";
+import { createIntakeTask, FINANCIAL_OWNER, INTAKE_COORDINATORS, Lead, LeadStatus, mockLeads, TimelineEvent } from "@/data/leads";
 
 interface LeadsContextValue {
   leads: Lead[];
@@ -77,6 +77,52 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
   if (patch.status === "Can Not Submit Auth") {
     tasks.push(createIntakeTask("Collect Missing Documentation", next.owner, 1));
     next.nextAction = "Collect missing documentation";
+  }
+
+  if (patch.status === "Sent to VOB") {
+    next.vobStatus = "Sent";
+    next.financialOwner = FINANCIAL_OWNER;
+    next.nextAction = "Submit to Solum, Eligipro, and CentralReach";
+    tasks.push(createIntakeTask("Submit to Solum", FINANCIAL_OWNER), createIntakeTask("Add to Eligipro", FINANCIAL_OWNER), createIntakeTask("Add to CentralReach", FINANCIAL_OWNER));
+    log.push("VOB sent — financial gate tasks created");
+  }
+  if (patch.vobStatus === "Received" || patch.vobFile) {
+    next.vobStatus = "Received";
+    next.financialStatus = "Pending Review";
+    next.nextAction = "Financial review by Gabi";
+    log.push("VOB received — moved to financial review");
+  }
+  if (patch.financialStatus === "Approved") {
+    next.status = "VOB Completed";
+    next.vobStatus = next.vobStatus === "Not Started" ? "Received" : next.vobStatus;
+    next.paymentPlanNeeded = false;
+    next.paymentPlanStatus = "Not Required";
+    next.nextAction = "Move to Client Pipeline";
+    log.push("Financial decision approved — ready for client pipeline");
+  }
+  if (patch.financialStatus === "Payment Plan Required") {
+    next.paymentPlanNeeded = true;
+    next.paymentPlanStatus = next.paymentPlanSent ? "Awaiting Signature" : "Not Required";
+    next.nextAction = "Send payment plan and confirm signature";
+    tasks.push(createIntakeTask("Send Payment Plan", FINANCIAL_OWNER), createIntakeTask("Follow Up with Family", FINANCIAL_OWNER, 2), createIntakeTask("Confirm Payment Plan Signed", FINANCIAL_OWNER, 3));
+    log.push("Payment plan required — finance tasks created");
+  }
+  if (patch.financialStatus === "Not Viable") {
+    next.status = "Non-Qualified";
+    next.notQualifiedReason = next.financialDecisionNotes || "Financially not viable";
+    next.nextAction = "Notify intake and leadership";
+    log.push("Case rejected as not viable");
+  }
+  if (patch.paymentPlanSent) {
+    next.paymentPlanStatus = "Awaiting Signature";
+    next.nextAction = "Follow up with family on payment plan";
+  }
+  if (patch.paymentPlanSigned) {
+    next.paymentPlanStatus = "Signed";
+    next.financialStatus = "Approved";
+    next.status = "VOB Completed";
+    next.nextAction = "Move to Client Pipeline";
+    log.push("Payment plan signed — ready for client pipeline");
   }
 
   if (patch.status && patch.status !== lead.status) next.daysInStage = 0;

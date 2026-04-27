@@ -20,6 +20,8 @@ export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete" | "Complete
 export type ConsentStatus = "Not Sent" | "Sent" | "Complete" | "Completed";
 export type VobStatus = "Not Started" | "Not Sent" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
 export type FormReviewStatus = "Pending" | "Complete" | "Missing Info" | "Missing Information";
+export type FinancialStatus = "Pending Review" | "Approved" | "Payment Plan Required" | "Not Viable";
+export type PaymentPlanStatus = "Not Required" | "Sent" | "Awaiting Signature" | "Signed" | "Approved" | "Declined" | "Not Qualified";
 
 export interface LeadTask {
   id: string;
@@ -45,6 +47,33 @@ export const createIntakeTask = (title: LeadTask["title"], owner = INTAKE_COORDI
     workflowStep: title,
   };
 };
+
+export const FINANCIAL_OWNER = "Gabi";
+
+export const defaultFinancialFields = (insurance = "") => ({
+  primaryInsurance: insurance,
+  secondaryInsurance: "",
+  inNetwork: true,
+  outOfNetwork: false,
+  deductibleAmount: 3000,
+  deductibleRemaining: 1200,
+  coinsurancePercent: 20,
+  copay: 35,
+  maxOutOfPocket: 8500,
+  estimatedInsuranceCoveragePercent: 80,
+  estimatedClientResponsibility: 620,
+  expectedWeeklyHours: 20,
+  estimatedMonthlyRevenue: 6400,
+  financialStatus: "Pending Review" as FinancialStatus,
+  financialDecisionNotes: "",
+  financialOwner: FINANCIAL_OWNER,
+  daysInFinancialStage: 0,
+  financialBlockers: [] as string[],
+  paymentPlanSent: false,
+  paymentPlanSigned: false,
+  paymentPlanAmount: 0,
+  paymentPlanStatus: "Not Required" as PaymentPlanStatus,
+});
 
 export interface TimelineEvent {
   id: string;
@@ -86,6 +115,24 @@ export interface Lead {
   formReviewStatus: FormReviewStatus;
   insurance: string;
   insuranceType: string;
+  primaryInsurance: string;
+  secondaryInsurance?: string;
+  inNetwork: boolean;
+  outOfNetwork: boolean;
+  deductibleAmount: number;
+  deductibleRemaining: number;
+  coinsurancePercent: number;
+  copay: number;
+  maxOutOfPocket: number;
+  estimatedInsuranceCoveragePercent: number;
+  estimatedClientResponsibility: number;
+  expectedWeeklyHours: number;
+  estimatedMonthlyRevenue: number;
+  financialStatus: FinancialStatus;
+  financialDecisionNotes?: string;
+  financialOwner: string;
+  daysInFinancialStage: number;
+  financialBlockers: string[];
   notQualifiedReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +144,10 @@ export interface Lead {
   payor: string;
   coverageType: string;
   paymentPlanNeeded: boolean;
+  paymentPlanSent: boolean;
+  paymentPlanSigned: boolean;
+  paymentPlanAmount: number;
+  paymentPlanStatus: PaymentPlanStatus;
   initialFormLink?: string;
   vobFile?: { name: string; uploadedAt: string };
   notes?: string;
@@ -214,6 +265,11 @@ const buildLead = (
   const formReviewStatus = partial.formReviewStatus ?? "Pending";
   return {
     ...partial,
+    ...defaultFinancialFields(partial.insurance),
+    financialStatus: partial.insurance.toLowerCase().includes("medicaid") ? "Approved" : partial.vobStatus === "Payment Plan Required" ? "Payment Plan Required" : partial.status === "VOB Completed" ? "Approved" : "Pending Review",
+    paymentPlanNeeded: partial.paymentPlanNeeded,
+    paymentPlanStatus: partial.paymentPlanNeeded ? "Awaiting Signature" : "Not Required",
+    paymentPlanAmount: partial.paymentPlanNeeded ? 450 : 0,
     formStatus,
     consentStatus,
     vobStatus,
