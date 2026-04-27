@@ -50,6 +50,7 @@ import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
 import BenefitsFinancial from "./pages/BenefitsFinancial";
+import ClientOnboarding from "./pages/ClientOnboarding";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leads" element={<Leads />} />
                   <Route path="/benefits-financial" element={<BenefitsFinancial />} />
+                  <Route path="/client-onboarding" element={<ClientOnboarding />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/clients" element={<Clients />} />
                   <Route path="/clients/:id" element={<ClientDetail />} />
