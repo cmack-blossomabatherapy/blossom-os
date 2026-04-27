@@ -36,11 +36,11 @@ export function TopBar({ title }: TopBarProps) {
   const todayIso = new Date().toISOString().split("T")[0];
 
   return (
-    <header className="min-h-14 shrink-0 border-b border-border bg-card/80 px-3 py-2 backdrop-blur-sm md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
-      <h1 className="truncate text-base font-semibold text-foreground md:text-lg">{title}</h1>
+    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/85 px-4 py-2.5 backdrop-blur-xl md:static md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
+      <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
 
       <div className="mt-2 flex items-center gap-1.5 md:mt-0 md:gap-2">
-        <div className="relative min-w-0 flex-1 md:flex-none">
+        <div className="relative hidden min-w-0 flex-1 sm:block md:flex-none">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={q}
@@ -65,7 +65,7 @@ export function TopBar({ title }: TopBarProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="h-8 gap-1.5 px-2 text-xs sm:px-3">
+            <Button size="icon" className="h-8 w-8 sm:w-auto sm:gap-1.5 sm:px-3 sm:text-xs">
               <Plus className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Create</span>
             </Button>
