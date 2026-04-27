@@ -131,7 +131,7 @@ export const getSchedulingStatus = (c: Client): SchedulingClientStatus => {
   const daysUntilStart = c.startDate ? Math.ceil((new Date(c.startDate).getTime() - Date.now()) / 86400000) : null;
   if (!c.bcba) blockers.push("No BCBA assigned");
   if (c.staffingStatus === "Needed" || c.stage === "Staffing Needed") blockers.push("No RBT assigned");
-  if (c.stage === "Pending Treatment Auth") blockers.push("Awaiting auth approval");
+  if (["Pending Treatment Auth", "Treatment Auth – Awaiting Submission", "Treatment Auth – Submitted", "Treatment Auth – Denied"].includes(c.stage)) blockers.push("Awaiting auth approval");
   if (c.rbt && c.schedule.length === 0) alerts.push("No schedule created");
   if (c.schedule.length > 0 && weeklyHours > approvedHours) blockers.push("Schedule exceeds approved hours");
   if (c.schedule.length > 0 && weeklyHours < approvedHours) alerts.push("Schedule below approved hours");
@@ -143,6 +143,10 @@ export const getSchedulingStatus = (c: Client): SchedulingClientStatus => {
   else if (daysUntilStart !== null && daysUntilStart < 0) status = "Delayed";
   else if (daysUntilStart !== null && daysUntilStart <= 7) status = "Starting Soon";
   else if (c.startDate) status = "Pending Start";
+  else if (c.schedulingStatus === "Active") status = "Active";
+  else if (c.schedulingStatus === "Pending Start") status = "Pending Start";
+  else if (c.schedulingStatus === "Schedule Created") status = "Schedule Built";
+  else if (c.schedulingStatus === "Pending Schedule") status = "Pending Schedule";
   else if (c.stage === "Schedule Assessment") status = "Unscheduled Assessment";
   else if (c.stage === "Assessment Scheduled") status = "Assessment Scheduled";
   else if (c.schedule.length > 0) status = "Schedule Built";
