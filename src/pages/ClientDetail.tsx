@@ -25,6 +25,7 @@ import {
   AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
 } from "@/components/clients/ClientDetailDialogs";
 import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
+import { mockPhoneCalls } from "@/data/calls";
 
 type ScheduleDay = ScheduleSlot["day"];
 
@@ -42,6 +43,21 @@ const tlIcons: Record<string, React.ReactNode> = {
 };
 
 const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+type UnifiedTimelineEvent = {
+  id: string;
+  type: "system" | "auth" | "staffing" | "schedule" | "qa" | "note" | "stage" | "call" | "document" | "task";
+  title: string;
+  detail?: string;
+  timestamp: string;
+  user?: string;
+};
+
+const dateToIso = (date: string | null | undefined, fallbackOffset = 0) => {
+  if (!date) return new Date(Date.now() - fallbackOffset * 60_000).toISOString();
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? new Date(Date.now() - fallbackOffset * 60_000).toISOString() : parsed.toISOString();
+};
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
