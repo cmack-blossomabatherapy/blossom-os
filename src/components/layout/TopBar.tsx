@@ -39,21 +39,23 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
   const todayIso = new Date().toISOString().split("T")[0];
 
   return (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/85 px-4 py-2.5 backdrop-blur-xl md:static md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
+    <>
+    <header
+      className={cn(
+        "sticky top-0 z-30 shrink-0 border-b border-border bg-card/95 px-4 py-2.5 backdrop-blur-xl transition-transform duration-300 md:static md:flex md:h-14 md:translate-y-0 md:items-center md:justify-between md:px-6 md:py-0",
+        mobileMenuFloating ? "-translate-y-full" : "translate-y-0"
+      )}
+    >
       <div className="flex items-center justify-between gap-3 md:block md:pr-0">
         <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
         <Button
           size="icon"
-          className={cn(
-            "z-50 h-10 w-10 shrink-0 rounded-full bg-sidebar text-sidebar-foreground shadow-md transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden",
-            mobileMenuFloating
-              ? "fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top))] h-11 w-11 shadow-lg ring-1 ring-sidebar-border/70"
-              : "relative right-auto top-auto shadow-sm"
-          )}
+          variant="ghost"
+          className="h-10 w-10 shrink-0 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground md:hidden"
           onClick={onOpenMobileMenu}
           aria-label="Open navigation menu"
         >
-          <Menu className="h-4 w-4" />
+          <Menu className="h-5 w-5" />
         </Button>
       </div>
 
@@ -147,5 +149,17 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
 
       <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} onCreated={(lead) => navigate(`/leads/${lead.id}`)} />
     </header>
+    <Button
+      size="icon"
+      className={cn(
+        "fixed right-3 top-[calc(0.625rem+env(safe-area-inset-top))] z-50 h-11 w-11 rounded-full bg-card/90 text-foreground shadow-lg ring-1 ring-border/80 backdrop-blur-xl transition-all duration-300 hover:bg-card md:hidden",
+        mobileMenuFloating ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
+      )}
+      onClick={onOpenMobileMenu}
+      aria-label="Open navigation menu"
+    >
+      <Menu className="h-5 w-5 text-primary" />
+    </Button>
+    </>
   );
 }
