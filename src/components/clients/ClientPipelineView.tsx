@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Client, ClientStage, clientStages, getClientAlert } from "@/data/clients";
+import { Client, ClientStage, pipelineSections, getClientAlert } from "@/data/clients";
+import { canonicalPipelineStage } from "@/data/pipeline";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { canAdvanceToStage } from "@/data/pipeline";
 
 interface Props {
   clients: Client[];
@@ -18,9 +20,12 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
-  const stageData = clientStages.map((s) => ({
-    ...s,
-    clients: clients.filter((c) => c.stage === s.name),
+  const stageData = pipelineSections.map((section) => ({
+    ...section,
+    stages: section.stages.map((stage) => ({
+      ...stage,
+      clients: clients.filter((c) => canonicalPipelineStage(c.stage) === stage.name),
+    })),
   }));
 
   const handleDragStart = (e: React.DragEvent, client: Client) => {
@@ -54,7 +59,14 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
     setDragOverStage(null);
     if (!id) return;
     const client = clients.find((c) => c.id === id);
-    if (!client || client.stage === stage) return;
+    if (!client || canonicalPipelineStage(client.stage) === stage) return;
+
+    if (!canAdvanceToStage(client.stage, stage)) {
+      toast.error("Pipeline stages must advance in order", {
+        description: `Move from ${canonicalPipelineStage(client.stage)} to the next stage first.`,
+      });
+      return;
+    }
 
     if (!hasPerm("clients.edit")) {
       toast.error("You don't have permission to edit clients");
@@ -74,9 +86,9 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
 
     // Optimistic update via context (synchronous setState — UI updates immediately).
     // moveStage already appends an automation log entry + timeline event.
-    moveStage([id], stage);
+    void moveStage([id], stage);
     toast.success(`${client.childName} moved to ${stage}`, {
-      description: `From ${previousStage}`,
+      description: `From ${canonicalPipelineStage(previousStage)}`,
       action: {
         label: "Undo",
         onClick: () => {
@@ -88,9 +100,16 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
   };
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
-      {stageData.map((stage) => {
-        const isDropTarget = dragOverStage === stage.name;
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {stageData.map((section) => (
+        <section key={section.title} className="shrink-0">
+          <div className="mb-2 px-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">{section.title}</h3>
+            <p className="text-[11px] text-muted-foreground">{section.summary}</p>
+          </div>
+          <div className="flex gap-3">
+            {section.stages.map((stage) => {
+              const isDropTarget = dragOverStage === stage.name;
         return (
           <div
             key={stage.name}
@@ -167,7 +186,10 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
             </div>
           </div>
         );
-      })}
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

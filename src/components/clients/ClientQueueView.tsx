@@ -2,6 +2,7 @@ import { Client, stageVariant } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { AlertTriangle, Hourglass, ArrowRightCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { canonicalPipelineStage } from "@/data/pipeline";
 
 interface Props {
   clients: Client[];
@@ -16,8 +17,8 @@ export function ClientQueueView({ clients, onSelect }: Props) {
       tone: "destructive" as const,
       filter: (c: Client) =>
         !c.bcba ||
-        (c.stage === "Pending Initial Auth" && c.authStatus === "Not Submitted") ||
-        c.stage === "Waiting on Consent Forms" ||
+        (canonicalPipelineStage(c.stage) === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted") ||
+        canonicalPipelineStage(c.stage) === "Waiting on Consent" ||
         (c.stage === "Schedule Assessment" && c.daysInStage >= 3),
     },
     {
@@ -25,10 +26,8 @@ export function ClientQueueView({ clients, onSelect }: Props) {
       icon: Hourglass,
       tone: "warning" as const,
       filter: (c: Client) =>
-        c.stage === "Pending Treatment Auth" ||
-        c.stage === "Staffing Needed" ||
-        c.stage === "Restaffing Needed" ||
-        c.stage === "In QA",
+        canonicalPipelineStage(c.stage).startsWith("Treatment Auth") ||
+        ["Staffing Needed", "Matching in Progress", "Restaffing Needed", "QA Review", "QA Issues / Fix Required"].includes(canonicalPipelineStage(c.stage)),
     },
     {
       title: "Ready to Move",
@@ -36,7 +35,7 @@ export function ClientQueueView({ clients, onSelect }: Props) {
       tone: "success" as const,
       filter: (c: Client) =>
         c.stage === "Pending Start Date" ||
-        (c.stage === "In QA" && c.qaStatus === "Complete"),
+        canonicalPipelineStage(c.stage) === "QA Approved",
     },
   ];
 
@@ -73,7 +72,7 @@ export function ClientQueueView({ clients, onSelect }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-foreground truncate">{c.childName}</p>
-                        <StatusBadge status={c.stage} variant={stageVariant(c.stage)} />
+                        <StatusBadge status={canonicalPipelineStage(c.stage)} variant={stageVariant(c.stage)} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">
                         {c.bcba || "No BCBA"} {c.rbt && `· ${c.rbt}`} · {c.state} · {c.nextAction}

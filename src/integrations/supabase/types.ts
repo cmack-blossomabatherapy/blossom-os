@@ -2115,6 +2115,42 @@ export type Database = {
         | "Flaked"
         | "Discharged"
         | "Services on Pause"
+        | "New Lead"
+        | "In Contact"
+        | "Sent Form"
+        | "Missing Information"
+        | "Form Received"
+        | "Sent to VOB"
+        | "VOB Pending"
+        | "VOB Received"
+        | "Financial Review"
+        | "Payment Plan Required"
+        | "Payment Plan Received"
+        | "Approved for Services"
+        | "Not Qualified"
+        | "Converted to Client"
+        | "Initial Auth – Awaiting Submission"
+        | "Initial Auth – Submitted"
+        | "Initial Auth – Approved"
+        | "Waiting on Consent"
+        | "Assessment Completed"
+        | "Treatment Plan Pending"
+        | "QA Review"
+        | "QA Issues / Fix Required"
+        | "QA Approved"
+        | "Treatment Auth – Awaiting Submission"
+        | "Treatment Auth – Submitted"
+        | "Treatment Auth – Approved"
+        | "Treatment Auth – Denied"
+        | "Matching in Progress"
+        | "RBT Assigned"
+        | "Pending Schedule"
+        | "Schedule Created"
+        | "Reauth Triggered"
+        | "Progress Report Needed"
+        | "Progress Report Received"
+        | "Reauth Submitted"
+        | "Reauth Approved"
       employee_status:
         | "pending_start"
         | "active"
@@ -2457,6 +2493,42 @@ export const Constants = {
         "Flaked",
         "Discharged",
         "Services on Pause",
+        "New Lead",
+        "In Contact",
+        "Sent Form",
+        "Missing Information",
+        "Form Received",
+        "Sent to VOB",
+        "VOB Pending",
+        "VOB Received",
+        "Financial Review",
+        "Payment Plan Required",
+        "Payment Plan Received",
+        "Approved for Services",
+        "Not Qualified",
+        "Converted to Client",
+        "Initial Auth – Awaiting Submission",
+        "Initial Auth – Submitted",
+        "Initial Auth – Approved",
+        "Waiting on Consent",
+        "Assessment Completed",
+        "Treatment Plan Pending",
+        "QA Review",
+        "QA Issues / Fix Required",
+        "QA Approved",
+        "Treatment Auth – Awaiting Submission",
+        "Treatment Auth – Submitted",
+        "Treatment Auth – Approved",
+        "Treatment Auth – Denied",
+        "Matching in Progress",
+        "RBT Assigned",
+        "Pending Schedule",
+        "Schedule Created",
+        "Reauth Triggered",
+        "Progress Report Needed",
+        "Progress Report Received",
+        "Reauth Submitted",
+        "Reauth Approved",
       ],
       employee_status: [
         "pending_start",

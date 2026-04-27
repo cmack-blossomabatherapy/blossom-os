@@ -1,18 +1,57 @@
+import { canonicalPipelineStage, masterPipelineSections, masterPipelineStages, type PipelineStageVariant } from "@/data/pipeline";
+
 export type ClientStage =
+  | "New Lead"
+  | "In Contact"
+  | "Sent Form"
+  | "Missing Information"
+  | "Form Received"
+  | "Sent to VOB"
+  | "VOB Pending"
+  | "VOB Received"
+  | "Financial Review"
+  | "Payment Plan Required"
+  | "Payment Plan Received"
+  | "Approved for Services"
+  | "Not Qualified"
+  | "Converted to Client"
   | "BCBA Assignment"
+  | "Pending Initial Authorization"
   | "Pending Initial Auth"
+  | "Initial Auth – Awaiting Submission"
+  | "Initial Auth – Submitted"
+  | "Initial Auth – Approved"
+  | "Waiting on Consent"
   | "Waiting on Consent Forms"
   | "Schedule Assessment"
   | "Assessment Scheduled"
+  | "Assessment Completed"
+  | "Treatment Plan Pending"
+  | "QA Review"
+  | "QA Issues / Fix Required"
+  | "QA Approved"
   | "In QA"
+  | "Treatment Auth – Awaiting Submission"
+  | "Treatment Auth – Submitted"
+  | "Treatment Auth – Approved"
+  | "Treatment Auth – Denied"
   | "Pending Treatment Auth"
   | "Staffing Needed"
+  | "Matching in Progress"
+  | "RBT Assigned"
   | "Restaffing Needed"
+  | "Pending Schedule"
+  | "Schedule Created"
   | "Pending Start Date"
   | "Active"
   | "Flaked"
   | "Discharged"
-  | "Services on Pause";
+  | "Services on Pause"
+  | "Reauth Triggered"
+  | "Progress Report Needed"
+  | "Progress Report Received"
+  | "Reauth Submitted"
+  | "Reauth Approved";
 
 export type AuthStatus = "Not Submitted" | "Submitted" | "Approved" | "Denied" | "Expired";
 export type StaffingStatus = "Not Needed" | "Needed" | "In Progress" | "Assigned";
@@ -84,25 +123,15 @@ export interface Client {
   staffingHistory: { date: string; event: string }[];
 }
 
-export const clientStages: { name: ClientStage; variant: "default" | "success" | "warning" | "destructive" | "info" | "muted" }[] = [
-  { name: "BCBA Assignment", variant: "info" },
-  { name: "Pending Initial Auth", variant: "warning" },
-  { name: "Waiting on Consent Forms", variant: "warning" },
-  { name: "Schedule Assessment", variant: "info" },
-  { name: "Assessment Scheduled", variant: "default" },
-  { name: "In QA", variant: "default" },
-  { name: "Pending Treatment Auth", variant: "warning" },
-  { name: "Staffing Needed", variant: "destructive" },
-  { name: "Restaffing Needed", variant: "warning" },
-  { name: "Pending Start Date", variant: "info" },
-  { name: "Active", variant: "success" },
-  { name: "Flaked", variant: "muted" },
-  { name: "Discharged", variant: "muted" },
-  { name: "Services on Pause", variant: "muted" },
-];
+export const pipelineSections = masterPipelineSections as { title: string; summary: string; stages: { name: ClientStage; variant: PipelineStageVariant; owner: string }[] }[];
+
+export const clientStages: { name: ClientStage; variant: PipelineStageVariant }[] = masterPipelineStages.map((stage) => ({
+  name: stage.name as ClientStage,
+  variant: stage.variant,
+}));
 
 export const stageVariant = (stage: string): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
-  return clientStages.find((s) => s.name === stage)?.variant || "muted";
+  return clientStages.find((s) => s.name === canonicalPipelineStage(stage))?.variant || "muted";
 };
 
 export const authVariant = (s: AuthStatus): "default" | "success" | "warning" | "destructive" | "muted" => {
@@ -136,12 +165,13 @@ export const qaVariant = (s: QAStatus): "default" | "success" | "warning" | "mut
 };
 
 export const getClientAlert = (c: Client): { type: "red" | "yellow"; message: string } | null => {
-  if (!c.bcba) return { type: "red", message: "No BCBA assigned" };
-  if (c.stage === "Pending Initial Auth" && c.authStatus === "Not Submitted") return { type: "red", message: "Auth not submitted" };
+  const stage = canonicalPipelineStage(c.stage);
+  if (!c.bcba && getLifecycleProgress(c).some(Boolean)) return { type: "red", message: "No BCBA assigned" };
+  if (stage === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted") return { type: "red", message: "Auth not submitted" };
   if (c.stage === "Schedule Assessment" && c.daysInStage >= 5) return { type: "yellow", message: "Assessment not scheduled" };
   if (c.stage === "Staffing Needed" && c.daysInStage >= 5) return { type: "red", message: `Staffing needed ${c.daysInStage}d` };
   if (c.stage === "Pending Start Date" && !c.startDate) return { type: "red", message: "Start date missing" };
-  if (c.stage === "Pending Treatment Auth" && c.daysInStage >= 7) return { type: "yellow", message: `Auth pending ${c.daysInStage}d` };
+  if (stage === "Treatment Auth – Awaiting Submission" && c.daysInStage >= 7) return { type: "yellow", message: `Auth pending ${c.daysInStage}d` };
   return null;
 };
 
@@ -160,11 +190,11 @@ export const lifecycleSteps = [
 
 export const getLifecycleProgress = (c: Client): boolean[] => {
   const stageOrder: ClientStage[] = [
-    "BCBA Assignment", "Pending Initial Auth", "Waiting on Consent Forms",
-    "Schedule Assessment", "Assessment Scheduled", "In QA",
-    "Pending Treatment Auth", "Staffing Needed", "Pending Start Date", "Active",
+    "BCBA Assignment", "Initial Auth – Awaiting Submission", "Waiting on Consent",
+    "Schedule Assessment", "Assessment Scheduled", "QA Review",
+    "Treatment Auth – Awaiting Submission", "Staffing Needed", "Pending Start Date", "Active",
   ];
-  const idx = stageOrder.indexOf(c.stage);
+  const idx = stageOrder.indexOf(canonicalPipelineStage(c.stage) as ClientStage);
   // step i is done if we are PAST stage i
   return lifecycleSteps.map((_, i) => idx > i || c.stage === "Active");
 };
@@ -572,19 +602,19 @@ export type ClientKpiKey =
   | "active";
 
 export const clientKpiFilters: Record<ClientKpiKey, (c: Client) => boolean> = {
-  bcbaAssignment: (c) => c.stage === "BCBA Assignment",
-  pendingInitialAuth: (c) => c.stage === "Pending Initial Auth",
-  waitingConsent: (c) => c.stage === "Waiting on Consent Forms",
+  bcbaAssignment: (c) => canonicalPipelineStage(c.stage) === "BCBA Assignment",
+  pendingInitialAuth: (c) => canonicalPipelineStage(c.stage) === "Initial Auth – Awaiting Submission",
+  waitingConsent: (c) => canonicalPipelineStage(c.stage) === "Waiting on Consent",
   assessmentScheduled: (c) => c.stage === "Assessment Scheduled",
-  inQa: (c) => c.stage === "In QA",
-  pendingTreatmentAuth: (c) => c.stage === "Pending Treatment Auth",
-  staffingNeeded: (c) => c.stage === "Staffing Needed" || c.stage === "Restaffing Needed",
+  inQa: (c) => canonicalPipelineStage(c.stage) === "QA Review",
+  pendingTreatmentAuth: (c) => canonicalPipelineStage(c.stage) === "Treatment Auth – Awaiting Submission",
+  staffingNeeded: (c) => ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c.stage)),
   pendingStart: (c) => c.stage === "Pending Start Date",
   active: (c) => c.stage === "Active",
 };
 
 export const calculateClientKpis = (clients: Client[]) => {
-  const inStage = (s: ClientStage) => clients.filter((c) => c.stage === s).length;
+  const inStage = (s: ClientStage) => clients.filter((c) => canonicalPipelineStage(c.stage) === s).length;
   const avgDaysIn = (filter: (c: Client) => boolean) => {
     const xs = clients.filter(filter);
     if (!xs.length) return 0;
@@ -592,16 +622,16 @@ export const calculateClientKpis = (clients: Client[]) => {
   };
   return {
     bcbaAssignment: inStage("BCBA Assignment"),
-    pendingInitialAuth: inStage("Pending Initial Auth"),
-    waitingConsent: inStage("Waiting on Consent Forms"),
+    pendingInitialAuth: inStage("Initial Auth – Awaiting Submission"),
+    waitingConsent: inStage("Waiting on Consent"),
     assessmentScheduled: inStage("Assessment Scheduled"),
-    inQa: inStage("In QA"),
-    pendingTreatmentAuth: inStage("Pending Treatment Auth"),
-    staffingNeeded: inStage("Staffing Needed") + inStage("Restaffing Needed"),
+    inQa: inStage("QA Review"),
+    pendingTreatmentAuth: inStage("Treatment Auth – Awaiting Submission"),
+    staffingNeeded: inStage("Staffing Needed") + inStage("Matching in Progress") + inStage("Restaffing Needed"),
     pendingStart: inStage("Pending Start Date"),
     active: inStage("Active"),
     avgTimeToStart: avgDaysIn((c) => c.daysToStart !== null) || 18,
-    avgTimeInQa: avgDaysIn((c) => c.stage === "In QA") || 0,
-    avgTimeInStaffing: avgDaysIn((c) => c.stage === "Staffing Needed") || 0,
+    avgTimeInQa: avgDaysIn((c) => canonicalPipelineStage(c.stage) === "QA Review") || 0,
+    avgTimeInStaffing: avgDaysIn((c) => ["Staffing Needed", "Matching in Progress"].includes(canonicalPipelineStage(c.stage))) || 0,
   };
 };

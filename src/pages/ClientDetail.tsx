@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
-  getClientAlert, getLifecycleProgress, lifecycleSteps, clientStages, ClientStage, ScheduleSlot,
+  getClientAlert, getLifecycleProgress, lifecycleSteps, ClientStage, ScheduleSlot,
 } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   AddTaskDialog, DatePickerDialog, ScheduleBlockDialog, UploadDocumentDialog,
 } from "@/components/clients/ClientDetailDialogs";
+import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
 
 type ScheduleDay = ScheduleSlot["day"];
 
@@ -72,6 +73,12 @@ export default function ClientDetail() {
   const alert = getClientAlert(client);
   const lifecycle = getLifecycleProgress(client);
   const lifecyclePercent = Math.round((lifecycle.filter(Boolean).length / lifecycle.length) * 100);
+  const nextStage = getNextPipelineStage(client.stage) as ClientStage | null;
+  const moveClientStage = (stage: ClientStage) => {
+    void moveStage([client.id], stage)
+      .then(() => toast.success(`Moved to ${stage}`))
+      .catch((error) => toast.error("Pipeline stages must advance in order", { description: error instanceof Error ? error.message : undefined }));
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -91,7 +98,7 @@ export default function ClientDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <StatusBadge status={client.stage} variant={stageVariant(client.stage)} />
+          <StatusBadge status={canonicalPipelineStage(client.stage)} variant={stageVariant(client.stage)} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
@@ -100,13 +107,13 @@ export default function ClientDetail() {
               <DropdownMenuItem onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/clients/${client.id}`); toast.success("Client link copied"); }}>
                 <ExternalLink className="h-3.5 w-3.5 mr-2" /> Copy client link
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { moveStage([client.id], "Flaked"); toast.success("Marked as Flaked"); }}>
+              <DropdownMenuItem onClick={() => moveClientStage("Flaked")}>
                 <AlertCircle className="h-3.5 w-3.5 mr-2" /> Mark as Flaked
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { moveStage([client.id], "Services on Pause"); toast.success("Services paused"); }}>
+              <DropdownMenuItem onClick={() => moveClientStage("Services on Pause")}>
                 <Clock className="h-3.5 w-3.5 mr-2" /> Pause services
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { moveStage([client.id], "Discharged"); toast.success("Client discharged"); }}>
+              <DropdownMenuItem onClick={() => moveClientStage("Discharged")}>
                 <CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Discharge
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -151,11 +158,9 @@ export default function ClientDetail() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="max-h-[400px] overflow-y-auto">
             <DropdownMenuLabel className="text-[10px]">Move to stage</DropdownMenuLabel>
-            {clientStages.map((s) => (
-              <DropdownMenuItem key={s.name} onClick={() => { moveStage([client.id], s.name as ClientStage); toast.success(`Moved to ${s.name}`); }}>
-                {s.name}
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuItem disabled={!nextStage} onClick={() => nextStage && moveClientStage(nextStage)}>
+              {nextStage ? `Next: ${nextStage}` : "No next stage"}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

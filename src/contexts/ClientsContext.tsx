@@ -4,6 +4,7 @@ import {
   Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
   ScheduleSlot, AuthStatus, StaffingStatus, QAStatus,
 } from "@/data/clients";
+import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Row<T> = T & Record<string, unknown>;
@@ -304,6 +305,9 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     if (!ids.length) return;
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
+      if (c && !canAdvanceToStage(c.stage, stage)) {
+        throw new Error(`Pipeline stages must advance in order. Move from ${canonicalPipelineStage(c.stage)} to the next stage before ${stage}.`);
+      }
       const nextLog = [...(c?.automationLog ?? []), `Stage moved to ${stage} (manual)`];
       await supabase.from("clients").update({
         stage, stage_entered_at: new Date().toISOString(), automation_log: nextLog,
@@ -336,11 +340,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const assignBcba = useCallback(async (ids: string[], bcba: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
-      const advance = c?.stage === "BCBA Assignment";
+      const advance = canonicalPipelineStage(c?.stage ?? "") === "BCBA Assignment";
       const nextLog = [...(c?.automationLog ?? []), `BCBA assigned: ${bcba}`];
       await supabase.from("clients").update({
         bcba, automation_log: nextLog,
-        ...(advance ? { stage: "Pending Initial Auth" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        ...(advance ? { stage: "Pending Initial Authorization" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
       } as never).eq("id", id);
       await insertTimeline(id, `BCBA ${bcba} assigned`, "staffing");
     }
@@ -349,11 +353,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const assignRbt = useCallback(async (ids: string[], rbt: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
-      const advance = c?.stage === "Staffing Needed" || c?.stage === "Restaffing Needed";
+      const advance = ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c?.stage ?? ""));
       const nextLog = [...(c?.automationLog ?? []), `RBT assigned: ${rbt}`];
       await supabase.from("clients").update({
         rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog,
-        ...(advance ? { stage: "Pending Start Date" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        ...(advance ? { stage: "RBT Assigned" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
       } as never).eq("id", id);
       await insertTimeline(id, `${rbt} assigned as RBT`, "staffing");
     }

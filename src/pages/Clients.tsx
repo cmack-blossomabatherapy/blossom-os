@@ -13,6 +13,7 @@ import { ConvertLeadDialog } from "@/components/clients/ConvertLeadDialog";
 import { ClientKpiKey, clientKpiFilters, ClientStage, clientStages } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
+import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
 
 const exportToCsv = (rows: Record<string, unknown>[], filename: string) => {
   if (!rows.length) return;
@@ -101,11 +102,11 @@ export default function Clients() {
     } else {
       switch (activeView) {
         case "mine": result = result.filter((c) => c.intakeOwner === "Sarah M."); break;
-        case "action": result = result.filter((c) => !c.bcba || c.stage === "Waiting on Consent Forms" || c.stage === "Schedule Assessment" || (c.stage === "Pending Initial Auth" && c.authStatus === "Not Submitted")); break;
+        case "action": result = result.filter((c) => !c.bcba || canonicalPipelineStage(c.stage) === "Waiting on Consent" || c.stage === "Schedule Assessment" || (canonicalPipelineStage(c.stage) === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted")); break;
         case "pending-start": result = result.filter((c) => c.stage === "Pending Start Date"); break;
-        case "staffing": result = result.filter((c) => c.stage === "Staffing Needed" || c.stage === "Restaffing Needed"); break;
-        case "qa": result = result.filter((c) => c.stage === "In QA"); break;
-        case "tx-auth": result = result.filter((c) => c.stage === "Pending Treatment Auth"); break;
+        case "staffing": result = result.filter((c) => ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c.stage))); break;
+        case "qa": result = result.filter((c) => ["QA Review", "QA Issues / Fix Required", "QA Approved"].includes(canonicalPipelineStage(c.stage))); break;
+        case "tx-auth": result = result.filter((c) => canonicalPipelineStage(c.stage).startsWith("Treatment Auth")); break;
         case "active": result = result.filter((c) => c.stage === "Active"); break;
       }
     }
@@ -168,6 +169,12 @@ export default function Clients() {
     toast.success(`Exported ${target.length} clients`);
   };
 
+  const selectedClients = clients.filter((c) => selectedIds.includes(c.id));
+  const selectedNextStages = selectedClients.map((c) => getNextPipelineStage(c.stage));
+  const sharedNextStage = selectedClients.length
+    ? selectedNextStages.every((stage) => stage === selectedNextStages[0]) ? selectedNextStages[0] : null
+    : null;
+
   return (
     <PageShell
       title="Clients"
@@ -193,6 +200,7 @@ export default function Clients() {
       <ClientBulkActionBar
         count={selectedIds.length}
         onClear={() => setSelectedIds([])}
+        movableStages={sharedNextStage ? [sharedNextStage as ClientStage] : []}
         bcbas={filterOptions.bcbas.length ? filterOptions.bcbas : ["Dr. Kim", "Dr. Lee", "Dr. Patel"]}
         rbts={filterOptions.rbts.length ? filterOptions.rbts : ["Taylor S.", "Jordan M.", "Casey R."]}
         onAssignBcba={(bcba) => { assignBcba(selectedIds, bcba); toast.success(`Assigned ${selectedIds.length} clients to ${bcba}`); }}
