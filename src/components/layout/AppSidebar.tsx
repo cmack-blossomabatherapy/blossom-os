@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,7 @@ const hrSection: { title: string; items: NavItem[] } = {
 export function AppSidebar() {
   const location = useLocation();
   const { hasPerm, isAdmin } = useAuth();
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Pipeline", "Operations", "Records", "Intelligence", "HR Suite", "Admin"]));
 
   const allSections = isAdmin ? navSections.filter((section) => section.title || !section.items.some((item) => item.path === "/" || item.path === "/leadership-dashboard")) : [...navSections];
   if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
@@ -130,6 +132,16 @@ export function AppSidebar() {
     }))
     .filter((s) => s.items.length > 0);
 
+  const isItemActive = (path: string) => location.pathname === path || `${location.pathname}${location.search}` === path;
+  const toggleSection = (title: string) => {
+    setOpenSections((current) => {
+      const next = new Set(current);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  };
+
   return (
     <aside className="w-60 h-screen sticky top-0 bg-sidebar flex flex-col border-r border-sidebar-border shrink-0">
       {/* Logo */}
@@ -139,30 +151,40 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
-        {sections.map((section, i) => (
-          <div key={i}>
+        {sections.map((section, i) => {
+          const activeInSection = section.items.some((item) => isItemActive(item.path));
+          const sectionOpen = !section.title || activeInSection || openSections.has(section.title);
+          return (
+          <div key={section.title ?? i}>
             {section.title && (
-              <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted">
-                {section.title}
-              </p>
+              <button
+                type="button"
+                onClick={() => toggleSection(section.title!)}
+                className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                aria-expanded={sectionOpen}
+              >
+                <span>{section.title}</span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform", !sectionOpen && "-rotate-90")} />
+              </button>
             )}
-            <div className="space-y-0.5">
+            {sectionOpen && <div className="space-y-0.5">
               {section.items.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   end={item.path === "/"}
                   className={({ isActive }) =>
-                    cn("nav-item", isActive || `${location.pathname}${location.search}` === item.path ? "nav-item-active" : "nav-item-inactive")
+                    cn("nav-item", isActive || isItemActive(item.path) ? "nav-item-active" : "nav-item-inactive")
                   }
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
               ))}
-            </div>
+            </div>}
           </div>
-        ))}
+        );
+        })}
       </nav>
     </aside>
   );
