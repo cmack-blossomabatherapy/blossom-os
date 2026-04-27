@@ -64,7 +64,7 @@ const pipelineSection: { title: string; items: NavItem[] } = {
   items: masterPipelineSections.map((section) => ({
     label: section.title,
     icon: pipelineIcons[section.key],
-    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations?type=initial" : section.key === "assessment" ? "/assessments" : section.key === "treatmentAuth" ? "/authorizations?type=treatment" : `/clients?pipeline=${section.key}&view=pipeline`,
+    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations?type=initial" : section.key === "assessment" ? "/assessments" : section.key === "treatmentAuth" ? "/authorizations?type=treatment" : section.key === "activeServices" ? "/active-services" : `/clients?pipeline=${section.key}&view=pipeline`,
     perm: section.key === "intake" || section.key === "financial" ? "leads.view" : "clients.view",
   })),
 };
@@ -85,6 +85,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     items: [
       { label: "Operations", icon: Workflow, path: "/operations", perm: "operations.view" },
       { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "scheduling.view" },
+      { label: "Active Services", icon: HeartHandshake, path: "/active-services", perm: "clients.view" },
       { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
       { label: "Staffing", icon: UserPlus, path: "/staffing", perm: "staffing.view" },
       { label: "QA", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
