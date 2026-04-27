@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
@@ -121,6 +121,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const { hasPerm, isAdmin } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
+  const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
 
   const allSections = isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections];
   // Insert HR Suite before Admin so it sits with the operations modules
@@ -163,24 +164,38 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     });
   };
 
+  const activeSectionTitles = new Set(sections.filter((section) => section.title && section.items.some((item) => isItemActive(item.path))).map((section) => section.title!));
+  const toggleMobileSection = (title: string) => setMobileOpenSections((current) => { const next = new Set(current); if (next.has(title)) next.delete(title); else next.add(title); return next; });
+
+  useEffect(() => {
+    if (mobileOpen) setMobileOpenSections(activeSectionTitles);
+  }, [location.pathname, location.search, mobileOpen]);
+
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
         <SheetContent side="right" className="mobile-menu-sheet w-[88vw] max-w-sm overflow-y-auto border-l border-border bg-card p-0 md:hidden">
-          <div className="sticky top-0 z-10 border-b border-border bg-card/95 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur-xl">
+          <div className="sticky top-0 z-10 border-b border-sidebar-border bg-sidebar px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-lg">
             <div className="flex items-center justify-between gap-3">
               <img src={logo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <p className="mt-3 text-xs font-medium text-muted-foreground">Blossom OS navigation</p>
+            <p className="mt-3 text-xs font-medium text-sidebar-foreground/80">Blossom OS navigation</p>
           </div>
-          <nav className="space-y-5 px-4 py-4" aria-label="Mobile navigation">
-            {sections.map((section, i) => (
-              <div key={section.title ?? i}>
-                {section.title && <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{section.title}</p>}
-                <div className="grid gap-2">
+          <nav className="space-y-3 px-4 py-4" aria-label="Mobile navigation">
+            {sections.map((section, i) => {
+              const title = section.title ?? `Section ${i + 1}`;
+              const activeInSection = section.items.some((item) => isItemActive(item.path));
+              const sectionOpen = mobileOpenSections.has(title);
+              return (
+              <div key={title} className="rounded-2xl border border-border/60 bg-background/60 p-2 shadow-sm">
+                <button type="button" onClick={() => toggleMobileSection(title)} className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left" aria-expanded={sectionOpen}>
+                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", activeInSection ? "text-primary" : "text-muted-foreground")}>{section.title}</span>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", !sectionOpen && "-rotate-90")} />
+                </button>
+                {sectionOpen && <div className="grid gap-2 pt-1">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
                     return (
@@ -190,9 +205,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                       </NavLink>
                     );
                   })}
-                </div>
+                </div>}
               </div>
-            ))}
+            );})}
           </nav>
         </SheetContent>
       </Sheet>
