@@ -1,4 +1,4 @@
-import { AlertCircle, Clock, CheckCircle2, MapPin, ArrowRight } from "lucide-react";
+import { AlertCircle, Clock, CheckCircle2, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,18 @@ const sections: {
     description: "Lost RBT · Needs replacement",
   },
   {
-    id: "Ready to Assign",
-    title: "Ready to Assign",
+    id: "Matching",
+    title: "Matching",
+    icon: Sparkles,
+    iconClass: "text-warning",
+    description: "Staffing team is comparing RBT options",
+  },
+  {
+    id: "RBT Assigned",
+    title: "RBT Assigned",
     icon: CheckCircle2,
     iconClass: "text-success",
-    description: "Auth ✔ · Schedule ✔ · Just need RBT",
+    description: "Ready for scheduling handoff",
   },
 ];
 
