@@ -59,7 +59,7 @@ export function TeamAdminPanel() {
     const [profilesRes, rolesRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at"),
+        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
@@ -78,6 +78,12 @@ export function TeamAdminPanel() {
       responsibilities: p.responsibilities ?? "",
       welcome_sent_at: p.welcome_sent_at,
       roles: byUser.get(p.user_id) ?? [],
+      department: p.department ?? "",
+      state: p.state ?? "",
+      clinic: p.clinic ?? "",
+      part_of_leadership: !!p.part_of_leadership,
+      dashboard_access: p.dashboard_access ?? "department",
+      active: p.active ?? true,
     }));
     combined.sort((a, b) => a.display_name.localeCompare(b.display_name));
     setMembers(combined);
