@@ -45,9 +45,10 @@ const sections: {
 
 interface Props {
   searchQuery: string;
+  onStartMatching?: () => void;
 }
 
-export function StaffingQueueView({ searchQuery }: Props) {
+export function StaffingQueueView({ searchQuery, onStartMatching }: Props) {
   const navigate = useNavigate();
   const { clients, assignRbt } = useClients();
   const all = getClientStaffingNeeds(clients);
@@ -119,7 +120,7 @@ export function StaffingQueueView({ searchQuery }: Props) {
                         {n.daysWaiting}d
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); navigate(`/staffing?match=${n.client.id}`); }}>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); onStartMatching?.(); }}>
                           Assign <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
                         {n.client.rbt && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(event) => { event.stopPropagation(); assignRbt([n.client.id], n.client.rbt ?? ""); }}>Confirm</Button>}
