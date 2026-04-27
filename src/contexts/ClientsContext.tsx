@@ -340,11 +340,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const assignBcba = useCallback(async (ids: string[], bcba: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
-      const advance = c?.stage === "BCBA Assignment";
+      const advance = canonicalPipelineStage(c?.stage ?? "") === "BCBA Assignment";
       const nextLog = [...(c?.automationLog ?? []), `BCBA assigned: ${bcba}`];
       await supabase.from("clients").update({
         bcba, automation_log: nextLog,
-        ...(advance ? { stage: "Pending Initial Auth" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        ...(advance ? { stage: "Pending Initial Authorization" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
       } as never).eq("id", id);
       await insertTimeline(id, `BCBA ${bcba} assigned`, "staffing");
     }
@@ -353,11 +353,11 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const assignRbt = useCallback(async (ids: string[], rbt: string) => {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
-      const advance = c?.stage === "Staffing Needed" || c?.stage === "Restaffing Needed";
+      const advance = ["Staffing Needed", "Matching in Progress", "Restaffing Needed"].includes(canonicalPipelineStage(c?.stage ?? ""));
       const nextLog = [...(c?.automationLog ?? []), `RBT assigned: ${rbt}`];
       await supabase.from("clients").update({
         rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog,
-        ...(advance ? { stage: "Pending Start Date" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        ...(advance ? { stage: "RBT Assigned" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
       } as never).eq("id", id);
       await insertTimeline(id, `${rbt} assigned as RBT`, "staffing");
     }
