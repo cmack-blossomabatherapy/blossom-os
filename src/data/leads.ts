@@ -265,6 +265,11 @@ const buildLead = (
   const formReviewStatus = partial.formReviewStatus ?? "Pending";
   return {
     ...partial,
+    ...defaultFinancialFields(partial.insurance),
+    financialStatus: partial.insurance.toLowerCase().includes("medicaid") ? "Approved" : partial.vobStatus === "Payment Plan Required" ? "Payment Plan Required" : partial.status === "VOB Completed" ? "Approved" : "Pending Review",
+    paymentPlanNeeded: partial.paymentPlanNeeded,
+    paymentPlanStatus: partial.paymentPlanNeeded ? "Awaiting Signature" : "Not Required",
+    paymentPlanAmount: partial.paymentPlanNeeded ? 450 : 0,
     formStatus,
     consentStatus,
     vobStatus,
