@@ -92,9 +92,16 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
   };
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
-      {stageData.map((stage) => {
-        const isDropTarget = dragOverStage === stage.name;
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {stageData.map((section) => (
+        <section key={section.title} className="shrink-0">
+          <div className="mb-2 px-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">{section.title}</h3>
+            <p className="text-[11px] text-muted-foreground">{section.summary}</p>
+          </div>
+          <div className="flex gap-3">
+            {section.stages.map((stage) => {
+              const isDropTarget = dragOverStage === stage.name;
         return (
           <div
             key={stage.name}
@@ -171,7 +178,10 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
             </div>
           </div>
         );
-      })}
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
