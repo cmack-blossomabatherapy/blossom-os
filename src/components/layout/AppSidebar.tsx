@@ -132,7 +132,14 @@ export function AppSidebar() {
     }))
     .filter((s) => s.items.length > 0);
 
-  const isItemActive = (path: string) => location.pathname === path || `${location.pathname}${location.search}` === path;
+  const isItemActive = (path: string) => {
+    if (path.startsWith("/leadership-dashboard?")) {
+      const itemDashboard = new URLSearchParams(path.split("?")[1]).get("dashboard");
+      const currentDashboard = new URLSearchParams(location.search).get("dashboard") ?? "ceo";
+      return location.pathname === "/leadership-dashboard" && itemDashboard === currentDashboard;
+    }
+    return location.pathname === path || `${location.pathname}${location.search}` === path;
+  };
   const toggleSection = (title: string) => {
     setOpenSections((current) => {
       const next = new Set(current);
@@ -173,9 +180,10 @@ export function AppSidebar() {
                   key={item.path}
                   to={item.path}
                   end={item.path === "/"}
-                  className={({ isActive }) =>
-                    cn("nav-item", isActive || isItemActive(item.path) ? "nav-item-active" : "nav-item-inactive")
-                  }
+                  className={({ isActive }) => {
+                    const queryAwareActive = item.path.includes("?") ? isItemActive(item.path) : isActive || isItemActive(item.path);
+                    return cn("nav-item", queryAwareActive ? "nav-item-active" : "nav-item-inactive");
+                  }}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
