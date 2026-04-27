@@ -20,6 +20,8 @@ export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete" | "Complete
 export type ConsentStatus = "Not Sent" | "Sent" | "Complete" | "Completed";
 export type VobStatus = "Not Started" | "Not Sent" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
 export type FormReviewStatus = "Pending" | "Complete" | "Missing Info" | "Missing Information";
+export type FinancialStatus = "Pending Review" | "Approved" | "Payment Plan Required" | "Not Viable";
+export type PaymentPlanStatus = "Not Required" | "Sent" | "Awaiting Signature" | "Signed" | "Approved" | "Declined" | "Not Qualified";
 
 export interface LeadTask {
   id: string;
@@ -86,6 +88,24 @@ export interface Lead {
   formReviewStatus: FormReviewStatus;
   insurance: string;
   insuranceType: string;
+  primaryInsurance: string;
+  secondaryInsurance?: string;
+  inNetwork: boolean;
+  outOfNetwork: boolean;
+  deductibleAmount: number;
+  deductibleRemaining: number;
+  coinsurancePercent: number;
+  copay: number;
+  maxOutOfPocket: number;
+  estimatedInsuranceCoveragePercent: number;
+  estimatedClientResponsibility: number;
+  expectedWeeklyHours: number;
+  estimatedMonthlyRevenue: number;
+  financialStatus: FinancialStatus;
+  financialDecisionNotes?: string;
+  financialOwner: string;
+  daysInFinancialStage: number;
+  financialBlockers: string[];
   notQualifiedReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +117,10 @@ export interface Lead {
   payor: string;
   coverageType: string;
   paymentPlanNeeded: boolean;
+  paymentPlanSent: boolean;
+  paymentPlanSigned: boolean;
+  paymentPlanAmount: number;
+  paymentPlanStatus: PaymentPlanStatus;
   initialFormLink?: string;
   vobFile?: { name: string; uploadedAt: string };
   notes?: string;
