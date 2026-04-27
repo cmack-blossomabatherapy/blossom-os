@@ -1,17 +1,42 @@
 import { useState } from "react";
-import { Sparkles, MapPin, Clock, Award, ArrowRight } from "lucide-react";
+import { Sparkles, MapPin, Clock, Award, ArrowRight, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { suggestMatches } from "@/data/scheduling";
-import { mockRBTProfiles, getClientStaffingNeeds, getRBTUtilization } from "@/data/staffing";
+import { mockRBTProfiles, getClientStaffingNeeds, getRBTUtilization, suggestStaffingMatches } from "@/data/staffing";
+import { useClients } from "@/contexts/ClientsContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function StaffingMatchingView({ searchQuery }: { searchQuery: string }) {
-  const needs = getClientStaffingNeeds().filter(
+  const { clients, assignRbt, updateClient, addTask } = useClients();
+  const needs = getClientStaffingNeeds(clients).filter(
     (n) => !searchQuery || n.client.childName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
   const [selectedId, setSelectedId] = useState<string | null>(needs[0]?.client.id ?? null);
   const selected = needs.find((n) => n.client.id === selectedId);
-  const suggestions = selected ? suggestMatches(selected.client) : [];
+  const suggestions = selected ? suggestStaffingMatches(selected) : [];
+
+  const assignMatch = async (rbtId: string, rbtName: string, score: number) => {
+    if (!selected) return;
+    await supabase.from("staffing_matches").insert({
+      client_id: selected.client.id,
+      rbt_id: rbtId,
+      rbt_name: rbtName,
+      status: "Assigned",
+      match_score: score,
+      notes: "Assigned from staffing matching engine",
+    } as never);
+    await assignRbt([selected.client.id], rbtName);
+    await addTask(selected.client.id, { id: `schedule-${Date.now()}`, title: "Confirm schedule", completed: false, dueDate: new Date().toISOString().split("T")[0] });
+    toast.success(`${rbtName} assigned`, { description: "Client moved to Pending Start Date for scheduling." });
+  };
+
+  const markMatching = async () => {
+    if (!selected) return;
+    await updateClient(selected.client.id, { stage: "Matching in Progress", staffingStatus: "In Progress", nextAction: "Compare RBT matches" });
+    await addTask(selected.client.id, { id: `candidate-${Date.now()}`, title: "Contact candidate", completed: false, dueDate: new Date().toISOString().split("T")[0] });
+    toast.success("Matching started");
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -61,6 +86,9 @@ export function StaffingMatchingView({ searchQuery }: { searchQuery: string }) {
                   {n.requiredHours} hr/wk
                 </span>
               </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {n.availability.map((slot) => <span key={slot} className="rounded bg-muted px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">{slot}</span>)}
+              </div>
               <div className="mt-1 text-[11px] text-muted-foreground">
                 <span
                   className={cn(
@@ -78,18 +106,27 @@ export function StaffingMatchingView({ searchQuery }: { searchQuery: string }) {
 
       {/* Middle: matches */}
       <div className="lg:col-span-4 bg-card rounded-xl border border-border/60 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          Suggested Matches
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Suggested Matches
+          </h3>
+          {selected && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={markMatching}>Start Matching</Button>}
+        </div>
         {!selected && <p className="text-xs text-muted-foreground italic">Select a client</p>}
         {selected && suggestions.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">No RBTs available in {selected.client.state}</p>
+          <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+            <ShieldAlert className="mb-1 h-4 w-4" /> No available RBT in {selected.client.state}. Region shortage should be escalated.
+          </div>
         )}
         {selected &&
-          suggestions.map((rbt, idx) => (
+          suggestions.map((match, idx) => {
+            const rbt = mockRBTProfiles.find((profile) => profile.id === match.rbtId);
+            if (!rbt) return null;
+            const overloaded = match.capacityRemaining < selected.requiredHours;
+            return (
             <div
-              key={rbt.id}
+              key={match.rbtId}
               className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-transparent border border-primary/20 space-y-2"
             >
               <div className="flex items-start justify-between">
@@ -101,17 +138,22 @@ export function StaffingMatchingView({ searchQuery }: { searchQuery: string }) {
                         Top match
                       </span>
                     )}
+                    <span className="text-[10px] font-semibold uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{match.score}%</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    {rbt.clinic} · {rbt.experience}
+                    {rbt.clinic} · {rbt.experience} · {match.distanceMiles} mi
                   </p>
                 </div>
-                <span className="text-[11px] font-medium text-success">
-                  {rbt.capacityHours - rbt.assignedHours}h available
+                <span className={cn("text-[11px] font-medium", overloaded ? "text-warning" : "text-success")}>
+                  {match.capacityRemaining}h available
                 </span>
               </div>
+              <div className="flex flex-wrap gap-1 text-[10px]">
+                {match.availabilityOverlap.map((slot) => <span key={slot} className="rounded bg-success/10 px-1.5 py-0.5 capitalize text-success">{slot}</span>)}
+                <span className={cn("rounded px-1.5 py-0.5", overloaded ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground")}>{match.notes}</span>
+              </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" className="h-7 text-xs flex-1">
+                <Button size="sm" className="h-7 text-xs flex-1" disabled={rbt.status === "Full"} onClick={() => assignMatch(match.rbtId, match.rbtName, match.score)}>
                   Assign <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs">
@@ -119,7 +161,7 @@ export function StaffingMatchingView({ searchQuery }: { searchQuery: string }) {
                 </Button>
               </div>
             </div>
-          ))}
+          );})}
       </div>
 
       {/* Right: RBT supply */}
