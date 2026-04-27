@@ -170,8 +170,9 @@ export default function Clients() {
   };
 
   const selectedClients = clients.filter((c) => selectedIds.includes(c.id));
+  const selectedNextStages = selectedClients.map((c) => getNextPipelineStage(c.stage));
   const sharedNextStage = selectedClients.length
-    ? selectedClients.map((c) => getNextPipelineStage(c.stage)).reduce<string | null>((shared, next) => (shared === next ? shared : null))
+    ? selectedNextStages.every((stage) => stage === selectedNextStages[0]) ? selectedNextStages[0] : null
     : null;
 
   return (
