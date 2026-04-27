@@ -1,16 +1,27 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, FileText, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
-import { iconMap, trainingCourses, trainingDepartments, trainingPathSteps } from "@/data/training";
+import { getStoredTrainingCourses, iconMap, trainingDepartments, trainingPathSteps, TRAINING_UPDATED_EVENT } from "@/data/training";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 
 export default function TrainingDepartment() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
+  useEffect(() => {
+    const refresh = () => setTrainingCourses(getStoredTrainingCourses());
+    window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
   const dept = trainingDepartments.find((d) => d.slug === slug) ?? trainingDepartments[0];
   const Icon = iconMap[dept.icon];
   const courses = trainingCourses.filter((course) => course.departmentId === dept.id);
