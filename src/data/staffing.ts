@@ -58,7 +58,7 @@ export const mockRBTProfiles: RBTProfile[] = mockRBTs.map((r, idx) => {
     ].slice(0, idx % 3),
     tasks: [
       { id: "t1", title: "Confirm weekly availability", completed: idx % 2 === 0 },
-      { id: "t2", title: "Complete onboarding modules", completed: status === "Active" },
+      { id: "t2", title: "Complete onboarding modules", completed: status !== "Inactive" },
     ],
     timeline: [
       { date: "2024-08-15", event: "Hired" },
@@ -120,7 +120,7 @@ export const getClientStaffingNeeds = (): StaffingClientNeed[] => {
         reason,
         priority,
         daysWaiting: c.daysInStage,
-        requiredHours: c.authorizations.find((a) => a.type === "Treatment" || a.type === "Reauth")?.approvedHours ?? Number.parseInt(c.authorizations.find((a) => a.type === "Treatment" || a.type === "Reauth")?.hours ?? "20", 10) || 20,
+        requiredHours: c.authorizations.find((a) => a.type === "Treatment" || a.type === "Reauth")?.approvedHours ?? (Number.parseInt(c.authorizations.find((a) => a.type === "Treatment" || a.type === "Reauth")?.hours ?? "20", 10) || 20),
         availability,
         zip: c.state === "GA" ? "30092" : c.state === "TX" ? "78701" : "85020",
         region: `${c.state} · ${c.clinic}`,
