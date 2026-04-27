@@ -159,6 +159,7 @@ export default function LeadershipDashboard() {
   const [timesheetRows, setTimesheetRows] = useState<TimesheetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [lastSuccessfulFetch, setLastSuccessfulFetch] = useState<Date | null>(null);
   const [dateRange, setDateRange] = useState("This Month");
   const [stateFilter, setStateFilter] = useState("All States");
   const [clinicFilter, setClinicFilter] = useState("All Clinics");
@@ -190,6 +191,7 @@ export default function LeadershipDashboard() {
       setClientRows((clientsRes.data ?? []) as ClientRow[]);
       setAuthRows((authsRes.data ?? []) as AuthRow[]);
       setTimesheetRows((timesheetsRes.data ?? []) as TimesheetRow[]);
+      setLastSuccessfulFetch(new Date());
     } catch (error) {
       const message = error instanceof Error ? error.message : "Live dashboard data could not be loaded.";
       setLoadError(message);
@@ -242,9 +244,11 @@ export default function LeadershipDashboard() {
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Company-wide operational scorecard for clinics, staffing, authorizations, utilization, and client flow.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{loading ? "Initializing live data…" : `Last Updated: ${live.lastUpdated.toLocaleString()}`}</span>
+            <span className="rounded-md border border-border/60 bg-card px-3 py-2 text-xs text-muted-foreground">
+              {loading ? "Fetching live metrics…" : lastSuccessfulFetch ? `Last successful metrics fetch: ${lastSuccessfulFetch.toLocaleString()}` : "Metrics have not fetched yet"}
+            </span>
             <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>
-            <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />Refresh</Button>
+            <Button size="sm" onClick={load} disabled={loading} className="shadow-sm"><RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />Refresh metrics</Button>
           </div>
         </div>
 
