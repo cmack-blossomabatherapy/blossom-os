@@ -10,6 +10,7 @@ import {
 import logo from "@/assets/blossom-logo-full.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
 
 interface NavItem {
   label: string;
@@ -18,6 +19,30 @@ interface NavItem {
   perm: string;
   superAdminOnly?: boolean;
 }
+
+const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
+  ceo: BarChart3,
+  intake: Users,
+  authorizations: ShieldCheck,
+  scheduling: Calendar,
+  staffing: UserPlus,
+  clinic: Building2,
+  qa: ClipboardCheck,
+  finance: Wallet,
+  hr: HeartHandshake,
+  recruiting: Briefcase,
+};
+
+const superAdminDashboardSection: { title: string; items: NavItem[] } = {
+  title: "Dashboards",
+  items: dashboardDefinitions.map((dashboard) => ({
+    label: dashboard.name.replace(" Dashboard", ""),
+    icon: dashboardIcons[dashboard.key],
+    path: `/leadership-dashboard?dashboard=${dashboard.key}`,
+    perm: "dashboard.view",
+    superAdminOnly: true,
+  })),
+};
 
 const navSections: { title?: string; items: NavItem[] }[] = [
   {
@@ -87,7 +112,7 @@ export function AppSidebar() {
   const { hasPerm, isAdmin } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
 
-  const allSections = [...navSections];
+  const allSections = isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections];
   // Insert HR Suite before Admin so it sits with the operations modules
   const adminIndex = allSections.findIndex((s) => s.title === "Admin");
   if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
