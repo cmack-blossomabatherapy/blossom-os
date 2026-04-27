@@ -140,6 +140,9 @@
   .mobile-menu-sheet > button {
     @apply hidden;
   }
+  .mobile-menu-sheet {
+    box-shadow: -18px 0 44px -24px hsl(var(--foreground) / 0.42);
+  }
 }
 
 @layer base {
