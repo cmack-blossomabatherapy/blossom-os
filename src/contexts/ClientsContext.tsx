@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
   ScheduleSlot, AuthStatus, StaffingStatus, QAStatus, ClientSchedulingStatus,
+  ActiveServiceStatus, ActiveStaffingStatus, NotesComplianceStatus, BillingClaimStatus,
 } from "@/data/clients";
 import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
@@ -75,6 +76,25 @@ interface DbClient {
   pairing_email_sent?: boolean;
   scheduling_notes?: string | null;
   centralreach_sync_status?: string;
+  active_service_status?: ActiveServiceStatus;
+  active_staffing_status?: ActiveStaffingStatus;
+  approved_weekly_hours?: number;
+  scheduled_weekly_hours?: number;
+  delivered_weekly_hours?: number;
+  service_location?: string;
+  notes_compliance_status?: NotesComplianceStatus;
+  noteguard_flags?: number;
+  amerigroup_status?: string;
+  sessions_logged?: number;
+  claims_submitted?: number;
+  claims_issues?: number;
+  billing_status?: BillingClaimStatus;
+  new_rbt_start_date?: string | null;
+  rbt_check_in_status?: string;
+  early_rbt_issues?: string[];
+  next_reauth_date?: string | null;
+  active_alerts?: string[];
+  active_notes?: string | null;
   stage_entered_at: string;
   vob_completed_at: string | null;
   blockers: string[];
@@ -122,6 +142,25 @@ const buildClient = (
   pairingEmailSent: Boolean((c as Row<DbClient>).pairing_email_sent),
   schedulingNotes: ((c as Row<DbClient>).scheduling_notes as string | null | undefined) ?? null,
   centralReachSyncStatus: ((c as Row<DbClient>).centralreach_sync_status as string | undefined) ?? "Not Synced",
+  activeServiceStatus: ((c as Row<DbClient>).active_service_status as ActiveServiceStatus | undefined) ?? (c.stage === "Services on Pause" || c.stage === "Flaked" || c.stage === "Discharged" ? c.stage : "Active"),
+  activeStaffingStatus: ((c as Row<DbClient>).active_staffing_status as ActiveStaffingStatus | undefined) ?? (c.rbt ? "Stable" : "Needs Restaffing"),
+  approvedWeeklyHours: Number(((c as Row<DbClient>).approved_weekly_hours as number | undefined) ?? (((auths.find((a) => a.kind === "Treatment" || a.kind === "Reauth") as Row<DbAuth> | undefined)?.approved_hours as number | undefined) ?? 0)),
+  scheduledWeeklyHours: Number(((c as Row<DbClient>).scheduled_weekly_hours as number | undefined) ?? 0),
+  deliveredWeeklyHours: Number(((c as Row<DbClient>).delivered_weekly_hours as number | undefined) ?? 0),
+  serviceLocation: ((c as Row<DbClient>).service_location as string | undefined) ?? "Clinic",
+  notesComplianceStatus: ((c as Row<DbClient>).notes_compliance_status as NotesComplianceStatus | undefined) ?? "Compliant",
+  noteguardFlags: Number(((c as Row<DbClient>).noteguard_flags as number | undefined) ?? 0),
+  amerigroupStatus: ((c as Row<DbClient>).amerigroup_status as string | undefined) ?? "Current",
+  sessionsLogged: Number(((c as Row<DbClient>).sessions_logged as number | undefined) ?? 0),
+  claimsSubmitted: Number(((c as Row<DbClient>).claims_submitted as number | undefined) ?? 0),
+  claimsIssues: Number(((c as Row<DbClient>).claims_issues as number | undefined) ?? 0),
+  billingStatus: ((c as Row<DbClient>).billing_status as BillingClaimStatus | undefined) ?? "Current",
+  newRbtStartDate: ((c as Row<DbClient>).new_rbt_start_date as string | null | undefined) ?? null,
+  rbtCheckInStatus: ((c as Row<DbClient>).rbt_check_in_status as string | undefined) ?? "Not Required",
+  earlyRbtIssues: (((c as Row<DbClient>).early_rbt_issues as string[] | undefined) ?? []),
+  nextReauthDate: ((c as Row<DbClient>).next_reauth_date as string | null | undefined) ?? null,
+  activeAlerts: (((c as Row<DbClient>).active_alerts as string[] | undefined) ?? []),
+  activeNotes: ((c as Row<DbClient>).active_notes as string | null | undefined) ?? null,
   nextAction: c.next_action ?? "",
   nextTaskDue: c.next_task_due,
   lastActivity: timeline[0]?.description ?? "—",
