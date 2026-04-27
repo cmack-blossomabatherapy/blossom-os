@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageShell } from "@/components/shared/PageShell";
-import { UserCheck } from "lucide-react";
+import { AlertTriangle, CalendarDays, FileCheck2, ShieldCheck, UserCheck } from "lucide-react";
 import { ClientControlBar, ClientViewMode } from "@/components/clients/ClientControlBar";
 import { ClientTableView, ClientSortField, SortDir } from "@/components/clients/ClientTableView";
 import { ClientQueueView } from "@/components/clients/ClientQueueView";
@@ -177,6 +177,13 @@ export default function Clients() {
     ? selectedNextStages.every((stage) => stage === selectedNextStages[0]) ? selectedNextStages[0] : null
     : null;
 
+  const lifecycleSignals = useMemo(() => [
+    { label: "Auth records", value: clients.reduce((sum, client) => sum + client.authorizations.length, 0), icon: ShieldCheck },
+    { label: "QA flags", value: clients.reduce((sum, client) => sum + client.blockers.length + (client.qaStatus === "In Review" ? 1 : 0), 0), icon: AlertTriangle },
+    { label: "Schedule blocks", value: clients.reduce((sum, client) => sum + client.schedule.length, 0), icon: CalendarDays },
+    { label: "Documents", value: clients.reduce((sum, client) => sum + client.documents.length, 0), icon: FileCheck2 },
+  ], [clients]);
+
   return (
     <PageShell
       title="Clients"
@@ -184,6 +191,16 @@ export default function Clients() {
       icon={UserCheck}
     >
       <ClientKpiStrip clients={clients} activeKpi={activeKpi} onKpiClick={handleKpi} />
+
+      <section className="grid gap-3 md:grid-cols-4">
+        {lifecycleSignals.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-lg border border-border/60 bg-card p-3">
+            <Icon className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-xl font-semibold text-foreground">{value}</p>
+            <p className="text-xs text-muted-foreground">{label} connected to client records</p>
+          </div>
+        ))}
+      </section>
 
       <ClientControlBar
         viewMode={viewMode}
