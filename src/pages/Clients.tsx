@@ -12,7 +12,7 @@ import { ConvertLeadDialog } from "@/components/clients/ConvertLeadDialog";
 import { ClientKpiKey, clientKpiFilters, ClientStage, clientStages } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
-import { canonicalPipelineStage, getNextPipelineStage, masterPipelineSections, type PipelineSectionKey } from "@/data/pipeline";
+import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
 
 const exportToCsv = (rows: Record<string, unknown>[], filename: string) => {
   if (!rows.length) return;
