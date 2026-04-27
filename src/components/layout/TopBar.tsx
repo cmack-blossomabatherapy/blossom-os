@@ -1,4 +1,4 @@
-import { Search, Plus, CalendarDays, User, UserPlus, FileText, ListPlus, Phone, LogOut, Shield } from "lucide-react";
+import { Search, Plus, CalendarDays, User, UserPlus, FileText, ListPlus, Phone, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "./NotificationBell";
@@ -11,9 +11,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface TopBarProps {
   title: string;
+  onOpenMobileMenu?: () => void;
 }
 
-export function TopBar({ title }: TopBarProps) {
+export function TopBar({ title, onOpenMobileMenu }: TopBarProps) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [newLeadOpen, setNewLeadOpen] = useState(false);
@@ -37,7 +38,12 @@ export function TopBar({ title }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-card/85 px-4 py-2.5 backdrop-blur-xl md:static md:flex md:h-14 md:items-center md:justify-between md:px-6 md:py-0">
-      <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
+      <div className="flex items-center justify-between gap-3 md:block">
+        <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
+        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full md:hidden" onClick={onOpenMobileMenu} aria-label="Open navigation menu">
+          <Menu className="h-4 w-4" />
+        </Button>
+      </div>
 
       <div className="mt-2 flex items-center gap-1.5 md:mt-0 md:gap-2">
         <div className="relative hidden min-w-0 flex-1 sm:block md:flex-none">
