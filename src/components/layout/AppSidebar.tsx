@@ -9,13 +9,39 @@ import {
 import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
 
 interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   path: string;
   perm: string;
+  superAdminOnly?: boolean;
 }
+
+const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
+  ceo: BarChart3,
+  intake: Users,
+  authorizations: ShieldCheck,
+  scheduling: Calendar,
+  staffing: UserPlus,
+  clinic: Building2,
+  qa: ClipboardCheck,
+  finance: Wallet,
+  hr: HeartHandshake,
+  recruiting: Briefcase,
+};
+
+const superAdminDashboardSection: { title: string; items: NavItem[] } = {
+  title: "Dashboards",
+  items: dashboardDefinitions.map((dashboard) => ({
+    label: dashboard.name.replace(" Dashboard", ""),
+    icon: dashboardIcons[dashboard.key],
+    path: `/leadership-dashboard?dashboard=${dashboard.key}`,
+    perm: "dashboard.view",
+    superAdminOnly: true,
+  })),
+};
 
 const navSections: { title?: string; items: NavItem[] }[] = [
   {
@@ -88,9 +114,10 @@ const hrSection: { title: string; items: NavItem[] } = {
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPerm } = useAuth();
+  const { hasPerm, isAdmin } = useAuth();
 
   const allSections = [...navSections];
+  if (isAdmin) allSections.splice(1, 0, superAdminDashboardSection);
   // Insert HR Suite before Admin so it sits with the operations modules
   const adminIndex = allSections.findIndex((s) => s.title === "Admin");
   if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
@@ -99,7 +126,7 @@ export function AppSidebar() {
   const sections = allSections
     .map((s) => ({
       ...s,
-      items: s.items.filter((item) => hasPerm(item.perm)),
+      items: s.items.filter((item) => (!item.superAdminOnly || isAdmin) && hasPerm(item.perm)),
     }))
     .filter((s) => s.items.length > 0);
 
@@ -126,7 +153,7 @@ export function AppSidebar() {
                   to={item.path}
                   end={item.path === "/"}
                   className={({ isActive }) =>
-                    cn("nav-item", isActive ? "nav-item-active" : "nav-item-inactive")
+                    cn("nav-item", isActive || `${location.pathname}${location.search}` === item.path ? "nav-item-active" : "nav-item-inactive")
                   }
                 >
                   <item.icon className="h-4 w-4 shrink-0" />

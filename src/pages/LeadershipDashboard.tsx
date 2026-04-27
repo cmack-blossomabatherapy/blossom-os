@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, Filter, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,6 +153,7 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
 
 export default function LeadershipDashboard() {
   const { clinicId } = useParams();
+  const [searchParams] = useSearchParams();
   const { isAdmin, roles, partOfLeadership, dashboardAccess } = useAuth();
   const [clientRows, setClientRows] = useState<ClientRow[]>([]);
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
@@ -173,6 +174,7 @@ export default function LeadershipDashboard() {
     return roles.map((role) => roleDashboardMap[role]).find(Boolean) ?? "clinic";
   }, [dashboardAccess, roles]);
   const [selectedDashboard, setSelectedDashboard] = useState<DashboardKey>(isAdmin || partOfLeadership ? "ceo" : assignedDashboard);
+  const requestedDashboard = searchParams.get("dashboard") as DashboardKey | null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -212,7 +214,7 @@ export default function LeadershipDashboard() {
   const clinicNames = ["All Clinics", ...Array.from(new Set(live.clinics.map((clinic) => clinic.clinic))).filter(Boolean)];
   const insuranceNames = ["All Insurance", ...Array.from(new Set(live.clientRecords.map((client) => client.insurance))).filter((item) => item && item !== "—")];
   const allowedDashboards = isAdmin ? dashboardDefinitions : partOfLeadership ? dashboardDefinitions.filter((d) => d.key === "ceo") : dashboardDefinitions.filter((d) => d.key === assignedDashboard);
-  const activeDashboard = allowedDashboards.some((d) => d.key === selectedDashboard) ? selectedDashboard : allowedDashboards[0]?.key ?? "clinic";
+  const activeDashboard = requestedDashboard && allowedDashboards.some((d) => d.key === requestedDashboard) ? requestedDashboard : allowedDashboards.some((d) => d.key === selectedDashboard) ? selectedDashboard : allowedDashboards[0]?.key ?? "clinic";
   const selectedClinic = clinicId ? live.clinics.find((clinic) => clinic.id === clinicId) : null;
 
   const filteredClients = useMemo(() => {
