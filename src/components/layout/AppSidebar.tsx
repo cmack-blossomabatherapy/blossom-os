@@ -11,6 +11,7 @@ import logo from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardDefinitions, type DashboardKey } from "@/data/leadershipDashboard";
+import { masterPipelineSections, type PipelineSectionKey } from "@/data/pipeline";
 
 interface NavItem {
   label: string;
@@ -33,6 +34,20 @@ const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   recruiting: Briefcase,
 };
 
+const pipelineIcons: Record<PipelineSectionKey, typeof LayoutDashboard> = {
+  intake: Users,
+  financial: Wallet,
+  clientSetup: UserCheck,
+  initialAuth: ShieldCheck,
+  assessment: ClipboardCheck,
+  qa: ClipboardCheck,
+  treatmentAuth: ShieldCheck,
+  staffing: UserPlus,
+  scheduling: Calendar,
+  activeServices: HeartHandshake,
+  reauth: Workflow,
+};
+
 const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   title: "Dashboards",
   items: dashboardDefinitions.map((dashboard) => ({
@@ -41,6 +56,16 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
     path: `/leadership-dashboard?dashboard=${dashboard.key}`,
     perm: "dashboard.view",
     superAdminOnly: true,
+  })),
+};
+
+const pipelineSection: { title: string; items: NavItem[] } = {
+  title: "Pipeline",
+  items: masterPipelineSections.map((section) => ({
+    label: section.title,
+    icon: pipelineIcons[section.key],
+    path: `/clients?pipeline=${section.key}&view=pipeline`,
+    perm: "clients.view",
   })),
 };
 
@@ -53,11 +78,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: "Pipeline",
-    items: [
-      { label: "Leads", icon: Users, path: "/leads", perm: "leads.view" },
-      { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
-      { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "auth.view" },
-    ],
+    items: pipelineSection.items,
   },
   {
     title: "Operations",
