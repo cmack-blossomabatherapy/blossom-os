@@ -82,7 +82,7 @@ interface DbClient {
 interface DbTask { id: string; client_id: string; title: string; completed: boolean; due_date: string | null; position: number; }
 interface DbDocument { id: string; client_id: string; name: string; type: string; }
 interface DbTimeline { id: string; client_id: string; event_type: ClientTimelineEvent["type"]; description: string; user_name: string | null; created_at: string; }
-interface DbAuth { id: string; client_id: string; kind: "Initial" | "Treatment"; status: AuthStatus; submitted_date: string | null; approved_date: string | null; expiration_date: string | null; hours: string | null; notes: string | null; }
+interface DbAuth { id: string; client_id: string; kind: "Initial" | "Treatment"; status: AuthStatus; submitted_date: string | null; approved_date: string | null; expiration_date: string | null; hours: string | null; notes: string | null; stage_entered_at?: string | null; }
 interface DbSlot { id: string; client_id: string; day: ScheduleSlot["day"]; start_time: string; end_time: string; rbt: string | null; }
 
 const buildClient = (
@@ -128,12 +128,25 @@ const buildClient = (
   consentComplete: Boolean((c as Row<DbClient>).consent_complete),
   blockers: c.blockers ?? [],
   authorizations: auths.map((a) => ({
+    id: a.id,
     type: a.kind, status: a.status,
     submittedDate: a.submitted_date ?? undefined,
     approvedDate: a.approved_date ?? undefined,
     expirationDate: a.expiration_date ?? undefined,
     hours: a.hours ?? undefined,
     notes: a.notes ?? undefined,
+    payor: ((a as Row<DbAuth>).payor as string | undefined) ?? c.payor,
+    state: ((a as Row<DbAuth>).state as string | undefined) ?? c.state,
+    assignedAuthCoordinator: (a as Row<DbAuth>).assigned_auth_coordinator as string | undefined,
+    qaOwner: ((a as Row<DbAuth>).qa_owner as string | null | undefined) ?? null,
+    qaStatus: (((a as Row<DbAuth>).qa_status as QAStatus | undefined) ?? "Not Started"),
+    treatmentPlanReceived: Boolean((a as Row<DbAuth>).treatment_plan_received),
+    requiredDocsReceived: ((a as Row<DbAuth>).required_docs_received as boolean | undefined) ?? true,
+    missingDocs: (((a as Row<DbAuth>).missing_docs as string[] | undefined) ?? []),
+    nextAction: (((a as Row<DbAuth>).next_action as string | undefined) ?? "Submit Authorization"),
+    blockers: (((a as Row<DbAuth>).blockers as string[] | undefined) ?? []),
+    daysInStage: daysBetween(a.stage_entered_at),
+    progressReportStatus: (((a as Row<DbAuth>).progress_report_status as "Not Started" | "In Progress" | "Received" | undefined) ?? "Not Started"),
   })) as AuthorizationRecord[],
   schedule: slots.map((s) => ({ day: s.day, start: s.start_time, end: s.end_time, rbt: s.rbt ?? undefined })),
   tasks: tasks.map((t) => ({ id: t.id, title: t.title, completed: t.completed, dueDate: t.due_date ?? undefined })),
@@ -289,6 +302,17 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
           client_id: newId, kind: a.type, status: a.status,
           submitted_date: a.submittedDate ?? null, approved_date: a.approvedDate ?? null,
           expiration_date: a.expirationDate ?? null, hours: a.hours ?? null, notes: a.notes ?? null,
+          payor: a.payor ?? client.payor,
+          state: a.state ?? client.state,
+          assigned_auth_coordinator: a.assignedAuthCoordinator ?? null,
+          qa_owner: a.qaOwner ?? null,
+          qa_status: a.qaStatus ?? "Not Started",
+          treatment_plan_received: a.treatmentPlanReceived ?? false,
+          required_docs_received: a.requiredDocsReceived ?? true,
+          missing_docs: a.missingDocs ?? [],
+          next_action: a.nextAction ?? "Submit Authorization",
+          blockers: a.blockers ?? [],
+          progress_report_status: a.progressReportStatus ?? "Not Started",
         })) as never,
       );
     }

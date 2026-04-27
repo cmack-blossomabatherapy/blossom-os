@@ -1,0 +1,1 @@
+ALTER TYPE public.client_stage ADD VALUE IF NOT EXISTS 'Can Not Submit Auth';
