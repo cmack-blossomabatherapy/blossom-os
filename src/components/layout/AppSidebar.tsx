@@ -81,6 +81,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     title: "Intelligence",
     items: [
       { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
+      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
     ],
   },
   {
