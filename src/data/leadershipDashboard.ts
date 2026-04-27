@@ -126,7 +126,7 @@ const riverdaleClients: ClientRecord[] = Object.entries(riverdaleByStage).flatMa
     deliveredHours: status === "Active" ? 24 : 0,
     daysInStatus: [6, 9, 16, 24, 21, 12, 18, 4, 15][stageIndex] ?? 7,
     startDate: status === "Active" ? "2026-04-08" : "—",
-    riskLevel: status === "Flaked" || status.includes("Authorization") ? "Critical" : status === "Missing Info" || status === "Staffing Needed" ? "High" : "Medium",
+    riskLevel: (status === "Flaked" || status.includes("Authorization") ? "Critical" : status === "Missing Info" || status === "Staffing Needed" ? "High" : "Medium") as RiskLevel,
     notes: status === "Flaked" ? "Follow-up required after approval." : status === "Missing Info" ? "Family outreach needed." : "Monitor next handoff.",
   })),
 );
