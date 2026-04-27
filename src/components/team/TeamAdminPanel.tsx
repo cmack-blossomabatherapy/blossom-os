@@ -149,15 +149,22 @@ export function TeamAdminPanel() {
 
   const saveInfo = async (
     member: Member,
-    next: { display_name: string; job_title: string; responsibilities: string },
+    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean },
   ) => {
     setSavingId(member.user_id);
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: next.display_name.trim() || null,
+        email: next.email.trim() || null,
         job_title: next.job_title.trim() || null,
         responsibilities: next.responsibilities.trim() || null,
+        department: next.department.trim() || null,
+        state: next.state.trim() || null,
+        clinic: next.clinic.trim() || null,
+        part_of_leadership: next.part_of_leadership,
+        dashboard_access: next.dashboard_access,
+        active: next.active,
       })
       .eq("user_id", member.user_id);
     setSavingId(null);
@@ -167,8 +174,15 @@ export function TeamAdminPanel() {
     }
     updateMember(member.user_id, {
       display_name: next.display_name.trim() || "(no name)",
+      email: next.email.trim(),
       job_title: next.job_title.trim(),
       responsibilities: next.responsibilities.trim(),
+      department: next.department.trim(),
+      state: next.state.trim(),
+      clinic: next.clinic.trim(),
+      part_of_leadership: next.part_of_leadership,
+      dashboard_access: next.dashboard_access,
+      active: next.active,
     });
     toast.success("Saved");
     return true;
