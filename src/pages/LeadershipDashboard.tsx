@@ -153,7 +153,7 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
 
 export default function LeadershipDashboard() {
   const { clinicId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAdmin, roles, partOfLeadership, dashboardAccess } = useAuth();
   const [clientRows, setClientRows] = useState<ClientRow[]>([]);
   const [authRows, setAuthRows] = useState<AuthRow[]>([]);
@@ -217,6 +217,11 @@ export default function LeadershipDashboard() {
   const activeDashboard = requestedDashboard && allowedDashboards.some((d) => d.key === requestedDashboard) ? requestedDashboard : allowedDashboards.some((d) => d.key === selectedDashboard) ? selectedDashboard : allowedDashboards[0]?.key ?? "clinic";
   const selectedClinic = clinicId ? live.clinics.find((clinic) => clinic.id === clinicId) : null;
 
+  const handleDashboardSelect = (dashboard: DashboardKey) => {
+    setSelectedDashboard(dashboard);
+    setSearchParams({ dashboard });
+  };
+
   const filteredClients = useMemo(() => {
     const q = query.toLowerCase();
     return live.clientRecords
@@ -254,7 +259,7 @@ export default function LeadershipDashboard() {
           </div>
         </div>
 
-        {isAdmin && <DashboardSelector activeDashboard={activeDashboard} onSelect={setSelectedDashboard} />}
+        {isAdmin && <DashboardSelector activeDashboard={activeDashboard} onSelect={handleDashboardSelect} />}
         {!isAdmin && !partOfLeadership && activeDashboard !== "ceo" && <DepartmentDashboardNotice dashboard={allowedDashboards[0]} />}
 
         {activeDashboard === "ceo" && (
