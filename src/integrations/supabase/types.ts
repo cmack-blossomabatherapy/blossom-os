@@ -190,80 +190,110 @@ export type Database = {
       }
       client_authorizations: {
         Row: {
+          approval_letter_received: boolean
           approved_date: string | null
+          approved_hours: number | null
           assigned_auth_coordinator: string | null
+          authorization_period: string | null
           blockers: string[]
           client_id: string
           created_at: string
+          escalation_owner: string | null
           expiration_date: string | null
+          frequency: string | null
           hours: string | null
           id: string
           kind: Database["public"]["Enums"]["auth_kind"]
           missing_docs: string[]
           next_action: string
           notes: string | null
+          partial_approval: boolean
           payor: string | null
           progress_report_status: Database["public"]["Enums"]["progress_report_status"]
+          qa_notes: string | null
           qa_owner: string | null
           qa_status: Database["public"]["Enums"]["qa_status"]
           reauth_source_id: string | null
           required_docs_received: boolean
+          service_type: string | null
           stage_entered_at: string
           state: string | null
           status: Database["public"]["Enums"]["auth_status"]
+          submission_history: Json
           submitted_date: string | null
+          treatment_plan_linked: boolean
           treatment_plan_received: boolean
           updated_at: string
         }
         Insert: {
+          approval_letter_received?: boolean
           approved_date?: string | null
+          approved_hours?: number | null
           assigned_auth_coordinator?: string | null
+          authorization_period?: string | null
           blockers?: string[]
           client_id: string
           created_at?: string
+          escalation_owner?: string | null
           expiration_date?: string | null
+          frequency?: string | null
           hours?: string | null
           id?: string
           kind: Database["public"]["Enums"]["auth_kind"]
           missing_docs?: string[]
           next_action?: string
           notes?: string | null
+          partial_approval?: boolean
           payor?: string | null
           progress_report_status?: Database["public"]["Enums"]["progress_report_status"]
+          qa_notes?: string | null
           qa_owner?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           reauth_source_id?: string | null
           required_docs_received?: boolean
+          service_type?: string | null
           stage_entered_at?: string
           state?: string | null
           status?: Database["public"]["Enums"]["auth_status"]
+          submission_history?: Json
           submitted_date?: string | null
+          treatment_plan_linked?: boolean
           treatment_plan_received?: boolean
           updated_at?: string
         }
         Update: {
+          approval_letter_received?: boolean
           approved_date?: string | null
+          approved_hours?: number | null
           assigned_auth_coordinator?: string | null
+          authorization_period?: string | null
           blockers?: string[]
           client_id?: string
           created_at?: string
+          escalation_owner?: string | null
           expiration_date?: string | null
+          frequency?: string | null
           hours?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["auth_kind"]
           missing_docs?: string[]
           next_action?: string
           notes?: string | null
+          partial_approval?: boolean
           payor?: string | null
           progress_report_status?: Database["public"]["Enums"]["progress_report_status"]
+          qa_notes?: string | null
           qa_owner?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           reauth_source_id?: string | null
           required_docs_received?: boolean
+          service_type?: string | null
           stage_entered_at?: string
           state?: string | null
           status?: Database["public"]["Enums"]["auth_status"]
+          submission_history?: Json
           submitted_date?: string | null
+          treatment_plan_linked?: boolean
           treatment_plan_received?: boolean
           updated_at?: string
         }
