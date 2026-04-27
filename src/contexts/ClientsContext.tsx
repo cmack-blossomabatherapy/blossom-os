@@ -356,7 +356,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     if (client.schedule?.length) {
       await supabase.from("client_schedule_slots").insert(
         client.schedule.map((s) => ({
-          client_id: newId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null,
+          client_id: newId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null, location: s.location ?? "Clinic", notes: s.notes ?? null,
         })) as never,
       );
     }
@@ -503,7 +503,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
 
   const addScheduleSlot = useCallback(async (clientId: string, slot: ScheduleSlot) => {
     await supabase.from("client_schedule_slots").insert({
-      client_id: clientId, day: slot.day, start_time: slot.start, end_time: slot.end, rbt: slot.rbt ?? null,
+      client_id: clientId, day: slot.day, start_time: slot.start, end_time: slot.end, rbt: slot.rbt ?? null, location: slot.location ?? "Clinic", notes: slot.notes ?? null,
     } as never);
   }, []);
 
@@ -516,7 +516,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     if (slots.length) {
       await supabase.from("client_schedule_slots").insert(
         slots.map((s) => ({
-          client_id: clientId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null,
+          client_id: clientId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null, location: s.location ?? "Clinic", notes: s.notes ?? null,
         })) as never,
       );
     }
