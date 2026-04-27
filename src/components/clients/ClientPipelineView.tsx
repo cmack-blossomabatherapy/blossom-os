@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Client, ClientStage, clientStages, getClientAlert } from "@/data/clients";
+import { Client, ClientStage, pipelineSections, getClientAlert } from "@/data/clients";
+import { canonicalPipelineStage } from "@/data/pipeline";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,9 +19,12 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
-  const stageData = clientStages.map((s) => ({
-    ...s,
-    clients: clients.filter((c) => c.stage === s.name),
+  const stageData = pipelineSections.map((section) => ({
+    ...section,
+    stages: section.stages.map((stage) => ({
+      ...stage,
+      clients: clients.filter((c) => canonicalPipelineStage(c.stage) === stage.name),
+    })),
   }));
 
   const handleDragStart = (e: React.DragEvent, client: Client) => {
@@ -54,7 +58,7 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
     setDragOverStage(null);
     if (!id) return;
     const client = clients.find((c) => c.id === id);
-    if (!client || client.stage === stage) return;
+    if (!client || canonicalPipelineStage(client.stage) === stage) return;
 
     if (!hasPerm("clients.edit")) {
       toast.error("You don't have permission to edit clients");
@@ -74,9 +78,9 @@ export function ClientPipelineView({ clients, onSelect }: Props) {
 
     // Optimistic update via context (synchronous setState — UI updates immediately).
     // moveStage already appends an automation log entry + timeline event.
-    moveStage([id], stage);
+    void moveStage([id], stage);
     toast.success(`${client.childName} moved to ${stage}`, {
-      description: `From ${previousStage}`,
+      description: `From ${canonicalPipelineStage(previousStage)}`,
       action: {
         label: "Undo",
         onClick: () => {
