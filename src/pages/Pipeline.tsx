@@ -170,6 +170,28 @@ function ReadOnlyRecord({ title, description, details }: { title: string; descri
   );
 }
 
+function CompactActivityTimeline({ events }: { events: { title: string; timestamp: string; type: string; description?: string; isBlocker?: boolean }[] }) {
+  return (
+    <div className="space-y-2">
+      {events.map((event, index) => (
+        <div key={`${event.title}-${event.timestamp}-${index}`} className="flex gap-3 rounded-md border border-border/60 bg-background p-3">
+          <div className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md", event.isBlocker ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
+            {event.isBlocker ? <AlertCircle className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">{event.title}</p>
+              <span className="shrink-0 text-[11px] text-muted-foreground">{formatTimelineDate(event.timestamp)}</span>
+            </div>
+            {event.description && <p className="mt-1 text-xs text-muted-foreground">{event.description}</p>}
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{event.type}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drilldown: Drilldown; onOpenClient: () => void; onOpenWorkspace: (path: string) => void }) {
   const { client, stage } = drilldown;
   const sectionKey = stageToSection.get(stage) ?? "clientSetup";
@@ -177,6 +199,7 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
   const alert = getClientAlert(client);
   const context = getStageContext(client, sectionKey);
   const relatedRecords = getRelatedRecords(client, sectionKey);
+  const activityEvents = getStageActivity(client, sectionKey);
 
   return (
     <div className="mt-6 space-y-4">
@@ -211,6 +234,16 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
         </div>
         <div className="mt-3 space-y-2">
           {relatedRecords.map((record) => <ReadOnlyRecord key={record.title} {...record} />)}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-foreground">Stage activity</h3>
+          <span className="text-xs text-muted-foreground">Recent events</span>
+        </div>
+        <div className="mt-3">
+          <CompactActivityTimeline events={activityEvents} />
         </div>
       </div>
 
