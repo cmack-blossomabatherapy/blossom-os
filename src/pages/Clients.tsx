@@ -13,7 +13,7 @@ import { ConvertLeadDialog } from "@/components/clients/ConvertLeadDialog";
 import { ClientKpiKey, clientKpiFilters, ClientStage, clientStages } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
-import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
+import { canonicalPipelineStage, getNextPipelineStage, masterPipelineSections, type PipelineSectionKey } from "@/data/pipeline";
 
 const exportToCsv = (rows: Record<string, unknown>[], filename: string) => {
   if (!rows.length) return;
@@ -36,7 +36,9 @@ export default function Clients() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { clients, moveStage, assignBcba, assignRbt, setStartDate, deleteClients } = useClients();
 
-  const [viewMode, setViewMode] = useState<ClientViewMode>("table");
+  const requestedPipeline = searchParams.get("pipeline") as PipelineSectionKey | null;
+  const requestedView = searchParams.get("view") as ClientViewMode | null;
+  const [viewMode, setViewMode] = useState<ClientViewMode>(requestedView ?? "table");
   const [activeView, setActiveView] = useState("all");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "");
   const [filters, setFilters] = useState<ClientFilters>(emptyClientFilters);
@@ -50,6 +52,8 @@ export default function Clients() {
   useEffect(() => {
     const q = searchParams.get("q");
     if (q !== null && q !== searchQuery) setSearchQuery(q);
+    const view = searchParams.get("view") as ClientViewMode | null;
+    if (view && view !== viewMode) setViewMode(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -97,6 +101,12 @@ export default function Clients() {
     if (filters.qaStatuses.length) result = result.filter((c) => filters.qaStatuses.includes(c.qaStatus));
     if (filters.payors.length) result = result.filter((c) => filters.payors.includes(c.payor));
 
+    if (requestedPipeline) {
+      const section = masterPipelineSections.find((s) => s.key === requestedPipeline);
+      const sectionStages = new Set(section?.stages.map((stage) => stage.name) ?? []);
+      result = result.filter((c) => sectionStages.has(canonicalPipelineStage(c.stage)));
+    }
+
     if (activeKpi) {
       result = result.filter(clientKpiFilters[activeKpi]);
     } else {
@@ -134,7 +144,7 @@ export default function Clients() {
     }
 
     return result;
-  }, [clients, searchQuery, filters, activeView, activeKpi, sortField, sortDir]);
+  }, [clients, searchQuery, filters, requestedPipeline, activeView, activeKpi, sortField, sortDir]);
 
   const handleKpi = (key: ClientKpiKey) => {
     setActiveKpi(activeKpi === key ? null : key);
