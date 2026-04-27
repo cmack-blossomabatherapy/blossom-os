@@ -70,8 +70,9 @@ export default function Training() {
   async function createCourse() {
     if (!name.trim()) { toast.error("Name is required."); return; }
     const { error } = await supabase.from("training_courses").insert({
-      name: name.trim(), category, provider: provider.trim() || null,
+      name: name.trim(), title: name.trim(), category, provider: provider.trim() || null,
       description: desc.trim() || null,
+      estimated_minutes: renewal ? parseInt(renewal) : 15,
       renewal_months: renewal ? parseInt(renewal) : null,
     });
     if (error) { toast.error(error.message); return; }
