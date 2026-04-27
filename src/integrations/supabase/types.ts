@@ -2550,6 +2550,7 @@ export type Database = {
         | "Reauth Submitted"
         | "Reauth Approved"
         | "Pending Initial Authorization"
+        | "Can Not Submit Auth"
       employee_status:
         | "pending_start"
         | "active"
@@ -2999,6 +3000,7 @@ export const Constants = {
         "Reauth Submitted",
         "Reauth Approved",
         "Pending Initial Authorization",
+        "Can Not Submit Auth",
       ],
       employee_status: [
         "pending_start",
