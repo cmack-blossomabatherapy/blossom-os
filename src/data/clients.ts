@@ -165,12 +165,13 @@ export const qaVariant = (s: QAStatus): "default" | "success" | "warning" | "mut
 };
 
 export const getClientAlert = (c: Client): { type: "red" | "yellow"; message: string } | null => {
-  if (!c.bcba) return { type: "red", message: "No BCBA assigned" };
-  if (c.stage === "Pending Initial Auth" && c.authStatus === "Not Submitted") return { type: "red", message: "Auth not submitted" };
+  const stage = canonicalPipelineStage(c.stage);
+  if (!c.bcba && getLifecycleProgress(c).some(Boolean)) return { type: "red", message: "No BCBA assigned" };
+  if (stage === "Initial Auth – Awaiting Submission" && c.authStatus === "Not Submitted") return { type: "red", message: "Auth not submitted" };
   if (c.stage === "Schedule Assessment" && c.daysInStage >= 5) return { type: "yellow", message: "Assessment not scheduled" };
   if (c.stage === "Staffing Needed" && c.daysInStage >= 5) return { type: "red", message: `Staffing needed ${c.daysInStage}d` };
   if (c.stage === "Pending Start Date" && !c.startDate) return { type: "red", message: "Start date missing" };
-  if (c.stage === "Pending Treatment Auth" && c.daysInStage >= 7) return { type: "yellow", message: `Auth pending ${c.daysInStage}d` };
+  if (stage === "Treatment Auth – Awaiting Submission" && c.daysInStage >= 7) return { type: "yellow", message: `Auth pending ${c.daysInStage}d` };
   return null;
 };
 
@@ -189,11 +190,11 @@ export const lifecycleSteps = [
 
 export const getLifecycleProgress = (c: Client): boolean[] => {
   const stageOrder: ClientStage[] = [
-    "BCBA Assignment", "Pending Initial Auth", "Waiting on Consent Forms",
-    "Schedule Assessment", "Assessment Scheduled", "In QA",
-    "Pending Treatment Auth", "Staffing Needed", "Pending Start Date", "Active",
+    "BCBA Assignment", "Initial Auth – Awaiting Submission", "Waiting on Consent",
+    "Schedule Assessment", "Assessment Scheduled", "QA Review",
+    "Treatment Auth – Awaiting Submission", "Staffing Needed", "Pending Start Date", "Active",
   ];
-  const idx = stageOrder.indexOf(c.stage);
+  const idx = stageOrder.indexOf(canonicalPipelineStage(c.stage) as ClientStage);
   // step i is done if we are PAST stage i
   return lifecycleSteps.map((_, i) => idx > i || c.stage === "Active");
 };
