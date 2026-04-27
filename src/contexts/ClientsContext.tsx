@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { supabase } from "@/integrations/supabase/client";
 import {
   Client, ClientStage, ClientTask, ClientTimelineEvent, AuthorizationRecord,
-  ScheduleSlot, AuthStatus, StaffingStatus, QAStatus,
+  ScheduleSlot, AuthStatus, StaffingStatus, QAStatus, ClientSchedulingStatus,
 } from "@/data/clients";
 import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,6 +70,11 @@ interface DbClient {
   next_task_due: string | null;
   assessment_date: string | null;
   start_date: string | null;
+  scheduling_status?: ClientSchedulingStatus;
+  case_coordination_document_generated?: boolean;
+  pairing_email_sent?: boolean;
+  scheduling_notes?: string | null;
+  centralreach_sync_status?: string;
   stage_entered_at: string;
   vob_completed_at: string | null;
   blockers: string[];
@@ -112,6 +117,11 @@ const buildClient = (
   daysToStart: c.start_date ? daysUntil(c.start_date) : null,
   assessmentDate: c.assessment_date,
   startDate: c.start_date,
+  schedulingStatus: ((c as Row<DbClient>).scheduling_status as ClientSchedulingStatus | undefined) ?? "Pending Schedule",
+  caseCoordinationDocumentGenerated: Boolean((c as Row<DbClient>).case_coordination_document_generated),
+  pairingEmailSent: Boolean((c as Row<DbClient>).pairing_email_sent),
+  schedulingNotes: ((c as Row<DbClient>).scheduling_notes as string | null | undefined) ?? null,
+  centralReachSyncStatus: ((c as Row<DbClient>).centralreach_sync_status as string | undefined) ?? "Not Synced",
   nextAction: c.next_action ?? "",
   nextTaskDue: c.next_task_due,
   lastActivity: timeline[0]?.description ?? "—",
@@ -159,7 +169,7 @@ const buildClient = (
     daysInStage: daysBetween(a.stage_entered_at),
     progressReportStatus: (((a as Row<DbAuth>).progress_report_status as "Not Started" | "In Progress" | "Received" | undefined) ?? "Not Started"),
   })) as AuthorizationRecord[],
-  schedule: slots.map((s) => ({ day: s.day, start: s.start_time, end: s.end_time, rbt: s.rbt ?? undefined })),
+  schedule: slots.map((s) => ({ day: s.day, start: s.start_time, end: s.end_time, rbt: s.rbt ?? undefined, location: ((s as Row<typeof s>).location as ScheduleSlot["location"] | undefined) ?? "Clinic", notes: ((s as Row<typeof s>).notes as string | undefined) })),
   tasks: tasks.map((t) => ({ id: t.id, title: t.title, completed: t.completed, dueDate: t.due_date ?? undefined })),
   timeline: timeline.map((t) => ({ id: t.id, type: t.event_type, description: t.description, timestamp: t.created_at, user: t.user_name ?? undefined })),
   documents: docs.map((d) => ({ name: d.name, type: d.type })),
@@ -196,6 +206,11 @@ const clientPatchToDb = (patch: Partial<Client>): Record<string, unknown> => {
   if (patch.nextTaskDue !== undefined) out.next_task_due = patch.nextTaskDue;
   if (patch.assessmentDate !== undefined) out.assessment_date = patch.assessmentDate;
   if (patch.startDate !== undefined) out.start_date = patch.startDate;
+  if (patch.schedulingStatus !== undefined) out.scheduling_status = patch.schedulingStatus;
+  if (patch.caseCoordinationDocumentGenerated !== undefined) out.case_coordination_document_generated = patch.caseCoordinationDocumentGenerated;
+  if (patch.pairingEmailSent !== undefined) out.pairing_email_sent = patch.pairingEmailSent;
+  if (patch.schedulingNotes !== undefined) out.scheduling_notes = patch.schedulingNotes;
+  if (patch.centralReachSyncStatus !== undefined) out.centralreach_sync_status = patch.centralReachSyncStatus;
   if (patch.blockers !== undefined) out.blockers = patch.blockers;
   if (patch.automationLog !== undefined) out.automation_log = patch.automationLog;
   if (patch.staffingHistory !== undefined) out.staffing_history = patch.staffingHistory;
