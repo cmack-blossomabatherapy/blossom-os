@@ -13,6 +13,7 @@ import { canonicalPipelineStage, masterPipelineSections } from "@/data/pipeline"
 import { cn } from "@/lib/utils";
 
 const ALL = "all";
+type Drilldown = { client: Client; stage: string };
 
 const lifecycleLabels: Record<string, string> = {
   financial: "Financial",
@@ -35,7 +36,7 @@ export default function Pipeline() {
   const [query, setQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState(ALL);
   const [clinicFilter, setClinicFilter] = useState(ALL);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
 
   const clinics = useMemo(() => Array.from(new Set(clients.map((client) => client.clinic))).sort(), [clients]);
 
@@ -52,7 +53,6 @@ export default function Pipeline() {
 
   const urgentCount = filteredClients.filter((client) => client.daysInStage >= 7 || getClientAlert(client)).length;
   const activeCount = filteredClients.filter((client) => canonicalPipelineStage(client.stage) === "Active").length;
-  const needsWorkCount = filteredClients.filter((client) => client.nextAction && client.nextAction !== "Monitor").length;
 
   return (
     <PageShell title="Pipeline" description="Read-only lifecycle tracker for every client from intake through reauth" icon={Workflow}>
@@ -104,7 +104,7 @@ export default function Pipeline() {
                   {sectionClients.map((client) => {
                     const alert = getClientAlert(client);
                     return (
-                      <button key={client.id} onClick={() => setSelectedClient(client)} className="w-full rounded-md border border-border/60 bg-background p-3 text-left transition-colors hover:bg-muted/40">
+                      <button key={client.id} onClick={() => setDrilldown({ client, stage: canonicalPipelineStage(client.stage) })} className="w-full rounded-md border border-border/60 bg-background p-3 text-left transition-colors hover:bg-muted/40">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-foreground">{client.childName}</p>
@@ -124,35 +124,15 @@ export default function Pipeline() {
         </div>
       </div>
 
-      <Sheet open={Boolean(selectedClient)} onOpenChange={(open) => !open && setSelectedClient(null)}>
+      <Sheet open={Boolean(drilldown)} onOpenChange={(open) => !open && setDrilldown(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          {selectedClient && (
+          {drilldown && (
             <>
               <SheetHeader>
-                <SheetTitle>{selectedClient.childName}</SheetTitle>
-                <SheetDescription>{selectedClient.parentName} · {selectedClient.id}</SheetDescription>
+                <SheetTitle>{drilldown.client.childName}</SheetTitle>
+                <SheetDescription>{drilldown.client.parentName} · {drilldown.client.id}</SheetDescription>
               </SheetHeader>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-lg border border-border/60 bg-card p-4">
-                  <StatusBadge status={canonicalPipelineStage(selectedClient.stage)} variant={stageVariant(selectedClient.stage)} />
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <Info label="Clinic" value={selectedClient.clinic} />
-                    <Info label="Payor" value={selectedClient.payor} />
-                    <Info label="BCBA" value={selectedClient.bcba || "Unassigned"} />
-                    <Info label="RBT" value={selectedClient.rbt || "Unassigned"} />
-                    <Info label="Next action" value={selectedClient.nextAction || "—"} />
-                    <Info label="Open tasks" value={String(selectedClient.tasks.filter((task) => !task.completed).length)} />
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <MiniStat label="Authorizations" value={selectedClient.authorizations.length} icon={ShieldCheck} />
-                  <MiniStat label="Schedule blocks" value={selectedClient.schedule.length} icon={Calendar} />
-                  <MiniStat label="Days in stage" value={selectedClient.daysInStage} icon={Clock} />
-                </div>
-                <Button className="w-full" onClick={() => navigate(`/clients/${selectedClient.id}`)}>
-                  <ExternalLink className="mr-2 h-4 w-4" /> Open client record
-                </Button>
-              </div>
+              <PipelineDrilldown drilldown={drilldown} onOpenClient={() => navigate(`/clients/${drilldown.client.id}`)} onOpenWorkspace={(path) => navigate(path)} />
             </>
           )}
         </SheetContent>
