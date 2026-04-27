@@ -37,11 +37,11 @@ export function AppLayout() {
   const title = pageTitles[location.pathname] || "Blossom ABA";
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:flex-row">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={title} />
-        <main className="flex-1 overflow-auto p-6">
+        <main className="mobile-page flex-1 overflow-auto px-3 pb-28 pt-4 md:p-6">
           <Outlet />
         </main>
       </div>
