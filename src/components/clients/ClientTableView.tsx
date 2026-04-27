@@ -39,7 +39,9 @@ export function ClientTableView({
     { label: "Staffing", field: null },
     { label: "QA", field: null },
     { label: "Days", field: "daysInStage", w: "w-[55px]" },
+    { label: "Sched", field: null },
     { label: "Start Date", field: "startDate", w: "w-[90px]" },
+    { label: "Records", field: null },
     { label: "Next Action", field: null },
     { label: "Alerts", field: null, w: "w-[40px]" },
   ];
@@ -130,7 +132,9 @@ export function ClientTableView({
                       {c.daysInStage}d
                     </span>
                   </td>
+                  <td className="px-3 py-2.5"><StatusBadge status={c.schedulingStatus ?? (c.schedule.length ? "Schedule Created" : "Pending Schedule")} variant={c.schedule.length ? "success" : "warning"} /></td>
                   <td className="px-3 py-2.5 text-muted-foreground text-xs whitespace-nowrap">{c.startDate || <span className="text-muted-foreground/60">—</span>}</td>
+                  <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{c.authorizations.length} auth · {c.schedule.length} blocks · {c.documents.length} docs</td>
                   <td className="px-3 py-2.5 text-xs text-muted-foreground max-w-[180px] truncate">{c.nextAction}</td>
                   <td className="px-3 py-2.5">
                     {alert && (
