@@ -80,6 +80,7 @@ const navSections: { title?: string; items: NavItem[] }[] = [
   {
     title: "Intelligence",
     items: [
+      { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
     ],
@@ -101,7 +102,8 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews",      icon: Star,           path: "/hr/reviews",   perm: "hr.reviews.view" },
-    { label: "Training",     icon: GraduationCap,  path: "/hr/training",  perm: "hr.training.view" },
+    { label: "Training Dashboard", icon: GraduationCap, path: "/hr/training-dashboard", perm: "hr.training.view" },
+    { label: "Training Admin", icon: GraduationCap, path: "/hr/training", perm: "hr.training.view" },
     { label: "Time Clock",   icon: Timer,          path: "/hr/time-clock", perm: "hr.timeclock.view" },
     { label: "Hours",        icon: FileSpreadsheet,path: "/hr/hours",      perm: "hr.hours.view" },
     { label: "Payroll",      icon: Wallet,         path: "/hr/payroll",   perm: "hr.payroll.runs.view" },
@@ -126,7 +128,7 @@ export function AppSidebar() {
   const sections = allSections
     .map((s) => ({
       ...s,
-      items: s.items.filter((item) => (!item.superAdminOnly || isAdmin) && hasPerm(item.perm)),
+        items: s.items.filter((item) => (!item.superAdminOnly || isAdmin) && (!item.perm || hasPerm(item.perm))),
     }))
     .filter((s) => s.items.length > 0);
 

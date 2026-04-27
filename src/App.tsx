@@ -35,6 +35,9 @@ import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
 import HRDashboard from "./pages/hr/HRDashboard";
+import TrainingHub from "./pages/TrainingHub";
+import TrainingDepartment from "./pages/TrainingDepartment";
+import TrainingCourse from "./pages/TrainingCourse";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
@@ -49,6 +52,7 @@ import Announcements from "./pages/hr/Announcements";
 import ResourceHub from "./pages/hr/ResourceHub";
 import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
+import TrainingDashboard from "./pages/hr/TrainingDashboard";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
 import IntakeDashboard from "./pages/IntakeDashboard";
 import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
@@ -99,6 +103,9 @@ const App = () => (
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/automations" element={<Automations />} />
+                  <Route path="/training" element={<TrainingHub />} />
+                  <Route path="/training/department/:slug" element={<TrainingDepartment />} />
+                  <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/team" element={<PermissionRoute permission="team.view"><Team /></PermissionRoute>} />
                   <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
                   <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
@@ -111,6 +118,7 @@ const App = () => (
                   <Route path="/hr/kiosk" element={<PermissionRoute permission="hr.timeclock.kiosk"><TimeClockKiosk /></PermissionRoute>} />
                   <Route path="/hr/reviews" element={<PermissionRoute permission="hr.reviews.view"><Reviews /></PermissionRoute>} />
                   <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view"><Training /></PermissionRoute>} />
+                  <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view"><TrainingDashboard /></PermissionRoute>} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
