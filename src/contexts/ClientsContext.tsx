@@ -364,12 +364,16 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
       const advance = canonicalPipelineStage(c?.stage ?? "") === "BCBA Assignment";
-      const nextLog = [...(c?.automationLog ?? []), `BCBA assigned: ${bcba}`];
+      const blocked = Boolean(c?.paymentPlanRequired && !c.paymentPlanSigned);
+      const nextLog = [...(c?.automationLog ?? []), `BCBA assigned: ${bcba}`, ...(blocked ? ["Progression blocked: payment plan not signed"] : ["Moved to Pending Initial Authorization"] )];
       await supabase.from("clients").update({
-        bcba, automation_log: nextLog,
-        ...(advance ? { stage: "Pending Initial Authorization" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
+        bcba,
+        ready_for_auth: !blocked,
+        blockers: blocked ? Array.from(new Set([...(c?.blockers ?? []), "Payment plan not signed"])) : (c?.blockers ?? []).filter((blocker) => blocker !== "No BCBA assigned"),
+        automation_log: nextLog,
+        ...(advance && !blocked ? { stage: "Pending Initial Authorization" as ClientStage, stage_entered_at: new Date().toISOString(), auth_status: "Not Submitted" as AuthStatus, next_action: "Submit Initial Auth" } : {}),
       } as never).eq("id", id);
-      await insertTimeline(id, `BCBA ${bcba} assigned`, "staffing");
+      await insertTimeline(id, blocked ? `BCBA ${bcba} assigned — payment plan blocks auth handoff` : `BCBA ${bcba} assigned — moved to Pending Initial Authorization`, "staffing");
     }
   }, [clients, user]);
 
