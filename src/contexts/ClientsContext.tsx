@@ -315,16 +315,17 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const refetch = useCallback(async () => {
     if (!user) { setClients([]); setLoading(false); return; }
     setLoading(true);
-    const [c, t, d, tl, a, s] = await Promise.all([
+    const [c, t, d, tl, a, s, r] = await Promise.all([
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("client_tasks").select("*").order("position", { ascending: true }),
       supabase.from("client_documents").select("*").order("created_at", { ascending: false }),
       supabase.from("client_timeline").select("*").order("created_at", { ascending: false }),
       supabase.from("client_authorizations").select("*").order("created_at", { ascending: true }),
       supabase.from("client_schedule_slots").select("*").order("day", { ascending: true }),
+      supabase.from("client_reauth_cycles" as never).select("*").order("current_auth_expiration_date", { ascending: true }),
     ]);
-    if (c.error || t.error || d.error || tl.error || a.error || s.error) {
-      console.error("Clients fetch error", { c: c.error, t: t.error, d: d.error, tl: tl.error, a: a.error, s: s.error });
+    if (c.error || t.error || d.error || tl.error || a.error || s.error || r.error) {
+      console.error("Clients fetch error", { c: c.error, t: t.error, d: d.error, tl: tl.error, a: a.error, s: s.error, r: r.error });
       setClients([]);
       setLoading(false);
       return;
@@ -335,6 +336,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
     const timeline = (tl.data ?? []) as unknown as DbTimeline[];
     const auths = (a.data ?? []) as unknown as DbAuth[];
     const slots = (s.data ?? []) as unknown as DbSlot[];
+    const reauths = (r.data ?? []) as unknown as DbReauth[];
 
     const built = dbClients.map((row) =>
       buildClient(
@@ -344,6 +346,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
         timeline.filter((x) => x.client_id === row.id),
         auths.filter((x) => x.client_id === row.id),
         slots.filter((x) => x.client_id === row.id),
+        reauths.filter((x) => x.client_id === row.id),
       ),
     );
     setClients(built);
@@ -366,6 +369,7 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
       .on("postgres_changes", { event: "*", schema: "public", table: "client_timeline" }, () => void refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "client_authorizations" }, () => void refetch())
       .on("postgres_changes", { event: "*", schema: "public", table: "client_schedule_slots" }, () => void refetch())
+      .on("postgres_changes", { event: "*", schema: "public", table: "client_reauth_cycles" }, () => void refetch())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [user, refetch]);
