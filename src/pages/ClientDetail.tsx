@@ -40,6 +40,9 @@ const tlIcons: Record<string, React.ReactNode> = {
   qa: <CheckCircle2 className="h-3.5 w-3.5" />,
   note: <FileText className="h-3.5 w-3.5" />,
   stage: <ArrowRight className="h-3.5 w-3.5" />,
+  call: <Phone className="h-3.5 w-3.5" />,
+  document: <FileIcon className="h-3.5 w-3.5" />,
+  task: <Circle className="h-3.5 w-3.5" />,
 };
 
 const dayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
