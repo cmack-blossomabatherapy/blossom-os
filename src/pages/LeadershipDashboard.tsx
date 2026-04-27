@@ -226,9 +226,10 @@ export default function LeadershipDashboard() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Live dashboard data could not be loaded.";
       setLoadError(message);
-      setClientRows([]);
-      setAuthRows([]);
-      setTimesheetRows([]);
+      const demo = demoLeadershipRows();
+      setClientRows(demo.clients);
+      setAuthRows(demo.auths);
+      setTimesheetRows(demo.timesheets);
     } finally {
       setLoading(false);
     }
@@ -238,7 +239,11 @@ export default function LeadershipDashboard() {
     void load();
   }, [load]);
 
-  const live = useMemo(() => buildLiveDashboard(clientRows, authRows, timesheetRows), [authRows, clientRows, timesheetRows]);
+  const dashboardRows = useMemo(() => {
+    if (clientRows.length > 0) return { clients: clientRows, auths: authRows, timesheets: timesheetRows };
+    return demoLeadershipRows();
+  }, [authRows, clientRows, timesheetRows]);
+  const live = useMemo(() => buildLiveDashboard(dashboardRows.clients, dashboardRows.auths, dashboardRows.timesheets), [dashboardRows]);
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
   const clinicNames = ["All Clinics", ...Array.from(new Set(live.clinics.map((clinic) => clinic.clinic))).filter(Boolean)];
   const insuranceNames = ["All Insurance", ...Array.from(new Set(live.clientRecords.map((client) => client.insurance))).filter((item) => item && item !== "—")];
@@ -307,7 +312,8 @@ export default function LeadershipDashboard() {
         )}
       </header>
 
-      {loadError ? <DashboardErrorState message={loadError} onRetry={load} /> : loading || live.clientRecords.length === 0 ? <DashboardLoadingState isSyncingFirstData={!loading} /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
+      {loadError && <DashboardDemoNotice message={loadError} onRetry={load} />}
+      {loading ? <DashboardLoadingState /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
     </div>
   );
 }
