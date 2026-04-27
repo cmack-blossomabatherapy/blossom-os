@@ -17,6 +17,8 @@ interface AuthContextValue {
   isAdmin: boolean;
   canEdit: boolean;
   mustChangePassword: boolean;
+  partOfLeadership: boolean;
+  dashboardAccess: string | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -33,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ownedLeadStages, setOwnedLeadStages] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [partOfLeadership, setPartOfLeadership] = useState(false);
+  const [dashboardAccess, setDashboardAccess] = useState<string | null>(null);
 
   useEffect(() => {
     // Subscribe FIRST to avoid missing the initial event
@@ -51,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setOwnedClientStages(new Set());
           setOwnedLeadStages(new Set());
         setMustChangePassword(false);
+        setPartOfLeadership(false);
+        setDashboardAccess(null);
       }
     });
 
@@ -106,10 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfileFlag = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("must_change_password")
+      .select("must_change_password, part_of_leadership, dashboard_access")
       .eq("user_id", userId)
       .maybeSingle();
-    if (!error && data) setMustChangePassword(!!data.must_change_password);
+    if (!error && data) {
+      setMustChangePassword(!!data.must_change_password);
+      setPartOfLeadership(!!data.part_of_leadership);
+      setDashboardAccess(data.dashboard_access ?? null);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -121,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setRoles([]);
     setMustChangePassword(false);
+    setPartOfLeadership(false);
+    setDashboardAccess(null);
   };
 
   const updatePassword = async (newPassword: string) => {
@@ -138,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AuthContextValue>(() => ({
-    session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword,
+    session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword, partOfLeadership, dashboardAccess,
     isAdmin: roles.includes("admin"),
     canEdit:
       roles.includes("admin") ||
@@ -156,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles.includes("ops_manager") ||
       ownedLeadStages.has(stage),
     signIn, signOut, updatePassword,
-  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword]);
+  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword, partOfLeadership, dashboardAccess]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
