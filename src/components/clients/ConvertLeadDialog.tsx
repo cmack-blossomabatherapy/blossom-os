@@ -57,7 +57,20 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
     }
     const lead: Lead = selectedLead;
     const now = new Date().toISOString();
-    const paymentPlan = lead.vobStatus === "Payment Plan Required" || lead.paymentPlanNeeded;
+    const paymentPlan = lead.financialStatus === "Payment Plan Required" || lead.vobStatus === "Payment Plan Required" || lead.paymentPlanNeeded;
+    const approved = lead.financialStatus === "Approved" || lead.paymentPlanSigned;
+    const missingRequired = [lead.childName, lead.parentName, lead.phone, lead.email, lead.state, lead.insurance || lead.payor].some((value) => !value);
+
+    if (!approved && !lead.paymentPlanSigned) {
+      toast.error("Lead is not qualified for conversion", { description: "Financial approval or a signed payment plan is required." });
+      return;
+    }
+    if (missingRequired) {
+      toast.error("Missing lead data", { description: "Send this record back to Intake before conversion." });
+      return;
+    }
+    const duplicate = clients.find((client) => client.childName.toLowerCase() === lead.childName.toLowerCase() || client.phone === lead.phone || client.email === lead.email);
+    if (duplicate && !window.confirm(`Possible duplicate: ${duplicate.childName}. Create a new client anyway?`)) return;
 
     const tasks = paymentPlan
       ? [
@@ -70,8 +83,11 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
         ];
 
     const draft: Omit<Client, "id"> = {
+      leadId: lead.id,
       childName: lead.childName,
       parentName: lead.parentName,
+      phone: lead.phone,
+      email: lead.email,
       childAge: lead.childAge,
       state: lead.state,
       clinic,
@@ -92,7 +108,14 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
       nextTaskDue: now.split("T")[0],
       lastActivity: "Converted from Leads",
       payor: lead.payor || lead.insurance,
-      blockers: ["No BCBA assigned"],
+      insurance: lead.primaryInsurance || lead.insurance,
+      paymentPlanStatus: lead.paymentPlanStatus,
+      paymentPlanRequired: paymentPlan,
+      paymentPlanSigned: lead.paymentPlanSigned,
+      readyForAuth: false,
+      consentRequired: true,
+      consentComplete: lead.consentStatus === "Complete" || lead.consentStatus === "Completed",
+      blockers: ["No BCBA assigned", ...(paymentPlan && !lead.paymentPlanSigned ? ["Payment plan not signed"] : []), ...((lead.consentStatus === "Complete" || lead.consentStatus === "Completed") ? [] : ["Missing consent forms"])],
       authorizations: [
         { type: "Initial", status: "Not Submitted" },
         { type: "Treatment", status: "Not Submitted" },
@@ -102,9 +125,13 @@ export function ConvertLeadDialog({ open, onOpenChange, onCreated }: ConvertLead
       timeline: [
         { id: "ct-tl1", type: "system", description: `Converted from lead ${lead.id} (VOB ${lead.vobStatus})`, timestamp: now, user: "You" },
       ],
-      documents: [],
+      documents: [
+        ...lead.documents.map((document) => ({ name: document.name, type: document.type })),
+        ...(lead.vobFile ? [{ name: lead.vobFile.name, type: "VOB File" }] : []),
+      ],
       automationLog: [
         `Converted from lead ${lead.id}`,
+        "Lead archived as source record",
         paymentPlan ? "Payment plan tasks created" : "Standard intake tasks created",
         "Awaiting BCBA assignment",
       ],
