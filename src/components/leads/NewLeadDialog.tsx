@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lead, LeadSource, Priority } from "@/data/leads";
+import { defaultFinancialFields, Lead, LeadSource, Priority } from "@/data/leads";
 import { useLeads } from "@/contexts/LeadsContext";
 import { toast } from "sonner";
 
@@ -75,6 +75,7 @@ export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogPr
       formReviewStatus: "Pending",
       insurance: form.insurance.trim(),
       insuranceType: form.insuranceType,
+      ...defaultFinancialFields(form.insurance.trim()),
       createdAt: now,
       updatedAt: now,
       lastContacted: null,
