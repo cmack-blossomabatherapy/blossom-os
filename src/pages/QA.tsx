@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, ClipboardCheck, FileWarning, Gauge, ListChecks, RefreshCw, ShieldCheck, Stethoscope, UserCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardCheck, ExternalLink, FileWarning, Gauge, ListChecks, RefreshCw, ShieldCheck, Stethoscope, UserCheck } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useClients } from "@/contexts/ClientsContext";
 import { Client } from "@/data/clients";
@@ -22,6 +24,7 @@ type QAErrorType = Database["public"]["Enums"]["qa_error_type"];
 type NoteMonitor = Database["public"]["Tables"]["qa_note_monitoring"]["Row"];
 type ViewKey = "all" | "awaiting" | "review" | "issues" | "ready" | "monitoring" | "performance";
 type QAItem = { review: QAReview | null; client: Client; missingRecord: boolean };
+const ALL = "all";
 
 const todayIso = () => new Date().toISOString().split("T")[0];
 const daysBetween = (date?: string | null) => date ? Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86400000)) : 0;
