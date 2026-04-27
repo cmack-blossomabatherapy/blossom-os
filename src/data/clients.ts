@@ -62,6 +62,9 @@ export type ActiveServiceStatus = "Active" | "Services on Pause" | "Flaked" | "D
 export type ActiveStaffingStatus = "Stable" | "Needs Restaffing" | "In Transition";
 export type NotesComplianceStatus = "Compliant" | "Needs Review" | "Flagged" | "Repeated Errors";
 export type BillingClaimStatus = "Current" | "Missing Sessions" | "Claims Issue" | "Delayed Billing";
+export type ReauthCycleStatus = "Not Started" | "BCBA Notified" | "In Progress" | "Report Received" | "QA Review" | "Submitted" | "Approved" | "Failed / Delayed";
+export type ReauthQAStatus = "Not Started" | "In Review" | "Passed" | "Failed";
+export type ReauthSubmissionStatus = "Not Submitted" | "Ready" | "Submitted" | "Approved" | "Denied";
 
 export interface ClientTask {
   id: string;
@@ -119,6 +122,34 @@ export interface ScheduleSlot {
   rbt?: string;
   location?: "Home" | "School" | "Clinic";
   notes?: string;
+}
+
+export interface ReauthCycle {
+  id: string;
+  clientId: string;
+  linkedAuthorizationId?: string | null;
+  payor: string;
+  currentAuthExpirationDate: string;
+  reauthTriggerDate: string;
+  bcba9WeekNotificationDate?: string | null;
+  bcba6WeekNotificationDate?: string | null;
+  progressReportDueDate?: string | null;
+  progressReportReceivedDate?: string | null;
+  qaReviewStartedDate?: string | null;
+  qaCompletedDate?: string | null;
+  submissionDate?: string | null;
+  approvalDate?: string | null;
+  status: ReauthCycleStatus;
+  qaStatus: ReauthQAStatus;
+  submissionStatus: ReauthSubmissionStatus;
+  assignedBcba?: string | null;
+  qaOwner?: string | null;
+  authorizationCoordinator?: string | null;
+  stateDirector?: string | null;
+  blockers: string[];
+  alerts: string[];
+  notes?: string | null;
+  daysInStage?: number;
 }
 
 export interface Client {
@@ -181,6 +212,7 @@ export interface Client {
   consentComplete?: boolean;
   blockers: string[];
   authorizations: AuthorizationRecord[];
+  reauthCycles?: ReauthCycle[];
   schedule: ScheduleSlot[];
   tasks: ClientTask[];
   timeline: ClientTimelineEvent[];
