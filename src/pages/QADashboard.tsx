@@ -117,7 +117,8 @@ const kpiAlertCopy = (key: KpiKey, records: QARecord[]) => {
 export default function QADashboard() {
   const [records, setRecords] = useState(recordsSeed);
   const [selected, setSelected] = useState<QARecord | null>(recordsSeed[0]);
-  const [kpiFilter, setKpiFilter] = useState<string | null>(null);
+  const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
+  const [kpiTable, setKpiTable] = useState<KpiKey | null>(null);
   const [filters, setFilters] = useState({ range: "30 days", state: ALL, owner: ALL, bcba: ALL, rbt: ALL, payor: ALL, status: ALL, stage: ALL, search: "" });
 
   const options = useMemo(() => ({
@@ -126,16 +127,7 @@ export default function QADashboard() {
 
   const filtered = useMemo(() => records.filter((r) => {
     const q = filters.search.toLowerCase().trim();
-    const kpiMatch = !kpiFilter ||
-      (kpiFilter === "awaiting" && r.qaStatus === "Awaiting Review") ||
-      (kpiFilter === "inReview" && r.qaStatus === "In Review") ||
-      (kpiFilter === "issues" && ["Issues Found", "Corrections Needed"].includes(r.qaStatus)) ||
-      (kpiFilter === "ready" && r.qaStatus === "Ready for Submission") ||
-      (kpiFilter === "overdue" && (r.qaStatus === "Overdue" || r.alerts.some((a) => a.includes("overdue")))) ||
-      (kpiFilter === "notes" && r.notesFlagged > 0) ||
-      (kpiFilter === "newRbt" && r.newRbt) ||
-      (kpiFilter === "turnaround" && r.daysInQA > 3);
-    return kpiMatch &&
+    return kpiMatches(kpiFilter, r) &&
       (filters.state === ALL || r.state === filters.state) &&
       (filters.owner === ALL || r.qaOwner === filters.owner) &&
       (filters.bcba === ALL || r.bcba === filters.bcba) &&
@@ -170,7 +162,7 @@ export default function QADashboard() {
 
   const markReady = (r: QARecord) => updateRecord(r.id, { qaStatus: "Ready for Submission", authStatus: "Awaiting Submission", authReadiness: "Ready", stage: "Pending Treatment Auth", nextAction: "Submit treatment authorization", alerts: r.alerts.filter((a) => !a.includes("blocking") && !a.includes("Missing")), checklist: { ...r.checklist, ready: true } }, "Marked ready for submission");
 
-  const kpis = [
+  const kpis: { key: KpiKey; label: string; value: string | number; sub: string; icon: typeof ClipboardCheck; tone: Health }[] = [
     { key: "awaiting", label: "Awaiting QA Review", value: metrics.awaiting, sub: "New plans waiting", icon: ClipboardCheck, tone: "warning" as Health },
     { key: "inReview", label: "In QA Review", value: metrics.inReview, sub: "Active reviews", icon: Eye, tone: "info" as Health },
     { key: "issues", label: "Issues Found", value: metrics.issues, sub: "Needs BCBA/RBT fixes", icon: ShieldAlert, tone: "destructive" as Health },
@@ -178,14 +170,18 @@ export default function QADashboard() {
     { key: "overdue", label: "Overdue Treatment Plans", value: metrics.overdue, sub: "Past 14-day SLA", icon: AlertTriangle, tone: "destructive" as Health },
     { key: "notes", label: "Notes Flagged", value: metrics.notes, sub: "NoteGuard + payer flags", icon: Flag, tone: "warning" as Health },
     { key: "newRbt", label: "New RBTs Monitored", value: metrics.newRbt, sub: "First 1–2 week support", icon: UserCheck, tone: "info" as Health },
-    { key: "turnaround", label: "Avg QA Turnaround", value: `${metrics.avgTurnaround}d`, sub: "Target under 3 days", icon: Timer, tone: metrics.avgTurnaround > 3 ? "warning" : "success" as Health },
+    { key: "turnaround", label: "Avg QA Turnaround", value: `${metrics.avgTurnaround}d`, sub: "Target under 3 days", icon: Timer, tone: metrics.avgTurnaround > 3 ? "warning" : "success" },
   ];
+
+  const kpiTableRows = useMemo(() => kpiTable ? records.filter((r) => kpiMatches(kpiTable, r)) : [], [kpiTable, records]);
+  const activeKpi = kpis.find((kpi) => kpi.key === kpiTable) ?? null;
 
   return <div className="space-y-6 animate-fade-in">
     <header className="space-y-4"><div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between"><div><h1 className="text-3xl font-semibold tracking-tight text-foreground">QA Dashboard</h1><p className="mt-1 text-sm text-muted-foreground">Treatment plan review, documentation quality, note compliance, and auth readiness.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => toast.success("QA dashboard refreshed")}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button><Button onClick={() => toast.success(`Exported ${filtered.length} QA rows`)}><Download className="mr-2 h-4 w-4" />Export</Button></div></div>
       <div className="sticky top-0 z-10 rounded-2xl border border-border/60 bg-card/95 p-3 shadow-sm backdrop-blur"><div className="grid gap-2 md:grid-cols-4 xl:grid-cols-8"><Select value={filters.range} onValueChange={(range) => setFilters({ ...filters, range })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["7 days", "30 days", "Quarter", "All time"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select><FilterSelect value={filters.state} values={options.states} onChange={(state) => setFilters({ ...filters, state })} placeholder="State" /><FilterSelect value={filters.owner} values={options.owners} onChange={(owner) => setFilters({ ...filters, owner })} placeholder="QA owner" /><FilterSelect value={filters.bcba} values={options.bcbas} onChange={(bcba) => setFilters({ ...filters, bcba })} placeholder="BCBA" /><FilterSelect value={filters.rbt} values={options.rbts} onChange={(rbt) => setFilters({ ...filters, rbt })} placeholder="RBT" /><FilterSelect value={filters.payor} values={options.payors} onChange={(payor) => setFilters({ ...filters, payor })} placeholder="Payor" /><FilterSelect value={filters.status} values={options.statuses} onChange={(status) => setFilters({ ...filters, status })} placeholder="QA status" /><FilterSelect value={filters.stage} values={options.stages} onChange={(stage) => setFilters({ ...filters, stage })} placeholder="Client stage" /></div><div className="relative mt-2"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} placeholder="Search clients, owners, issue types, payors..." className="pl-9" /></div></div></header>
 
-    <section className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">{kpis.map(({ key, label, value, sub, icon: Icon, tone }) => <button key={key} onClick={() => setKpiFilter(kpiFilter === key ? null : key)} className={cn("rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md", kpiFilter === key ? "border-primary/50 ring-2 ring-primary/15" : "border-border/60")}><div className="mb-3 flex items-center justify-between"><Icon className={cn("h-4 w-4", tone === "destructive" ? "text-destructive" : tone === "warning" ? "text-warning" : tone === "success" ? "text-success" : "text-primary")} /><span className={cn("h-2 w-2 rounded-full", tone === "destructive" ? "bg-destructive" : tone === "warning" ? "bg-warning" : tone === "success" ? "bg-success" : "bg-primary")} /></div><p className="text-2xl font-semibold text-foreground">{value}</p><p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{label}</p><p className="mt-1 text-[11px] text-muted-foreground">{sub}</p></button>)}</section>
+    <section className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">{kpis.map(({ key, label, value, sub, icon: Icon, tone }) => <button key={key} onClick={() => { setKpiFilter(key); setKpiTable(key); }} className={cn("rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md", kpiFilter === key ? "border-primary/50 ring-2 ring-primary/15" : "border-border/60")}><div className="mb-3 flex items-center justify-between"><Icon className={cn("h-4 w-4", tone === "destructive" ? "text-destructive" : tone === "warning" ? "text-warning" : tone === "success" ? "text-success" : "text-primary")} /><span className={cn("h-2 w-2 rounded-full", tone === "destructive" ? "bg-destructive" : tone === "warning" ? "bg-warning" : tone === "success" ? "bg-success" : "bg-primary")} /></div><p className="text-2xl font-semibold text-foreground">{value}</p><p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{label}</p><p className="mt-1 text-[11px] text-muted-foreground">{sub}</p></button>)}</section>
+    {activeKpi && <KpiRecordTable kpi={activeKpi} rows={kpiTableRows} onClose={() => { setKpiTable(null); setKpiFilter(null); }} onSelect={setSelected} onReady={markReady} updateRecord={updateRecord} />}
 
     <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"><ActionQueue records={filtered} onSelect={setSelected} onReady={markReady} updateRecord={updateRecord} /><ReadinessSnapshot records={records} /></section>
     <FlowBoard records={records} />
