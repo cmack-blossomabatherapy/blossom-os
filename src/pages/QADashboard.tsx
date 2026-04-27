@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, Bell, CalendarDays, CheckCircle2, ClipboardCheck, Download, Eye, FileCheck2, Filter, Flag, ListChecks, MessageSquare, RefreshCw, Search, ShieldAlert, ShieldCheck, Stethoscope, Timer, UserCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -171,7 +171,7 @@ export default function QADashboard() {
 
 function FilterSelect({ value, values, onChange, placeholder }: { value: string; values: string[]; onChange: (value: string) => void; placeholder: string }) { return <Select value={value} onValueChange={onChange}><SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger><SelectContent><SelectItem value={ALL}>{placeholder}: All</SelectItem>{values.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>; }
 
-function Panel({ title, icon: Icon, children, action }: { title: string; icon: typeof ClipboardCheck; children: React.ReactNode; action?: React.ReactNode }) { return <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /><h2 className="font-semibold text-foreground">{title}</h2></div>{action}</div><div className="p-4">{children}</div></section>; }
+function Panel({ title, icon: Icon, children, action }: { title: string; icon: typeof ClipboardCheck; children: ReactNode; action?: ReactNode }) { return <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div className="flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /><h2 className="font-semibold text-foreground">{title}</h2></div>{action}</div><div className="p-4">{children}</div></section>; }
 
 function ActionQueue({ records, onSelect, onReady, updateRecord }: { records: QARecord[]; onSelect: (r: QARecord) => void; onReady: (r: QARecord) => void; updateRecord: (id: string, patch: Partial<QARecord>, message: string) => void }) {
   const groups = [{ title: "Urgent Now", rows: records.filter((r) => r.alerts.length || r.qaStatus === "Overdue").slice(0, 6) }, { title: "Review Today", rows: records.filter((r) => ["Awaiting Review", "In Review"].includes(r.qaStatus)).slice(0, 5) }, { title: "Compliance Risks", rows: records.filter((r) => r.repeatNoteErrors > 1 || r.newRbt || r.issueType.includes("Missing")).slice(0, 5) }];
