@@ -302,6 +302,17 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
           client_id: newId, kind: a.type, status: a.status,
           submitted_date: a.submittedDate ?? null, approved_date: a.approvedDate ?? null,
           expiration_date: a.expirationDate ?? null, hours: a.hours ?? null, notes: a.notes ?? null,
+          payor: a.payor ?? client.payor,
+          state: a.state ?? client.state,
+          assigned_auth_coordinator: a.assignedAuthCoordinator ?? null,
+          qa_owner: a.qaOwner ?? null,
+          qa_status: a.qaStatus ?? "Not Started",
+          treatment_plan_received: a.treatmentPlanReceived ?? false,
+          required_docs_received: a.requiredDocsReceived ?? true,
+          missing_docs: a.missingDocs ?? [],
+          next_action: a.nextAction ?? "Submit Authorization",
+          blockers: a.blockers ?? [],
+          progress_report_status: a.progressReportStatus ?? "Not Started",
         })) as never,
       );
     }
