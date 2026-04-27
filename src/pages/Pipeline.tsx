@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Filter, Search, Workflow, ExternalLink, Clock, AlertCircle, UserCheck, ShieldCheck, Calendar, Users } from "lucide-react";
+import { Filter, Search, Workflow, ExternalLink, Clock, AlertCircle, UserCheck, ShieldCheck, Calendar, Users, ClipboardCheck } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,12 +153,30 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-foreground">{value}</p></div>;
 }
 
+function ReadOnlyRecord({ title, description, details }: { title: string; description?: string; details: { label: string; value: string }[] }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-background p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{title}</p>
+          {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
+        </div>
+        <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+        {details.map((detail) => <Info key={`${title}-${detail.label}`} label={detail.label} value={detail.value} />)}
+      </div>
+    </div>
+  );
+}
+
 function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drilldown: Drilldown; onOpenClient: () => void; onOpenWorkspace: (path: string) => void }) {
   const { client, stage } = drilldown;
   const sectionKey = stageToSection.get(stage) ?? "clientSetup";
   const openTasks = client.tasks.filter((task) => !task.completed);
   const alert = getClientAlert(client);
   const context = getStageContext(client, sectionKey);
+  const relatedRecords = getRelatedRecords(client, sectionKey);
 
   return (
     <div className="mt-6 space-y-4">
@@ -184,6 +202,16 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
         <MiniStat label="Open tasks" value={openTasks.length} icon={Clock} />
         <MiniStat label="Documents" value={client.documents.length} icon={ExternalLink} />
         <MiniStat label="Timeline" value={client.timeline.length} icon={Workflow} />
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-foreground">Key related records</h3>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground"><ClipboardCheck className="h-3.5 w-3.5" /> Read-only</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {relatedRecords.map((record) => <ReadOnlyRecord key={record.title} {...record} />)}
+        </div>
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card p-4">
