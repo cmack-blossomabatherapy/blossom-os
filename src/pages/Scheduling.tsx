@@ -44,7 +44,7 @@ export default function Scheduling() {
         );
         break;
       case "ready":
-        result = result.filter((i) => i.status === "Ready to Schedule");
+        result = result.filter((i) => i.status === "Pending Schedule");
         break;
       case "week":
         result = result.filter((i) => i.client.schedule.length > 0);
