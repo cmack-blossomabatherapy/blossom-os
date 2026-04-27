@@ -64,7 +64,7 @@ const pipelineSection: { title: string; items: NavItem[] } = {
   items: masterPipelineSections.map((section) => ({
     label: section.title,
     icon: pipelineIcons[section.key],
-    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : `/clients?pipeline=${section.key}&view=pipeline`,
+    path: section.key === "intake" ? "/leads?view=queue" : section.key === "financial" ? "/benefits-financial" : section.key === "clientSetup" ? "/client-onboarding" : section.key === "initialAuth" ? "/authorizations" : `/clients?pipeline=${section.key}&view=pipeline`,
     perm: section.key === "intake" || section.key === "financial" ? "leads.view" : "clients.view",
   })),
 };
@@ -166,6 +166,9 @@ export function AppSidebar() {
     }
     if (path.startsWith("/leads?")) {
       return location.pathname === "/leads";
+    }
+    if (path === "/authorizations") {
+      return location.pathname.startsWith("/authorizations");
     }
     return location.pathname === path || `${location.pathname}${location.search}` === path;
   };
