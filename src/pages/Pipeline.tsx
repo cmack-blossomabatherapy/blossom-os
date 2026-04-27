@@ -13,6 +13,7 @@ import { canonicalPipelineStage, masterPipelineSections } from "@/data/pipeline"
 import { cn } from "@/lib/utils";
 
 const ALL = "all";
+type Drilldown = { client: Client; stage: string };
 
 const lifecycleLabels: Record<string, string> = {
   financial: "Financial",
@@ -35,7 +36,7 @@ export default function Pipeline() {
   const [query, setQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState(ALL);
   const [clinicFilter, setClinicFilter] = useState(ALL);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [drilldown, setDrilldown] = useState<Drilldown | null>(null);
 
   const clinics = useMemo(() => Array.from(new Set(clients.map((client) => client.clinic))).sort(), [clients]);
 
@@ -52,7 +53,6 @@ export default function Pipeline() {
 
   const urgentCount = filteredClients.filter((client) => client.daysInStage >= 7 || getClientAlert(client)).length;
   const activeCount = filteredClients.filter((client) => canonicalPipelineStage(client.stage) === "Active").length;
-  const needsWorkCount = filteredClients.filter((client) => client.nextAction && client.nextAction !== "Monitor").length;
 
   return (
     <PageShell title="Pipeline" description="Read-only lifecycle tracker for every client from intake through reauth" icon={Workflow}>
@@ -104,7 +104,7 @@ export default function Pipeline() {
                   {sectionClients.map((client) => {
                     const alert = getClientAlert(client);
                     return (
-                      <button key={client.id} onClick={() => setSelectedClient(client)} className="w-full rounded-md border border-border/60 bg-background p-3 text-left transition-colors hover:bg-muted/40">
+                      <button key={client.id} onClick={() => setDrilldown({ client, stage: canonicalPipelineStage(client.stage) })} className="w-full rounded-md border border-border/60 bg-background p-3 text-left transition-colors hover:bg-muted/40">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-foreground">{client.childName}</p>
@@ -124,35 +124,15 @@ export default function Pipeline() {
         </div>
       </div>
 
-      <Sheet open={Boolean(selectedClient)} onOpenChange={(open) => !open && setSelectedClient(null)}>
+      <Sheet open={Boolean(drilldown)} onOpenChange={(open) => !open && setDrilldown(null)}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          {selectedClient && (
+          {drilldown && (
             <>
               <SheetHeader>
-                <SheetTitle>{selectedClient.childName}</SheetTitle>
-                <SheetDescription>{selectedClient.parentName} · {selectedClient.id}</SheetDescription>
+                <SheetTitle>{drilldown.client.childName}</SheetTitle>
+                <SheetDescription>{drilldown.client.parentName} · {drilldown.client.id}</SheetDescription>
               </SheetHeader>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-lg border border-border/60 bg-card p-4">
-                  <StatusBadge status={canonicalPipelineStage(selectedClient.stage)} variant={stageVariant(selectedClient.stage)} />
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <Info label="Clinic" value={selectedClient.clinic} />
-                    <Info label="Payor" value={selectedClient.payor} />
-                    <Info label="BCBA" value={selectedClient.bcba || "Unassigned"} />
-                    <Info label="RBT" value={selectedClient.rbt || "Unassigned"} />
-                    <Info label="Next action" value={selectedClient.nextAction || "—"} />
-                    <Info label="Open tasks" value={String(selectedClient.tasks.filter((task) => !task.completed).length)} />
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <MiniStat label="Authorizations" value={selectedClient.authorizations.length} icon={ShieldCheck} />
-                  <MiniStat label="Schedule blocks" value={selectedClient.schedule.length} icon={Calendar} />
-                  <MiniStat label="Days in stage" value={selectedClient.daysInStage} icon={Clock} />
-                </div>
-                <Button className="w-full" onClick={() => navigate(`/clients/${selectedClient.id}`)}>
-                  <ExternalLink className="mr-2 h-4 w-4" /> Open client record
-                </Button>
-              </div>
+              <PipelineDrilldown drilldown={drilldown} onOpenClient={() => navigate(`/clients/${drilldown.client.id}`)} onOpenWorkspace={(path) => navigate(path)} />
             </>
           )}
         </SheetContent>
@@ -171,4 +151,76 @@ function MiniStat({ label, value, icon: Icon }: { label: string; value: number; 
 
 function Info({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-foreground">{value}</p></div>;
+}
+
+function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drilldown: Drilldown; onOpenClient: () => void; onOpenWorkspace: (path: string) => void }) {
+  const { client, stage } = drilldown;
+  const sectionKey = stageToSection.get(stage) ?? "clientSetup";
+  const openTasks = client.tasks.filter((task) => !task.completed);
+  const alert = getClientAlert(client);
+  const context = getStageContext(client, sectionKey);
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Focused stage</p>
+            <StatusBadge status={stage} variant={stageVariant(client.stage)} />
+          </div>
+          <span className={cn("rounded-md px-2 py-1 text-xs font-semibold", client.daysInStage >= 7 ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>{client.daysInStage} days</span>
+        </div>
+        {alert && <p className="mt-3 flex items-center gap-1.5 rounded-md bg-destructive/10 px-2.5 py-2 text-xs font-medium text-destructive"><AlertCircle className="h-3.5 w-3.5" />{alert.message}</p>}
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <h3 className="text-sm font-semibold text-foreground">Read-only stage context</h3>
+        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+          {context.map((item) => <Info key={item.label} label={item.label} value={item.value} />)}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <MiniStat label="Open tasks" value={openTasks.length} icon={Clock} />
+        <MiniStat label="Documents" value={client.documents.length} icon={ExternalLink} />
+        <MiniStat label="Timeline" value={client.timeline.length} icon={Workflow} />
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <h3 className="text-sm font-semibold text-foreground">Relevant actions</h3>
+        <div className="mt-3 grid gap-2">
+          <Button variant="outline" className="justify-start" onClick={() => onOpenWorkspace(getWorkspacePath(sectionKey))}>
+            <ExternalLink className="mr-2 h-4 w-4" /> Open {lifecycleLabels[sectionKey] ?? "workspace"} workspace
+          </Button>
+          <Button className="justify-start" onClick={onOpenClient}>
+            <ExternalLink className="mr-2 h-4 w-4" /> Open full client record
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getStageContext(client: Client, sectionKey: string) {
+  const auth = client.authorizations[0];
+  const base = [
+    { label: "Clinic", value: client.clinic },
+    { label: "Next action", value: client.nextAction || "—" },
+  ];
+  if (["intake", "financial", "clientSetup"].includes(sectionKey)) return [...base, { label: "Parent", value: client.parentName }, { label: "Payor", value: client.payor }, { label: "Intake owner", value: client.intakeOwner }, { label: "Blockers", value: client.blockers.length ? client.blockers.join(", ") : "None" }];
+  if (["initialAuth", "treatmentAuth", "reauth"].includes(sectionKey)) return [...base, { label: "Auth status", value: auth?.status ?? client.authStatus }, { label: "Payor", value: auth?.payor ?? client.payor }, { label: "Approved hours", value: String(auth?.approvedHours ?? client.approvedWeeklyHours ?? "—") }, { label: "Expiration", value: auth?.expirationDate ?? client.nextReauthDate ?? "—" }];
+  if (sectionKey === "qa") return [...base, { label: "QA status", value: client.qaStatus }, { label: "BCBA", value: client.bcba || "Unassigned" }, { label: "Documents", value: String(client.documents.length) }, { label: "Blockers", value: client.blockers.length ? client.blockers.join(", ") : "None" }];
+  if (sectionKey === "staffing") return [...base, { label: "Staffing status", value: client.staffingStatus }, { label: "BCBA", value: client.bcba || "Unassigned" }, { label: "RBT", value: client.rbt || "Unassigned" }, { label: "Approved hours", value: String(client.approvedWeeklyHours ?? "—") }];
+  if (sectionKey === "scheduling") return [...base, { label: "Scheduling status", value: client.schedulingStatus ?? "—" }, { label: "Schedule blocks", value: String(client.schedule.length) }, { label: "Start date", value: client.startDate ?? "Not set" }, { label: "CR sync", value: client.centralReachSyncStatus ?? "—" }];
+  return [...base, { label: "Service status", value: client.activeServiceStatus ?? "Active" }, { label: "Delivered hours", value: String(client.deliveredWeeklyHours ?? 0) }, { label: "Billing", value: client.billingStatus ?? "—" }, { label: "Next reauth", value: client.nextReauthDate ?? "—" }];
+}
+
+function getWorkspacePath(sectionKey: string) {
+  if (sectionKey === "intake") return "/leads?view=queue";
+  if (["initialAuth", "treatmentAuth", "reauth"].includes(sectionKey)) return "/authorizations";
+  if (sectionKey === "qa") return "/qa";
+  if (sectionKey === "staffing") return "/staffing";
+  if (sectionKey === "scheduling") return "/scheduling";
+  if (sectionKey === "activeServices") return "/clinics";
+  return "/clients";
 }
