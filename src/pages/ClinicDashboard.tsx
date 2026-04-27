@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, Building2, CalendarDays, CheckCircle2, Download, FileText, MessageSquare, RefreshCw, Search, UserCheck, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,12 +47,13 @@ const stages: ClientStage[] = ["Active", "Pending Start", "Ready for Scheduling"
 const shortDate = (date?: string | null) => date ? new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—";
 const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
 const pct = (value: number, total: number) => total ? Math.round((value / total) * 100) : 0;
-const statusTone = (value: string) => value.includes("Delayed") || value.includes("Gap") || value.includes("Missing") || value.includes("Blocked") ? "destructive" : value.includes("Pending") || value.includes("Partial") || value.includes("Review") ? "warning" : value.includes("Active") || value.includes("Ready") || value.includes("Built") || value.includes("Verified") ? "success" : "muted";
+type PillTone = "success" | "warning" | "destructive" | "primary" | "muted";
+const statusTone = (value: string): PillTone => value.includes("Delayed") || value.includes("Gap") || value.includes("Missing") || value.includes("Blocked") ? "destructive" : value.includes("Pending") || value.includes("Partial") || value.includes("Review") ? "warning" : value.includes("Active") || value.includes("Ready") || value.includes("Built") || value.includes("Verified") ? "success" : "muted";
 
-function pillClass(tone: "success" | "warning" | "destructive" | "primary" | "muted") {
+function pillClass(tone: PillTone) {
   return cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium", tone === "success" && "border-success/30 bg-success/10 text-success", tone === "warning" && "border-warning/30 bg-warning/10 text-warning", tone === "destructive" && "border-destructive/30 bg-destructive/10 text-destructive", tone === "primary" && "border-primary/30 bg-primary/10 text-primary", tone === "muted" && "border-border bg-muted text-muted-foreground");
 }
-function StatusPill({ children, tone = "muted" }: { children: string; tone?: "success" | "warning" | "destructive" | "primary" | "muted" }) { return <span className={pillClass(tone)}>{children}</span>; }
+function StatusPill({ children, tone = "muted" }: { children: ReactNode; tone?: PillTone }) { return <span className={pillClass(tone)}>{children}</span>; }
 function HealthDot({ health }: { health: Health }) { return <span className={cn("h-2.5 w-2.5 rounded-full", health === "green" && "bg-success", health === "yellow" && "bg-warning", health === "red" && "bg-destructive")} />; }
 const block = (day: string, time: string, client: string, rbt: string, bcba: string, room: string, program: string, status: ScheduleBlock["status"] = "Scheduled"): ScheduleBlock => ({ id: `${client}-${day}-${time}`, day, time, client, rbt, bcba, room, program, status });
 function makeClient(base: Omit<ClinicClient, "tasks" | "docs" | "notes" | "timeline">): ClinicClient {
