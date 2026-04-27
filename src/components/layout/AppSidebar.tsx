@@ -159,6 +159,11 @@ export function AppSidebar() {
       const currentDashboard = new URLSearchParams(location.search).get("dashboard") ?? "ceo";
       return location.pathname === "/leadership-dashboard" && itemDashboard === currentDashboard;
     }
+    if (path.startsWith("/clients?pipeline=")) {
+      const itemPipeline = new URLSearchParams(path.split("?")[1]).get("pipeline");
+      const currentPipeline = new URLSearchParams(location.search).get("pipeline");
+      return location.pathname === "/clients" && itemPipeline === currentPipeline;
+    }
     return location.pathname === path || `${location.pathname}${location.search}` === path;
   };
   const toggleSection = (title: string) => {
