@@ -61,6 +61,7 @@ import StaffingDashboard from "./pages/StaffingDashboard";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import QADashboard from "./pages/QADashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
+import RecruitingDashboard from "./pages/RecruitingDashboard";
 
 const queryClient = new QueryClient();
 
@@ -79,7 +80,7 @@ function RoleDashboardRedirect() {
     qa: "/qa-dashboard",
     finance: "/finance-dashboard",
     hr: "/hr",
-    recruiting: "/leadership-dashboard?dashboard=recruiting",
+    recruiting: "/recruiting-dashboard",
   };
   const roleRoutes: Array<[string, string]> = [
     ["intake", "/intake-dashboard"],
@@ -93,7 +94,7 @@ function RoleDashboardRedirect() {
     ["hr", "/hr"],
     ["hr_admin", "/hr"],
     ["hr_manager", "/hr"],
-    ["recruiting_assistant", "/leadership-dashboard?dashboard=recruiting"],
+    ["recruiting_assistant", "/recruiting-dashboard"],
     ["payroll_admin", "/hr/payroll"],
     ["phone_support", "/phone-calls"],
   ];
@@ -126,6 +127,7 @@ const App = () => (
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
                   <Route path="/qa-dashboard" element={<PermissionRoute permission="dashboard.view"><QADashboard /></PermissionRoute>} />
                   <Route path="/finance-dashboard" element={<PermissionRoute permission="dashboard.view"><FinanceDashboard /></PermissionRoute>} />
+                  <Route path="/recruiting-dashboard" element={<PermissionRoute permission="dashboard.view"><RecruitingDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leads" element={<Leads />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
