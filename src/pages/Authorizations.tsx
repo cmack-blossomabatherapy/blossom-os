@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Clock, FileWarning, RefreshCw, Send, ShieldCheck } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { AlertTriangle, CheckCircle2, Clock, FileWarning, RefreshCw, Send, ShieldCheck, TrendingUp } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,21 +20,29 @@ const coordinatorFor = (client: Client, auth: AuthorizationRecord) => auth.assig
 
 const getAlert = (auth: AuthRow) => {
   const exp = daysUntil(auth.expirationDate);
+  if (auth.type === "Treatment" && !auth.treatmentPlanLinked) return { tone: "red", message: "Missing treatment plan" };
   if ((auth.missingDocs?.length ?? 0) > 0 || auth.requiredDocsReceived === false) return { tone: "red", message: "Missing documentation" };
   if (auth.status === "Denied") return { tone: "red", message: "Denied auth" };
   if (exp !== null && exp < 30) return { tone: "red", message: `Expiring in ${exp}d` };
   if (auth.qaStatus === "In Review") return { tone: "yellow", message: "QA blocking submission" };
+  if (auth.status === "Submitted" && (auth.daysInStage ?? 0) > 10) return { tone: "red", message: `Waiting ${auth.daysInStage}d` };
+  if (auth.status === "Submitted" && (auth.daysInStage ?? 0) > 5) return { tone: "yellow", message: `Waiting ${auth.daysInStage}d` };
   if (auth.status === "Not Submitted" && (auth.daysInStage ?? 0) > 2) return { tone: "yellow", message: `Awaiting submission ${auth.daysInStage}d` };
   return null;
 };
 
+const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+
 export default function Authorizations() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { clients, updateClient, addTask } = useClients();
   const [view, setView] = useState<ViewKey>("all");
   const [query, setQuery] = useState("");
+  const typeFilter = searchParams.get("type") === "treatment" ? "Treatment" : searchParams.get("type") === "initial" ? "Initial" : null;
+  const isTreatment = typeFilter === "Treatment";
 
-  const auths = useMemo<AuthRow[]>(() => clients.flatMap((client) => client.authorizations.map((auth, index) => ({ ...auth, client, authId: auth.id ?? `${client.id}-${auth.type}-${index}`, type: auth.type } as AuthRow))), [clients]);
+  const auths = useMemo<AuthRow[]>(() => clients.flatMap((client) => client.authorizations.map((auth, index) => ({ ...auth, client, authId: auth.id ?? `${client.id}-${auth.type}-${index}`, type: auth.type } as AuthRow))).filter((auth) => !typeFilter || auth.type === typeFilter), [clients, typeFilter]);
 
   const filtered = useMemo(() => {
     let rows = auths;
@@ -46,7 +54,7 @@ export default function Authorizations() {
     if (view === "progress") rows = rows.filter((auth) => auth.status === "Submitted" || auth.qaStatus === "In Review");
     if (view === "approved") rows = rows.filter((auth) => auth.status === "Approved");
     if (view === "problem") rows = rows.filter((auth) => auth.status === "Denied" || (auth.missingDocs?.length ?? 0) > 0 || auth.requiredDocsReceived === false);
-    if (view === "expiring") rows = rows.filter((auth) => auth.status === "Expired" || (daysUntil(auth.expirationDate) ?? 999) <= 90);
+    if (view === "expiring") rows = rows.filter((auth) => auth.status === "Expiring Soon" || auth.status === "Expired" || (daysUntil(auth.expirationDate) ?? 999) <= 90);
     return rows;
   }, [auths, query, view]);
 
@@ -55,7 +63,17 @@ export default function Authorizations() {
     progress: auths.filter((a) => a.status === "Submitted" || a.qaStatus === "In Review").length,
     approved: auths.filter((a) => a.status === "Approved").length,
     problem: auths.filter((a) => a.status === "Denied" || (a.missingDocs?.length ?? 0) > 0 || a.requiredDocsReceived === false).length,
-    expiring: auths.filter((a) => (daysUntil(a.expirationDate) ?? 999) <= 90).length,
+    expiring: auths.filter((a) => a.status === "Expiring Soon" || (daysUntil(a.expirationDate) ?? 999) <= 90).length,
+  };
+
+  const submittedRows = auths.filter((a) => a.status === "Submitted" && a.submittedDate);
+  const approvedRows = auths.filter((a) => a.status === "Approved");
+  const successMetrics = {
+    qaToSubmission: avg(submittedRows.map((a) => a.daysInStage ?? 0)),
+    submissionToApproval: avg(approvedRows.map((a) => a.daysInStage ?? 0)),
+    approvalRate: auths.length ? Math.round((approvedRows.length / auths.length) * 100) : 0,
+    denialRate: auths.length ? Math.round((auths.filter((a) => a.status === "Denied").length / auths.length) * 100) : 0,
+    reauthSuccess: auths.filter((a) => a.type === "Reauth").length ? Math.round((auths.filter((a) => a.type === "Reauth" && a.status === "Approved").length / auths.filter((a) => a.type === "Reauth").length) * 100) : 0,
   };
 
   const submitAuth = async (auth: AuthRow) => {
@@ -86,13 +104,14 @@ export default function Authorizations() {
   };
 
   const triggerReauth = async (auth: AuthRow) => {
+    if (auth.id) await supabase.from("client_authorizations").update({ status: "Expiring Soon", next_action: "Start reauthorization" } as never).eq("id", auth.authId);
     await supabase.from("client_authorizations").insert({ client_id: auth.client.id, kind: "Reauth", status: "Not Submitted", payor: auth.payor ?? auth.client.payor, state: auth.state ?? auth.client.state, assigned_auth_coordinator: coordinatorFor(auth.client, auth), next_action: "Confirm Treatment Plan", reauth_source_id: auth.id ?? null } as never);
     await addTask(auth.client.id, { id: `reauth-${Date.now()}`, title: "Request Progress Report", completed: false });
     toast.success("Reauth record created");
   };
 
   return (
-    <PageShell title="Authorization" description="Revenue gate for initial auth, treatment auth, denials, and reauthorization cycles" icon={ShieldCheck}>
+    <PageShell title={isTreatment ? "Treatment Authorization" : "Authorization"} description={isTreatment ? "Primary revenue activation layer from QA approval to staffing, denials, and reauth" : "Revenue gate for initial auth, treatment auth, denials, and reauthorization cycles"} icon={ShieldCheck}>
       <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Metric label="Needs Submission" value={metrics.needs} icon={Send} active={view === "needs"} onClick={() => setView("needs")} />
         <Metric label="In Progress" value={metrics.progress} icon={Clock} active={view === "progress"} onClick={() => setView("progress")} />
@@ -100,6 +119,16 @@ export default function Authorizations() {
         <Metric label="Problem Cases" value={metrics.problem} icon={FileWarning} active={view === "problem"} onClick={() => setView("problem")} />
         <Metric label="Expiring Soon" value={metrics.expiring} icon={RefreshCw} active={view === "expiring"} onClick={() => setView("expiring")} />
       </section>
+
+      {isTreatment && (
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <Metric label="QA → Submission" value={`${successMetrics.qaToSubmission}d`} icon={TrendingUp} active={false} onClick={() => setView("progress")} />
+          <Metric label="Submission → Approval" value={`${successMetrics.submissionToApproval}d`} icon={Clock} active={false} onClick={() => setView("approved")} />
+          <Metric label="Approval Rate" value={`${successMetrics.approvalRate}%`} icon={CheckCircle2} active={false} onClick={() => setView("approved")} />
+          <Metric label="Denial Rate" value={`${successMetrics.denialRate}%`} icon={FileWarning} active={false} onClick={() => setView("problem")} />
+          <Metric label="Reauth Success" value={`${successMetrics.reauthSuccess}%`} icon={RefreshCw} active={false} onClick={() => setView("expiring")} />
+        </section>
+      )}
 
       <div className="flex items-center gap-2"><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search client, payor, auth ID, coordinator…" className="max-w-md" /><Button variant="outline" onClick={() => setView("all")}>All</Button></div>
       <AuthRevenueTable auths={filtered} onSelect={(auth) => navigate(`/clients/${auth.client.id}`)} onSubmit={submitAuth} onApprove={approveAuth} onDeny={denyAuth} onMissingDocs={handleMissingDocs} onReauth={triggerReauth} />
