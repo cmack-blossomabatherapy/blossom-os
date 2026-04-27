@@ -81,8 +81,6 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     title: "Intelligence",
     items: [
       { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
-      { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
-      { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
     ],
   },
   {
@@ -90,6 +88,8 @@ const navSections: { title?: string; items: NavItem[] }[] = [
     items: [
       { label: "Team", icon: UsersRound, path: "/team", perm: "team.view" },
       { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view" },
+      { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
+      { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
     ],
   },
