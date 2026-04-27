@@ -295,16 +295,26 @@ export type Database = {
           child_age: string | null
           child_name: string
           clinic: string
+          consent_complete: boolean
+          consent_required: boolean
           created_at: string
           created_by: string | null
+          email: string | null
           id: string
+          insurance: string | null
           intake_owner: string | null
+          lead_id: string | null
           next_action: string | null
           next_task_due: string | null
           parent_name: string
+          payment_plan_required: boolean
+          payment_plan_signed: boolean
+          payment_plan_status: string
           payor: string
+          phone: string | null
           qa_status: Database["public"]["Enums"]["qa_status"]
           rbt: string | null
+          ready_for_auth: boolean
           staffing_history: Json
           staffing_status: Database["public"]["Enums"]["staffing_status"]
           stage: Database["public"]["Enums"]["client_stage"]
@@ -323,16 +333,26 @@ export type Database = {
           child_age?: string | null
           child_name: string
           clinic: string
+          consent_complete?: boolean
+          consent_required?: boolean
           created_at?: string
           created_by?: string | null
+          email?: string | null
           id?: string
+          insurance?: string | null
           intake_owner?: string | null
+          lead_id?: string | null
           next_action?: string | null
           next_task_due?: string | null
           parent_name: string
+          payment_plan_required?: boolean
+          payment_plan_signed?: boolean
+          payment_plan_status?: string
           payor?: string
+          phone?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
+          ready_for_auth?: boolean
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -351,16 +371,26 @@ export type Database = {
           child_age?: string | null
           child_name?: string
           clinic?: string
+          consent_complete?: boolean
+          consent_required?: boolean
           created_at?: string
           created_by?: string | null
+          email?: string | null
           id?: string
+          insurance?: string | null
           intake_owner?: string | null
+          lead_id?: string | null
           next_action?: string | null
           next_task_due?: string | null
           parent_name?: string
+          payment_plan_required?: boolean
+          payment_plan_signed?: boolean
+          payment_plan_status?: string
           payor?: string
+          phone?: string | null
           qa_status?: Database["public"]["Enums"]["qa_status"]
           rbt?: string | null
+          ready_for_auth?: boolean
           staffing_history?: Json
           staffing_status?: Database["public"]["Enums"]["staffing_status"]
           stage?: Database["public"]["Enums"]["client_stage"]
@@ -2479,6 +2509,7 @@ export type Database = {
         | "Progress Report Received"
         | "Reauth Submitted"
         | "Reauth Approved"
+        | "Pending Initial Authorization"
       employee_status:
         | "pending_start"
         | "active"
@@ -2925,6 +2956,7 @@ export const Constants = {
         "Progress Report Received",
         "Reauth Submitted",
         "Reauth Approved",
+        "Pending Initial Authorization",
       ],
       employee_status: [
         "pending_start",
