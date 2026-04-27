@@ -287,7 +287,7 @@ function MemberRow({
 }: {
   member: Member;
   onToggleRole: (role: AppRole) => void;
-  onSaveInfo: (next: { display_name: string; job_title: string; responsibilities: string }) => Promise<boolean>;
+  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
   saving: boolean;
   isCurrentUser: boolean;
@@ -295,29 +295,57 @@ function MemberRow({
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(member.display_name === "(no name)" ? "" : member.display_name);
+  const [draftEmail, setDraftEmail] = useState(member.email);
   const [draftTitle, setDraftTitle] = useState(member.job_title);
   const [draftResp, setDraftResp] = useState(member.responsibilities);
+  const [draftDepartment, setDraftDepartment] = useState(member.department);
+  const [draftState, setDraftState] = useState(member.state);
+  const [draftClinic, setDraftClinic] = useState(member.clinic);
+  const [draftLeadership, setDraftLeadership] = useState(member.part_of_leadership);
+  const [draftDashboard, setDraftDashboard] = useState(member.dashboard_access);
+  const [draftActive, setDraftActive] = useState(member.active);
 
   // Re-sync draft when member changes (e.g. after refresh)
   useEffect(() => {
     setDraftName(member.display_name === "(no name)" ? "" : member.display_name);
+    setDraftEmail(member.email);
     setDraftTitle(member.job_title);
     setDraftResp(member.responsibilities);
-  }, [member.display_name, member.job_title, member.responsibilities]);
+    setDraftDepartment(member.department);
+    setDraftState(member.state);
+    setDraftClinic(member.clinic);
+    setDraftLeadership(member.part_of_leadership);
+    setDraftDashboard(member.dashboard_access);
+    setDraftActive(member.active);
+  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.active]);
 
   const handleSave = async () => {
     const ok = await onSaveInfo({
       display_name: draftName,
+      email: draftEmail,
       job_title: draftTitle,
       responsibilities: draftResp,
+      department: draftDepartment,
+      state: draftState,
+      clinic: draftClinic,
+      part_of_leadership: draftLeadership,
+      dashboard_access: draftDashboard,
+      active: draftActive,
     });
     if (ok) setEditing(false);
   };
 
   const handleCancelEdit = () => {
     setDraftName(member.display_name === "(no name)" ? "" : member.display_name);
+    setDraftEmail(member.email);
     setDraftTitle(member.job_title);
     setDraftResp(member.responsibilities);
+    setDraftDepartment(member.department);
+    setDraftState(member.state);
+    setDraftClinic(member.clinic);
+    setDraftLeadership(member.part_of_leadership);
+    setDraftDashboard(member.dashboard_access);
+    setDraftActive(member.active);
     setEditing(false);
   };
 
