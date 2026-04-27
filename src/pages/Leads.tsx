@@ -179,8 +179,8 @@ export default function Leads() {
 
   return (
     <PageShell
-      title="Leads"
-      description="Lead command center — track intake pipeline from first contact to VOB"
+      title="Intake"
+      description="Action queue for intake leads from first contact through VOB readiness"
       icon={Users}
     >
       <LeadKpiStrip leads={leads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />
