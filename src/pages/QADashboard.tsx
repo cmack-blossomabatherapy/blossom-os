@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
 type Health = "success" | "warning" | "destructive" | "info" | "muted";
+type KpiKey = "awaiting" | "inReview" | "issues" | "ready" | "overdue" | "notes" | "newRbt" | "turnaround";
 
 interface QARecord {
   id: string;
@@ -86,6 +87,32 @@ const withTimeline = (record: QARecord): QARecord => ({
 const recordsSeed = seedRecords.map(withTimeline);
 const ALL = "All";
 const statusTone = (status: string): Health => status.includes("Ready") || status.includes("Submitted") ? "success" : status.includes("Issue") || status.includes("Overdue") || status.includes("Blocked") || status.includes("Missing") ? "destructive" : status.includes("Correction") || status.includes("Review") ? "warning" : "muted";
+const kpiMatches = (key: KpiKey | null, r: QARecord) => !key ||
+  (key === "awaiting" && r.qaStatus === "Awaiting Review") ||
+  (key === "inReview" && r.qaStatus === "In Review") ||
+  (key === "issues" && ["Issues Found", "Corrections Needed"].includes(r.qaStatus)) ||
+  (key === "ready" && r.qaStatus === "Ready for Submission") ||
+  (key === "overdue" && (r.qaStatus === "Overdue" || r.alerts.some((a) => a.toLowerCase().includes("overdue")))) ||
+  (key === "notes" && r.notesFlagged > 0) ||
+  (key === "newRbt" && r.newRbt) ||
+  (key === "turnaround" && r.daysInQA > 3);
+
+const kpiAlertCopy = (key: KpiKey, records: QARecord[]) => {
+  const blocked = records.filter((r) => r.authReadiness === "Blocked").length;
+  const openTasks = records.reduce((sum, r) => sum + r.tasks.filter((t) => t.status === "Open").length, 0);
+  const oldest = records.reduce<QARecord | null>((max, r) => !max || r.daysInQA > max.daysInQA ? r : max, null);
+  const map: Record<KpiKey, { title: string; detail: string; tone: Health }> = {
+    awaiting: { title: `${records.length} plans need intake triage`, detail: "Start review, confirm owner assignment, and identify missing treatment plan artifacts before auth prep stalls.", tone: records.length ? "warning" : "success" },
+    inReview: { title: `${records.length} reviews actively moving`, detail: `${oldest ? `${oldest.client} is oldest at ${oldest.daysInQA} days. ` : ""}Escalate anything crossing the 3-day QA target.`, tone: records.some((r) => r.daysInQA > 3) ? "warning" : "info" },
+    issues: { title: `${blocked} records blocking authorization`, detail: `${openTasks} open fix tasks are tied to QA issues. Prioritize payer-specific and missing-document blockers first.`, tone: blocked ? "destructive" : "warning" },
+    ready: { title: `${records.length} packets can move to auth`, detail: "Marking ready keeps QA approved, sets linked treatment auth to Awaiting Submission, and moves the client toward Pending Treatment Auth.", tone: "success" },
+    overdue: { title: `${records.length} treatment plan SLA exceptions`, detail: `${oldest ? `${oldest.client} is the highest-risk item. ` : ""}Alert logic includes overdue QA status and treatment-plan overdue flags.`, tone: records.length ? "destructive" : "success" },
+    notes: { title: `${records.reduce((sum, r) => sum + r.notesFlagged, 0)} flagged notes in scope`, detail: "Alert logic highlights NoteGuard flags, repeated note errors, and Amerigroup-specific documentation corrections.", tone: "warning" },
+    newRbt: { title: `${records.length} new RBT monitoring cases`, detail: "Includes first-week check-ins, early note quality, payer flags, and coaching tasks linked to the client QA record.", tone: "info" },
+    turnaround: { title: `${records.length} reviews over target`, detail: "Shows records above the 3-day QA turnaround goal so owners can rebalance workload and escalate blockers.", tone: records.length ? "warning" : "success" },
+  };
+  return map[key];
+};
 
 export default function QADashboard() {
   const [records, setRecords] = useState(recordsSeed);
