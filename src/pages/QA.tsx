@@ -64,11 +64,15 @@ const alertFor = (item: QAItem) => {
 
 export default function QA() {
   const navigate = useNavigate();
-  const { clients, updateClient, addTask } = useClients();
+  const { clients, updateClient, addTask, appendTimeline, appendAutomation } = useClients();
   const [reviews, setReviews] = useState<QAReview[]>([]);
   const [monitors, setMonitors] = useState<NoteMonitor[]>([]);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewKey>("all");
+  const [ownerFilter, setOwnerFilter] = useState(ALL);
+  const [stateFilter, setStateFilter] = useState(ALL);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [qaNote, setQaNote] = useState("");
 
   const refetch = useCallback(async () => {
     const [r, m] = await Promise.all([
@@ -115,8 +119,14 @@ export default function QA() {
     if (view === "review") next = next.filter((row) => row.review?.status === "In Review");
     if (view === "issues") next = next.filter((row) => row.review?.status === "Issues Found");
     if (view === "ready") next = next.filter((row) => row.review?.status === "Ready for Submission" || row.review?.status === "Submitted to Auth");
+    if (ownerFilter !== ALL) next = next.filter((row) => (row.review?.assigned_qa_owner ?? "Unassigned") === ownerFilter);
+    if (stateFilter !== ALL) next = next.filter((row) => row.client.state === stateFilter);
     return next;
-  }, [query, rows, view]);
+  }, [ownerFilter, query, rows, stateFilter, view]);
+
+  const selectedItem = filtered.find((row) => row.client.id === selectedId) ?? filtered[0] ?? null;
+  const ownerOptions = useMemo(() => Array.from(new Set(rows.map((row) => row.review?.assigned_qa_owner ?? "Unassigned"))).sort(), [rows]);
+  const stateOptions = useMemo(() => Array.from(new Set(rows.map((row) => row.client.state))).sort(), [rows]);
 
   const metrics = {
     awaiting: rows.filter((row) => row.missingRecord || row.review?.status === "Awaiting Review").length,
@@ -185,6 +195,30 @@ export default function QA() {
     await supabase.from("qa_note_monitoring").insert({ client_id: client?.id, monitoring_type: type, rbt_name: client?.rbt ?? "New RBT", bcba_name: client?.bcba, flagged_notes: type === "RBT Check-In" ? 0 : 1, notes_checked: type === "Amerigroup" ? 12 : 1, errors_found: type === "RBT Check-In" ? 0 : 1, new_rbt_monitoring: type === "RBT Check-In", check_in_due: todayIso(), owner: type === "Amerigroup" ? "Anje" : "QA Team", next_action: type === "RBT Check-In" ? "Check RBT Performance" : "Review Notes" });
     toast.success("Monitoring item created");
     void refetch();
+  };
+
+  const writeClientQANote = async (item: QAItem, flag?: QAErrorType) => {
+    const note = qaNote.trim();
+    if (!note && !flag) { toast.info("Add a QA note or choose a flag"); return; }
+    const nextBlockers = flag ? Array.from(new Set([...item.client.blockers, flag])) : item.client.blockers;
+    const nextActiveAlerts = flag ? Array.from(new Set([...(item.client.activeAlerts ?? []), flag])) : item.client.activeAlerts;
+    await updateClient(item.client.id, {
+      qaStatus: flag ? "In Review" : item.client.qaStatus,
+      notesComplianceStatus: flag ? "Flagged" : item.client.notesComplianceStatus,
+      noteguardFlags: flag ? (item.client.noteguardFlags ?? 0) + 1 : item.client.noteguardFlags,
+      blockers: nextBlockers,
+      activeAlerts: nextActiveAlerts,
+      activeNotes: [item.client.activeNotes, note || (flag ? `QA flag: ${flag}` : "")].filter(Boolean).join("\n"),
+      nextAction: flag ? "Resolve QA compliance flag" : item.client.nextAction,
+    });
+    if (note) await appendTimeline(item.client.id, `QA note: ${note}`, "qa");
+    if (flag) {
+      await appendTimeline(item.client.id, `QA flag added: ${flag}`, "qa");
+      await appendAutomation(item.client.id, `QA compliance flag written back to client record: ${flag}`);
+      await addTask(item.client.id, { id: `qa-flag-${Date.now()}`, title: `Resolve QA flag: ${flag}`, completed: false, dueDate: todayIso() });
+    }
+    setQaNote("");
+    toast.success("Client QA record updated");
   };
 
   const resolveMonitor = async (monitor: NoteMonitor) => {
