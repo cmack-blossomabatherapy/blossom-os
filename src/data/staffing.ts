@@ -79,8 +79,8 @@ export type StaffingClientNeed = {
   alert: string | null;
 };
 
-export const getClientStaffingNeeds = (): StaffingClientNeed[] => {
-  return mockClients
+export const getClientStaffingNeeds = (clients: Client[] = mockClients): StaffingClientNeed[] => {
+  return clients
     .filter(
       (c) =>
         c.stage === "Staffing Needed" ||
