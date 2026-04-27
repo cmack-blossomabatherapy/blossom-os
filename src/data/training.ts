@@ -9,6 +9,8 @@ export interface TrainingLesson { id: string; title: string; description: string
 export interface QuizQuestion { id: string; question: string; type: "Multiple choice" | "True / false" | "Short answer"; options?: string[]; answer: string; }
 export interface TrainingVersion { id: string; version: number; savedAt: string; savedBy: string; changeSummary: string[]; snapshot: Omit<TrainingCourse, "versions">; }
 export interface TrainingCourse { id: string; departmentId: string; title: string; description: string; type: TrainingType; difficulty: Difficulty; minutes: number; required: boolean; status: TrainingStatus; progress: number; dueDate?: string; requiredBy?: string; lastOpened?: string; startedAt?: string; quizScore?: number; popular?: boolean; recentlyAdded?: boolean; archived?: boolean; roleVisibility: string[]; lessons: TrainingLesson[]; quiz?: { passingScore: number; questions: QuizQuestion[] }; resources: string[]; owner: string; versions?: TrainingVersion[]; }
+export type TrainingAuditAction = "created" | "edited" | "archived" | "deleted" | "restored" | "resource_added" | "resource_changed" | "rolled_back";
+export interface TrainingAuditEntry { id: string; trainingId: string; trainingTitle: string; action: TrainingAuditAction; actor: string; actorRole: string; occurredAt: string; summary: string; details: string[]; itemType: "Training" | "Resource"; }
 export interface TrainingDepartment { id: string; slug: string; name: string; shortName: string; description: string; icon: keyof typeof iconMap; accent: string; sort: number; }
 export interface TrainingProgressRecord { userId: string; trainingId: string; department: string; startedDate?: string; lastOpenedDate?: string; completedDate?: string; progressPercentage: number; lessonsCompleted: string[]; quizScore?: number; status: TrainingStatus; timeSpentMinutes: number; required: boolean; dueDate?: string; assignedBy?: string; }
 
@@ -32,6 +34,8 @@ export const trainingDepartments: TrainingDepartment[] = [
 
 export const TRAINING_STORAGE_KEY = "blossom-training-courses";
 export const TRAINING_UPDATED_EVENT = "blossom-training-courses-updated";
+export const TRAINING_AUDIT_STORAGE_KEY = "blossom-training-audit-log";
+export const TRAINING_AUDIT_UPDATED_EVENT = "blossom-training-audit-updated";
 
 export const trainingCourses: TrainingCourse[] = [];
 
@@ -55,6 +59,22 @@ export function saveStoredTrainingCourses(courses: TrainingCourse[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TRAINING_STORAGE_KEY, JSON.stringify(courses));
   window.dispatchEvent(new Event(TRAINING_UPDATED_EVENT));
+}
+
+export function getStoredTrainingAuditLog(): TrainingAuditEntry[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(TRAINING_AUDIT_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as TrainingAuditEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredTrainingAuditLog(entries: TrainingAuditEntry[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRAINING_AUDIT_STORAGE_KEY, JSON.stringify(entries));
+  window.dispatchEvent(new Event(TRAINING_AUDIT_UPDATED_EVENT));
 }
 
 export function createTrainingCourse(input: CreateTrainingInput): TrainingCourse {
