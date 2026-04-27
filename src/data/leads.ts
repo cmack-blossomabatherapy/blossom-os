@@ -119,8 +119,8 @@ export const pipelineStages: { name: LeadStatus; color: string }[] = [
   { name: "Can't Reach", color: "destructive" },
   { name: "Can Not Submit Auth", color: "destructive" },
   { name: "Sent Packet - Can't Reach", color: "warning" },
-  { name: "Non-qualified Lead", color: "muted" },
-  { name: "Getting DX", color: "default" },
+  { name: "Non-Qualified", color: "muted" },
+  { name: "Needs DX", color: "default" },
 ];
 
 const makeTimeline = (status: LeadStatus): TimelineEvent[] => {
@@ -131,7 +131,7 @@ const makeTimeline = (status: LeadStatus): TimelineEvent[] => {
     base.push({ id: "t2", type: "call", description: "Call attempt #1 — no answer", timestamp: "2025-04-10T10:30:00Z", user: "Sarah M." });
     base.push({ id: "t3", type: "sms", description: "Intro SMS sent", timestamp: "2025-04-10T10:32:00Z", user: "Sarah M." });
   }
-  if (["Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed", "Getting DX"].includes(status)) {
+  if (["Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed", "Needs DX", "Getting DX"].includes(status)) {
     base.push({ id: "t4", type: "call", description: "Connected — parent interested", timestamp: "2025-04-11T14:00:00Z", user: "Sarah M." });
     base.push({ id: "t5", type: "form", description: "Intake form sent via PandaDoc", timestamp: "2025-04-11T14:15:00Z", user: "Sarah M." });
   }
@@ -266,6 +266,8 @@ export const statusVariant = (status: string): "default" | "success" | "warning"
     "Sent Packet - Can't Reach": "warning",
     "Non-qualified Lead": "muted",
     "Getting DX": "default",
+    "Non-Qualified": "muted",
+    "Needs DX": "default",
   };
   return map[status] || "muted";
 };
