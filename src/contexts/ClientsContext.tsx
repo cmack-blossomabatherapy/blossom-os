@@ -50,8 +50,11 @@ const daysUntil = (iso?: string | null): number | null => {
 /* ──────────────────────── DB ↔ Client mapping ──────────────────────── */
 interface DbClient {
   id: string;
+  lead_id?: string | null;
   child_name: string;
   parent_name: string;
+  phone?: string | null;
+  email?: string | null;
   child_age: string | null;
   state: string;
   clinic: string;
@@ -113,6 +116,16 @@ const buildClient = (
   nextTaskDue: c.next_task_due,
   lastActivity: timeline[0]?.description ?? "—",
   payor: c.payor,
+  leadId: c.lead_id ?? undefined,
+  phone: c.phone ?? undefined,
+  email: c.email ?? undefined,
+  insurance: (c as Row<DbClient>).insurance as string | undefined,
+  paymentPlanStatus: ((c as Row<DbClient>).payment_plan_status as string | undefined) ?? "Not Required",
+  paymentPlanRequired: Boolean((c as Row<DbClient>).payment_plan_required),
+  paymentPlanSigned: Boolean((c as Row<DbClient>).payment_plan_signed),
+  readyForAuth: Boolean((c as Row<DbClient>).ready_for_auth),
+  consentRequired: ((c as Row<DbClient>).consent_required as boolean | undefined) ?? true,
+  consentComplete: Boolean((c as Row<DbClient>).consent_complete),
   blockers: c.blockers ?? [],
   authorizations: auths.map((a) => ({
     type: a.kind, status: a.status,
@@ -133,7 +146,10 @@ const buildClient = (
 const clientPatchToDb = (patch: Partial<Client>): Record<string, unknown> => {
   const out: Record<string, unknown> = {};
   if (patch.childName !== undefined) out.child_name = patch.childName;
+  if (patch.leadId !== undefined) out.lead_id = patch.leadId;
   if (patch.parentName !== undefined) out.parent_name = patch.parentName;
+  if (patch.phone !== undefined) out.phone = patch.phone;
+  if (patch.email !== undefined) out.email = patch.email;
   if (patch.childAge !== undefined) out.child_age = patch.childAge;
   if (patch.state !== undefined) out.state = patch.state;
   if (patch.clinic !== undefined) out.clinic = patch.clinic;
@@ -145,6 +161,13 @@ const clientPatchToDb = (patch: Partial<Client>): Record<string, unknown> => {
   if (patch.staffingStatus !== undefined) out.staffing_status = patch.staffingStatus;
   if (patch.qaStatus !== undefined) out.qa_status = patch.qaStatus;
   if (patch.payor !== undefined) out.payor = patch.payor;
+  if (patch.insurance !== undefined) out.insurance = patch.insurance;
+  if (patch.paymentPlanStatus !== undefined) out.payment_plan_status = patch.paymentPlanStatus;
+  if (patch.paymentPlanRequired !== undefined) out.payment_plan_required = patch.paymentPlanRequired;
+  if (patch.paymentPlanSigned !== undefined) out.payment_plan_signed = patch.paymentPlanSigned;
+  if (patch.readyForAuth !== undefined) out.ready_for_auth = patch.readyForAuth;
+  if (patch.consentRequired !== undefined) out.consent_required = patch.consentRequired;
+  if (patch.consentComplete !== undefined) out.consent_complete = patch.consentComplete;
   if (patch.nextAction !== undefined) out.next_action = patch.nextAction;
   if (patch.nextTaskDue !== undefined) out.next_task_due = patch.nextTaskDue;
   if (patch.assessmentDate !== undefined) out.assessment_date = patch.assessmentDate;
