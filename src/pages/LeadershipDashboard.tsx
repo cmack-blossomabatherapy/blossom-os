@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { dashboardDefinitions, pipelineStageOrder, type ClientRecord, type ClinicPerformance, type DashboardKey, type HealthStatus, type RiskLevel, type ServiceSetting } from "@/data/leadershipDashboard";
+import { mockClients } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -151,6 +152,34 @@ function buildLiveDashboard(clients: ClientRow[], auths: AuthRow[], timesheets: 
   return { clientRecords, clinics, pipelineStages, redFlags, lastUpdated: new Date() };
 }
 
+function demoLeadershipRows() {
+  const clients = mockClients.map((client, index) => ({
+    id: client.id,
+    child_name: client.childName,
+    stage: client.stage,
+    state: client.state,
+    clinic: client.clinic,
+    bcba: client.bcba,
+    rbt: client.rbt,
+    staffing_status: client.staffingStatus,
+    auth_status: client.authStatus,
+    payor: client.payor,
+    start_date: client.startDate,
+    next_action: client.nextAction,
+    blockers: client.blockers,
+    stage_entered_at: new Date(Date.now() - client.daysInStage * dayMs).toISOString(),
+  })) as unknown as ClientRow[];
+  const auths = mockClients.flatMap((client) => client.authorizations.map((auth, index) => ({
+    id: `${client.id}-auth-${index}`,
+    client_id: client.id,
+    kind: auth.type,
+    status: auth.status,
+    hours: auth.hours ?? (auth.approvedHours ? `${auth.approvedHours}/wk` : null),
+  }))) as unknown as AuthRow[];
+  const timesheets = mockClients.filter((client) => client.stage === "Active").map((client, index) => ({ id: `demo-ts-${index}`, total_hours: client.deliveredWeeklyHours ?? 18 })) as unknown as TimesheetRow[];
+  return { clients, auths, timesheets };
+}
+
 export default function LeadershipDashboard() {
   const { clinicId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -197,9 +226,10 @@ export default function LeadershipDashboard() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Live dashboard data could not be loaded.";
       setLoadError(message);
-      setClientRows([]);
-      setAuthRows([]);
-      setTimesheetRows([]);
+      const demo = demoLeadershipRows();
+      setClientRows(demo.clients);
+      setAuthRows(demo.auths);
+      setTimesheetRows(demo.timesheets);
     } finally {
       setLoading(false);
     }
@@ -209,7 +239,11 @@ export default function LeadershipDashboard() {
     void load();
   }, [load]);
 
-  const live = useMemo(() => buildLiveDashboard(clientRows, authRows, timesheetRows), [authRows, clientRows, timesheetRows]);
+  const dashboardRows = useMemo(() => {
+    if (clientRows.length > 0) return { clients: clientRows, auths: authRows, timesheets: timesheetRows };
+    return demoLeadershipRows();
+  }, [authRows, clientRows, timesheetRows]);
+  const live = useMemo(() => buildLiveDashboard(dashboardRows.clients, dashboardRows.auths, dashboardRows.timesheets), [dashboardRows]);
   const states = ["All States", ...Array.from(new Set(live.clientRecords.map((client) => client.state))).filter(Boolean)];
   const clinicNames = ["All Clinics", ...Array.from(new Set(live.clinics.map((clinic) => clinic.clinic))).filter(Boolean)];
   const insuranceNames = ["All Insurance", ...Array.from(new Set(live.clientRecords.map((client) => client.insurance))).filter((item) => item && item !== "—")];
@@ -278,7 +312,8 @@ export default function LeadershipDashboard() {
         )}
       </header>
 
-      {loadError ? <DashboardErrorState message={loadError} onRetry={load} /> : loading || live.clientRecords.length === 0 ? <DashboardLoadingState isSyncingFirstData={!loading} /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
+      {loadError && <DashboardDemoNotice message={loadError} onRetry={load} />}
+      {loading ? <DashboardLoadingState /> : activeDashboard === "ceo" ? <LeadershipScorecard live={live} filteredClients={filteredClients} query={query} setQuery={setQuery} sortBy={sortBy} setSortBy={setSortBy} /> : <DepartmentDashboard dashboardKey={activeDashboard} live={live} />}
     </div>
   );
 }
@@ -293,6 +328,10 @@ function DashboardLoadingState({ isSyncingFirstData = false }: { isSyncingFirstD
 
 function DashboardErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return <Section title="Live dashboard unavailable"><div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4"><div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><p className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertTriangle className="h-4 w-4" />Unable to load live leadership data</p><p className="mt-2 max-w-3xl text-sm text-muted-foreground">The dashboard is safe, but one or more live queries failed while initializing. Try refreshing; if it continues, check that the current account has access to Clients, Authorizations, and Timesheets.</p><p className="mt-3 rounded-md bg-background px-3 py-2 text-xs text-muted-foreground">Error: {message}</p></div><Button variant="outline" size="sm" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></div></div></Section>;
+}
+
+function DashboardDemoNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <div className="rounded-lg border border-warning/30 bg-warning/5 p-4"><div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><p className="flex items-center gap-2 text-sm font-semibold text-foreground"><AlertTriangle className="h-4 w-4 text-warning" />Showing connected test data</p><p className="mt-1 text-sm text-muted-foreground">Live metrics were unavailable, so dashboards are populated from Blossom OS demo records until data sync returns.</p><p className="mt-2 text-xs text-muted-foreground">Error: {message}</p></div><Button variant="outline" size="sm" onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4" />Retry live data</Button></div></div>;
 }
 
 function LeadershipScorecard({ live, filteredClients, query, setQuery, sortBy, setSortBy }: { live: ReturnType<typeof buildLiveDashboard>; filteredClients: ClientRecord[]; query: string; setQuery: (value: string) => void; sortBy: keyof ClientRecord; setSortBy: (value: keyof ClientRecord) => void }) {
