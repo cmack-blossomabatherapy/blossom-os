@@ -1,7 +1,7 @@
 import { X, UserPlus, Users, ArrowRight, Calendar, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { ClientStage, clientStages } from "@/data/clients";
+import { ClientStage } from "@/data/clients";
 
 interface ClientBulkActionBarProps {
   count: number;
@@ -14,10 +14,11 @@ interface ClientBulkActionBarProps {
   onDelete: () => void;
   bcbas: string[];
   rbts: string[];
+  movableStages: ClientStage[];
 }
 
 export function ClientBulkActionBar({
-  count, onClear, onAssignBcba, onAssignRbt, onMoveStage, onSetStartDate, onExport, onDelete, bcbas, rbts,
+  count, onClear, onAssignBcba, onAssignRbt, onMoveStage, onSetStartDate, onExport, onDelete, bcbas, rbts, movableStages,
 }: ClientBulkActionBarProps) {
   if (count === 0) return null;
 
@@ -61,8 +62,9 @@ export function ClientBulkActionBar({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="max-h-[400px] overflow-y-auto">
           <DropdownMenuLabel className="text-[10px]">Move to</DropdownMenuLabel>
-          {clientStages.map((s) => (
-            <DropdownMenuItem key={s.name} onClick={() => onMoveStage(s.name)}>{s.name}</DropdownMenuItem>
+          {movableStages.length === 0 && <DropdownMenuItem disabled>No shared next stage</DropdownMenuItem>}
+          {movableStages.map((stage) => (
+            <DropdownMenuItem key={stage} onClick={() => onMoveStage(stage)}>{stage}</DropdownMenuItem>
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
