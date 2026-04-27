@@ -27,9 +27,9 @@ const KIND_ICON: Record<ResourceKind, typeof FileText> = {
   document: FileText, link: Link2, video: Video, policy: FileText, form: FileText, folder: Folder,
 };
 
-export default function ResourceHub() {
+export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }) {
   const { hasPerm, user } = useAuth();
-  const canManage = hasPerm("hr.resources.manage");
+  const canManage = !readOnly && hasPerm("hr.resources.manage");
   const [items, setItems] = useState<HRResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
