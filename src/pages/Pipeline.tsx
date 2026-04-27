@@ -170,6 +170,28 @@ function ReadOnlyRecord({ title, description, details }: { title: string; descri
   );
 }
 
+function CompactActivityTimeline({ events }: { events: { title: string; timestamp: string; type: string; description?: string; isBlocker?: boolean }[] }) {
+  return (
+    <div className="space-y-2">
+      {events.map((event, index) => (
+        <div key={`${event.title}-${event.timestamp}-${index}`} className="flex gap-3 rounded-md border border-border/60 bg-background p-3">
+          <div className={cn("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md", event.isBlocker ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
+            {event.isBlocker ? <AlertCircle className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-foreground">{event.title}</p>
+              <span className="shrink-0 text-[11px] text-muted-foreground">{formatTimelineDate(event.timestamp)}</span>
+            </div>
+            {event.description && <p className="mt-1 text-xs text-muted-foreground">{event.description}</p>}
+            <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{event.type}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drilldown: Drilldown; onOpenClient: () => void; onOpenWorkspace: (path: string) => void }) {
   const { client, stage } = drilldown;
   const sectionKey = stageToSection.get(stage) ?? "clientSetup";
@@ -177,6 +199,7 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
   const alert = getClientAlert(client);
   const context = getStageContext(client, sectionKey);
   const relatedRecords = getRelatedRecords(client, sectionKey);
+  const activityEvents = getStageActivity(client, sectionKey);
 
   return (
     <div className="mt-6 space-y-4">
@@ -211,6 +234,16 @@ function PipelineDrilldown({ drilldown, onOpenClient, onOpenWorkspace }: { drill
         </div>
         <div className="mt-3 space-y-2">
           {relatedRecords.map((record) => <ReadOnlyRecord key={record.title} {...record} />)}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-card p-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-foreground">Stage activity</h3>
+          <span className="text-xs text-muted-foreground">Recent events</span>
+        </div>
+        <div className="mt-3">
+          <CompactActivityTimeline events={activityEvents} />
         </div>
       </div>
 
@@ -342,6 +375,43 @@ function getRelatedRecords(client: Client, sectionKey: string) {
       ],
     },
   ];
+}
+
+function getStageActivity(client: Client, sectionKey: string) {
+  const stageTypes: Record<string, string[]> = {
+    initialAuth: ["auth", "stage"],
+    treatmentAuth: ["auth", "stage"],
+    reauth: ["auth", "qa", "stage"],
+    qa: ["qa", "note", "stage"],
+    staffing: ["staffing", "stage"],
+    scheduling: ["schedule", "stage"],
+    assessment: ["schedule", "stage", "note"],
+    activeServices: ["schedule", "staffing", "note", "stage"],
+  };
+  const matchingTypes = stageTypes[sectionKey] ?? ["system", "note", "stage"];
+  const timelineEvents = client.timeline
+    .filter((event) => matchingTypes.includes(event.type))
+    .map((event) => ({ title: event.description, timestamp: event.timestamp, type: event.type, description: event.user ? `By ${event.user}` : undefined }));
+  const blockerEvents = client.blockers.map((blocker, index) => ({
+    title: blocker,
+    timestamp: client.nextTaskDue ?? client.lastActivity,
+    type: "blocker",
+    description: "Current stage blocker",
+    isBlocker: true,
+  }));
+  const taskEvents = client.tasks
+    .filter((task) => !task.completed)
+    .map((task) => ({ title: task.title, timestamp: task.dueDate ?? client.lastActivity, type: "task", description: "Open task" }));
+
+  return [...blockerEvents, ...timelineEvents, ...taskEvents]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 5);
+}
+
+function formatTimelineDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getWorkspacePath(sectionKey: string) {
