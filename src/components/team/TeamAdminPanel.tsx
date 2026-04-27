@@ -451,6 +451,10 @@ function MemberRow({
                   />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Email</Label>
+                  <Input value={draftEmail} onChange={(e) => setDraftEmail(e.target.value)} placeholder="name@blossomaba.com" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">Job title</Label>
                   <Input
                     value={draftTitle}
@@ -459,6 +463,35 @@ function MemberRow({
                     className="h-8 text-sm"
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Department</Label>
+                  <Input value={draftDepartment} onChange={(e) => setDraftDepartment(e.target.value)} placeholder="Intake" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">State</Label>
+                  <Input value={draftState} onChange={(e) => setDraftState(e.target.value)} placeholder="GA" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Clinic</Label>
+                  <Input value={draftClinic} onChange={(e) => setDraftClinic(e.target.value)} placeholder="Riverdale" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Dashboard Access</Label>
+                  <Select value={draftDashboard} onValueChange={setDraftDashboard}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[["department", "Department-specific"], ["ceo", "CEO & Leadership"], ["intake", "Intake"], ["authorizations", "Authorizations"], ["scheduling", "Scheduling"], ["staffing", "Staffing"], ["clinic", "Clinic"], ["qa", "QA"], ["finance", "Finance"], ["hr", "HR"], ["recruiting", "Recruiting"]].map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
+                  <Checkbox checked={draftLeadership} onCheckedChange={(checked) => setDraftLeadership(checked === true)} />
+                  <span><strong>Part of Leadership</strong><br /><span className="text-muted-foreground">Leadership users can access the CEO & Leadership Dashboard.</span></span>
+                </label>
+                <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
+                  <Checkbox checked={draftActive} onCheckedChange={(checked) => setDraftActive(checked === true)} />
+                  <span><strong>Active</strong><br /><span className="text-muted-foreground">Inactive users remain visible for admin review.</span></span>
+                </label>
                 <div className="sm:col-span-2 space-y-1">
                   <Label className="text-[11px] text-muted-foreground">
                     Responsibilities
