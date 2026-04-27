@@ -14,6 +14,7 @@ export type ClientStage =
   | "Payment Plan Received"
   | "Approved for Services"
   | "Not Qualified"
+  | "Can Not Submit Auth"
   | "Converted to Client"
   | "BCBA Assignment"
   | "Pending Initial Authorization"
