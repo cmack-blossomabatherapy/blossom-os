@@ -9,15 +9,15 @@ export type LeadStatus =
   | "Can't Reach"
   | "Can Not Submit Auth"
   | "Sent Packet - Can't Reach"
-  | "Non-qualified Lead"
-  | "Getting DX";
+  | "Non-Qualified"
+  | "Needs DX";
 
 export type Priority = "Hot" | "Warm" | "Cold";
 export type LeadSource = "Website" | "Phone" | "Facebook" | "Referral" | "Ads" | "Organic" | "Digital" | "Insurance";
-export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Completed";
-export type ConsentStatus = "Not Sent" | "Sent" | "Completed";
-export type VobStatus = "Not Started" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
-export type FormReviewStatus = "Pending" | "Complete" | "Missing Information";
+export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete";
+export type ConsentStatus = "Not Sent" | "Sent" | "Complete";
+export type VobStatus = "Not Sent" | "Sent" | "Received" | "Approved" | "Payment Plan Required";
+export type FormReviewStatus = "Pending" | "Complete" | "Missing Info";
 
 export interface LeadTask {
   id: string;
@@ -28,6 +28,21 @@ export interface LeadTask {
   workflowStep?: string;
   comments?: number;
 }
+
+export const INTAKE_COORDINATORS = ["Sarah M.", "James R.", "Maya P."];
+
+export const createIntakeTask = (title: LeadTask["title"], owner = INTAKE_COORDINATORS[0], dueOffsetDays = 0): LeadTask => {
+  const due = new Date();
+  due.setDate(due.getDate() + dueOffsetDays);
+  return {
+    id: `tk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    completed: false,
+    owner,
+    dueDate: due.toISOString().split("T")[0],
+    workflowStep: title,
+  };
+};
 
 export interface TimelineEvent {
   id: string;
