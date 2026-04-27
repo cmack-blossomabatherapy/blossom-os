@@ -4,7 +4,6 @@ import { PageShell } from "@/components/shared/PageShell";
 import { UserCheck } from "lucide-react";
 import { ClientControlBar, ClientViewMode } from "@/components/clients/ClientControlBar";
 import { ClientTableView, ClientSortField, SortDir } from "@/components/clients/ClientTableView";
-import { ClientPipelineView } from "@/components/clients/ClientPipelineView";
 import { ClientQueueView } from "@/components/clients/ClientQueueView";
 import { ClientKpiStrip } from "@/components/clients/ClientKpiStrip";
 import { ClientBulkActionBar } from "@/components/clients/ClientBulkActionBar";
@@ -36,7 +35,6 @@ export default function Clients() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { clients, moveStage, assignBcba, assignRbt, setStartDate, deleteClients } = useClients();
 
-  const requestedPipeline = searchParams.get("pipeline") as PipelineSectionKey | null;
   const requestedView = searchParams.get("view") as ClientViewMode | null;
   const [viewMode, setViewMode] = useState<ClientViewMode>(requestedView ?? "table");
   const [activeView, setActiveView] = useState("all");
@@ -101,12 +99,6 @@ export default function Clients() {
     if (filters.qaStatuses.length) result = result.filter((c) => filters.qaStatuses.includes(c.qaStatus));
     if (filters.payors.length) result = result.filter((c) => filters.payors.includes(c.payor));
 
-    if (requestedPipeline) {
-      const section = masterPipelineSections.find((s) => s.key === requestedPipeline);
-      const sectionStages = new Set(section?.stages.map((stage) => stage.name) ?? []);
-      result = result.filter((c) => sectionStages.has(canonicalPipelineStage(c.stage)));
-    }
-
     if (activeKpi) {
       result = result.filter(clientKpiFilters[activeKpi]);
     } else {
@@ -144,7 +136,7 @@ export default function Clients() {
     }
 
     return result;
-  }, [clients, searchQuery, filters, requestedPipeline, activeView, activeKpi, sortField, sortDir]);
+  }, [clients, searchQuery, filters, activeView, activeKpi, sortField, sortDir]);
 
   const handleKpi = (key: ClientKpiKey) => {
     setActiveKpi(activeKpi === key ? null : key);
@@ -240,9 +232,6 @@ export default function Clients() {
           sortDir={sortDir}
           onSort={handleSort}
         />
-      )}
-      {viewMode === "pipeline" && (
-        <ClientPipelineView clients={filteredClients} onSelect={(c) => navigate(`/clients/${c.id}`)} />
       )}
       {viewMode === "queue" && (
         <ClientQueueView clients={filteredClients} onSelect={(c) => navigate(`/clients/${c.id}`)} />
