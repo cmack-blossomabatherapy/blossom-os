@@ -9,15 +9,17 @@ export type LeadStatus =
   | "Can't Reach"
   | "Can Not Submit Auth"
   | "Sent Packet - Can't Reach"
+  | "Non-qualified Lead"
+  | "Getting DX"
   | "Non-Qualified"
   | "Needs DX";
 
 export type Priority = "Hot" | "Warm" | "Cold";
 export type LeadSource = "Website" | "Phone" | "Facebook" | "Referral" | "Ads" | "Organic" | "Digital" | "Insurance";
-export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete";
-export type ConsentStatus = "Not Sent" | "Sent" | "Complete";
-export type VobStatus = "Not Sent" | "Sent" | "Received" | "Approved" | "Payment Plan Required";
-export type FormReviewStatus = "Pending" | "Complete" | "Missing Info";
+export type FormStatus = "Not Sent" | "Sent" | "Viewed" | "Complete" | "Completed";
+export type ConsentStatus = "Not Sent" | "Sent" | "Complete" | "Completed";
+export type VobStatus = "Not Started" | "Not Sent" | "Sent" | "Received" | "Completed" | "Issue" | "Approved" | "Payment Plan Required";
+export type FormReviewStatus = "Pending" | "Complete" | "Missing Info" | "Missing Information";
 
 export interface LeadTask {
   id: string;
