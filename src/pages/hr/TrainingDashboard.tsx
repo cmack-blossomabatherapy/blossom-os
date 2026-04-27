@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Archive, Award, BarChart3, BookOpen, CheckCircle2, Clock, Edit3, Eye, Filter, GraduationCap, History, Link2, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
+import { Archive, Award, BarChart3, BookOpen, CheckCircle2, Clock, Edit3, Eye, Filter, GraduationCap, History, Link2, Plus, RotateCcw, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { useLiveTeam } from "@/hooks/useLiveTeam";
 import { useAuth } from "@/contexts/AuthContext";
-import { createTrainingCourse, getStoredTrainingCourses, saveStoredTrainingCourses, trainingBadges, trainingDepartments, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
+import { createTrainingCourse, getStoredTrainingAuditLog, getStoredTrainingCourses, saveStoredTrainingAuditLog, saveStoredTrainingCourses, trainingBadges, trainingDepartments, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingAuditAction, type TrainingAuditEntry, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
 
 const ALL = "All";
 const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
@@ -56,6 +56,21 @@ const makeTrainingVersion = (before: TrainingCourse, after: TrainingCourse, labe
   savedBy: after.owner || before.owner || "Training Admin",
   changeSummary: describeTrainingChanges(snapshotCourse(before), after).map((change) => label === "Training edit" ? change : `${label}: ${change}`),
   snapshot: snapshotCourse(before),
+});
+
+const auditLabel: Record<TrainingAuditAction, string> = { created: "Created", edited: "Edited", archived: "Archived", deleted: "Deleted", restored: "Restored", resource_added: "Resource added", resource_changed: "Resources changed", rolled_back: "Rolled back" };
+
+const makeAuditEntry = (course: TrainingCourse, action: TrainingAuditAction, actor: string, actorRole: string, details: string[], summary?: string): TrainingAuditEntry => ({
+  id: `audit-${course.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  trainingId: course.id,
+  trainingTitle: course.title,
+  action,
+  actor,
+  actorRole,
+  occurredAt: new Date().toISOString(),
+  summary: summary ?? `${auditLabel[action]} ${course.title}`,
+  details,
+  itemType: action === "resource_added" || action === "resource_changed" ? "Resource" : "Training",
 });
 
 export default function TrainingDashboard() {
