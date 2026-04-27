@@ -12,6 +12,7 @@ import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
+import Pipeline from "./pages/Pipeline";
 import Authorizations from "./pages/Authorizations";
 import AuthDetail from "./pages/AuthDetail";
 import Scheduling from "./pages/Scheduling";
@@ -49,11 +50,6 @@ import ResourceHub from "./pages/hr/ResourceHub";
 import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
-import BenefitsFinancial from "./pages/BenefitsFinancial";
-import ClientOnboarding from "./pages/ClientOnboarding";
-import Assessments from "./pages/Assessments";
-import ActiveServices from "./pages/ActiveServices";
-import ReauthLoop from "./pages/ReauthLoop";
 
 const queryClient = new QueryClient();
 
@@ -76,17 +72,13 @@ const App = () => (
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/leads" element={<Leads />} />
-                  <Route path="/benefits-financial" element={<BenefitsFinancial />} />
-                  <Route path="/client-onboarding" element={<ClientOnboarding />} />
-                  <Route path="/assessments" element={<Assessments />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
+                  <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/clients" element={<Clients />} />
                   <Route path="/clients/:id" element={<ClientDetail />} />
                   <Route path="/authorizations" element={<Authorizations />} />
                   <Route path="/authorizations/:id" element={<AuthDetail />} />
                   <Route path="/scheduling" element={<Scheduling />} />
-                  <Route path="/active-services" element={<ActiveServices />} />
-                  <Route path="/reauth-loop" element={<ReauthLoop />} />
                   <Route path="/staffing" element={<Staffing />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/recruiting" element={<Recruiting />} />

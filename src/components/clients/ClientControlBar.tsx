@@ -1,10 +1,10 @@
-import { Search, Filter, Plus, Download, LayoutList, Columns3, ListChecks, Sparkles } from "lucide-react";
+import { Search, Plus, Download, LayoutList, ListChecks, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ClientFilterPopover, ClientFilters } from "./ClientFilterPopover";
 
-export type ClientViewMode = "table" | "pipeline" | "queue";
+export type ClientViewMode = "table" | "queue";
 
 interface SavedView { label: string; id: string }
 
@@ -57,7 +57,6 @@ export function ClientControlBar({
         <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 bg-card">
           {([
             { mode: "table" as const, icon: LayoutList, label: "Table" },
-            { mode: "pipeline" as const, icon: Columns3, label: "Pipeline" },
             { mode: "queue" as const, icon: ListChecks, label: "Queue" },
           ]).map(({ mode, icon: Icon, label }) => (
             <button
