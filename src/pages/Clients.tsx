@@ -13,7 +13,7 @@ import { ConvertLeadDialog } from "@/components/clients/ConvertLeadDialog";
 import { ClientKpiKey, clientKpiFilters, ClientStage, clientStages } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
 import { toast } from "sonner";
-import { canonicalPipelineStage } from "@/data/pipeline";
+import { canonicalPipelineStage, getNextPipelineStage } from "@/data/pipeline";
 
 const exportToCsv = (rows: Record<string, unknown>[], filename: string) => {
   if (!rows.length) return;
@@ -169,6 +169,11 @@ export default function Clients() {
     toast.success(`Exported ${target.length} clients`);
   };
 
+  const selectedClients = clients.filter((c) => selectedIds.includes(c.id));
+  const sharedNextStage = selectedClients.length
+    ? selectedClients.map((c) => getNextPipelineStage(c.stage)).reduce<string | null>((shared, next) => (shared === next ? shared : null))
+    : null;
+
   return (
     <PageShell
       title="Clients"
@@ -194,6 +199,7 @@ export default function Clients() {
       <ClientBulkActionBar
         count={selectedIds.length}
         onClear={() => setSelectedIds([])}
+        movableStages={sharedNextStage ? [sharedNextStage as ClientStage] : []}
         bcbas={filterOptions.bcbas.length ? filterOptions.bcbas : ["Dr. Kim", "Dr. Lee", "Dr. Patel"]}
         rbts={filterOptions.rbts.length ? filterOptions.rbts : ["Taylor S.", "Jordan M.", "Casey R."]}
         onAssignBcba={(bcba) => { assignBcba(selectedIds, bcba); toast.success(`Assigned ${selectedIds.length} clients to ${bcba}`); }}
