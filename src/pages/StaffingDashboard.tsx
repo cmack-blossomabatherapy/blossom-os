@@ -244,6 +244,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
+    .filter((item) => item.match.score >= mapFilters.minScore)
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, 6);
   const selectedRoute = activeMatch ? routeStats(selected, activeMatch.rbt) : mapMatches[0]?.route;
@@ -417,7 +418,9 @@ export default function StaffingDashboard() {
   const mapRbts = useMemo(() => rbts
     .filter((rbt) => stateFilter === ALL || rbt.state === stateFilter)
     .filter((rbt) => !mapFilters.readyRbtsOnly || rbt.compliance === "Ready")
-    .filter((rbt) => !mapFilters.urgentLocalOnly || rbt.state === selected.state || rbt.region === selected.region), [rbts, stateFilter, mapFilters.readyRbtsOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
+    .filter((rbt) => !mapFilters.urgentLocalOnly || rbt.state === selected.state || rbt.region === selected.region)
+    .filter((rbt) => scoreMatch(selected, rbt).score >= mapFilters.minScore)
+    .sort((a, b) => mapFilters.sortMarkersByScore ? scoreMatch(selected, b).score - scoreMatch(selected, a).score : 0), [rbts, stateFilter, mapFilters.readyRbtsOnly, mapFilters.urgentLocalOnly, mapFilters.minScore, mapFilters.sortMarkersByScore, selected]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
@@ -441,7 +444,9 @@ export default function StaffingDashboard() {
   const mapClients = useMemo(() => filtered
     .filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed")))
     .filter((record) => !mapFilters.unassignedOnly || !record.assignedRbtId)
-    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region))), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
+    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region)))
+    .filter((record) => rbts.some((rbt) => rbt.state === record.state && scoreMatch(record, rbt).score >= mapFilters.minScore))
+    .sort((a, b) => mapFilters.sortMarkersByScore ? (matchesFor(b)[0]?.score ?? 0) - (matchesFor(a)[0]?.score ?? 0) : 0), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, mapFilters.minScore, mapFilters.sortMarkersByScore, selected.state, selected.region, rbts]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
