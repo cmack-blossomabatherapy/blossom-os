@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { useLiveTeam } from "@/hooks/useLiveTeam";
 import { useAuth } from "@/contexts/AuthContext";
-import { createTrainingCourse, getStoredTrainingAssignments, getStoredTrainingAuditLog, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingAuditLog, saveStoredTrainingCourses, trainingBadges, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingAssignmentRecord, type TrainingAssignmentStatus, type TrainingAuditAction, type TrainingAuditEntry, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
+import { badgeReasonOptions, createTrainingCourse, getStoredTrainingAssignments, getStoredTrainingAuditLog, getStoredTrainingBadges, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingAuditLog, saveStoredTrainingBadges, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingAssignmentRecord, type TrainingAssignmentStatus, type TrainingAuditAction, type TrainingAuditEntry, type TrainingBadge, type TrainingBadgeReason, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
 
 const ALL = "All";
 const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
@@ -97,6 +97,10 @@ export default function TrainingDashboard() {
   const [createOpen, setCreateOpen] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentRecord[]>([]);
   const [auditLog, setAuditLog] = useState<TrainingAuditEntry[]>(() => getStoredTrainingAuditLog());
+  const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
+  const [badgeEmoji, setBadgeEmoji] = useState("🌸");
+  const [badgeTitle, setBadgeTitle] = useState("");
+  const [badgeReason, setBadgeReason] = useState<TrainingBadgeReason>(badgeReasonOptions[0]);
 
   useEffect(() => {
     const refresh = () => setCourses(getStoredTrainingCourses());
@@ -118,6 +122,13 @@ export default function TrainingDashboard() {
     window.addEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refreshAssignments);
     window.addEventListener("storage", refreshAssignments);
     return () => { window.removeEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refreshAssignments); window.removeEventListener("storage", refreshAssignments); };
+  }, []);
+
+  useEffect(() => {
+    const refreshBadges = () => setBadges(getStoredTrainingBadges());
+    window.addEventListener(TRAINING_BADGES_UPDATED_EVENT, refreshBadges);
+    window.addEventListener("storage", refreshBadges);
+    return () => { window.removeEventListener(TRAINING_BADGES_UPDATED_EVENT, refreshBadges); window.removeEventListener("storage", refreshBadges); };
   }, []);
 
   const persistCourses = (next: TrainingCourse[]) => { setCourses(next); saveStoredTrainingCourses(next); };
@@ -165,6 +176,7 @@ export default function TrainingDashboard() {
   const handleAddResource = (course: TrainingCourse, resource: string) => { if (!canManageTrainings) return blockTrainingAction(); const current = courses.find((item) => item.id === course.id) ?? course; const draft = { ...current, resources: [...current.resources, resource] }; const nextCourse = { ...draft, versions: [makeTrainingVersion(current, draft, "Resource added"), ...(current.versions ?? [])] }; persistCourses(courses.map((item) => item.id === course.id ? nextCourse : item)); recordAudit(makeAuditEntry(nextCourse, "resource_added", actorName, roleSummary, [`Added resource: ${resource}`, `Resource count: ${current.resources.length} → ${nextCourse.resources.length}`])); setSelectedCourse(nextCourse); toast.success("Resource added, versioned, and audit logged"); };
   const handleAssign = (records: AssignmentRecord[]) => { if (!canAssignTraining) return blockTrainingAction(); if (!records.length) { toast.error("No matching team members found for this assignment"); return; } const next = [...records, ...assignments].filter((assignment, index, all) => all.findIndex((item) => item.courseId === assignment.courseId && item.employeeId === assignment.employeeId) === index); setAssignments(next); saveStoredTrainingAssignments(next); setAssignOpen(false); toast.success(`${records.length} HR-connected training enrollment${records.length === 1 ? "" : "s"} saved`); };
   const handleUpdateAssignment = (id: string, status: AssignmentStatus) => { if (!canAssignTraining) return blockTrainingAction(); const progress = status === "completed" ? 100 : status === "in_progress" ? 50 : 0; const next = assignments.map((assignment) => assignment.id === id ? { ...assignment, status, progress, startedAt: status === "in_progress" && !assignment.startedAt ? new Date().toISOString() : assignment.startedAt, completedAt: status === "completed" ? new Date().toISOString() : undefined } : assignment); setAssignments(next); saveStoredTrainingAssignments(next); toast.success("Training progress updated"); };
+  const handleCreateBadge = () => { if (!canManageTrainings) return blockTrainingAction(); if (!badgeTitle.trim()) { toast.error("Add a badge title"); return; } const next = [{ id: `badge-${Date.now()}`, emoji: badgeEmoji.trim() || "🌸", title: badgeTitle.trim(), reason: badgeReason, description: badgeReason, earned: false }, ...badges]; setBadges(next); saveStoredTrainingBadges(next); setBadgeTitle(""); setBadgeEmoji("🌸"); setBadgeReason(badgeReasonOptions[0]); toast.success("Badge created"); };
   const handleRollback = (course: TrainingCourse, version: TrainingVersion): void => { if (!canManageTrainings) { blockTrainingAction(); return; } const current = courses.find((item) => item.id === course.id) ?? course; const restoredDraft = { ...version.snapshot, versions: current.versions ?? [] }; const rollbackMarker = makeTrainingVersion(current, restoredDraft, `Rolled back to v${version.version}`); const nextCourse = { ...version.snapshot, versions: [rollbackMarker, ...(current.versions ?? []).filter((item) => item.id !== version.id)] }; persistCourses(courses.map((item) => item.id === course.id ? nextCourse : item)); recordAudit(makeAuditEntry(nextCourse, "rolled_back", actorName, roleSummary, [`Restored snapshot from version ${version.version}`, `Snapshot saved ${formatDateTime(version.savedAt)} by ${version.savedBy}`])); setSelectedCourse(nextCourse); toast.success(`Rolled back to version ${version.version} and audit logged`); };
 
   return <div className="space-y-6 animate-fade-in"><header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><h1 className="text-3xl font-semibold tracking-tight text-foreground">Training Dashboard</h1><p className="mt-1 text-sm text-muted-foreground">Create, edit, archive, delete, resource, and assign trainings as Blossom’s library grows.</p><p className="mt-2 text-xs text-muted-foreground">Management access is controlled by Admin → Team roles. Current role: {roleSummary}.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => canAssignTraining ? setAssignOpen(true) : blockTrainingAction()} disabled={activeCourses.length === 0 || !canAssignTraining}><Plus className="mr-2 h-4 w-4" />Assign Training</Button><Button onClick={() => canManageTrainings ? setCreateOpen(true) : blockTrainingAction()} disabled={!canManageTrainings}><Plus className="mr-2 h-4 w-4" />Create Training</Button></div></header>
