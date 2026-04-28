@@ -5,6 +5,18 @@ export interface RoleNavigationException {
   itemPaths?: string[];
 }
 
+export interface NavigationPreviewItem {
+  label: string;
+  path: string;
+  perm?: string;
+  superAdminOnly?: boolean;
+}
+
+export interface NavigationPreviewSection {
+  title: string;
+  items: NavigationPreviewItem[];
+}
+
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
@@ -13,6 +25,67 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
 };
 
 const intelligenceRoutePrefixes = ["/training", "/resources"];
+
+const dashboardPreviewSection: NavigationPreviewSection = {
+  title: "Dashboards",
+  items: [
+    { label: "CEO & Leadership", path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Intake Dashboard", path: "/intake-dashboard", perm: "leads.view", superAdminOnly: true },
+    { label: "Authorizations Dashboard", path: "/authorizations-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Scheduling Dashboard", path: "/scheduling-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Staffing Dashboard", path: "/staffing-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Clinic Dashboard", path: "/clinic-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "QA Dashboard", path: "/qa-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Finance Dashboard", path: "/finance-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "HR Dashboard", path: "/hr", perm: "dashboard.view", superAdminOnly: true },
+    { label: "Recruiting Dashboard", path: "/recruiting-dashboard", perm: "dashboard.view", superAdminOnly: true },
+  ],
+};
+
+const navigationPreviewSections: NavigationPreviewSection[] = [
+  { title: "Operate", items: [
+    { label: "Clients", path: "/clients", perm: "clients.view" },
+    { label: "Intake", path: "/leads?view=queue", perm: "leads.view" },
+    { label: "Authorizations", path: "/authorizations", perm: "auth.view" },
+    { label: "Scheduling", path: "/scheduling", perm: "scheduling.view" },
+    { label: "Staffing", path: "/staffing", perm: "staffing.view" },
+    { label: "QA & Compliance", path: "/qa", perm: "qa.view" },
+    { label: "Recruiting", path: "/recruiting", perm: "recruiting.view" },
+    { label: "Clinics", path: "/clinics", perm: "clinics.view" },
+  ] },
+  { title: "Pipeline", items: [{ label: "Pipeline", path: "/pipeline", perm: "clients.view" }] },
+  { title: "Records", items: [
+    { label: "Phone Calls", path: "/phone-calls", perm: "phone.view" },
+    { label: "Documents", path: "/documents", perm: "documents.view" },
+    { label: "Tasks", path: "/tasks", perm: "tasks.view" },
+  ] },
+  { title: "Intelligence", items: [
+    { label: "Training", path: "/training" },
+    { label: "Resource Hub", path: "/resources" },
+  ] },
+  { title: "HR Suite", items: [
+    { label: "HR Dashboard", path: "/hr", perm: "hr.view" },
+    { label: "Employees", path: "/hr/directory", perm: "hr.employees.view" },
+    { label: "Org Chart", path: "/hr/org-chart", perm: "hr.employees.view" },
+    { label: "Onboarding", path: "/hr/onboarding", perm: "hr.onboarding.manage" },
+    { label: "Reviews", path: "/hr/reviews", perm: "hr.reviews.view" },
+    { label: "Training Admin", path: "/hr/training", perm: "hr.training.view" },
+    { label: "Time Clock", path: "/hr/time-clock", perm: "hr.timeclock.view" },
+    { label: "Hours", path: "/hr/hours", perm: "hr.hours.view" },
+    { label: "Payroll", path: "/hr/payroll", perm: "hr.payroll.runs.view" },
+    { label: "Announcements", path: "/hr/announcements", perm: "hr.announcements.view" },
+    { label: "Resource Hub", path: "/hr/resources", perm: "hr.resources.view" },
+    { label: "HR Reports", path: "/hr/reports", perm: "hr.reports.view" },
+    { label: "HR Settings", path: "/hr/settings", perm: "hr.settings.manage" },
+  ] },
+  { title: "Admin", items: [
+    { label: "Team", path: "/team", perm: "team.view" },
+    { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
+    { label: "Reports", path: "/reports", perm: "reports.view" },
+    { label: "Automations", path: "/automations", perm: "automations.view" },
+    { label: "Settings", path: "/settings", perm: "settings.view" },
+  ] },
+];
 
 const sectionRoutePrefixes: Record<string, string[]> = {
   Dashboards: [
