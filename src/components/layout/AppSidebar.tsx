@@ -133,6 +133,8 @@ const mobileItemDescriptions: Record<string, string> = {
   "Resource Hub": "Guides and internal tools",
 };
 
+const limitedRoleMessage = "Only Intelligence is available. Other menu areas are restricted for your role.";
+
 const roleLabels: Record<string, string> = {
   admin: "Super Admin / Systems",
   exec: "Executive",
@@ -270,6 +272,15 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 </div>}
               </div>
             );})}
+            {!hasFullNavigation && (
+              <div className="rounded-2xl border border-border/60 bg-card/86 p-3 text-xs leading-relaxed text-muted-foreground shadow-sm backdrop-blur-xl">
+                <div className="mb-1 flex items-center gap-2 font-semibold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span>Intelligence-only access</span>
+                </div>
+                <p>{limitedRoleMessage}</p>
+              </div>
+            )}
           </nav>
           <div className="sticky bottom-0 border-t border-border/60 bg-card/92 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 shadow-[0_-18px_34px_-28px_hsl(var(--foreground))] backdrop-blur-xl">
             <div className="flex items-center gap-3 rounded-2xl border border-border/65 bg-background/70 p-3 shadow-sm">
@@ -329,6 +340,15 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           </div>
         );
         })}
+        {!hasFullNavigation && (
+          <div className="rounded-md border border-sidebar-border bg-sidebar-accent/60 px-3 py-2 text-[11px] leading-relaxed text-sidebar-muted">
+            <div className="mb-1 flex items-center gap-2 font-semibold text-sidebar-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-sidebar-primary" />
+              <span>Intelligence-only access</span>
+            </div>
+            <p>{limitedRoleMessage}</p>
+          </div>
+        )}
       </nav>
       </aside>
     </>
