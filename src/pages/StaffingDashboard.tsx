@@ -232,7 +232,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, setMapFocus, setMapZoom, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, setMapFocus, setMapZoom, setMapFilters, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -276,6 +276,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
       <p className="mt-2 text-[11px] text-muted-foreground">{route.withinRadius ? "Within service radius" : "Travel exception may be needed"}</p>
     </div>
   );
+  const toggleMapFilter = (key: keyof MapFilters) => setMapFilters({ ...mapFilters, [key]: !mapFilters[key] });
 
   return (
     <section className="mt-6 overflow-hidden rounded-lg border bg-card shadow-sm">
