@@ -331,6 +331,7 @@ export default function QA() {
   const [comment, setComment] = useState("");
   const [newReviewOpen, setNewReviewOpen] = useState(false);
   const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
+  const [starterSettings, setStarterSettings] = useState<StarterQaSettings>({ taskTitle: "Start treatment plan QA review", dueOffsetDays: 1, qaOwner: "QA Team" });
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
@@ -504,12 +505,12 @@ export default function QA() {
   const createQaReview = async () => {
     const client = clients.find((item) => item.id === newReviewClientId);
     if (!client) return toast.error("Select an assessment or treatment plan first");
-    const record = qaRecordFromClient(client, records.length);
+    const record = qaRecordFromClient(client, records.length, starterSettings);
     setRecords((current) => [record, ...current]);
     focusQaRecord(record);
     setFilters((current) => ({ ...current, status: "Awaiting Review", issue: "all", plan: "all", note: "all" }));
     await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: record.issues.length ? "Upload missing QA attachments" : "Start QA review" });
-    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
+    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: starterSettings.taskTitle, dueDate: isoDaysAhead(starterSettings.dueOffsetDays), completed: false });
     await Promise.all(record.tasks.filter((task) => task.title.startsWith("Upload ")).map((task) => addTask(client.id, task)));
     await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
     if (record.issues.length) await appendTimeline(client.id, `QA document requirements generated: ${record.documents.filter((doc) => doc.required && !doc.present).map((doc) => doc.name).join(", ")}`, "qa");
