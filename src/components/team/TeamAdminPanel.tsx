@@ -261,40 +261,26 @@ export function TeamAdminPanel() {
       toast.error("No email on file for this member");
       return;
     }
-    const loginUrl = `${window.location.origin}/auth`;
-    const subject = `Welcome to Blossom — your account is ready`;
-    const lines = [
-      `Hi ${member.display_name.split(" ")[0] || "there"},`,
-      ``,
-      `Your Blossom account has been created. Sign in here:`,
-      `${loginUrl}`,
-      ``,
-      `Email: ${member.email}`,
-      `(You'll be asked to set a new password the first time you sign in.)`,
-      ``,
-      member.job_title ? `Role: ${member.job_title}` : "",
-      member.responsibilities ? `What you'll be working on: ${member.responsibilities}` : "",
-      ``,
-      `Welcome aboard,`,
-      `The Blossom team`,
-    ].filter(Boolean);
-    const body = lines.join("\n");
-    const url = `mailto:${encodeURIComponent(member.email)}?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = url;
+    setSavingId(member.user_id);
+    const { data, error } = await supabase.functions.invoke("admin-resend-welcome-email", {
+      body: {
+        userId: member.user_id,
+        email: member.email,
+        displayName: member.display_name === "(no name)" ? undefined : member.display_name,
+        roles: member.roles,
+        jobTitle: member.job_title || undefined,
+        responsibilities: member.responsibilities || undefined,
+        siteUrl: window.location.origin,
+      },
+    });
+    setSavingId(null);
 
-    // Mark welcome as sent (informational only — admin still has to actually send from their mail client)
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        welcome_sent_at: new Date().toISOString(),
-        welcome_sent_by: currentUser?.id ?? null,
-      })
-      .eq("user_id", member.user_id);
-    if (!error) {
-      updateMember(member.user_id, { welcome_sent_at: new Date().toISOString() });
+    if (error || !data?.ok) {
+      toast.error(data?.error ?? error?.message ?? "Welcome email was not sent");
+      return;
     }
+    updateMember(member.user_id, { welcome_sent_at: data.welcomeSentAt ?? new Date().toISOString() });
+    toast.success(data.resendMessageId ? "Welcome email sent through Resend" : "Welcome email sent");
   };
 
   if (loading) {
@@ -690,12 +676,12 @@ function MemberRow({
             </div>
           </div>
 
-          {/* Welcome email — manual only */}
+          {/* Welcome email */}
           <div className="rounded-md border border-border/40 bg-card/60 p-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground">Welcome email</p>
               <p className="text-[11px] text-muted-foreground">
-                Opens a draft in your mail app — nothing is sent until you click Send there.
+                Sends the welcome email automatically through Resend.
               </p>
             </div>
             <Button
@@ -703,9 +689,9 @@ function MemberRow({
               variant="outline"
               className="h-8 text-xs shrink-0"
               onClick={onSendWelcome}
-              disabled={!member.email}
+              disabled={!member.email || saving}
             >
-              <Mail className="h-3.5 w-3.5 mr-1.5" />
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
               {welcomeLabel}
             </Button>
           </div>
