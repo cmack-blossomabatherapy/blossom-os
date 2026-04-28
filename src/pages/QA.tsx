@@ -92,7 +92,7 @@ interface QARecord {
   progressReportStatus: "Not Needed" | "Received" | "Awaiting QA" | "Corrections Needed" | "Ready for Reauth";
   checklist: Record<ChecklistKey, boolean>;
   issues: { id: string; type: IssueType; description: string; owner: string; dueDate: string; resolved: boolean }[];
-  documents: { name: string; type: string; present: boolean }[];
+  documents: { name: string; type: string; present: boolean; required?: boolean; reason?: string }[];
   tasks: { id: string; title: string; owner: string; dueDate: string; completed: boolean }[];
   timeline: { date: string; event: string }[];
   comments: string[];
@@ -136,6 +136,19 @@ const correctionTaskFor = (record: QARecord, title: string, dueInDays = 2) => ({
   dueDate: isoDaysAhead(dueInDays),
   completed: false,
 });
+
+const hasClientDocument = (client: Client, terms: string[]) => client.documents.some((doc) => {
+  const value = `${doc.name} ${doc.type}`.toLowerCase();
+  return terms.some((term) => value.includes(term));
+});
+
+const documentRequirementsFor = (client: Client, treatmentPlanReceived: boolean) => [
+  { name: "Treatment plan", type: "Treatment Plan", present: treatmentPlanReceived || hasClientDocument(client, ["treatment plan", "plan"]), checklistKey: "planReceived" as ChecklistKey, reason: "Required before QA can approve auth handoff." },
+  { name: "Assessment report", type: "Assessment", present: hasClientDocument(client, ["assessment", "eval", "evaluation"]) || Boolean(client.assessmentDate), checklistKey: "assessmentDate" as ChecklistKey, reason: "Required to verify assessment date and clinical source data." },
+  { name: "Parent consent", type: "Supporting", present: hasClientDocument(client, ["consent"]) || Boolean(client.consentComplete), checklistKey: "clientInfo" as ChecklistKey, reason: "Required to validate family consent and client demographics." },
+  { name: "Initial authorization letter", type: "Authorization", present: hasClientDocument(client, ["auth letter", "authorization letter", "initial auth"]), checklistKey: "readyForAuth" as ChecklistKey, reason: "Required to confirm the plan is tied to the approved assessment authorization." },
+  { name: "BCBA signature page", type: "Signature", present: hasClientDocument(client, ["signature", "signed", "bcba"]), checklistKey: "signatures" as ChecklistKey, reason: "Required for clinical sign-off before submission." },
+];
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   if (status === "Ready for Submission" || status === "Submitted to Auth") return "success";
