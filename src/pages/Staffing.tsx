@@ -175,6 +175,17 @@ const calcScore = (record: StaffingRecord, rbt: RbtRecord) => {
   return Math.round(location + availability + capacityScore + readiness + urgency);
 };
 
+const calcWeightedScore = (record: StaffingRecord, rbt: RbtRecord, weights: MatchWeights) => {
+  const overlap = rbt.availability.filter((a) => record.availability.includes(a)).length;
+  const capacity = Math.max(0, rbt.maxHours - rbt.currentHours);
+  const regionRaw = rbt.state === record.state ? (rbt.clinic === record.clinic ? 1 : 0.68) : 0;
+  const availabilityRaw = Math.min(1, overlap / Math.max(record.availability.length, 1));
+  const complianceRaw = ((rbt.compliance === "Ready" ? 0.57 : rbt.compliance === "Needs Review" ? 0.29 : 0) + (rbt.training === "Ready" ? 0.43 : rbt.training === "Needs Review" ? 0.19 : 0));
+  const capacityRaw = Math.min(1, capacity / Math.max(record.requiredHours, 1));
+  const totalWeight = Math.max(1, weights.region + weights.availability + weights.compliance + weights.capacity);
+  return Math.round(((regionRaw * weights.region) + (availabilityRaw * weights.availability) + (complianceRaw * weights.compliance) + (capacityRaw * weights.capacity)) / totalWeight * 100);
+};
+
 const buildRecords = (clients: Client[], rbts: RbtRecord[]): StaffingRecord[] => {
   const existing = clients.filter((c) => c.authStatus === "Approved" && (c.staffingStatus !== "Not Needed" || c.stage.includes("Staffing") || c.stage === "RBT Assigned" || c.stage === "Pending Start Date"));
   const connected = names.map((n, index) => {
