@@ -1,6 +1,14 @@
-import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog, ShieldCheck, Save, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
   type TeamMember,
@@ -11,6 +19,7 @@ import {
   capacityTextColor,
   findMember,
 } from "@/data/team";
+import { toast } from "sonner";
 
 interface Props {
   member: TeamMember | null;
