@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
+import { HR_STATES } from "@/lib/hr/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,15 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TEAM_DEPARTMENTS = ["Exec", "Intake", "Auth", "QA", "Scheduling", "Staffing", "Clinics"];
+const HR_DEPARTMENT_BY_TEAM: Record<string, string> = {
+  Exec: "Executive",
+  Intake: "Intake",
+  Auth: "Authorizations",
+  QA: "QA / Compliance",
+  Scheduling: "Scheduling",
+  Staffing: "Staffing",
+  Clinics: "Clinic Operations",
+};
 
 interface ProfileRow {
   user_id: string;
