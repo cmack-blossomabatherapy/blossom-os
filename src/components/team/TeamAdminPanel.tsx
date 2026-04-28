@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
+import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,8 +33,13 @@ interface RoleRow {
   user_id: string;
   role: AppRole;
 }
+interface EmployeeLinkRow {
+  id: string;
+  user_id: string | null;
+}
 interface Member {
   user_id: string;
+  employee_id: string | null;
   display_name: string;
   email: string;
   job_title: string;
@@ -58,14 +64,17 @@ export function TeamAdminPanel() {
 
   const load = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, employeeLinksRes] = await Promise.all([
       supabase
         .from("profiles")
         .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
       supabase.from("user_roles").select("user_id, role"),
+      supabase.from("employees").select("id, user_id").not("user_id", "is", null),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
     const roles = (rolesRes.data ?? []) as RoleRow[];
+    const employeeLinks = (employeeLinksRes.data ?? []) as EmployeeLinkRow[];
+    const employeeIdByUser = new Map(employeeLinks.map((row) => [row.user_id, row.id]));
     const byUser = new Map<string, AppRole[]>();
     roles.forEach((r) => {
       const list = byUser.get(r.user_id) ?? [];
@@ -74,6 +83,7 @@ export function TeamAdminPanel() {
     });
     const combined: Member[] = profiles.map((p) => ({
       user_id: p.user_id,
+      employee_id: employeeIdByUser.get(p.user_id) ?? null,
       display_name: p.display_name ?? "(no name)",
       email: p.email ?? "",
       job_title: p.job_title ?? "",
@@ -393,6 +403,15 @@ function MemberRow({
                 Department needed
               </span>
             )}
+            {member.employee_id ? (
+              <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                HR record linked
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+                No HR record
+              </span>
+            )}
             {member.roles.map((r) => (
               <span
                 key={r}
@@ -408,8 +427,21 @@ function MemberRow({
 
       {open && (
         <div className="px-4 pb-4 bg-muted/20 border-t border-border/40 space-y-4">
+          {member.employee_id && (
+            <div className="pt-3 flex items-center justify-between gap-3 rounded-md border border-border/40 bg-card/60 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">Employee record</p>
+                <p className="text-[11px] text-muted-foreground">Open the full HR profile to edit hierarchy, payroll, training, documents, and access.</p>
+              </div>
+              <Button asChild size="sm" variant="outline" className="h-8 shrink-0 text-xs">
+                <Link to={`/hr/employees/${member.employee_id}`}>
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
+                </Link>
+              </Button>
+            </div>
+          )}
           {/* Info section */}
-          <div className="pt-3">
+          <div className={member.employee_id ? "" : "pt-3"}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                 Member info
