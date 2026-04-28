@@ -38,6 +38,7 @@ export default function Training() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Compliance");
   const [provider, setProvider] = useState("");
+  const [minutes, setMinutes] = useState("30");
   const [renewal, setRenewal] = useState("12");
   const [desc, setDesc] = useState("");
 
@@ -51,6 +52,7 @@ export default function Training() {
         .order("due_date", { ascending: true, nullsFirst: false }),
       supabase.from("training_courses").select("*").order("name"),
     ]);
+    if (a.error || b.error) toast.error(a.error?.message ?? b.error?.message ?? "Training data could not load.");
     setRows((a.data ?? []) as unknown as Row[]);
     setCourses((b.data ?? []) as TrainingCourse[]);
     setLoading(false);
@@ -72,12 +74,12 @@ export default function Training() {
     const { error } = await supabase.from("training_courses").insert({
       name: name.trim(), title: name.trim(), category, provider: provider.trim() || null,
       description: desc.trim() || null,
-      estimated_minutes: renewal ? parseInt(renewal) : 15,
+      estimated_minutes: minutes ? parseInt(minutes) : 30,
       renewal_months: renewal ? parseInt(renewal) : null,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Course added.");
-    setOpen(false); setName(""); setProvider(""); setDesc("");
+    setOpen(false); setName(""); setProvider(""); setMinutes("30"); setRenewal(""); setDesc("");
     void load();
   }
 
@@ -186,7 +188,10 @@ export default function Training() {
               <div><Label className="text-xs text-muted-foreground">Category</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} /></div>
               <div><Label className="text-xs text-muted-foreground">Provider</Label><Input value={provider} onChange={(e) => setProvider(e.target.value)} /></div>
             </div>
-            <div><Label className="text-xs text-muted-foreground">Renewal months (blank = none)</Label><Input type="number" value={renewal} onChange={(e) => setRenewal(e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs text-muted-foreground">Estimated minutes</Label><Input type="number" value={minutes} onChange={(e) => setMinutes(e.target.value)} /></div>
+              <div><Label className="text-xs text-muted-foreground">Renewal months (blank = none)</Label><Input type="number" value={renewal} onChange={(e) => setRenewal(e.target.value)} /></div>
+            </div>
             <div><Label className="text-xs text-muted-foreground">Description</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} /></div>
           </div>
           <DialogFooter>

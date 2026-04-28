@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCircle, LinkIcon, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -23,14 +23,22 @@ export default function TrainingCourse() {
     };
   }, []);
   const course = trainingCourses.find((c) => c.id === courseId);
+  const [completed, setCompleted] = useState<Set<string>>(() => new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
+  const [activeLessonId, setActiveLessonId] = useState(course?.lessons[0]?.id);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [score, setScore] = useState<number | null>(course?.quizScore ?? null);
+
+  useEffect(() => {
+    setCompleted(new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
+    setActiveLessonId(course?.lessons[0]?.id);
+    setAnswers({});
+    setScore(course?.quizScore ?? null);
+  }, [course]);
+
   if (!course) return <Navigate to="/training" replace />;
   const dept = trainingDepartments.find((d) => d.id === course.departmentId)!;
-  const [completed, setCompleted] = useState<Set<string>>(new Set(course.lessons.filter((l) => l.completed).map((l) => l.id)));
-  const [activeLessonId, setActiveLessonId] = useState(course.lessons[0]?.id);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [score, setScore] = useState<number | null>(course.quizScore ?? null);
   const activeLesson = course.lessons.find((lesson) => lesson.id === activeLessonId) ?? course.lessons[0];
-  const progress = useMemo(() => Math.round((completed.size / course.lessons.length) * 100), [completed.size, course.lessons.length]);
+  const progress = course.lessons.length ? Math.round((completed.size / course.lessons.length) * 100) : 0;
   const markComplete = () => { setCompleted((current) => new Set([...current, activeLesson.id])); toast.success("Lesson marked complete"); };
   const submitQuiz = () => { if (!course.quiz) return; const correct = course.quiz.questions.filter((q) => (answers[q.id] ?? "").toLowerCase().trim() === q.answer.toLowerCase().trim()).length; const next = Math.round((correct / course.quiz.questions.length) * 100); setScore(next); toast[next >= course.quiz.passingScore ? "success" : "error"](next >= course.quiz.passingScore ? "Quiz passed" : "Quiz needs a retake"); };
 
