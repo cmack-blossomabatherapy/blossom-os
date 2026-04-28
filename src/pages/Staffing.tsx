@@ -111,6 +111,12 @@ const urgencyOptions: ("All" | Urgency)[] = ["All", "Critical", "High", "Medium"
 const staffingOwnerSchema = z.string().trim().refine((owner) => owners.includes(owner) && owner !== "All", "Choose a valid staffing owner.");
 const staffingStatusSchema = z.string().trim().refine((status): status is StaffingStatus => statusOptions.includes(status as StaffingStatus) && status !== "All", "Choose a valid staffing status.");
 const bulkSelectionSchema = z.array(z.string().regex(/^STF-\d{4}$/)).min(1, "Select at least one staffing record.").max(100, "Bulk edit is limited to 100 records.");
+const escalationReasonSchema = z.enum(["WAITING_OVER_7_DAYS", "NO_RBT_MATCH", "REGIONAL_CAPACITY_GAP"]);
+const escalationReasonLabels: Record<z.infer<typeof escalationReasonSchema>, string> = {
+  WAITING_OVER_7_DAYS: "Client waiting over 7 days",
+  NO_RBT_MATCH: "No RBT match exists",
+  REGIONAL_CAPACITY_GAP: "Regional capacity gap",
+};
 const viewModes: { id: ViewMode; label: string; icon: typeof FolderKanban }[] = [
   { id: "queue", label: "Queue View", icon: FolderKanban },
   { id: "table", label: "Table View", icon: BriefcaseBusiness },
@@ -397,13 +403,29 @@ export default function Staffing() {
     toast.success(`Moved to ${status}`);
   }
 
+  function escalationReasonFor(record: StaffingRecord): z.infer<typeof escalationReasonSchema> | null {
+    if (record.daysWaiting > 7) return "WAITING_OVER_7_DAYS";
+    if (record.status === "No Match Available" || record.alerts.some((alert) => alert.includes("No RBT") || alert.includes("No match"))) return "NO_RBT_MATCH";
+    if (record.alerts.some((alert) => alert.includes("capacity gap"))) return "REGIONAL_CAPACITY_GAP";
+    return null;
+  }
+
   function escalate(record: StaffingRecord) {
+    const reason = escalationReasonFor(record);
+    const parsedReason = escalationReasonSchema.safeParse(reason);
+    if (!parsedReason.success) {
+      toast.error("Escalation blocked", { description: "Escalations require either waiting over 7 days or no RBT match available." });
+      return;
+    }
+    const reasonLabel = escalationReasonLabels[parsedReason.data];
     patchRecord(record.id, {
       urgency: "Critical",
-      alerts: Array.from(new Set([...record.alerts, "Escalated to Operations leadership"])),
-      tasks: [{ id: `task-${Date.now()}`, title: "Leadership review required", owner: "Operations leadership", due: "Today", completed: false }, ...record.tasks],
-    }, "Escalation task created for Operations leadership");
-    toast.success("Escalation created");
+      alerts: Array.from(new Set([...record.alerts, "Escalated to Operations leadership", reasonLabel])),
+      nextAction: "Leadership escalation review",
+      tasks: [{ id: `task-${Date.now()}`, title: `Leadership review: ${reasonLabel}`, owner: "Operations leadership", due: "Today", completed: false }, ...record.tasks],
+      communications: [{ id: `com-${Date.now()}`, channel: "Leadership Escalation", note: `Escalated with reason code ${parsedReason.data}: ${reasonLabel}.`, at: "Just now", owner: record.owner }, ...record.communications],
+    }, `Escalation task created for Operations leadership · ${parsedReason.data}`);
+    toast.success("Escalation created", { description: reasonLabel });
   }
 
   function addNote(record: StaffingRecord) {
