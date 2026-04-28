@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, CheckCircle2, Copy, FileText, Gauge, ListChecks, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, FileText, Gauge, ListChecks, Plus, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -303,7 +303,7 @@ function ListStep({ title, intro, values, onChange, placeholder }: { title: stri
   return <section className="space-y-3"><div><h3 className="font-semibold text-foreground">{title}</h3><p className="text-sm text-muted-foreground">{intro}</p></div>{values.map((value, index) => <div key={index} className="flex gap-2"><Input value={value} onChange={(e) => onChange(values.map((item, i) => i === index ? e.target.value : item))} placeholder={placeholder} /><Button variant="ghost" onClick={() => onChange(values.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button></div>)}<Button variant="outline" onClick={() => onChange([...values, ""])}><Plus className="mr-2 h-4 w-4" />Add objective</Button></section>;
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) { return <div className={cn("space-y-2", className)}><Label>{label}</Label>{children}</div>; }
+function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) { return <div className={cn("space-y-2", className)}><Label>{label}</Label>{children}</div>; }
 function PreviewCard({ title, items }: { title: string; items: string[] }) { return <div className="rounded-xl border border-border/60 bg-background p-3"><p className="font-medium text-foreground">{title}</p>{items.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">{items.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">Not added yet.</p>}</div>; }
 function clean(items: string[]) { return items.map((item) => item.trim()).filter(Boolean); }
 function firstSentence(value: string) { return value.split(/[.!?]\s/)[0]?.trim() || value.slice(0, 160); }
