@@ -243,7 +243,6 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
-  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))).slice(0, 18), [filtered, mapFocus]);
   const mapRbts = useMemo(() => rbts.filter((rbt) => stateFilter === ALL || rbt.state === stateFilter), [rbts, stateFilter]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
@@ -262,6 +261,7 @@ export default function StaffingDashboard() {
       .filter((r) => activeKpi === "all" || (activeKpi === "needed" && r.status === "Staffing Needed") || (activeKpi === "restaffing" && r.status === "Restaffing Needed") || (activeKpi === "matching" && r.status === "Matching in Progress") || (activeKpi === "assigned" && r.status === "RBT Assigned") || (activeKpi === "urgent" && (r.priority === "Critical" || r.daysWaiting > 7)) || activeKpi === "avg" || activeKpi === "available" || activeKpi === "gap")
       .filter((r) => !q || [r.client, r.parent, r.state, r.clinic, r.region, r.owner, r.bcba, r.status, r.nextAction].some((field) => field.toLowerCase().includes(q)));
   }, [activeKpi, bcbaFilter, clientStatus, clinicFilter, ownerFilter, query, rbtFilter, rbts, records, staffingStatus, stateFilter, urgencyFilter]);
+  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))).slice(0, 18), [filtered, mapFocus]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
