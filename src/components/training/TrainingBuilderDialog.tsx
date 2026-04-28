@@ -33,7 +33,7 @@ type ChecklistItem = { id: string; label: string; required: boolean };
 type MistakeItem = { id: string; error: string; consequence: string; avoid: string };
 type QuizQuestion = { id: string; type: "Multiple choice" | "True / false"; question: string; options: string[]; answer: string; explanation: string };
 type WalkthroughLink = { id: string; url: string; label: string };
-type AiSourceType = "tango" | "upload" | "paste";
+type AiSourceType = "tango" | "upload" | "paste" | "combined";
 type AiDraft = { title: string; description: string; departmentId: string; difficulty: Difficulty; type: TrainingType; minutes: number; objectives: string[]; sop: { title?: string; content?: string }; walkthrough?: { url?: string; label?: string; summary?: string }; steps: Array<{ title?: string; description?: string; systemTag?: string }>; checklist: string[]; commonMistakes: Array<{ error?: string; consequence?: string; avoid?: string }>; quiz: Array<{ type?: "Multiple choice" | "True / false"; question?: string; options?: string[]; answer?: string; explanation?: string }>; badge?: { title?: string; description?: string }; qualityScore?: number };
 
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -172,8 +172,9 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   const generateWithAi = async () => {
     const body = { sourceType: aiSource, tangoUrl: aiTangoUrl.trim(), sopText: aiSopText.trim(), fileName: aiFileName };
+    if (aiSource === "combined" && (!body.tangoUrl || !body.sopText)) return toast.error("Add both a Tango link and SOP content first");
     if (aiSource === "tango" && !body.tangoUrl) return toast.error("Add a Tango link first");
-    if (aiSource !== "tango" && !body.sopText) return toast.error("Add SOP text first");
+    if ((aiSource === "upload" || aiSource === "paste") && !body.sopText) return toast.error("Add SOP text first");
     setAiGenerating(true);
     const { data, error } = await supabase.functions.invoke("generate-training-draft", { body });
     setAiGenerating(false);
@@ -312,7 +313,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto"><DialogHeader><DialogTitle>{course ? "Edit Training Builder" : "Create Training Builder"}</DialogTitle></DialogHeader>
     <div className="space-y-5">
-      {!course && <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div><div><p className="font-semibold text-primary">Generate Training with AI</p><p className="text-sm text-primary/80">Drop in a Tango link, SOP upload text, or pasted SOP and get a structured draft in seconds.</p></div></div><Button onClick={() => setAiOpen(true)}><Sparkles className="mr-2 h-4 w-4" />Generate Training with AI</Button></div></div>}
+      {!course && <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div><div><p className="font-semibold text-primary">Generate Training with AI</p><p className="text-sm text-primary/80">Drop in a Tango link, SOP text, or both together and get a structured draft in seconds.</p></div></div><Button onClick={() => setAiOpen(true)}><Sparkles className="mr-2 h-4 w-4" />Generate Training with AI</Button></div></div>}
       <div className="rounded-2xl border border-border/60 bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Gauge className="h-5 w-5 text-primary" /><div><p className="font-semibold text-foreground">Training Quality Score: {quality}% ({qualityLabel(quality)})</p><p className="text-xs text-muted-foreground">SOP, Tango, steps, checklist, quiz, and common mistakes raise readiness.</p></div></div><StatusBadge status={`Step ${step + 1} of ${builderSteps.length}`} variant="info" /></div>
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-background p-3"><span className="text-xs font-medium text-muted-foreground">Regenerate only</span>{(["sop", "steps", "quiz"] as const).map((sectionMode) => <Button key={sectionMode} size="sm" variant="outline" onClick={() => regenerateSection(sectionMode)} disabled={Boolean(sectionGenerating)}>{sectionGenerating === sectionMode ? <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-2 h-3.5 w-3.5" />}{sectionMode === "sop" ? "SOP section" : sectionMode === "steps" ? "Steps" : "Quiz"}</Button>)}</div>
