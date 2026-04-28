@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, ArrowRight, BarChart3, CheckCircle2, Clock, Download, Eye, MapPin,
   MessageSquare, Phone, RefreshCw, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
@@ -24,6 +24,11 @@ type KpiKey = "all" | "needed" | "restaffing" | "matching" | "assigned" | "avg" 
 type Task = { id: string; title: string; owner: string; dueDate: string; completed: boolean };
 type Note = { id: string; type: "RBT outreach" | "Family" | "Internal"; text: string; timestamp: string; user: string };
 type TimelineEvent = { id: string; title: string; text: string; timestamp: string; user: string };
+type MatchBreakdown = { region: number; availability: number; compliance: number; capacity: number; experience: number; urgency: number; penalty: number };
+type MatchDecision = {
+  id: string; rbtId: string; rbtName: string; decision: "Selected" | "Rejected"; score: number; breakdown: MatchBreakdown;
+  reasons: string[]; weights: Pick<MatchBreakdown, "region" | "availability" | "compliance" | "capacity">; decidedAt: string; decidedBy: string; note: string;
+};
 type Rbt = {
   id: string; name: string; state: StateCode; region: string; clinic: string; location: string; radius: number; availability: string[];
   currentHours: number; maxHours: number; assignedClients: string[]; experience: string[]; compliance: "Ready" | "Expiring" | "Incomplete"; onboarding: "Active" | "Clearing" | "Offer Accepted";
@@ -32,11 +37,14 @@ type StaffingRecord = {
   id: string; client: string; parent: string; state: StateCode; region: string; clinic: string; location: LocationType; bcba: string; owner: string;
   status: StaffingStatus; requiredHours: number; approvedHours: number; availability: string[]; priority: Urgency; daysWaiting: number;
   assignedRbtId?: string; rejectedRbtIds: string[]; clinicalNotes: string; startUrgency: string; nextAction: string; blockers: string[];
-  authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[];
+  authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[]; decisionHistory: MatchDecision[];
 };
-type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[] };
+type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 
 const ALL = "All";
+const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
+const STAFFING_RBTS_KEY = "blossom.staffing.rbts.v1";
+const auditWeights = { region: 18, availability: 35, compliance: 14, capacity: 25 };
 const today = new Date("2026-04-27T12:00:00Z");
 const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
 const statuses: StaffingStatus[] = ["Staffing Needed", "Matching in Progress", "Offer / Confirmation Pending", "RBT Assigned", "Restaffing Needed", "No Match Available", "Ready for Scheduling"];
@@ -80,7 +88,7 @@ function baseTimeline(id: string, owner: string, status: StaffingStatus, client:
   ];
 }
 
-function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | "rejectedRbtIds"> & { rejectedRbtIds?: string[] }): StaffingRecord {
+function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | "rejectedRbtIds" | "decisionHistory"> & { rejectedRbtIds?: string[]; decisionHistory?: MatchDecision[] }): StaffingRecord {
   return {
     ...base,
     rejectedRbtIds: base.rejectedRbtIds ?? [],
@@ -95,6 +103,7 @@ function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | 
       { id: `${base.id}-n3`, type: "RBT outreach", text: base.assignedRbtId ? "Assigned RBT accepted match." : "Outreach pending from staffing queue.", timestamp: "2026-04-26T14:00:00Z", user: base.owner },
     ],
     timeline: baseTimeline(base.id, base.owner, base.status, base.client),
+    decisionHistory: base.decisionHistory ?? [],
   };
 }
 
@@ -126,10 +135,12 @@ function scoreMatch(record: StaffingRecord, rbt: Rbt): Match {
   const readyScore = rbt.compliance === "Ready" && rbt.onboarding === "Active" ? 14 : rbt.compliance === "Expiring" ? 7 : 0;
   const experienceScore = rbt.experience.some((skill) => skill === record.location || record.clinicalNotes.toLowerCase().includes(skill.toLowerCase())) ? 8 : 4;
   const urgencyScore = record.priority === "Critical" ? 5 : record.priority === "High" ? 4 : 2;
-  const score = Math.max(0, Math.min(99, distanceFit + overlapScore + capacityFit + readyScore + experienceScore + urgencyScore - (record.rejectedRbtIds.includes(rbt.id) ? 20 : 0)));
+  const penalty = record.rejectedRbtIds.includes(rbt.id) ? 20 : 0;
+  const score = Math.max(0, Math.min(99, distanceFit + overlapScore + capacityFit + readyScore + experienceScore + urgencyScore - penalty));
   return {
     rbt, score, overlap, distanceFit, capacityFit, ready: rbt.compliance === "Ready" && rbt.onboarding === "Active",
     reasons: [rbt.clinic === record.clinic ? "Clinic fit" : rbt.region === record.region ? "Region fit" : "State backup", `${overlap} overlap slots`, `${capacity}h capacity`, rbt.compliance],
+    breakdown: { region: distanceFit, availability: overlapScore, compliance: readyScore, capacity: capacityFit, experience: experienceScore, urgency: urgencyScore, penalty },
   };
 }
 
@@ -156,9 +167,35 @@ function alertsFor(record: StaffingRecord, matches: Match[], assigned?: Rbt) {
   return alerts;
 }
 
+function decisionEntry(match: Match, decision: MatchDecision["decision"], note: string): MatchDecision {
+  return {
+    id: `${match.rbt.id}-${Date.now()}`,
+    rbtId: match.rbt.id,
+    rbtName: match.rbt.name,
+    decision,
+    score: match.score,
+    breakdown: match.breakdown,
+    reasons: match.reasons,
+    weights: auditWeights,
+    decidedAt: today.toISOString(),
+    decidedBy: "Dashboard user",
+    note,
+  };
+}
+
+function hydrateRecords(records: StaffingRecord[]) {
+  return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
+}
+
 export default function StaffingDashboard() {
-  const [records, setRecords] = useState<StaffingRecord[]>(staffingSeed);
-  const [rbts, setRbts] = useState<Rbt[]>(rbtSeed);
+  const [records, setRecords] = useState<StaffingRecord[]>(() => {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
+    return saved ? hydrateRecords(JSON.parse(saved) as StaffingRecord[]) : staffingSeed;
+  });
+  const [rbts, setRbts] = useState<Rbt[]>(() => {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RBTS_KEY) : null;
+    return saved ? JSON.parse(saved) as Rbt[] : rbtSeed;
+  });
   const [selectedId, setSelectedId] = useState<string>(staffingSeed[1].id);
   const [dateRange, setDateRange] = useState("This Week");
   const [stateFilter, setStateFilter] = useState(ALL);
@@ -181,6 +218,9 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
+
+  useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
+  useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -236,11 +276,17 @@ export default function StaffingDashboard() {
     toast.success(message);
   };
   const assignRbt = (record: StaffingRecord, rbt: Rbt) => {
+    const match = scoreMatch(record, rbt);
     const hoursToAdd = Math.min(record.requiredHours, availableHours(rbt));
+    const decision = decisionEntry(match, "Selected", `Selected for ${match.score} score with ${match.overlap} matching availability slot${match.overlap === 1 ? "" : "s"}.`);
     setRbts((current) => current.map((item) => item.id === rbt.id ? { ...item, currentHours: item.currentHours + hoursToAdd, assignedClients: Array.from(new Set([...item.assignedClients, record.client])) } : item));
-    updateRecord(record.id, { assignedRbtId: rbt.id, status: "Ready for Scheduling", nextAction: "Send client to scheduling", blockers: record.blockers.filter((b) => !b.toLowerCase().includes("no rbt")) }, `${rbt.name} assigned to ${record.client}`);
+    updateRecord(record.id, { assignedRbtId: rbt.id, status: "Ready for Scheduling", nextAction: "Send client to scheduling", blockers: record.blockers.filter((b) => !b.toLowerCase().includes("no rbt")), decisionHistory: [decision, ...record.decisionHistory] }, `${rbt.name} assigned to ${record.client}`);
   };
-  const rejectMatch = (record: StaffingRecord, rbt: Rbt) => updateRecord(record.id, { rejectedRbtIds: [...record.rejectedRbtIds, rbt.id], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
+  const rejectMatch = (record: StaffingRecord, rbt: Rbt) => {
+    const match = scoreMatch(record, rbt);
+    const decision = decisionEntry(match, "Rejected", `Rejected despite ${match.score} score; next best match required.`);
+    updateRecord(record.id, { rejectedRbtIds: Array.from(new Set([...record.rejectedRbtIds, rbt.id])), decisionHistory: [decision, ...record.decisionHistory], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
+  };
   const exportCsv = () => {
     const rows = filtered.map((r) => [r.client, r.state, r.clinic, r.requiredHours, r.status, rbts.find((x) => x.id === r.assignedRbtId)?.name ?? "", matchesFor(r)[0]?.rbt.name ?? "", matchesFor(r)[0]?.score ?? 0, r.daysWaiting, r.priority, r.nextAction]);
     const csv = [["Client", "State", "Clinic", "Required Hours", "Status", "Assigned RBT", "Suggested RBT", "Match Score", "Days Waiting", "Urgency", "Next Action"], ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -298,14 +344,15 @@ export default function StaffingDashboard() {
 
       <section className="mt-6 rounded-lg border bg-card p-4 shadow-sm"><h2 className="font-semibold">Staffing Worklist</h2><div className="mt-4 overflow-auto"><table className="w-full text-left text-sm"><thead className="text-xs text-muted-foreground"><tr><th className="py-2">Client</th><th>State</th><th>Clinic</th><th>Hours</th><th>Availability</th><th>Status</th><th>Assigned RBT</th><th>Suggested</th><th>Score</th><th>Waiting</th><th>Urgency</th><th>Next Action</th><th>Alerts</th></tr></thead><tbody>{filtered.map((record) => { const matches = matchesFor(record); const best = matches[0]; const assigned = rbts.find((r) => r.id === record.assignedRbtId); const alerts = alertsFor(record, matches, assigned); return <tr key={record.id} onClick={() => { setSelectedId(record.id); setActiveMatchId(best?.rbt.id ?? null); setDetailOpen(true); }} className="cursor-pointer border-t hover:bg-muted/40"><td className="py-3 font-medium">{record.client}</td><td>{record.state}</td><td>{record.clinic}</td><td>{record.requiredHours}h</td><td className="max-w-44 truncate">{record.availability.join(", ")}</td><td><StatusPill tone={statusTone(record.status)}>{record.status}</StatusPill></td><td>{assigned?.name ?? "—"}</td><td>{best?.rbt.name ?? "—"}</td><td>{best?.score ?? 0}</td><td>{record.daysWaiting}d</td><td><StatusPill tone={urgencyTone(record.priority)}>{record.priority}</StatusPill></td><td className="max-w-56 truncate">{record.nextAction}</td><td><div className="flex gap-1">{alerts.slice(0, 2).map((a) => <AlertTriangle key={a.label} className={cn("h-4 w-4", a.severity === "red" ? "text-destructive" : "text-warning")} />)}</div></td></tr>; })}</tbody></table></div></section>
 
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}><SheetContent className="w-[720px] max-w-[92vw] overflow-y-auto sm:max-w-[720px]"><SheetHeader><SheetTitle>{selected.client}</SheetTitle><SheetDescription>{selected.state} / {selected.clinic} · {selected.status} · {selected.requiredHours} weekly hours</SheetDescription></SheetHeader><div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => activeMatch && assignRbt(selected, activeMatch.rbt)}><UserCheck className="mr-2 h-4 w-4" />Assign Top Match</Button><Button variant="outline" size="sm" onClick={() => updateRecord(selected.id, { status: "Matching in Progress" }, "Marked matching in progress")}><Sparkles className="mr-2 h-4 w-4" />Mark Matching</Button><Button variant="outline" size="sm" onClick={() => updateRecord(selected.id, { priority: "Critical", nextAction: "Escalated to leadership" }, "Case escalated")}><AlertTriangle className="mr-2 h-4 w-4" />Escalate</Button></div><Separator className="my-4" /><Tabs defaultValue="overview"><TabsList className="grid w-full grid-cols-4"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="matching">Matching</TabsTrigger><TabsTrigger value="availability">Availability</TabsTrigger><TabsTrigger value="profile">RBT Profile</TabsTrigger></TabsList><TabsList className="mt-2 grid w-full grid-cols-3"><TabsTrigger value="communications">Communications</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger></TabsList>
+      <Sheet open={detailOpen} onOpenChange={setDetailOpen}><SheetContent className="w-[720px] max-w-[92vw] overflow-y-auto sm:max-w-[720px]"><SheetHeader><SheetTitle>{selected.client}</SheetTitle><SheetDescription>{selected.state} / {selected.clinic} · {selected.status} · {selected.requiredHours} weekly hours</SheetDescription></SheetHeader><div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => activeMatch && assignRbt(selected, activeMatch.rbt)}><UserCheck className="mr-2 h-4 w-4" />Assign Top Match</Button><Button variant="outline" size="sm" onClick={() => updateRecord(selected.id, { status: "Matching in Progress" }, "Marked matching in progress")}><Sparkles className="mr-2 h-4 w-4" />Mark Matching</Button><Button variant="outline" size="sm" onClick={() => updateRecord(selected.id, { priority: "Critical", nextAction: "Escalated to leadership" }, "Case escalated")}><AlertTriangle className="mr-2 h-4 w-4" />Escalate</Button></div><Separator className="my-4" /><Tabs defaultValue="overview"><TabsList className="grid w-full grid-cols-4"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="matching">Matching</TabsTrigger><TabsTrigger value="availability">Availability</TabsTrigger><TabsTrigger value="profile">RBT Profile</TabsTrigger></TabsList><TabsList className="mt-2 grid w-full grid-cols-4"><TabsTrigger value="communications">Communications</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger><TabsTrigger value="audit">Audit</TabsTrigger></TabsList>
         <TabsContent value="overview" className="space-y-3 pt-4"><div className="grid grid-cols-2 gap-3">{[["Status", selected.status], ["Owner", selected.owner], ["Required hours", `${selected.requiredHours}h`], ["Days waiting", `${selected.daysWaiting}d`], ["Auth", selected.authStatus], ["BCBA", selected.bcba]].map(([label, value]) => <div key={label} className="rounded-lg border p-3"><div className="text-xs text-muted-foreground">{label}</div><div className="mt-1 font-medium">{value}</div></div>)}</div><div className="rounded-lg border p-3"><div className="text-xs font-medium text-muted-foreground">Blockers</div><div className="mt-2 flex flex-wrap gap-2">{selected.blockers.length ? selected.blockers.map((b) => <StatusPill key={b} tone="destructive">{b}</StatusPill>) : <StatusPill tone="success">No active blockers</StatusPill>}</div></div></TabsContent>
-        <TabsContent value="matching" className="space-y-3 pt-4">{selectedMatches.map((match) => <div key={match.rbt.id} className="rounded-lg border p-3"><div className="flex items-center justify-between"><div><div className="font-medium">{match.rbt.name}</div><div className="text-xs text-muted-foreground">{match.rbt.location} · {match.rbt.experience.join(", ")}</div></div><div className="text-xl font-semibold">{match.score}</div></div><Progress value={match.score} className="mt-2 h-2" /><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => assignRbt(selected, match.rbt)}><CheckCircle2 className="mr-2 h-4 w-4" />Assign</Button><Button variant="outline" size="sm" onClick={() => rejectMatch(selected, match.rbt)}><XCircle className="mr-2 h-4 w-4" />Reject</Button><Button variant="outline" size="sm" onClick={() => toast.success(`Outreach logged for ${match.rbt.name}`)}><Phone className="mr-2 h-4 w-4" />Contact RBT</Button></div></div>)}</TabsContent>
+        <TabsContent value="matching" className="space-y-3 pt-4">{selectedMatches.map((match) => <div key={match.rbt.id} className="rounded-lg border p-3"><div className="flex items-center justify-between"><div><div className="font-medium">{match.rbt.name}</div><div className="text-xs text-muted-foreground">{match.rbt.location} · {match.rbt.experience.join(", ")}</div></div><div className="text-xl font-semibold">{match.score}</div></div><Progress value={match.score} className="mt-2 h-2" /><div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-muted-foreground">{[["Region", match.breakdown.region], ["Availability", match.breakdown.availability], ["Compliance", match.breakdown.compliance], ["Capacity", match.breakdown.capacity]].map(([label, value]) => <div key={String(label)} className="rounded-md border bg-muted/30 p-2"><div>{label}</div><div className="font-medium text-foreground">{value}/{auditWeights[label.toString().toLowerCase() as keyof typeof auditWeights]}</div></div>)}</div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => assignRbt(selected, match.rbt)}><CheckCircle2 className="mr-2 h-4 w-4" />Assign</Button><Button variant="outline" size="sm" onClick={() => rejectMatch(selected, match.rbt)}><XCircle className="mr-2 h-4 w-4" />Reject</Button><Button variant="outline" size="sm" onClick={() => toast.success(`Outreach logged for ${match.rbt.name}`)}><Phone className="mr-2 h-4 w-4" />Contact RBT</Button></div></div>)}</TabsContent>
         <TabsContent value="availability" className="pt-4"><div className="grid grid-cols-4 gap-2">{["Mon AM", "Mon PM", "Tue AM", "Tue PM", "Wed AM", "Wed PM", "Thu AM", "Thu PM", "Fri AM", "Fri PM", "Sat AM", "Weekend AM"].map((slot) => <div key={slot} className={cn("rounded-md border p-2 text-center text-xs", selected.availability.includes(slot) ? "bg-primary/10 text-primary" : "bg-muted/40 text-muted-foreground")}>{slot}</div>)}</div><p className="mt-4 text-sm text-muted-foreground">Preferred times: {selected.availability.join(", ")} · Required hours: {selected.requiredHours}</p></TabsContent>
         <TabsContent value="profile" className="pt-4">{activeMatch ? <div className="rounded-lg border p-4"><div className="flex items-center justify-between"><div><div className="text-lg font-semibold">{activeMatch.rbt.name}</div><div className="text-sm text-muted-foreground">{activeMatch.rbt.location} · {activeMatch.rbt.radius} mile radius</div></div><StatusPill tone={activeMatch.rbt.compliance === "Ready" ? "success" : "destructive"}>{activeMatch.rbt.compliance}</StatusPill></div><div className="mt-4 grid grid-cols-3 gap-3 text-sm"><div className="rounded-lg border p-3"><div className="text-xs text-muted-foreground">Capacity</div><div>{activeMatch.rbt.currentHours}/{activeMatch.rbt.maxHours}h</div></div><div className="rounded-lg border p-3"><div className="text-xs text-muted-foreground">Available</div><div>{availableHours(activeMatch.rbt)}h</div></div><div className="rounded-lg border p-3"><div className="text-xs text-muted-foreground">Clients</div><div>{activeMatch.rbt.assignedClients.length}</div></div></div></div> : null}</TabsContent>
         <TabsContent value="communications" className="space-y-3 pt-4">{selected.notes.map((note) => <div key={note.id} className="rounded-lg border p-3"><div className="flex justify-between"><StatusPill>{note.type}</StatusPill><span className="text-xs text-muted-foreground">{shortDate(note.timestamp)}</span></div><p className="mt-2 text-sm">{note.text}</p><div className="mt-1 text-xs text-muted-foreground">{note.user}</div></div>)}</TabsContent>
         <TabsContent value="tasks" className="space-y-2 pt-4">{selected.tasks.map((task) => <div key={task.id} className="flex items-center justify-between rounded-lg border p-3"><div><div className="font-medium">{task.title}</div><div className="text-xs text-muted-foreground">{task.owner} · Due {task.dueDate}</div></div><StatusPill tone={task.completed ? "success" : "warning"}>{task.completed ? "Complete" : "Open"}</StatusPill></div>)}</TabsContent>
         <TabsContent value="timeline" className="space-y-3 pt-4">{selected.timeline.map((event) => <div key={event.id} className="flex gap-3"><div className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" /><div><div className="font-medium">{event.title}</div><div className="text-sm text-muted-foreground">{event.text}</div><div className="text-xs text-muted-foreground">{shortDate(event.timestamp)} · {event.user}</div></div></div>)}</TabsContent>
+        <TabsContent value="audit" className="space-y-3 pt-4">{selected.decisionHistory.length ? selected.decisionHistory.map((entry) => <div key={entry.id} className="rounded-lg border p-3"><div className="flex items-start justify-between gap-3"><div><div className="font-medium">{entry.rbtName} {entry.decision.toLowerCase()}</div><div className="text-xs text-muted-foreground">{shortDate(entry.decidedAt)} · {entry.decidedBy}</div></div><StatusPill tone={entry.decision === "Selected" ? "success" : "destructive"}>{entry.decision}</StatusPill></div><p className="mt-2 text-sm text-muted-foreground">{entry.note}</p><div className="mt-3 grid grid-cols-4 gap-2 text-[11px] text-muted-foreground">{[["Region", entry.breakdown.region, entry.weights.region], ["Availability", entry.breakdown.availability, entry.weights.availability], ["Compliance", entry.breakdown.compliance, entry.weights.compliance], ["Capacity", entry.breakdown.capacity, entry.weights.capacity]].map(([label, value, max]) => <div key={String(label)} className="rounded-md border bg-muted/30 p-2"><div>{label}</div><div className="font-medium text-foreground">{value}/{max}</div></div>)}</div><div className="mt-3 flex flex-wrap gap-2">{entry.reasons.map((reason) => <StatusPill key={`${entry.id}-${reason}`}>{reason}</StatusPill>)}<StatusPill tone="primary">{`Score ${entry.score}`}</StatusPill></div></div>) : <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No assignment decisions logged yet.</div>}</TabsContent>
       </Tabs></SheetContent></Sheet>
     </div>
   );
