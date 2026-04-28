@@ -99,6 +99,12 @@ interface QARecord {
   comments: string[];
 }
 
+interface StarterQaSettings {
+  taskTitle: string;
+  dueOffsetDays: number;
+  qaOwner: string;
+}
+
 const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA Team", "Clinical Director"];
 const BCBAS = ["Dr. Mia Hart", "Elena Ruiz", "Jordan Klein", "Nora Patel", "Caleb Stone", "Avery Brooks"];
 const RBTS = ["Sofia Miles", "Noah Grant", "Camila Reed", "Ethan Fox", "Maya Chen", "Liam Price", "Harper Cole"];
@@ -249,7 +255,7 @@ const buildRecords = (clients: Client[]): QARecord[] => {
   });
 };
 
-const qaRecordFromClient = (client: Client, index: number): QARecord => {
+const qaRecordFromClient = (client: Client, index: number, starterSettings: StarterQaSettings): QARecord => {
   const treatmentAuth = client.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
   const treatmentPlanReceived = Boolean(treatmentAuth?.treatmentPlanReceived || treatmentAuth?.treatmentPlanLinked);
   const requirements = documentRequirementsFor(client, treatmentPlanReceived);
@@ -274,7 +280,7 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
     payor: treatmentAuth?.payor ?? client.payor,
     bcba: client.bcba ?? BCBAS[index % BCBAS.length],
     rbt: client.rbt ?? "Unassigned",
-    qaOwner: "QA Team",
+    qaOwner: starterSettings.qaOwner,
     status: "Awaiting Review",
     planStatus: treatmentPlanReceived ? "Submitted" : "Missing",
     noteStatus: client.notesComplianceStatus === "Flagged" ? "Flagged" : "Clean",
@@ -302,7 +308,7 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
     checklist,
     issues: missingIssues,
     documents: [...requirements.map(({ checklistKey, ...requirement }) => ({ ...requirement, required: true })), { name: "QA notes", type: "QA", present: true, required: false }],
-    tasks: [{ id: `task-${Date.now()}`, title: "Start treatment plan QA review", owner: "QA Team", dueDate: isoDaysAhead(1), completed: false }, ...missingTasks],
+    tasks: [{ id: `task-${Date.now()}`, title: starterSettings.taskTitle, owner: starterSettings.qaOwner, dueDate: isoDaysAhead(starterSettings.dueOffsetDays), completed: false }, ...missingTasks],
     timeline: [
       { date: client.assessmentDate ?? isoDaysAgo(client.daysSinceAssessment ?? 0), event: "Assessment/treatment plan selected for QA" },
       ...(missingRequirements.length ? [{ date: isoDaysAgo(0), event: `Document requirements generated: ${missingRequirements.map((requirement) => requirement.name).join(", ")}` }] : []),
