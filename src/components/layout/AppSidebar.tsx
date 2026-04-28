@@ -142,7 +142,7 @@ const roleLabels: Record<string, string> = {
 
 export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
   const location = useLocation();
-  const { hasPerm, isAdmin } = useAuth();
+  const { hasPerm, isAdmin, user, roles } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
 
@@ -189,6 +189,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
   const activeSectionTitles = new Set(sections.filter((section) => section.title && section.items.some((item) => isItemActive(item.path))).map((section) => section.title!));
   const toggleMobileSection = (title: string) => setMobileOpenSections((current) => { const next = new Set(current); if (next.has(title)) next.delete(title); else next.add(title); return next; });
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0]?.replace(/[._-]/g, " ") || "Blossom User";
+  const initials = displayName.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "BU";
+  const roleLabel = roles.map((role) => roleLabels[role]).find(Boolean) || "Operations Director";
 
   useEffect(() => {
     if (mobileOpen) setMobileOpenSections(activeSectionTitles);
