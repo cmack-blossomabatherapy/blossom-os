@@ -304,6 +304,7 @@ export default function QA() {
   };
 
   const markIssues = async (record: QARecord, issue: IssueType = "Clinical Accuracy") => {
+    const correctionTask = correctionTaskFor(record, `Correct QA issue: ${issue}`, 2);
     patchRecord(record.id, {
       status: "Issues Found",
       issueType: issue,
@@ -312,17 +313,21 @@ export default function QA() {
       authReadiness: "Blocked",
       alerts: Array.from(new Set([...record.alerts, "Issues unresolved over 2 days", "QA blocking auth submission"])),
       issues: [...record.issues, { id: `issue-${Date.now()}`, type: issue, description: `${issue} correction required.`, owner: record.bcba, dueDate: isoDaysAhead(2), resolved: false }],
-      tasks: [...record.tasks, { id: `task-${Date.now()}`, title: `Fix QA issue: ${issue}`, owner: record.bcba, dueDate: isoDaysAhead(2), completed: false }],
-      nextAction: "Create fix task and notify BCBA",
-    }, `Issues found: ${issue}`);
-    await addTask(record.clientId, { id: `qa-fix-${Date.now()}`, title: `Fix QA issue: ${issue}`, dueDate: isoDaysAhead(2), completed: false });
-    toast.error("Issue logged and correction task created");
+      tasks: [correctionTask, ...record.tasks],
+      nextAction: `Correction due ${correctionTask.dueDate}`,
+    }, `Issues found: ${issue}; correction task due ${correctionTask.dueDate}`);
+    await addTask(record.clientId, { id: `qa-fix-${Date.now()}`, title: correctionTask.title, dueDate: correctionTask.dueDate, completed: false });
+    await appendAutomation(record.clientId, `QA issue automation created correction task due ${correctionTask.dueDate}`);
+    toast.error("Issue logged and correction task created", { description: `Due ${correctionTask.dueDate}` });
   };
 
   const requestCorrection = async (record: QARecord) => {
-    patchRecord(record.id, { status: "Corrections Needed", planStatus: "Correction Requested", nextAction: "BCBA correction requested", alerts: Array.from(new Set([...record.alerts, "Issues unresolved over 2 days"])) }, "Correction requested from BCBA");
+    const correctionTask = correctionTaskFor(record, "Complete QA requested treatment plan correction", 2);
+    patchRecord(record.id, { status: "Corrections Needed", planStatus: "Correction Requested", nextAction: `Correction due ${correctionTask.dueDate}`, alerts: Array.from(new Set([...record.alerts, "Issues unresolved over 2 days"])), tasks: [correctionTask, ...record.tasks] }, `Correction requested; task due ${correctionTask.dueDate}`);
+    await addTask(record.clientId, { id: `qa-correction-${Date.now()}`, title: correctionTask.title, dueDate: correctionTask.dueDate, completed: false });
     await appendTimeline(record.clientId, "QA requested BCBA correction", "qa");
-    toast.success("BCBA notified for correction");
+    await appendAutomation(record.clientId, `QA correction automation created task due ${correctionTask.dueDate}`);
+    toast.success("BCBA correction task created", { description: `Due ${correctionTask.dueDate}` });
   };
 
   const resolveIssue = (record: QARecord, issueId?: string) => {
