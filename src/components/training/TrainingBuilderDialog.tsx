@@ -15,7 +15,7 @@ import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { createTrainingCourse, trainingDepartments, type Difficulty, type TrainingCourse, type TrainingLesson, type TrainingType } from "@/data/training";
 
 const builderSteps = ["Basics", "Objectives", "SOP", "Tango", "Steps", "Blocks", "Checklist", "Mistakes", "Quiz", "Badge", "Assignment", "Preview"];
-const trainingTypes: TrainingType[] = ["Workflow", "SOP", "Tango", "Checklist", "Quiz", "Policy", "Video"];
+const trainingTypes: TrainingType[] = ["Workflow", "SOP", "System Training", "Policy", "Onboarding", "Clinical", "Tango", "Checklist", "Quiz", "Video"];
 const difficultyLevels: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
 const systems = ["Blossom OS", "Monday", "CentralReach", "Viventium", "SharePoint", "Email", "Phone"];
 const templates = [
