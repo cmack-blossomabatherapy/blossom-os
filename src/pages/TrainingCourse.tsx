@@ -33,7 +33,7 @@ export default function TrainingCourse() {
     setActiveLessonId(course?.lessons[0]?.id);
     setAnswers({});
     setScore(course?.quizScore ?? null);
-  }, [course?.id]);
+  }, [course]);
 
   if (!course) return <Navigate to="/training" replace />;
   const dept = trainingDepartments.find((d) => d.id === course.departmentId)!;
