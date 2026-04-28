@@ -286,27 +286,33 @@ export function TeamAdminPanel() {
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {members.length} member{members.length === 1 ? "" : "s"}
+        <span className="hidden text-xs text-muted-foreground tabular-nums sm:inline">
+          {query.trim() ? `${filtered.length} result${filtered.length === 1 ? "" : "s"}` : showFullList ? `${members.length} members` : `${visibleMembers.length} recent`}
         </span>
+        {!query.trim() && members.length > 3 && (
+          <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => setShowFullList((value) => !value)}>
+            {showFullList ? "Show recent" : "Show full list"}
+          </Button>
+        )}
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={load}>
           Refresh
         </Button>
       </div>
 
       <div className="divide-y divide-border/40">
-        {filtered.map((m) => (
+        {visibleMembers.map((m) => (
           <MemberRow
             key={m.user_id}
             member={m}
             onToggleRole={(role) => toggleRole(m, role)}
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
+            onVisited={() => trackVisited(m.user_id)}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
           />
         ))}
-        {filtered.length === 0 && (
+        {visibleMembers.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">No members match.</div>
         )}
       </div>
