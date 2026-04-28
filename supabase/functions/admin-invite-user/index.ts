@@ -9,6 +9,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
+
 type Role =
   | "admin"
   | "exec"
@@ -90,6 +93,9 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const email: string | undefined = body.email?.trim().toLowerCase();
   const displayName: string | undefined = body.displayName?.trim() || undefined;
+  const siteUrl: string = typeof body.siteUrl === "string" && body.siteUrl.startsWith("http")
+    ? body.siteUrl.replace(/\/$/, "")
+    : "https://blossom-os.lovable.app";
   // Accept either `roles: string[]` (preferred, multi-role) or legacy single `role`.
   const incoming: unknown[] = Array.isArray(body.roles)
     ? body.roles
@@ -140,6 +146,14 @@ Deno.serve(async (req) => {
     );
   }
 
+  const welcomeEmailSent = await sendWelcomeEmail({
+    email,
+    displayName,
+    roles,
+    tempPassword,
+    loginUrl: `${siteUrl}/auth`,
+  });
+
   // Insert any additional roles beyond the primary one (which the trigger inserted).
   const extraRoles = roles.slice(1);
   if (extraRoles.length > 0) {
@@ -155,7 +169,83 @@ Deno.serve(async (req) => {
       email,
       roles,
       tempPassword,
+      welcomeEmailSent,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+async function sendWelcomeEmail({
+  email,
+  displayName,
+  roles,
+  tempPassword,
+  loginUrl,
+}: {
+  email: string;
+  displayName?: string;
+  roles: Role[];
+  tempPassword: string;
+  loginUrl: string;
+}) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  if (!LOVABLE_API_KEY || !RESEND_API_KEY) return false;
+
+  const firstName = displayName?.split(" ").filter(Boolean)[0];
+  const greeting = firstName ? `Welcome to Blossom, ${escapeHtml(firstName)}!` : "Welcome to Blossom!";
+  const roleList = roles.map((role) => role.replace(/_/g, " ")).join(", ");
+  const html = `
+    <div style="margin:0;padding:0;background:#f6fbfc;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#18313a;">
+      <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
+        <div style="background:#ffffff;border:1px solid #dcebed;border-radius:18px;overflow:hidden;box-shadow:0 18px 44px rgba(57,153,170,0.14);">
+          <div style="background:linear-gradient(135deg,#3999AA,#5bb7c6);padding:28px 30px;color:#ffffff;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.86;">Blossom ABA Therapy</div>
+            <h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:750;">${greeting}</h1>
+            <p style="margin:10px 0 0;font-size:15px;line-height:1.55;opacity:0.92;">Your Blossom workspace is ready. We’re so glad to have you on the team.</p>
+          </div>
+          <div style="padding:28px 30px;">
+            <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#31505a;">Use the details below to sign in for the first time. For security, you’ll be asked to create your own password right away.</p>
+            <div style="border:1px solid #dcebed;border-radius:14px;background:#f8fcfd;padding:18px;margin:0 0 22px;">
+              <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#667f87;">Email</div><div style="font-size:15px;font-weight:650;color:#18313a;">${escapeHtml(email)}</div></div>
+              <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#667f87;">Temporary password</div><div style="font-family:'SFMono-Regular',Consolas,monospace;font-size:16px;font-weight:700;color:#18313a;">${escapeHtml(tempPassword)}</div></div>
+              <div><div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#667f87;">Role access</div><div style="font-size:14px;text-transform:capitalize;color:#31505a;">${escapeHtml(roleList)}</div></div>
+            </div>
+            <a href="${escapeHtml(loginUrl)}" style="display:inline-block;background:#3999AA;color:#ffffff;text-decoration:none;border-radius:10px;padding:13px 18px;font-size:14px;font-weight:750;box-shadow:0 12px 26px rgba(57,153,170,0.25);">Sign in to Blossom</a>
+            <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#667f87;">Once you’re in, you’ll see your training, resources, and the tools connected to your role.</p>
+            <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#31505a;">Welcome aboard,<br /><strong>The Blossom team</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  const response = await fetch(`${RESEND_GATEWAY_URL}/emails`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "X-Connection-Api-Key": RESEND_API_KEY,
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [email],
+      subject: "Welcome to Blossom — your workspace is ready",
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to send welcome email", response.status, await response.text());
+    return false;
+  }
+  return true;
+}
