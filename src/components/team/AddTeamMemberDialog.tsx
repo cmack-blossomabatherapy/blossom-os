@@ -20,6 +20,7 @@ interface InviteResult {
   email: string;
   tempPassword: string;
   roles: AppRole[];
+  welcomeEmailSent?: boolean;
 }
 
 export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
@@ -64,6 +65,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
         email: email.trim().toLowerCase(),
         displayName: displayName.trim() || undefined,
         roles: Array.from(selectedRoles),
+        siteUrl: window.location.origin,
       },
     });
     setBusy(false);
@@ -75,8 +77,8 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
       toast.error(data?.error ?? "Failed to invite team member");
       return;
     }
-    setResult({ email: data.email, tempPassword: data.tempPassword, roles: data.roles ?? [] });
-    toast.success("Team member invited");
+    setResult({ email: data.email, tempPassword: data.tempPassword, roles: data.roles ?? [], welcomeEmailSent: data.welcomeEmailSent });
+    toast.success(data.welcomeEmailSent ? "Team member invited and welcome email sent" : "Team member invited");
     onCreated?.();
   };
 
@@ -204,8 +206,8 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
               </div>
               <DialogTitle>Account created</DialogTitle>
               <DialogDescription>
-                Share these credentials with {result.email}. They'll be required to set a
-                new password on first sign-in. This password won't be shown again.
+                {result.welcomeEmailSent ? "A polished welcome email was sent automatically." : `Share these credentials with ${result.email}.`} They'll be required to set a
+                new password on first sign-in.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -225,7 +227,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground text-center">
-                The welcome draft opens in your mail app — nothing is sent until you click Send there.
+                {result.welcomeEmailSent ? "The email was sent from Blossom through Resend." : "The welcome draft opens in your mail app — nothing is sent until you click Send there."}
               </p>
             </div>
             <DialogFooter>
