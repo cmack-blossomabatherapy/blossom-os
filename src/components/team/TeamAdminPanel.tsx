@@ -340,6 +340,7 @@ export function TeamAdminPanel() {
             onSendWelcome={() => sendWelcomeMail(m)}
             onVisited={() => trackVisited(m.user_id)}
             lastVisitedAt={!showFullList && !query.trim() ? recentVisits.find((visit) => visit.id === m.user_id)?.visitedAt ?? null : null}
+            roleActivity={roleActivity.find((activity) => activity.id === m.user_id) ?? null}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
           />
@@ -359,6 +360,7 @@ function MemberRow({
   onSendWelcome,
   onVisited,
   lastVisitedAt,
+  roleActivity,
   saving,
   isCurrentUser,
 }: {
@@ -368,6 +370,7 @@ function MemberRow({
   onSendWelcome: () => void;
   onVisited: () => void;
   lastVisitedAt: string | null;
+  roleActivity: RoleActivity | null;
   saving: boolean;
   isCurrentUser: boolean;
 }) {
@@ -453,6 +456,11 @@ function MemberRow({
             {lastVisitedAt && (
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                 Last visited {formatLastVisited(lastVisitedAt)}
+              </span>
+            )}
+            {roleActivity && (
+              <span className="text-[10px] font-medium uppercase tracking-wider text-info bg-info/10 px-1.5 py-0.5 rounded">
+                Roles {formatLastVisited(roleActivity.updatedAt)} · {roleActivity.label}
               </span>
             )}
             {isCurrentUser && (
