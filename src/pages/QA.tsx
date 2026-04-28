@@ -461,7 +461,7 @@ export default function QA() {
           {mode === "table" && <TableView records={filtered} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onOpen={openRecord} onPatch={patchRecord} onBulkNotify={() => bulkPatch({ nextAction: "BCBA notified" }, "Bulk notified BCBA")} />}
           {mode === "flow" && <FlowView records={filtered} onOpen={openRecord} onPatch={patchRecord} />}
           {mode === "plan" && <TreatmentPlanView record={selected} onToggle={toggleChecklist} onReady={markReady} onCorrection={requestCorrection} onComment={addComment} comment={comment} setComment={setComment} />}
-          {mode === "notes" && <NotesView records={filtered.filter((r) => r.noteStatus !== "Clean" || r.notesFlagged > 0 || r.issueType === "Amerigroup Issue")} onOpen={openRecord} onResolve={resolveNote} onTask={createCorrectionTask} onEscalate={(r) => markIssues(r, r.issueType === "None" ? "NoteGuard Flag" : r.issueType)} />}
+          {mode === "notes" && <NotesView records={filtered.filter((r) => r.noteStatus !== "Clean" || r.notesFlagged > 0 || r.issueType === "Amerigroup Issue")} onOpen={openRecord} onResolve={resolveNote} onTask={createCorrectionTask} onNotify={notifyNoteOwner} onEscalate={(r) => markIssues(r, r.issueType === "None" ? "NoteGuard Flag" : r.issueType)} />}
           {mode === "rbt" && <RbtMonitoringView records={filtered.filter((r) => r.newRbt)} onOpen={openRecord} onPatch={patchRecord} />}
           {mode === "progress" && <ProgressReportView records={filtered.filter((r) => r.progressReportStatus !== "Not Needed")} onOpen={openRecord} onReady={markReady} onAuth={sendToAuth} />}
         </div>
