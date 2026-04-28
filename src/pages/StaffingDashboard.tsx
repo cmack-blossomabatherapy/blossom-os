@@ -406,6 +406,9 @@ export default function StaffingDashboard() {
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
+  useEffect(() => {
+    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters }));
+  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
