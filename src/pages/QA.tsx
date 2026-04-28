@@ -234,6 +234,61 @@ const buildRecords = (clients: Client[]): QARecord[] => {
   });
 };
 
+const qaRecordFromClient = (client: Client, index: number): QARecord => {
+  const treatmentAuth = client.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
+  const treatmentPlanReceived = Boolean(treatmentAuth?.treatmentPlanReceived || treatmentAuth?.treatmentPlanLinked);
+  return {
+    id: `qa-new-${Date.now()}`,
+    clientId: client.id,
+    clientName: client.childName,
+    parentName: client.parentName,
+    state: client.state,
+    clinic: client.clinic,
+    payor: treatmentAuth?.payor ?? client.payor,
+    bcba: client.bcba ?? BCBAS[index % BCBAS.length],
+    rbt: client.rbt ?? "Unassigned",
+    qaOwner: "QA Team",
+    status: "Awaiting Review",
+    planStatus: treatmentPlanReceived ? "Submitted" : "Missing",
+    noteStatus: client.notesComplianceStatus === "Flagged" ? "Flagged" : "Clean",
+    issueType: treatmentPlanReceived ? "None" : "Missing Treatment Plan",
+    severity: treatmentPlanReceived ? "Medium" : "High",
+    risk: treatmentPlanReceived ? "Moderate" : "High",
+    daysSinceAssessment: client.daysSinceAssessment ?? 0,
+    daysInQA: 0,
+    daysInStage: 0,
+    treatmentPlanSubmitted: treatmentPlanReceived ? isoDaysAgo(0) : "—",
+    dueDate: isoDaysAhead(3),
+    authExpiration: treatmentAuth?.expirationDate ?? isoDaysAhead(30),
+    authStatus: "Not Submitted",
+    authReadiness: treatmentPlanReceived ? "Needs QA" : "Blocked",
+    nextAction: "Start QA review",
+    alerts: treatmentPlanReceived ? ["Awaiting QA Review"] : ["Missing Treatment Plan", "QA blocking auth submission"],
+    notesFlagged: client.noteguardFlags ?? 0,
+    correctionOwner: client.bcba ?? "Clinical Team",
+    correctionDue: isoDaysAhead(2),
+    newRbt: Boolean(client.newRbtStartDate),
+    rbtStartDate: client.newRbtStartDate ?? isoDaysAgo(0),
+    rbtCheckInStatus: "Complete",
+    trainingStatus: "Supported",
+    progressReportStatus: "Not Needed",
+    checklist: CHECKLIST.reduce((acc, item) => ({ ...acc, [item.key]: item.key === "planReceived" ? treatmentPlanReceived : false }), {} as Record<ChecklistKey, boolean>),
+    issues: treatmentPlanReceived ? [] : [{ id: `issue-${Date.now()}`, type: "Missing Treatment Plan", description: "Treatment plan must be attached before QA can approve auth handoff.", owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(2), resolved: false }],
+    documents: [
+      { name: "Treatment plan", type: "Treatment Plan", present: treatmentPlanReceived },
+      { name: "Assessment report", type: "Assessment", present: Boolean(client.assessmentDate) },
+      { name: "Parent consent", type: "Supporting", present: Boolean(client.consentComplete) },
+      { name: "QA notes", type: "QA", present: true },
+    ],
+    tasks: [{ id: `task-${Date.now()}`, title: "Start treatment plan QA review", owner: "QA Team", dueDate: isoDaysAhead(1), completed: false }],
+    timeline: [
+      { date: client.assessmentDate ?? isoDaysAgo(client.daysSinceAssessment ?? 0), event: "Assessment/treatment plan selected for QA" },
+      { date: isoDaysAgo(0), event: "New QA Review created: Awaiting QA Review" },
+    ],
+    comments: ["QA review created from existing assessment/treatment plan."],
+  };
+};
+
 export default function QA() {
   const navigate = useNavigate();
   const { clients, updateClient, addTask, appendTimeline, appendAutomation } = useClients();
@@ -245,6 +300,8 @@ export default function QA() {
   const [panelTab, setPanelTab] = useState("overview");
   const [filters, setFilters] = useState({ state: "all", owner: "all", bcba: "all", rbt: "all", payor: "all", status: "all", issue: "all", plan: "all", note: "all", date: "all" });
   const [comment, setComment] = useState("");
+  const [newReviewOpen, setNewReviewOpen] = useState(false);
+  const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
@@ -405,6 +462,20 @@ export default function QA() {
     setPanelTab("overview");
   };
 
+  const createQaReview = async () => {
+    const client = clients.find((item) => item.id === newReviewClientId);
+    if (!client) return toast.error("Select an assessment or treatment plan first");
+    const record = qaRecordFromClient(client, records.length);
+    setRecords((current) => [record, ...current]);
+    setSelectedId(record.id);
+    setMode("plan");
+    setNewReviewOpen(false);
+    await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: "Start QA review" });
+    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
+    await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
+    toast.success("New QA Review created", { description: "Initial status set to Awaiting QA Review." });
+  };
+
   return (
     <PageShell
       title="QA & Compliance"
@@ -412,7 +483,7 @@ export default function QA() {
       icon={ClipboardCheck}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm"><Plus className="h-4 w-4" />New QA Review</Button>
+          <Button size="sm" onClick={() => setNewReviewOpen(true)}><Plus className="h-4 w-4" />New QA Review</Button>
           <Button size="sm" variant="outline" onClick={() => selectedIds.length ? bulkPatch({ qaOwner: "QA Team" }, "Bulk assigned QA owner") : toast.info("Select rows first")}>Bulk Actions</Button>
           <Button size="sm" variant="outline"><Download className="h-4 w-4" />Export</Button>
           <Button size="sm" variant="outline"><Sparkles className="h-4 w-4" />Saved Views</Button>
@@ -467,12 +538,19 @@ export default function QA() {
         </div>
         <DetailPanel record={selected} panelTab={panelTab} setPanelTab={setPanelTab} onOpenClient={() => navigate(`/clients/${selected.clientId}`)} onStart={startReview} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onToggle={toggleChecklist} onResolveIssue={resolveIssue} onResolveNote={resolveNote} comment={comment} setComment={setComment} onComment={addComment} />
       </section>
+      {newReviewOpen && <NewQaReviewDialog clients={clients} selectedId={newReviewClientId} onSelect={setNewReviewClientId} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} />}
     </PageShell>
   );
 }
 
 function FilterSelect({ value, onChange, label, items }: { value: string; onChange: (value: string) => void; label: string; items: string[] }) {
   return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={label} /></SelectTrigger><SelectContent><SelectItem value="all">{label}</SelectItem>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
+}
+
+function NewQaReviewDialog({ clients, selectedId, onSelect, onClose, onCreate }: { clients: Client[]; selectedId: string; onSelect: (id: string) => void; onClose: () => void; onCreate: () => void }) {
+  const selected = clients.find((client) => client.id === selectedId);
+  const options = clients.filter((client) => client.assessmentDate || client.stage === "Assessment Completed" || client.stage === "Treatment Plan Pending" || client.stage === "QA Review" || client.authorizations.some((auth) => auth.type === "Treatment"));
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur-sm"><div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl"><div className="border-b border-border p-5"><h2 className="text-lg font-semibold text-foreground">New QA Review</h2><p className="text-sm text-muted-foreground">Create a QA item from an existing assessment or treatment plan.</p></div><div className="space-y-4 p-5"><label className="space-y-2"><span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Assessment / Treatment Plan</span><Select value={selectedId} onValueChange={onSelect}><SelectTrigger><SelectValue placeholder="Select client assessment" /></SelectTrigger><SelectContent>{options.map((client) => <SelectItem key={client.id} value={client.id}>{client.childName} · {client.state} · {client.stage}</SelectItem>)}</SelectContent></Select></label>{selected && <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-4"><div><p className="text-xs text-muted-foreground">Client</p><p className="text-sm font-medium text-foreground">{selected.childName}</p></div><div><p className="text-xs text-muted-foreground">Assessment Date</p><p className="text-sm font-medium text-foreground">{selected.assessmentDate ?? "Not set"}</p></div><div><p className="text-xs text-muted-foreground">BCBA</p><p className="text-sm font-medium text-foreground">{selected.bcba ?? "Unassigned"}</p></div><div><p className="text-xs text-muted-foreground">Treatment Auth</p><p className="text-sm font-medium text-foreground">{selected.authorizations.some((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked) ? "Available" : "Missing plan"}</p></div></div>}<div className="rounded-md border border-info/30 bg-info/10 p-3 text-xs text-info">New records are created with initial status Awaiting QA Review and a starter QA task due tomorrow.</div></div><div className="flex justify-end gap-2 border-t border-border p-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={onCreate}>Create QA Review</Button></div></div></div>;
 }
 
 function SlaQueueView(props: { records: QARecord[]; onOpen: (r: QARecord) => void; onStart: (r: QARecord) => void; onIssue: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onTask: (r: QARecord) => void }) {
