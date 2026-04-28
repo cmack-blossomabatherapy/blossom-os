@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, MapPin, Building2, Calendar } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,23 +24,29 @@ import { TimeClockTab } from "@/components/hr/profile/TimeClockTab";
 import { ReviewsTab } from "@/components/hr/profile/ReviewsTab";
 import { TrainingTab } from "@/components/hr/profile/TrainingTab";
 import { PayrollTab } from "@/components/hr/profile/PayrollTab";
+import { EmployeeInfoEditor } from "@/components/hr/profile/EmployeeInfoEditor";
 
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
   const { hasPerm } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [department, setDepartment] = useState<Department | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { if (id) void load(id); }, [id]);
 
   async function load(empId: string) {
     setLoading(true);
-    const { data: emp } = await supabase.from("employees").select("*").eq("id", empId).maybeSingle();
+    const [{ data: emp }, { data: deptRows }] = await Promise.all([
+      supabase.from("employees").select("*").eq("id", empId).maybeSingle(),
+      supabase.from("hr_departments").select("*").order("name"),
+    ]);
+    const allDepartments = (deptRows ?? []) as Department[];
+    setDepartments(allDepartments);
     setEmployee(emp as Employee | null);
     if (emp?.department_id) {
-      const { data: dept } = await supabase.from("hr_departments").select("*").eq("id", emp.department_id).maybeSingle();
-      setDepartment(dept ?? null);
+      setDepartment(allDepartments.find((dept) => dept.id === emp.department_id) ?? null);
     } else {
       setDepartment(null);
     }
@@ -71,15 +77,19 @@ export default function EmployeeProfile() {
   const showReviews = hasPerm("hr.reviews.view");
   const showTraining = hasPerm("hr.training.view");
   const showCompensation = hasPerm("hr.bonuses.view") || hasPerm("hr.paychanges.view") || hasPerm("hr.payroll.view");
+  const canEditEmployee = hasPerm("hr.employees.edit");
+  const canEditPayroll = hasPerm("hr.payroll.edit") || hasPerm("hr.paychanges.manage");
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <Link to="/hr/directory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to directory
-      </Link>
-
-      <Card className="p-5">
-        <div className="flex flex-col md:flex-row gap-5 md:items-start">
+      <Card className="overflow-hidden">
+        <div className="border-b border-border/50 bg-secondary/25 px-5 py-3 flex items-center justify-between gap-3">
+          <Link to="/hr/directory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Directory
+          </Link>
+          <EmployeeInfoEditor employee={employee} departments={departments} canEditEmployee={canEditEmployee} canEditPayroll={canEditPayroll} onSaved={() => load(employee.id)} />
+        </div>
+        <div className="p-5 flex flex-col gap-5 md:flex-row md:items-start">
           <EmployeeAvatar employee={employee} size="xl" />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -93,6 +103,12 @@ export default function EmployeeProfile() {
               <Info icon={MapPin}>{employee.state}{employee.clinic ? ` · ${employee.clinic}` : ""}</Info>
               {employee.start_date && <Info icon={Calendar}>Started {employee.start_date}</Info>}
               {employee.employee_code && <Info icon={Building2}>{employee.employee_code}</Info>}
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <ProfileStat icon={Briefcase} label="Employment" value={`${employee.employment_type.replace("_", " ")} · ${employee.work_setting}`} />
+              <ProfileStat icon={Wallet} label="Payroll" value={`${employee.pay_type}${employee.pay_rate ? ` · $${employee.pay_rate}` : ""}`} />
+              <ProfileStat icon={Calendar} label="Next review" value={employee.next_review_date ?? "Not scheduled"} />
+              <ProfileStat icon={Building2} label="Systems" value={employee.viventium_employee_id ? `Viventium ${employee.viventium_employee_id}` : "Not connected"} />
             </div>
           </div>
         </div>
@@ -139,4 +155,13 @@ export default function EmployeeProfile() {
 
 function Info({ icon: Icon, children }: { icon: typeof Mail; children: React.ReactNode }) {
   return <span className="inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{children}</span>;
+}
+
+function ProfileStat({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-secondary/25 px-3 py-2">
+      <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold capitalize text-foreground">{value}</p>
+    </div>
+  );
 }
