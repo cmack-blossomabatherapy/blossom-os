@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
     loginUrl: `${siteUrl}/auth`,
   });
 
-  await admin.from("invite_email_logs").insert({
+  const { error: logErr } = await admin.from("invite_email_logs").insert({
     recipient_email: email,
     status: welcomeEmailResult.status,
     resend_message_id: welcomeEmailResult.resendMessageId,
@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
     invited_user_id: created.user.id,
     created_by: callerId,
   });
+  if (logErr) console.error("Failed to log invite email result", logErr.message);
 
   // Insert any additional roles beyond the primary one (which the trigger inserted).
   const extraRoles = roles.slice(1);
@@ -180,6 +181,9 @@ Deno.serve(async (req) => {
       roles,
       tempPassword,
       welcomeEmailSent: welcomeEmailResult.status === "sent",
+      welcomeEmailStatus: welcomeEmailResult.status,
+      welcomeEmailError: welcomeEmailResult.errorMessage,
+      resendMessageId: welcomeEmailResult.resendMessageId,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
