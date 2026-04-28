@@ -250,6 +250,7 @@ export default function Staffing() {
   const [sideOpen, setSideOpen] = useState(false);
   const [note, setNote] = useState("");
   const [schedulingRecords, setSchedulingRecords] = useState<SchedulingRecord[]>([]);
+  const [capacityFocusKey, setCapacityFocusKey] = useState<string | null>(null);
 
   const selected = records.find((r) => r.id === selectedId) ?? records[0];
   const selectedRbt = rbts.find((r) => r.id === selected?.assignedRbtId) ?? rbts.find((r) => r.id === selected?.suggestedRbtId);
@@ -257,6 +258,20 @@ export default function Staffing() {
   const clinics = ["All", ...Array.from(new Set(records.map((r) => r.clinic)))];
   const rbtNames = ["All", ...rbts.map((r) => r.name)];
   const regions = ["All", ...Array.from(new Set(records.map((r) => r.region)))];
+
+  const coverageRows = useMemo(() => {
+    const areas = Array.from(new Set(records.map((r) => `${r.state}|${r.region}|${r.clinic}`)));
+    return areas.map((area) => {
+      const [state, region, clinic] = area.split("|");
+      const areaRecords = records.filter((r) => r.state === state && r.region === region && r.clinic === clinic);
+      const areaRbts = rbts.filter((r) => r.state === state && (r.clinic === clinic || r.region === region));
+      const required = areaRecords.reduce((sum, r) => sum + r.requiredHours, 0);
+      const available = areaRbts.reduce((sum, r) => sum + Math.max(0, r.maxHours - r.currentHours), 0);
+      const assigned = areaRbts.reduce((sum, r) => sum + r.currentHours, 0);
+      const gap = available - required;
+      return { state, region, clinic, required, available, assigned, gap, coverage: required ? Math.min(100, Math.round((available / required) * 100)) : 100, unstaffed: areaRecords.filter((r) => ["Staffing Needed", "Restaffing Needed", "No Match Available"].includes(r.status)).length, rbts: areaRbts.filter((r) => r.status === "Available").length };
+    }).sort((a, b) => a.gap - b.gap || b.unstaffed - a.unstaffed);
+  }, [records, rbts]);
 
   const rankedMatches = (record: StaffingRecord) => rbts
     .map((rbt) => ({ rbt, score: calcScore(record, rbt), overlap: rbt.availability.filter((a) => record.availability.includes(a)), available: rbt.maxHours - rbt.currentHours }))
