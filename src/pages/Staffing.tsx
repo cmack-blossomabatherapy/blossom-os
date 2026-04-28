@@ -28,9 +28,11 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useClients } from "@/contexts/ClientsContext";
@@ -45,6 +47,7 @@ type Urgency = "Critical" | "High" | "Medium" | "Low";
 type Readiness = "Ready" | "Needs Review" | "Incomplete";
 type RbtStatus = "Available" | "Near Capacity" | "Full" | "Inactive";
 type AvailabilitySlot = "Morning" | "Afternoon" | "Evening";
+type MatchWeights = { region: number; availability: number; compliance: number; capacity: number };
 
 type RbtRecord = {
   id: string;
