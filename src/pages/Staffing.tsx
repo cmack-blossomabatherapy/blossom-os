@@ -111,6 +111,12 @@ const urgencyOptions: ("All" | Urgency)[] = ["All", "Critical", "High", "Medium"
 const staffingOwnerSchema = z.string().trim().refine((owner) => owners.includes(owner) && owner !== "All", "Choose a valid staffing owner.");
 const staffingStatusSchema = z.string().trim().refine((status): status is StaffingStatus => statusOptions.includes(status as StaffingStatus) && status !== "All", "Choose a valid staffing status.");
 const bulkSelectionSchema = z.array(z.string().regex(/^STF-\d{4}$/)).min(1, "Select at least one staffing record.").max(100, "Bulk edit is limited to 100 records.");
+const escalationReasonSchema = z.enum(["WAITING_OVER_7_DAYS", "NO_RBT_MATCH", "REGIONAL_CAPACITY_GAP"]);
+const escalationReasonLabels: Record<z.infer<typeof escalationReasonSchema>, string> = {
+  WAITING_OVER_7_DAYS: "Client waiting over 7 days",
+  NO_RBT_MATCH: "No RBT match exists",
+  REGIONAL_CAPACITY_GAP: "Regional capacity gap",
+};
 const viewModes: { id: ViewMode; label: string; icon: typeof FolderKanban }[] = [
   { id: "queue", label: "Queue View", icon: FolderKanban },
   { id: "table", label: "Table View", icon: BriefcaseBusiness },
