@@ -148,6 +148,13 @@ const draftFromCourse = (course: TrainingCourse): BuilderDraft => ({
 export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, courses = [] }: { open: boolean; onOpenChange: (open: boolean) => void; onSubmit: (course: TrainingCourse) => void; course?: TrainingCourse; courses?: TrainingCourse[] }) {
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<BuilderDraft>(() => emptyDraft());
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiSource, setAiSource] = useState<AiSourceType>("tango");
+  const [aiTangoUrl, setAiTangoUrl] = useState("");
+  const [aiSopText, setAiSopText] = useState("");
+  const [aiFileName, setAiFileName] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -161,6 +168,48 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   const patch = <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
   const setList = <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
+
+  const generateWithAi = async () => {
+    const body = { sourceType: aiSource, tangoUrl: aiTangoUrl.trim(), sopText: aiSopText.trim(), fileName: aiFileName };
+    if (aiSource === "tango" && !body.tangoUrl) return toast.error("Add a Tango link first");
+    if (aiSource !== "tango" && !body.sopText) return toast.error("Add SOP text first");
+    setAiGenerating(true);
+    const { data, error } = await supabase.functions.invoke("generate-training-draft", { body });
+    setAiGenerating(false);
+    if (error) return toast.error(error.message || "AI training generation failed");
+    setAiDraft(data?.draft as AiDraft);
+    toast.success("AI training draft generated");
+  };
+
+  const acceptAiDraft = () => {
+    if (!aiDraft) return;
+    setDraft((current) => ({
+      ...current,
+      title: aiDraft.title || current.title,
+      description: aiDraft.description || current.description,
+      departmentId: aiDraft.departmentId || current.departmentId,
+      difficulty: aiDraft.difficulty || current.difficulty,
+      type: aiDraft.type || current.type,
+      minutes: aiDraft.minutes || current.minutes,
+      objectives: aiDraft.objectives?.length ? aiDraft.objectives : current.objectives,
+      sopTitle: aiDraft.sop?.title || aiDraft.title || current.sopTitle,
+      sopContent: aiDraft.sop?.content || current.sopContent,
+      sopFileName: aiFileName || current.sopFileName,
+      walkthroughs: aiDraft.walkthrough?.url ? [{ id: uid("tango"), url: aiDraft.walkthrough.url, label: aiDraft.walkthrough.label || "Open Walkthrough" }] : current.walkthroughs,
+      steps: aiDraft.steps?.length ? aiDraft.steps.map((item) => ({ id: uid("step"), title: item.title ?? "", description: item.description ?? "", systemTag: item.systemTag || "Blossom OS" })) : current.steps,
+      checklist: aiDraft.checklist?.length ? aiDraft.checklist.map((label) => ({ id: uid("check"), label, required: true })) : current.checklist,
+      mistakes: aiDraft.commonMistakes?.length ? aiDraft.commonMistakes.map((item) => ({ id: uid("mistake"), error: item.error ?? "", consequence: item.consequence ?? "", avoid: item.avoid ?? "" })) : current.mistakes,
+      quizEnabled: Boolean(aiDraft.quiz?.length),
+      quiz: aiDraft.quiz?.length ? aiDraft.quiz.map((item) => ({ id: uid("quiz"), type: item.type === "True / false" ? "True / false" : "Multiple choice", question: item.question ?? "", options: item.options?.length ? item.options : ["True", "False"], answer: item.answer ?? "", explanation: item.explanation ?? "" })) : current.quiz,
+      badgeTitle: aiDraft.badge?.title || current.badgeTitle,
+      badgeDescription: aiDraft.badge?.description || current.badgeDescription,
+      awardBadge: Boolean(aiDraft.badge?.title) || current.awardBadge,
+      templateName: "AI-generated training draft",
+    }));
+    setStep(11);
+    setAiOpen(false);
+    toast.success("AI draft loaded into the editable builder");
+  };
 
   const applyTemplate = (name: string) => {
     const template = templates.find((item) => item.name === name);
@@ -234,6 +283,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto"><DialogHeader><DialogTitle>{course ? "Edit Training Builder" : "Create Training Builder"}</DialogTitle></DialogHeader>
     <div className="space-y-5">
+      {!course && <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div><div><p className="font-semibold text-primary">Generate Training with AI</p><p className="text-sm text-primary/80">Drop in a Tango link, SOP upload text, or pasted SOP and get a structured draft in seconds.</p></div></div><Button onClick={() => setAiOpen(true)}><Sparkles className="mr-2 h-4 w-4" />Generate Training with AI</Button></div></div>}
       <div className="rounded-2xl border border-border/60 bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Gauge className="h-5 w-5 text-primary" /><div><p className="font-semibold text-foreground">Training Quality Score: {quality}% ({qualityLabel(quality)})</p><p className="text-xs text-muted-foreground">SOP, Tango, steps, checklist, quiz, and common mistakes raise readiness.</p></div></div><StatusBadge status={`Step ${step + 1} of ${builderSteps.length}`} variant="info" /></div>
         <Progress value={quality} className="mt-3 h-2" />
@@ -254,6 +304,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
       {step === 11 && <PreviewStep draft={draft} quality={quality} blockers={blockers} />}
     </div>
     <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="outline" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>{step < builderSteps.length - 1 ? <Button onClick={() => setStep((current) => Math.min(builderSteps.length - 1, current + 1))}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button> : <><Button variant="outline" onClick={() => submit("draft")}>Save draft</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Publish</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Assign now</Button></>}</DialogFooter>
+    <AiTrainingDialog open={aiOpen} onOpenChange={setAiOpen} source={aiSource} setSource={setAiSource} tangoUrl={aiTangoUrl} setTangoUrl={setAiTangoUrl} sopText={aiSopText} setSopText={setAiSopText} fileName={aiFileName} setFileName={setAiFileName} generating={aiGenerating} draft={aiDraft} onGenerate={generateWithAi} onAccept={acceptAiDraft} />
   </DialogContent></Dialog>;
 }
 
