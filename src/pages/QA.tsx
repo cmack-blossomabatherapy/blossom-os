@@ -119,6 +119,7 @@ const CHECKLIST: { key: ChecklistKey; label: string }[] = [
 const today = new Date("2026-04-28T12:00:00");
 const isoDaysAgo = (days: number) => new Date(today.getTime() - days * 86400000).toISOString().slice(0, 10);
 const isoDaysAhead = (days: number) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
+const missingChecklistItems = (record: QARecord) => CHECKLIST.filter((item) => !record.checklist[item.key]);
 const allChecked = (record: QARecord) => Object.values(record.checklist).every(Boolean) && record.issues.every((issue) => issue.resolved);
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
@@ -264,6 +265,16 @@ export default function QA() {
   ];
 
   const patchRecord = (id: string, patch: Partial<QARecord>, event?: string) => {
+    if (patch.status === "Ready for Submission") {
+      const record = records.find((item) => item.id === id);
+      if (record && !allChecked(record)) {
+        const missing = missingChecklistItems(record).map((item) => item.label);
+        toast.error("Treatment Plan Review gate incomplete", {
+          description: missing.length ? `Finish: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ` +${missing.length - 3} more` : ""}` : "Resolve all QA issues before marking ready.",
+        });
+        return;
+      }
+    }
     setRecords((current) => current.map((record) => record.id === id ? { ...record, ...patch, timeline: event ? [...record.timeline, { date: isoDaysAgo(0), event }] : record.timeline } : record));
   };
 
@@ -313,7 +324,10 @@ export default function QA() {
 
   const markReady = async (record: QARecord) => {
     if (!allChecked(record)) {
-      toast.error("Complete every checklist item and resolve issues first");
+      const missing = missingChecklistItems(record).map((item) => item.label);
+      toast.error("Treatment Plan Review gate incomplete", {
+        description: missing.length ? `Finish: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ` +${missing.length - 3} more` : ""}` : "Resolve all QA issues before marking ready.",
+      });
       return;
     }
     patchRecord(record.id, { status: "Ready for Submission", planStatus: "Approved", authReadiness: "Ready", risk: "Low", nextAction: "Send to Auth", tasks: record.tasks.map((task) => task.title.includes("Review") || task.title.includes("Resolve") ? { ...task, completed: true } : task) }, "QA approved and ready for auth submission");
