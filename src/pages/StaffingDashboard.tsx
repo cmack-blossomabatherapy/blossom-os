@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, ArrowRight, BarChart3, CheckCircle2, Clock, Download, Eye, MapPin,
-  MessageSquare, Phone, RefreshCw, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
+  AlertTriangle, ArrowRight, BarChart3, Building2, CheckCircle2, Clock, Download, Eye, Home, MapPin,
+  MessageSquare, Navigation, Phone, RefreshCw, Route, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ type StaffingRecord = {
   authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[]; decisionHistory: MatchDecision[];
 };
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
+type MapPoint = { x: number; y: number };
 
 const ALL = "All";
 const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
@@ -55,6 +56,7 @@ const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum,
 const pct = (value: number, total: number) => total ? Math.round((value / total) * 100) : 0;
 const availableHours = (rbt: Rbt) => Math.max(0, rbt.maxHours - rbt.currentHours);
 const stageHealth = (count: number, oldest: number) => count === 0 ? "green" : oldest > 7 ? "red" : oldest > 3 ? "yellow" : "green";
+const clamp = (value: number, min = 7, max = 93) => Math.max(min, Math.min(max, value));
 
 const rbtSeed: Rbt[] = [
   { id: "RBT-101", name: "Taylor S.", state: "GA", region: "Atlanta Metro", clinic: "Peachtree Corners", location: "Norcross", radius: 18, availability: ["Mon AM", "Tue AM", "Wed AM", "Thu AM", "Fri AM"], currentHours: 27, maxHours: 32, assignedClients: ["Emma Thompson"], experience: ["Early intervention", "Clinic"], compliance: "Ready", onboarding: "Active" },
