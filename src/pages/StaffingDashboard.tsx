@@ -199,6 +199,8 @@ function storedMapState() {
   try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | number | MapFilters>; } catch { return null; }
 }
 
+const defaultMapFilters: MapFilters = { unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, sortMarkersByScore: false, minScore: 0 };
+
 const regionAnchors: Record<string, MapPoint> = {
   "Atlanta Metro": { x: 28, y: 68 }, "Atlanta South": { x: 24, y: 77 }, Charlotte: { x: 45, y: 51 }, Raleigh: { x: 57, y: 48 }, Nashville: { x: 36, y: 38 }, Memphis: { x: 18, y: 43 }, Richmond: { x: 67, y: 32 }, Norfolk: { x: 78, y: 40 }, Bethesda: { x: 69, y: 20 }, Baltimore: { x: 76, y: 17 },
 };
@@ -309,7 +311,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
         <Button size="sm" variant={showTooltipBreakdown ? "default" : "outline"} onClick={() => setShowTooltipBreakdown(!showTooltipBreakdown)}>Tooltip score details</Button>
         <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
-        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
+        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly || mapFilters.sortMarkersByScore || mapFilters.minScore > 0) && <Button size="sm" variant="outline" onClick={() => setMapFilters(defaultMapFilters)}>Clear</Button>}
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="relative min-h-[560px] overflow-hidden bg-muted/20">
@@ -398,7 +400,7 @@ export default function StaffingDashboard() {
   const [activeMatchId, setActiveMatchId] = useState<string | null>(typeof initialMapState?.activeMatchId === "string" ? initialMapState.activeMatchId : null);
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
-  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ ...defaultMapFilters, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
   const [showTooltipBreakdown, setShowTooltipBreakdown] = useState<boolean>(typeof initialMapState?.showTooltipBreakdown === "boolean" ? initialMapState.showTooltipBreakdown : true);
   const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
