@@ -4,6 +4,7 @@ import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCirc
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -76,10 +77,12 @@ const saveStoredNote = (courseId: string, lessonId: string, note: string) => {
 };
 
 function LessonEmbed({ lesson, walkthroughs = [] }: { lesson: TrainingLesson; walkthroughs?: { id: string; url: string; label: string }[] }) {
+  const [loadedEmbeds, setLoadedEmbeds] = useState<Set<string>>(new Set());
+  useEffect(() => setLoadedEmbeds(new Set()), [lesson.id, walkthroughs.map((item) => item.url).join("|")]);
   const tangoWalkthroughs = walkthroughs.filter((item) => item.url.trim());
   const embeds = tangoWalkthroughs.length ? tangoWalkthroughs : lesson.tangoUrl ? [{ id: lesson.id, url: lesson.tangoUrl, label: lesson.title }] : [];
   if (embeds.length) {
-    return <div className="space-y-4 bg-background p-4">{embeds.map((embed, index) => <div key={embed.id || embed.url} className="overflow-hidden rounded-xl border border-border/60 bg-card"><div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tango walkthrough {index + 1}</p><h2 className="text-sm font-semibold text-foreground">{embed.label || `Walkthrough ${index + 1}`}</h2></div><Button size="sm" variant="outline" onClick={() => openResource(embed.url)}><ExternalLink className="mr-2 h-4 w-4" />Open</Button></div><iframe title={embed.label || `Tango walkthrough ${index + 1}`} src={toTangoEmbedUrl(embed.url)} className="h-[420px] w-full border-0" allow="fullscreen" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div>)}</div>;
+    return <div className="space-y-4 bg-background p-4">{embeds.map((embed, index) => { const embedKey = embed.id || embed.url; const loaded = loadedEmbeds.has(embedKey); return <div key={embedKey} className="overflow-hidden rounded-xl border border-border/60 bg-card"><div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tango walkthrough {index + 1}</p><h2 className="text-sm font-semibold text-foreground">{embed.label || `Walkthrough ${index + 1}`}</h2></div><Button size="sm" variant="outline" onClick={() => openResource(embed.url)}><ExternalLink className="mr-2 h-4 w-4" />Open</Button></div><div className="relative aspect-video min-h-[320px] w-full bg-muted/30 md:min-h-[420px]"><div className={cn("absolute inset-0 transition-opacity", loaded ? "pointer-events-none opacity-0" : "opacity-100")}><Skeleton className="h-full w-full rounded-none" /><div className="absolute inset-0 flex items-center justify-center p-6 text-center"><div><p className="text-sm font-medium text-foreground">Loading walkthrough</p><p className="mt-1 text-xs text-muted-foreground">Preparing embedded Tango content</p></div></div></div><iframe title={embed.label || `Tango walkthrough ${index + 1}`} src={toTangoEmbedUrl(embed.url)} className="absolute inset-0 h-full w-full border-0" allow="fullscreen" loading="lazy" referrerPolicy="no-referrer-when-downgrade" onLoad={() => setLoadedEmbeds((current) => new Set([...current, embedKey]))} /></div></div>; })}</div>;
   }
   if (lesson.resourceUrl) {
     return <div className="flex min-h-[260px] items-center justify-center bg-muted/40 p-8 text-center"><div><FileText className="mx-auto h-14 w-14 text-primary" /><h2 className="mt-4 text-xl font-semibold text-foreground">Resource attached</h2><p className="mt-2 max-w-md text-sm text-muted-foreground">Open the linked resource to view or download it.</p><Button className="mt-4" variant="outline" onClick={() => openResource(lesson.resourceUrl)}><ExternalLink className="mr-2 h-4 w-4" />Open resource</Button></div></div>;
