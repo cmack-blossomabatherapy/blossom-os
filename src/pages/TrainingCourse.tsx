@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
-import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT, type TrainingLesson } from "@/data/training";
+import { useAuth } from "@/contexts/AuthContext";
+import { getStoredTrainingAssignments, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingLesson } from "@/data/training";
 
 const TANGO_EMBED_URL_STORAGE_KEY = "blossom-training-tango-embed-urls";
 
@@ -94,13 +95,24 @@ function LessonEmbed({ lesson, walkthroughs = [] }: { lesson: TrainingLesson; wa
 
 export default function TrainingCourse() {
   const { courseId } = useParams();
+  const { user } = useAuth();
   const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
+  const [assignments, setAssignments] = useState(() => getStoredTrainingAssignments());
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(TRAINING_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  useEffect(() => {
+    const refresh = () => setAssignments(getStoredTrainingAssignments());
+    window.addEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
