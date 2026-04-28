@@ -183,7 +183,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const { hasPerm, isAdmin, user, roles } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
-  const hasFullNavigation = isAdmin || roles.includes("exec") || roles.includes("ops_manager");
+  const hasFullNavigation = hasFullNavigationAccess(roles);
   const limitedSections = limitedNavigationSections(roles);
   const hasNavigationExceptions = !hasFullNavigation && limitedSections.some((section) => section.title !== "Intelligence");
 
