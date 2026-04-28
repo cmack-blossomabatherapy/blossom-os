@@ -104,6 +104,23 @@ export function TeamDetailPanel({ member, onClose }: Props) {
     toast.success("Employee quick panel updated");
   };
 
+  const directManager = useMemo(() => relationships.find((row) => row.kind === "direct_manager") ?? null, [relationships]);
+
+  const updateDirectManager = async (managerId: string) => {
+    if (!employee || !canEditQuick) return;
+    setSavingQuick(true);
+    await supabase.from("employee_relationships").delete().eq("employee_id", employee.id).eq("kind", "direct_manager");
+    const { error } = await supabase.from("employee_relationships").insert({ employee_id: employee.id, related_employee_id: managerId, kind: "direct_manager" });
+    setSavingQuick(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const related = employeeOptions.find((option) => option.id === managerId) ?? null;
+    setRelationships((current) => [{ kind: "direct_manager", related_employee_id: managerId, related }, ...current.filter((row) => row.kind !== "direct_manager")]);
+    toast.success("Manager updated");
+  };
+
   return (
     <div className="bg-card rounded-xl border border-border/60 flex flex-col max-h-[calc(100vh-180px)]">
       {/* Header */}
