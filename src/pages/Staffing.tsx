@@ -275,6 +275,7 @@ export default function Staffing() {
   const [note, setNote] = useState("");
   const [schedulingRecords, setSchedulingRecords] = useState<SchedulingRecord[]>([]);
   const [capacityFocusKey, setCapacityFocusKey] = useState<string | null>(null);
+  const [matchWeights, setMatchWeights] = useState<MatchWeights>({ region: 25, availability: 25, compliance: 25, capacity: 25 });
 
   const selected = records.find((r) => r.id === selectedId) ?? records[0];
   const selectedRbt = rbts.find((r) => r.id === selected?.assignedRbtId) ?? rbts.find((r) => r.id === selected?.suggestedRbtId);
@@ -305,7 +306,7 @@ export default function Staffing() {
   }
 
   const rankedMatches = (record: StaffingRecord) => rbts
-    .map((rbt) => ({ rbt, score: calcScore(record, rbt), overlap: rbt.availability.filter((a) => record.availability.includes(a)), available: rbt.maxHours - rbt.currentHours }))
+    .map((rbt) => ({ rbt, score: calcWeightedScore(record, rbt, matchWeights), overlap: rbt.availability.filter((a) => record.availability.includes(a)), available: rbt.maxHours - rbt.currentHours }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 
@@ -317,10 +318,10 @@ export default function Staffing() {
     const complianceScore = (rbt.compliance === "Ready" ? 12 : rbt.compliance === "Needs Review" ? 6 : 0) + (rbt.training === "Ready" ? 9 : rbt.training === "Needs Review" ? 4 : 0);
     const capacityScore = Math.round(Math.min(22, (available / Math.max(record.requiredHours, 1)) * 22));
     return [
-      { label: "Region fit", value: regionScore, max: 25, note: rbt.clinic === record.clinic ? "Same clinic" : rbt.state === record.state ? "Same state" : "Out of region" },
-      { label: "Availability overlap", value: availabilityScore, max: 24, note: overlap.length ? overlap.join(", ") : "No shared slots" },
-      { label: "Compliance readiness", value: complianceScore, max: 21, note: `${rbt.compliance} compliance · ${rbt.training} training` },
-      { label: "Capacity fit", value: capacityScore, max: 22, note: `${available}h available / ${record.requiredHours}h needed` },
+      { label: "Region fit", value: regionScore, max: 25, weight: matchWeights.region, note: rbt.clinic === record.clinic ? "Same clinic" : rbt.state === record.state ? "Same state" : "Out of region" },
+      { label: "Availability overlap", value: availabilityScore, max: 24, weight: matchWeights.availability, note: overlap.length ? overlap.join(", ") : "No shared slots" },
+      { label: "Compliance readiness", value: complianceScore, max: 21, weight: matchWeights.compliance, note: `${rbt.compliance} compliance · ${rbt.training} training` },
+      { label: "Capacity fit", value: capacityScore, max: 22, weight: matchWeights.capacity, note: `${available}h available / ${record.requiredHours}h needed` },
     ];
   };
 
