@@ -315,6 +315,7 @@ export function TeamAdminPanel() {
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
             onVisited={() => trackVisited(m.user_id)}
+            lastVisitedAt={!showFullList && !query.trim() ? recentVisits.find((visit) => visit.id === m.user_id)?.visitedAt ?? null : null}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
           />
@@ -333,6 +334,7 @@ function MemberRow({
   onSaveInfo,
   onSendWelcome,
   onVisited,
+  lastVisitedAt,
   saving,
   isCurrentUser,
 }: {
@@ -341,6 +343,7 @@ function MemberRow({
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
   onVisited: () => void;
+  lastVisitedAt: string | null;
   saving: boolean;
   isCurrentUser: boolean;
 }) {
@@ -422,6 +425,11 @@ function MemberRow({
             <span className="text-sm font-medium text-foreground">{member.display_name}</span>
             {member.job_title && (
               <span className="text-[11px] text-muted-foreground">· {member.job_title}</span>
+            )}
+            {lastVisitedAt && (
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                Last visited {formatLastVisited(lastVisitedAt)}
+              </span>
             )}
             {isCurrentUser && (
               <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
