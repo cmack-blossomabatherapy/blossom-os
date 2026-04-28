@@ -8,7 +8,7 @@ import {
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
-import logoWhite from "@/assets/blossom-logo-white.png";
+import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
