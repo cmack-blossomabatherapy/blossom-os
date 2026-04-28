@@ -394,6 +394,7 @@ export default function StaffingDashboard() {
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
   const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [showTooltipBreakdown, setShowTooltipBreakdown] = useState<boolean>(typeof initialMapState?.showTooltipBreakdown === "boolean" ? initialMapState.showTooltipBreakdown : true);
   const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
@@ -411,8 +412,8 @@ export default function StaffingDashboard() {
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
   useEffect(() => {
-    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters }));
-  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId]);
+    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters, showTooltipBreakdown }));
+  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId, showTooltipBreakdown]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -528,7 +529,7 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
-      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} routeRefreshCount={routeRefreshCount} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} onRefreshRoutes={refreshRoutes} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onOpenDetails={() => setDetailOpen(true)} onAssign={assignRbt} />
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} showTooltipBreakdown={showTooltipBreakdown} routeRefreshCount={routeRefreshCount} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} setShowTooltipBreakdown={setShowTooltipBreakdown} onRefreshRoutes={refreshRoutes} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onOpenDetails={() => setDetailOpen(true)} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
