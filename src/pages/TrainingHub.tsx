@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, GraduationCap, Play, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { featuredResources, getStoredTrainingAssignments, getStoredTrainingCourses, iconMap, trainingBadges, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingCourse } from "@/data/training";
+import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainingCourses, iconMap, resourcePlaceholders, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingBadge, type TrainingCourse } from "@/data/training";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 
@@ -17,6 +17,7 @@ export default function TrainingHub() {
   const [query, setQuery] = useState("");
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
+  const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
@@ -32,6 +33,15 @@ export default function TrainingHub() {
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  useEffect(() => {
+    const refresh = () => setBadges(getStoredTrainingBadges());
+    window.addEventListener(TRAINING_BADGES_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_BADGES_UPDATED_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -68,7 +78,7 @@ export default function TrainingHub() {
             <div className="relative max-w-2xl"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search topics, SOPs, systems, departments..." className="h-14 rounded-2xl border-border/70 bg-background/80 pl-12 text-base shadow-sm" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: trainingBadges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
+            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: badges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
           </div>
         </div>
       </section>
@@ -81,7 +91,7 @@ export default function TrainingHub() {
 
       <section className="space-y-3"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-foreground">Department Training Library</h2><p className="text-sm text-muted-foreground">Choose a department path and build confidence step by step.</p></div><BookOpen className="h-5 w-5 text-primary" /></div><div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">{trainingDepartments.map((dept) => { const Icon = iconMap[dept.icon]; const courses = visibleCourses.filter((c) => c.departmentId === dept.id); const completion = courses.length ? Math.round(courses.reduce((sum, c) => sum + courseStatus(c).progress, 0) / courses.length) : 0; return <Link key={dept.id} to={`/training/department/${dept.slug}`} className="group flex min-h-[260px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", dept.accent)}><Icon className="h-5 w-5" /></div><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" /></div><h3 className="mt-4 truncate text-base font-semibold text-foreground" title={dept.name}>{dept.name}</h3><p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted-foreground">{dept.description}</p><div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground"><span>{courses.length} trainings</span><span>{completion}% complete</span></div><Progress value={completion} className="mt-2 h-2" /><Button variant="outline" size="sm" className="mt-4 w-full">View Training</Button></Link>; })}</div></section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]"><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><h2 className="text-xl font-semibold text-foreground">Featured Resources</h2></div><div className="grid gap-3 md:grid-cols-2">{featuredResources.map((item) => <button key={item} onClick={() => setQuery(item)} className="rounded-xl border border-border/60 bg-background p-4 text-left transition-colors hover:bg-muted/30"><p className="font-medium text-foreground">{item}</p><p className="mt-1 text-xs text-muted-foreground">Open SOPs, Tangos, checklists, and walkthroughs.</p></button>)}</div></div><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Award className="h-5 w-5 text-warning" /><h2 className="text-xl font-semibold text-foreground">My Badges</h2></div><div className="space-y-3">{trainingBadges.map((badge) => <div key={badge.id} className={cn("flex items-center gap-3 rounded-xl border p-3", badge.earned ? "border-warning/30 bg-warning/5" : "border-border/60 bg-background opacity-70")}><div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning"><Award className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-foreground">{badge.title}</p><p className="text-xs text-muted-foreground">{badge.earned ? `Earned ${badge.earnedAt}` : "Not earned yet"}</p></div>{badge.earned && <CheckCircle2 className="h-4 w-4 text-success" />}</div>)}</div></div></section>
+      <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]"><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><h2 className="text-xl font-semibold text-foreground">Featured Resources</h2></div><div className="grid gap-3 md:grid-cols-2">{resourcePlaceholders.map((item) => <div key={item.id} className="rounded-xl border border-dashed border-border bg-background p-4 text-left"><div className="flex items-center justify-between gap-3"><p className="font-medium text-foreground">{item.title}</p><StatusBadge status={item.category} variant="muted" /></div><p className="mt-1 text-xs text-muted-foreground">{item.description}</p><p className="mt-3 text-[11px] uppercase tracking-wider text-muted-foreground">{item.roleGroup}</p></div>)}</div></div><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Award className="h-5 w-5 text-warning" /><h2 className="text-xl font-semibold text-foreground">My Badges</h2></div><div className="space-y-3">{badges.length ? badges.map((badge) => <div key={badge.id} className={cn("flex items-center gap-3 rounded-xl border p-3", badge.earned ? "border-warning/30 bg-warning/5" : "border-border/60 bg-background opacity-70")}><div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-lg">{badge.emoji}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-foreground">{badge.title}</p><p className="text-xs text-muted-foreground">{badge.reason}</p></div>{badge.earned && <CheckCircle2 className="h-4 w-4 text-success" />}</div>) : <EmptyState text="No badges yet. Badges will appear here after Training Dashboard creates them." />}</div></div></section>
     </div>
   );
 }
