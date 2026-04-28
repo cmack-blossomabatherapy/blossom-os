@@ -134,10 +134,26 @@ const mobileItemDescriptions: Record<string, string> = {
 };
 
 const roleLabels: Record<string, string> = {
-  admin: "System Administrator",
-  exec: "Executive Leader",
-  ops_manager: "Operations Director",
-  staff: "Care Team Member",
+  admin: "Super Admin / Systems",
+  exec: "Executive",
+  ops_manager: "Operations Leadership",
+  intake: "Intake Team",
+  finance: "Financial / Benefits",
+  auth_team: "Authorization Team",
+  qa: "QA Team",
+  staffing: "Staffing Team",
+  scheduling: "Scheduling Team",
+  clinic: "Clinic Team",
+  payroll_admin: "Finance / Payroll",
+  hr: "HR / People Ops",
+  hr_admin: "HR Admin",
+  hr_manager: "HR Manager",
+  recruiting_assistant: "Recruiting Team",
+  state_director: "State Leadership",
+  clinic_director: "Clinic Director",
+  dept_manager: "Department Manager",
+  staff: "Staff",
+  viewer: "Viewer",
 };
 
 export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
