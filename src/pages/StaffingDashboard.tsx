@@ -365,6 +365,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
 }
 
 export default function StaffingDashboard() {
+  const initialMapState = storedMapState();
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
     return saved ? hydrateRecords(JSON.parse(saved) as StaffingRecord[]) : staffingSeed;
@@ -373,7 +374,7 @@ export default function StaffingDashboard() {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RBTS_KEY) : null;
     return saved ? JSON.parse(saved) as Rbt[] : rbtSeed;
   });
-  const [selectedId, setSelectedId] = useState<string>(staffingSeed[1].id);
+  const [selectedId, setSelectedId] = useState<string>(typeof initialMapState?.selectedId === "string" ? initialMapState.selectedId : staffingSeed[1].id);
   const [dateRange, setDateRange] = useState("This Week");
   const [stateFilter, setStateFilter] = useState(ALL);
   const [clinicFilter, setClinicFilter] = useState(ALL);
@@ -387,10 +388,10 @@ export default function StaffingDashboard() {
   const [activeKpi, setActiveKpi] = useState<KpiKey>("all");
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [detailOpen, setDetailOpen] = useState(false);
-  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
-  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
-  const [mapZoom, setMapZoom] = useState<MapZoom>("regional");
-  const [mapFilters, setMapFilters] = useState<MapFilters>({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false });
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(typeof initialMapState?.activeMatchId === "string" ? initialMapState.activeMatchId : null);
+  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
+  const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
+  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
