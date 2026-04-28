@@ -196,7 +196,7 @@ function hydrateRecords(records: StaffingRecord[]) {
 
 function storedMapState() {
   if (typeof window === "undefined") return null;
-  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | MapFilters>; } catch { return null; }
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | MapFilters>; } catch { return null; }
 }
 
 const regionAnchors: Record<string, MapPoint> = {
@@ -238,7 +238,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, onRefreshRoutes, onSelectRecord, onSelectRbt, onOpenDetails, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onOpenDetails: () => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, showTooltipBreakdown, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, setShowTooltipBreakdown, onRefreshRoutes, onSelectRecord, onSelectRbt, onOpenDetails, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; showTooltipBreakdown: boolean; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; setShowTooltipBreakdown: (show: boolean) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onOpenDetails: () => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -271,14 +271,14 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <div className="rounded-md bg-muted/50 p-1.5"><p className="font-semibold">{route.miles} mi</p><p className="text-muted-foreground">distance</p></div>
         <div className="rounded-md bg-muted/50 p-1.5"><p className="font-semibold">{match.score}</p><p className="text-muted-foreground">score</p></div>
       </div>
-      <div className="mt-2 space-y-1">
+      {showTooltipBreakdown && <div className="mt-2 space-y-1">
         {breakdownRows(match.breakdown).map(([label, value]) => (
           <div key={label} className="flex items-center justify-between gap-2 text-[11px]">
             <span className="text-muted-foreground">{label}</span>
             <span className="font-medium text-foreground">{value}</span>
           </div>
         ))}
-      </div>
+      </div>}
       <p className="mt-2 text-[11px] text-muted-foreground">{route.withinRadius ? "Within service radius" : "Travel exception may be needed"}</p>
     </div>
   );
@@ -302,6 +302,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant={showTooltipBreakdown ? "default" : "outline"} onClick={() => setShowTooltipBreakdown(!showTooltipBreakdown)}>Tooltip score details</Button>
         <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
         {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
       </div>
@@ -393,6 +394,7 @@ export default function StaffingDashboard() {
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
   const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [showTooltipBreakdown, setShowTooltipBreakdown] = useState<boolean>(typeof initialMapState?.showTooltipBreakdown === "boolean" ? initialMapState.showTooltipBreakdown : true);
   const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
@@ -410,8 +412,8 @@ export default function StaffingDashboard() {
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
   useEffect(() => {
-    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters }));
-  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId]);
+    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters, showTooltipBreakdown }));
+  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId, showTooltipBreakdown]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -527,7 +529,7 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
-      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} routeRefreshCount={routeRefreshCount} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} onRefreshRoutes={refreshRoutes} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onOpenDetails={() => setDetailOpen(true)} onAssign={assignRbt} />
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} showTooltipBreakdown={showTooltipBreakdown} routeRefreshCount={routeRefreshCount} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} setShowTooltipBreakdown={setShowTooltipBreakdown} onRefreshRoutes={refreshRoutes} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onOpenDetails={() => setDetailOpen(true)} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
