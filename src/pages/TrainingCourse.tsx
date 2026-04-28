@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCircle, LinkIcon, PlayCircle, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -87,17 +87,23 @@ function LessonEmbed({ lesson, walkthroughs = [] }: { lesson: TrainingLesson; wa
   if (embeds.length) {
     return <div className="space-y-4 bg-background p-4">{embeds.map((embed, index) => { const embedKey = embed.id || embed.url; const loaded = loadedEmbeds.has(embedKey); const failed = failedEmbeds.has(embedKey); return <div key={embedKey} className="overflow-hidden rounded-xl border border-border/60 bg-card"><div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tango walkthrough {index + 1}</p><h2 className="text-sm font-semibold text-foreground">{embed.label || `Walkthrough ${index + 1}`}</h2></div><Button size="sm" variant="outline" onClick={() => openResource(embed.url)}><ExternalLink className="mr-2 h-4 w-4" />Open Tango</Button></div><div className="relative aspect-video min-h-[320px] w-full bg-muted/30 md:min-h-[420px]">{failed ? <div className="absolute inset-0 flex items-center justify-center p-6 text-center"><div><FileText className="mx-auto h-12 w-12 text-primary" /><h3 className="mt-3 text-lg font-semibold text-foreground">Tango embed could not load</h3><p className="mt-2 max-w-md text-sm text-muted-foreground">The walkthrough may require opening directly in Tango.</p><Button className="mt-4" variant="outline" onClick={() => openResource(embed.url)}><ExternalLink className="mr-2 h-4 w-4" />Open Tango</Button></div></div> : <><div className={cn("absolute inset-0 transition-opacity", loaded ? "pointer-events-none opacity-0" : "opacity-100")}><Skeleton className="h-full w-full rounded-none" /><div className="absolute inset-0 flex items-center justify-center p-6 text-center"><div><p className="text-sm font-medium text-foreground">Loading walkthrough</p><p className="mt-1 text-xs text-muted-foreground">Preparing embedded Tango content</p></div></div></div><iframe title={embed.label || `Tango walkthrough ${index + 1}`} src={toTangoEmbedUrl(embed.url)} className="absolute inset-0 h-full w-full border-0" allow="fullscreen" loading="lazy" referrerPolicy="no-referrer-when-downgrade" onLoad={() => setLoadedEmbeds((current) => new Set([...current, embedKey]))} onError={() => setFailedEmbeds((current) => new Set([...current, embedKey]))} /></>}</div></div>; })}{resourceCard && <div className="overflow-hidden rounded-xl border border-border/60 bg-card">{resourceCard}</div>}</div>;
   }
-  if (lesson.resourceUrl) {
-    return resourceCard;
-  }
+  if (lesson.resourceUrl) return resourceCard;
   return <div className="flex min-h-[260px] items-center justify-center bg-muted/40 p-8 text-center"><div><PlayCircle className="mx-auto h-14 w-14 text-primary" /><h2 className="mt-4 text-xl font-semibold text-foreground">Training content</h2><p className="mt-2 max-w-md text-sm text-muted-foreground">Review the written content below, then mark the lesson complete.</p></div></div>;
 }
 
 export default function TrainingCourse() {
-  const { courseId } = useParams();
+  const { courseId, lessonId } = useParams();
   const { user } = useAuth();
   const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
-  const [assignments, setAssignments] = useState(() => getStoredTrainingAssignments());
+  const [, setAssignments] = useState(() => getStoredTrainingAssignments());
+  const course = trainingCourses.find((c) => c.id === courseId);
+  const activeLesson = course?.lessons.find((lesson) => lesson.id === lessonId) ?? course?.lessons[0];
+  const [completed, setCompleted] = useState<Set<string>>(() => new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [score, setScore] = useState<number | null>(course?.quizScore ?? null);
+  const [checkedChecklist, setCheckedChecklist] = useState<Set<string>>(() => getStoredChecklistItems(course?.id, activeLesson?.id));
+  const [note, setNote] = useState(() => getStoredNote(course?.id, activeLesson?.id));
+
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
@@ -107,6 +113,7 @@ export default function TrainingCourse() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
   useEffect(() => {
     const refresh = () => setAssignments(getStoredTrainingAssignments());
     window.addEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
@@ -116,53 +123,28 @@ export default function TrainingCourse() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
-  const course = trainingCourses.find((c) => c.id === courseId);
-  const [completed, setCompleted] = useState<Set<string>>(() => new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
-  const [activeLessonId, setActiveLessonId] = useState(course?.lessons[0]?.id);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [score, setScore] = useState<number | null>(course?.quizScore ?? null);
-  const [checkedChecklist, setCheckedChecklist] = useState<Set<string>>(() => getStoredChecklistItems(course?.id, course?.lessons[0]?.id));
-  const [note, setNote] = useState(() => getStoredNote(course?.id, course?.lessons[0]?.id));
-  const centerScrollRef = useRef<HTMLElement | null>(null);
-  const lessonRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     setCompleted(new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
-    setActiveLessonId(course?.lessons[0]?.id);
     setAnswers({});
     setScore(course?.quizScore ?? null);
   }, [course]);
 
   useEffect(() => {
-    setCheckedChecklist(getStoredChecklistItems(course?.id, activeLessonId));
-    setNote(getStoredNote(course?.id, activeLessonId));
-  }, [course?.id, activeLessonId]);
-
-  useEffect(() => {
-    const root = centerScrollRef.current;
-    if (!course || !root) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const lessonId = visible?.target instanceof HTMLElement ? visible.target.dataset.lessonId : undefined;
-        if (lessonId) setActiveLessonId(lessonId);
-      },
-      { root, rootMargin: "-18% 0px -52% 0px", threshold: [0.25, 0.4, 0.6, 0.8] },
-    );
-    course.lessons.forEach((lesson) => {
-      const element = lessonRefs.current[lesson.id];
-      if (element) observer.observe(element);
-    });
-    return () => observer.disconnect();
-  }, [course?.id, course?.lessons.length]);
+    setCheckedChecklist(getStoredChecklistItems(course?.id, activeLesson?.id));
+    setNote(getStoredNote(course?.id, activeLesson?.id));
+  }, [course?.id, activeLesson?.id]);
 
   if (!course) return <Navigate to="/training" replace />;
+  if (!activeLesson) return <Navigate to="/training" replace />;
+  if (!lessonId || lessonId !== activeLesson.id) return <Navigate to={`/training/course/${course.id}/lesson/${activeLesson.id}`} replace />;
+
   const dept = trainingDepartments.find((d) => d.id === course.departmentId)!;
-  const activeLesson = course.lessons.find((lesson) => lesson.id === activeLessonId) ?? course.lessons[0];
+  const activeLessonIndex = course.lessons.findIndex((lesson) => lesson.id === activeLesson.id);
   const checklistItems = course.completionChecklist?.length ? course.completionChecklist.map((item) => item.label) : defaultChecklistItems;
   const progress = course.lessons.length ? Math.round((completed.size / course.lessons.length) * 100) : 0;
+  const lessonResourceUrl = activeLesson.tangoUrl || course.walkthroughs?.find((item) => item.url.trim())?.url || activeLesson.resourceUrl || course.sop?.fileUrl;
+
   const persistProgress = (nextCompleted: Set<string>) => {
     const nextProgress = course.lessons.length ? Math.round((nextCompleted.size / course.lessons.length) * 100) : 0;
     const now = new Date().toISOString();
@@ -183,10 +165,7 @@ export default function TrainingCourse() {
       saveStoredTrainingAssignments(nextAssignments);
     }
   };
-  const scrollToLesson = (lessonId: string) => {
-    setActiveLessonId(lessonId);
-    lessonRefs.current[lessonId]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+
   const markLessonComplete = (lesson: TrainingLesson) => { setCompleted((current) => { const next = new Set([...current, lesson.id]); persistProgress(next); return next; }); toast.success("Lesson progress saved"); };
   const submitQuiz = () => {
     if (!course.quiz) return;
@@ -207,5 +186,111 @@ export default function TrainingCourse() {
   const toggleChecklistItem = (item: string, checked: boolean) => setCheckedChecklist((current) => { const next = new Set(current); checked ? next.add(item) : next.delete(item); saveStoredChecklistItems(course.id, activeLesson.id, next); return next; });
   const saveNote = () => { saveStoredNote(course.id, activeLesson.id, note); toast.success("Note saved"); };
 
-  return <div className="-m-6 grid min-h-[calc(100vh-3.5rem)] bg-background lg:h-[calc(100vh-3.5rem)] lg:grid-cols-[280px_1fr_320px] lg:overflow-hidden"><aside className="training-scroll-column border-r border-border/60 bg-card [--training-scroll-fade-bg:hsl(var(--card))] lg:h-full lg:overflow-y-auto"><div className="sticky top-0 z-20 border-b border-border bg-card px-4 pb-4 pt-4 backdrop-blur supports-[backdrop-filter]:bg-card/95"><Button variant="ghost" size="sm" asChild className="mb-4"><Link to={`/training/department/${dept.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />{dept.shortName}</Link></Button><h2 className="text-lg font-semibold text-foreground">Module outline</h2><p className="mt-1 text-xs text-muted-foreground">{course.lessons.length} lessons · {course.minutes} minutes</p><div className="mt-3 rounded-xl border border-primary/40 bg-primary/15 p-3 ring-1 ring-primary/10"><p className="text-[11px] font-medium uppercase tracking-wider text-primary">Current lesson</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{activeLesson.title}</p></div></div><div className="space-y-2 p-4">{course.lessons.map((lesson, index) => <button key={lesson.id} onClick={() => scrollToLesson(lesson.id)} className={cn("w-full rounded-xl border p-3 text-left transition-colors", activeLesson.id === lesson.id ? "border-primary/50 bg-primary/15 ring-1 ring-primary/15" : "border-border/60 bg-background hover:bg-muted/30")}><div className="flex items-center justify-between gap-2"><span className="text-xs font-medium text-muted-foreground">Lesson {index + 1}</span>{completed.has(lesson.id) ? <CheckCircle2 className="h-4 w-4 text-success" /> : <span className="h-4 w-4 rounded-full border border-border" />}</div><p className="mt-1 text-sm font-medium text-foreground">{lesson.title}</p><p className="mt-1 text-[11px] text-muted-foreground">{lesson.type} · {lesson.minutes} min</p></button>)}</div></aside><main ref={centerScrollRef} className="training-scroll-column scroll-smooth p-5 [--training-scroll-fade-bg:hsl(var(--background))] md:p-8 lg:h-full lg:overflow-y-auto"><div className="mx-auto max-w-4xl space-y-5"><div><p className="text-sm font-medium text-primary">{dept.name}</p><h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{course.title}</h1><p className="mt-2 text-muted-foreground">{course.description}</p></div>{course.lessons.map((lesson, index) => { const isActive = activeLesson.id === lesson.id; const lessonResourceUrl = lesson.tangoUrl || course.walkthroughs?.find((item) => item.url.trim())?.url || lesson.resourceUrl || course.sop?.fileUrl; return <section key={lesson.id} data-lesson-id={lesson.id} ref={(element) => { lessonRefs.current[lesson.id] = element; }} className={cn("scroll-mt-6 overflow-hidden rounded-2xl border bg-card transition-colors", isActive ? "border-primary/50 ring-1 ring-primary/10" : "border-border/60")}><LessonEmbed lesson={lesson} walkthroughs={lesson.type === "Tango" || lesson.tangoUrl ? course.walkthroughs : []} /><div className="p-5"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lesson {index + 1}</p><h2 className="mt-1 text-xl font-semibold text-foreground">{lesson.title}</h2><p className="mt-1 text-sm text-muted-foreground">{lesson.description}</p></div><StatusBadge status={lesson.type} variant="info" /></div><Tabs defaultValue="content" className="mt-5"><TabsList><TabsTrigger value="content">Content</TabsTrigger><TabsTrigger value="checklist" disabled={!isActive}>Checklist</TabsTrigger><TabsTrigger value="notes" disabled={!isActive}>Notes</TabsTrigger><TabsTrigger value="quiz" disabled={!isActive}>Quiz</TabsTrigger></TabsList><TabsContent value="content" className="space-y-4 pt-4"><div className="rounded-xl border border-border/60 bg-background p-4"><p className="whitespace-pre-line text-sm leading-6 text-foreground">{lesson.content}</p></div><div className="flex flex-wrap gap-2">{lessonResourceUrl && <Button variant="outline" onClick={() => openResource(lessonResourceUrl)}><ExternalLink className="mr-2 h-4 w-4" />Open resource</Button>}{lesson.tangoUrl && <Button variant="outline" onClick={() => openResource(lesson.tangoUrl)}><LinkIcon className="mr-2 h-4 w-4" />Open Tango</Button>}</div></TabsContent>{isActive && <TabsContent value="checklist" className="space-y-2 pt-4">{checklistItems.map((item) => <label key={item} className="flex items-center gap-3 rounded-xl border border-border/60 bg-background p-3 text-sm"><input type="checkbox" className="h-4 w-4" checked={checkedChecklist.has(item)} onChange={(event) => toggleChecklistItem(item, event.target.checked)} />{item}</label>)}</TabsContent>}{isActive && <TabsContent value="notes" className="space-y-3 pt-4"><Textarea rows={7} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Write private notes for this training..." /><Button onClick={saveNote}><Save className="mr-2 h-4 w-4" />Save note</Button></TabsContent>}{isActive && <TabsContent value="quiz" className="space-y-4 pt-4">{course.quiz?.questions.map((q) => <div key={q.id} className="rounded-xl border border-border/60 bg-background p-4"><p className="font-medium text-foreground">{q.question}</p>{q.options ? <div className="mt-3 grid gap-2">{q.options.map((option) => <button key={option} onClick={() => setAnswers((a) => ({ ...a, [q.id]: option }))} className={cn("rounded-lg border px-3 py-2 text-left text-sm", answers[q.id] === option ? "border-primary bg-primary/10" : "border-border/60 hover:bg-muted/30")}>{option}</button>)}</div> : <Textarea className="mt-3" onChange={(event) => setAnswers((a) => ({ ...a, [q.id]: event.target.value }))} placeholder="Short answer placeholder" />}</div>)}<div className="flex items-center gap-3"><Button onClick={submitQuiz}>Submit quiz</Button>{score !== null && <StatusBadge status={`Score ${score}% · ${score >= (course.quiz?.passingScore ?? 80) ? "Pass" : "Fail"}`} variant={score >= (course.quiz?.passingScore ?? 80) ? "success" : "destructive"} />}<Button variant="outline" onClick={() => { setAnswers({}); setScore(null); }}>Retake</Button></div></TabsContent>}</Tabs><div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4"><p className="text-sm text-muted-foreground">Passing score: {course.quiz?.passingScore ?? 80}%</p><Button onClick={() => markLessonComplete(lesson)}><CheckCircle2 className="mr-2 h-4 w-4" />Mark lesson complete</Button></div></div></section>; })}</div></main><aside className="training-scroll-column border-l border-border/60 bg-card [--training-scroll-fade-bg:hsl(var(--card))] lg:h-full lg:overflow-y-auto"><div className="sticky top-0 z-20 border-b border-border bg-card px-4 pb-4 pt-4 backdrop-blur supports-[backdrop-filter]:bg-card/95"><h2 className="text-lg font-semibold text-foreground">Progress tracker</h2><div className="mt-3 rounded-xl border border-primary/40 bg-primary/15 p-3 ring-1 ring-primary/10"><p className="text-[11px] font-medium uppercase tracking-wider text-primary">Current lesson</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{activeLesson.title}</p></div></div><div className="m-4 rounded-2xl border border-border/60 bg-background p-4 text-center"><div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border-[10px] border-primary/20"><span className="text-2xl font-semibold text-foreground">{progress}%</span></div><p className="mt-3 text-sm text-muted-foreground">{completed.size}/{course.lessons.length} lessons complete</p>{progress === 100 && <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-warning"><Award className="mx-auto h-5 w-5" /><p className="mt-1 text-xs font-medium">Completion badge earned</p></div>}</div><div className="mx-4 mt-4 space-y-3">{[["Estimated time", `${course.minutes} minutes`, Clock], ["Department owner", course.owner, HelpCircle], ["Related resources", `${course.resources.length} resources`, FileText]].map(([label, value, Icon]) => <div key={label as string} className="rounded-xl border border-border/60 bg-background p-3"><Icon className="mb-2 h-4 w-4 text-primary" /><p className="text-xs text-muted-foreground">{label as string}</p><p className="text-sm font-medium text-foreground">{value as string}</p></div>)}</div><div className="m-4 rounded-xl border border-border/60 bg-background p-3"><p className="text-sm font-semibold text-foreground">Help contact</p><p className="mt-1 text-xs text-muted-foreground">Ask {course.owner} for help with this module.</p></div></aside></div>;
+  return (
+    <div className="-m-6 grid min-h-[calc(100vh-3.5rem)] bg-background lg:h-[calc(100vh-3.5rem)] lg:grid-cols-[280px_1fr_320px] lg:overflow-hidden">
+      <aside className="training-scroll-column border-r border-border/60 bg-card lg:h-full lg:overflow-y-auto">
+        <div className="sticky top-0 z-20 border-b border-border bg-card px-4 pb-4 pt-4">
+          <Button variant="ghost" size="sm" asChild className="mb-4">
+            <Link to={`/training/department/${dept.slug}`}><ArrowLeft className="mr-2 h-4 w-4" />{dept.shortName}</Link>
+          </Button>
+          <h2 className="text-lg font-semibold text-foreground">Module outline</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{course.lessons.length} lessons · {course.minutes} minutes</p>
+          <div className="mt-3 rounded-xl border border-primary/40 bg-primary/15 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-primary">Current lesson</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{activeLesson.title}</p>
+          </div>
+        </div>
+        <div className="space-y-2 p-4">
+          {course.lessons.map((lesson, index) => (
+            <Link key={lesson.id} to={`/training/course/${course.id}/lesson/${lesson.id}`} className={cn("block w-full rounded-xl border p-3 text-left transition-colors", activeLesson.id === lesson.id ? "border-primary/50 bg-primary/15" : "border-border/60 bg-background hover:bg-muted/30")}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Lesson {index + 1}</span>
+                {completed.has(lesson.id) ? <CheckCircle2 className="h-4 w-4 text-success" /> : <span className="h-4 w-4 rounded-full border border-border" />}
+              </div>
+              <p className="mt-1 text-sm font-medium text-foreground">{lesson.title}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{lesson.type} · {lesson.minutes} min</p>
+            </Link>
+          ))}
+        </div>
+      </aside>
+
+      <main className="training-scroll-column p-5 md:p-8 lg:h-full lg:overflow-y-auto">
+        <div className="mx-auto max-w-4xl space-y-5">
+          <div>
+            <p className="text-sm font-medium text-primary">{dept.name}</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{course.title}</h1>
+            <p className="mt-2 text-muted-foreground">{course.description}</p>
+          </div>
+
+          <section className="overflow-hidden rounded-2xl border border-primary/50 bg-card">
+            <LessonEmbed lesson={activeLesson} walkthroughs={activeLesson.type === "Tango" || activeLesson.tangoUrl ? course.walkthroughs : []} />
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lesson {activeLessonIndex + 1}</p>
+                  <h2 className="mt-1 text-xl font-semibold text-foreground">{activeLesson.title}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{activeLesson.description}</p>
+                </div>
+                <StatusBadge status={activeLesson.type} variant="info" />
+              </div>
+              <Tabs defaultValue="content" className="mt-5">
+                <TabsList>
+                  <TabsTrigger value="content">Content</TabsTrigger>
+                  <TabsTrigger value="checklist">Checklist</TabsTrigger>
+                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                  <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                </TabsList>
+                <TabsContent value="content" className="space-y-4 pt-4">
+                  <div className="rounded-xl border border-border/60 bg-background p-4">
+                    <p className="whitespace-pre-line text-sm leading-6 text-foreground">{activeLesson.content}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {lessonResourceUrl && <Button variant="outline" onClick={() => openResource(lessonResourceUrl)}><ExternalLink className="mr-2 h-4 w-4" />Open resource</Button>}
+                    {activeLesson.tangoUrl && <Button variant="outline" onClick={() => openResource(activeLesson.tangoUrl)}><LinkIcon className="mr-2 h-4 w-4" />Open Tango</Button>}
+                  </div>
+                </TabsContent>
+                <TabsContent value="checklist" className="space-y-2 pt-4">
+                  {checklistItems.map((item) => <label key={item} className="flex items-center gap-3 rounded-xl border border-border/60 bg-background p-3 text-sm"><input type="checkbox" className="h-4 w-4" checked={checkedChecklist.has(item)} onChange={(event) => toggleChecklistItem(item, event.target.checked)} />{item}</label>)}
+                </TabsContent>
+                <TabsContent value="notes" className="space-y-3 pt-4">
+                  <Textarea rows={7} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Write private notes for this training..." />
+                  <Button onClick={saveNote}><Save className="mr-2 h-4 w-4" />Save note</Button>
+                </TabsContent>
+                <TabsContent value="quiz" className="space-y-4 pt-4">
+                  {course.quiz?.questions.map((q) => <div key={q.id} className="rounded-xl border border-border/60 bg-background p-4"><p className="font-medium text-foreground">{q.question}</p>{q.options ? <div className="mt-3 grid gap-2">{q.options.map((option) => <button key={option} onClick={() => setAnswers((a) => ({ ...a, [q.id]: option }))} className={cn("rounded-lg border px-3 py-2 text-left text-sm", answers[q.id] === option ? "border-primary bg-primary/10" : "border-border/60 hover:bg-muted/30")}>{option}</button>)}</div> : <Textarea className="mt-3" onChange={(event) => setAnswers((a) => ({ ...a, [q.id]: event.target.value }))} placeholder="Short answer placeholder" />}</div>)}
+                  <div className="flex items-center gap-3">
+                    <Button onClick={submitQuiz}>Submit quiz</Button>
+                    {score !== null && <StatusBadge status={`Score ${score}% · ${score >= (course.quiz?.passingScore ?? 80) ? "Pass" : "Fail"}`} variant={score >= (course.quiz?.passingScore ?? 80) ? "success" : "destructive"} />}
+                    <Button variant="outline" onClick={() => { setAnswers({}); setScore(null); }}>Retake</Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+                <p className="text-sm text-muted-foreground">Passing score: {course.quiz?.passingScore ?? 80}%</p>
+                <Button onClick={() => markLessonComplete(activeLesson)}><CheckCircle2 className="mr-2 h-4 w-4" />Mark lesson complete</Button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <aside className="training-scroll-column border-l border-border/60 bg-card lg:h-full lg:overflow-y-auto">
+        <div className="sticky top-0 z-20 border-b border-border bg-card px-4 pb-4 pt-4">
+          <h2 className="text-lg font-semibold text-foreground">Progress tracker</h2>
+          <div className="mt-3 rounded-xl border border-primary/40 bg-primary/15 p-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-primary">Current lesson</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">{activeLesson.title}</p>
+          </div>
+        </div>
+        <div className="m-4 rounded-2xl border border-border/60 bg-background p-4 text-center">
+          <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border-[10px] border-primary/20"><span className="text-2xl font-semibold text-foreground">{progress}%</span></div>
+          <Progress value={progress} className="mt-4" />
+          <p className="mt-3 text-sm text-muted-foreground">{completed.size}/{course.lessons.length} lessons complete</p>
+          {progress === 100 && <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-warning"><Award className="mx-auto h-5 w-5" /><p className="mt-1 text-xs font-medium">Completion badge earned</p></div>}
+        </div>
+        <div className="mx-4 mt-4 space-y-3">{[["Estimated time", `${course.minutes} minutes`, Clock], ["Department owner", course.owner, HelpCircle], ["Related resources", `${course.resources.length} resources`, FileText]].map(([label, value, Icon]) => <div key={label as string} className="rounded-xl border border-border/60 bg-background p-3"><Icon className="mb-2 h-4 w-4 text-primary" /><p className="text-xs text-muted-foreground">{label as string}</p><p className="text-sm font-medium text-foreground">{value as string}</p></div>)}</div>
+        <div className="m-4 rounded-xl border border-border/60 bg-background p-3"><p className="text-sm font-semibold text-foreground">Help contact</p><p className="mt-1 text-xs text-muted-foreground">Ask {course.owner} for help with this module.</p></div>
+      </aside>
+    </div>
+  );
 }
