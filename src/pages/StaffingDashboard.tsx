@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, ArrowRight, BarChart3, CheckCircle2, Clock, Download, Eye, MapPin,
   MessageSquare, Phone, RefreshCw, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
@@ -24,6 +24,11 @@ type KpiKey = "all" | "needed" | "restaffing" | "matching" | "assigned" | "avg" 
 type Task = { id: string; title: string; owner: string; dueDate: string; completed: boolean };
 type Note = { id: string; type: "RBT outreach" | "Family" | "Internal"; text: string; timestamp: string; user: string };
 type TimelineEvent = { id: string; title: string; text: string; timestamp: string; user: string };
+type MatchBreakdown = { region: number; availability: number; compliance: number; capacity: number; experience: number; urgency: number; penalty: number };
+type MatchDecision = {
+  id: string; rbtId: string; rbtName: string; decision: "Selected" | "Rejected"; score: number; breakdown: MatchBreakdown;
+  reasons: string[]; weights: Pick<MatchBreakdown, "region" | "availability" | "compliance" | "capacity">; decidedAt: string; decidedBy: string; note: string;
+};
 type Rbt = {
   id: string; name: string; state: StateCode; region: string; clinic: string; location: string; radius: number; availability: string[];
   currentHours: number; maxHours: number; assignedClients: string[]; experience: string[]; compliance: "Ready" | "Expiring" | "Incomplete"; onboarding: "Active" | "Clearing" | "Offer Accepted";
@@ -32,11 +37,14 @@ type StaffingRecord = {
   id: string; client: string; parent: string; state: StateCode; region: string; clinic: string; location: LocationType; bcba: string; owner: string;
   status: StaffingStatus; requiredHours: number; approvedHours: number; availability: string[]; priority: Urgency; daysWaiting: number;
   assignedRbtId?: string; rejectedRbtIds: string[]; clinicalNotes: string; startUrgency: string; nextAction: string; blockers: string[];
-  authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[];
+  authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[]; decisionHistory: MatchDecision[];
 };
-type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[] };
+type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 
 const ALL = "All";
+const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
+const STAFFING_RBTS_KEY = "blossom.staffing.rbts.v1";
+const auditWeights = { region: 18, availability: 35, compliance: 14, capacity: 25 };
 const today = new Date("2026-04-27T12:00:00Z");
 const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
 const statuses: StaffingStatus[] = ["Staffing Needed", "Matching in Progress", "Offer / Confirmation Pending", "RBT Assigned", "Restaffing Needed", "No Match Available", "Ready for Scheduling"];
