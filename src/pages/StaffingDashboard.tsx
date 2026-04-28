@@ -393,6 +393,7 @@ export default function StaffingDashboard() {
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
   const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -479,6 +480,10 @@ export default function StaffingDashboard() {
     const match = scoreMatch(record, rbt);
     const decision = decisionEntry(match, "Rejected", `Rejected despite ${match.score} score; next best match required.`);
     updateRecord(record.id, { rejectedRbtIds: Array.from(new Set([...record.rejectedRbtIds, rbt.id])), decisionHistory: [decision, ...record.decisionHistory], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
+  };
+  const refreshRoutes = () => {
+    setRouteRefreshCount((count) => count + 1);
+    toast.success("Visible map routes recomputed");
   };
   const exportCsv = () => {
     const rows = filtered.map((r) => [r.client, r.state, r.clinic, r.requiredHours, r.status, rbts.find((x) => x.id === r.assignedRbtId)?.name ?? "", matchesFor(r)[0]?.rbt.name ?? "", matchesFor(r)[0]?.score ?? 0, r.daysWaiting, r.priority, r.nextAction]);
