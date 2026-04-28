@@ -403,13 +403,29 @@ export default function Staffing() {
     toast.success(`Moved to ${status}`);
   }
 
+  function escalationReasonFor(record: StaffingRecord): z.infer<typeof escalationReasonSchema> | null {
+    if (record.daysWaiting > 7) return "WAITING_OVER_7_DAYS";
+    if (record.status === "No Match Available" || record.alerts.some((alert) => alert.includes("No RBT") || alert.includes("No match"))) return "NO_RBT_MATCH";
+    if (record.alerts.some((alert) => alert.includes("capacity gap"))) return "REGIONAL_CAPACITY_GAP";
+    return null;
+  }
+
   function escalate(record: StaffingRecord) {
+    const reason = escalationReasonFor(record);
+    const parsedReason = escalationReasonSchema.safeParse(reason);
+    if (!parsedReason.success) {
+      toast.error("Escalation blocked", { description: "Escalations require either waiting over 7 days or no RBT match available." });
+      return;
+    }
+    const reasonLabel = escalationReasonLabels[parsedReason.data];
     patchRecord(record.id, {
       urgency: "Critical",
-      alerts: Array.from(new Set([...record.alerts, "Escalated to Operations leadership"])),
-      tasks: [{ id: `task-${Date.now()}`, title: "Leadership review required", owner: "Operations leadership", due: "Today", completed: false }, ...record.tasks],
-    }, "Escalation task created for Operations leadership");
-    toast.success("Escalation created");
+      alerts: Array.from(new Set([...record.alerts, "Escalated to Operations leadership", reasonLabel])),
+      nextAction: "Leadership escalation review",
+      tasks: [{ id: `task-${Date.now()}`, title: `Leadership review: ${reasonLabel}`, owner: "Operations leadership", due: "Today", completed: false }, ...record.tasks],
+      communications: [{ id: `com-${Date.now()}`, channel: "Leadership Escalation", note: `Escalated with reason code ${parsedReason.data}: ${reasonLabel}.`, at: "Just now", owner: record.owner }, ...record.communications],
+    }, `Escalation task created for Operations leadership · ${parsedReason.data}`);
+    toast.success("Escalation created", { description: reasonLabel });
   }
 
   function addNote(record: StaffingRecord) {
