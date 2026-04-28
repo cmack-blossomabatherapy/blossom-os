@@ -84,6 +84,7 @@ async function syncEmployeeFromTeamMember(
   const [firstName, ...lastNameParts] = displayName.split(/\s+/).filter(Boolean);
   const state = next.state.trim().toUpperCase();
   const departmentName = HR_DEPARTMENT_BY_TEAM[next.department.trim()] ?? next.department.trim();
+  const employeeStatus = next.active ? "active" as const : "on_hold" as const;
   const [{ data: departments }, { data: existing }] = await Promise.all([
     supabase.from("hr_departments").select("id, name"),
     supabase.from("employees").select("id").or(`user_id.eq.${member.user_id},email.eq.${email}`).maybeSingle(),
@@ -98,7 +99,7 @@ async function syncEmployeeFromTeamMember(
     department_id: departmentId,
     state: HR_STATES.includes(state as (typeof HR_STATES)[number]) ? state : "GA",
     clinic: next.clinic.trim() || null,
-    status: next.active ? "active" : "on_hold",
+    status: employeeStatus,
   };
 
   if (existing?.id) {
@@ -112,9 +113,9 @@ async function syncEmployeeFromTeamMember(
 
   const { error } = await supabase.from("employees").insert({
     ...employeePayload,
-    employment_type: "full_time",
-    pay_type: "salaried",
-    work_setting: "admin",
+    employment_type: "full_time" as never,
+    pay_type: "salaried" as never,
+    work_setting: "admin" as never,
   });
   if (error) {
     toast.error(`Team saved, but Employees sync failed: ${error.message}`);
