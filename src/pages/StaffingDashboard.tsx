@@ -238,7 +238,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, setMapFocus, setMapZoom, setMapFilters, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, onRefreshRoutes, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -251,12 +251,12 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
     const lead = cluster.items.sort((a, b) => b.daysWaiting - a.daysWaiting)[0];
     const best = rbts.map((rbt) => scoreMatch(lead, rbt)).filter((match) => match.rbt.state === lead.state).sort((a, b) => b.score - a.score)[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, records: cluster.items, best, route: best ? routeStats(lead, best.rbt) : undefined };
-  }), [records, rbts, bucketSize]);
+  }), [records, rbts, bucketSize, routeRefreshCount]);
   const rbtClusters = useMemo<RbtCluster[]>(() => clusterItems(rbts, (rbt) => pointFor(rbt.id, rbt.region, "rbt"), bucketSize).map((cluster) => {
     const scored = cluster.items.map((rbt) => scoreMatch(selected, rbt)).sort((a, b) => b.score - a.score);
     const best = scored[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, rbts: cluster.items, best, route: routeStats(selected, best.rbt) };
-  }), [rbts, selected, bucketSize]);
+  }), [rbts, selected, bucketSize, routeRefreshCount]);
   const breakdownRows = (breakdown: MatchBreakdown) => [
     ["Region", breakdown.region],
     ["Availability", breakdown.availability],
@@ -302,6 +302,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
         {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -392,6 +393,7 @@ export default function StaffingDashboard() {
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
   const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -479,6 +481,10 @@ export default function StaffingDashboard() {
     const decision = decisionEntry(match, "Rejected", `Rejected despite ${match.score} score; next best match required.`);
     updateRecord(record.id, { rejectedRbtIds: Array.from(new Set([...record.rejectedRbtIds, rbt.id])), decisionHistory: [decision, ...record.decisionHistory], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
   };
+  const refreshRoutes = () => {
+    setRouteRefreshCount((count) => count + 1);
+    toast.success("Visible map routes recomputed");
+  };
   const exportCsv = () => {
     const rows = filtered.map((r) => [r.client, r.state, r.clinic, r.requiredHours, r.status, rbts.find((x) => x.id === r.assignedRbtId)?.name ?? "", matchesFor(r)[0]?.rbt.name ?? "", matchesFor(r)[0]?.score ?? 0, r.daysWaiting, r.priority, r.nextAction]);
     const csv = [["Client", "State", "Clinic", "Required Hours", "Status", "Assigned RBT", "Suggested RBT", "Match Score", "Days Waiting", "Urgency", "Next Action"], ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -520,7 +526,7 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
-      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} routeRefreshCount={routeRefreshCount} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} onRefreshRoutes={refreshRoutes} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
