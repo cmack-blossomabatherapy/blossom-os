@@ -36,8 +36,13 @@ export const TRAINING_STORAGE_KEY = "blossom-training-courses";
 export const TRAINING_UPDATED_EVENT = "blossom-training-courses-updated";
 export const TRAINING_AUDIT_STORAGE_KEY = "blossom-training-audit-log";
 export const TRAINING_AUDIT_UPDATED_EVENT = "blossom-training-audit-updated";
+export const TRAINING_ASSIGNMENTS_STORAGE_KEY = "blossom-training-assignments";
+export const TRAINING_ASSIGNMENTS_UPDATED_EVENT = "blossom-training-assignments-updated";
 
 export const trainingCourses: TrainingCourse[] = [];
+
+export type TrainingAssignmentStatus = "assigned" | "in_progress" | "completed" | "overdue";
+export interface TrainingAssignmentRecord { id: string; courseId: string; courseTitle: string; target: string; department: string; role: string; dueDate: string; required: boolean; assignedAt: string; employeeId: string; employeeName: string; employeeEmail?: string; status: TrainingAssignmentStatus; progress: number; startedAt?: string; completedAt?: string; }
 
 export type CreateTrainingInput = Pick<TrainingCourse, "departmentId" | "title" | "description" | "type" | "difficulty" | "minutes" | "required" | "roleVisibility" | "owner"> & {
   dueDate?: string;
@@ -75,6 +80,24 @@ export function saveStoredTrainingAuditLog(entries: TrainingAuditEntry[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TRAINING_AUDIT_STORAGE_KEY, JSON.stringify(entries));
   window.dispatchEvent(new Event(TRAINING_AUDIT_UPDATED_EVENT));
+}
+
+export function getStoredTrainingAssignments(): TrainingAssignmentRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(TRAINING_ASSIGNMENTS_STORAGE_KEY);
+    const rows = stored ? (JSON.parse(stored) as TrainingAssignmentRecord[]) : [];
+    const today = new Date().toISOString().slice(0, 10);
+    return rows.map((row) => row.dueDate && row.dueDate < today && row.status !== "completed" ? { ...row, status: "overdue", progress: Math.max(row.progress ?? 0, 0) } : row);
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredTrainingAssignments(assignments: TrainingAssignmentRecord[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRAINING_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(assignments));
+  window.dispatchEvent(new Event(TRAINING_ASSIGNMENTS_UPDATED_EVENT));
 }
 
 export function createTrainingCourse(input: CreateTrainingInput): TrainingCourse {
