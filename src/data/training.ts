@@ -1,7 +1,7 @@
 import { Award, BarChart3, BookOpen, Briefcase, Building2, CheckCircle2, ClipboardCheck, FileText, GraduationCap, HeartHandshake, Landmark, Laptop, Phone, ShieldCheck, Sparkles, Stethoscope, Users, Wallet } from "lucide-react";
 
 export type TrainingStatus = "Not Started" | "In Progress" | "Completed" | "Overdue";
-export type TrainingType = "SOP" | "Video" | "Tango" | "Checklist" | "Quiz" | "Policy" | "Workflow";
+export type TrainingType = "SOP" | "Video" | "Tango" | "Checklist" | "Quiz" | "Policy" | "Workflow" | "System Training" | "Onboarding" | "Clinical";
 export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 export type LessonType = "Written SOP" | "Video" | "Tango" | "Checklist" | "Quiz" | "File" | "External Link";
 
