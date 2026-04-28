@@ -538,6 +538,7 @@ export default function QA() {
         </div>
         <DetailPanel record={selected} panelTab={panelTab} setPanelTab={setPanelTab} onOpenClient={() => navigate(`/clients/${selected.clientId}`)} onStart={startReview} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onToggle={toggleChecklist} onResolveIssue={resolveIssue} onResolveNote={resolveNote} comment={comment} setComment={setComment} onComment={addComment} />
       </section>
+      {newReviewOpen && <NewQaReviewDialog clients={clients} selectedId={newReviewClientId} onSelect={setNewReviewClientId} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} />}
     </PageShell>
   );
 }
