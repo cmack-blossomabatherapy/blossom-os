@@ -42,6 +42,7 @@ type StaffingRecord = {
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 type MapPoint = { x: number; y: number };
 type MapZoom = "regional" | "local" | "street";
+type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean };
 type ClientCluster = { id: string; x: number; y: number; records: StaffingRecord[]; best?: Match; route?: ReturnType<typeof routeStats> };
 type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; route: ReturnType<typeof routeStats> };
 
