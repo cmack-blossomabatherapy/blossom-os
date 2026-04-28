@@ -37,7 +37,14 @@ type AiSourceType = "tango" | "upload" | "paste" | "combined";
 type QuizComplexity = "easy" | "medium" | "hard";
 type AiDraft = { title: string; description: string; departmentId: string; difficulty: Difficulty; type: TrainingType; minutes: number; objectives: string[]; sop: { title?: string; content?: string }; walkthrough?: { url?: string; label?: string; summary?: string }; steps: Array<{ title?: string; description?: string; systemTag?: string }>; checklist: string[]; commonMistakes: Array<{ error?: string; consequence?: string; avoid?: string }>; quiz: Array<{ type?: "Multiple choice" | "True / false"; question?: string; options?: string[]; answer?: string; explanation?: string }>; badge?: { title?: string; description?: string }; qualityScore?: number };
 
+const quizComplexities: QuizComplexity[] = ["easy", "medium", "hard"];
+const quizComplexityDefaultKey = "blossom.trainingBuilder.quizComplexityDefault";
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const getSavedQuizComplexity = (): QuizComplexity => {
+  if (typeof window === "undefined") return "medium";
+  const saved = window.localStorage.getItem(quizComplexityDefaultKey);
+  return quizComplexities.includes(saved as QuizComplexity) ? saved as QuizComplexity : "medium";
+};
 
 interface BuilderDraft {
   title: string;
@@ -154,7 +161,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
   const [aiTangoUrl, setAiTangoUrl] = useState("");
   const [aiSopText, setAiSopText] = useState("");
   const [aiFileName, setAiFileName] = useState("");
-  const [aiQuizComplexity, setAiQuizComplexity] = useState<QuizComplexity>("medium");
+  const [aiQuizComplexity, setAiQuizComplexity] = useState<QuizComplexity>(() => getSavedQuizComplexity());
   const [aiQuizQuestionCount, setAiQuizQuestionCount] = useState(5);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [sectionGenerating, setSectionGenerating] = useState<"sop" | "steps" | "quiz" | null>(null);
@@ -165,6 +172,10 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
     setStep(0);
     setDraft(course ? draftFromCourse(course) : emptyDraft());
   }, [course, open]);
+
+  useEffect(() => {
+    window.localStorage.setItem(quizComplexityDefaultKey, aiQuizComplexity);
+  }, [aiQuizComplexity]);
 
   const quality = useMemo(() => getQualityScore(draft), [draft]);
   const blockers = useMemo(() => getPublishBlockers(draft), [draft]);
