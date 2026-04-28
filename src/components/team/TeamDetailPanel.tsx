@@ -55,10 +55,16 @@ export function TeamDetailPanel({ member, onClose }: Props) {
     setLoadingQuick(true);
     void Promise.all([
       supabase.from("employees").select("id,user_id,pay_rate,pay_type,viventium_employee_id,kiosk_pin,kiosk_enabled,resource_hub_access").eq("id", member.id).maybeSingle(),
-      supabase.from("employee_relationships").select("kind,related_employee_id,related:related_employee_id(first_name,last_name,preferred_name)").eq("employee_id", member.id),
-    ]).then(([employeeRes, relationshipRes]) => {
+      supabase.from("employee_relationships").select("kind,related_employee_id").eq("employee_id", member.id),
+    ]).then(async ([employeeRes, relationshipRes]) => {
       setEmployee((employeeRes.data as EmployeeQuickRecord | null) ?? null);
-      setRelationships((relationshipRes.data ?? []) as RelationshipRow[]);
+      const rows = (relationshipRes.data ?? []) as Array<Omit<RelationshipRow, "related">>;
+      const relatedIds = rows.map((row) => row.related_employee_id);
+      const relatedRes = relatedIds.length
+        ? await supabase.from("employees").select("id,first_name,last_name,preferred_name").in("id", relatedIds)
+        : { data: [] };
+      const relatedById = new Map((relatedRes.data ?? []).map((row) => [row.id, row]));
+      setRelationships(rows.map((row) => ({ ...row, related: relatedById.get(row.related_employee_id) ?? null })));
     }).finally(() => setLoadingQuick(false));
   }, [member]);
 
