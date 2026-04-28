@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog, Loader2, ExternalLink } from "lucide-react";
+import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog, Loader2, ExternalLink, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -50,13 +50,23 @@ interface EmployeeOption {
   preferred_name: string | null;
 }
 
+interface AuditEvent {
+  id: string;
+  description: string;
+  event_type: string;
+  created_at: string;
+  created_by_name: string | null;
+}
+
 export function TeamDetailPanel({ member, onClose }: Props) {
-  const { hasPerm } = useAuth();
+  const { hasPerm, user } = useAuth();
   const [employee, setEmployee] = useState<EmployeeQuickRecord | null>(null);
   const [relationships, setRelationships] = useState<RelationshipRow[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<EmployeeOption[]>([]);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [loadingQuick, setLoadingQuick] = useState(false);
   const [savingQuick, setSavingQuick] = useState(false);
+  const directManager = useMemo(() => relationships.find((row) => row.kind === "direct_manager") ?? null, [relationships]);
 
   useEffect(() => {
     if (!member) return;
@@ -65,9 +75,11 @@ export function TeamDetailPanel({ member, onClose }: Props) {
       supabase.from("employees").select("id,user_id,pay_rate,pay_type,viventium_employee_id,kiosk_pin,kiosk_enabled,resource_hub_access").eq("id", member.id).maybeSingle(),
       supabase.from("employee_relationships").select("kind,related_employee_id").eq("employee_id", member.id),
       supabase.from("employees").select("id,first_name,last_name,preferred_name").neq("id", member.id).order("last_name"),
-    ]).then(async ([employeeRes, relationshipRes, optionsRes]) => {
+      supabase.from("employee_timeline").select("id,description,event_type,created_at,created_by_name").eq("employee_id", member.id).order("created_at", { ascending: false }).limit(6),
+    ]).then(async ([employeeRes, relationshipRes, optionsRes, timelineRes]) => {
       setEmployee((employeeRes.data as EmployeeQuickRecord | null) ?? null);
       setEmployeeOptions((optionsRes.data ?? []) as EmployeeOption[]);
+      setAuditEvents((timelineRes.data ?? []) as AuditEvent[]);
       const rows = (relationshipRes.data ?? []) as Array<Omit<RelationshipRow, "related">>;
       const relatedIds = rows.map((row) => row.related_employee_id);
       const relatedRes = relatedIds.length
@@ -91,6 +103,18 @@ export function TeamDetailPanel({ member, onClose }: Props) {
   const canEditQuick = hasPerm("hr.employees.edit");
   const canEditPayroll = hasPerm("hr.payroll.edit") || hasPerm("hr.paychanges.manage");
 
+  const logAuditEvent = async (eventType: string, description: string) => {
+    if (!employee) return;
+    const { data } = await supabase.from("employee_timeline").insert({
+      employee_id: employee.id,
+      event_type: eventType,
+      description,
+      created_by: user?.id ?? null,
+      created_by_name: user?.email ?? null,
+    }).select("id,description,event_type,created_at,created_by_name").single();
+    if (data) setAuditEvents((current) => [data as AuditEvent, ...current].slice(0, 6));
+  };
+
   const saveQuickAccess = async (patch: Partial<EmployeeQuickRecord>) => {
     if (!employee) return;
     setSavingQuick(true);
@@ -101,10 +125,10 @@ export function TeamDetailPanel({ member, onClose }: Props) {
       return;
     }
     setEmployee({ ...employee, ...patch });
+    const changed = Object.keys(patch).map((key) => key.replace(/_/g, " ")).join(", ");
+    await logAuditEvent(Object.keys(patch).some((key) => key.includes("pay")) ? "payroll_updated" : "access_updated", `Team quick panel updated ${changed}`);
     toast.success("Employee quick panel updated");
   };
-
-  const directManager = useMemo(() => relationships.find((row) => row.kind === "direct_manager") ?? null, [relationships]);
 
   const updateDirectManager = async (managerId: string) => {
     if (!employee || !canEditQuick) return;
@@ -118,6 +142,7 @@ export function TeamDetailPanel({ member, onClose }: Props) {
     }
     const related = employeeOptions.find((option) => option.id === managerId) ?? null;
     setRelationships((current) => [{ kind: "direct_manager", related_employee_id: managerId, related }, ...current.filter((row) => row.kind !== "direct_manager")]);
+    await logAuditEvent("hierarchy_updated", `Direct manager changed to ${related ? formatEmployeeOption(related) : "selected employee"}`);
     toast.success("Manager updated");
   };
 
@@ -204,6 +229,30 @@ export function TeamDetailPanel({ member, onClose }: Props) {
             </div>
           ) : (
             <p className="rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs text-muted-foreground">No linked employee record found.</p>
+          )}
+        </Section>
+
+        <Section title="Audit timeline">
+          {loadingQuick ? (
+            <div className="flex items-center justify-center rounded-lg border border-border/40 bg-secondary/30 py-5">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : auditEvents.length > 0 ? (
+            <div className="space-y-2">
+              {auditEvents.map((event) => (
+                <div key={event.id} className="flex gap-2 rounded-md border border-border/40 bg-secondary/30 px-3 py-2">
+                  <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-foreground">{event.description}</p>
+                    <p className="mt-0.5 text-[10px] capitalize text-muted-foreground">
+                      {new Date(event.created_at).toLocaleString()} · {event.event_type.replace(/_/g, " ")}{event.created_by_name ? ` · ${event.created_by_name}` : ""}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs text-muted-foreground">No HR profile, access, or hierarchy edits logged yet.</p>
           )}
         </Section>
 
