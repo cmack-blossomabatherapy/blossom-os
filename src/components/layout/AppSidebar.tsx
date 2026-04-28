@@ -161,12 +161,15 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const { hasPerm, isAdmin, user, roles } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
+  const hasFullNavigation = isAdmin || roles.includes("exec") || roles.includes("ops_manager");
 
-  const allSections = isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections];
+  const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : navSections.filter((section) => section.title === "Intelligence");
   // Insert HR Suite before Admin so it sits with the operations modules
-  const adminIndex = allSections.findIndex((s) => s.title === "Admin");
-  if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
-  else allSections.push(hrSection);
+  if (hasFullNavigation) {
+    const adminIndex = allSections.findIndex((s) => s.title === "Admin");
+    if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
+    else allSections.push(hrSection);
+  }
 
   const sections = allSections
     .map((s) => ({
