@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getStoredTrainingAssignments, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingLesson } from "@/data/training";
+import { getStoredTrainingAssignments, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingLesson, type TrainingStatus } from "@/data/training";
 
 const TANGO_EMBED_URL_STORAGE_KEY = "blossom-training-tango-embed-urls";
 
@@ -145,7 +145,7 @@ export default function TrainingCourse() {
   const persistProgress = (nextCompleted: Set<string>) => {
     const nextProgress = course.lessons.length ? Math.round((nextCompleted.size / course.lessons.length) * 100) : 0;
     const now = new Date().toISOString();
-    const nextStatus = nextProgress >= 100 ? "Completed" : nextProgress > 0 ? "In Progress" : "Not Started";
+    const nextStatus: TrainingStatus = nextProgress >= 100 ? "Completed" : nextProgress > 0 ? "In Progress" : "Not Started";
     const nextCourses = getStoredTrainingCourses().map((item) => item.id === course.id ? { ...item, lessons: item.lessons.map((lesson) => ({ ...lesson, completed: nextCompleted.has(lesson.id) })), progress: nextProgress, status: nextStatus, startedAt: item.startedAt ?? now, lastOpened: now, updatedAt: now } : item);
     setTrainingCourses(nextCourses);
     saveStoredTrainingCourses(nextCourses);
