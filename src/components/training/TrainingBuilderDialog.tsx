@@ -34,6 +34,7 @@ type MistakeItem = { id: string; error: string; consequence: string; avoid: stri
 type QuizQuestion = { id: string; type: "Multiple choice" | "True / false"; question: string; options: string[]; answer: string; explanation: string };
 type WalkthroughLink = { id: string; url: string; label: string };
 type AiSourceType = "tango" | "upload" | "paste" | "combined";
+type QuizComplexity = "easy" | "medium" | "hard";
 type AiDraft = { title: string; description: string; departmentId: string; difficulty: Difficulty; type: TrainingType; minutes: number; objectives: string[]; sop: { title?: string; content?: string }; walkthrough?: { url?: string; label?: string; summary?: string }; steps: Array<{ title?: string; description?: string; systemTag?: string }>; checklist: string[]; commonMistakes: Array<{ error?: string; consequence?: string; avoid?: string }>; quiz: Array<{ type?: "Multiple choice" | "True / false"; question?: string; options?: string[]; answer?: string; explanation?: string }>; badge?: { title?: string; description?: string }; qualityScore?: number };
 
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -153,6 +154,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
   const [aiTangoUrl, setAiTangoUrl] = useState("");
   const [aiSopText, setAiSopText] = useState("");
   const [aiFileName, setAiFileName] = useState("");
+  const [aiQuizComplexity, setAiQuizComplexity] = useState<QuizComplexity>("medium");
   const [aiGenerating, setAiGenerating] = useState(false);
   const [sectionGenerating, setSectionGenerating] = useState<"sop" | "steps" | "quiz" | null>(null);
   const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
@@ -171,7 +173,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
   const setList = <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
   const generateWithAi = async () => {
-    const body = { sourceType: aiSource, tangoUrl: aiTangoUrl.trim(), sopText: aiSopText.trim(), fileName: aiFileName };
+    const body = { sourceType: aiSource, tangoUrl: aiTangoUrl.trim(), sopText: aiSopText.trim(), fileName: aiFileName, quizComplexity: aiQuizComplexity };
     if (aiSource === "combined" && (!body.tangoUrl || !body.sopText)) return toast.error("Add both a Tango link and SOP content first");
     if (aiSource === "tango" && !body.tangoUrl) return toast.error("Add a Tango link first");
     if ((aiSource === "upload" || aiSource === "paste") && !body.sopText) return toast.error("Add SOP text first");
@@ -223,6 +225,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
         tangoUrl,
         sopText,
         fileName: draft.sopFileName || aiFileName,
+        quizComplexity: aiQuizComplexity,
         sectionMode,
         currentDraft: draft,
       },
@@ -335,7 +338,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
       {step === 11 && <PreviewStep draft={draft} quality={quality} blockers={blockers} />}
     </div>
     <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="outline" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>{step < builderSteps.length - 1 ? <Button onClick={() => setStep((current) => Math.min(builderSteps.length - 1, current + 1))}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button> : <><Button variant="outline" onClick={() => submit("draft")}>Save draft</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Publish</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Assign now</Button></>}</DialogFooter>
-    <AiTrainingDialog open={aiOpen} onOpenChange={setAiOpen} source={aiSource} setSource={setAiSource} tangoUrl={aiTangoUrl} setTangoUrl={setAiTangoUrl} sopText={aiSopText} setSopText={setAiSopText} fileName={aiFileName} setFileName={setAiFileName} generating={aiGenerating} draft={aiDraft} onGenerate={generateWithAi} onAccept={acceptAiDraft} />
+    <AiTrainingDialog open={aiOpen} onOpenChange={setAiOpen} source={aiSource} setSource={setAiSource} tangoUrl={aiTangoUrl} setTangoUrl={setAiTangoUrl} sopText={aiSopText} setSopText={setAiSopText} fileName={aiFileName} setFileName={setAiFileName} quizComplexity={aiQuizComplexity} setQuizComplexity={setAiQuizComplexity} generating={aiGenerating} draft={aiDraft} onGenerate={generateWithAi} onAccept={acceptAiDraft} />
   </DialogContent></Dialog>;
 }
 
