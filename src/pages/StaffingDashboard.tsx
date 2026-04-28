@@ -302,6 +302,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
         {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
