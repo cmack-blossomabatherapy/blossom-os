@@ -23,6 +23,16 @@ interface NavItem {
   superAdminOnly?: boolean;
 }
 
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+interface RoleNavigationException {
+  sectionTitles?: string[];
+  itemPaths?: string[];
+}
+
 const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   ceo: BarChart3,
   intake: Users,
@@ -52,7 +62,7 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-const navSections: { title?: string; items: NavItem[] }[] = [
+const navSections: NavSection[] = [
   {
     title: "Operate",
     items: [
@@ -118,6 +128,24 @@ const hrSection: { title: string; items: NavItem[] } = {
   ],
 };
 
+const roleNavigationExceptions: Record<string, RoleNavigationException> = {
+  // Add role keys here when limited roles need more than Intelligence.
+  // Example: hr: { sectionTitles: ["HR Suite"], itemPaths: ["/team"] },
+};
+
+const limitedNavigationSections = (roles: string[]): NavSection[] => {
+  const exceptions = roles.map((role) => roleNavigationExceptions[role]).filter(Boolean);
+  const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
+  const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []));
+
+  return [...navSections, hrSection]
+    .map((section) => ({
+      ...section,
+      items: allowedSections.has(section.title ?? "") ? section.items : section.items.filter((item) => allowedPaths.has(item.path)),
+    }))
+    .filter((section) => section.items.length > 0);
+};
+
 const mobileSectionDescriptions: Record<string, string> = {
   Dashboards: "Real-time insights and performance",
   Operate: "Run and manage daily operations",
@@ -134,6 +162,7 @@ const mobileItemDescriptions: Record<string, string> = {
 };
 
 const limitedRoleMessage = "Only Intelligence is available. Other menu areas are restricted for your role.";
+const limitedRoleExceptionMessage = "Your role has limited access. Additional menu areas appear only when an exception is configured.";
 
 const roleLabels: Record<string, string> = {
   admin: "Super Admin / Systems",
@@ -164,8 +193,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const hasFullNavigation = isAdmin || roles.includes("exec") || roles.includes("ops_manager");
+  const hasNavigationExceptions = !hasFullNavigation && sectionsHaveExceptions(limitedNavigationSections(roles));
 
-  const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : navSections.filter((section) => section.title === "Intelligence");
+  const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : limitedNavigationSections(roles);
   // Insert HR Suite before Admin so it sits with the operations modules
   if (hasFullNavigation) {
     const adminIndex = allSections.findIndex((s) => s.title === "Admin");
