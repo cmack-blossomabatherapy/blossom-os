@@ -325,6 +325,7 @@ function MemberRow({
   onToggleRole,
   onSaveInfo,
   onSendWelcome,
+  onVisited,
   saving,
   isCurrentUser,
 }: {
@@ -332,6 +333,7 @@ function MemberRow({
   onToggleRole: (role: AppRole) => void;
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
+  onVisited: () => void;
   saving: boolean;
   isCurrentUser: boolean;
 }) {
@@ -399,7 +401,10 @@ function MemberRow({
   return (
     <div>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          onVisited();
+          setOpen((v) => !v);
+        }}
         className="w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3"
       >
         <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
