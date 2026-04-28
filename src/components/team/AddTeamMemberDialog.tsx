@@ -227,6 +227,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
                 <InfoRow label="Temporary password" value={result.tempPassword} mono />
                 <InfoRow label="Roles" value={result.roles.join(", ")} />
               </div>
+              <InviteEmailStatus result={result} />
               {!result.welcomeEmailSent && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button variant="outline" onClick={copy}>
                   <Copy className="h-3.5 w-3.5 mr-2" />
@@ -256,6 +257,30 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
     <div className="flex items-start justify-between gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className={mono ? "font-mono text-foreground" : "text-foreground"}>{value}</span>
+    </div>
+  );
+}
+
+function InviteEmailStatus({ result }: { result: InviteResult }) {
+  const status = result.welcomeEmailStatus ?? (result.welcomeEmailSent ? "sent" : "failed");
+  const sent = status === "sent";
+
+  return (
+    <div className={cn(
+      "rounded-lg border p-3 text-sm",
+      sent ? "border-success/30 bg-success/10" : "border-destructive/30 bg-destructive/10",
+    )}>
+      <div className="flex items-start gap-2">
+        {sent ? <CheckCircle2 className="h-4 w-4 text-success mt-0.5" /> : <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />}
+        <div className="min-w-0 flex-1">
+          <p className={cn("font-medium", sent ? "text-success" : "text-destructive")}>{sent ? "Welcome email sent via Resend" : "Welcome email was not sent"}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {sent
+              ? result.resendMessageId ? `Resend message ID: ${result.resendMessageId}` : "Resend accepted the email for delivery."
+              : result.welcomeEmailError ?? "The backend saved the invite, but Resend did not confirm delivery."}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
