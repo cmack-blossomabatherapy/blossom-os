@@ -167,6 +167,22 @@ function alertsFor(record: StaffingRecord, matches: Match[], assigned?: Rbt) {
   return alerts;
 }
 
+function decisionEntry(match: Match, decision: MatchDecision["decision"], note: string): MatchDecision {
+  return {
+    id: `${match.rbt.id}-${Date.now()}`,
+    rbtId: match.rbt.id,
+    rbtName: match.rbt.name,
+    decision,
+    score: match.score,
+    breakdown: match.breakdown,
+    reasons: match.reasons,
+    weights: auditWeights,
+    decidedAt: today.toISOString(),
+    decidedBy: "Dashboard user",
+    note,
+  };
+}
+
 export default function StaffingDashboard() {
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = window.localStorage.getItem(STAFFING_RECORDS_KEY);
