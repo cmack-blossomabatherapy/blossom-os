@@ -10,16 +10,37 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT, type TrainingLesson } from "@/data/training";
 
+const TANGO_EMBED_URL_STORAGE_KEY = "blossom-training-tango-embed-urls";
+
 const toTangoEmbedUrl = (url?: string) => {
   if (!url) return "";
+  const cacheKey = url.trim();
+  if (!cacheKey) return "";
+  if (typeof window !== "undefined") {
+    try {
+      const cached = JSON.parse(window.localStorage.getItem(TANGO_EMBED_URL_STORAGE_KEY) || "{}") as Record<string, string>;
+      if (cached[cacheKey]) return cached[cacheKey];
+    } catch {
+      // Ignore malformed cache and recalculate below.
+    }
+  }
   try {
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes("tango.us")) return url;
-    if (parsed.pathname.includes("/embed/")) return url;
+    const parsed = new URL(cacheKey);
+    if (!parsed.hostname.includes("tango.us")) return cacheKey;
+    if (parsed.pathname.includes("/embed/")) return cacheKey;
     parsed.pathname = parsed.pathname.replace("/app/workflow/", "/embed/workflow/");
-    return parsed.toString();
+    const embedUrl = parsed.toString();
+    if (typeof window !== "undefined") {
+      try {
+        const cached = JSON.parse(window.localStorage.getItem(TANGO_EMBED_URL_STORAGE_KEY) || "{}") as Record<string, string>;
+        window.localStorage.setItem(TANGO_EMBED_URL_STORAGE_KEY, JSON.stringify({ ...cached, [cacheKey]: embedUrl }));
+      } catch {
+        // Local storage may be unavailable; the transformed URL can still be used for this render.
+      }
+    }
+    return embedUrl;
   } catch {
-    return url;
+    return cacheKey;
   }
 };
 
