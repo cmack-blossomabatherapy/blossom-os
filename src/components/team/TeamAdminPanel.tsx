@@ -106,22 +106,22 @@ async function syncEmployeeFromTeamMember(
     const { error } = await supabase.from("employees").update(employeePayload).eq("id", existing.id);
     if (error) {
       toast.error(`Team saved, but Employees sync failed: ${error.message}`);
-      return false;
+      return null;
     }
-    return true;
+    return existing.id;
   }
 
-  const { error } = await supabase.from("employees").insert({
+  const { data: created, error } = await supabase.from("employees").insert({
     ...employeePayload,
     employment_type: "full_time" as never,
     pay_type: "salaried" as never,
     work_setting: "admin" as never,
-  });
+  }).select("id").single();
   if (error) {
     toast.error(`Team saved, but Employees sync failed: ${error.message}`);
-    return false;
+    return null;
   }
-  return true;
+  return created?.id ?? null;
 }
 
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
@@ -299,8 +299,9 @@ export function TeamAdminPanel() {
       toast.error(error.message);
       return false;
     }
-    const employeeSynced = await syncEmployeeFromTeamMember(member, next);
+    const syncedEmployeeId = await syncEmployeeFromTeamMember(member, next);
     updateMember(member.user_id, {
+      employee_id: syncedEmployeeId ?? member.employee_id,
       display_name: next.display_name.trim() || "(no name)",
       email: next.email.trim(),
       job_title: next.job_title.trim(),
@@ -312,7 +313,7 @@ export function TeamAdminPanel() {
       dashboard_access: next.dashboard_access,
       active: next.active,
     });
-    toast.success(employeeSynced ? "Saved and synced to Employees" : "Saved");
+    toast.success(syncedEmployeeId ? "Saved and HR record linked" : "Saved");
     return true;
   };
 
