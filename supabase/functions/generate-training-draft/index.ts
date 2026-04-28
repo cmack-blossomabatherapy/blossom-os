@@ -14,6 +14,7 @@ const InputSchema = z.object({
   fileName: z.string().max(255).optional().default(""),
   tone: z.enum(["Simple", "Detailed", "Technical"]).optional().default("Detailed"),
   quizComplexity: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
+  quizQuestionCount: z.number().int().min(3).max(10).optional().default(5),
   sectionMode: z.enum(["full", "sop", "steps", "quiz"]).optional().default("full"),
   currentDraft: z.unknown().optional(),
 });
@@ -95,7 +96,7 @@ function json(body: unknown, status = 200) {
 function systemPrompt() {
   return `You are Blossom ABA Therapy's embedded training specialist. Generate a complete, practical training draft from a Tango URL, uploaded SOP text, pasted SOP text, or a combined Tango + SOP package.
 Return JSON only with this exact shape: {"title":"","description":"","departmentId":"","difficulty":"Beginner|Intermediate|Advanced","type":"Workflow|SOP|System Training|Policy|Onboarding|Clinical|Tango|Checklist|Quiz|Video","minutes":30,"objectives":[""],"sop":{"title":"","content":"Purpose\n...\n\nWhen used\n...\n\nSystems required\n...\n\nStep-by-step instructions\n...\n\nExpected outcome\n...\n\nCommon mistakes\n..."},"walkthrough":{"url":"","label":"","summary":""},"steps":[{"title":"","description":"","systemTag":""}],"checklist":[""],"commonMistakes":[{"error":"","consequence":"","avoid":""}],"quiz":[{"type":"Multiple choice|True / false","question":"","options":[""],"answer":"","explanation":""}],"badge":{"title":"","description":""},"qualityScore":82}.
- Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create 3-5 quiz questions; match the quiz to quizComplexity and quizGuidance; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. For combined mode, merge SOP policy/context with the Tango walkthrough sequence into one cohesive course: SOP provides standards, rationale, expected outcomes, mistakes, and validation; Tango provides walkthrough flow and step order. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
+ Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create exactly quizQuestionCount quiz questions; match the quiz to quizComplexity and quizGuidance; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. For combined mode, merge SOP policy/context with the Tango walkthrough sequence into one cohesive course: SOP provides standards, rationale, expected outcomes, mistakes, and validation; Tango provides walkthrough flow and step order. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
 }
 
 function quizComplexityGuidance(complexity: "easy" | "medium" | "hard") {
@@ -124,7 +125,7 @@ function normalizeDraft(raw: Record<string, unknown>) {
     steps: arr(raw.steps).slice(0, 12),
     checklist: arr(raw.checklist).map((x) => asString(x)).filter(Boolean).slice(0, 12),
     commonMistakes: arr(raw.commonMistakes).slice(0, 8),
-    quiz: arr(raw.quiz).slice(0, 5),
+    quiz: arr(raw.quiz).slice(0, 10),
     badge: typeof raw.badge === "object" && raw.badge ? raw.badge : { title: "Workflow Certified", description: "Awarded after completing this training." },
     qualityScore,
   };
