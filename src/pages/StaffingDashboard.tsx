@@ -49,6 +49,7 @@ type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; 
 const ALL = "All";
 const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
 const STAFFING_RBTS_KEY = "blossom.staffing.rbts.v1";
+const STAFFING_MAP_STATE_KEY = "blossom.staffing.map-state.v1";
 const auditWeights = { region: 18, availability: 35, compliance: 14, capacity: 25 };
 const today = new Date("2026-04-27T12:00:00Z");
 const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
@@ -191,6 +192,11 @@ function decisionEntry(match: Match, decision: MatchDecision["decision"], note: 
 
 function hydrateRecords(records: StaffingRecord[]) {
   return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
+}
+
+function storedMapState() {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | MapFilters>; } catch { return null; }
 }
 
 const regionAnchors: Record<string, MapPoint> = {
@@ -359,6 +365,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
 }
 
 export default function StaffingDashboard() {
+  const initialMapState = storedMapState();
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
     return saved ? hydrateRecords(JSON.parse(saved) as StaffingRecord[]) : staffingSeed;
@@ -367,7 +374,7 @@ export default function StaffingDashboard() {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RBTS_KEY) : null;
     return saved ? JSON.parse(saved) as Rbt[] : rbtSeed;
   });
-  const [selectedId, setSelectedId] = useState<string>(staffingSeed[1].id);
+  const [selectedId, setSelectedId] = useState<string>(typeof initialMapState?.selectedId === "string" ? initialMapState.selectedId : staffingSeed[1].id);
   const [dateRange, setDateRange] = useState("This Week");
   const [stateFilter, setStateFilter] = useState(ALL);
   const [clinicFilter, setClinicFilter] = useState(ALL);
@@ -381,10 +388,10 @@ export default function StaffingDashboard() {
   const [activeKpi, setActiveKpi] = useState<KpiKey>("all");
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [detailOpen, setDetailOpen] = useState(false);
-  const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
-  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
-  const [mapZoom, setMapZoom] = useState<MapZoom>("regional");
-  const [mapFilters, setMapFilters] = useState<MapFilters>({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false });
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(typeof initialMapState?.activeMatchId === "string" ? initialMapState.activeMatchId : null);
+  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
+  const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
+  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -399,6 +406,9 @@ export default function StaffingDashboard() {
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
+  useEffect(() => {
+    window.localStorage.setItem(STAFFING_MAP_STATE_KEY, JSON.stringify({ selectedId, activeMatchId, mapFocus, mapZoom, mapFilters }));
+  }, [activeMatchId, mapFilters, mapFocus, mapZoom, selectedId]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
