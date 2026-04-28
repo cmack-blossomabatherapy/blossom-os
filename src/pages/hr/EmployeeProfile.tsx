@@ -82,10 +82,6 @@ export default function EmployeeProfile() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <Link to="/hr/directory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to directory
-      </Link>
-
       <Card className="overflow-hidden">
         <div className="border-b border-border/50 bg-secondary/25 px-5 py-3 flex items-center justify-between gap-3">
           <Link to="/hr/directory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
