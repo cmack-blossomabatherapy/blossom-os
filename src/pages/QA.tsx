@@ -369,15 +369,28 @@ export default function QA() {
     toast.success("Sent to Authorization");
   };
 
-  const resolveNote = (record: QARecord) => {
+  const resolveNote = async (record: QARecord) => {
     patchRecord(record.id, { noteStatus: "Resolved", notesFlagged: 0, alerts: record.alerts.filter((a) => !a.includes("note") && !a.includes("Amerigroup") && !a.includes("NoteGuard")), nextAction: "Continue QA review" }, "Note compliance issue resolved");
+    await appendTimeline(record.clientId, "QA marked note compliance issue resolved", "qa");
+    await appendAutomation(record.clientId, "Note compliance resolution updated QA timeline");
     toast.success("Note issue resolved");
   };
 
   const createCorrectionTask = async (record: QARecord) => {
-    patchRecord(record.id, { tasks: [...record.tasks, { id: `task-${Date.now()}`, title: "QA correction follow-up", owner: record.correctionOwner, dueDate: isoDaysAhead(1), completed: false }] }, "Correction task created");
-    await addTask(record.clientId, { id: `qa-task-${Date.now()}`, title: "QA correction follow-up", dueDate: isoDaysAhead(1), completed: false });
-    toast.success("Correction task created");
+    const task = correctionTaskFor(record, "Resolve note compliance correction", 1);
+    patchRecord(record.id, { tasks: [task, ...record.tasks], nextAction: `Note correction due ${task.dueDate}` }, `Note correction task created; due ${task.dueDate}`);
+    await addTask(record.clientId, { id: `qa-task-${Date.now()}`, title: task.title, dueDate: task.dueDate, completed: false });
+    await appendTimeline(record.clientId, `QA created note correction task due ${task.dueDate}`, "qa");
+    await appendAutomation(record.clientId, `Note compliance automation created correction task due ${task.dueDate}`);
+    toast.success("Correction task created", { description: `Due ${task.dueDate}` });
+  };
+
+  const notifyNoteOwner = async (record: QARecord, owner: "RBT" | "BCBA") => {
+    const recipient = owner === "RBT" ? record.rbt : record.bcba;
+    patchRecord(record.id, { nextAction: `${owner} notified for note correction`, alerts: Array.from(new Set([...record.alerts, `${owner} notified for note correction`])) }, `${owner} notified: ${recipient}`);
+    await appendTimeline(record.clientId, `QA notified ${owner} ${recipient} for note correction`, "qa");
+    await appendAutomation(record.clientId, `Note compliance notification sent to ${owner}`);
+    toast.success(`${owner} notified`, { description: recipient });
   };
 
   const addComment = (record: QARecord) => {
