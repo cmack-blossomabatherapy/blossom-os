@@ -584,7 +584,7 @@ export default function QA() {
         </div>
         <DetailPanel record={selected} panelTab={panelTab} setPanelTab={setPanelTab} onOpenClient={() => navigate(`/clients/${selected.clientId}`)} onStart={startReview} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onToggle={toggleChecklist} onResolveIssue={resolveIssue} onResolveNote={resolveNote} comment={comment} setComment={setComment} onComment={addComment} />
       </section>
-      {newReviewOpen && <NewQaReviewDialog clients={clients} records={records} selectedId={newReviewClientId} onSelect={setNewReviewClientId} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} onReuse={reuseQaReview} />}
+      {newReviewOpen && <NewQaReviewDialog clients={clients} records={records} selectedId={newReviewClientId} starterSettings={starterSettings} onSelect={setNewReviewClientId} onSettingsChange={setStarterSettings} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} onReuse={reuseQaReview} />}
     </PageShell>
   );
 }
@@ -593,7 +593,7 @@ function FilterSelect({ value, onChange, label, items }: { value: string; onChan
   return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={label} /></SelectTrigger><SelectContent><SelectItem value="all">{label}</SelectItem>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
 }
 
-function NewQaReviewDialog({ clients, records, selectedId, onSelect, onClose, onCreate, onReuse }: { clients: Client[]; records: QARecord[]; selectedId: string; onSelect: (id: string) => void; onClose: () => void; onCreate: () => void; onReuse: (record: QARecord) => void }) {
+function NewQaReviewDialog({ clients, records, selectedId, starterSettings, onSelect, onSettingsChange, onClose, onCreate, onReuse }: { clients: Client[]; records: QARecord[]; selectedId: string; starterSettings: StarterQaSettings; onSelect: (id: string) => void; onSettingsChange: (settings: StarterQaSettings) => void; onClose: () => void; onCreate: () => void; onReuse: (record: QARecord) => void }) {
   const selected = clients.find((client) => client.id === selectedId);
   const options = clients.filter((client) => client.assessmentDate || client.stage === "Assessment Completed" || client.stage === "Treatment Plan Pending" || client.stage === "QA Review" || client.authorizations.some((auth) => auth.type === "Treatment"));
   const treatmentAuth = selected?.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
