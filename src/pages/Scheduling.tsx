@@ -152,7 +152,7 @@ const inferStatus = (client: Client, blocks: ScheduleBlock[], index: number): Sc
 
 const buildRecords = (clients: Client[]): ScheduleRecord[] => {
   const pool = clients.length ? clients : [];
-  const records = pool.map((client, index) => {
+  const records: ScheduleRecord[] = pool.map((client, index) => {
     const blocks = makeBlocks(client, index);
     const approvedHours = client.approvedWeeklyHours || getApprovedWeeklyHours(client) || 20;
     const scheduledHours = blocks.length ? blocks.reduce((sum, block) => sum + block.hours, 0) : calculateWeeklyHours(client);
@@ -206,7 +206,7 @@ const buildRecords = (clients: Client[]): ScheduleRecord[] => {
       overlapScore: index % 4 === 0 ? 58 : 84,
       conflictNotes: index % 4 === 0 ? ["RBT availability conflict on Friday", "Approved hours not fully scheduled"] : [],
       clientStage: client.stage,
-    } satisfies ScheduleRecord;
+    };
   });
 
   const seeded = [...records];
