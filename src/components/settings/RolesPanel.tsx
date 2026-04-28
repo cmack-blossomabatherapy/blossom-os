@@ -115,8 +115,22 @@ export function RolesPanel() {
   return (
     <SettingsPanel
       title="Roles & Permissions"
-      description="Pick a role on the left, toggle the permissions it grants on the right. Changes save instantly."
+      description="Admin access control for what each role sees, does, and owns. Changes save instantly."
+      showSave={false}
     >
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
+        {[
+          ["System Admin", ROLE_META.filter((r) => r.permissionLevel === "System Admin").length],
+          ["Full Module Control", ROLE_META.filter((r) => r.permissionLevel === "Full Module Control").length],
+          ["Edit Scoped", ROLE_META.filter((r) => r.permissionLevel === "Edit Scoped").length],
+          ["View Only", ROLE_META.filter((r) => r.permissionLevel === "View Only").length],
+        ].map(([label, count]) => (
+          <div key={label} className="rounded-lg border border-border/60 bg-secondary/20 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className="text-lg font-semibold text-foreground">{count}</p>
+          </div>
+        ))}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
         <div className="space-y-1 max-h-[calc(100vh-260px)] overflow-y-auto pr-1">
           {ROLE_META.map((r) => (
@@ -137,6 +151,7 @@ export function RolesPanel() {
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground truncate mt-0.5">{r.description}</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wider text-primary">{r.permissionLevel}</p>
             </button>
           ))}
         </div>
