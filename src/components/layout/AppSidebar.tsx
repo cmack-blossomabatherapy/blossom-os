@@ -12,6 +12,7 @@ import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
+import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix } from "@/lib/navigationAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -26,11 +27,6 @@ interface NavItem {
 interface NavSection {
   title?: string;
   items: NavItem[];
-}
-
-interface RoleNavigationException {
-  sectionTitles?: string[];
-  itemPaths?: string[];
 }
 
 const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
@@ -128,20 +124,15 @@ const hrSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-const roleNavigationExceptions: Record<string, RoleNavigationException> = {
-  // Add role keys here when limited roles need more than Intelligence.
-  // Example: hr: { sectionTitles: ["HR Suite"], itemPaths: ["/team"] },
-};
-
 const limitedNavigationSections = (roles: string[]): NavSection[] => {
-  const exceptions = roles.map((role) => roleNavigationExceptions[role]).filter(Boolean);
+  const exceptions = getRoleNavigationExceptions(roles as never);
   const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
   const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []));
 
   return [...navSections, hrSection]
     .map((section) => ({
       ...section,
-      items: allowedSections.has(section.title ?? "") ? section.items : section.items.filter((item) => allowedPaths.has(item.path)),
+      items: allowedSections.has(section.title ?? "") ? section.items : section.items.filter((item) => allowedPaths.has(navPathToRoutePrefix(item.path))),
     }))
     .filter((section) => section.items.length > 0);
 };
@@ -192,7 +183,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const { hasPerm, isAdmin, user, roles } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
-  const hasFullNavigation = isAdmin || roles.includes("exec") || roles.includes("ops_manager");
+  const hasFullNavigation = hasFullNavigationAccess(roles);
   const limitedSections = limitedNavigationSections(roles);
   const hasNavigationExceptions = !hasFullNavigation && limitedSections.some((section) => section.title !== "Intelligence");
 
