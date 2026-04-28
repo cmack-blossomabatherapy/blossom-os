@@ -429,15 +429,55 @@ export default function Staffing() {
     toast.success("Staffing export downloaded");
   }
 
-  function bulkUpdateStatus(status: StaffingStatus) {
-    setRecords((current) => current.map((r) => checked.includes(r.id) ? { ...r, status, timeline: [{ id: `tl-${Date.now()}-${r.id}`, event: `Bulk updated to ${status}`, at: "Just now", owner: "Staffing OS" }, ...r.timeline] } : r));
-    toast.success(`${checked.length} records updated`);
+  function validateBulkSelection() {
+    const parsed = bulkSelectionSchema.safeParse(checked);
+    if (!parsed.success) {
+      toast.error("Bulk edit blocked", { description: parsed.error.issues[0]?.message ?? "Select valid staffing records first." });
+      return null;
+    }
+    return parsed.data;
+  }
+
+  function bulkUpdateStatus(status: string) {
+    const ids = validateBulkSelection();
+    const parsedStatus = staffingStatusSchema.safeParse(status);
+    if (!ids || !parsedStatus.success) {
+      if (!parsedStatus.success) toast.error("Bulk status update blocked", { description: parsedStatus.error.issues[0]?.message });
+      return;
+    }
+    const selectedRecords = records.filter((record) => ids.includes(record.id));
+    const blocked = selectedRecords.filter((record) => parsedStatus.data === "Ready for Scheduling" && !record.assignedRbtId);
+    if (blocked.length) {
+      toast.error("Status update blocked", { description: `${blocked.length} selected clients need an assigned RBT before Ready for Scheduling.` });
+      return;
+    }
+    const alertText = parsedStatus.data === "No Match Available" ? "No RBT match available" : parsedStatus.data === "Restaffing Needed" ? "Restaffing urgent" : "Bulk status updated";
+    setRecords((current) => current.map((record) => ids.includes(record.id) ? {
+      ...record,
+      status: parsedStatus.data,
+      urgency: ["No Match Available", "Restaffing Needed"].includes(parsedStatus.data) ? "Critical" : record.urgency,
+      alerts: Array.from(new Set([...record.alerts, alertText])),
+      nextAction: parsedStatus.data === "No Match Available" ? "Escalate regional capacity gap" : parsedStatus.data === "Matching in Progress" ? "Compare RBT matches" : record.nextAction,
+      timeline: [{ id: `tl-${Date.now()}-${record.id}`, event: `Bulk status updated to ${parsedStatus.data}`, at: "Just now", owner: "Staffing OS" }, ...record.timeline],
+    } : record));
+    toast.success(`${ids.length} records updated`, { description: `Status set to ${parsedStatus.data}; affected records were flagged for review.` });
     setChecked([]);
   }
 
   function bulkAssignOwner(owner: string) {
-    setRecords((current) => current.map((r) => checked.includes(r.id) ? { ...r, owner } : r));
-    toast.success(`${checked.length} records assigned to ${owner}`);
+    const ids = validateBulkSelection();
+    const parsedOwner = staffingOwnerSchema.safeParse(owner);
+    if (!ids || !parsedOwner.success) {
+      if (!parsedOwner.success) toast.error("Bulk owner update blocked", { description: parsedOwner.error.issues[0]?.message });
+      return;
+    }
+    setRecords((current) => current.map((record) => ids.includes(record.id) ? {
+      ...record,
+      owner: parsedOwner.data,
+      alerts: record.owner === "" ? Array.from(new Set([...record.alerts, "Staffing owner assigned"])) : record.alerts,
+      timeline: [{ id: `tl-${Date.now()}-${record.id}`, event: `Bulk assigned to ${parsedOwner.data}`, at: "Just now", owner: "Staffing OS" }, ...record.timeline],
+    } : record));
+    toast.success(`${ids.length} records assigned`, { description: `Staffing owner set to ${parsedOwner.data}.` });
   }
 
   const MiniCard = ({ label, value, mode, filter }: typeof kpis[number]) => (
