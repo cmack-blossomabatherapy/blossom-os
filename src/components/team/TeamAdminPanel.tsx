@@ -64,7 +64,7 @@ export function TeamAdminPanel() {
 
   const load = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, employeeLinksRes] = await Promise.all([
       supabase
         .from("profiles")
         .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
@@ -73,7 +73,8 @@ export function TeamAdminPanel() {
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
     const roles = (rolesRes.data ?? []) as RoleRow[];
-    const employeeLinks = ((arguments[0] as never) ?? []) as EmployeeLinkRow[];
+    const employeeLinks = (employeeLinksRes.data ?? []) as EmployeeLinkRow[];
+    const employeeIdByUser = new Map(employeeLinks.map((row) => [row.user_id, row.id]));
     const byUser = new Map<string, AppRole[]>();
     roles.forEach((r) => {
       const list = byUser.get(r.user_id) ?? [];
@@ -82,6 +83,7 @@ export function TeamAdminPanel() {
     });
     const combined: Member[] = profiles.map((p) => ({
       user_id: p.user_id,
+      employee_id: employeeIdByUser.get(p.user_id) ?? null,
       display_name: p.display_name ?? "(no name)",
       email: p.email ?? "",
       job_title: p.job_title ?? "",
