@@ -168,8 +168,14 @@ function alertsFor(record: StaffingRecord, matches: Match[], assigned?: Rbt) {
 }
 
 export default function StaffingDashboard() {
-  const [records, setRecords] = useState<StaffingRecord[]>(staffingSeed);
-  const [rbts, setRbts] = useState<Rbt[]>(rbtSeed);
+  const [records, setRecords] = useState<StaffingRecord[]>(() => {
+    const saved = window.localStorage.getItem(STAFFING_RECORDS_KEY);
+    return saved ? JSON.parse(saved) as StaffingRecord[] : staffingSeed;
+  });
+  const [rbts, setRbts] = useState<Rbt[]>(() => {
+    const saved = window.localStorage.getItem(STAFFING_RBTS_KEY);
+    return saved ? JSON.parse(saved) as Rbt[] : rbtSeed;
+  });
   const [selectedId, setSelectedId] = useState<string>(staffingSeed[1].id);
   const [dateRange, setDateRange] = useState("This Week");
   const [stateFilter, setStateFilter] = useState(ALL);
@@ -192,6 +198,9 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
+
+  useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
+  useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -247,11 +256,17 @@ export default function StaffingDashboard() {
     toast.success(message);
   };
   const assignRbt = (record: StaffingRecord, rbt: Rbt) => {
+    const match = scoreMatch(record, rbt);
     const hoursToAdd = Math.min(record.requiredHours, availableHours(rbt));
+    const decision = decisionEntry(match, "Selected", `Selected for ${match.score} score with ${match.overlap} matching availability slot${match.overlap === 1 ? "" : "s"}.`);
     setRbts((current) => current.map((item) => item.id === rbt.id ? { ...item, currentHours: item.currentHours + hoursToAdd, assignedClients: Array.from(new Set([...item.assignedClients, record.client])) } : item));
-    updateRecord(record.id, { assignedRbtId: rbt.id, status: "Ready for Scheduling", nextAction: "Send client to scheduling", blockers: record.blockers.filter((b) => !b.toLowerCase().includes("no rbt")) }, `${rbt.name} assigned to ${record.client}`);
+    updateRecord(record.id, { assignedRbtId: rbt.id, status: "Ready for Scheduling", nextAction: "Send client to scheduling", blockers: record.blockers.filter((b) => !b.toLowerCase().includes("no rbt")), decisionHistory: [decision, ...record.decisionHistory] }, `${rbt.name} assigned to ${record.client}`);
   };
-  const rejectMatch = (record: StaffingRecord, rbt: Rbt) => updateRecord(record.id, { rejectedRbtIds: [...record.rejectedRbtIds, rbt.id], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
+  const rejectMatch = (record: StaffingRecord, rbt: Rbt) => {
+    const match = scoreMatch(record, rbt);
+    const decision = decisionEntry(match, "Rejected", `Rejected despite ${match.score} score; next best match required.`);
+    updateRecord(record.id, { rejectedRbtIds: Array.from(new Set([...record.rejectedRbtIds, rbt.id])), decisionHistory: [decision, ...record.decisionHistory], nextAction: `Rejected ${rbt.name}; review next best match` }, `${rbt.name} rejected for ${record.client}`);
+  };
   const exportCsv = () => {
     const rows = filtered.map((r) => [r.client, r.state, r.clinic, r.requiredHours, r.status, rbts.find((x) => x.id === r.assignedRbtId)?.name ?? "", matchesFor(r)[0]?.rbt.name ?? "", matchesFor(r)[0]?.score ?? 0, r.daysWaiting, r.priority, r.nextAction]);
     const csv = [["Client", "State", "Clinic", "Required Hours", "Status", "Assigned RBT", "Suggested RBT", "Match Score", "Days Waiting", "Urgency", "Next Action"], ...rows].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
