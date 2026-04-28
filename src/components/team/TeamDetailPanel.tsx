@@ -43,10 +43,18 @@ interface RelationshipRow {
   related: { first_name: string; last_name: string; preferred_name: string | null } | null;
 }
 
+interface EmployeeOption {
+  id: string;
+  first_name: string;
+  last_name: string;
+  preferred_name: string | null;
+}
+
 export function TeamDetailPanel({ member, onClose }: Props) {
   const { hasPerm } = useAuth();
   const [employee, setEmployee] = useState<EmployeeQuickRecord | null>(null);
   const [relationships, setRelationships] = useState<RelationshipRow[]>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<EmployeeOption[]>([]);
   const [loadingQuick, setLoadingQuick] = useState(false);
   const [savingQuick, setSavingQuick] = useState(false);
 
@@ -56,8 +64,10 @@ export function TeamDetailPanel({ member, onClose }: Props) {
     void Promise.all([
       supabase.from("employees").select("id,user_id,pay_rate,pay_type,viventium_employee_id,kiosk_pin,kiosk_enabled,resource_hub_access").eq("id", member.id).maybeSingle(),
       supabase.from("employee_relationships").select("kind,related_employee_id").eq("employee_id", member.id),
-    ]).then(async ([employeeRes, relationshipRes]) => {
+      supabase.from("employees").select("id,first_name,last_name,preferred_name").neq("id", member.id).order("last_name"),
+    ]).then(async ([employeeRes, relationshipRes, optionsRes]) => {
       setEmployee((employeeRes.data as EmployeeQuickRecord | null) ?? null);
+      setEmployeeOptions((optionsRes.data ?? []) as EmployeeOption[]);
       const rows = (relationshipRes.data ?? []) as Array<Omit<RelationshipRow, "related">>;
       const relatedIds = rows.map((row) => row.related_employee_id);
       const relatedRes = relatedIds.length
