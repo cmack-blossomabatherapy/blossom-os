@@ -144,7 +144,7 @@ const buildRecords = (clients: Client[]): QARecord[] => {
     const issueType: IssueType = status === "Issues Found" ? ISSUE_TYPES[(index % 8) + 2] : status === "Corrections Needed" ? "Clinical Accuracy" : index % 6 === 0 ? "Amerigroup Issue" : index % 5 === 0 ? "NoteGuard Flag" : "None";
     const isReady = status === "Ready for Submission" || status === "Submitted to Auth";
     const daysInQA = [1, 2, 4, 6, 0, 3, 15][index % 7];
-    const checklist = CHECKLIST.reduce((acc, item, cIndex) => ({ ...acc, [item.key]: isReady || status === "Submitted to Auth" || cIndex < (index % 9) + 1 }), {} as Record<ChecklistKey, boolean>);
+    const checklist = CHECKLIST.reduce((acc, item, cIndex) => ({ ...acc, [item.key]: isReady || cIndex < (index % 9) + 1 }), {} as Record<ChecklistKey, boolean>);
     const alerts = [
       daysInQA > 3 && status !== "Submitted to Auth" ? "QA review waiting over 3 days" : "",
       status === "Overdue" ? "Treatment plan overdue after 14 days" : "",
