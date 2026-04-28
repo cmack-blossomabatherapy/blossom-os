@@ -38,6 +38,7 @@ type PipelineRecord = {
 type Filters = { dateRange: string; state: string; clinic: string; stage: string; owner: string; payor: string; bcba: string; rbt: string; priority: string; atRiskOnly: boolean; stuckOnly: boolean };
 
 const lifecycleSections = ["Intake", "Benefits & Financial", "Onboarding to Client", "Authorization", "Assessment", "QA", "Treatment Authorization", "Staffing", "Scheduling", "Active Services", "Reauth Loop"];
+const blockerOptions = ["Missing intake info", "Payment plan not signed", "Consent missing", "Treatment plan overdue", "QA delayed", "No RBT assigned", "Schedule missing", "Revenue at risk"];
 const stageGroups: Record<string, string[]> = {
   Intake: ["New Lead", "In Contact", "Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed"],
   "Benefits & Financial": ["VOB Pending", "Financial Review", "Payment Plan Required", "Payment Plan Received", "Approved for Services", "Not Qualified"],
@@ -146,6 +147,13 @@ function buildPipelineData(clients: Client[]) {
   const mapped = clients.slice(0, 12).map((client, index) => buildRecord(index, client));
   const start = mapped.length;
   return [...mapped, ...Array.from({ length: Math.max(35 - mapped.length, 0) }, (_, i) => buildRecord(start + i))];
+}
+
+function requirementIssues(record: PipelineRecord) {
+  const issues = [...record.blockers];
+  if (record.tasks.some((task) => !task.completed && task.blocker)) issues.push("Open blocker task");
+  if (record.documents.some((document) => document.status === "Missing")) issues.push("Missing required document");
+  return Array.from(new Set(issues));
 }
 
 export default function Pipeline() {
