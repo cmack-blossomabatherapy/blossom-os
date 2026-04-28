@@ -254,12 +254,12 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
     const lead = cluster.items.sort((a, b) => b.daysWaiting - a.daysWaiting)[0];
     const best = rbts.map((rbt) => scoreMatch(lead, rbt)).filter((match) => match.rbt.state === lead.state).sort((a, b) => b.score - a.score)[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, records: cluster.items, best, route: best ? routeStats(lead, best.rbt) : undefined };
-  }), [records, rbts, bucketSize, routeRefreshCount]);
+  }).filter((cluster) => (cluster.best?.score ?? 0) >= mapFilters.minScore).sort((a, b) => mapFilters.sortMarkersByScore ? (b.best?.score ?? 0) - (a.best?.score ?? 0) : 0), [records, rbts, bucketSize, mapFilters.minScore, mapFilters.sortMarkersByScore, routeRefreshCount]);
   const rbtClusters = useMemo<RbtCluster[]>(() => clusterItems(rbts, (rbt) => pointFor(rbt.id, rbt.region, "rbt"), bucketSize).map((cluster) => {
     const scored = cluster.items.map((rbt) => scoreMatch(selected, rbt)).sort((a, b) => b.score - a.score);
     const best = scored[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, rbts: cluster.items, best, route: routeStats(selected, best.rbt) };
-  }), [rbts, selected, bucketSize, routeRefreshCount]);
+  }).filter((cluster) => cluster.best.score >= mapFilters.minScore).sort((a, b) => mapFilters.sortMarkersByScore ? b.best.score - a.best.score : 0), [rbts, selected, bucketSize, mapFilters.minScore, mapFilters.sortMarkersByScore, routeRefreshCount]);
   const topPairs = useMemo(() => records.flatMap((record) => rbts
     .filter((rbt) => rbt.state === record.state)
     .map((rbt) => ({ record, match: scoreMatch(record, rbt), route: routeStats(record, rbt) })))
