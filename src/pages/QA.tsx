@@ -35,7 +35,7 @@ import type { Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type WorkMode = "queue" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
+type WorkMode = "queue" | "sla" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
 type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
 type PlanStatus = "Missing" | "Submitted" | "In Review" | "Correction Requested" | "Approved";
 type NoteStatus = "Clean" | "Flagged" | "Correction Due" | "Resolved";
@@ -121,6 +121,14 @@ const isoDaysAgo = (days: number) => new Date(today.getTime() - days * 86400000)
 const isoDaysAhead = (days: number) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
 const missingChecklistItems = (record: QARecord) => CHECKLIST.filter((item) => !record.checklist[item.key]);
 const allChecked = (record: QARecord) => Object.values(record.checklist).every(Boolean) && record.issues.every((issue) => issue.resolved);
+const qaWaitingOverSla = (record: QARecord) => record.daysInQA >= 3 && record.status !== "Ready for Submission" && record.status !== "Submitted to Auth";
+const treatmentPlanOverdue = (record: QARecord) => record.daysSinceAssessment >= 14 && record.status !== "Submitted to Auth" && record.planStatus !== "Approved";
+const slaRulesFor = (record: QARecord) => [
+  qaWaitingOverSla(record) ? "3+ days waiting in QA" : "",
+  treatmentPlanOverdue(record) ? "Treatment plan overdue 14+ days" : "",
+  record.status === "Overdue" ? "Overdue status" : "",
+  record.alerts.find((alert) => alert.toLowerCase().includes("overdue")) ?? "",
+].filter(Boolean);
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   if (status === "Ready for Submission" || status === "Submitted to Auth") return "success";
@@ -259,7 +267,7 @@ export default function QA() {
     { label: "Issues Found", value: records.filter((r) => r.status === "Issues Found").length, mode: "queue" as WorkMode, filter: "Issues Found", icon: ShieldAlert },
     { label: "Corrections Needed", value: records.filter((r) => r.status === "Corrections Needed").length, mode: "queue" as WorkMode, filter: "Corrections Needed", icon: MessageSquare },
     { label: "Ready for Submission", value: records.filter((r) => r.status === "Ready for Submission").length, mode: "plan" as WorkMode, filter: "Ready for Submission", icon: ShieldCheck },
-    { label: "Overdue Plans", value: records.filter((r) => r.status === "Overdue" || r.alerts.some((a) => a.includes("overdue"))).length, mode: "queue" as WorkMode, filter: "Overdue", icon: AlertTriangle },
+    { label: "SLA Alerts", value: records.filter((r) => slaRulesFor(r).length > 0).length, mode: "sla" as WorkMode, filter: "all", icon: AlertTriangle },
     { label: "Notes Flagged", value: records.filter((r) => r.noteStatus === "Flagged" || r.notesFlagged > 0).length, mode: "notes" as WorkMode, filter: "all", icon: FileText },
     { label: "New RBT Check-ins", value: records.filter((r) => r.newRbt && r.rbtCheckInStatus !== "Cleared").length, mode: "rbt" as WorkMode, filter: "all", icon: UserCheck },
   ];
@@ -414,7 +422,7 @@ export default function QA() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
-            ["queue", "Queue View", ClipboardCheck], ["table", "Table View", Table2], ["flow", "QA Flow View", PanelRightOpen], ["plan", "Treatment Plan Review", FileCheck2], ["notes", "Note Compliance View", FileText], ["rbt", "New RBT Monitoring", UserCheck], ["progress", "Progress Report Review", ShieldCheck],
+            ["queue", "Queue View", ClipboardCheck], ["sla", "SLA Queue", AlertTriangle], ["table", "Table View", Table2], ["flow", "QA Flow View", PanelRightOpen], ["plan", "Treatment Plan Review", FileCheck2], ["notes", "Note Compliance View", FileText], ["rbt", "New RBT Monitoring", UserCheck], ["progress", "Progress Report Review", ShieldCheck],
           ].map(([key, label, Icon]) => (
             <Button key={key as string} size="sm" variant={mode === key ? "default" : "outline"} onClick={() => setMode(key as WorkMode)}><Icon className="h-4 w-4" />{label as string}</Button>
           ))}
@@ -424,6 +432,7 @@ export default function QA() {
       <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0">
           {mode === "queue" && <QueueView records={filtered} onOpen={openRecord} onStart={startReview} onIssue={markIssues} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onOpenClient={(id) => navigate(`/clients/${id}`)} />}
+          {mode === "sla" && <SlaQueueView records={filtered} onOpen={openRecord} onStart={startReview} onIssue={markIssues} onCorrection={requestCorrection} onTask={createCorrectionTask} />}
           {mode === "table" && <TableView records={filtered} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onOpen={openRecord} onPatch={patchRecord} onBulkNotify={() => bulkPatch({ nextAction: "BCBA notified" }, "Bulk notified BCBA")} />}
           {mode === "flow" && <FlowView records={filtered} onOpen={openRecord} onPatch={patchRecord} />}
           {mode === "plan" && <TreatmentPlanView record={selected} onToggle={toggleChecklist} onReady={markReady} onCorrection={requestCorrection} onComment={addComment} comment={comment} setComment={setComment} />}
@@ -439,6 +448,15 @@ export default function QA() {
 
 function FilterSelect({ value, onChange, label, items }: { value: string; onChange: (value: string) => void; label: string; items: string[] }) {
   return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={label} /></SelectTrigger><SelectContent><SelectItem value="all">{label}</SelectItem>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
+}
+
+function SlaQueueView(props: { records: QARecord[]; onOpen: (r: QARecord) => void; onStart: (r: QARecord) => void; onIssue: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onTask: (r: QARecord) => void }) {
+  const sections = [
+    { title: "3+ Days Waiting", description: "QA reviews waiting beyond the internal response SLA", filter: qaWaitingOverSla },
+    { title: "Treatment Plans Overdue 14+ Days", description: "Assessment-to-plan cycle has crossed the 14 day limit", filter: treatmentPlanOverdue },
+    { title: "All SLA Breaches", description: "Any record matching overdue QA or treatment plan rules", filter: (r: QARecord) => slaRulesFor(r).length > 0 },
+  ];
+  return <div className="space-y-4">{sections.map((section) => { const rows = props.records.filter(section.filter); return <div key={section.title} className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-3"><div><h3 className="text-sm font-semibold text-foreground">{section.title}</h3><p className="text-xs text-muted-foreground">{section.description}</p></div><StatusBadge status={`${rows.length} alerts`} variant={rows.length ? "destructive" : "success"} /></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border/50">{["Client", "Owner", "Status", "Days in QA", "Days Since Assessment", "SLA Badges", "Next Action", "Actions"].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-muted-foreground">{h}</th>)}</tr></thead><tbody>{rows.map((r) => <tr key={`${section.title}-${r.id}`} className="border-b border-border/40 hover:bg-muted/20"><td className="px-3 py-3"><button onClick={() => props.onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.clientName}</button><p className="text-xs text-muted-foreground">{r.state} · {r.bcba}</p></td><td className="px-3 py-3 text-muted-foreground">{r.qaOwner}</td><td className="px-3 py-3"><StatusBadge status={r.status} variant={statusVariant(r.status)} /></td><td className="px-3 py-3 font-medium text-muted-foreground">{r.daysInQA}d</td><td className="px-3 py-3 font-medium text-muted-foreground">{r.daysSinceAssessment}d</td><td className="px-3 py-3"><div className="flex flex-wrap gap-1.5">{slaRulesFor(r).map((rule) => <span key={rule} className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3 w-3" />{rule}</span>)}</div></td><td className="px-3 py-3 text-muted-foreground">{r.nextAction}</td><td className="px-3 py-3"><div className="flex flex-wrap gap-1.5"><Button size="sm" variant="outline" onClick={() => props.onOpen(r)}>Open</Button>{r.status === "Awaiting Review" && <Button size="sm" variant="outline" onClick={() => props.onStart(r)}>Start</Button>}<Button size="sm" variant="outline" onClick={() => props.onTask(r)}>Task</Button><Button size="sm" variant="outline" onClick={() => props.onCorrection(r)}>Notify</Button><Button size="sm" variant="outline" onClick={() => props.onIssue(r)}>Issue</Button></div></td></tr>)}</tbody></table></div>{rows.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No SLA alerts in this group.</p>}</div>; })}</div>;
 }
 
 function QueueView(props: { records: QARecord[]; onOpen: (r: QARecord) => void; onStart: (r: QARecord) => void; onIssue: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onReady: (r: QARecord) => void; onAuth: (r: QARecord) => void; onTask: (r: QARecord) => void; onOpenClient: (id: string) => void }) {
