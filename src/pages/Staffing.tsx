@@ -285,6 +285,21 @@ export default function Staffing() {
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 
+  const matchBreakdown = (record: StaffingRecord, rbt: RbtRecord) => {
+    const overlap = rbt.availability.filter((a) => record.availability.includes(a));
+    const available = Math.max(0, rbt.maxHours - rbt.currentHours);
+    const regionScore = rbt.state === record.state ? (rbt.clinic === record.clinic ? 25 : 17) : 0;
+    const availabilityScore = Math.min(24, overlap.length * 12);
+    const complianceScore = (rbt.compliance === "Ready" ? 12 : rbt.compliance === "Needs Review" ? 6 : 0) + (rbt.training === "Ready" ? 9 : rbt.training === "Needs Review" ? 4 : 0);
+    const capacityScore = Math.round(Math.min(22, (available / Math.max(record.requiredHours, 1)) * 22));
+    return [
+      { label: "Region fit", value: regionScore, max: 25, note: rbt.clinic === record.clinic ? "Same clinic" : rbt.state === record.state ? "Same state" : "Out of region" },
+      { label: "Availability overlap", value: availabilityScore, max: 24, note: overlap.length ? overlap.join(", ") : "No shared slots" },
+      { label: "Compliance readiness", value: complianceScore, max: 21, note: `${rbt.compliance} compliance · ${rbt.training} training` },
+      { label: "Capacity fit", value: capacityScore, max: 22, note: `${available}h available / ${record.requiredHours}h needed` },
+    ];
+  };
+
   const filteredRecords = useMemo(() => {
     return records
       .filter((r) => !search || [r.clientName, r.state, r.clinic, r.bcba, r.owner, rbts.find((x) => x.id === r.assignedRbtId)?.name, rbts.find((x) => x.id === r.suggestedRbtId)?.name].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase()))
