@@ -54,6 +54,11 @@ interface Member {
   active: boolean;
 }
 
+interface RecentVisit {
+  id: string;
+  visitedAt: string;
+}
+
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
 export function TeamAdminPanel() {
   const { user: currentUser } = useAuth();
@@ -62,9 +67,10 @@ export function TeamAdminPanel() {
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [showFullList, setShowFullList] = useState(false);
-  const [recentMemberIds, setRecentMemberIds] = useState<string[]>(() => {
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+      const raw = JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+      return Array.isArray(raw) ? raw.map((entry) => typeof entry === "string" ? { id: entry, visitedAt: new Date().toISOString() } : entry).filter((entry) => entry?.id && entry?.visitedAt) : [];
     } catch {
       return [];
     }
@@ -129,16 +135,17 @@ export function TeamAdminPanel() {
 
   const visibleMembers = useMemo(() => {
     if (showFullList || query.trim()) return filtered;
-    const recent = recentMemberIds
+    const recentIds = recentVisits.map((visit) => visit.id);
+    const recent = recentIds
       .map((id) => filtered.find((member) => member.user_id === id))
       .filter(Boolean) as Member[];
-    const remaining = filtered.filter((member) => !recentMemberIds.includes(member.user_id));
+    const remaining = filtered.filter((member) => !recentIds.includes(member.user_id));
     return [...recent, ...remaining].slice(0, 3);
-  }, [filtered, query, recentMemberIds, showFullList]);
+  }, [filtered, query, recentVisits, showFullList]);
 
   const trackVisited = (userId: string) => {
-    setRecentMemberIds((current) => {
-      const next = [userId, ...current.filter((id) => id !== userId)].slice(0, 12);
+    setRecentVisits((current) => {
+      const next = [{ id: userId, visitedAt: new Date().toISOString() }, ...current.filter((visit) => visit.id !== userId)].slice(0, 12);
       localStorage.setItem("team-admin-recent-members", JSON.stringify(next));
       return next;
     });
