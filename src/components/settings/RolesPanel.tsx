@@ -157,21 +157,67 @@ export function RolesPanel() {
         </div>
 
         <div className="bg-secondary/20 rounded-lg border border-border/40 p-4 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {ROLE_META.find((r) => r.key === activeRole)?.label}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {ROLE_META.find((r) => r.key === activeRole)?.description}
-              </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold text-foreground">{activeMeta.label}</h3>
+                  <Badge variant="secondary" className="text-[10px]">{activeMeta.permissionLevel}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{activeMeta.description}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-semibold text-foreground">{grantedCount}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Permissions</p>
+              </div>
             </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div className="rounded-lg border border-border/50 bg-card px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Scope</p>
+                <p className="mt-1 text-xs font-medium text-foreground">{activeMeta.scope}</p>
+              </div>
+              <div className="rounded-lg border border-border/50 bg-card px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">People</p>
+                <p className="mt-1 text-xs font-medium text-foreground">{activeMeta.owners.join(", ")}</p>
+              </div>
+              <div className="rounded-lg border border-border/50 bg-card px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Owns</p>
+                <p className="mt-1 text-xs font-medium text-foreground">{activeMeta.owns.join(" · ")}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="rounded-lg border border-success/20 bg-success/5 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><ShieldCheck className="h-3.5 w-3.5 text-success" /> Can</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {activeMeta.can.map((item) => <Badge key={item} variant="outline" className="text-[11px]">{item}</Badge>)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border/50 bg-card p-3">
+                <p className="text-xs font-semibold text-foreground">Cannot / guardrails</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {(activeMeta.cannot ?? ["Limited by selected permission toggles and ownership scope"]).map((item) => <Badge key={item} variant="secondary" className="text-[11px]">{item}</Badge>)}
+                </div>
+              </div>
+            </div>
+
             {activeRole === "admin" && (
-              <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded">
+              <span className="w-fit text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded">
                 Always all permissions
               </span>
             )}
           </div>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Permission matrix
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Toggle exactly what this role can access in Admin settings.
+              </p>
+            </div>
 
           {grouped.map(([module, items]) => (
             <div key={module}>
@@ -215,6 +261,7 @@ export function RolesPanel() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
     </SettingsPanel>
