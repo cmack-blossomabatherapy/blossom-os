@@ -8,12 +8,23 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import logoBrand from "@/assets/blossom-logo.png";
 
+const CANONICAL_LOGIN_HOST = "blossom.abacommandcenter.com";
+const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
+
 export default function Auth() {
   const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hostname !== LOVABLE_PUBLISHED_HOST) return;
+
+    window.location.replace(
+      `https://${CANONICAL_LOGIN_HOST}${window.location.pathname}${window.location.search}${window.location.hash}`,
+    );
+  }, []);
 
   useEffect(() => {
     if (!loading && user) navigate("/", { replace: true });
