@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, ArrowRight, BarChart3, CheckCircle2, Clock, Download, Eye, MapPin,
-  MessageSquare, Phone, RefreshCw, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
+  AlertTriangle, ArrowRight, BarChart3, Building2, CheckCircle2, Clock, Download, Eye, Home, MapPin,
+  MessageSquare, Navigation, Phone, RefreshCw, Route, Search, Send, ShieldCheck, Sparkles, UserCheck, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ type StaffingRecord = {
   authStatus: "Approved" | "Reauth pending" | "Pending start"; tasks: Task[]; notes: Note[]; timeline: TimelineEvent[]; decisionHistory: MatchDecision[];
 };
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
+type MapPoint = { x: number; y: number };
 
 const ALL = "All";
 const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
@@ -55,6 +56,7 @@ const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum,
 const pct = (value: number, total: number) => total ? Math.round((value / total) * 100) : 0;
 const availableHours = (rbt: Rbt) => Math.max(0, rbt.maxHours - rbt.currentHours);
 const stageHealth = (count: number, oldest: number) => count === 0 ? "green" : oldest > 7 ? "red" : oldest > 3 ? "yellow" : "green";
+const clamp = (value: number, min = 7, max = 93) => Math.max(min, Math.min(max, value));
 
 const rbtSeed: Rbt[] = [
   { id: "RBT-101", name: "Taylor S.", state: "GA", region: "Atlanta Metro", clinic: "Peachtree Corners", location: "Norcross", radius: 18, availability: ["Mon AM", "Tue AM", "Wed AM", "Thu AM", "Fri AM"], currentHours: 27, maxHours: 32, assignedClients: ["Emma Thompson"], experience: ["Early intervention", "Clinic"], compliance: "Ready", onboarding: "Active" },
@@ -187,6 +189,35 @@ function hydrateRecords(records: StaffingRecord[]) {
   return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
 }
 
+const regionAnchors: Record<string, MapPoint> = {
+  "Atlanta Metro": { x: 28, y: 68 }, "Atlanta South": { x: 24, y: 77 }, Charlotte: { x: 45, y: 51 }, Raleigh: { x: 57, y: 48 }, Nashville: { x: 36, y: 38 }, Memphis: { x: 18, y: 43 }, Richmond: { x: 67, y: 32 }, Norfolk: { x: 78, y: 40 }, Bethesda: { x: 69, y: 20 }, Baltimore: { x: 76, y: 17 },
+};
+
+function pointFor(seed: string, region: string, kind: "client" | "rbt"): MapPoint {
+  const anchor = regionAnchors[region] ?? { x: 50, y: 50 };
+  const hash = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const spread = kind === "client" ? 5 : 9;
+  return { x: clamp(anchor.x + ((hash % 11) - 5) * 0.8 + (kind === "client" ? 1.8 : -1.2), 5, 95), y: clamp(anchor.y + (((hash / 7) % 11) - 5) * spread * 0.16, 5, 95) };
+}
+
+function routeStats(client: StaffingRecord, rbt: Rbt) {
+  const clientPoint = pointFor(client.id, client.region, "client");
+  const rbtPoint = pointFor(rbt.id, rbt.region, "rbt");
+  const direct = Math.hypot(clientPoint.x - rbtPoint.x, clientPoint.y - rbtPoint.y);
+  const sameClinic = client.clinic === rbt.clinic;
+  const sameRegion = client.region === rbt.region;
+  const miles = Math.max(2, Math.round(direct * (sameClinic ? 0.42 : sameRegion ? 0.62 : 1.05) + (client.location === "Home" ? 3 : 1)));
+  const minutes = Math.round(miles * (sameClinic ? 2.4 : sameRegion ? 2.8 : 3.2) + (client.priority === "Critical" ? 4 : 0));
+  return { clientPoint, rbtPoint, miles, minutes, withinRadius: miles <= rbt.radius };
+}
+
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, setMapFocus, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; setMapFocus: (focus: "all" | "ready" | "urgent") => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+  const mapMatches = rbts.map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) })).filter((item) => item.match.rbt.state === selected.state).sort((a, b) => b.match.score - a.match.score).slice(0, 6);
+  const selectedRoute = activeMatch ? routeStats(selected, activeMatch.rbt) : mapMatches[0]?.route;
+  const selectedClientPoint = pointFor(selected.id, selected.region, "client");
+  return <section className="mt-6 overflow-hidden rounded-lg border bg-card shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><div><h2 className="flex items-center gap-2 font-semibold"><MapPin className="h-4 w-4 text-primary" />Interactive Staffing Map</h2><p className="text-xs text-muted-foreground">Live RBT and client geography with estimated route time, coverage radius, and assignment shortcuts.</p></div><div className="flex rounded-md border bg-muted/40 p-1">{(["ready", "urgent", "all"] as const).map((focus) => <button key={focus} onClick={() => setMapFocus(focus)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapFocus === focus ? "bg-card shadow-sm" : "text-muted-foreground")}>{focus}</button>)}</div></div><div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]"><div className="relative min-h-[560px] overflow-hidden bg-muted/20"><div className="absolute inset-0 opacity-70" style={{ backgroundImage: "linear-gradient(hsl(var(--border) / 0.45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.45) 1px, transparent 1px)", backgroundSize: "48px 48px" }} /><div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_70%,hsl(var(--primary)/0.12),transparent_26%),radial-gradient(circle_at_75%_24%,hsl(var(--accent)/0.12),transparent_24%)]" />{Object.entries(regionAnchors).map(([region, point]) => <div key={region} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background/80 px-2 py-1 text-[10px] font-medium text-muted-foreground shadow-sm" style={{ left: `${point.x}%`, top: `${point.y}%` }}>{region}</div>)}{selectedRoute && activeMatch && <svg className="pointer-events-none absolute inset-0 h-full w-full"><line x1={`${selectedRoute.rbtPoint.x}%`} y1={`${selectedRoute.rbtPoint.y}%`} x2={`${selectedRoute.clientPoint.x}%`} y2={`${selectedRoute.clientPoint.y}%`} stroke="hsl(var(--primary))" strokeWidth="3" strokeDasharray="8 7" strokeLinecap="round" /><circle cx={`${selectedRoute.rbtPoint.x}%`} cy={`${selectedRoute.rbtPoint.y}%`} r="46" fill="none" stroke="hsl(var(--primary) / 0.22)" strokeWidth="2" /></svg>}{records.map((record) => { const point = pointFor(record.id, record.region, "client"); const best = rbts.map((rbt) => scoreMatch(record, rbt)).filter((match) => match.rbt.state === record.state).sort((a, b) => b.score - a.score)[0]; return <button key={record.id} onClick={() => onSelectRecord(record, best)} className={cn("absolute z-10 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg border shadow-sm transition hover:scale-110", selected.id === record.id ? "border-primary bg-primary text-primary-foreground" : record.priority === "Critical" || record.status === "Restaffing Needed" ? "border-destructive/40 bg-destructive text-destructive-foreground" : "border-warning/40 bg-warning text-warning-foreground")} style={{ left: `${point.x}%`, top: `${point.y}%` }} title={`${record.client} · ${record.requiredHours}h`}>{record.location === "Home" ? <Home className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}</button>; })}{rbts.map((rbt) => { const point = pointFor(rbt.id, rbt.region, "rbt"); const isActive = activeMatch?.rbt.id === rbt.id; return <button key={rbt.id} onClick={() => onSelectRbt(rbt.id)} className={cn("absolute z-20 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition hover:scale-110", isActive ? "border-primary bg-primary text-primary-foreground ring-4 ring-primary/20" : rbt.compliance === "Ready" ? "border-success/40 bg-success text-success-foreground" : "border-border bg-background text-muted-foreground")} style={{ left: `${point.x}%`, top: `${point.y}%` }} title={`${rbt.name} · ${availableHours(rbt)}h open`}><Users className="h-3.5 w-3.5" /></button>; })}<div className="absolute bottom-4 left-4 flex flex-wrap gap-2 rounded-lg border bg-background/90 p-2 text-xs shadow-sm backdrop-blur"><span className="inline-flex items-center gap-1"><Home className="h-3 w-3 text-warning" />Client home</span><span className="inline-flex items-center gap-1"><Building2 className="h-3 w-3 text-destructive" />Clinic/urgent</span><span className="inline-flex items-center gap-1"><Users className="h-3 w-3 text-success" />RBT</span><span className="inline-flex items-center gap-1"><Route className="h-3 w-3 text-primary" />Selected route</span></div></div><aside className="border-t p-4 xl:border-l xl:border-t-0"><div className="rounded-lg border bg-muted/20 p-3"><div className="flex items-start justify-between gap-3"><div><p className="font-medium">{selected.client}</p><p className="text-xs text-muted-foreground">{selected.region} · {selected.location} · {selected.requiredHours}h needed</p></div><StatusPill tone={urgencyTone(selected.priority)}>{selected.priority}</StatusPill></div>{activeMatch && selectedRoute && <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><div className="rounded-md border bg-background p-2"><Navigation className="mx-auto mb-1 h-3.5 w-3.5 text-primary" /><p className="font-semibold">{selectedRoute.miles} mi</p><p className="text-muted-foreground">drive</p></div><div className="rounded-md border bg-background p-2"><Clock className="mx-auto mb-1 h-3.5 w-3.5 text-primary" /><p className="font-semibold">{selectedRoute.minutes}m</p><p className="text-muted-foreground">ETA</p></div><div className="rounded-md border bg-background p-2"><ShieldCheck className="mx-auto mb-1 h-3.5 w-3.5 text-primary" /><p className="font-semibold">{selectedRoute.withinRadius ? "Inside" : "Outside"}</p><p className="text-muted-foreground">radius</p></div></div>}</div><div className="mt-4 space-y-3"><h3 className="text-sm font-semibold">Fastest viable RBTs</h3>{mapMatches.map(({ match, route }) => <button key={match.rbt.id} onClick={() => onSelectRbt(match.rbt.id)} className={cn("w-full rounded-lg border p-3 text-left transition hover:bg-muted/40", activeMatch?.rbt.id === match.rbt.id && "border-primary bg-primary/5")}><div className="flex items-center justify-between"><div><p className="font-medium">{match.rbt.name}</p><p className="text-xs text-muted-foreground">{route.minutes} min · {route.miles} mi · {availableHours(match.rbt)}h open</p></div><span className="text-lg font-semibold">{match.score}</span></div><div className="mt-2 flex flex-wrap gap-1.5"><StatusPill tone={route.withinRadius ? "success" : "warning"}>{route.withinRadius ? "Within radius" : "Travel exception"}</StatusPill><StatusPill tone={match.ready ? "success" : "destructive"}>{match.rbt.compliance}</StatusPill></div></button>)}</div>{activeMatch && <Button className="mt-4 w-full" onClick={() => onAssign(selected, activeMatch.rbt)}><UserCheck className="mr-2 h-4 w-4" />Assign {activeMatch.rbt.name}</Button>}</aside></div></section>;
+}
+
 export default function StaffingDashboard() {
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
@@ -211,6 +242,7 @@ export default function StaffingDashboard() {
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -218,6 +250,7 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
+  const mapRbts = useMemo(() => rbts.filter((rbt) => stateFilter === ALL || rbt.state === stateFilter), [rbts, stateFilter]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
@@ -235,6 +268,7 @@ export default function StaffingDashboard() {
       .filter((r) => activeKpi === "all" || (activeKpi === "needed" && r.status === "Staffing Needed") || (activeKpi === "restaffing" && r.status === "Restaffing Needed") || (activeKpi === "matching" && r.status === "Matching in Progress") || (activeKpi === "assigned" && r.status === "RBT Assigned") || (activeKpi === "urgent" && (r.priority === "Critical" || r.daysWaiting > 7)) || activeKpi === "avg" || activeKpi === "available" || activeKpi === "gap")
       .filter((r) => !q || [r.client, r.parent, r.state, r.clinic, r.region, r.owner, r.bcba, r.status, r.nextAction].some((field) => field.toLowerCase().includes(q)));
   }, [activeKpi, bcbaFilter, clientStatus, clinicFilter, ownerFilter, query, rbtFilter, rbts, records, staffingStatus, stateFilter, urgencyFilter]);
+  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))).slice(0, 18), [filtered, mapFocus]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
@@ -327,6 +361,8 @@ export default function StaffingDashboard() {
           <div className="mt-4 space-y-3">{selectedMatches.slice(0, 3).map((match) => <button key={match.rbt.id} onClick={() => setActiveMatchId(match.rbt.id)} className={cn("w-full rounded-lg border p-3 text-left transition hover:bg-muted/40", activeMatch?.rbt.id === match.rbt.id && "border-primary bg-primary/5")}><div className="flex items-center justify-between"><div className="font-medium">{match.rbt.name}</div><span className="text-lg font-semibold">{match.score}</span></div><div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-muted-foreground"><span>{match.overlap} overlap</span><span>{availableHours(match.rbt)}h open</span><span>{match.rbt.compliance}</span></div><Progress value={match.score} className="mt-2 h-1.5" /><Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); assignRbt(selected, match.rbt); }}>Assign {match.rbt.name}</Button></button>)}</div>
         </aside>
       </div>
+
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} setMapFocus={setMapFocus} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
