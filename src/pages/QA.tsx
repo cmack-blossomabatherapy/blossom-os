@@ -129,6 +129,13 @@ const slaRulesFor = (record: QARecord) => [
   record.status === "Overdue" ? "Overdue status" : "",
   record.alerts.find((alert) => alert.toLowerCase().includes("overdue")) ?? "",
 ].filter(Boolean);
+const correctionTaskFor = (record: QARecord, title: string, dueInDays = 2) => ({
+  id: `task-${Date.now()}`,
+  title,
+  owner: record.correctionOwner || record.bcba,
+  dueDate: isoDaysAhead(dueInDays),
+  completed: false,
+});
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   if (status === "Ready for Submission" || status === "Submitted to Auth") return "success";
