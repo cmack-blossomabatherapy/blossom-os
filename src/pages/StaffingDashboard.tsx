@@ -196,7 +196,7 @@ function hydrateRecords(records: StaffingRecord[]) {
 
 function storedMapState() {
   if (typeof window === "undefined") return null;
-  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | MapFilters>; } catch { return null; }
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | MapFilters>; } catch { return null; }
 }
 
 const regionAnchors: Record<string, MapPoint> = {
@@ -238,7 +238,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, onRefreshRoutes, onSelectRecord, onSelectRbt, onOpenDetails, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onOpenDetails: () => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, showTooltipBreakdown, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, setShowTooltipBreakdown, onRefreshRoutes, onSelectRecord, onSelectRbt, onOpenDetails, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; showTooltipBreakdown: boolean; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; setShowTooltipBreakdown: (show: boolean) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onOpenDetails: () => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -271,14 +271,14 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <div className="rounded-md bg-muted/50 p-1.5"><p className="font-semibold">{route.miles} mi</p><p className="text-muted-foreground">distance</p></div>
         <div className="rounded-md bg-muted/50 p-1.5"><p className="font-semibold">{match.score}</p><p className="text-muted-foreground">score</p></div>
       </div>
-      <div className="mt-2 space-y-1">
+      {showTooltipBreakdown && <div className="mt-2 space-y-1">
         {breakdownRows(match.breakdown).map(([label, value]) => (
           <div key={label} className="flex items-center justify-between gap-2 text-[11px]">
             <span className="text-muted-foreground">{label}</span>
             <span className="font-medium text-foreground">{value}</span>
           </div>
         ))}
-      </div>
+      </div>}
       <p className="mt-2 text-[11px] text-muted-foreground">{route.withinRadius ? "Within service radius" : "Travel exception may be needed"}</p>
     </div>
   );
@@ -302,6 +302,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant={showTooltipBreakdown ? "default" : "outline"} onClick={() => setShowTooltipBreakdown(!showTooltipBreakdown)}>Tooltip score details</Button>
         <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
         {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
       </div>
