@@ -267,7 +267,7 @@ export default function QA() {
     { label: "Issues Found", value: records.filter((r) => r.status === "Issues Found").length, mode: "queue" as WorkMode, filter: "Issues Found", icon: ShieldAlert },
     { label: "Corrections Needed", value: records.filter((r) => r.status === "Corrections Needed").length, mode: "queue" as WorkMode, filter: "Corrections Needed", icon: MessageSquare },
     { label: "Ready for Submission", value: records.filter((r) => r.status === "Ready for Submission").length, mode: "plan" as WorkMode, filter: "Ready for Submission", icon: ShieldCheck },
-    { label: "Overdue Plans", value: records.filter((r) => r.status === "Overdue" || r.alerts.some((a) => a.includes("overdue"))).length, mode: "queue" as WorkMode, filter: "Overdue", icon: AlertTriangle },
+    { label: "SLA Alerts", value: records.filter((r) => slaRulesFor(r).length > 0).length, mode: "sla" as WorkMode, filter: "all", icon: AlertTriangle },
     { label: "Notes Flagged", value: records.filter((r) => r.noteStatus === "Flagged" || r.notesFlagged > 0).length, mode: "notes" as WorkMode, filter: "all", icon: FileText },
     { label: "New RBT Check-ins", value: records.filter((r) => r.newRbt && r.rbtCheckInStatus !== "Cleared").length, mode: "rbt" as WorkMode, filter: "all", icon: UserCheck },
   ];
@@ -422,7 +422,7 @@ export default function QA() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
-            ["queue", "Queue View", ClipboardCheck], ["table", "Table View", Table2], ["flow", "QA Flow View", PanelRightOpen], ["plan", "Treatment Plan Review", FileCheck2], ["notes", "Note Compliance View", FileText], ["rbt", "New RBT Monitoring", UserCheck], ["progress", "Progress Report Review", ShieldCheck],
+            ["queue", "Queue View", ClipboardCheck], ["sla", "SLA Queue", AlertTriangle], ["table", "Table View", Table2], ["flow", "QA Flow View", PanelRightOpen], ["plan", "Treatment Plan Review", FileCheck2], ["notes", "Note Compliance View", FileText], ["rbt", "New RBT Monitoring", UserCheck], ["progress", "Progress Report Review", ShieldCheck],
           ].map(([key, label, Icon]) => (
             <Button key={key as string} size="sm" variant={mode === key ? "default" : "outline"} onClick={() => setMode(key as WorkMode)}><Icon className="h-4 w-4" />{label as string}</Button>
           ))}
@@ -432,6 +432,7 @@ export default function QA() {
       <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="min-w-0">
           {mode === "queue" && <QueueView records={filtered} onOpen={openRecord} onStart={startReview} onIssue={markIssues} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onOpenClient={(id) => navigate(`/clients/${id}`)} />}
+          {mode === "sla" && <SlaQueueView records={filtered} onOpen={openRecord} onStart={startReview} onIssue={markIssues} onCorrection={requestCorrection} onTask={createCorrectionTask} />}
           {mode === "table" && <TableView records={filtered} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onOpen={openRecord} onPatch={patchRecord} onBulkNotify={() => bulkPatch({ nextAction: "BCBA notified" }, "Bulk notified BCBA")} />}
           {mode === "flow" && <FlowView records={filtered} onOpen={openRecord} onPatch={patchRecord} />}
           {mode === "plan" && <TreatmentPlanView record={selected} onToggle={toggleChecklist} onReady={markReady} onCorrection={requestCorrection} onComment={addComment} comment={comment} setComment={setComment} />}
