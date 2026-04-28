@@ -232,6 +232,30 @@ export function TeamDetailPanel({ member, onClose }: Props) {
           )}
         </Section>
 
+        <Section title="Audit timeline">
+          {loadingQuick ? (
+            <div className="flex items-center justify-center rounded-lg border border-border/40 bg-secondary/30 py-5">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : auditEvents.length > 0 ? (
+            <div className="space-y-2">
+              {auditEvents.map((event) => (
+                <div key={event.id} className="flex gap-2 rounded-md border border-border/40 bg-secondary/30 px-3 py-2">
+                  <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-foreground">{event.description}</p>
+                    <p className="mt-0.5 text-[10px] capitalize text-muted-foreground">
+                      {new Date(event.created_at).toLocaleString()} · {event.event_type.replace(/_/g, " ")}{event.created_by_name ? ` · ${event.created_by_name}` : ""}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs text-muted-foreground">No HR profile, access, or hierarchy edits logged yet.</p>
+          )}
+        </Section>
+
         {/* Capacity / Snapshot */}
         <Section title="Workload Snapshot">
           <div className="bg-secondary/30 border border-border/40 rounded-lg p-3">
