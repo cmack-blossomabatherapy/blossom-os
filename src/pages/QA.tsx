@@ -486,7 +486,11 @@ export default function QA() {
     const record = qaRecordFromClient(client, records.length);
     setRecords((current) => [record, ...current]);
     setSelectedId(record.id);
-    setMode("plan");
+    setSelectedIds([record.id]);
+    setPanelTab("checklist");
+    setMode("queue");
+    setQuery("");
+    setFilters((current) => ({ ...current, status: "Awaiting Review", issue: "all", plan: "all", note: "all" }));
     setNewReviewOpen(false);
     await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: record.issues.length ? "Upload missing QA attachments" : "Start QA review" });
     await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
