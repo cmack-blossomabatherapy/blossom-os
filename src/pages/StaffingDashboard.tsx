@@ -291,6 +291,13 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
           ))}
         </div><div className="flex rounded-md border bg-muted/40 p-1">{(["regional", "local", "street"] as const).map((zoom) => <button key={zoom} onClick={() => setMapZoom(zoom)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapZoom === zoom ? "bg-card shadow-sm" : "text-muted-foreground")}>{zoom}</button>)}</div></div>
       </div>
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <span className="text-xs font-medium text-muted-foreground">Map filters</span>
+        <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
+        <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
+        <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
+      </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="relative min-h-[560px] overflow-hidden bg-muted/20">
           <div className="absolute inset-0 opacity-70" style={{ backgroundImage: "linear-gradient(hsl(var(--border) / 0.45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.45) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
