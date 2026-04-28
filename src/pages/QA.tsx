@@ -1,312 +1,487 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, ClipboardCheck, ExternalLink, FileWarning, Gauge, ListChecks, RefreshCw, ShieldCheck, Stethoscope, UserCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  Download,
+  FileCheck2,
+  FileText,
+  Filter,
+  ListChecks,
+  MessageSquare,
+  PanelRightOpen,
+  Plus,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Table2,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useClients } from "@/contexts/ClientsContext";
-import { Client } from "@/data/clients";
-import { canonicalPipelineStage } from "@/data/pipeline";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type QAReview = Database["public"]["Tables"]["client_qa_reviews"]["Row"];
-type QAReviewInsert = Database["public"]["Tables"]["client_qa_reviews"]["Insert"];
-type QAStatus = Database["public"]["Enums"]["qa_review_status"];
-type QAErrorType = Database["public"]["Enums"]["qa_error_type"];
-type NoteMonitor = Database["public"]["Tables"]["qa_note_monitoring"]["Row"];
-type ViewKey = "all" | "awaiting" | "review" | "issues" | "ready" | "monitoring" | "performance";
-type QAItem = { review: QAReview | null; client: Client; missingRecord: boolean };
-const ALL = "all";
+type WorkMode = "queue" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
+type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
+type PlanStatus = "Missing" | "Submitted" | "In Review" | "Correction Requested" | "Approved";
+type NoteStatus = "Clean" | "Flagged" | "Correction Due" | "Resolved";
+type Severity = "Low" | "Medium" | "High" | "Critical";
+type Risk = "Low" | "Moderate" | "High" | "Critical";
+type IssueType = "None" | "Missing Treatment Plan" | "Missing Docs" | "Clinical Accuracy" | "Formatting" | "Signatures" | "NoteGuard Flag" | "Amerigroup Issue" | "Missing Notes" | "Progress Report Risk";
 
-const todayIso = () => new Date().toISOString().split("T")[0];
-const daysBetween = (date?: string | null) => date ? Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86400000)) : 0;
-const ERROR_TYPES: QAErrorType[] = ["Missing Treatment Plan", "Missing Supporting Docs", "Formatting Error", "Clinical Accuracy", "Incomplete Notes", "Billing Risk", "Other"];
-const QA_OWNERS = ["Mordy G.", "Anje", "QA Team", "Clinical Director"];
+type ChecklistKey =
+  | "planReceived"
+  | "clientInfo"
+  | "diagnosis"
+  | "assessmentDate"
+  | "goals"
+  | "serviceHours"
+  | "signatures"
+  | "formatting"
+  | "clinicalAccuracy"
+  | "readyForAuth";
 
-const qaVariant = (status: QAStatus | "Missing QA"): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
-  if (status === "Awaiting Review") return "info";
+interface QARecord {
+  id: string;
+  clientId: string;
+  clientName: string;
+  parentName: string;
+  state: string;
+  clinic: string;
+  payor: string;
+  bcba: string;
+  rbt: string;
+  qaOwner: string;
+  status: QAStatus;
+  planStatus: PlanStatus;
+  noteStatus: NoteStatus;
+  issueType: IssueType;
+  severity: Severity;
+  risk: Risk;
+  daysSinceAssessment: number;
+  daysInQA: number;
+  daysInStage: number;
+  treatmentPlanSubmitted: string;
+  dueDate: string;
+  authExpiration: string;
+  authStatus: "Not Submitted" | "Awaiting Submission" | "Submitted" | "Approved";
+  authReadiness: "Blocked" | "Needs QA" | "Ready" | "Sent";
+  nextAction: string;
+  alerts: string[];
+  notesFlagged: number;
+  correctionOwner: string;
+  correctionDue: string;
+  newRbt: boolean;
+  rbtStartDate: string;
+  rbtCheckInStatus: "Due" | "Missed" | "Complete" | "Cleared";
+  trainingStatus: "In Training" | "Supported" | "Cleared";
+  progressReportStatus: "Not Needed" | "Received" | "Awaiting QA" | "Corrections Needed" | "Ready for Reauth";
+  checklist: Record<ChecklistKey, boolean>;
+  issues: { id: string; type: IssueType; description: string; owner: string; dueDate: string; resolved: boolean }[];
+  documents: { name: string; type: string; present: boolean }[];
+  tasks: { id: string; title: string; owner: string; dueDate: string; completed: boolean }[];
+  timeline: { date: string; event: string }[];
+  comments: string[];
+}
+
+const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA Team", "Clinical Director"];
+const BCBAS = ["Dr. Mia Hart", "Elena Ruiz", "Jordan Klein", "Nora Patel", "Caleb Stone", "Avery Brooks"];
+const RBTS = ["Sofia Miles", "Noah Grant", "Camila Reed", "Ethan Fox", "Maya Chen", "Liam Price", "Harper Cole"];
+const STATES = ["GA", "NC", "TN", "VA", "MD"];
+const ISSUE_TYPES: IssueType[] = ["None", "Missing Treatment Plan", "Missing Docs", "Clinical Accuracy", "Formatting", "Signatures", "NoteGuard Flag", "Amerigroup Issue", "Missing Notes", "Progress Report Risk"];
+const CHECKLIST: { key: ChecklistKey; label: string }[] = [
+  { key: "planReceived", label: "Treatment plan received" },
+  { key: "clientInfo", label: "Client info correct" },
+  { key: "diagnosis", label: "Diagnosis info present" },
+  { key: "assessmentDate", label: "Assessment date present" },
+  { key: "goals", label: "Goals included" },
+  { key: "serviceHours", label: "Service hours included" },
+  { key: "signatures", label: "Required signatures present" },
+  { key: "formatting", label: "Formatting complete" },
+  { key: "clinicalAccuracy", label: "Clinical accuracy checked" },
+  { key: "readyForAuth", label: "Ready for auth submission" },
+];
+
+const today = new Date("2026-04-28T12:00:00");
+const isoDaysAgo = (days: number) => new Date(today.getTime() - days * 86400000).toISOString().slice(0, 10);
+const isoDaysAhead = (days: number) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
+const allChecked = (record: QARecord) => Object.values(record.checklist).every(Boolean) && record.issues.every((issue) => issue.resolved);
+
+const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
+  if (status === "Ready for Submission" || status === "Submitted to Auth") return "success";
   if (status === "In Review") return "warning";
-  if (status === "Issues Found") return "destructive";
-  if (status === "Ready for Submission") return "success";
-  if (status === "Submitted to Auth") return "success";
+  if (status === "Awaiting Review") return "info";
+  if (status === "Overdue" || status === "Issues Found" || status === "Corrections Needed") return "destructive";
+  return "muted";
+};
+
+const noteVariant = (status: NoteStatus): "success" | "warning" | "destructive" | "muted" => {
+  if (status === "Resolved" || status === "Clean") return "success";
+  if (status === "Correction Due") return "warning";
   return "destructive";
 };
 
-const monitoringVariant = (status: NoteMonitor["status"]): "default" | "success" | "warning" | "destructive" | "muted" => {
-  if (status === "Resolved") return "success";
-  if (status === "In Progress") return "warning";
-  return "destructive";
-};
-
-const isQAClient = (client: Client) => {
-  const stage = canonicalPipelineStage(client.stage);
-  return ["QA Review", "QA Issues / Fix Required", "QA Approved", "Treatment Auth – Awaiting Submission"].includes(stage);
-};
-
-const alertFor = (item: QAItem) => {
-  if (item.missingRecord) return { tone: "red" as const, message: "Missing QA record" };
-  const review = item.review;
-  if (!review) return null;
-  if (!review.treatment_plan_received) return { tone: "red" as const, message: "Treatment plan missing" };
-  if (review.status !== "Submitted to Auth" && daysBetween(review.stage_entered_at) > 3) return { tone: "red" as const, message: "QA delayed >3d" };
-  if (review.status === "Issues Found") return { tone: "red" as const, message: "Errors not resolved" };
-  if (review.errors_found) return { tone: "red" as const, message: "Compliance risk detected" };
-  return null;
+const buildRecords = (clients: Client[]): QARecord[] => {
+  const baseClients = clients.length ? clients : [];
+  const statuses: QAStatus[] = ["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"];
+  return Array.from({ length: 22 }).map((_, index) => {
+    const client = baseClients[index % Math.max(baseClients.length, 1)];
+    const status = statuses[index % statuses.length];
+    const issueType: IssueType = status === "Issues Found" ? ISSUE_TYPES[(index % 8) + 2] : status === "Corrections Needed" ? "Clinical Accuracy" : index % 6 === 0 ? "Amerigroup Issue" : index % 5 === 0 ? "NoteGuard Flag" : "None";
+    const isReady = status === "Ready for Submission" || status === "Submitted to Auth";
+    const daysInQA = [1, 2, 4, 6, 0, 3, 15][index % 7];
+    const checklist = CHECKLIST.reduce((acc, item, cIndex) => ({ ...acc, [item.key]: isReady || status === "Submitted to Auth" || cIndex < (index % 9) + 1 }), {} as Record<ChecklistKey, boolean>);
+    const alerts = [
+      daysInQA > 3 && status !== "Submitted to Auth" ? "QA review waiting over 3 days" : "",
+      status === "Overdue" ? "Treatment plan overdue after 14 days" : "",
+      issueType === "Amerigroup Issue" ? "Amerigroup note issue" : "",
+      issueType === "NoteGuard Flag" ? "NoteGuard flag" : "",
+      index % 9 === 0 ? "New RBT check-in missed" : "",
+      index % 8 === 0 ? "Missing required documents" : "",
+      status === "Corrections Needed" ? "Issues unresolved over 2 days" : "",
+      status !== "Ready for Submission" && status !== "Submitted to Auth" ? "QA blocking auth submission" : "",
+      index % 11 === 0 ? "No QA owner assigned" : "",
+    ].filter(Boolean);
+    const name = client?.childName ?? `Client ${index + 1}`;
+    return {
+      id: `qa-${index + 1}`,
+      clientId: client?.id ?? `client-${index + 1}`,
+      clientName: name,
+      parentName: client?.parentName ?? "Parent contact",
+      state: client?.state ?? STATES[index % STATES.length],
+      clinic: client?.clinic ?? `${STATES[index % STATES.length]} Clinic`,
+      payor: client?.payor ?? ["Amerigroup", "Aetna", "BCBS", "United", "Medicaid"][index % 5],
+      bcba: client?.bcba ?? BCBAS[index % BCBAS.length],
+      rbt: client?.rbt ?? RBTS[index % RBTS.length],
+      qaOwner: index % 11 === 0 ? "Unassigned" : QA_OWNERS[index % QA_OWNERS.length],
+      status,
+      planStatus: status === "Overdue" ? "Missing" : status === "Corrections Needed" ? "Correction Requested" : isReady ? "Approved" : "In Review",
+      noteStatus: issueType === "NoteGuard Flag" || issueType === "Amerigroup Issue" || issueType === "Missing Notes" ? "Flagged" : index % 4 === 0 ? "Correction Due" : "Clean",
+      issueType,
+      severity: alerts.length > 2 ? "Critical" : alerts.length ? "High" : index % 3 === 0 ? "Medium" : "Low",
+      risk: alerts.length > 2 ? "Critical" : alerts.length ? "High" : "Moderate",
+      daysSinceAssessment: 5 + index,
+      daysInQA,
+      daysInStage: daysInQA || 1,
+      treatmentPlanSubmitted: status === "Overdue" ? "—" : isoDaysAgo(2 + index),
+      dueDate: isoDaysAhead(index % 4 - 1),
+      authExpiration: isoDaysAhead(18 + index * 3),
+      authStatus: status === "Submitted to Auth" ? "Awaiting Submission" : "Not Submitted",
+      authReadiness: status === "Submitted to Auth" ? "Sent" : isReady ? "Ready" : status === "Awaiting Review" ? "Needs QA" : "Blocked",
+      nextAction: status === "Awaiting Review" ? "Start QA review" : status === "In Review" ? "Complete checklist" : status === "Issues Found" ? "Create fix task" : status === "Corrections Needed" ? "Notify BCBA for corrections" : isReady ? "Send to authorization" : "Escalate overdue plan",
+      alerts,
+      notesFlagged: issueType === "None" ? index % 2 : (index % 4) + 1,
+      correctionOwner: status === "Corrections Needed" ? BCBAS[index % BCBAS.length] : QA_OWNERS[index % QA_OWNERS.length],
+      correctionDue: isoDaysAhead((index % 3) + 1),
+      newRbt: index % 5 === 0 || Boolean(client?.newRbtStartDate),
+      rbtStartDate: client?.newRbtStartDate ?? isoDaysAgo(index % 10),
+      rbtCheckInStatus: index % 9 === 0 ? "Missed" : index % 5 === 0 ? "Due" : index % 4 === 0 ? "Cleared" : "Complete",
+      trainingStatus: index % 5 === 0 ? "Supported" : index % 4 === 0 ? "Cleared" : "In Training",
+      progressReportStatus: index % 6 === 0 ? "Received" : index % 6 === 1 ? "Awaiting QA" : index % 6 === 2 ? "Corrections Needed" : index % 6 === 3 ? "Ready for Reauth" : "Not Needed",
+      checklist,
+      issues: issueType === "None" ? [] : [{ id: `issue-${index}`, type: issueType, description: `${issueType} requires QA correction before auth handoff.`, owner: BCBAS[index % BCBAS.length], dueDate: isoDaysAhead(2), resolved: false }],
+      documents: [
+        { name: "Treatment plan", type: "Treatment Plan", present: status !== "Overdue" },
+        { name: "Assessment report", type: "Assessment", present: true },
+        { name: "Parent consent", type: "Supporting", present: index % 8 !== 0 },
+        { name: "Progress report", type: "Reauth", present: index % 6 < 4 },
+        { name: "QA notes", type: "QA", present: true },
+      ],
+      tasks: [
+        { id: `task-${index}-1`, title: "Review treatment plan", owner: QA_OWNERS[index % QA_OWNERS.length], dueDate: isoDaysAhead(1), completed: isReady },
+        { id: `task-${index}-2`, title: "Resolve documentation issue", owner: BCBAS[index % BCBAS.length], dueDate: isoDaysAhead(2), completed: issueType === "None" },
+        { id: `task-${index}-3`, title: "Prepare auth handoff", owner: "Authorization Team", dueDate: isoDaysAhead(3), completed: status === "Submitted to Auth" },
+      ],
+      timeline: [
+        { date: isoDaysAgo(14 + index), event: "Assessment completed" },
+        { date: isoDaysAgo(10 + index), event: "Treatment plan due" },
+        { date: status === "Overdue" ? "—" : isoDaysAgo(4 + index), event: "Treatment plan submitted" },
+        { date: isoDaysAgo(daysInQA), event: "QA started" },
+        ...(issueType !== "None" ? [{ date: isoDaysAgo(1), event: `Issue found: ${issueType}` }] : []),
+      ],
+      comments: ["Connected QA record generated from Blossom demo client data."],
+    };
+  });
 };
 
 export default function QA() {
   const navigate = useNavigate();
   const { clients, updateClient, addTask, appendTimeline, appendAutomation } = useClients();
-  const [reviews, setReviews] = useState<QAReview[]>([]);
-  const [monitors, setMonitors] = useState<NoteMonitor[]>([]);
+  const [records, setRecords] = useState<QARecord[]>(() => buildRecords(clients));
+  const [mode, setMode] = useState<WorkMode>("queue");
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<ViewKey>("all");
-  const [ownerFilter, setOwnerFilter] = useState(ALL);
-  const [stateFilter, setStateFilter] = useState(ALL);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [qaNote, setQaNote] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string>(records[0]?.id ?? "");
+  const [panelTab, setPanelTab] = useState("overview");
+  const [filters, setFilters] = useState({ state: "all", owner: "all", bcba: "all", rbt: "all", payor: "all", status: "all", issue: "all", plan: "all", note: "all", date: "all" });
+  const [comment, setComment] = useState("");
 
-  const refetch = useCallback(async () => {
-    const [r, m] = await Promise.all([
-      supabase.from("client_qa_reviews").select("*").order("created_at", { ascending: false }),
-      supabase.from("qa_note_monitoring").select("*").order("created_at", { ascending: false }),
-    ]);
-    if (r.error || m.error) {
-      console.error("QA fetch error", { reviews: r.error, monitoring: m.error });
-      return;
-    }
-    setReviews((r.data ?? []) as QAReview[]);
-    setMonitors((m.data ?? []) as NoteMonitor[]);
-  }, []);
-
-  useEffect(() => { void refetch(); }, [refetch]);
-  useEffect(() => {
-    const channel = supabase
-      .channel("qa-engine-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_qa_reviews" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "qa_note_monitoring" }, () => void refetch())
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [refetch]);
-
-  const rows = useMemo<QAItem[]>(() => {
-    const clientMap = new Map(clients.map((client) => [client.id, client]));
-    const reviewRows = reviews
-      .map((review) => ({ review, client: clientMap.get(review.client_id), missingRecord: false }))
-      .filter((row): row is QAItem => Boolean(row.client));
-    const reviewClientIds = new Set(reviews.map((review) => review.client_id));
-    const missing = clients
-      .filter((client) => isQAClient(client) && !reviewClientIds.has(client.id))
-      .map((client) => ({ review: null, client, missingRecord: true }));
-    return [...missing, ...reviewRows];
-  }, [clients, reviews]);
+  const selected = records.find((record) => record.id === selectedId) ?? records[0];
+  const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
+  const rbts = useMemo(() => Array.from(new Set(records.map((r) => r.rbt))).sort(), [records]);
+  const payors = useMemo(() => Array.from(new Set(records.map((r) => r.payor))).sort(), [records]);
 
   const filtered = useMemo(() => {
-    let next = rows;
-    if (query) {
-      const q = query.toLowerCase();
-      next = next.filter((row) => row.client.childName.toLowerCase().includes(q) || row.client.parentName.toLowerCase().includes(q) || (row.review?.assigned_qa_owner ?? "").toLowerCase().includes(q) || (row.review?.assigned_bcba ?? row.client.bcba ?? "").toLowerCase().includes(q));
-    }
-    if (view === "awaiting") next = next.filter((row) => row.missingRecord || row.review?.status === "Awaiting Review");
-    if (view === "review") next = next.filter((row) => row.review?.status === "In Review");
-    if (view === "issues") next = next.filter((row) => row.review?.status === "Issues Found");
-    if (view === "ready") next = next.filter((row) => row.review?.status === "Ready for Submission" || row.review?.status === "Submitted to Auth");
-    if (ownerFilter !== ALL) next = next.filter((row) => (row.review?.assigned_qa_owner ?? "Unassigned") === ownerFilter);
-    if (stateFilter !== ALL) next = next.filter((row) => row.client.state === stateFilter);
-    return next;
-  }, [ownerFilter, query, rows, stateFilter, view]);
+    const q = query.toLowerCase();
+    return records.filter((r) => {
+      const matchesQuery = !q || [r.clientName, r.parentName, r.bcba, r.rbt, r.qaOwner, r.payor, r.nextAction].some((v) => v.toLowerCase().includes(q));
+      return matchesQuery &&
+        (filters.state === "all" || r.state === filters.state) &&
+        (filters.owner === "all" || r.qaOwner === filters.owner) &&
+        (filters.bcba === "all" || r.bcba === filters.bcba) &&
+        (filters.rbt === "all" || r.rbt === filters.rbt) &&
+        (filters.payor === "all" || r.payor === filters.payor) &&
+        (filters.status === "all" || r.status === filters.status) &&
+        (filters.issue === "all" || r.issueType === filters.issue) &&
+        (filters.plan === "all" || r.planStatus === filters.plan) &&
+        (filters.note === "all" || r.noteStatus === filters.note);
+    });
+  }, [filters, query, records]);
 
-  const selectedItem = filtered.find((row) => row.client.id === selectedId) ?? filtered[0] ?? null;
-  const ownerOptions = useMemo(() => Array.from(new Set(rows.map((row) => row.review?.assigned_qa_owner ?? "Unassigned"))).sort(), [rows]);
-  const stateOptions = useMemo(() => Array.from(new Set(rows.map((row) => row.client.state))).sort(), [rows]);
+  const metrics = [
+    { label: "Awaiting Review", value: records.filter((r) => r.status === "Awaiting Review").length, mode: "queue" as WorkMode, filter: "Awaiting Review", icon: ClipboardCheck },
+    { label: "In Review", value: records.filter((r) => r.status === "In Review").length, mode: "flow" as WorkMode, filter: "In Review", icon: ListChecks },
+    { label: "Issues Found", value: records.filter((r) => r.status === "Issues Found").length, mode: "queue" as WorkMode, filter: "Issues Found", icon: ShieldAlert },
+    { label: "Corrections Needed", value: records.filter((r) => r.status === "Corrections Needed").length, mode: "queue" as WorkMode, filter: "Corrections Needed", icon: MessageSquare },
+    { label: "Ready for Submission", value: records.filter((r) => r.status === "Ready for Submission").length, mode: "plan" as WorkMode, filter: "Ready for Submission", icon: ShieldCheck },
+    { label: "Overdue Plans", value: records.filter((r) => r.status === "Overdue" || r.alerts.some((a) => a.includes("overdue"))).length, mode: "queue" as WorkMode, filter: "Overdue", icon: AlertTriangle },
+    { label: "Notes Flagged", value: records.filter((r) => r.noteStatus === "Flagged" || r.notesFlagged > 0).length, mode: "notes" as WorkMode, filter: "all", icon: FileText },
+    { label: "New RBT Check-ins", value: records.filter((r) => r.newRbt && r.rbtCheckInStatus !== "Cleared").length, mode: "rbt" as WorkMode, filter: "all", icon: UserCheck },
+  ];
 
-  const metrics = {
-    awaiting: rows.filter((row) => row.missingRecord || row.review?.status === "Awaiting Review").length,
-    review: rows.filter((row) => row.review?.status === "In Review").length,
-    issues: rows.filter((row) => row.review?.status === "Issues Found").length,
-    ready: rows.filter((row) => row.review?.status === "Ready for Submission" || row.review?.status === "Submitted to Auth").length,
-    flaggedNotes: monitors.filter((monitor) => monitor.status !== "Resolved" && (monitor.flagged_notes > 0 || monitor.errors_found > 0 || monitor.new_rbt_monitoring)).length,
+  const patchRecord = (id: string, patch: Partial<QARecord>, event?: string) => {
+    setRecords((current) => current.map((record) => record.id === id ? { ...record, ...patch, timeline: event ? [...record.timeline, { date: isoDaysAgo(0), event }] : record.timeline } : record));
   };
 
-  const createReview = async (client: Client) => {
-    const payload: QAReviewInsert = { client_id: client.id, assigned_qa_owner: "QA Team", assigned_bcba: client.bcba, treatment_plan_submitted_date: todayIso(), treatment_plan_received: client.documents.some((doc) => doc.name.toLowerCase().includes("treatment plan")), next_action: "Review Treatment Plan" };
-    const { error } = await supabase.from("client_qa_reviews").insert(payload);
-    if (error) { toast.error("Could not create QA record"); return; }
-    await addTask(client.id, { id: `qa-${Date.now()}`, title: "Review Treatment Plan", completed: false, dueDate: todayIso() });
-    toast.success("QA record created");
-    void refetch();
+  const bulkPatch = (patch: Partial<QARecord>, message: string) => {
+    setRecords((current) => current.map((record) => selectedIds.includes(record.id) ? { ...record, ...patch, timeline: [...record.timeline, { date: isoDaysAgo(0), event: message }] } : record));
+    toast.success(`${selectedIds.length} QA records updated`);
   };
 
-  const updateReview = async (review: QAReview, patch: Database["public"]["Tables"]["client_qa_reviews"]["Update"]) => {
-    await supabase.from("client_qa_reviews").update(patch).eq("id", review.id);
-    void refetch();
-  };
-
-  const startReview = async (item: QAItem) => {
-    if (!item.review) return;
-    await updateReview(item.review, { status: "In Review", qa_start_date: todayIso(), next_action: "Complete QA checklist" });
+  const startReview = (record: QARecord) => {
+    patchRecord(record.id, { status: "In Review", planStatus: "In Review", daysInQA: Math.max(1, record.daysInQA), nextAction: "Complete QA checklist" }, "QA started");
     toast.success("QA review started");
   };
 
-  const setOwner = async (review: QAReview, owner: string) => {
-    await updateReview(review, { assigned_qa_owner: owner });
-    toast.success("QA owner assigned");
+  const markIssues = async (record: QARecord, issue: IssueType = "Clinical Accuracy") => {
+    patchRecord(record.id, {
+      status: "Issues Found",
+      issueType: issue,
+      severity: "High",
+      risk: "High",
+      authReadiness: "Blocked",
+      alerts: Array.from(new Set([...record.alerts, "Issues unresolved over 2 days", "QA blocking auth submission"])),
+      issues: [...record.issues, { id: `issue-${Date.now()}`, type: issue, description: `${issue} correction required.`, owner: record.bcba, dueDate: isoDaysAhead(2), resolved: false }],
+      tasks: [...record.tasks, { id: `task-${Date.now()}`, title: `Fix QA issue: ${issue}`, owner: record.bcba, dueDate: isoDaysAhead(2), completed: false }],
+      nextAction: "Create fix task and notify BCBA",
+    }, `Issues found: ${issue}`);
+    await addTask(record.clientId, { id: `qa-fix-${Date.now()}`, title: `Fix QA issue: ${issue}`, dueDate: isoDaysAhead(2), completed: false });
+    toast.error("Issue logged and correction task created");
   };
 
-  const updateChecklist = async (review: QAReview, key: "treatment_plan_received" | "notes_verified" | "documentation_complete", checked: boolean) => {
-    await updateReview(review, { [key]: checked });
+  const requestCorrection = async (record: QARecord) => {
+    patchRecord(record.id, { status: "Corrections Needed", planStatus: "Correction Requested", nextAction: "BCBA correction requested", alerts: Array.from(new Set([...record.alerts, "Issues unresolved over 2 days"])) }, "Correction requested from BCBA");
+    await appendTimeline(record.clientId, "QA requested BCBA correction", "qa");
+    toast.success("BCBA notified for correction");
   };
 
-  const flagIssues = async (item: QAItem, errorType: QAErrorType) => {
-    if (!item.review) return;
-    const nextTypes = Array.from(new Set([...item.review.error_types, errorType]));
-    await updateReview(item.review, { errors_found: true, error_types: nextTypes, status: "Issues Found", next_action: "Fix Treatment Plan", blockers: Array.from(new Set([...item.review.blockers, errorType])) });
-    await addTask(item.client.id, { id: `qa-fix-${Date.now()}`, title: "Fix Treatment Plan", completed: false, dueDate: todayIso() });
-    toast.error("QA issues sent back to BCBA");
+  const resolveIssue = (record: QARecord, issueId?: string) => {
+    const issues = record.issues.map((issue) => !issueId || issue.id === issueId ? { ...issue, resolved: true } : issue);
+    patchRecord(record.id, { issues, status: "In Review", issueType: issues.every((i) => i.resolved) ? "None" : record.issueType, nextAction: "Complete final QA review" }, "Issue resolved; returned to In Review");
+    toast.success("Issue resolved");
   };
 
-  const clearIssues = async (item: QAItem) => {
-    if (!item.review) return;
-    await updateReview(item.review, { errors_found: false, error_types: [], blockers: [], status: "In Review", next_action: "Complete QA checklist" });
-    toast.success("Issues cleared — back in review");
+  const toggleChecklist = (record: QARecord, key: ChecklistKey, value: boolean) => {
+    const checklist = { ...record.checklist, [key]: value };
+    const ready = Object.values(checklist).every(Boolean) && record.issues.every((i) => i.resolved);
+    patchRecord(record.id, { checklist, nextAction: ready ? "Mark ready for submission" : "Complete QA checklist" }, ready ? "Checklist complete" : undefined);
   };
 
-  const approveQA = async (item: QAItem) => {
-    if (!item.review) return;
-    if (!item.review.treatment_plan_received || !item.review.notes_verified || !item.review.documentation_complete || item.review.errors_found) {
-      toast.error("QA checklist must pass before auth handoff");
+  const markReady = async (record: QARecord) => {
+    if (!allChecked(record)) {
+      toast.error("Complete every checklist item and resolve issues first");
       return;
     }
-    await updateReview(item.review, { status: "Ready for Submission", qa_completed_date: todayIso(), next_action: "Submit to Authorization" });
-    await updateClient(item.client.id, { stage: "Treatment Auth – Awaiting Submission", qaStatus: "Complete", nextAction: "Submit Treatment Authorization" });
-    toast.success("QA approved — treatment auth handoff ready");
+    patchRecord(record.id, { status: "Ready for Submission", planStatus: "Approved", authReadiness: "Ready", risk: "Low", nextAction: "Send to Auth", tasks: record.tasks.map((task) => task.title.includes("Review") || task.title.includes("Resolve") ? { ...task, completed: true } : task) }, "QA approved and ready for auth submission");
+    await updateClient(record.clientId, { stage: "Treatment Auth – Awaiting Submission", qaStatus: "Complete", nextAction: "Submit treatment authorization", readyForAuth: true });
+    await appendTimeline(record.clientId, "QA marked treatment plan ready for submission", "qa");
+    await appendAutomation(record.clientId, "QA approval updated treatment authorization readiness");
+    toast.success("QA ready for submission");
   };
 
-  const createMonitoring = async (type: NoteMonitor["monitoring_type"]) => {
-    const client = clients.find((c) => c.rbt || c.bcba) ?? clients[0];
-    await supabase.from("qa_note_monitoring").insert({ client_id: client?.id, monitoring_type: type, rbt_name: client?.rbt ?? "New RBT", bcba_name: client?.bcba, flagged_notes: type === "RBT Check-In" ? 0 : 1, notes_checked: type === "Amerigroup" ? 12 : 1, errors_found: type === "RBT Check-In" ? 0 : 1, new_rbt_monitoring: type === "RBT Check-In", check_in_due: todayIso(), owner: type === "Amerigroup" ? "Anje" : "QA Team", next_action: type === "RBT Check-In" ? "Check RBT Performance" : "Review Notes" });
-    toast.success("Monitoring item created");
-    void refetch();
-  };
-
-  const writeClientQANote = async (item: QAItem, flag?: QAErrorType) => {
-    const note = qaNote.trim();
-    if (!note && !flag) { toast.info("Add a QA note or choose a flag"); return; }
-    const nextBlockers = flag ? Array.from(new Set([...item.client.blockers, flag])) : item.client.blockers;
-    const nextActiveAlerts = flag ? Array.from(new Set([...(item.client.activeAlerts ?? []), flag])) : item.client.activeAlerts;
-    await updateClient(item.client.id, {
-      qaStatus: flag ? "In Review" : item.client.qaStatus,
-      notesComplianceStatus: flag ? "Flagged" : item.client.notesComplianceStatus,
-      noteguardFlags: flag ? (item.client.noteguardFlags ?? 0) + 1 : item.client.noteguardFlags,
-      blockers: nextBlockers,
-      activeAlerts: nextActiveAlerts,
-      activeNotes: [item.client.activeNotes, note || (flag ? `QA flag: ${flag}` : "")].filter(Boolean).join("\n"),
-      nextAction: flag ? "Resolve QA compliance flag" : item.client.nextAction,
-    });
-    if (note) await appendTimeline(item.client.id, `QA note: ${note}`, "qa");
-    if (flag) {
-      await appendTimeline(item.client.id, `QA flag added: ${flag}`, "qa");
-      await appendAutomation(item.client.id, `QA compliance flag written back to client record: ${flag}`);
-      await addTask(item.client.id, { id: `qa-flag-${Date.now()}`, title: `Resolve QA flag: ${flag}`, completed: false, dueDate: todayIso() });
+  const sendToAuth = async (record: QARecord) => {
+    const readyRecord = allChecked(record) || record.status === "Ready for Submission";
+    if (!readyRecord) {
+      toast.error("QA must be ready before sending to Auth");
+      return;
     }
-    setQaNote("");
-    toast.success("Client QA record updated");
+    patchRecord(record.id, { status: "Submitted to Auth", authStatus: "Awaiting Submission", authReadiness: "Sent", nextAction: "Auth team submission queued", tasks: record.tasks.map((task) => task.title.includes("auth") || task.title.includes("handoff") || task.title.includes("Prepare") ? { ...task, completed: true } : task) }, "Sent to authorization workspace");
+    await updateClient(record.clientId, { stage: "Treatment Auth – Awaiting Submission", authStatus: "Not Submitted", qaStatus: "Complete", nextAction: "Authorization awaiting submission", readyForAuth: true });
+    await appendTimeline(record.clientId, "QA sent treatment auth package to authorization", "auth");
+    toast.success("Sent to Authorization");
   };
 
-  const resolveMonitor = async (monitor: NoteMonitor) => {
-    await supabase.from("qa_note_monitoring").update({ status: "Resolved", next_action: "Closed" }).eq("id", monitor.id);
-    toast.success("Monitoring item resolved");
-    void refetch();
+  const resolveNote = (record: QARecord) => {
+    patchRecord(record.id, { noteStatus: "Resolved", notesFlagged: 0, alerts: record.alerts.filter((a) => !a.includes("note") && !a.includes("Amerigroup") && !a.includes("NoteGuard")), nextAction: "Continue QA review" }, "Note compliance issue resolved");
+    toast.success("Note issue resolved");
+  };
+
+  const createCorrectionTask = async (record: QARecord) => {
+    patchRecord(record.id, { tasks: [...record.tasks, { id: `task-${Date.now()}`, title: "QA correction follow-up", owner: record.correctionOwner, dueDate: isoDaysAhead(1), completed: false }] }, "Correction task created");
+    await addTask(record.clientId, { id: `qa-task-${Date.now()}`, title: "QA correction follow-up", dueDate: isoDaysAhead(1), completed: false });
+    toast.success("Correction task created");
+  };
+
+  const addComment = (record: QARecord) => {
+    if (!comment.trim()) return;
+    patchRecord(record.id, { comments: [...record.comments, comment.trim()] }, `QA comment added: ${comment.trim()}`);
+    setComment("");
+    toast.success("QA comment added");
+  };
+
+  const openRecord = (record: QARecord) => {
+    setSelectedId(record.id);
+    setPanelTab("overview");
   };
 
   return (
-    <PageShell title="QA" description="Compliance and quality engine for treatment plans, documentation, notes, RBT monitoring, and auth readiness" icon={ClipboardCheck}>
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <Metric label="Awaiting Review" value={metrics.awaiting} icon={ClipboardCheck} active={view === "awaiting"} onClick={() => setView("awaiting")} />
-        <Metric label="In Review" value={metrics.review} icon={ListChecks} active={view === "review"} onClick={() => setView("review")} />
-        <Metric label="Issues Found" value={metrics.issues} icon={FileWarning} active={view === "issues"} onClick={() => setView("issues")} />
-        <Metric label="Ready for Auth" value={metrics.ready} icon={ShieldCheck} active={view === "ready"} onClick={() => setView("ready")} />
-        <Metric label="Flagged Notes" value={metrics.flaggedNotes} icon={AlertTriangle} active={view === "monitoring"} onClick={() => setView("monitoring")} />
-        <Metric label="Performance" value={reviews.length} icon={Gauge} active={view === "performance"} onClick={() => setView("performance")} />
+    <PageShell
+      title="QA & Compliance"
+      description="Review treatment plans, resolve documentation issues, monitor notes, and prepare cases for auth submission."
+      icon={ClipboardCheck}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm"><Plus className="h-4 w-4" />New QA Review</Button>
+          <Button size="sm" variant="outline" onClick={() => selectedIds.length ? bulkPatch({ qaOwner: "QA Team" }, "Bulk assigned QA owner") : toast.info("Select rows first")}>Bulk Actions</Button>
+          <Button size="sm" variant="outline"><Download className="h-4 w-4" />Export</Button>
+          <Button size="sm" variant="outline"><Sparkles className="h-4 w-4" />Saved Views</Button>
+          <Button size="sm" variant="outline"><ListChecks className="h-4 w-4" />QA Checklist Templates</Button>
+          <Button size="sm" variant="outline" onClick={() => setMode("notes")}><FileText className="h-4 w-4" />Note Review Queue</Button>
+        </div>
+      }
+    >
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+        {metrics.map(({ label, value, mode: nextMode, filter, icon: Icon }) => (
+          <button key={label} type="button" onClick={() => { setMode(nextMode); setFilters((f) => ({ ...f, status: filter === "all" ? "all" : filter })); }} className="rounded-lg border border-border/60 bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/30">
+            <div className="mb-3 flex items-center justify-between"><span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary"><Icon className="h-4 w-4" /></span><ChevronRight className="h-4 w-4 text-muted-foreground" /></div>
+            <p className="text-2xl font-semibold text-foreground">{value}</p><p className="text-xs text-muted-foreground">{label}</p>
+          </button>
+        ))}
       </section>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search client, parent, QA owner, BCBA…" className="max-w-md" />
-        <Select value={ownerFilter} onValueChange={setOwnerFilter}><SelectTrigger className="w-[170px]"><SelectValue placeholder="QA owner" /></SelectTrigger><SelectContent><SelectItem value={ALL}>All owners</SelectItem>{ownerOptions.map((owner) => <SelectItem key={owner} value={owner}>{owner}</SelectItem>)}</SelectContent></Select>
-        <Select value={stateFilter} onValueChange={setStateFilter}><SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger><SelectContent><SelectItem value={ALL}>All states</SelectItem>{stateOptions.map((state) => <SelectItem key={state} value={state}>{state}</SelectItem>)}</SelectContent></Select>
-        <Button variant="outline" onClick={() => setView("all")}>All</Button>
-        <Button variant="outline" onClick={() => createMonitoring("NoteGuard")}>NoteGuard</Button>
-        <Button variant="outline" onClick={() => createMonitoring("Amerigroup")}>Amerigroup Daily</Button>
-        <Button variant="outline" onClick={() => createMonitoring("RBT Check-In")}>New RBT</Button>
-      </div>
+      <section className="rounded-lg border border-border/60 bg-card p-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search client, QA owner, BCBA, RBT, payor, next action…" className="pl-9" /></div>
+          <div className="flex flex-wrap gap-2">
+            <FilterSelect value={filters.state} onChange={(v) => setFilters((f) => ({ ...f, state: v }))} label="State" items={STATES} />
+            <FilterSelect value={filters.owner} onChange={(v) => setFilters((f) => ({ ...f, owner: v }))} label="QA Owner" items={["Unassigned", ...QA_OWNERS]} />
+            <FilterSelect value={filters.bcba} onChange={(v) => setFilters((f) => ({ ...f, bcba: v }))} label="BCBA" items={bcbas} />
+            <FilterSelect value={filters.rbt} onChange={(v) => setFilters((f) => ({ ...f, rbt: v }))} label="RBT" items={rbts} />
+            <FilterSelect value={filters.payor} onChange={(v) => setFilters((f) => ({ ...f, payor: v }))} label="Payor" items={payors} />
+            <FilterSelect value={filters.status} onChange={(v) => setFilters((f) => ({ ...f, status: v }))} label="QA Status" items={["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"]} />
+            <FilterSelect value={filters.issue} onChange={(v) => setFilters((f) => ({ ...f, issue: v }))} label="Issue Type" items={ISSUE_TYPES} />
+            <FilterSelect value={filters.plan} onChange={(v) => setFilters((f) => ({ ...f, plan: v }))} label="Plan Status" items={["Missing", "Submitted", "In Review", "Correction Requested", "Approved"]} />
+            <FilterSelect value={filters.note} onChange={(v) => setFilters((f) => ({ ...f, note: v }))} label="Note Status" items={["Clean", "Flagged", "Correction Due", "Resolved"]} />
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            ["queue", "Queue View", ClipboardCheck], ["table", "Table View", Table2], ["flow", "QA Flow View", PanelRightOpen], ["plan", "Treatment Plan Review", FileCheck2], ["notes", "Note Compliance View", FileText], ["rbt", "New RBT Monitoring", UserCheck], ["progress", "Progress Report Review", ShieldCheck],
+          ].map(([key, label, Icon]) => (
+            <Button key={key as string} size="sm" variant={mode === key ? "default" : "outline"} onClick={() => setMode(key as WorkMode)}><Icon className="h-4 w-4" />{label as string}</Button>
+          ))}
+        </div>
+      </section>
 
-      {view === "monitoring" ? <MonitoringDashboard monitors={monitors} onResolve={resolveMonitor} /> : view === "performance" ? <PerformanceDashboard rows={rows} monitors={monitors} /> : (
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <QAQueueTable items={filtered} selectedId={selectedItem?.client.id ?? null} onSelect={setSelectedId} />
-          <QAActionsPanel item={selectedItem} note={qaNote} onNote={setQaNote} onOpenClient={(client) => navigate(`/clients/${client.id}`)} onCreate={createReview} onStart={startReview} onOwner={setOwner} onChecklist={updateChecklist} onIssue={flagIssues} onClear={clearIssues} onApprove={approveQA} onWriteBack={writeClientQANote} />
-        </section>
-      )}
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0">
+          {mode === "queue" && <QueueView records={filtered} onOpen={openRecord} onStart={startReview} onIssue={markIssues} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onOpenClient={(id) => navigate(`/clients/${id}`)} />}
+          {mode === "table" && <TableView records={filtered} selectedIds={selectedIds} setSelectedIds={setSelectedIds} onOpen={openRecord} onPatch={patchRecord} onBulkNotify={() => bulkPatch({ nextAction: "BCBA notified" }, "Bulk notified BCBA")} />}
+          {mode === "flow" && <FlowView records={filtered} onOpen={openRecord} onPatch={patchRecord} />}
+          {mode === "plan" && <TreatmentPlanView record={selected} onToggle={toggleChecklist} onReady={markReady} onCorrection={requestCorrection} onComment={addComment} comment={comment} setComment={setComment} />}
+          {mode === "notes" && <NotesView records={filtered.filter((r) => r.noteStatus !== "Clean" || r.notesFlagged > 0 || r.issueType === "Amerigroup Issue")} onOpen={openRecord} onResolve={resolveNote} onTask={createCorrectionTask} onEscalate={(r) => markIssues(r, r.issueType === "None" ? "NoteGuard Flag" : r.issueType)} />}
+          {mode === "rbt" && <RbtMonitoringView records={filtered.filter((r) => r.newRbt)} onOpen={openRecord} onPatch={patchRecord} />}
+          {mode === "progress" && <ProgressReportView records={filtered.filter((r) => r.progressReportStatus !== "Not Needed")} onOpen={openRecord} onReady={markReady} onAuth={sendToAuth} />}
+        </div>
+        <DetailPanel record={selected} panelTab={panelTab} setPanelTab={setPanelTab} onOpenClient={() => navigate(`/clients/${selected.clientId}`)} onStart={startReview} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onToggle={toggleChecklist} onResolveIssue={resolveIssue} onResolveNote={resolveNote} comment={comment} setComment={setComment} onComment={addComment} />
+      </section>
     </PageShell>
   );
 }
 
-function Metric({ label, value, icon: Icon, active, onClick }: { label: string; value: number; icon: typeof ClipboardCheck; active: boolean; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className={cn("rounded-lg border border-border/60 bg-card p-4 text-left transition-colors hover:bg-muted/30", active && "border-primary/40 bg-primary/5")}><div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div><p className="text-2xl font-semibold text-foreground">{value}</p><p className="text-xs text-muted-foreground">{label}</p></button>;
+function FilterSelect({ value, onChange, label, items }: { value: string; onChange: (value: string) => void; label: string; items: string[] }) {
+  return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={label} /></SelectTrigger><SelectContent><SelectItem value="all">{label}</SelectItem>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
 }
 
-function QAQueueTable({ items, selectedId, onSelect }: { items: QAItem[]; selectedId: string | null; onSelect: (id: string) => void }) {
-  return <div className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="border-b border-border/60 px-4 py-3"><h2 className="text-sm font-semibold text-foreground">QA Queue</h2><p className="text-xs text-muted-foreground">Filtered by status, owner, and state</p></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border bg-muted/30">{["Client", "Status", "Owner", "State", "BCBA", "Days", "Alerts"].map((header) => <th key={header} className="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">{header}</th>)}</tr></thead><tbody>{items.map((item) => { const alert = alertFor(item); const active = selectedId === item.client.id; return <tr key={item.review?.id ?? item.client.id} onClick={() => onSelect(item.client.id)} className={cn("cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/30", active && "bg-primary/5")}><td className="px-3 py-3"><p className="font-medium text-foreground">{item.client.childName}</p><p className="text-xs text-muted-foreground">{item.client.parentName}</p></td><td className="px-3 py-3"><StatusBadge status={item.review?.status ?? "Missing QA"} variant={qaVariant(item.review?.status ?? "Missing QA")} /></td><td className="px-3 py-3 text-muted-foreground">{item.review?.assigned_qa_owner ?? "Unassigned"}</td><td className="px-3 py-3 text-muted-foreground">{item.client.state}</td><td className="px-3 py-3 text-muted-foreground">{item.review?.assigned_bcba ?? item.client.bcba ?? "—"}</td><td className="px-3 py-3 text-muted-foreground">{item.review ? daysBetween(item.review.qa_start_date ?? item.review.stage_entered_at) : "—"}</td><td className="px-3 py-3">{alert ? <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs", alert.tone === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}><AlertTriangle className="h-3 w-3" />{alert.message}</span> : <span className="text-xs text-muted-foreground">—</span>}</td></tr>; })}</tbody></table></div>{items.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">No QA items match this view</p>}</div>;
-}
-
-function QAActionsPanel({ item, note, onNote, onOpenClient, onCreate, onStart, onOwner, onChecklist, onIssue, onClear, onApprove, onWriteBack }: { item: QAItem | null; note: string; onNote: (value: string) => void; onOpenClient: (client: Client) => void; onCreate: (client: Client) => void; onStart: (item: QAItem) => void; onOwner: (review: QAReview, owner: string) => void; onChecklist: (review: QAReview, key: "treatment_plan_received" | "notes_verified" | "documentation_complete", checked: boolean) => void; onIssue: (item: QAItem, errorType: QAErrorType) => void; onClear: (item: QAItem) => void; onApprove: (item: QAItem) => void; onWriteBack: (item: QAItem, flag?: QAErrorType) => void }) {
-  if (!item) return <aside className="rounded-lg border border-border/60 bg-card p-5 text-sm text-muted-foreground">Select a QA item to review actions.</aside>;
-  const review = item.review;
-  return <aside className="sticky top-20 h-fit rounded-lg border border-border/60 bg-card p-4"><div className="flex items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-foreground">{item.client.childName}</h2><p className="text-xs text-muted-foreground">{item.client.state} · {item.client.clinic}</p></div><StatusBadge status={review?.status ?? "Missing QA"} variant={qaVariant(review?.status ?? "Missing QA")} /></div><Separator className="my-4" /><div className="space-y-3 text-sm"><div className="flex items-center justify-between"><span className="text-muted-foreground">QA owner</span>{review ? <Select value={review.assigned_qa_owner ?? undefined} onValueChange={(owner) => onOwner(review, owner)}><SelectTrigger className="h-8 w-[150px]"><SelectValue placeholder="Owner" /></SelectTrigger><SelectContent>{QA_OWNERS.map((owner) => <SelectItem key={owner} value={owner}>{owner}</SelectItem>)}</SelectContent></Select> : <span className="text-foreground">Unassigned</span>}</div><div className="flex items-center justify-between"><span className="text-muted-foreground">BCBA</span><span className="font-medium text-foreground">{review?.assigned_bcba ?? item.client.bcba ?? "—"}</span></div><div className="flex items-center justify-between"><span className="text-muted-foreground">Client flags</span><span className="font-medium text-foreground">{item.client.blockers.length + (item.client.activeAlerts?.length ?? 0)}</span></div></div>{review && <div className="mt-4 space-y-2 rounded-md border border-border/50 p-3"><Checklist checked={review.treatment_plan_received} label="Treatment plan received" onChange={(checked) => onChecklist(review, "treatment_plan_received", checked)} /><Checklist checked={review.notes_verified} label="Notes verified" onChange={(checked) => onChecklist(review, "notes_verified", checked)} /><Checklist checked={review.documentation_complete} label="Documentation complete" onChange={(checked) => onChecklist(review, "documentation_complete", checked)} /></div>}<div className="mt-4 space-y-2"><Textarea value={note} onChange={(event) => onNote(event.target.value)} placeholder="Write QA note back to central Client record…" className="min-h-[110px]" /><Button className="w-full" onClick={() => onWriteBack(item)}>Save QA note to Client</Button><Select onValueChange={(error) => onWriteBack(item, error as QAErrorType)}><SelectTrigger><SelectValue placeholder="Flag compliance issue" /></SelectTrigger><SelectContent>{ERROR_TYPES.map((error) => <SelectItem key={error} value={error}>{error}</SelectItem>)}</SelectContent></Select></div><Separator className="my-4" /><div className="grid gap-2">{item.missingRecord && <Button variant="outline" onClick={() => onCreate(item.client)}>Create QA record</Button>}{review?.status === "Awaiting Review" && <Button variant="outline" onClick={() => onStart(item)}>Start QA review</Button>}{review?.status === "Issues Found" && <Button variant="outline" onClick={() => onClear(item)}><RefreshCw className="mr-2 h-4 w-4" />Mark fixed</Button>}{review && <Button variant="outline" onClick={() => onApprove(item)}><CheckCircle2 className="mr-2 h-4 w-4" />Approve for auth</Button>}<Button variant="outline" onClick={() => onOpenClient(item.client)}><ExternalLink className="mr-2 h-4 w-4" />Open Client record</Button></div></aside>;
-}
-
-function QALane(props: { title: string; items: QAItem[]; onOpen: (client: Client) => void; onCreate: (client: Client) => void; onStart: (item: QAItem) => void; onOwner: (review: QAReview, owner: string) => void; onChecklist: (review: QAReview, key: "treatment_plan_received" | "notes_verified" | "documentation_complete", checked: boolean) => void; onIssue: (item: QAItem, errorType: QAErrorType) => void; onClear: (item: QAItem) => void; onApprove: (item: QAItem) => void }) {
-  return <div className="rounded-lg border border-border/60 bg-card"><div className="flex items-center justify-between border-b border-border/60 px-4 py-3"><h2 className="text-sm font-semibold text-foreground">{props.title}</h2><span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{props.items.length}</span></div><div className="min-h-[420px] space-y-3 p-3">{props.items.map((item) => <QACard key={item.review?.id ?? item.client.id} {...props} item={item} />)}{props.items.length === 0 && <p className="py-12 text-center text-xs text-muted-foreground">No QA items</p>}</div></div>;
-}
-
-function QACard({ item, onOpen, onCreate, onStart, onOwner, onChecklist, onIssue, onClear, onApprove }: { item: QAItem; onOpen: (client: Client) => void; onCreate: (client: Client) => void; onStart: (item: QAItem) => void; onOwner: (review: QAReview, owner: string) => void; onChecklist: (review: QAReview, key: "treatment_plan_received" | "notes_verified" | "documentation_complete", checked: boolean) => void; onIssue: (item: QAItem, errorType: QAErrorType) => void; onClear: (item: QAItem) => void; onApprove: (item: QAItem) => void }) {
-  const alert = alertFor(item);
-  const review = item.review;
-  return <article className="rounded-md border border-border/60 bg-background p-3"><button type="button" onClick={() => onOpen(item.client)} className="w-full text-left"><div className="flex items-start justify-between gap-2"><div><p className="font-medium text-foreground">{item.client.childName}</p><p className="text-xs text-muted-foreground">{item.client.parentName} · {review?.assigned_bcba ?? item.client.bcba ?? "No BCBA"}</p></div><StatusBadge status={review?.status ?? "Missing QA"} variant={qaVariant(review?.status ?? "Missing QA")} /></div></button>{alert && <p className={cn("mt-3 flex items-center gap-1 rounded-md px-2 py-1.5 text-xs", alert.tone === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}><AlertTriangle className="h-3 w-3" />{alert.message}</p>}<div className="mt-3 grid gap-2 text-xs text-muted-foreground"><div className="flex items-center justify-between"><span>QA owner</span><span className="font-medium text-foreground">{review?.assigned_qa_owner ?? "Unassigned"}</span></div><div className="flex items-center justify-between"><span>Days in QA</span><span className="font-medium text-foreground">{review ? daysBetween(review.qa_start_date ?? review.stage_entered_at) : "—"}</span></div><div className="flex items-center justify-between"><span>Next action</span><span className="max-w-[160px] truncate font-medium text-foreground">{review?.next_action ?? "Create QA record"}</span></div></div>{review && <div className="mt-3 space-y-2 rounded-md border border-border/50 p-2"><Checklist checked={review.treatment_plan_received} label="Treatment plan" onChange={(checked) => onChecklist(review, "treatment_plan_received", checked)} /><Checklist checked={review.notes_verified} label="Notes verified" onChange={(checked) => onChecklist(review, "notes_verified", checked)} /><Checklist checked={review.documentation_complete} label="Docs complete" onChange={(checked) => onChecklist(review, "documentation_complete", checked)} /></div>}<div className="mt-3 flex flex-wrap gap-2">{item.missingRecord && <Button size="sm" variant="outline" onClick={() => onCreate(item.client)}>Create</Button>}{review?.status === "Awaiting Review" && <Button size="sm" variant="outline" onClick={() => onStart(item)}>Start</Button>}{review && <Select value={review.assigned_qa_owner ?? undefined} onValueChange={(owner) => onOwner(review, owner)}><SelectTrigger className="h-8 w-[128px]"><SelectValue placeholder="Owner" /></SelectTrigger><SelectContent>{QA_OWNERS.map((owner) => <SelectItem key={owner} value={owner}>{owner}</SelectItem>)}</SelectContent></Select>}{review && review.status !== "Ready for Submission" && review.status !== "Submitted to Auth" && <Select onValueChange={(error) => onIssue(item, error as QAErrorType)}><SelectTrigger className="h-8 w-[126px]"><SelectValue placeholder="Flag issue" /></SelectTrigger><SelectContent>{ERROR_TYPES.map((error) => <SelectItem key={error} value={error}>{error}</SelectItem>)}</SelectContent></Select>}{review?.status === "Issues Found" && <Button size="sm" variant="outline" onClick={() => onClear(item)}><RefreshCw className="mr-1.5 h-3.5 w-3.5" />Fixed</Button>}{review && <Button size="sm" variant="outline" onClick={() => onApprove(item)}><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Approve</Button>}</div></article>;
-}
-
-function Checklist({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
-  return <label className="flex items-center gap-2 text-xs text-muted-foreground"><Checkbox checked={checked} onCheckedChange={(value) => onChange(Boolean(value))} /><span>{label}</span></label>;
-}
-
-function QATable({ items, onOpen }: { items: QAItem[]; onOpen: (client: Client) => void }) {
-  return <div className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border bg-muted/30">{["Client", "QA Owner", "BCBA", "Submitted", "Days in QA", "Status", "Alerts"].map((header) => <th key={header} className="whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">{header}</th>)}</tr></thead><tbody>{items.map((item) => { const alert = alertFor(item); return <tr key={item.review?.id ?? item.client.id} className="border-b border-border/40"><td className="px-3 py-3"><button onClick={() => onOpen(item.client)} className="text-left font-medium text-foreground hover:text-primary">{item.client.childName}</button><p className="text-xs text-muted-foreground">{item.client.parentName}</p></td><td className="px-3 py-3 text-muted-foreground">{item.review?.assigned_qa_owner ?? "—"}</td><td className="px-3 py-3 text-muted-foreground">{item.review?.assigned_bcba ?? item.client.bcba ?? "—"}</td><td className="px-3 py-3 text-muted-foreground">{item.review?.treatment_plan_submitted_date ?? "—"}</td><td className="px-3 py-3 text-muted-foreground">{item.review ? daysBetween(item.review.qa_start_date ?? item.review.stage_entered_at) : "—"}</td><td className="px-3 py-3"><StatusBadge status={item.review?.status ?? "Missing QA"} variant={qaVariant(item.review?.status ?? "Missing QA")} /></td><td className="px-3 py-3">{alert ? <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive"><AlertTriangle className="h-3 w-3" />{alert.message}</span> : <span className="text-xs text-muted-foreground">—</span>}</td></tr>; })}</tbody></table></div>{items.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">No QA items match this view</p>}</div>;
-}
-
-function MonitoringDashboard({ monitors, onResolve }: { monitors: NoteMonitor[]; onResolve: (monitor: NoteMonitor) => void }) {
-  return <section className="grid gap-4 xl:grid-cols-3">{monitors.map((monitor) => <article key={monitor.id} className="rounded-lg border border-border/60 bg-card p-4"><div className="mb-3 flex items-start justify-between gap-2"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">{monitor.new_rbt_monitoring ? <UserCheck className="h-4 w-4" /> : <Stethoscope className="h-4 w-4" />}</div><div><h2 className="text-sm font-semibold text-foreground">{monitor.monitoring_type}</h2><p className="text-xs text-muted-foreground">{monitor.rbt_name ?? "No RBT"} · {monitor.bcba_name ?? "No BCBA"}</p></div></div><StatusBadge status={monitor.status} variant={monitoringVariant(monitor.status)} /></div><div className="grid grid-cols-3 gap-3 text-sm"><div><p className="text-xl font-semibold text-foreground">{monitor.flagged_notes}</p><p className="text-xs text-muted-foreground">Flagged</p></div><div><p className="text-xl font-semibold text-foreground">{monitor.errors_found}</p><p className="text-xs text-muted-foreground">Errors</p></div><div><p className="text-xl font-semibold text-foreground">{monitor.notes_checked}</p><p className="text-xs text-muted-foreground">Checked</p></div></div><div className="mt-3 flex items-center justify-between text-xs text-muted-foreground"><span>Due {monitor.check_in_due ?? "today"}</span><span>{monitor.owner ?? "QA Team"}</span></div>{monitor.status !== "Resolved" && <Button size="sm" variant="outline" className="mt-3" onClick={() => onResolve(monitor)}>Resolve</Button>}</article>)}{monitors.length === 0 && <p className="rounded-lg border border-border/60 bg-card py-12 text-center text-sm text-muted-foreground xl:col-span-3">No note monitoring records yet</p>}</section>;
-}
-
-function PerformanceDashboard({ rows, monitors }: { rows: QAItem[]; monitors: NoteMonitor[] }) {
-  const completed = rows.filter((row) => row.review?.qa_completed_date);
-  const avgTurnaround = completed.length ? Math.round(completed.reduce((sum, row) => sum + daysBetween(row.review!.qa_start_date ?? row.review!.stage_entered_at) - daysBetween(row.review!.qa_completed_date), 0) / completed.length) : 0;
-  const issues = rows.filter((row) => row.review?.errors_found || row.review?.status === "Issues Found").length;
-  const reviewed = rows.filter((row) => row.review).length;
-  const noteAccuracy = monitors.length ? Math.round(((monitors.reduce((sum, m) => sum + m.notes_checked, 0) - monitors.reduce((sum, m) => sum + m.errors_found, 0)) / Math.max(1, monitors.reduce((sum, m) => sum + m.notes_checked, 0))) * 100) : 100;
-  const cards = [
-    ["Avg QA Turnaround", `${avgTurnaround}d`],
-    ["Items Reviewed", String(reviewed)],
-    ["Issues Found", reviewed ? `${Math.round((issues / reviewed) * 100)}%` : "0%"],
-    ["Rework Rate", reviewed ? `${Math.round((rows.filter((row) => (row.review?.error_types.length ?? 0) > 0).length / reviewed) * 100)}%` : "0%"],
-    ["Note Accuracy", `${noteAccuracy}%`],
-    ["Open Monitoring", String(monitors.filter((m) => m.status !== "Resolved").length)],
+function QueueView(props: { records: QARecord[]; onOpen: (r: QARecord) => void; onStart: (r: QARecord) => void; onIssue: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onReady: (r: QARecord) => void; onAuth: (r: QARecord) => void; onTask: (r: QARecord) => void; onOpenClient: (id: string) => void }) {
+  const sections = [
+    { title: "Urgent Now", filter: (r: QARecord) => r.alerts.length > 0 || r.risk === "Critical" || r.status === "Overdue" },
+    { title: "Awaiting QA Review", filter: (r: QARecord) => r.status === "Awaiting Review" },
+    { title: "In Review", filter: (r: QARecord) => r.status === "In Review" },
+    { title: "Corrections Needed", filter: (r: QARecord) => r.status === "Corrections Needed" || r.status === "Issues Found" },
+    { title: "Note Compliance", filter: (r: QARecord) => r.noteStatus !== "Clean" || r.notesFlagged > 0 },
+    { title: "Ready for Auth Submission", filter: (r: QARecord) => r.status === "Ready for Submission" },
   ];
-  return <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{cards.map(([label, value]) => <article key={label} className="rounded-lg border border-border/60 bg-card p-5"><p className="text-3xl font-semibold text-foreground">{value}</p><p className="mt-1 text-sm text-muted-foreground">{label}</p></article>)}</section>;
+  return <div className="space-y-4">{sections.map((section) => { const rows = props.records.filter(section.filter); return <div key={section.title} className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-3"><div><h3 className="text-sm font-semibold text-foreground">{section.title}</h3><p className="text-xs text-muted-foreground">{rows.length} active QA items</p></div><StatusBadge status={String(rows.length)} variant={rows.length ? "info" : "muted"} /></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border/50">{["Client", "State", "BCBA / RBT", "Owner", "Status", "Plan", "Issue", "Days", "Next Action", "Alert", "Quick Action"].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-muted-foreground">{h}</th>)}</tr></thead><tbody>{rows.map((r) => <tr key={`${section.title}-${r.id}`} className="border-b border-border/40 hover:bg-muted/20"><td className="px-3 py-3"><button onClick={() => props.onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.clientName}</button><p className="text-xs text-muted-foreground">{r.parentName}</p></td><td className="px-3 py-3 text-muted-foreground">{r.state}</td><td className="px-3 py-3 text-muted-foreground"><p>{r.bcba}</p><p className="text-xs">{r.rbt}</p></td><td className="px-3 py-3 text-muted-foreground">{r.qaOwner}</td><td className="px-3 py-3"><StatusBadge status={r.status} variant={statusVariant(r.status)} /></td><td className="px-3 py-3 text-muted-foreground">{r.planStatus}</td><td className="px-3 py-3 text-muted-foreground">{r.issueType}</td><td className="px-3 py-3 text-muted-foreground">{r.daysInQA}d</td><td className="px-3 py-3 text-muted-foreground">{r.nextAction}</td><td className="px-3 py-3">{r.alerts[0] ? <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive"><AlertTriangle className="h-3 w-3" />{r.alerts[0]}</span> : <span className="text-xs text-muted-foreground">—</span>}</td><td className="px-3 py-3"><div className="flex flex-wrap gap-1.5"><Button size="sm" variant="outline" onClick={() => props.onOpen(r)}>Open QA</Button>{r.status === "Awaiting Review" && <Button size="sm" variant="outline" onClick={() => props.onStart(r)}>Start</Button>}<Button size="sm" variant="outline" onClick={() => props.onIssue(r)}>Issues</Button><Button size="sm" variant="outline" onClick={() => props.onTask(r)}>Fix Task</Button><Button size="sm" variant="outline" onClick={() => props.onCorrection(r)}>Notify</Button><Button size="sm" variant="outline" onClick={() => props.onReady(r)}>Ready</Button><Button size="sm" variant="outline" onClick={() => props.onAuth(r)}>Auth</Button><Button size="sm" variant="outline" onClick={() => props.onOpenClient(r.clientId)}>Client</Button></div></td></tr>)}</tbody></table></div>{rows.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No records in this queue.</p>}</div>; })}</div>;
+}
+
+function TableView({ records, selectedIds, setSelectedIds, onOpen, onPatch, onBulkNotify }: { records: QARecord[]; selectedIds: string[]; setSelectedIds: (ids: string[]) => void; onOpen: (r: QARecord) => void; onPatch: (id: string, patch: Partial<QARecord>, event?: string) => void; onBulkNotify: () => void }) {
+  const sorted = [...records].sort((a, b) => b.daysInQA - a.daysInQA);
+  const toggleAll = (checked: boolean) => setSelectedIds(checked ? records.map((r) => r.id) : []);
+  return <div className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="flex items-center justify-between border-b border-border/60 px-4 py-3"><div><h3 className="text-sm font-semibold text-foreground">QA Operations Table</h3><p className="text-xs text-muted-foreground">Sort by risk, multi-select, bulk notify, and inline edit owner/status/issues.</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={onBulkNotify}>Bulk notify BCBA</Button><Button size="sm" variant="outline" onClick={() => toast.success("Bulk status update applied")}>Bulk status update</Button></div></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border/50 bg-muted/20">{["", "Client", "State", "BCBA", "RBT", "QA Owner", "QA Status", "Treatment Plan", "Days Since Assessment", "Days in QA", "Issue", "Notes", "Auth", "Next Action", "Alerts"].map((h, i) => <th key={`${h}-${i}`} className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-muted-foreground">{i === 0 ? <Checkbox checked={selectedIds.length === records.length && records.length > 0} onCheckedChange={(v) => toggleAll(Boolean(v))} /> : h}</th>)}</tr></thead><tbody>{sorted.map((r) => <tr key={r.id} className="border-b border-border/40 hover:bg-muted/20"><td className="px-3 py-3"><Checkbox checked={selectedIds.includes(r.id)} onCheckedChange={(v) => setSelectedIds(v ? [...selectedIds, r.id] : selectedIds.filter((id) => id !== r.id))} /></td><td className="px-3 py-3"><button onClick={() => onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.clientName}</button></td><td className="px-3 py-3 text-muted-foreground">{r.state}</td><td className="px-3 py-3 text-muted-foreground">{r.bcba}</td><td className="px-3 py-3 text-muted-foreground">{r.rbt}</td><td className="px-3 py-3"><InlineSelect value={r.qaOwner} items={["Unassigned", ...QA_OWNERS]} onChange={(v) => onPatch(r.id, { qaOwner: v }, "QA owner updated")} /></td><td className="px-3 py-3"><InlineSelect value={r.status} items={["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"]} onChange={(v) => onPatch(r.id, { status: v as QAStatus }, "QA status updated")} /></td><td className="px-3 py-3 text-muted-foreground">{r.planStatus}</td><td className="px-3 py-3 text-muted-foreground">{r.daysSinceAssessment}d</td><td className="px-3 py-3 text-muted-foreground">{r.daysInQA}d</td><td className="px-3 py-3"><InlineSelect value={r.issueType} items={ISSUE_TYPES} onChange={(v) => onPatch(r.id, { issueType: v as IssueType }, "Issue type updated")} /></td><td className="px-3 py-3 text-muted-foreground">{r.notesFlagged}</td><td className="px-3 py-3"><StatusBadge status={r.authReadiness} variant={r.authReadiness === "Ready" || r.authReadiness === "Sent" ? "success" : "warning"} /></td><td className="px-3 py-3"><Input value={r.nextAction} onChange={(e) => onPatch(r.id, { nextAction: e.target.value })} className="h-8 min-w-[180px]" /></td><td className="px-3 py-3 text-muted-foreground">{r.alerts.length || "—"}</td></tr>)}</tbody></table></div></div>;
+}
+
+function InlineSelect({ value, items, onChange }: { value: string; items: string[]; onChange: (v: string) => void }) {
+  return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-8 min-w-[150px]"><SelectValue /></SelectTrigger><SelectContent>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
+}
+
+function FlowView({ records, onOpen, onPatch }: { records: QARecord[]; onOpen: (r: QARecord) => void; onPatch: (id: string, patch: Partial<QARecord>, event?: string) => void }) {
+  const stages: QAStatus[] = ["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"];
+  return <div className="grid gap-3 xl:grid-cols-7">{stages.map((stage) => { const rows = records.filter((r) => r.status === stage); const oldest = rows.length ? Math.max(...rows.map((r) => r.daysInStage)) : 0; const avg = rows.length ? Math.round(rows.reduce((sum, r) => sum + r.daysInStage, 0) / rows.length) : 0; return <div key={stage} className="rounded-lg border border-border/60 bg-card"><div className="border-b border-border/60 p-3"><div className="flex items-center justify-between"><h3 className="text-xs font-semibold text-foreground">{stage}</h3><StatusBadge status={String(rows.length)} variant={statusVariant(stage)} /></div><p className="mt-1 text-[11px] text-muted-foreground">Oldest {oldest}d · Avg {avg}d</p></div><div className="min-h-[520px] space-y-2 p-2">{rows.map((r) => <button key={r.id} onClick={() => onOpen(r)} className="w-full rounded-md border border-border/50 bg-background p-3 text-left transition-colors hover:border-primary/40"><p className="text-sm font-medium text-foreground">{r.clientName}</p><p className="text-xs text-muted-foreground">{r.bcba} · {r.qaOwner}</p><div className="mt-2 flex items-center justify-between text-xs"><span className="text-muted-foreground">{r.daysInStage}d</span><span className="text-muted-foreground">{r.nextAction}</span></div>{r.alerts[0] && <p className="mt-2 rounded bg-destructive/10 px-2 py-1 text-xs text-destructive">{r.alerts[0]}</p>}<Select value={r.status} onValueChange={(v) => onPatch(r.id, { status: v as QAStatus }, `Moved to ${v}`)}><SelectTrigger className="mt-2 h-8"><SelectValue /></SelectTrigger><SelectContent>{stages.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></button>)}</div></div>; })}</div>;
+}
+
+function TreatmentPlanView({ record, onToggle, onReady, onCorrection, onComment, comment, setComment }: { record: QARecord; onToggle: (r: QARecord, key: ChecklistKey, value: boolean) => void; onReady: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onComment: (r: QARecord) => void; comment: string; setComment: (v: string) => void }) {
+  if (!record) return null;
+  return <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]"><div className="rounded-lg border border-border/60 bg-card p-5"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-base font-semibold text-foreground">Treatment plan preview</h3><p className="text-xs text-muted-foreground">{record.clientName} · {record.treatmentPlanSubmitted}</p></div><StatusBadge status={record.planStatus} variant={record.planStatus === "Approved" ? "success" : record.planStatus === "Missing" ? "destructive" : "warning"} /></div><div className="min-h-[620px] rounded-lg border border-dashed border-border bg-muted/20 p-8"><div className="mx-auto max-w-2xl space-y-5 rounded-lg border border-border/60 bg-background p-6"><div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Blossom ABA Therapy</p><h2 className="mt-2 text-2xl font-semibold text-foreground">Treatment Plan QA Packet</h2><p className="text-sm text-muted-foreground">Client info, diagnosis, assessment date, goals, service hours, signatures, formatting, and clinical accuracy are reviewed here.</p></div>{["Assessment summary", "Clinical goals", "Service authorization request", "Caregiver participation", "BCBA signature"].map((line) => <div key={line} className="rounded-md bg-muted/40 p-4"><p className="text-sm font-medium text-foreground">{line}</p><p className="mt-2 h-2 w-full rounded bg-muted" /><p className="mt-2 h-2 w-3/4 rounded bg-muted" /></div>)}</div></div></div><div className="rounded-lg border border-border/60 bg-card p-4"><h3 className="text-sm font-semibold text-foreground">QA checklist</h3><div className="mt-4 space-y-3">{CHECKLIST.map((item) => <label key={item.key} className="flex items-center gap-3 rounded-md border border-border/50 p-3 text-sm"><Checkbox checked={record.checklist[item.key]} onCheckedChange={(v) => onToggle(record, item.key, Boolean(v))} /><span className="text-foreground">{item.label}</span></label>)}</div><Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add QA comment…" className="mt-4" /><div className="mt-3 grid gap-2"><Button onClick={() => toast.success("Review saved")}>Save Review</Button><Button variant="outline" onClick={() => onCorrection(record)}>Request Correction</Button><Button variant="outline" onClick={() => onReady(record)}>Mark Ready for Submission</Button><Button variant="outline" onClick={() => onComment(record)}>Add QA Comment</Button></div></div></div>;
+}
+
+function NotesView({ records, onOpen, onResolve, onTask, onEscalate }: { records: QARecord[]; onOpen: (r: QARecord) => void; onResolve: (r: QARecord) => void; onTask: (r: QARecord) => void; onEscalate: (r: QARecord) => void }) {
+  return <SimpleTable title="Note Compliance Queue" subtitle="NoteGuard flags, Amerigroup reviews, missing notes, repeated note errors, and correction tasks." headers={["Client", "RBT", "BCBA", "Payor", "Note Date", "Issue", "Severity", "Owner", "Due", "Status", "Actions"]}>{records.map((r) => <tr key={r.id} className="border-b border-border/40"><td className="px-3 py-3"><button onClick={() => onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.clientName}</button></td><td className="px-3 py-3 text-muted-foreground">{r.rbt}</td><td className="px-3 py-3 text-muted-foreground">{r.bcba}</td><td className="px-3 py-3 text-muted-foreground">{r.payor}</td><td className="px-3 py-3 text-muted-foreground">{isoDaysAgo(r.daysInQA + 1)}</td><td className="px-3 py-3 text-muted-foreground">{r.issueType}</td><td className="px-3 py-3"><StatusBadge status={r.severity} variant={r.severity === "Critical" || r.severity === "High" ? "destructive" : "warning"} /></td><td className="px-3 py-3 text-muted-foreground">{r.correctionOwner}</td><td className="px-3 py-3 text-muted-foreground">{r.correctionDue}</td><td className="px-3 py-3"><StatusBadge status={r.noteStatus} variant={noteVariant(r.noteStatus)} /></td><td className="px-3 py-3"><div className="flex flex-wrap gap-1.5"><Button size="sm" variant="outline" onClick={() => onTask(r)}>Create Correction Task</Button><Button size="sm" variant="outline" onClick={() => toast.success("RBT notified")}>Notify RBT</Button><Button size="sm" variant="outline" onClick={() => toast.success("BCBA notified")}>Notify BCBA</Button><Button size="sm" variant="outline" onClick={() => onResolve(r)}>Resolved</Button><Button size="sm" variant="outline" onClick={() => onEscalate(r)}>Escalate</Button></div></td></tr>)}</SimpleTable>;
+}
+
+function RbtMonitoringView({ records, onOpen, onPatch }: { records: QARecord[]; onOpen: (r: QARecord) => void; onPatch: (id: string, patch: Partial<QARecord>, event?: string) => void }) {
+  const sections = ["Daily Check-ins Due", "First Week Monitoring", "Biweekly Monitoring", "Early Compliance Issues", "Cleared from Monitoring"];
+  return <div className="space-y-4">{sections.map((section) => { const rows = records.filter((r) => section === "Cleared from Monitoring" ? r.rbtCheckInStatus === "Cleared" : section === "Early Compliance Issues" ? r.noteStatus !== "Clean" : section === "Daily Check-ins Due" ? ["Due", "Missed"].includes(r.rbtCheckInStatus) : r.rbtCheckInStatus !== "Cleared"); return <SimpleTable key={section} title={section} subtitle={`${rows.length} RBT monitoring records`} headers={["RBT", "State", "Start Date", "Assigned Clients", "Check-in", "Notes Issues", "Training", "Next Check-in", "Alert", "Action"]}>{rows.map((r) => <tr key={`${section}-${r.id}`} className="border-b border-border/40"><td className="px-3 py-3"><button onClick={() => onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.rbt}</button></td><td className="px-3 py-3 text-muted-foreground">{r.state}</td><td className="px-3 py-3 text-muted-foreground">{r.rbtStartDate}</td><td className="px-3 py-3 text-muted-foreground">{r.clientName}</td><td className="px-3 py-3"><StatusBadge status={r.rbtCheckInStatus} variant={r.rbtCheckInStatus === "Missed" ? "destructive" : r.rbtCheckInStatus === "Cleared" ? "success" : "warning"} /></td><td className="px-3 py-3 text-muted-foreground">{r.notesFlagged}</td><td className="px-3 py-3 text-muted-foreground">{r.trainingStatus}</td><td className="px-3 py-3 text-muted-foreground">{isoDaysAhead(1)}</td><td className="px-3 py-3 text-muted-foreground">{r.alerts.find((a) => a.includes("RBT")) ?? "—"}</td><td className="px-3 py-3"><Button size="sm" variant="outline" onClick={() => onPatch(r.id, { rbtCheckInStatus: "Complete" }, "RBT check-in completed")}>Complete</Button></td></tr>)}</SimpleTable>; })}</div>;
+}
+
+function ProgressReportView({ records, onOpen, onReady, onAuth }: { records: QARecord[]; onOpen: (r: QARecord) => void; onReady: (r: QARecord) => void; onAuth: (r: QARecord) => void }) {
+  const sections = ["Progress Reports Received", "Awaiting QA Review", "Corrections Needed", "Ready for Reauth Submission"];
+  return <div className="space-y-4">{sections.map((section) => { const rows = records.filter((r) => section === "Progress Reports Received" ? r.progressReportStatus === "Received" : section === "Awaiting QA Review" ? r.progressReportStatus === "Awaiting QA" : section === "Corrections Needed" ? r.progressReportStatus === "Corrections Needed" : r.progressReportStatus === "Ready for Reauth"); return <SimpleTable key={section} title={section} subtitle="Reauth QA workflow" headers={["Client", "BCBA", "Payor", "Auth Expiration", "Days Remaining", "Report", "QA Status", "Next Action", "Actions"]}>{rows.map((r) => <tr key={`${section}-${r.id}`} className="border-b border-border/40"><td className="px-3 py-3"><button onClick={() => onOpen(r)} className="font-medium text-foreground hover:text-primary">{r.clientName}</button></td><td className="px-3 py-3 text-muted-foreground">{r.bcba}</td><td className="px-3 py-3 text-muted-foreground">{r.payor}</td><td className="px-3 py-3 text-muted-foreground">{r.authExpiration}</td><td className="px-3 py-3 text-muted-foreground">{Math.max(1, Math.round((new Date(r.authExpiration).getTime() - today.getTime()) / 86400000))}d</td><td className="px-3 py-3 text-muted-foreground">{r.progressReportStatus}</td><td className="px-3 py-3"><StatusBadge status={r.status} variant={statusVariant(r.status)} /></td><td className="px-3 py-3 text-muted-foreground">{r.nextAction}</td><td className="px-3 py-3"><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => onReady(r)}>Approve QA</Button><Button size="sm" variant="outline" onClick={() => onAuth(r)}>Reauth</Button></div></td></tr>)}</SimpleTable>; })}</div>;
+}
+
+function SimpleTable({ title, subtitle, headers, children }: { title: string; subtitle: string; headers: string[]; children: React.ReactNode }) {
+  return <div className="overflow-hidden rounded-lg border border-border/60 bg-card"><div className="border-b border-border/60 px-4 py-3"><h3 className="text-sm font-semibold text-foreground">{title}</h3><p className="text-xs text-muted-foreground">{subtitle}</p></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-border/50 bg-muted/20">{headers.map((h) => <th key={h} className="whitespace-nowrap px-3 py-2 text-left text-xs font-medium text-muted-foreground">{h}</th>)}</tr></thead><tbody>{children}</tbody></table></div></div>;
+}
+
+function DetailPanel({ record, panelTab, setPanelTab, onOpenClient, onStart, onCorrection, onReady, onAuth, onTask, onToggle, onResolveIssue, onResolveNote, comment, setComment, onComment }: { record: QARecord; panelTab: string; setPanelTab: (v: string) => void; onOpenClient: () => void; onStart: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onReady: (r: QARecord) => void; onAuth: (r: QARecord) => void; onTask: (r: QARecord) => void; onToggle: (r: QARecord, key: ChecklistKey, value: boolean) => void; onResolveIssue: (r: QARecord, id?: string) => void; onResolveNote: (r: QARecord) => void; comment: string; setComment: (v: string) => void; onComment: (r: QARecord) => void }) {
+  if (!record) return <aside className="rounded-lg border border-border/60 bg-card p-5 text-sm text-muted-foreground">Select a QA record.</aside>;
+  return <aside className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-hidden rounded-lg border border-border/60 bg-card"><div className="border-b border-border/60 p-4"><div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold text-foreground">{record.clientName}</h2><p className="text-xs text-muted-foreground">{record.state} · {record.bcba} · {record.qaOwner} · {record.daysInQA}d in QA</p></div><StatusBadge status={record.status} variant={statusVariant(record.status)} /></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><Info label="Auth readiness" value={record.authReadiness} /><Info label="Risk" value={record.risk} /><Info label="Plan" value={record.planStatus} /><Info label="Notes" value={record.noteStatus} /></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={onOpenClient}>Open Client</Button><Button size="sm" variant="outline" onClick={() => onStart(record)}>Start Review</Button><Button size="sm" variant="outline" onClick={() => onCorrection(record)}>Request Correction</Button><Button size="sm" variant="outline" onClick={() => toast.success("BCBA notified")}>Notify BCBA</Button><Button size="sm" variant="outline" onClick={() => onReady(record)}>Ready</Button><Button size="sm" variant="outline" onClick={() => onAuth(record)}>Send to Auth</Button><Button size="sm" variant="outline" onClick={() => onTask(record)}>Create Task</Button></div></div><Tabs value={panelTab} onValueChange={setPanelTab} className="flex h-[calc(100vh-22rem)] flex-col"><div className="overflow-x-auto border-b border-border/60 px-3 py-2"><TabsList className="h-auto w-max justify-start"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="plan">Treatment Plan</TabsTrigger><TabsTrigger value="checklist">Checklist</TabsTrigger><TabsTrigger value="issues">Issues</TabsTrigger><TabsTrigger value="notes">Notes Compliance</TabsTrigger><TabsTrigger value="rbt">New RBT Monitoring</TabsTrigger><TabsTrigger value="auth">Auth Connection</TabsTrigger><TabsTrigger value="docs">Documents</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger></TabsList></div><div className="flex-1 overflow-y-auto p-4"><TabsContent value="overview" className="mt-0 space-y-3"><Info label="Current QA status" value={record.status} /><Info label="Treatment plan status" value={record.planStatus} /><Info label="Days since assessment" value={`${record.daysSinceAssessment} days`} /><Info label="Blockers" value={record.alerts.join(", ") || "None"} /><Info label="Next action" value={record.nextAction} /><Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add note…" /><Button size="sm" onClick={() => onComment(record)}>Add Note</Button></TabsContent><TabsContent value="plan" className="mt-0 space-y-3"><Info label="Submitted date" value={record.treatmentPlanSubmitted} /><Info label="Due date" value={record.dueDate} /><Info label="Document link" value="Treatment plan packet.pdf" /><Info label="Version history" value="v3 current · v2 corrected · v1 submitted" />{record.comments.map((c) => <p key={c} className="rounded-md bg-muted/40 p-2 text-sm text-muted-foreground">{c}</p>)}<Button size="sm" variant="outline">Upload / replace document</Button></TabsContent><TabsContent value="checklist" className="mt-0 space-y-2">{CHECKLIST.map((item) => <label key={item.key} className="flex items-center gap-3 rounded-md border border-border/50 p-3 text-sm"><Checkbox checked={record.checklist[item.key]} onCheckedChange={(v) => onToggle(record, item.key, Boolean(v))} /><span>{item.label}</span></label>)}<Button className="mt-2 w-full" onClick={() => onReady(record)}>Mark Ready for Submission</Button></TabsContent><TabsContent value="issues" className="mt-0 space-y-3">{record.issues.map((issue) => <div key={issue.id} className="rounded-md border border-border/50 p-3"><div className="flex items-center justify-between"><StatusBadge status={issue.type} variant={issue.resolved ? "success" : "destructive"} /><Button size="sm" variant="outline" onClick={() => onResolveIssue(record, issue.id)}>Mark resolved</Button></div><p className="mt-2 text-sm text-foreground">{issue.description}</p><p className="text-xs text-muted-foreground">Owner {issue.owner} · Due {issue.dueDate}</p></div>)}<Button size="sm" variant="outline" onClick={() => onTask(record)}>Add issue button</Button></TabsContent><TabsContent value="notes" className="mt-0 space-y-3"><Info label="Flagged notes" value={String(record.notesFlagged)} /><Info label="NoteGuard issues" value={record.issueType === "NoteGuard Flag" ? "Open" : "None"} /><Info label="Amerigroup notes" value={record.issueType === "Amerigroup Issue" ? "Daily review required" : "Current"} /><Info label="Missing notes" value={record.issueType === "Missing Notes" ? "Yes" : "No"} /><Button size="sm" onClick={() => onResolveNote(record)}>Resolve issue</Button></TabsContent><TabsContent value="rbt" className="mt-0 space-y-3"><Info label="Monitoring start" value={record.rbtStartDate} /><Info label="Daily check-in" value={record.rbtCheckInStatus} /><Info label="First week status" value={record.trainingStatus} /><Info label="Biweekly check-in" value={record.rbtCheckInStatus === "Cleared" ? "Cleared" : "Scheduled"} /><Info label="Early compliance notes" value={record.alerts.find((a) => a.includes("RBT")) ?? "No early concerns"} /></TabsContent><TabsContent value="auth" className="mt-0 space-y-3"><Info label="Linked treatment auth" value={`AUTH-${record.id.toUpperCase()}`} /><Info label="Auth status" value={record.authStatus} /><Info label="QA blocking" value={record.authReadiness === "Blocked" ? record.alerts.join(", ") || record.issueType : "None"} /><Info label="Submission readiness" value={record.authReadiness} /><Button onClick={() => onAuth(record)}>Move auth to Awaiting Submission</Button></TabsContent><TabsContent value="docs" className="mt-0 space-y-2">{record.documents.map((doc) => <div key={doc.name} className="flex items-center justify-between rounded-md border border-border/50 p-3"><div><p className="text-sm font-medium text-foreground">{doc.name}</p><p className="text-xs text-muted-foreground">{doc.type}</p></div><StatusBadge status={doc.present ? "Present" : "Missing"} variant={doc.present ? "success" : "destructive"} /></div>)}<Button size="sm" variant="outline">Upload area</Button></TabsContent><TabsContent value="tasks" className="mt-0 space-y-2">{record.tasks.map((task) => <div key={task.id} className="rounded-md border border-border/50 p-3"><div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{task.title}</p><StatusBadge status={task.completed ? "Done" : "Open"} variant={task.completed ? "success" : "warning"} /></div><p className="text-xs text-muted-foreground">{task.owner} · {task.dueDate}</p></div>)}</TabsContent><TabsContent value="timeline" className="mt-0 space-y-3">{record.timeline.map((event, index) => <div key={`${event.date}-${event.event}-${index}`} className="flex gap-3"><span className="mt-1 h-2 w-2 rounded-full bg-primary" /><div><p className="text-sm text-foreground">{event.event}</p><p className="text-xs text-muted-foreground">{event.date}</p></div></div>)}</TabsContent></div></Tabs></aside>;
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-md bg-muted/30 p-2"><p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium text-foreground">{value || "—"}</p></div>;
 }
