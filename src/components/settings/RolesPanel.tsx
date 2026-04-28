@@ -4,6 +4,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, type AppRole } from "@/lib/roles";
+import { getSidebarPreviewForRoles, hasFullNavigationAccess, roleNavigationExceptions } from "@/lib/navigationAccess";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -24,6 +25,10 @@ export function RolesPanel() {
   const [activeRole, setActiveRole] = useState<AppRole>("ops_manager");
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const activeMeta = ROLE_META.find((r) => r.key === activeRole) ?? ROLE_META[0];
+  const activeRoleHasPermission = (permission: string) => activeRole === "admin" || (matrix.get(permission)?.has(activeRole) ?? false);
+  const sidebarPreview = getSidebarPreviewForRoles([activeRole], activeRoleHasPermission);
+  const exceptionCount = (roleNavigationExceptions[activeRole]?.sectionTitles?.length ?? 0) + (roleNavigationExceptions[activeRole]?.itemPaths?.length ?? 0);
+  const totalVisibleTabs = sidebarPreview.reduce((total, section) => total + section.items.length, 0);
 
   useEffect(() => {
     const load = async () => {
@@ -207,6 +212,43 @@ export function RolesPanel() {
                 Always all permissions
               </span>
             )}
+
+            <div className="rounded-lg border border-border/50 bg-card p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Sidebar preview</h3>
+                  <p className="text-xs text-muted-foreground">Tabs visible to this role after menu restrictions and permissions.</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-foreground">{totalVisibleTabs}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Visible tabs</p>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {sidebarPreview.map((section) => (
+                  <div key={section.title} className="rounded-md border border-border/50 bg-secondary/20 p-2">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{section.title}</p>
+                      <Badge variant="secondary" className="text-[10px]">{section.items.length}</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {section.items.map((item) => (
+                        <Badge key={`${section.title}-${item.path}`} variant="outline" className="text-[11px]">
+                          {item.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                {hasFullNavigationAccess([activeRole])
+                  ? "This role uses the full navigation rule."
+                  : exceptionCount > 0
+                    ? `${exceptionCount} configured exception${exceptionCount === 1 ? "" : "s"} extend this role beyond Intelligence.`
+                    : "No exceptions configured; this role is limited to Intelligence."}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
