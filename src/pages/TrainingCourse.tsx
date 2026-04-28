@@ -142,7 +142,27 @@ export default function TrainingCourse() {
   const primaryResourceUrl = activeLesson.tangoUrl || course.walkthroughs?.find((item) => item.url.trim())?.url || activeLesson.resourceUrl || course.sop?.fileUrl;
   const checklistItems = course.completionChecklist?.length ? course.completionChecklist.map((item) => item.label) : defaultChecklistItems;
   const progress = course.lessons.length ? Math.round((completed.size / course.lessons.length) * 100) : 0;
-  const markComplete = () => { setCompleted((current) => new Set([...current, activeLesson.id])); toast.success("Lesson marked complete"); };
+  const persistProgress = (nextCompleted: Set<string>) => {
+    const nextProgress = course.lessons.length ? Math.round((nextCompleted.size / course.lessons.length) * 100) : 0;
+    const now = new Date().toISOString();
+    const nextStatus = nextProgress >= 100 ? "Completed" : nextProgress > 0 ? "In Progress" : "Not Started";
+    const nextCourses = getStoredTrainingCourses().map((item) => item.id === course.id ? { ...item, lessons: item.lessons.map((lesson) => ({ ...lesson, completed: nextCompleted.has(lesson.id) })), progress: nextProgress, status: nextStatus, startedAt: item.startedAt ?? now, lastOpened: now, updatedAt: now } : item);
+    setTrainingCourses(nextCourses);
+    saveStoredTrainingCourses(nextCourses);
+    const storedAssignments = getStoredTrainingAssignments();
+    const relatedAssignments = storedAssignments.filter((assignment) => assignment.courseId === course.id);
+    if (relatedAssignments.length) {
+      const nextAssignments = storedAssignments.map((assignment) => {
+        const isMine = user?.email && assignment.employeeEmail?.toLowerCase() === user.email.toLowerCase();
+        const shouldUpdate = assignment.courseId === course.id && (isMine || relatedAssignments.length === 1);
+        if (!shouldUpdate) return assignment;
+        return { ...assignment, progress: nextProgress, status: nextProgress >= 100 ? "completed" as const : nextProgress > 0 ? "in_progress" as const : "assigned" as const, startedAt: assignment.startedAt ?? now, completedAt: nextProgress >= 100 ? now : undefined };
+      });
+      setAssignments(nextAssignments);
+      saveStoredTrainingAssignments(nextAssignments);
+    }
+  };
+  const markComplete = () => { setCompleted((current) => { const next = new Set([...current, activeLesson.id]); persistProgress(next); return next; }); toast.success("Lesson progress saved"); };
   const submitQuiz = () => { if (!course.quiz) return; const correct = course.quiz.questions.filter((q) => (answers[q.id] ?? "").toLowerCase().trim() === q.answer.toLowerCase().trim()).length; const next = Math.round((correct / course.quiz.questions.length) * 100); setScore(next); toast[next >= course.quiz.passingScore ? "success" : "error"](next >= course.quiz.passingScore ? "Quiz passed" : "Quiz needs a retake"); };
   const toggleChecklistItem = (item: string, checked: boolean) => setCheckedChecklist((current) => { const next = new Set(current); checked ? next.add(item) : next.delete(item); saveStoredChecklistItems(course.id, activeLesson.id, next); return next; });
   const saveNote = () => { saveStoredNote(course.id, activeLesson.id, note); toast.success("Note saved"); };
