@@ -61,6 +61,14 @@ export function TeamAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [showFullList, setShowFullList] = useState(false);
+  const [recentMemberIds, setRecentMemberIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+    } catch {
+      return [];
+    }
+  });
 
   const load = async () => {
     setLoading(true);
@@ -118,6 +126,23 @@ export function TeamAdminPanel() {
         m.roles.some((r) => roleLabel(r).toLowerCase().includes(q)),
     );
   }, [members, query]);
+
+  const visibleMembers = useMemo(() => {
+    if (showFullList || query.trim()) return filtered;
+    const recent = recentMemberIds
+      .map((id) => filtered.find((member) => member.user_id === id))
+      .filter(Boolean) as Member[];
+    const remaining = filtered.filter((member) => !recentMemberIds.includes(member.user_id));
+    return [...recent, ...remaining].slice(0, 3);
+  }, [filtered, query, recentMemberIds, showFullList]);
+
+  const trackVisited = (userId: string) => {
+    setRecentMemberIds((current) => {
+      const next = [userId, ...current.filter((id) => id !== userId)].slice(0, 12);
+      localStorage.setItem("team-admin-recent-members", JSON.stringify(next));
+      return next;
+    });
+  };
 
   const updateMember = (userId: string, patch: Partial<Member>) => {
     setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...patch } : m)));
@@ -261,27 +286,33 @@ export function TeamAdminPanel() {
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {members.length} member{members.length === 1 ? "" : "s"}
+        <span className="hidden text-xs text-muted-foreground tabular-nums sm:inline">
+          {query.trim() ? `${filtered.length} result${filtered.length === 1 ? "" : "s"}` : showFullList ? `${members.length} members` : `${visibleMembers.length} recent`}
         </span>
+        {!query.trim() && members.length > 3 && (
+          <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => setShowFullList((value) => !value)}>
+            {showFullList ? "Show recent" : "Show full list"}
+          </Button>
+        )}
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={load}>
           Refresh
         </Button>
       </div>
 
       <div className="divide-y divide-border/40">
-        {filtered.map((m) => (
+        {visibleMembers.map((m) => (
           <MemberRow
             key={m.user_id}
             member={m}
             onToggleRole={(role) => toggleRole(m, role)}
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
+            onVisited={() => trackVisited(m.user_id)}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
           />
         ))}
-        {filtered.length === 0 && (
+        {visibleMembers.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">No members match.</div>
         )}
       </div>
@@ -294,6 +325,7 @@ function MemberRow({
   onToggleRole,
   onSaveInfo,
   onSendWelcome,
+  onVisited,
   saving,
   isCurrentUser,
 }: {
@@ -301,6 +333,7 @@ function MemberRow({
   onToggleRole: (role: AppRole) => void;
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
+  onVisited: () => void;
   saving: boolean;
   isCurrentUser: boolean;
 }) {
@@ -368,7 +401,10 @@ function MemberRow({
   return (
     <div>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          onVisited();
+          setOpen((v) => !v);
+        }}
         className="w-full text-left px-4 py-3 hover:bg-muted/30 transition-colors flex items-center gap-3"
       >
         <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
