@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, ExternalLink, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, Download, ExternalLink, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,6 +44,14 @@ const getSavedQuizComplexity = (): QuizComplexity => {
   if (typeof window === "undefined") return "medium";
   const saved = window.localStorage.getItem(quizComplexityDefaultKey);
   return quizComplexities.includes(saved as QuizComplexity) ? saved as QuizComplexity : "medium";
+};
+const downloadResource = (url: string, name: string) => {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name || "training-resource";
+  anchor.target = "_blank";
+  anchor.rel = "noopener noreferrer";
+  anchor.click();
 };
 
 interface BuilderDraft {
