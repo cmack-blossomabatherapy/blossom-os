@@ -95,7 +95,7 @@ export default function TrainingCourse() {
   const { courseId, lessonId } = useParams();
   const { user } = useAuth();
   const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
-  const [assignments, setAssignments] = useState(() => getStoredTrainingAssignments());
+  const [, setAssignments] = useState(() => getStoredTrainingAssignments());
   const course = trainingCourses.find((c) => c.id === courseId);
   const activeLesson = course?.lessons.find((lesson) => lesson.id === lessonId) ?? course?.lessons[0];
   const [completed, setCompleted] = useState<Set<string>>(() => new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
