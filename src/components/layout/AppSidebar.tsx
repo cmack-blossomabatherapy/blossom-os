@@ -176,6 +176,12 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     .filter((s) => s.items.length > 0);
 
   const isItemActive = (path: string) => {
+    if (path === "/hr") {
+      return location.pathname === "/hr";
+    }
+    if (path === "/hr/directory") {
+      return location.pathname === "/hr/directory" || location.pathname.startsWith("/hr/employees/");
+    }
     if (path.startsWith("/leadership-dashboard?")) {
       const itemDashboard = new URLSearchParams(path.split("?")[1]).get("dashboard");
       const currentDashboard = new URLSearchParams(location.search).get("dashboard");
