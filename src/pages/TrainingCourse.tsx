@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCircle, LinkIcon, PlayCircle } from "lucide-react";
+import { ArrowLeft, Award, CheckCircle2, Clock, ExternalLink, FileText, HelpCircle, LinkIcon, PlayCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -29,18 +29,29 @@ const openResource = (url?: string) => {
 };
 
 const TRAINING_CHECKLIST_STORAGE_KEY = "blossom-training-checklist-completions";
+const TRAINING_NOTES_STORAGE_KEY = "blossom-training-lesson-notes";
 const defaultChecklistItems = ["Review the SOP", "Confirm required fields", "Identify the owner", "Document blockers", "Complete knowledge check"];
 
-const checklistKey = (courseId?: string, lessonId?: string) => courseId && lessonId ? `${courseId}:${lessonId}` : "";
+const lessonStorageKey = (courseId?: string, lessonId?: string) => courseId && lessonId ? `${courseId}:${lessonId}` : "";
 const getStoredChecklistMap = (): Record<string, string[]> => {
   if (typeof window === "undefined") return {};
   try { return JSON.parse(window.localStorage.getItem(TRAINING_CHECKLIST_STORAGE_KEY) || "{}"); } catch { return {}; }
 };
-const getStoredChecklistItems = (courseId?: string, lessonId?: string) => new Set(getStoredChecklistMap()[checklistKey(courseId, lessonId)] ?? []);
+const getStoredNotesMap = (): Record<string, string> => {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(window.localStorage.getItem(TRAINING_NOTES_STORAGE_KEY) || "{}"); } catch { return {}; }
+};
+const getStoredChecklistItems = (courseId?: string, lessonId?: string) => new Set(getStoredChecklistMap()[lessonStorageKey(courseId, lessonId)] ?? []);
+const getStoredNote = (courseId?: string, lessonId?: string) => getStoredNotesMap()[lessonStorageKey(courseId, lessonId)] ?? "";
 const saveStoredChecklistItems = (courseId: string, lessonId: string, items: Set<string>) => {
   const stored = getStoredChecklistMap();
-  stored[checklistKey(courseId, lessonId)] = [...items];
+  stored[lessonStorageKey(courseId, lessonId)] = [...items];
   window.localStorage.setItem(TRAINING_CHECKLIST_STORAGE_KEY, JSON.stringify(stored));
+};
+const saveStoredNote = (courseId: string, lessonId: string, note: string) => {
+  const stored = getStoredNotesMap();
+  stored[lessonStorageKey(courseId, lessonId)] = note;
+  window.localStorage.setItem(TRAINING_NOTES_STORAGE_KEY, JSON.stringify(stored));
 };
 
 function LessonEmbed({ lesson }: { lesson: TrainingLesson }) {
