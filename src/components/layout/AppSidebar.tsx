@@ -309,7 +309,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                   <ShieldCheck className="h-4 w-4 text-primary" />
                   <span>Intelligence-only access</span>
                 </div>
-                <p>{limitedRoleMessage}</p>
+                <p>{hasNavigationExceptions ? limitedRoleExceptionMessage : limitedRoleMessage}</p>
               </div>
             )}
           </nav>
@@ -377,7 +377,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               <ShieldCheck className="h-3.5 w-3.5 text-sidebar-primary" />
               <span>Intelligence-only access</span>
             </div>
-            <p>{limitedRoleMessage}</p>
+            <p>{hasNavigationExceptions ? limitedRoleExceptionMessage : limitedRoleMessage}</p>
           </div>
         )}
       </nav>
