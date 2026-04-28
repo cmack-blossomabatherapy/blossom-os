@@ -709,3 +709,14 @@ function InfoLine({
     </div>
   );
 }
+
+function formatLastVisited(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "recently";
+  const diffMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
