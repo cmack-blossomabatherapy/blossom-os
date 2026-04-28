@@ -234,6 +234,61 @@ const buildRecords = (clients: Client[]): QARecord[] => {
   });
 };
 
+const qaRecordFromClient = (client: Client, index: number): QARecord => {
+  const treatmentAuth = client.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
+  const treatmentPlanReceived = Boolean(treatmentAuth?.treatmentPlanReceived || treatmentAuth?.treatmentPlanLinked);
+  return {
+    id: `qa-new-${Date.now()}`,
+    clientId: client.id,
+    clientName: client.childName,
+    parentName: client.parentName,
+    state: client.state,
+    clinic: client.clinic,
+    payor: treatmentAuth?.payor ?? client.payor,
+    bcba: client.bcba ?? BCBAS[index % BCBAS.length],
+    rbt: client.rbt ?? "Unassigned",
+    qaOwner: "QA Team",
+    status: "Awaiting Review",
+    planStatus: treatmentPlanReceived ? "Submitted" : "Missing",
+    noteStatus: client.notesComplianceStatus === "Flagged" ? "Flagged" : "Clean",
+    issueType: treatmentPlanReceived ? "None" : "Missing Treatment Plan",
+    severity: treatmentPlanReceived ? "Medium" : "High",
+    risk: treatmentPlanReceived ? "Moderate" : "High",
+    daysSinceAssessment: client.daysSinceAssessment ?? 0,
+    daysInQA: 0,
+    daysInStage: 0,
+    treatmentPlanSubmitted: treatmentPlanReceived ? isoDaysAgo(0) : "—",
+    dueDate: isoDaysAhead(3),
+    authExpiration: treatmentAuth?.expirationDate ?? isoDaysAhead(30),
+    authStatus: "Not Submitted",
+    authReadiness: treatmentPlanReceived ? "Needs QA" : "Blocked",
+    nextAction: "Start QA review",
+    alerts: treatmentPlanReceived ? ["Awaiting QA Review"] : ["Missing Treatment Plan", "QA blocking auth submission"],
+    notesFlagged: client.noteguardFlags ?? 0,
+    correctionOwner: client.bcba ?? "Clinical Team",
+    correctionDue: isoDaysAhead(2),
+    newRbt: Boolean(client.newRbtStartDate),
+    rbtStartDate: client.newRbtStartDate ?? isoDaysAgo(0),
+    rbtCheckInStatus: "Complete",
+    trainingStatus: "Supported",
+    progressReportStatus: "Not Needed",
+    checklist: CHECKLIST.reduce((acc, item) => ({ ...acc, [item.key]: item.key === "planReceived" ? treatmentPlanReceived : false }), {} as Record<ChecklistKey, boolean>),
+    issues: treatmentPlanReceived ? [] : [{ id: `issue-${Date.now()}`, type: "Missing Treatment Plan", description: "Treatment plan must be attached before QA can approve auth handoff.", owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(2), resolved: false }],
+    documents: [
+      { name: "Treatment plan", type: "Treatment Plan", present: treatmentPlanReceived },
+      { name: "Assessment report", type: "Assessment", present: Boolean(client.assessmentDate) },
+      { name: "Parent consent", type: "Supporting", present: Boolean(client.consentComplete) },
+      { name: "QA notes", type: "QA", present: true },
+    ],
+    tasks: [{ id: `task-${Date.now()}`, title: "Start treatment plan QA review", owner: "QA Team", dueDate: isoDaysAhead(1), completed: false }],
+    timeline: [
+      { date: client.assessmentDate ?? isoDaysAgo(client.daysSinceAssessment ?? 0), event: "Assessment/treatment plan selected for QA" },
+      { date: isoDaysAgo(0), event: "New QA Review created: Awaiting QA Review" },
+    ],
+    comments: ["QA review created from existing assessment/treatment plan."],
+  };
+};
+
 export default function QA() {
   const navigate = useNavigate();
   const { clients, updateClient, addTask, appendTimeline, appendAutomation } = useClients();
