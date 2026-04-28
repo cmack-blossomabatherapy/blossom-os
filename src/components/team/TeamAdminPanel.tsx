@@ -54,6 +54,11 @@ interface Member {
   active: boolean;
 }
 
+interface RecentVisit {
+  id: string;
+  visitedAt: string;
+}
+
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
 export function TeamAdminPanel() {
   const { user: currentUser } = useAuth();
@@ -62,9 +67,10 @@ export function TeamAdminPanel() {
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [showFullList, setShowFullList] = useState(false);
-  const [recentMemberIds, setRecentMemberIds] = useState<string[]>(() => {
+  const [recentVisits, setRecentVisits] = useState<RecentVisit[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+      const raw = JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+      return Array.isArray(raw) ? raw.map((entry) => typeof entry === "string" ? { id: entry, visitedAt: new Date().toISOString() } : entry).filter((entry) => entry?.id && entry?.visitedAt) : [];
     } catch {
       return [];
     }
@@ -129,16 +135,17 @@ export function TeamAdminPanel() {
 
   const visibleMembers = useMemo(() => {
     if (showFullList || query.trim()) return filtered;
-    const recent = recentMemberIds
+    const recentIds = recentVisits.map((visit) => visit.id);
+    const recent = recentIds
       .map((id) => filtered.find((member) => member.user_id === id))
       .filter(Boolean) as Member[];
-    const remaining = filtered.filter((member) => !recentMemberIds.includes(member.user_id));
+    const remaining = filtered.filter((member) => !recentIds.includes(member.user_id));
     return [...recent, ...remaining].slice(0, 3);
-  }, [filtered, query, recentMemberIds, showFullList]);
+  }, [filtered, query, recentVisits, showFullList]);
 
   const trackVisited = (userId: string) => {
-    setRecentMemberIds((current) => {
-      const next = [userId, ...current.filter((id) => id !== userId)].slice(0, 12);
+    setRecentVisits((current) => {
+      const next = [{ id: userId, visitedAt: new Date().toISOString() }, ...current.filter((visit) => visit.id !== userId)].slice(0, 12);
       localStorage.setItem("team-admin-recent-members", JSON.stringify(next));
       return next;
     });
@@ -308,6 +315,7 @@ export function TeamAdminPanel() {
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
             onVisited={() => trackVisited(m.user_id)}
+            lastVisitedAt={!showFullList && !query.trim() ? recentVisits.find((visit) => visit.id === m.user_id)?.visitedAt ?? null : null}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
           />
@@ -326,6 +334,7 @@ function MemberRow({
   onSaveInfo,
   onSendWelcome,
   onVisited,
+  lastVisitedAt,
   saving,
   isCurrentUser,
 }: {
@@ -334,6 +343,7 @@ function MemberRow({
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
   onVisited: () => void;
+  lastVisitedAt: string | null;
   saving: boolean;
   isCurrentUser: boolean;
 }) {
@@ -415,6 +425,11 @@ function MemberRow({
             <span className="text-sm font-medium text-foreground">{member.display_name}</span>
             {member.job_title && (
               <span className="text-[11px] text-muted-foreground">· {member.job_title}</span>
+            )}
+            {lastVisitedAt && (
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                Last visited {formatLastVisited(lastVisitedAt)}
+              </span>
             )}
             {isCurrentUser && (
               <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
@@ -693,4 +708,15 @@ function InfoLine({
       </dd>
     </div>
   );
+}
+
+function formatLastVisited(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "recently";
+  const diffMinutes = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
