@@ -61,6 +61,14 @@ export function TeamAdminPanel() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [showFullList, setShowFullList] = useState(false);
+  const [recentMemberIds, setRecentMemberIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
+    } catch {
+      return [];
+    }
+  });
 
   const load = async () => {
     setLoading(true);
@@ -118,6 +126,23 @@ export function TeamAdminPanel() {
         m.roles.some((r) => roleLabel(r).toLowerCase().includes(q)),
     );
   }, [members, query]);
+
+  const visibleMembers = useMemo(() => {
+    if (showFullList || query.trim()) return filtered;
+    const recent = recentMemberIds
+      .map((id) => filtered.find((member) => member.user_id === id))
+      .filter(Boolean) as Member[];
+    const remaining = filtered.filter((member) => !recentMemberIds.includes(member.user_id));
+    return [...recent, ...remaining].slice(0, 3);
+  }, [filtered, query, recentMemberIds, showFullList]);
+
+  const trackVisited = (userId: string) => {
+    setRecentMemberIds((current) => {
+      const next = [userId, ...current.filter((id) => id !== userId)].slice(0, 12);
+      localStorage.setItem("team-admin-recent-members", JSON.stringify(next));
+      return next;
+    });
+  };
 
   const updateMember = (userId: string, patch: Partial<Member>) => {
     setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...patch } : m)));
