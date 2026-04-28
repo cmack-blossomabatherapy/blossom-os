@@ -59,6 +59,12 @@ interface RecentVisit {
   visitedAt: string;
 }
 
+interface RoleActivity {
+  id: string;
+  updatedAt: string;
+  label: string;
+}
+
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
 export function TeamAdminPanel() {
   const { user: currentUser } = useAuth();
@@ -71,6 +77,14 @@ export function TeamAdminPanel() {
     try {
       const raw = JSON.parse(localStorage.getItem("team-admin-recent-members") ?? "[]");
       return Array.isArray(raw) ? raw.map((entry) => typeof entry === "string" ? { id: entry, visitedAt: new Date().toISOString() } : entry).filter((entry) => entry?.id && entry?.visitedAt) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [roleActivity, setRoleActivity] = useState<RoleActivity[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem("team-admin-role-activity") ?? "[]");
+      return Array.isArray(raw) ? raw.filter((entry) => entry?.id && entry?.updatedAt && entry?.label) : [];
     } catch {
       return [];
     }
@@ -151,6 +165,14 @@ export function TeamAdminPanel() {
     });
   };
 
+  const trackRoleActivity = (userId: string, label: string) => {
+    setRoleActivity((current) => {
+      const next = [{ id: userId, updatedAt: new Date().toISOString(), label }, ...current.filter((item) => item.id !== userId)].slice(0, 50);
+      localStorage.setItem("team-admin-role-activity", JSON.stringify(next));
+      return next;
+    });
+  };
+
   const updateMember = (userId: string, patch: Partial<Member>) => {
     setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, ...patch } : m)));
   };
@@ -177,6 +199,7 @@ export function TeamAdminPanel() {
         return;
       }
       updateMember(member.user_id, { roles: member.roles.filter((r) => r !== role) });
+      trackRoleActivity(member.user_id, `Removed ${roleLabel(role)}`);
     } else {
       const { error } = await supabase
         .from("user_roles")
@@ -187,6 +210,7 @@ export function TeamAdminPanel() {
         return;
       }
       updateMember(member.user_id, { roles: [...member.roles, role] });
+      trackRoleActivity(member.user_id, `Added ${roleLabel(role)}`);
     }
     setSavingId(null);
   };
