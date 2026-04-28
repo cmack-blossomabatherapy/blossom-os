@@ -12,6 +12,9 @@ import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainin
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 const executiveOnlyDepartmentIds = new Set(["exec", "ops", "systems", "hr", "finance"]);
 
+type CourseDisplayStatus = { status: string; progress: number; dueDate?: string; required: boolean };
+type QuizDisplayResult = { label: string; shortLabel: string; variant: "success" | "destructive"; failed: boolean };
+
 export default function TrainingHub() {
   const { user, roles } = useAuth();
   const navigate = useNavigate();
@@ -19,6 +22,7 @@ export default function TrainingHub() {
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
   const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
+
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
@@ -28,6 +32,7 @@ export default function TrainingHub() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
   useEffect(() => {
     const refresh = () => setAssignments(getStoredTrainingAssignments());
     window.addEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
@@ -37,6 +42,7 @@ export default function TrainingHub() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
   useEffect(() => {
     const refresh = () => setBadges(getStoredTrainingBadges());
     window.addEventListener(TRAINING_BADGES_UPDATED_EVENT, refresh);
@@ -46,6 +52,7 @@ export default function TrainingHub() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Blossom teammate";
   const roleSet = useMemo(() => new Set(roles), [roles]);
   const canSeeExecutiveTraining = roleSet.has("admin") || roleSet.has("exec");
@@ -57,12 +64,29 @@ export default function TrainingHub() {
     const canSeeCourse = assignedCourseIds.has(course.id) || course.roleVisibility.length === 0 || course.roleVisibility.some((role) => roleSet.has(role as never)) || roles.length === 0;
     return canSeeDepartment && canSeeCourse;
   }), [assignedCourseIds, canSeeExecutiveTraining, roleSet, roles.length, trainingCourses]);
+
   const courseAssignment = (courseId: string) => myAssignments.find((assignment) => assignment.courseId === courseId);
-  const courseStatus = (course: TrainingCourse) => {
-    const assignment = courseAssignment(course.id);
-    if (!assignment) return { status: course.status, progress: course.progress, dueDate: course.dueDate, required: course.required };
-    return { status: assignment.status === "completed" ? "Completed" : assignment.status === "overdue" ? "Overdue" : assignment.status === "in_progress" ? "In Progress" : "Not Started", progress: assignment.progress, dueDate: assignment.dueDate || course.dueDate, required: assignment.required };
+  const quizResult = (course: TrainingCourse): QuizDisplayResult | null => {
+    if (!course.quiz || course.quizScore == null) return null;
+    const passed = course.quizScore >= course.quiz.passingScore;
+    return {
+      label: `${passed ? "Quiz passed" : "Quiz failed"} · ${course.quizScore}%`,
+      shortLabel: `${passed ? "Passed" : "Failed"} ${course.quizScore}%`,
+      variant: passed ? "success" : "destructive",
+      failed: !passed,
+    };
   };
+  const courseStatus = (course: TrainingCourse): CourseDisplayStatus => {
+    const assignment = courseAssignment(course.id);
+    const base = assignment
+      ? { status: assignment.status === "completed" ? "Completed" : assignment.status === "overdue" ? "Overdue" : assignment.status === "in_progress" ? "In Progress" : "Not Started", progress: assignment.progress, dueDate: assignment.dueDate || course.dueDate, required: assignment.required }
+      : { status: course.status, progress: course.progress, dueDate: course.dueDate, required: course.required };
+    const quiz = quizResult(course);
+    if (quiz?.failed) return { ...base, status: "In Progress" };
+    if (quiz && base.progress >= 100) return { ...base, status: "Completed" };
+    return base;
+  };
+
   const searched = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) return visibleCourses;
@@ -71,8 +95,11 @@ export default function TrainingHub() {
       return [course.title, course.description, course.type, dept?.name, course.resources.join(" ")].join(" ").toLowerCase().includes(q);
     });
   }, [query, visibleCourses]);
-  const continueCourses = visibleCourses.filter((course) => courseStatus(course).status === "In Progress").slice(0, 4);
-  const requiredCourses = visibleCourses.filter((course) => courseStatus(course).required).slice(0, 8);
+
+  const continueCourses = visibleCourses.filter((course) => courseStatus(course).status === "In Progress" || quizResult(course)?.failed).slice(0, 4);
+  const allRequiredCourses = visibleCourses.filter((course) => courseStatus(course).required);
+  const completedCourses = allRequiredCourses.filter((course) => courseStatus(course).status === "Completed");
+  const requiredCourses = allRequiredCourses.filter((course) => courseStatus(course).status !== "Completed").slice(0, 8);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
@@ -85,16 +112,21 @@ export default function TrainingHub() {
             <div className="relative max-w-2xl"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search topics, SOPs, systems, departments..." className="h-14 rounded-2xl border-border/70 bg-background/80 pl-12 text-base shadow-sm" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: badges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
+            {[{ label: "Assigned", value: myAssignments.length || allRequiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: badges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
           </div>
         </div>
       </section>
 
-      {query && <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-3 flex items-center justify-between"><h2 className="text-base font-semibold text-foreground">Search results</h2><span className="text-xs text-muted-foreground">{searched.length} trainings</span></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{searched.slice(0, 6).map((course) => <CourseCard key={course.id} course={course} compact />)}</div></section>}
+      {query && <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-3 flex items-center justify-between"><h2 className="text-base font-semibold text-foreground">Search results</h2><span className="text-xs text-muted-foreground">{searched.length} trainings</span></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{searched.slice(0, 6).map((course) => <CourseCard key={course.id} course={course} compact training={courseStatus(course)} quiz={quizResult(course)} />)}</div></section>}
 
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Continue Learning</h2><p className="text-sm text-muted-foreground">Started trainings that are waiting for you.</p></div><Flame className="h-5 w-5 text-warning" /></div>{continueCourses.length ? <div className="grid items-stretch gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">{continueCourses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <EmptyState text="No trainings are in progress yet. Start a required course or browse the Training Library below." />}</section>
+      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Continue Learning</h2><p className="text-sm text-muted-foreground">Started trainings and failed quizzes that need another attempt.</p></div><Flame className="h-5 w-5 text-warning" /></div>{continueCourses.length ? <div className="grid items-stretch gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">{continueCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />)}</div> : <EmptyState text="No trainings are in progress yet. Start a required course or browse the Training Library below." />}</section>
 
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Required Training</h2><p className="text-sm text-muted-foreground">Personalized by role, department, and assignments.</p></div><Clock className="h-5 w-5 text-primary" /></div>{requiredCourses.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Training", "Required by", "Due date", "Status", "Progress", "Action"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{requiredCourses.map((course) => { const training = courseStatus(course); return <tr key={course.id} className="border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><p className="font-medium text-foreground">{course.title}</p><p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{training.dueDate ?? "—"}</td><td className="px-4 py-3"><StatusBadge status={training.status} variant={statusVariant(training.status)} /></td><td className="px-4 py-3 min-w-[150px]"><Progress value={training.progress} className="h-2" /><span className="mt-1 block text-[11px] text-muted-foreground">{training.progress}%</span></td><td className="px-4 py-3"><Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{training.progress ? "Continue" : "Start"}</Button></td></tr>; })}</tbody></table></div> : <EmptyState text="No required trainings have been assigned yet." />}</section>
+      <section className="rounded-2xl border border-border/60 bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Required Training</h2><p className="text-sm text-muted-foreground">Personalized by role, department, and assignments.</p></div><Clock className="h-5 w-5 text-primary" /></div>
+        {requiredCourses.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Training", "Required by", "Due date", "Status", "Quiz", "Progress", "Action"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{requiredCourses.map((course) => { const training = courseStatus(course); const quiz = quizResult(course); return <tr key={course.id} className="border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><p className="font-medium text-foreground">{course.title}</p><p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{training.dueDate ?? "—"}</td><td className="px-4 py-3"><StatusBadge status={training.status} variant={statusVariant(training.status)} /></td><td className="px-4 py-3">{quiz ? <StatusBadge status={quiz.label} variant={quiz.variant} /> : <span className="text-xs text-muted-foreground">—</span>}</td><td className="px-4 py-3 min-w-[150px]"><Progress value={training.progress} className="h-2" /><span className="mt-1 block text-[11px] text-muted-foreground">{training.progress}%</span></td><td className="px-4 py-3"><Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{training.progress ? "Continue" : "Start"}</Button></td></tr>; })}</tbody></table></div> : <EmptyState text="No open required trainings. Completed required courses appear below." />}
+      </section>
+
+      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Completed Training</h2><p className="text-sm text-muted-foreground">Required trainings completed with passing quiz results when a quiz is included.</p></div><CheckCircle2 className="h-5 w-5 text-success" /></div>{completedCourses.length ? <div className="grid items-stretch gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">{completedCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />)}</div> : <EmptyState text="Completed trainings will appear here after you finish the lessons and pass the quiz." />}</section>
 
       <section className="space-y-3"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-foreground">Department Training Library</h2><p className="text-sm text-muted-foreground">Choose a department path and build confidence step by step.</p></div><BookOpen className="h-5 w-5 text-primary" /></div><div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">{visibleTrainingDepartments.map((dept) => { const Icon = iconMap[dept.icon]; const courses = visibleCourses.filter((c) => c.departmentId === dept.id); const completion = courses.length ? Math.round(courses.reduce((sum, c) => sum + courseStatus(c).progress, 0) / courses.length) : 0; return <Link key={dept.id} to={`/training/department/${dept.slug}`} className="group flex min-h-[260px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", dept.accent)}><Icon className="h-5 w-5" /></div><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" /></div><h3 className="mt-4 truncate text-base font-semibold text-foreground" title={dept.name}>{dept.name}</h3><p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted-foreground">{dept.description}</p><div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground"><span>{courses.length} trainings</span><span>{completion}% complete</span></div><Progress value={completion} className="mt-2 h-2" /><Button variant="outline" size="sm" className="mt-4 w-full">View Training</Button></Link>; })}</div></section>
 
@@ -103,8 +135,9 @@ export default function TrainingHub() {
   );
 }
 
-function CourseCard({ course, compact = false }: { course: TrainingCourse; compact?: boolean }) {
+function CourseCard({ course, compact = false, training, quiz }: { course: TrainingCourse; compact?: boolean; training?: CourseDisplayStatus; quiz?: QuizDisplayResult | null }) {
   const dept = trainingDepartments.find((d) => d.id === course.departmentId);
-  return <div className="flex min-h-[230px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-foreground" title={course.title}>{course.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{dept?.name} · {course.minutes} min</p></div><div className="shrink-0"><StatusBadge status={course.status} variant={statusVariant(course.status)} /></div></div>{!compact && <p className="mt-3 line-clamp-2 min-h-10 text-sm text-muted-foreground">{course.description}</p>}<div className="mt-auto pt-4"><div className="mb-1 flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>{course.progress}% complete</span><span className="shrink-0">{course.progress ? `${Math.max(3, Math.round((100 - course.progress) / 100 * course.minutes))} min left` : `${course.minutes} min`}</span></div><Progress value={course.progress} className="h-2" /></div><div className="mt-4 flex items-center justify-between gap-3"><span className="truncate text-xs text-muted-foreground">Last opened {course.lastOpened ?? "—"}</span><Button asChild size="sm" className="shrink-0"><Link to={`/training/course/${course.id}`}><Play className="mr-1 h-3.5 w-3.5" />{course.progress ? "Continue" : "Start"}</Link></Button></div></div>;
+  const display = training ?? { status: course.status, progress: course.progress, dueDate: course.dueDate, required: course.required };
+  return <div className="flex min-h-[230px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-foreground" title={course.title}>{course.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{dept?.name} · {course.minutes} min</p></div><div className="flex shrink-0 flex-col items-end gap-1"><StatusBadge status={display.status} variant={statusVariant(display.status)} />{quiz && <StatusBadge status={quiz.shortLabel} variant={quiz.variant} />}</div></div>{!compact && <p className="mt-3 line-clamp-2 min-h-10 text-sm text-muted-foreground">{course.description}</p>}<div className="mt-auto pt-4"><div className="mb-1 flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>{display.progress}% complete</span><span className="shrink-0">{display.progress ? `${Math.max(3, Math.round((100 - display.progress) / 100 * course.minutes))} min left` : `${course.minutes} min`}</span></div><Progress value={display.progress} className="h-2" /></div><div className="mt-4 flex items-center justify-between gap-3"><span className="truncate text-xs text-muted-foreground">Last opened {course.lastOpened ?? "—"}</span><Button asChild size="sm" className="shrink-0"><Link to={`/training/course/${course.id}`}><Play className="mr-1 h-3.5 w-3.5" />{display.progress ? "Continue" : "Start"}</Link></Button></div></div>;
 }
 function EmptyState({ text }: { text: string }) { return <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">{text}</div>; }
