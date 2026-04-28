@@ -144,6 +144,15 @@ export default function TrainingCourse() {
   const checklistItems = course.completionChecklist?.length ? course.completionChecklist.map((item) => item.label) : defaultChecklistItems;
   const progress = course.lessons.length ? Math.round((completed.size / course.lessons.length) * 100) : 0;
   const lessonResourceUrl = activeLesson.tangoUrl || course.walkthroughs?.find((item) => item.url.trim())?.url || activeLesson.resourceUrl || course.sop?.fileUrl;
+  const relatedResources = [
+    ...course.resources.map((resource, index) => ({ id: `resource-${index}`, label: resource, url: resource, type: "Resource" })),
+    ...(course.sop?.fileUrl ? [{ id: "sop-file", label: course.sop.fileName || course.sop.title, url: course.sop.fileUrl, type: "SOP" }] : []),
+    ...(course.walkthroughs ?? []).filter((item) => item.url.trim()).map((item) => ({ id: item.id, label: item.label || "Tango walkthrough", url: item.url, type: "Tango" })),
+    ...course.lessons.flatMap((lesson) => [
+      ...(lesson.resourceUrl ? [{ id: `${lesson.id}-resource`, label: `${lesson.title} resource`, url: lesson.resourceUrl, type: "Lesson" }] : []),
+      ...(lesson.tangoUrl ? [{ id: `${lesson.id}-tango`, label: `${lesson.title} Tango`, url: lesson.tangoUrl, type: "Tango" }] : []),
+    ]),
+  ].filter((resource, index, list) => resource.url.trim() && list.findIndex((item) => item.url === resource.url) === index);
 
   const persistProgress = (nextCompleted: Set<string>) => {
     const nextProgress = course.lessons.length ? Math.round((nextCompleted.size / course.lessons.length) * 100) : 0;
@@ -288,7 +297,24 @@ export default function TrainingCourse() {
           <p className="mt-3 text-sm text-muted-foreground">{completed.size}/{course.lessons.length} lessons complete</p>
           {progress === 100 && <div className="mt-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-warning"><Award className="mx-auto h-5 w-5" /><p className="mt-1 text-xs font-medium">Completion badge earned</p></div>}
         </div>
-        <div className="mx-4 mt-4 space-y-3">{[["Estimated time", `${course.minutes} minutes`, Clock], ["Department owner", course.owner, HelpCircle], ["Related resources", `${course.resources.length} resources`, FileText]].map(([label, value, Icon]) => <div key={label as string} className="rounded-xl border border-border/60 bg-background p-3"><Icon className="mb-2 h-4 w-4 text-primary" /><p className="text-xs text-muted-foreground">{label as string}</p><p className="text-sm font-medium text-foreground">{value as string}</p></div>)}</div>
+        <div className="mx-4 mt-4 space-y-3">
+          {[["Estimated time", `${course.minutes} minutes`, Clock], ["Department owner", course.owner, HelpCircle]].map(([label, value, Icon]) => <div key={label as string} className="rounded-xl border border-border/60 bg-background p-3"><Icon className="mb-2 h-4 w-4 text-primary" /><p className="text-xs text-muted-foreground">{label as string}</p><p className="text-sm font-medium text-foreground">{value as string}</p></div>)}
+          <div className="rounded-xl border border-border/60 bg-background p-3">
+            <FileText className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-xs text-muted-foreground">Related resources</p>
+            <div className="mt-2 space-y-2">
+              {relatedResources.length ? relatedResources.map((resource) => (
+                <button key={resource.id} onClick={() => openResource(resource.url)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-left transition-colors hover:bg-muted/30">
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-foreground">{resource.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{resource.type}</span>
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-primary" />
+                </button>
+              )) : <p className="text-sm text-muted-foreground">No resources attached</p>}
+            </div>
+          </div>
+        </div>
         <div className="m-4 rounded-xl border border-border/60 bg-background p-3"><p className="text-sm font-semibold text-foreground">Help contact</p><p className="mt-1 text-xs text-muted-foreground">Ask {course.owner} for help with this module.</p></div>
       </aside>
     </div>
