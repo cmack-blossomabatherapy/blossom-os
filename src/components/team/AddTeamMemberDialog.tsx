@@ -216,7 +216,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
                 <InfoRow label="Temporary password" value={result.tempPassword} mono />
                 <InfoRow label="Roles" value={result.roles.join(", ")} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {!result.welcomeEmailSent && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button variant="outline" onClick={copy}>
                   <Copy className="h-3.5 w-3.5 mr-2" />
                   {copied ? "Copied" : "Copy credentials"}
@@ -225,7 +225,7 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
                   <Mail className="h-3.5 w-3.5 mr-2" />
                   Draft welcome email
                 </Button>
-              </div>
+              </div>}
               <p className="text-[11px] text-muted-foreground text-center">
                 {result.welcomeEmailSent ? "The email was sent from Blossom through Resend." : "The welcome draft opens in your mail app — nothing is sent until you click Send there."}
               </p>
