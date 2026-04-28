@@ -480,24 +480,34 @@ export default function QA() {
     setPanelTab("overview");
   };
 
+  const focusQaRecord = (record: QARecord, tab = "checklist") => {
+    setSelectedId(record.id);
+    setSelectedIds([record.id]);
+    setPanelTab(tab);
+    setMode("queue");
+    setQuery("");
+    setFilters((current) => ({ ...current, status: "all", issue: "all", plan: "all", note: "all" }));
+    setNewReviewOpen(false);
+  };
+
   const createQaReview = async () => {
     const client = clients.find((item) => item.id === newReviewClientId);
     if (!client) return toast.error("Select an assessment or treatment plan first");
     const record = qaRecordFromClient(client, records.length);
     setRecords((current) => [record, ...current]);
-    setSelectedId(record.id);
-    setSelectedIds([record.id]);
-    setPanelTab("checklist");
-    setMode("queue");
-    setQuery("");
+    focusQaRecord(record);
     setFilters((current) => ({ ...current, status: "Awaiting Review", issue: "all", plan: "all", note: "all" }));
-    setNewReviewOpen(false);
     await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: record.issues.length ? "Upload missing QA attachments" : "Start QA review" });
     await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
     await Promise.all(record.tasks.filter((task) => task.title.startsWith("Upload ")).map((task) => addTask(client.id, task)));
     await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
     if (record.issues.length) await appendTimeline(client.id, `QA document requirements generated: ${record.documents.filter((doc) => doc.required && !doc.present).map((doc) => doc.name).join(", ")}`, "qa");
     toast.success("New QA Review created", { description: "Initial status set to Awaiting QA Review." });
+  };
+
+  const reuseQaReview = (record: QARecord) => {
+    focusQaRecord(record);
+    toast.info("Existing QA Review opened", { description: `${record.clientName} is focused on the checklist tab.` });
   };
 
   return (
