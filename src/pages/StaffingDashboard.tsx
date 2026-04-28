@@ -189,6 +189,28 @@ function hydrateRecords(records: StaffingRecord[]) {
   return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
 }
 
+const regionAnchors: Record<string, MapPoint> = {
+  "Atlanta Metro": { x: 28, y: 68 }, "Atlanta South": { x: 24, y: 77 }, Charlotte: { x: 45, y: 51 }, Raleigh: { x: 57, y: 48 }, Nashville: { x: 36, y: 38 }, Memphis: { x: 18, y: 43 }, Richmond: { x: 67, y: 32 }, Norfolk: { x: 78, y: 40 }, Bethesda: { x: 69, y: 20 }, Baltimore: { x: 76, y: 17 },
+};
+
+function pointFor(seed: string, region: string, kind: "client" | "rbt"): MapPoint {
+  const anchor = regionAnchors[region] ?? { x: 50, y: 50 };
+  const hash = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const spread = kind === "client" ? 5 : 9;
+  return { x: clamp(anchor.x + ((hash % 11) - 5) * 0.8 + (kind === "client" ? 1.8 : -1.2), 5, 95), y: clamp(anchor.y + (((hash / 7) % 11) - 5) * spread * 0.16, 5, 95) };
+}
+
+function routeStats(client: StaffingRecord, rbt: Rbt) {
+  const clientPoint = pointFor(client.id, client.region, "client");
+  const rbtPoint = pointFor(rbt.id, rbt.region, "rbt");
+  const direct = Math.hypot(clientPoint.x - rbtPoint.x, clientPoint.y - rbtPoint.y);
+  const sameClinic = client.clinic === rbt.clinic;
+  const sameRegion = client.region === rbt.region;
+  const miles = Math.max(2, Math.round(direct * (sameClinic ? 0.42 : sameRegion ? 0.62 : 1.05) + (client.location === "Home" ? 3 : 1)));
+  const minutes = Math.round(miles * (sameClinic ? 2.4 : sameRegion ? 2.8 : 3.2) + (client.priority === "Critical" ? 4 : 0));
+  return { clientPoint, rbtPoint, miles, minutes, withinRadius: miles <= rbt.radius };
+}
+
 export default function StaffingDashboard() {
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
