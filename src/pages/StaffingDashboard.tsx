@@ -238,7 +238,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, setMapFocus, setMapZoom, setMapFilters, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, routeRefreshCount, setMapFocus, setMapZoom, setMapFilters, onRefreshRoutes, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; routeRefreshCount: number; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onRefreshRoutes: () => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -251,12 +251,12 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
     const lead = cluster.items.sort((a, b) => b.daysWaiting - a.daysWaiting)[0];
     const best = rbts.map((rbt) => scoreMatch(lead, rbt)).filter((match) => match.rbt.state === lead.state).sort((a, b) => b.score - a.score)[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, records: cluster.items, best, route: best ? routeStats(lead, best.rbt) : undefined };
-  }), [records, rbts, bucketSize]);
+  }), [records, rbts, bucketSize, routeRefreshCount]);
   const rbtClusters = useMemo<RbtCluster[]>(() => clusterItems(rbts, (rbt) => pointFor(rbt.id, rbt.region, "rbt"), bucketSize).map((cluster) => {
     const scored = cluster.items.map((rbt) => scoreMatch(selected, rbt)).sort((a, b) => b.score - a.score);
     const best = scored[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, rbts: cluster.items, best, route: routeStats(selected, best.rbt) };
-  }), [rbts, selected, bucketSize]);
+  }), [rbts, selected, bucketSize, routeRefreshCount]);
   const breakdownRows = (breakdown: MatchBreakdown) => [
     ["Region", breakdown.region],
     ["Availability", breakdown.availability],
