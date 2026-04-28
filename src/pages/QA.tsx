@@ -60,6 +60,7 @@ interface QARecord {
   clientId: string;
   clientName: string;
   parentName: string;
+  provenance: string;
   state: string;
   clinic: string;
   payor: string;
@@ -191,6 +192,7 @@ const buildRecords = (clients: Client[]): QARecord[] => {
       clientId: client?.id ?? `client-${index + 1}`,
       clientName: name,
       parentName: client?.parentName ?? "Parent contact",
+      provenance: client?.assessmentDate ? `Assessment ${client.assessmentDate}` : "Demo assessment/treatment plan",
       state: client?.state ?? STATES[index % STATES.length],
       clinic: client?.clinic ?? `${STATES[index % STATES.length]} Clinic`,
       payor: client?.payor ?? ["Amerigroup", "Aetna", "BCBS", "United", "Medicaid"][index % 5],
@@ -259,11 +261,13 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
   const missingAlerts = missingRequirements.map((requirement) => `Missing ${requirement.name}`);
   const missingTasks = missingRequirements.map((requirement, requirementIndex) => ({ id: `task-doc-${Date.now()}-${requirementIndex}`, title: `Upload ${requirement.name}`, owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(requirementIndex === 0 ? 1 : 2), completed: false }));
   const missingIssues = missingRequirements.map((requirement, requirementIndex) => ({ id: `issue-doc-${Date.now()}-${requirementIndex}`, type: requirement.name === "Treatment plan" ? "Missing Treatment Plan" as IssueType : "Missing Docs" as IssueType, description: `${requirement.name} is required. ${requirement.reason}`, owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(requirementIndex === 0 ? 1 : 2), resolved: false }));
+  const provenance = treatmentAuth ? `${treatmentAuth.payor} treatment plan · ${treatmentAuth.startDate ?? client.assessmentDate ?? "date pending"}` : `Assessment · ${client.assessmentDate ?? "date pending"}`;
   return {
     id: `qa-new-${Date.now()}`,
     clientId: client.id,
     clientName: client.childName,
     parentName: client.parentName,
+    provenance,
     state: client.state,
     clinic: client.clinic,
     payor: treatmentAuth?.payor ?? client.payor,
