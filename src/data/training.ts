@@ -13,6 +13,10 @@ export type TrainingAuditAction = "created" | "edited" | "archived" | "deleted" 
 export interface TrainingAuditEntry { id: string; trainingId: string; trainingTitle: string; action: TrainingAuditAction; actor: string; actorRole: string; occurredAt: string; summary: string; details: string[]; itemType: "Training" | "Resource"; }
 export interface TrainingDepartment { id: string; slug: string; name: string; shortName: string; description: string; icon: keyof typeof iconMap; accent: string; sort: number; }
 export interface TrainingProgressRecord { userId: string; trainingId: string; department: string; startedDate?: string; lastOpenedDate?: string; completedDate?: string; progressPercentage: number; lessonsCompleted: string[]; quizScore?: number; status: TrainingStatus; timeSpentMinutes: number; required: boolean; dueDate?: string; assignedBy?: string; }
+export type TrainingBadgeReason = "Course completion" | "Role certification" | "Compliance readiness" | "Workflow mastery" | "Leadership recognition" | "Systems proficiency";
+export interface TrainingBadge { id: string; emoji: string; title: string; reason: TrainingBadgeReason; description: string; earned: boolean; earnedAt?: string; }
+export type TrainingResourceCategory = "SOP" | "Tango" | "Checklist" | "Policy" | "System Guide" | "Workflow";
+export interface TrainingResourcePlaceholder { id: string; category: TrainingResourceCategory; roleGroup: string; title: string; description: string; }
 
 export const iconMap = { Award, BarChart3, BookOpen, Briefcase, Building2, CheckCircle2, ClipboardCheck, FileText, GraduationCap, HeartHandshake, Landmark, Laptop, Phone, ShieldCheck, Sparkles, Stethoscope, Users, Wallet };
 
@@ -38,6 +42,8 @@ export const TRAINING_AUDIT_STORAGE_KEY = "blossom-training-audit-log";
 export const TRAINING_AUDIT_UPDATED_EVENT = "blossom-training-audit-updated";
 export const TRAINING_ASSIGNMENTS_STORAGE_KEY = "blossom-training-assignments";
 export const TRAINING_ASSIGNMENTS_UPDATED_EVENT = "blossom-training-assignments-updated";
+export const TRAINING_BADGES_STORAGE_KEY = "blossom-training-badges";
+export const TRAINING_BADGES_UPDATED_EVENT = "blossom-training-badges-updated";
 
 export const trainingCourses: TrainingCourse[] = [];
 
@@ -98,6 +104,22 @@ export function saveStoredTrainingAssignments(assignments: TrainingAssignmentRec
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TRAINING_ASSIGNMENTS_STORAGE_KEY, JSON.stringify(assignments));
   window.dispatchEvent(new Event(TRAINING_ASSIGNMENTS_UPDATED_EVENT));
+}
+
+export function getStoredTrainingBadges(): TrainingBadge[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = window.localStorage.getItem(TRAINING_BADGES_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as TrainingBadge[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredTrainingBadges(badges: TrainingBadge[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRAINING_BADGES_STORAGE_KEY, JSON.stringify(badges));
+  window.dispatchEvent(new Event(TRAINING_BADGES_UPDATED_EVENT));
 }
 
 export function createTrainingCourse(input: CreateTrainingInput): TrainingCourse {
