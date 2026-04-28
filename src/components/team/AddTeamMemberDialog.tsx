@@ -92,18 +92,30 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
   const openWelcomeDraft = () => {
     if (!result) return;
     const loginUrl = `${window.location.origin}/auth`;
-    const subject = `Welcome to Blossom — your account is ready`;
+    const firstName = displayName.trim().split(" ").filter(Boolean)[0];
+    const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+    const roleList = result.roles
+      .map((role) => ROLE_META.find((item) => item.key === role)?.label ?? role)
+      .join(", ");
+    const subject = `Welcome to Blossom — your workspace is ready`;
     const body = [
-      `Hi,`,
+      greeting,
       ``,
-      `Your Blossom account has been created. Sign in here:`,
-      `${loginUrl}`,
+      `Welcome to Blossom ABA Therapy — we're so glad to have you on the team.`,
+      ``,
+      `Your Blossom workspace is ready, and you can use the details below to sign in for the first time:`,
       ``,
       `Email: ${result.email}`,
       `Temporary password: ${result.tempPassword}`,
-      `(You'll be asked to set a new password the first time you sign in.)`,
+      `Role access: ${roleList}`,
+      `Sign in: ${loginUrl}`,
       ``,
-      `Welcome aboard,`,
+      `For security, you'll be asked to create your own password the first time you sign in.`,
+      ``,
+      `Once you're in, you'll have access to your training, resources, and the tools connected to your role.`,
+      ``,
+      `Welcome aboard — we're excited to work with you!`,
+      ``,
       `The Blossom team`,
     ].join("\n");
     window.location.href = `mailto:${encodeURIComponent(result.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
