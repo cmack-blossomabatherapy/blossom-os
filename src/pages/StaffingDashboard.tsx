@@ -41,6 +41,9 @@ type StaffingRecord = {
 };
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 type MapPoint = { x: number; y: number };
+type MapZoom = "regional" | "local" | "street";
+type ClientCluster = { id: string; x: number; y: number; records: StaffingRecord[]; best?: Match; route?: ReturnType<typeof routeStats> };
+type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; route: ReturnType<typeof routeStats> };
 
 const ALL = "All";
 const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
@@ -211,13 +214,42 @@ function routeStats(client: StaffingRecord, rbt: Rbt) {
   return { clientPoint, rbtPoint, miles, minutes, withinRadius: miles <= rbt.radius };
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, setMapFocus, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; setMapFocus: (focus: "all" | "ready" | "urgent") => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucketSize: number) {
+  const groups = new Map<string, { x: number; y: number; items: T[] }>();
+  items.forEach((item) => {
+    const point = pointForItem(item);
+    const key = `${Math.floor(point.x / bucketSize)}-${Math.floor(point.y / bucketSize)}`;
+    const group = groups.get(key);
+    if (group) {
+      group.x += point.x;
+      group.y += point.y;
+      group.items.push(item);
+    } else {
+      groups.set(key, { x: point.x, y: point.y, items: [item] });
+    }
+  });
+  return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
+}
+
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, setMapFocus, setMapZoom, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, 6);
   const selectedRoute = activeMatch ? routeStats(selected, activeMatch.rbt) : mapMatches[0]?.route;
+  const shouldCluster = mapZoom !== "street" && (records.length > 45 || rbts.length > 35);
+  const bucketSize = mapZoom === "regional" ? 12 : 7;
+  const clientClusters = useMemo<ClientCluster[]>(() => clusterItems(records, (record) => pointFor(record.id, record.region, "client"), bucketSize).map((cluster) => {
+    const lead = cluster.items.sort((a, b) => b.daysWaiting - a.daysWaiting)[0];
+    const best = rbts.map((rbt) => scoreMatch(lead, rbt)).filter((match) => match.rbt.state === lead.state).sort((a, b) => b.score - a.score)[0];
+    return { id: cluster.id, x: cluster.x, y: cluster.y, records: cluster.items, best, route: best ? routeStats(lead, best.rbt) : undefined };
+  }), [records, rbts, bucketSize]);
+  const rbtClusters = useMemo<RbtCluster[]>(() => clusterItems(rbts, (rbt) => pointFor(rbt.id, rbt.region, "rbt"), bucketSize).map((cluster) => {
+    const scored = cluster.items.map((rbt) => scoreMatch(selected, rbt)).sort((a, b) => b.score - a.score);
+    const best = scored[0];
+    return { id: cluster.id, x: cluster.x, y: cluster.y, rbts: cluster.items, best, route: routeStats(selected, best.rbt) };
+  }), [rbts, selected, bucketSize]);
   const breakdownRows = (breakdown: MatchBreakdown) => [
     ["Region", breakdown.region],
     ["Availability", breakdown.availability],
@@ -251,11 +283,11 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, setMapFoc
           <h2 className="flex items-center gap-2 font-semibold"><MapPin className="h-4 w-4 text-primary" />Interactive Staffing Map</h2>
           <p className="text-xs text-muted-foreground">Live RBT and client geography with estimated route time, coverage radius, and assignment shortcuts.</p>
         </div>
-        <div className="flex rounded-md border bg-muted/40 p-1">
+        <div className="flex flex-wrap gap-2"><div className="flex rounded-md border bg-muted/40 p-1">
           {(["ready", "urgent", "all"] as const).map((focus) => (
             <button key={focus} onClick={() => setMapFocus(focus)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapFocus === focus ? "bg-card shadow-sm" : "text-muted-foreground")}>{focus}</button>
           ))}
-        </div>
+        </div><div className="flex rounded-md border bg-muted/40 p-1">{(["regional", "local", "street"] as const).map((zoom) => <button key={zoom} onClick={() => setMapZoom(zoom)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapZoom === zoom ? "bg-card shadow-sm" : "text-muted-foreground")}>{zoom}</button>)}</div></div>
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="relative min-h-[560px] overflow-hidden bg-muted/20">
@@ -270,7 +302,15 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, setMapFoc
               <circle cx={`${selectedRoute.rbtPoint.x}%`} cy={`${selectedRoute.rbtPoint.y}%`} r="46" fill="none" stroke="hsl(var(--primary) / 0.22)" strokeWidth="2" />
             </svg>
           )}
-          {records.map((record) => {
+          {shouldCluster ? clientClusters.map((cluster) => {
+            const lead = cluster.records[0];
+            return (
+              <button key={`client-cluster-${cluster.id}`} onClick={() => onSelectRecord(lead, cluster.best)} className={cn("group absolute z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border shadow-sm transition hover:z-40 hover:scale-110", cluster.records.some((record) => record.id === selected.id) ? "border-primary bg-primary text-primary-foreground" : cluster.records.some((record) => record.priority === "Critical" || record.status === "Restaffing Needed") ? "border-destructive/40 bg-destructive text-destructive-foreground" : "border-warning/40 bg-warning text-warning-foreground")} style={{ left: `${cluster.x}%`, top: `${cluster.y}%` }}>
+                <span className="text-xs font-semibold">{cluster.records.length}</span>
+                {cluster.best && cluster.route && <MarkerTooltip title={`${cluster.records.length} clients · top ${lead.client} → ${cluster.best.rbt.name}`} route={cluster.route} match={cluster.best} />}
+              </button>
+            );
+          }) : records.map((record) => {
             const point = pointFor(record.id, record.region, "client");
             const best = rbts.map((rbt) => scoreMatch(record, rbt)).filter((match) => match.rbt.state === record.state).sort((a, b) => b.score - a.score)[0];
             const route = best ? routeStats(record, best.rbt) : undefined;
@@ -281,7 +321,15 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, setMapFoc
               </button>
             );
           })}
-          {rbts.map((rbt) => {
+          {shouldCluster ? rbtClusters.map((cluster) => {
+            const isActive = cluster.rbts.some((rbt) => activeMatch?.rbt.id === rbt.id);
+            return (
+              <button key={`rbt-cluster-${cluster.id}`} onClick={() => onSelectRbt(cluster.best.rbt.id)} className={cn("group absolute z-20 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border shadow-sm transition hover:z-40 hover:scale-110", isActive ? "border-primary bg-primary text-primary-foreground ring-4 ring-primary/20" : cluster.rbts.some((rbt) => rbt.compliance === "Ready") ? "border-success/40 bg-success text-success-foreground" : "border-border bg-background text-muted-foreground")} style={{ left: `${cluster.x}%`, top: `${cluster.y}%` }}>
+                <span className="text-xs font-semibold">{cluster.rbts.length}</span>
+                <MarkerTooltip title={`${cluster.rbts.length} RBTs · top ${cluster.best.rbt.name} → ${selected.client}`} route={cluster.route} match={cluster.best} />
+              </button>
+            );
+          }) : rbts.map((rbt) => {
             const point = pointFor(rbt.id, rbt.region, "rbt");
             const isActive = activeMatch?.rbt.id === rbt.id;
             const match = scoreMatch(selected, rbt);
@@ -326,6 +374,7 @@ export default function StaffingDashboard() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
+  const [mapZoom, setMapZoom] = useState<MapZoom>("regional");
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -351,7 +400,7 @@ export default function StaffingDashboard() {
       .filter((r) => activeKpi === "all" || (activeKpi === "needed" && r.status === "Staffing Needed") || (activeKpi === "restaffing" && r.status === "Restaffing Needed") || (activeKpi === "matching" && r.status === "Matching in Progress") || (activeKpi === "assigned" && r.status === "RBT Assigned") || (activeKpi === "urgent" && (r.priority === "Critical" || r.daysWaiting > 7)) || activeKpi === "avg" || activeKpi === "available" || activeKpi === "gap")
       .filter((r) => !q || [r.client, r.parent, r.state, r.clinic, r.region, r.owner, r.bcba, r.status, r.nextAction].some((field) => field.toLowerCase().includes(q)));
   }, [activeKpi, bcbaFilter, clientStatus, clinicFilter, ownerFilter, query, rbtFilter, rbts, records, staffingStatus, stateFilter, urgencyFilter]);
-  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))).slice(0, 18), [filtered, mapFocus]);
+  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))), [filtered, mapFocus]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
@@ -445,7 +494,7 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
-      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} setMapFocus={setMapFocus} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} setMapFocus={setMapFocus} setMapZoom={setMapZoom} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
