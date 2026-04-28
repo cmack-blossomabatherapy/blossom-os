@@ -36,7 +36,7 @@ export default function TrainingHub() {
     };
   }, []);
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Blossom teammate";
-  const roleSet = new Set(roles);
+  const roleSet = useMemo(() => new Set(roles), [roles]);
   const myAssignments = useMemo(() => assignments.filter((assignment) => assignment.employeeEmail && user?.email && assignment.employeeEmail.toLowerCase() === user.email.toLowerCase()), [assignments, user?.email]);
   const assignedCourseIds = useMemo(() => new Set(myAssignments.map((assignment) => assignment.courseId)), [myAssignments]);
   const visibleCourses = useMemo(() => trainingCourses.filter((course) => assignedCourseIds.has(course.id) || course.roleVisibility.length === 0 || course.roleVisibility.some((role) => roleSet.has(role as never)) || roles.length === 0), [assignedCourseIds, roleSet, roles.length, trainingCourses]);
