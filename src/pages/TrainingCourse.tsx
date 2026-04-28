@@ -10,6 +10,24 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT } from "@/data/training";
 
+const toTangoEmbedUrl = (url?: string) => {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes("tango.us")) return url;
+    if (parsed.pathname.includes("/embed/")) return url;
+    parsed.pathname = parsed.pathname.replace("/app/workflow/", "/embed/workflow/");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+};
+
+const openResource = (url?: string) => {
+  if (!url) return;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
 export default function TrainingCourse() {
   const { courseId } = useParams();
   const [trainingCourses, setTrainingCourses] = useState(() => getStoredTrainingCourses());
