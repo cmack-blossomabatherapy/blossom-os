@@ -42,7 +42,7 @@ type StaffingRecord = {
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 type MapPoint = { x: number; y: number };
 type MapZoom = "regional" | "local" | "street";
-type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean };
+type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean; sortMarkersByScore: boolean; minScore: number };
 type ClientCluster = { id: string; x: number; y: number; records: StaffingRecord[]; best?: Match; route?: ReturnType<typeof routeStats> };
 type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; route: ReturnType<typeof routeStats> };
 
@@ -196,8 +196,10 @@ function hydrateRecords(records: StaffingRecord[]) {
 
 function storedMapState() {
   if (typeof window === "undefined") return null;
-  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | MapFilters>; } catch { return null; }
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | number | MapFilters>; } catch { return null; }
 }
+
+const defaultMapFilters: MapFilters = { unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, sortMarkersByScore: false, minScore: 0 };
 
 const regionAnchors: Record<string, MapPoint> = {
   "Atlanta Metro": { x: 28, y: 68 }, "Atlanta South": { x: 24, y: 77 }, Charlotte: { x: 45, y: 51 }, Raleigh: { x: 57, y: 48 }, Nashville: { x: 36, y: 38 }, Memphis: { x: 18, y: 43 }, Richmond: { x: 67, y: 32 }, Norfolk: { x: 78, y: 40 }, Bethesda: { x: 69, y: 20 }, Baltimore: { x: 76, y: 17 },
@@ -242,6 +244,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
+    .filter((item) => item.match.score >= mapFilters.minScore)
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, 6);
   const selectedRoute = activeMatch ? routeStats(selected, activeMatch.rbt) : mapMatches[0]?.route;
@@ -251,17 +254,18 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
     const lead = cluster.items.sort((a, b) => b.daysWaiting - a.daysWaiting)[0];
     const best = rbts.map((rbt) => scoreMatch(lead, rbt)).filter((match) => match.rbt.state === lead.state).sort((a, b) => b.score - a.score)[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, records: cluster.items, best, route: best ? routeStats(lead, best.rbt) : undefined };
-  }), [records, rbts, bucketSize, routeRefreshCount]);
+  }).filter((cluster) => (cluster.best?.score ?? 0) >= mapFilters.minScore).sort((a, b) => mapFilters.sortMarkersByScore ? (b.best?.score ?? 0) - (a.best?.score ?? 0) : 0), [records, rbts, bucketSize, mapFilters.minScore, mapFilters.sortMarkersByScore, routeRefreshCount]);
   const rbtClusters = useMemo<RbtCluster[]>(() => clusterItems(rbts, (rbt) => pointFor(rbt.id, rbt.region, "rbt"), bucketSize).map((cluster) => {
     const scored = cluster.items.map((rbt) => scoreMatch(selected, rbt)).sort((a, b) => b.score - a.score);
     const best = scored[0];
     return { id: cluster.id, x: cluster.x, y: cluster.y, rbts: cluster.items, best, route: routeStats(selected, best.rbt) };
-  }), [rbts, selected, bucketSize, routeRefreshCount]);
+  }).filter((cluster) => cluster.best.score >= mapFilters.minScore).sort((a, b) => mapFilters.sortMarkersByScore ? b.best.score - a.best.score : 0), [rbts, selected, bucketSize, mapFilters.minScore, mapFilters.sortMarkersByScore, routeRefreshCount]);
   const topPairs = useMemo(() => records.flatMap((record) => rbts
     .filter((rbt) => rbt.state === record.state)
     .map((rbt) => ({ record, match: scoreMatch(record, rbt), route: routeStats(record, rbt) })))
+    .filter((pair) => pair.match.score >= mapFilters.minScore)
     .sort((a, b) => b.match.score - a.match.score || a.route.minutes - b.route.minutes)
-    .slice(0, 8), [records, rbts, routeRefreshCount]);
+    .slice(0, 8), [records, rbts, mapFilters.minScore, routeRefreshCount]);
   const breakdownRows = (breakdown: MatchBreakdown) => [
     ["Region", breakdown.region],
     ["Availability", breakdown.availability],
@@ -307,9 +311,11 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant={mapFilters.sortMarkersByScore ? "default" : "outline"} onClick={() => toggleMapFilter("sortMarkersByScore")}>Sort by top score</Button>
+        <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">Min score<Input className="h-7 w-16 px-2 text-xs" type="number" min={0} max={100} value={mapFilters.minScore} onChange={(event) => setMapFilters({ ...mapFilters, minScore: Math.max(0, Math.min(100, Number(event.target.value) || 0)) })} /></label>
         <Button size="sm" variant={showTooltipBreakdown ? "default" : "outline"} onClick={() => setShowTooltipBreakdown(!showTooltipBreakdown)}>Tooltip score details</Button>
         <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
-        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
+        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly || mapFilters.sortMarkersByScore || mapFilters.minScore > 0) && <Button size="sm" variant="outline" onClick={() => setMapFilters(defaultMapFilters)}>Clear</Button>}
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="relative min-h-[560px] overflow-hidden bg-muted/20">
@@ -398,7 +404,7 @@ export default function StaffingDashboard() {
   const [activeMatchId, setActiveMatchId] = useState<string | null>(typeof initialMapState?.activeMatchId === "string" ? initialMapState.activeMatchId : null);
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">(["all", "ready", "urgent"].includes(String(initialMapState?.mapFocus)) ? initialMapState?.mapFocus as "all" | "ready" | "urgent" : "ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>(["regional", "local", "street"].includes(String(initialMapState?.mapZoom)) ? initialMapState?.mapZoom as MapZoom : "regional");
-  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
+  const [mapFilters, setMapFilters] = useState<MapFilters>(() => ({ ...defaultMapFilters, ...((initialMapState?.mapFilters as Partial<MapFilters>) ?? {}) }));
   const [showTooltipBreakdown, setShowTooltipBreakdown] = useState<boolean>(typeof initialMapState?.showTooltipBreakdown === "boolean" ? initialMapState.showTooltipBreakdown : true);
   const [routeRefreshCount, setRouteRefreshCount] = useState(0);
 
@@ -412,7 +418,9 @@ export default function StaffingDashboard() {
   const mapRbts = useMemo(() => rbts
     .filter((rbt) => stateFilter === ALL || rbt.state === stateFilter)
     .filter((rbt) => !mapFilters.readyRbtsOnly || rbt.compliance === "Ready")
-    .filter((rbt) => !mapFilters.urgentLocalOnly || rbt.state === selected.state || rbt.region === selected.region), [rbts, stateFilter, mapFilters.readyRbtsOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
+    .filter((rbt) => !mapFilters.urgentLocalOnly || rbt.state === selected.state || rbt.region === selected.region)
+    .filter((rbt) => scoreMatch(selected, rbt).score >= mapFilters.minScore)
+    .sort((a, b) => mapFilters.sortMarkersByScore ? scoreMatch(selected, b).score - scoreMatch(selected, a).score : 0), [rbts, stateFilter, mapFilters.readyRbtsOnly, mapFilters.urgentLocalOnly, mapFilters.minScore, mapFilters.sortMarkersByScore, selected]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
@@ -436,7 +444,9 @@ export default function StaffingDashboard() {
   const mapClients = useMemo(() => filtered
     .filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed")))
     .filter((record) => !mapFilters.unassignedOnly || !record.assignedRbtId)
-    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region))), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
+    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region)))
+    .filter((record) => rbts.some((rbt) => rbt.state === record.state && scoreMatch(record, rbt).score >= mapFilters.minScore))
+    .sort((a, b) => mapFilters.sortMarkersByScore ? (matchesFor(b)[0]?.score ?? 0) - (matchesFor(a)[0]?.score ?? 0) : 0), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, mapFilters.minScore, mapFilters.sortMarkersByScore, selected.state, selected.region, rbts]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
