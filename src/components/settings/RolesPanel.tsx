@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, ShieldCheck } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, type AppRole } from "@/lib/roles";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface PermRow {
@@ -22,6 +23,7 @@ export function RolesPanel() {
   const [loading, setLoading] = useState(true);
   const [activeRole, setActiveRole] = useState<AppRole>("ops_manager");
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const activeMeta = ROLE_META.find((r) => r.key === activeRole) ?? ROLE_META[0];
 
   useEffect(() => {
     const load = async () => {
@@ -58,6 +60,8 @@ export function RolesPanel() {
     });
     return Array.from(byModule.entries());
   }, [perms]);
+
+  const grantedCount = activeRole === "admin" ? perms.length : perms.filter((p) => matrix.get(p.key)?.has(activeRole)).length;
 
   const togglePerm = async (permKey: string) => {
     if (activeRole === "admin") {
