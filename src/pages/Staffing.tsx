@@ -273,6 +273,13 @@ export default function Staffing() {
     }).sort((a, b) => a.gap - b.gap || b.unstaffed - a.unstaffed);
   }, [records, rbts]);
 
+  function focusCapacityRow(row: typeof coverageRows[number]) {
+    setCapacityFocusKey(`${row.state}|${row.region}|${row.clinic}`);
+    setFilters((current) => ({ ...current, state: row.state, region: row.region, clinic: row.clinic }));
+    setViewMode("queue");
+    toast.info(`${row.region} filtered`, { description: `${row.gap}h gap · ${row.unstaffed} unstaffed clients highlighted.` });
+  }
+
   const rankedMatches = (record: StaffingRecord) => rbts
     .map((rbt) => ({ rbt, score: calcScore(record, rbt), overlap: rbt.availability.filter((a) => record.availability.includes(a)), available: rbt.maxHours - rbt.currentHours }))
     .sort((a, b) => b.score - a.score)
