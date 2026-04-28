@@ -13,6 +13,7 @@ const InputSchema = z.object({
   sopText: z.string().max(60000).optional().default(""),
   fileName: z.string().max(255).optional().default(""),
   tone: z.enum(["Simple", "Detailed", "Technical"]).optional().default("Detailed"),
+  quizComplexity: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
   sectionMode: z.enum(["full", "sop", "steps", "quiz"]).optional().default("full"),
   currentDraft: z.unknown().optional(),
 });
@@ -56,6 +57,7 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "Lovable AI is not configured" }, 500);
 
+    const quizGuidance = quizComplexityGuidance(input.quizComplexity);
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -64,7 +66,7 @@ Deno.serve(async (req) => {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt() },
-          { role: "user", content: JSON.stringify({ ...input, departments, difficulties, trainingTypes }) },
+          { role: "user", content: JSON.stringify({ ...input, quizGuidance, departments, difficulties, trainingTypes }) },
         ],
       }),
     });
@@ -93,7 +95,13 @@ function json(body: unknown, status = 200) {
 function systemPrompt() {
   return `You are Blossom ABA Therapy's embedded training specialist. Generate a complete, practical training draft from a Tango URL, uploaded SOP text, pasted SOP text, or a combined Tango + SOP package.
 Return JSON only with this exact shape: {"title":"","description":"","departmentId":"","difficulty":"Beginner|Intermediate|Advanced","type":"Workflow|SOP|System Training|Policy|Onboarding|Clinical|Tango|Checklist|Quiz|Video","minutes":30,"objectives":[""],"sop":{"title":"","content":"Purpose\n...\n\nWhen used\n...\n\nSystems required\n...\n\nStep-by-step instructions\n...\n\nExpected outcome\n...\n\nCommon mistakes\n..."},"walkthrough":{"url":"","label":"","summary":""},"steps":[{"title":"","description":"","systemTag":""}],"checklist":[""],"commonMistakes":[{"error":"","consequence":"","avoid":""}],"quiz":[{"type":"Multiple choice|True / false","question":"","options":[""],"answer":"","explanation":""}],"badge":{"title":"","description":""},"qualityScore":82}.
-Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create 3-5 quiz questions; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. For combined mode, merge SOP policy/context with the Tango walkthrough sequence into one cohesive course: SOP provides standards, rationale, expected outcomes, mistakes, and validation; Tango provides walkthrough flow and step order. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
+ Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create 3-5 quiz questions; match the quiz to quizComplexity and quizGuidance; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. For combined mode, merge SOP policy/context with the Tango walkthrough sequence into one cohesive course: SOP provides standards, rationale, expected outcomes, mistakes, and validation; Tango provides walkthrough flow and step order. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
+}
+
+function quizComplexityGuidance(complexity: "easy" | "medium" | "hard") {
+  if (complexity === "easy") return "Use direct recall and basic recognition. Questions should confirm the learner can identify the right step, system, or simple rule.";
+  if (complexity === "hard") return "Use scenario-based, judgment-heavy questions. Include edge cases, consequences, prioritization, and choosing the best action when details are ambiguous.";
+  return "Use applied understanding. Questions should require choosing the correct action in common workflow situations, not just memorizing definitions.";
 }
 
 function normalizeDraft(raw: Record<string, unknown>) {
