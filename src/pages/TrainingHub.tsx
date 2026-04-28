@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { featuredResources, getStoredTrainingCourses, iconMap, trainingBadges, trainingDepartments, TRAINING_UPDATED_EVENT, type TrainingCourse } from "@/data/training";
+import { featuredResources, getStoredTrainingAssignments, getStoredTrainingCourses, iconMap, trainingBadges, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingCourse } from "@/data/training";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 
@@ -16,6 +16,7 @@ export default function TrainingHub() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
+  const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
@@ -25,9 +26,26 @@ export default function TrainingHub() {
       window.removeEventListener("storage", refresh);
     };
   }, []);
+  useEffect(() => {
+    const refresh = () => setAssignments(getStoredTrainingAssignments());
+    window.addEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Blossom teammate";
   const roleSet = new Set(roles);
-  const visibleCourses = useMemo(() => trainingCourses.filter((course) => course.roleVisibility.length === 0 || course.roleVisibility.some((role) => roleSet.has(role as never)) || roles.length === 0), [roleSet, roles.length]);
+  const myAssignments = useMemo(() => assignments.filter((assignment) => assignment.employeeEmail && user?.email && assignment.employeeEmail.toLowerCase() === user.email.toLowerCase()), [assignments, user?.email]);
+  const assignedCourseIds = useMemo(() => new Set(myAssignments.map((assignment) => assignment.courseId)), [myAssignments]);
+  const visibleCourses = useMemo(() => trainingCourses.filter((course) => assignedCourseIds.has(course.id) || course.roleVisibility.length === 0 || course.roleVisibility.some((role) => roleSet.has(role as never)) || roles.length === 0), [assignedCourseIds, roleSet, roles.length, trainingCourses]);
+  const courseAssignment = (courseId: string) => myAssignments.find((assignment) => assignment.courseId === courseId);
+  const courseStatus = (course: TrainingCourse) => {
+    const assignment = courseAssignment(course.id);
+    if (!assignment) return { status: course.status, progress: course.progress, dueDate: course.dueDate, required: course.required };
+    return { status: assignment.status === "completed" ? "Completed" : assignment.status === "overdue" ? "Overdue" : assignment.status === "in_progress" ? "In Progress" : "Not Started", progress: assignment.progress, dueDate: assignment.dueDate || course.dueDate, required: assignment.required };
+  };
   const searched = useMemo(() => {
     const q = query.toLowerCase().trim();
     if (!q) return visibleCourses;
@@ -36,8 +54,8 @@ export default function TrainingHub() {
       return [course.title, course.description, course.type, dept?.name, course.resources.join(" ")].join(" ").toLowerCase().includes(q);
     });
   }, [query, visibleCourses]);
-  const continueCourses = visibleCourses.filter((course) => course.status === "In Progress").slice(0, 4);
-  const requiredCourses = visibleCourses.filter((course) => course.required).slice(0, 8);
+  const continueCourses = visibleCourses.filter((course) => courseStatus(course).status === "In Progress").slice(0, 4);
+  const requiredCourses = visibleCourses.filter((course) => courseStatus(course).required).slice(0, 8);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
@@ -50,7 +68,7 @@ export default function TrainingHub() {
             <div className="relative max-w-2xl"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search topics, SOPs, systems, departments..." className="h-14 rounded-2xl border-border/70 bg-background/80 pl-12 text-base shadow-sm" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Assigned", value: requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: trainingBadges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
+            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: trainingBadges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
           </div>
         </div>
       </section>
