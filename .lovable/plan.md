@@ -1,66 +1,56 @@
-Plan to implement the dedicated Finance Dashboard without rebuilding the app shell:
+Plan: make all HR Suite data real, including Training Admin, and migrate existing local/mock training content where possible.
 
-1. Create the Finance Dashboard page
-- Add a new `FinanceDashboard` page using the existing Blossom design system.
-- Build it desktop-first with responsive stacking for mobile/tablet.
-- Use semantic Tailwind tokens only.
+## Phase 1 — Audit and stabilize the HR data layer
+- Create a shared HR data/service layer for reads and writes instead of each HR page hand-building queries.
+- Standardize employee joins with departments, managers/relationships, onboarding, documents, trainings, reviews, time clock, payroll, cases, notes, and timeline.
+- Remove the HR Dashboard dependency on `src/data/hrDashboard.ts` and map the existing backend tables into the dashboard’s KPI/action-queue shape.
+- Fix the broken default employee side panel by starting HR Dashboard with no selected employee.
 
-2. Add shared connected finance mock data
-- Create at least 15 realistic finance client records across states, clinics, payors, client types, auth statuses, billing states, payment plans, revenue levels, reauth risk, and payroll impact.
-- Use one shared dataset so KPIs, tables, funnels, queues, and side panel all stay connected.
+## Phase 2 — Convert the main HR Dashboard to backend records
+- Load employees from `employees` and `hr_departments`.
+- Load related HR records from:
+  - `employee_onboarding` and `employee_onboarding_tasks`
+  - `employee_documents_hr`
+  - `employee_trainings` and `training_courses`
+  - `employee_reviews`
+  - `time_clock_punches`, `attendance_exceptions`, `hours_timesheets`
+  - `payroll_runs`, `payroll_run_items`, `employee_bonuses`, `employee_pay_changes`
+  - `employee_cases`, `employee_notes`, `employee_timeline`
+- Recalculate dashboard statuses from real records, not canned labels.
+- Make dashboard actions persist to the backend instead of only changing local React state.
 
-3. Build the dashboard header and sticky filters
-- Title: `Finance Dashboard`
-- Subtitle: `Revenue, profitability, billing health, and financial risk across the pipeline.`
-- Add filters for date range, state, clinic, payor, client type, financial status, and billing status.
-- Add Refresh and Export actions.
+## Phase 3 — Convert Training Admin/localStorage to real backend tables
+- Replace localStorage-backed Training Admin data with backend-backed data.
+- Map current Training Admin courses into `training_courses` where the existing schema supports it.
+- Map assignments into `employee_trainings` linked to real employees.
+- Preserve email assignment behavior using the existing training email function.
+- For training fields that do not currently exist in the backend schema, add small schema extensions only where needed, such as metadata JSON for lessons/resources/version history/audit/badges if required.
 
-4. Build interactive Finance Dashboard sections
-- Clickable KPI row:
-  - Expected Revenue
-  - Collected Revenue
-  - At-Risk Revenue
-  - Payment Plans
-  - Avg Client Value
-  - Revenue Blocked
-  - Avg Time to Revenue
-  - Payroll Cost
-- Financial Action Queue:
-  - Urgent Now
-  - Follow-Up Today
-  - Revenue Blockers
-- Revenue Pipeline funnel:
-  - Lead → Financial → Client → Auth → Active → Revenue
-- Client Profitability table.
-- Payor Performance section.
-- Payment Plan Tracking.
-- Billing & Claims health.
-- Reauth Risk timeline.
-- Payroll vs Revenue margin comparison.
-- Full finance worklist table.
+## Phase 4 — Migrate existing local/mock training content safely
+- Add a one-time client-side migration guard that detects local Training Admin content and offers/imports it into backend records without duplicating existing courses.
+- Match employees by email/name when importing assignments; skip unmatched assignment rows with a clear warning.
+- After successful migration, stop reading localStorage as a data source.
 
-5. Add client side panel interactions
-- Clicking a client/work item opens a side panel with tabs/sections:
-  - Overview
-  - Benefits
-  - Payment Plan
-  - Revenue
-  - Payroll Impact
-  - Auth Connection
-  - Tasks
-  - Timeline
+## Phase 5 — Verify every HR Suite page is backend-backed
+- Confirm these pages only use backend data or derived values from backend data:
+  - HR Dashboard
+  - Employee Directory
+  - Employee Profile tabs
+  - Org Chart
+  - Onboarding Center
+  - Reviews
+  - Training & Compliance
+  - Training Admin
+  - Time Clock / Hours
+  - Payroll
+  - Resource Hub
+  - Announcements
+  - HR Reports
+  - HR Settings
+- Remove or isolate demo files so they are no longer imported by HR Suite screens.
 
-6. Update routing and dashboard navigation
-- Add a dedicated route, likely `/finance-dashboard`.
-- Update the Dashboards sidebar item so “Finance Dashboard” opens `/finance-dashboard` instead of `/leadership-dashboard?dashboard=finance`.
-- Update role-based home redirect so finance users start on `/finance-dashboard`.
-- Update page title mapping so the top bar shows `Finance Dashboard`.
-
-7. Keep existing app shell intact
-- No rebuild from scratch.
-- Leave CEO/Leadership and other department dashboards in place.
-- The generic `DepartmentDashboard` can remain for HR/recruiting placeholders unless separately upgraded later.
-
-8. Validate
-- Run the development build to confirm TypeScript/Vite compile cleanly.
-- Verify Finance Dashboard route, sidebar active state, filters, KPI drilldowns, and side panel behavior.
+## Technical notes
+- No backend data will be made public. Existing HR RLS policies remain permission-based.
+- Any schema changes will be minimal and only for missing Training Admin persistence fields.
+- Sensitive fields like pay rate, notes, documents, and payroll remain behind existing HR/payroll permissions.
+- The implementation will be phased so each screen keeps working while mock/static dependencies are removed.
