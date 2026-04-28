@@ -413,7 +413,10 @@ export default function StaffingDashboard() {
       .filter((r) => activeKpi === "all" || (activeKpi === "needed" && r.status === "Staffing Needed") || (activeKpi === "restaffing" && r.status === "Restaffing Needed") || (activeKpi === "matching" && r.status === "Matching in Progress") || (activeKpi === "assigned" && r.status === "RBT Assigned") || (activeKpi === "urgent" && (r.priority === "Critical" || r.daysWaiting > 7)) || activeKpi === "avg" || activeKpi === "available" || activeKpi === "gap")
       .filter((r) => !q || [r.client, r.parent, r.state, r.clinic, r.region, r.owner, r.bcba, r.status, r.nextAction].some((field) => field.toLowerCase().includes(q)));
   }, [activeKpi, bcbaFilter, clientStatus, clinicFilter, ownerFilter, query, rbtFilter, rbts, records, staffingStatus, stateFilter, urgencyFilter]);
-  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))), [filtered, mapFocus]);
+  const mapClients = useMemo(() => filtered
+    .filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed")))
+    .filter((record) => !mapFilters.unassignedOnly || !record.assignedRbtId)
+    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region))), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
