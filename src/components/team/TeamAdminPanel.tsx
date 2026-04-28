@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
+import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,8 +33,13 @@ interface RoleRow {
   user_id: string;
   role: AppRole;
 }
+interface EmployeeLinkRow {
+  id: string;
+  user_id: string | null;
+}
 interface Member {
   user_id: string;
+  employee_id: string | null;
   display_name: string;
   email: string;
   job_title: string;
@@ -63,9 +69,11 @@ export function TeamAdminPanel() {
         .from("profiles")
         .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
       supabase.from("user_roles").select("user_id, role"),
+      supabase.from("employees").select("id, user_id").not("user_id", "is", null),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
     const roles = (rolesRes.data ?? []) as RoleRow[];
+    const employeeLinks = ((arguments[0] as never) ?? []) as EmployeeLinkRow[];
     const byUser = new Map<string, AppRole[]>();
     roles.forEach((r) => {
       const list = byUser.get(r.user_id) ?? [];
