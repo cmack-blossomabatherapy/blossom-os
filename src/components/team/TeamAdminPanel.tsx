@@ -250,6 +250,7 @@ export function TeamAdminPanel() {
       toast.error(error.message);
       return false;
     }
+    const employeeSynced = await syncEmployeeFromTeamMember(member, next);
     updateMember(member.user_id, {
       display_name: next.display_name.trim() || "(no name)",
       email: next.email.trim(),
@@ -262,7 +263,7 @@ export function TeamAdminPanel() {
       dashboard_access: next.dashboard_access,
       active: next.active,
     });
-    toast.success("Saved");
+    toast.success(employeeSynced ? "Saved and synced to Employees" : "Saved");
     return true;
   };
 
