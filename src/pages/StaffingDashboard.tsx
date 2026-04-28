@@ -262,8 +262,9 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
   const topPairs = useMemo(() => records.flatMap((record) => rbts
     .filter((rbt) => rbt.state === record.state)
     .map((rbt) => ({ record, match: scoreMatch(record, rbt), route: routeStats(record, rbt) })))
+    .filter((pair) => pair.match.score >= mapFilters.minScore)
     .sort((a, b) => b.match.score - a.match.score || a.route.minutes - b.route.minutes)
-    .slice(0, 8), [records, rbts, routeRefreshCount]);
+    .slice(0, 8), [records, rbts, mapFilters.minScore, routeRefreshCount]);
   const breakdownRows = (breakdown: MatchBreakdown) => [
     ["Region", breakdown.region],
     ["Availability", breakdown.availability],
@@ -309,6 +310,8 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
         <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
         <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
         <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        <Button size="sm" variant={mapFilters.sortMarkersByScore ? "default" : "outline"} onClick={() => toggleMapFilter("sortMarkersByScore")}>Sort by top score</Button>
+        <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">Min score<Input className="h-7 w-16 px-2 text-xs" type="number" min={0} max={100} value={mapFilters.minScore} onChange={(event) => setMapFilters({ ...mapFilters, minScore: Math.max(0, Math.min(100, Number(event.target.value) || 0)) })} /></label>
         <Button size="sm" variant={showTooltipBreakdown ? "default" : "outline"} onClick={() => setShowTooltipBreakdown(!showTooltipBreakdown)}>Tooltip score details</Button>
         <Button size="sm" variant="outline" onClick={onRefreshRoutes}><RefreshCw className="mr-2 h-3.5 w-3.5" />Refresh routes</Button>
         {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly || mapFilters.sortMarkersByScore || mapFilters.minScore > 0) && <Button size="sm" variant="outline" onClick={() => setMapFilters(defaultMapFilters)}>Clear</Button>}
