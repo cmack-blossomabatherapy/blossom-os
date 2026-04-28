@@ -5,9 +5,10 @@ import {
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen, ChevronDown, X,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
+import logoWhite from "@/assets/blossom-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
@@ -115,6 +116,28 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "HR Reports",   icon: BarChart3,      path: "/hr/reports",   perm: "hr.reports.view" },
     { label: "HR Settings",  icon: Settings,       path: "/hr/settings",  perm: "hr.settings.manage" },
   ],
+};
+
+const mobileSectionDescriptions: Record<string, string> = {
+  Dashboards: "Real-time insights and performance",
+  Operate: "Run and manage daily operations",
+  Pipeline: "Track client journey end-to-end",
+  Records: "Calls, documents, and tasks",
+  Intelligence: "Learning and operational knowledge",
+  "HR Suite": "People, payroll, and compliance",
+  Admin: "System settings and access control",
+};
+
+const mobileItemDescriptions: Record<string, string> = {
+  Training: "Courses and onboarding",
+  "Resource Hub": "Guides and internal tools",
+};
+
+const roleLabels: Record<string, string> = {
+  admin: "System Administrator",
+  exec: "Executive Leader",
+  ops_manager: "Operations Director",
+  staff: "Care Team Member",
 };
 
 export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
