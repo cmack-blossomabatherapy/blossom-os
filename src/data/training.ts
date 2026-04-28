@@ -158,7 +158,14 @@ function makeLessons(courseId: string, title: string, type: TrainingType, minute
 }
 function makeQuiz(title: string) { return { passingScore: 80, questions: [{ id: "q1", question: `The main goal of ${title} is to create clear ownership and clean handoffs.`, type: "True / false" as const, options: ["True", "False"], answer: "True" }, { id: "q2", question: "What should you do when required information is missing?", type: "Multiple choice" as const, options: ["Move it forward anyway", "Document the blocker and notify the owner", "Delete the task", "Wait silently"], answer: "Document the blocker and notify the owner" }, { id: "q3", question: "Short answer placeholder: where would you document a blocker?", type: "Short answer" as const, answer: "In the record notes or task comments" }] }; }
 
-export const trainingBadges = ["Intake Foundations Complete", "Authorization Workflow Certified", "Client Lifecycle Ready", "CentralReach Basics Complete", "Monday.com Workflow Ready", "HR Recruiting Process Complete"].map((title, i) => ({ id: `badge-${i}`, title, description: "Earned for completing a Blossom learning path.", icon: "Award", earned: i < 3, earnedAt: `2026-04-${18 + i}` }));
-export const featuredResources = ["Monday.com Basics", "CentralReach Basics", "Intake Workflow", "Authorization Workflow", "Client Lifecycle", "Recruiting Process", "EOB / Payment Plan Process", "Tango Walkthrough Library"];
+export const trainingBadges: TrainingBadge[] = [];
+export const badgeReasonOptions: TrainingBadgeReason[] = ["Course completion", "Role certification", "Compliance readiness", "Workflow mastery", "Leadership recognition", "Systems proficiency"];
+export const featuredResources: TrainingResourcePlaceholder[] = [];
+export const resourcePlaceholders: TrainingResourcePlaceholder[] = [
+  { id: "resource-sop", category: "SOP", roleGroup: "Role-specific", title: "SOP resource slot", description: "Add the best SOP for this teammate’s role." },
+  { id: "resource-tango", category: "Tango", roleGroup: "Role-specific", title: "Tango walkthrough slot", description: "Add the best guided walkthrough for this role." },
+  { id: "resource-checklist", category: "Checklist", roleGroup: "Role-specific", title: "Checklist resource slot", description: "Add the checklist that helps this role move faster." },
+  { id: "resource-policy", category: "Policy", roleGroup: "Compliance", title: "Policy resource slot", description: "Add policy guidance when the resource library is ready." },
+];
 export const demoLearners = ["Alyssa Morgan", "Priya Shah", "Marcus Green", "Nina Patel", "Jordan Miles", "Kayla Reed", "Devon Stone", "Riki Santos", "Taylor Quinn", "Avery Brooks", "Sam Rivera", "Jamie Lin"].map((name, i) => ({ id: `emp-${i}`, name, role: ["Intake Coordinator", "Auth Coordinator", "BCBA", "Scheduler", "HR Manager", "RBT"][i % 6], department: trainingDepartments[i % trainingDepartments.length].shortName, state: ["GA", "NC", "TN", "VA", "MD"][i % 5], assigned: 8 + (i % 7), completed: 3 + (i % 6), inProgress: 2 + (i % 3), overdue: i % 4 === 0 ? 2 : i % 3 === 0 ? 1 : 0, lastActive: `Apr ${26 - (i % 8)}`, completion: 45 + (i * 7) % 52, quiz: 76 + (i * 3) % 22 }));
 export const trainingPathSteps = ["Start Here", "Core Workflow", "System Training", "SOP Review", "Common Mistakes", "Quiz / Knowledge Check", "Completion"];
