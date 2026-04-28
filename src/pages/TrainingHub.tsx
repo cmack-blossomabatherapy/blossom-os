@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, GraduationCap, Play, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { featuredResources, getStoredTrainingAssignments, getStoredTrainingCourses, iconMap, trainingBadges, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingCourse } from "@/data/training";
+import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainingCourses, iconMap, resourcePlaceholders, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingBadge, type TrainingCourse } from "@/data/training";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 
@@ -17,6 +17,7 @@ export default function TrainingHub() {
   const [query, setQuery] = useState("");
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
+  const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
     window.addEventListener(TRAINING_UPDATED_EVENT, refresh);
@@ -32,6 +33,15 @@ export default function TrainingHub() {
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(TRAINING_ASSIGNMENTS_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  useEffect(() => {
+    const refresh = () => setBadges(getStoredTrainingBadges());
+    window.addEventListener(TRAINING_BADGES_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(TRAINING_BADGES_UPDATED_EVENT, refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -68,7 +78,7 @@ export default function TrainingHub() {
             <div className="relative max-w-2xl"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search topics, SOPs, systems, departments..." className="h-14 rounded-2xl border-border/70 bg-background/80 pl-12 text-base shadow-sm" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: trainingBadges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
+            {[{ label: "Assigned", value: myAssignments.length || requiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: badges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
           </div>
         </div>
       </section>
