@@ -403,6 +403,15 @@ function MemberRow({
                 Department needed
               </span>
             )}
+            {member.employee_id ? (
+              <span className="text-[10px] uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                HR record linked
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase tracking-wider text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+                No HR record
+              </span>
+            )}
             {member.roles.map((r) => (
               <span
                 key={r}
@@ -418,8 +427,21 @@ function MemberRow({
 
       {open && (
         <div className="px-4 pb-4 bg-muted/20 border-t border-border/40 space-y-4">
+          {member.employee_id && (
+            <div className="pt-3 flex items-center justify-between gap-3 rounded-md border border-border/40 bg-card/60 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">Employee record</p>
+                <p className="text-[11px] text-muted-foreground">Open the full HR profile to edit hierarchy, payroll, training, documents, and access.</p>
+              </div>
+              <Button asChild size="sm" variant="outline" className="h-8 shrink-0 text-xs">
+                <Link to={`/hr/employees/${member.employee_id}`}>
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open record
+                </Link>
+              </Button>
+            </div>
+          )}
           {/* Info section */}
-          <div className="pt-3">
+          <div className={member.employee_id ? "" : "pt-3"}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                 Member info
