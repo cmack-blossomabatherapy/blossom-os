@@ -490,7 +490,9 @@ export default function QA() {
     setNewReviewOpen(false);
     await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: "Start QA review" });
     await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
+    await Promise.all(record.tasks.filter((task) => task.title.startsWith("Upload ")).map((task) => addTask(client.id, task)));
     await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
+    if (record.issues.length) await appendTimeline(client.id, `QA document requirements generated: ${record.documents.filter((doc) => doc.required && !doc.present).map((doc) => doc.name).join(", ")}`, "qa");
     toast.success("New QA Review created", { description: "Initial status set to Awaiting QA Review." });
   };
 
