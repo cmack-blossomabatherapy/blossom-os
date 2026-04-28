@@ -488,7 +488,7 @@ export default function QA() {
     setSelectedId(record.id);
     setMode("plan");
     setNewReviewOpen(false);
-    await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: "Start QA review" });
+    await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: record.issues.length ? "Upload missing QA attachments" : "Start QA review" });
     await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
     await Promise.all(record.tasks.filter((task) => task.title.startsWith("Upload ")).map((task) => addTask(client.id, task)));
     await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
