@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const InputSchema = z.object({
-  sourceType: z.enum(["tango", "upload", "paste"]),
+  sourceType: z.enum(["tango", "upload", "paste", "combined"]),
   tangoUrl: z.string().url().optional().or(z.literal("")),
   sopText: z.string().max(60000).optional().default(""),
   fileName: z.string().max(255).optional().default(""),
@@ -48,8 +48,10 @@ Deno.serve(async (req) => {
     const parsed = InputSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
     const input = parsed.data;
-    const sourceText = input.sourceType === "tango" ? input.tangoUrl : input.sopText;
-    if (!sourceText?.trim() && !input.currentDraft) return json({ error: "Add a Tango link, SOP text, or an existing draft first" }, 400);
+    const hasTango = Boolean(input.tangoUrl?.trim());
+    const hasSop = Boolean(input.sopText?.trim());
+    if (input.sourceType === "combined" && (!hasTango || !hasSop)) return json({ error: "Add both a Tango link and SOP content for combined generation" }, 400);
+    if (input.sourceType !== "combined" && !hasTango && !hasSop && !input.currentDraft) return json({ error: "Add a Tango link, SOP text, or an existing draft first" }, 400);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "Lovable AI is not configured" }, 500);
@@ -89,9 +91,9 @@ function json(body: unknown, status = 200) {
 }
 
 function systemPrompt() {
-  return `You are Blossom ABA Therapy's embedded training specialist. Generate a complete, practical training draft from a Tango URL, uploaded SOP text, or pasted SOP text.
+  return `You are Blossom ABA Therapy's embedded training specialist. Generate a complete, practical training draft from a Tango URL, uploaded SOP text, pasted SOP text, or a combined Tango + SOP package.
 Return JSON only with this exact shape: {"title":"","description":"","departmentId":"","difficulty":"Beginner|Intermediate|Advanced","type":"Workflow|SOP|System Training|Policy|Onboarding|Clinical|Tango|Checklist|Quiz|Video","minutes":30,"objectives":[""],"sop":{"title":"","content":"Purpose\n...\n\nWhen used\n...\n\nSystems required\n...\n\nStep-by-step instructions\n...\n\nExpected outcome\n...\n\nCommon mistakes\n..."},"walkthrough":{"url":"","label":"","summary":""},"steps":[{"title":"","description":"","systemTag":""}],"checklist":[""],"commonMistakes":[{"error":"","consequence":"","avoid":""}],"quiz":[{"type":"Multiple choice|True / false","question":"","options":[""],"answer":"","explanation":""}],"badge":{"title":"","description":""},"qualityScore":82}.
-Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create 3-5 quiz questions; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
+Rules: choose departmentId from the provided ids; infer systems like Blossom OS, CentralReach, Monday, Viventium, SharePoint, Email, Phone; simplify messy language; remove redundancy; create 3-5 quiz questions; make steps actionable and readable; score based on SOP completeness, step clarity, checklist, quiz, and mistakes. For Tango-only input, infer a workflow from the URL/title when content is limited and attach the URL. For combined mode, merge SOP policy/context with the Tango walkthrough sequence into one cohesive course: SOP provides standards, rationale, expected outcomes, mistakes, and validation; Tango provides walkthrough flow and step order. If sectionMode is sop, steps, or quiz, regenerate ONLY that requested section using currentDraft as context and keep all other fields minimal or unchanged in the returned JSON.`;
 }
 
 function normalizeDraft(raw: Record<string, unknown>) {
