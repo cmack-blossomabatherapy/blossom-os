@@ -35,7 +35,7 @@ import type { Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type WorkMode = "queue" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
+type WorkMode = "queue" | "sla" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
 type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
 type PlanStatus = "Missing" | "Submitted" | "In Review" | "Correction Requested" | "Approved";
 type NoteStatus = "Clean" | "Flagged" | "Correction Due" | "Resolved";
@@ -121,6 +121,14 @@ const isoDaysAgo = (days: number) => new Date(today.getTime() - days * 86400000)
 const isoDaysAhead = (days: number) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
 const missingChecklistItems = (record: QARecord) => CHECKLIST.filter((item) => !record.checklist[item.key]);
 const allChecked = (record: QARecord) => Object.values(record.checklist).every(Boolean) && record.issues.every((issue) => issue.resolved);
+const qaWaitingOverSla = (record: QARecord) => record.daysInQA >= 3 && record.status !== "Ready for Submission" && record.status !== "Submitted to Auth";
+const treatmentPlanOverdue = (record: QARecord) => record.daysSinceAssessment >= 14 && record.status !== "Submitted to Auth" && record.planStatus !== "Approved";
+const slaRulesFor = (record: QARecord) => [
+  qaWaitingOverSla(record) ? "3+ days waiting in QA" : "",
+  treatmentPlanOverdue(record) ? "Treatment plan overdue 14+ days" : "",
+  record.status === "Overdue" ? "Overdue status" : "",
+  record.alerts.find((alert) => alert.toLowerCase().includes("overdue")) ?? "",
+].filter(Boolean);
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
   if (status === "Ready for Submission" || status === "Submitted to Auth") return "success";
