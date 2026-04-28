@@ -26,7 +26,42 @@ interface Props {
   onClose: () => void;
 }
 
+interface EmployeeQuickRecord {
+  id: string;
+  user_id: string | null;
+  pay_rate: number | null;
+  pay_type: "hourly" | "salaried";
+  viventium_employee_id: string | null;
+  kiosk_pin: string | null;
+  kiosk_enabled: boolean;
+  resource_hub_access: boolean;
+}
+
+interface RelationshipRow {
+  kind: string;
+  related_employee_id: string;
+  related: { first_name: string; last_name: string; preferred_name: string | null } | null;
+}
+
 export function TeamDetailPanel({ member, onClose }: Props) {
+  const { hasPerm } = useAuth();
+  const [employee, setEmployee] = useState<EmployeeQuickRecord | null>(null);
+  const [relationships, setRelationships] = useState<RelationshipRow[]>([]);
+  const [loadingQuick, setLoadingQuick] = useState(false);
+  const [savingQuick, setSavingQuick] = useState(false);
+
+  useEffect(() => {
+    if (!member) return;
+    setLoadingQuick(true);
+    void Promise.all([
+      supabase.from("employees").select("id,user_id,pay_rate,pay_type,viventium_employee_id,kiosk_pin,kiosk_enabled,resource_hub_access").eq("id", member.id).maybeSingle(),
+      supabase.from("employee_relationships").select("kind,related_employee_id,related:related_employee_id(first_name,last_name,preferred_name)").eq("employee_id", member.id),
+    ]).then(([employeeRes, relationshipRes]) => {
+      setEmployee((employeeRes.data as EmployeeQuickRecord | null) ?? null);
+      setRelationships((relationshipRes.data ?? []) as RelationshipRow[]);
+    }).finally(() => setLoadingQuick(false));
+  }, [member]);
+
   if (!member) {
     return (
       <div className="bg-card rounded-xl border border-border/60 p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
@@ -37,6 +72,21 @@ export function TeamDetailPanel({ member, onClose }: Props) {
   }
 
   const manager = member.reportsTo ? findMember(member.reportsTo) : null;
+  const canEditQuick = hasPerm("hr.employees.edit");
+  const canEditPayroll = hasPerm("hr.payroll.edit") || hasPerm("hr.paychanges.manage");
+
+  const saveQuickAccess = async (patch: Partial<EmployeeQuickRecord>) => {
+    if (!employee) return;
+    setSavingQuick(true);
+    const { error } = await supabase.from("employees").update(patch).eq("id", employee.id);
+    setSavingQuick(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setEmployee({ ...employee, ...patch });
+    toast.success("Employee quick panel updated");
+  };
 
   return (
     <div className="bg-card rounded-xl border border-border/60 flex flex-col max-h-[calc(100vh-180px)]">
