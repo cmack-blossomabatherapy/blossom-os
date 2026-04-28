@@ -37,6 +37,7 @@ import { useClients } from "@/contexts/ClientsContext";
 import { mockClients, type Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { z } from "zod";
 
 type ViewMode = "queue" | "table" | "matching" | "capacity" | "restaffing" | "coverage";
 type StaffingStatus = "Staffing Needed" | "Matching in Progress" | "Confirmation Pending" | "RBT Assigned" | "Ready for Scheduling" | "Restaffing Needed" | "No Match Available";
@@ -107,6 +108,9 @@ const owners = ["All", "Maria L.", "Dante R.", "Priya S.", "Noelle C.", "Marcus 
 const bcbaNames = ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Moore", "Dr. Price", "Dr. Nguyen"];
 const statusOptions: ("All" | StaffingStatus)[] = ["All", "Staffing Needed", "Matching in Progress", "Confirmation Pending", "RBT Assigned", "Ready for Scheduling", "Restaffing Needed", "No Match Available"];
 const urgencyOptions: ("All" | Urgency)[] = ["All", "Critical", "High", "Medium", "Low"];
+const staffingOwnerSchema = z.string().trim().refine((owner) => owners.includes(owner) && owner !== "All", "Choose a valid staffing owner.");
+const staffingStatusSchema = z.string().trim().refine((status): status is StaffingStatus => statusOptions.includes(status as StaffingStatus) && status !== "All", "Choose a valid staffing status.");
+const bulkSelectionSchema = z.array(z.string().regex(/^STF-\d{4}$/)).min(1, "Select at least one staffing record.").max(100, "Bulk edit is limited to 100 records.");
 const viewModes: { id: ViewMode; label: string; icon: typeof FolderKanban }[] = [
   { id: "queue", label: "Queue View", icon: FolderKanban },
   { id: "table", label: "Table View", icon: BriefcaseBusiness },
