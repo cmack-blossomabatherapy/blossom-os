@@ -117,7 +117,7 @@
     @apply bg-card rounded-xl border border-border/60 p-4 shadow-sm hover:shadow-md transition-shadow;
   }
   .nav-item {
-    @apply flex min-h-11 items-center justify-center gap-1 rounded-lg px-2 py-2 text-center text-[11px] font-medium transition-colors md:min-h-0 md:justify-start md:gap-3 md:px-3 md:text-sm;
+    @apply flex min-h-11 items-center justify-start gap-1 rounded-lg px-2 py-2 text-left text-[11px] font-medium transition-colors md:min-h-0 md:gap-3 md:px-3 md:text-sm;
   }
   .nav-item-active {
     @apply bg-sidebar-accent text-sidebar-accent-foreground;
