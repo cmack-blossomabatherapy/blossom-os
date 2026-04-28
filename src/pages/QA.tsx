@@ -261,7 +261,8 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
   const missingAlerts = missingRequirements.map((requirement) => `Missing ${requirement.name}`);
   const missingTasks = missingRequirements.map((requirement, requirementIndex) => ({ id: `task-doc-${Date.now()}-${requirementIndex}`, title: `Upload ${requirement.name}`, owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(requirementIndex === 0 ? 1 : 2), completed: false }));
   const missingIssues = missingRequirements.map((requirement, requirementIndex) => ({ id: `issue-doc-${Date.now()}-${requirementIndex}`, type: requirement.name === "Treatment plan" ? "Missing Treatment Plan" as IssueType : "Missing Docs" as IssueType, description: `${requirement.name} is required. ${requirement.reason}`, owner: client.bcba ?? "Clinical Team", dueDate: isoDaysAhead(requirementIndex === 0 ? 1 : 2), resolved: false }));
-  const provenance = treatmentAuth ? `${treatmentAuth.payor} treatment plan · ${treatmentAuth.startDate ?? client.assessmentDate ?? "date pending"}` : `Assessment · ${client.assessmentDate ?? "date pending"}`;
+  const provenanceDate = treatmentAuth?.submittedDate ?? treatmentAuth?.approvedDate ?? client.assessmentDate ?? "date pending";
+  const provenance = treatmentAuth ? `${treatmentAuth.payor ?? client.payor} treatment plan · ${provenanceDate}` : `Assessment · ${provenanceDate}`;
   return {
     id: `qa-new-${Date.now()}`,
     clientId: client.id,
