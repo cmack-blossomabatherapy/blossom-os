@@ -146,12 +146,22 @@ Deno.serve(async (req) => {
     );
   }
 
-  const welcomeEmailSent = await sendWelcomeEmail({
+  const welcomeEmailResult = await sendWelcomeEmail({
     email,
     displayName,
     roles,
     tempPassword,
     loginUrl: `${siteUrl}/auth`,
+  });
+
+  await admin.from("invite_email_logs").insert({
+    recipient_email: email,
+    status: welcomeEmailResult.status,
+    resend_message_id: welcomeEmailResult.resendMessageId,
+    error_message: welcomeEmailResult.errorMessage,
+    roles,
+    invited_user_id: created.user.id,
+    created_by: callerId,
   });
 
   // Insert any additional roles beyond the primary one (which the trigger inserted).
@@ -169,7 +179,7 @@ Deno.serve(async (req) => {
       email,
       roles,
       tempPassword,
-      welcomeEmailSent,
+      welcomeEmailSent: welcomeEmailResult.status === "sent",
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
@@ -199,7 +209,13 @@ async function sendWelcomeEmail({
 }) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-  if (!LOVABLE_API_KEY || !RESEND_API_KEY) return false;
+  if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
+    return {
+      status: "skipped" as const,
+      resendMessageId: null,
+      errorMessage: "Resend connector credentials are not configured",
+    };
+  }
 
   const firstName = displayName?.split(" ").filter(Boolean)[0];
   const greeting = firstName ? `Welcome to Blossom, ${escapeHtml(firstName)}!` : "Welcome to Blossom!";
@@ -243,9 +259,27 @@ async function sendWelcomeEmail({
     }),
   });
 
-  if (!response.ok) {
-    console.error("Failed to send welcome email", response.status, await response.text());
-    return false;
+  const responseText = await response.text();
+  let responseJson: { id?: string; message?: string; error?: string } | null = null;
+  try {
+    responseJson = responseText ? JSON.parse(responseText) : null;
+  } catch (_) {
+    responseJson = null;
   }
-  return true;
+
+  if (!response.ok) {
+    const errorMessage = responseJson?.message || responseJson?.error || responseText || `Resend returned ${response.status}`;
+    console.error("Failed to send welcome email", response.status, errorMessage);
+    return {
+      status: "failed" as const,
+      resendMessageId: responseJson?.id ?? null,
+      errorMessage,
+    };
+  }
+
+  return {
+    status: "sent" as const,
+    resendMessageId: responseJson?.id ?? null,
+    errorMessage: null,
+  };
 }
