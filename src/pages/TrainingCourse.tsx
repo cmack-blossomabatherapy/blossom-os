@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
-import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT } from "@/data/training";
+import { getStoredTrainingCourses, trainingDepartments, TRAINING_UPDATED_EVENT, type TrainingLesson } from "@/data/training";
 
 const toTangoEmbedUrl = (url?: string) => {
   if (!url) return "";
@@ -27,6 +27,16 @@ const openResource = (url?: string) => {
   if (!url) return;
   window.open(url, "_blank", "noopener,noreferrer");
 };
+
+function LessonEmbed({ lesson }: { lesson: TrainingLesson }) {
+  if (lesson.tangoUrl) {
+    return <div className="bg-background"><iframe title={lesson.title} src={toTangoEmbedUrl(lesson.tangoUrl)} className="h-[420px] w-full border-0" allow="fullscreen" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></div>;
+  }
+  if (lesson.resourceUrl) {
+    return <div className="flex min-h-[260px] items-center justify-center bg-muted/40 p-8 text-center"><div><FileText className="mx-auto h-14 w-14 text-primary" /><h2 className="mt-4 text-xl font-semibold text-foreground">Resource attached</h2><p className="mt-2 max-w-md text-sm text-muted-foreground">Open the linked resource to view or download it.</p><Button className="mt-4" variant="outline" onClick={() => openResource(lesson.resourceUrl)}><ExternalLink className="mr-2 h-4 w-4" />Open resource</Button></div></div>;
+  }
+  return <div className="flex min-h-[260px] items-center justify-center bg-muted/40 p-8 text-center"><div><PlayCircle className="mx-auto h-14 w-14 text-primary" /><h2 className="mt-4 text-xl font-semibold text-foreground">Training content</h2><p className="mt-2 max-w-md text-sm text-muted-foreground">Review the written content below, then mark the lesson complete.</p></div></div>;
+}
 
 export default function TrainingCourse() {
   const { courseId } = useParams();
