@@ -414,20 +414,6 @@ export default function Staffing() {
     toast.success(`${checked.length} records assigned to ${owner}`);
   }
 
-  const coverageRows = useMemo(() => {
-    const areas = Array.from(new Set(records.map((r) => `${r.state}|${r.region}|${r.clinic}`)));
-    return areas.map((area) => {
-      const [state, region, clinic] = area.split("|");
-      const areaRecords = records.filter((r) => r.state === state && r.region === region && r.clinic === clinic);
-      const areaRbts = rbts.filter((r) => r.state === state && (r.clinic === clinic || r.region === region));
-      const required = areaRecords.reduce((sum, r) => sum + r.requiredHours, 0);
-      const available = areaRbts.reduce((sum, r) => sum + Math.max(0, r.maxHours - r.currentHours), 0);
-      const assigned = areaRbts.reduce((sum, r) => sum + r.currentHours, 0);
-      const gap = available - required;
-      return { state, region, clinic, required, available, assigned, gap, coverage: required ? Math.min(100, Math.round((available / required) * 100)) : 100, unstaffed: areaRecords.filter((r) => ["Staffing Needed", "Restaffing Needed", "No Match Available"].includes(r.status)).length, rbts: areaRbts.filter((r) => r.status === "Available").length };
-    }).sort((a, b) => a.gap - b.gap);
-  }, [records, rbts]);
-
   const MiniCard = ({ label, value, mode, filter }: typeof kpis[number]) => (
     <button onClick={() => { setViewMode(mode); setFilters((f) => ({ ...f, status: filter })); }} className="rounded-xl border border-border/60 bg-card px-3 py-3 text-left transition-all hover:border-primary/40 hover:shadow-sm">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
