@@ -188,7 +188,22 @@ export default function TrainingCourse() {
     lessonRefs.current[lessonId]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const markLessonComplete = (lesson: TrainingLesson) => { setCompleted((current) => { const next = new Set([...current, lesson.id]); persistProgress(next); return next; }); toast.success("Lesson progress saved"); };
-  const submitQuiz = () => { if (!course.quiz) return; const correct = course.quiz.questions.filter((q) => (answers[q.id] ?? "").toLowerCase().trim() === q.answer.toLowerCase().trim()).length; const next = Math.round((correct / course.quiz.questions.length) * 100); setScore(next); toast[next >= course.quiz.passingScore ? "success" : "error"](next >= course.quiz.passingScore ? "Quiz passed" : "Quiz needs a retake"); };
+  const submitQuiz = () => {
+    if (!course.quiz) return;
+    const correct = course.quiz.questions.filter((q) => (answers[q.id] ?? "").toLowerCase().trim() === q.answer.toLowerCase().trim()).length;
+    const next = Math.round((correct / course.quiz.questions.length) * 100);
+    const passed = next >= course.quiz.passingScore;
+    setScore(next);
+    const nextCourses = getStoredTrainingCourses().map((item) => item.id === course.id ? {
+      ...item,
+      quizScore: next,
+      status: passed && item.progress >= 100 ? "Completed" as TrainingStatus : item.progress > 0 ? "In Progress" as TrainingStatus : item.status,
+      updatedAt: new Date().toISOString(),
+    } : item);
+    setTrainingCourses(nextCourses);
+    saveStoredTrainingCourses(nextCourses);
+    toast[passed ? "success" : "error"](passed ? "Quiz passed" : "Quiz needs a retake");
+  };
   const toggleChecklistItem = (item: string, checked: boolean) => setCheckedChecklist((current) => { const next = new Set(current); checked ? next.add(item) : next.delete(item); saveStoredChecklistItems(course.id, activeLesson.id, next); return next; });
   const saveNote = () => { saveStoredNote(course.id, activeLesson.id, note); toast.success("Note saved"); };
 
