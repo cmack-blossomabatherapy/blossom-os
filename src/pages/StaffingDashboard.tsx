@@ -235,6 +235,7 @@ export default function StaffingDashboard() {
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -242,6 +243,8 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
+  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))).slice(0, 18), [filtered, mapFocus]);
+  const mapRbts = useMemo(() => rbts.filter((rbt) => stateFilter === ALL || rbt.state === stateFilter), [rbts, stateFilter]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
