@@ -115,6 +115,27 @@ export const getRoleNavigationExceptions = (roles: AppRole[]) => roles.map((role
 
 export const navPathToRoutePrefix = (path: string) => path.split("?")[0];
 
+export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (permission: string) => boolean) => {
+  const isFullNavigation = hasFullNavigationAccess(roles);
+  const baseSections = isFullNavigation
+    ? roles.includes("admin") ? [dashboardPreviewSection, ...navigationPreviewSections] : navigationPreviewSections
+    : navigationPreviewSections;
+  const exceptions = getRoleNavigationExceptions(roles);
+  const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
+  const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []).map(navPathToRoutePrefix));
+
+  return baseSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (item.superAdminOnly && !roles.includes("admin")) return false;
+        if (!isFullNavigation && section.title !== "Intelligence" && !allowedSections.has(section.title) && !allowedPaths.has(navPathToRoutePrefix(item.path))) return false;
+        return !item.perm || hasPermission(item.perm);
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
+};
+
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
   if (intelligenceRoutePrefixes.some((prefix) => routeMatches(pathname, prefix))) return true;
