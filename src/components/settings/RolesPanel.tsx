@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
