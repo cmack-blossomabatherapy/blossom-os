@@ -252,9 +252,14 @@ export default function Pipeline() {
 
       <section className="grid gap-3 md:grid-cols-5 xl:grid-cols-10">{kpis.map(([label, value, target]) => <button key={label} onClick={() => { if (target === "stuck") updateFilter("stuckOnly", true); else setSelectedSection(target === "all" ? ALL : target); }} className="rounded-lg border bg-card p-3 text-left shadow-sm transition hover:shadow-md"><p className="text-[11px] font-medium text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold text-foreground">{value}</p></button>)}</section>
 
-      {view === "Lifecycle" && <LifecycleView records={filtered} summary={summary} selectedSection={selectedSection} setSelectedSection={setSelectedSection} openRecord={openRecord} />}
-      {view === "Board" && <BoardView records={filtered} openRecord={openRecord} />}
-      {view === "Table" && <TableView records={filtered} query={query} setQuery={setQuery} sortKey={sortKey} setSortKey={setSortKey} openRecord={openRecord} />}
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3 shadow-sm">
+        <div><p className="text-sm font-semibold">Batch actions</p><p className="text-xs text-muted-foreground">{selectedIds.length} selected · controlled stage movement only</p></div>
+        <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setSelectedIds(filtered.map((record) => record.id))}>Select visible</Button><Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>Clear</Button><Button size="sm" disabled={!selectedIds.length} onClick={() => { setPendingBatch({ type: "move" }); setBatchOpen(true); }}><ArrowRight className="mr-2 h-4 w-4" />Move forward</Button><Select disabled={!selectedIds.length} onValueChange={(blocker) => { setPendingBatch({ type: "blocker", blocker }); setBatchOpen(true); }}><SelectTrigger className="h-9 w-[210px]"><SelectValue placeholder="Add blocker…" /></SelectTrigger><SelectContent>{blockerOptions.map((blocker) => <SelectItem key={blocker} value={blocker}>{blocker}</SelectItem>)}</SelectContent></Select></div>
+      </section>
+
+      {view === "Lifecycle" && <LifecycleView records={filtered} summary={summary} selectedSection={selectedSection} setSelectedSection={setSelectedSection} openRecord={openRecord} selectedIds={selectedIds} toggleSelected={toggleSelected} />}
+      {view === "Board" && <BoardView records={filtered} openRecord={openRecord} selectedIds={selectedIds} toggleSelected={toggleSelected} />}
+      {view === "Table" && <TableView records={filtered} query={query} setQuery={setQuery} sortKey={sortKey} setSortKey={setSortKey} openRecord={openRecord} selectedIds={selectedIds} toggleSelected={toggleSelected} />}
       {view === "Bottleneck" && <BottleneckView records={filtered} setSelectedSection={setSelectedSection} setView={setView} />}
       {view === "Timeline" && <TimelineView records={filtered} openRecord={openRecord} />}
       {view === "Revenue" && <RevenueView records={filtered} setSelectedSection={setSelectedSection} />}
