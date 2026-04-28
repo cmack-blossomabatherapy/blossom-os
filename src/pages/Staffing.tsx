@@ -37,6 +37,7 @@ import { useClients } from "@/contexts/ClientsContext";
 import { mockClients, type Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { z } from "zod";
 
 type ViewMode = "queue" | "table" | "matching" | "capacity" | "restaffing" | "coverage";
 type StaffingStatus = "Staffing Needed" | "Matching in Progress" | "Confirmation Pending" | "RBT Assigned" | "Ready for Scheduling" | "Restaffing Needed" | "No Match Available";
@@ -107,6 +108,9 @@ const owners = ["All", "Maria L.", "Dante R.", "Priya S.", "Noelle C.", "Marcus 
 const bcbaNames = ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Moore", "Dr. Price", "Dr. Nguyen"];
 const statusOptions: ("All" | StaffingStatus)[] = ["All", "Staffing Needed", "Matching in Progress", "Confirmation Pending", "RBT Assigned", "Ready for Scheduling", "Restaffing Needed", "No Match Available"];
 const urgencyOptions: ("All" | Urgency)[] = ["All", "Critical", "High", "Medium", "Low"];
+const staffingOwnerSchema = z.string().trim().refine((owner) => owners.includes(owner) && owner !== "All", "Choose a valid staffing owner.");
+const staffingStatusSchema = z.string().trim().refine((status): status is StaffingStatus => statusOptions.includes(status as StaffingStatus) && status !== "All", "Choose a valid staffing status.");
+const bulkSelectionSchema = z.array(z.string().regex(/^STF-\d{4}$/)).min(1, "Select at least one staffing record.").max(100, "Bulk edit is limited to 100 records.");
 const viewModes: { id: ViewMode; label: string; icon: typeof FolderKanban }[] = [
   { id: "queue", label: "Queue View", icon: FolderKanban },
   { id: "table", label: "Table View", icon: BriefcaseBusiness },
@@ -425,15 +429,55 @@ export default function Staffing() {
     toast.success("Staffing export downloaded");
   }
 
-  function bulkUpdateStatus(status: StaffingStatus) {
-    setRecords((current) => current.map((r) => checked.includes(r.id) ? { ...r, status, timeline: [{ id: `tl-${Date.now()}-${r.id}`, event: `Bulk updated to ${status}`, at: "Just now", owner: "Staffing OS" }, ...r.timeline] } : r));
-    toast.success(`${checked.length} records updated`);
+  function validateBulkSelection() {
+    const parsed = bulkSelectionSchema.safeParse(checked);
+    if (!parsed.success) {
+      toast.error("Bulk edit blocked", { description: parsed.error.issues[0]?.message ?? "Select valid staffing records first." });
+      return null;
+    }
+    return parsed.data;
+  }
+
+  function bulkUpdateStatus(status: string) {
+    const ids = validateBulkSelection();
+    const parsedStatus = staffingStatusSchema.safeParse(status);
+    if (!ids || !parsedStatus.success) {
+      if (!parsedStatus.success) toast.error("Bulk status update blocked", { description: parsedStatus.error.issues[0]?.message });
+      return;
+    }
+    const selectedRecords = records.filter((record) => ids.includes(record.id));
+    const blocked = selectedRecords.filter((record) => parsedStatus.data === "Ready for Scheduling" && !record.assignedRbtId);
+    if (blocked.length) {
+      toast.error("Status update blocked", { description: `${blocked.length} selected clients need an assigned RBT before Ready for Scheduling.` });
+      return;
+    }
+    const alertText = parsedStatus.data === "No Match Available" ? "No RBT match available" : parsedStatus.data === "Restaffing Needed" ? "Restaffing urgent" : "Bulk status updated";
+    setRecords((current) => current.map((record) => ids.includes(record.id) ? {
+      ...record,
+      status: parsedStatus.data,
+      urgency: ["No Match Available", "Restaffing Needed"].includes(parsedStatus.data) ? "Critical" : record.urgency,
+      alerts: Array.from(new Set([...record.alerts, alertText])),
+      nextAction: parsedStatus.data === "No Match Available" ? "Escalate regional capacity gap" : parsedStatus.data === "Matching in Progress" ? "Compare RBT matches" : record.nextAction,
+      timeline: [{ id: `tl-${Date.now()}-${record.id}`, event: `Bulk status updated to ${parsedStatus.data}`, at: "Just now", owner: "Staffing OS" }, ...record.timeline],
+    } : record));
+    toast.success(`${ids.length} records updated`, { description: `Status set to ${parsedStatus.data}; affected records were flagged for review.` });
     setChecked([]);
   }
 
   function bulkAssignOwner(owner: string) {
-    setRecords((current) => current.map((r) => checked.includes(r.id) ? { ...r, owner } : r));
-    toast.success(`${checked.length} records assigned to ${owner}`);
+    const ids = validateBulkSelection();
+    const parsedOwner = staffingOwnerSchema.safeParse(owner);
+    if (!ids || !parsedOwner.success) {
+      if (!parsedOwner.success) toast.error("Bulk owner update blocked", { description: parsedOwner.error.issues[0]?.message });
+      return;
+    }
+    setRecords((current) => current.map((record) => ids.includes(record.id) ? {
+      ...record,
+      owner: parsedOwner.data,
+      alerts: record.owner === "" ? Array.from(new Set([...record.alerts, "Staffing owner assigned"])) : record.alerts,
+      timeline: [{ id: `tl-${Date.now()}-${record.id}`, event: `Bulk assigned to ${parsedOwner.data}`, at: "Just now", owner: "Staffing OS" }, ...record.timeline],
+    } : record));
+    toast.success(`${ids.length} records assigned`, { description: `Staffing owner set to ${parsedOwner.data}.` });
   }
 
   const MiniCard = ({ label, value, mode, filter }: typeof kpis[number]) => (
@@ -495,9 +539,9 @@ export default function Staffing() {
 
         {capacityFocusKey && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3"><div><p className="text-sm font-semibold text-foreground">Capacity focus active</p><p className="text-xs text-muted-foreground">Filtered to {filters.region}; unstaffed clients and coverage gaps are highlighted.</p></div><Button size="sm" variant="outline" onClick={() => { setCapacityFocusKey(null); setFilters((f) => ({ ...f, state: "All", region: "All", clinic: "All" })); }}>Clear capacity focus</Button></div>}
 
-        {checked.length > 0 && <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3"><span className="text-sm font-medium text-foreground">{checked.length} selected</span><Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("Matching in Progress")}>Mark Matching</Button><Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("No Match Available")}>Mark No Match</Button><Select onValueChange={bulkAssignOwner}><SelectTrigger className="h-8 w-44"><SelectValue placeholder="Bulk assign owner" /></SelectTrigger><SelectContent>{owners.filter((o) => o !== "All").map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select></div>}
+        {checked.length > 0 && <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3"><span className="text-sm font-medium text-foreground">{checked.length} selected</span><Select onValueChange={bulkAssignOwner}><SelectTrigger className="h-8 w-48"><SelectValue placeholder="Assign staffing owner" /></SelectTrigger><SelectContent>{owners.filter((o) => o !== "All").map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><Select onValueChange={bulkUpdateStatus}><SelectTrigger className="h-8 w-52"><SelectValue placeholder="Update staffing status" /></SelectTrigger><SelectContent>{statusOptions.filter((status) => status !== "All").map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent></Select><Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("Matching in Progress")}>Mark Matching</Button><Button size="sm" variant="outline" onClick={() => bulkUpdateStatus("No Match Available")}>Mark No Match</Button><Button size="sm" variant="ghost" onClick={() => setChecked([])}>Clear</Button></div>}
 
-        {viewMode === "queue" && <div className="space-y-4">{queueGroups.map((group) => { const items = filteredRecords.filter(group.test); return <section key={group.id} className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-3"><div><h3 className="font-semibold text-foreground">{group.title}</h3><p className="text-xs text-muted-foreground">{group.description}</p></div><StatusBadge status={`${items.length}`} variant={items.length ? "info" : "muted"} /></div><div className="overflow-x-auto"><table className="w-full min-w-[1180px] text-sm"><thead><tr className="border-b border-border/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">{["Client", "State / Clinic", "Location", "Required", "Availability", "Owner", "Suggested RBT", "Score", "Days", "Next Action", "Alert", "Quick Action"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr></thead><tbody>{items.map((record) => { const suggested = rbts.find((r) => r.id === record.suggestedRbtId); return <tr key={record.id} className={cn("border-b border-border/30 hover:bg-muted/25", capacityFocusKey === `${record.state}|${record.region}|${record.clinic}` && ["Staffing Needed", "Restaffing Needed", "No Match Available"].includes(record.status) && "bg-destructive/5")} onClick={() => openRecord(record)}><td className="px-4 py-3"><div className="font-medium text-foreground">{record.clientName}</div><div className="text-[11px] text-muted-foreground">{record.bcba}</div></td><td className="px-4 py-3 text-muted-foreground">{record.state} · {record.clinic}</td><td className="px-4 py-3 text-muted-foreground">{record.serviceType} · {record.location}</td><td className="px-4 py-3 text-muted-foreground">{record.requiredHours}h</td><td className="px-4 py-3 text-muted-foreground">{record.availability.join(", ")}</td><td className="px-4 py-3 text-muted-foreground">{record.owner}</td><td className="px-4 py-3 text-muted-foreground">{suggested?.name ?? "—"}</td><td className="px-4 py-3 font-semibold text-foreground">{record.matchScore}%</td><td className={cn("px-4 py-3 font-medium", record.daysWaiting > 7 ? "text-destructive" : record.daysWaiting > 3 ? "text-warning" : "text-muted-foreground")}>{record.daysWaiting}d</td><td className="px-4 py-3 text-muted-foreground">{record.nextAction}</td><td className="px-4 py-3">{record.alerts[0] ? <StatusBadge status={record.alerts[0]} variant={record.alerts[0].includes("7") || record.alerts[0].includes("No") ? "destructive" : "warning"} /> : <span className="text-muted-foreground">—</span>}</td><td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><div className="flex gap-1"><Button size="sm" variant="outline" className="h-8" onClick={() => { setSelectedId(record.id); setViewMode("matching"); }}>Open Match</Button>{suggested && <Button size="sm" className="h-8" onClick={() => assignRbt(record, suggested)}>Assign</Button>}<Button size="sm" variant="ghost" className="h-8" onClick={() => setStatus(record, "No Match Available")}>No Match</Button><Button size="sm" variant="ghost" className="h-8" onClick={() => escalate(record)}>Escalate</Button></div></td></tr>; })}</tbody></table>{items.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No records in this queue.</p>}</div></section>; })}</div>}
+        {viewMode === "queue" && <div className="space-y-4">{queueGroups.map((group) => { const items = filteredRecords.filter(group.test); return <section key={group.id} className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-3"><div><h3 className="font-semibold text-foreground">{group.title}</h3><p className="text-xs text-muted-foreground">{group.description}</p></div><StatusBadge status={`${items.length}`} variant={items.length ? "info" : "muted"} /></div><div className="overflow-x-auto"><table className="w-full min-w-[1180px] text-sm"><thead><tr className="border-b border-border/40 text-left text-[11px] uppercase tracking-wide text-muted-foreground">{["", "Client", "State / Clinic", "Location", "Required", "Availability", "Owner", "Suggested RBT", "Score", "Days", "Next Action", "Alert", "Quick Action"].map((h) => <th key={h} className="px-4 py-2 font-medium">{h}</th>)}</tr></thead><tbody>{items.map((record) => { const suggested = rbts.find((r) => r.id === record.suggestedRbtId); return <tr key={record.id} className={cn("border-b border-border/30 hover:bg-muted/25", checked.includes(record.id) && "bg-primary/5", capacityFocusKey === `${record.state}|${record.region}|${record.clinic}` && ["Staffing Needed", "Restaffing Needed", "No Match Available"].includes(record.status) && "bg-destructive/5")} onClick={() => openRecord(record)}><td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><Checkbox checked={checked.includes(record.id)} onCheckedChange={(v) => setChecked((current) => v ? Array.from(new Set([...current, record.id])) : current.filter((id) => id !== record.id))} /></td><td className="px-4 py-3"><div className="font-medium text-foreground">{record.clientName}</div><div className="text-[11px] text-muted-foreground">{record.bcba}</div></td><td className="px-4 py-3 text-muted-foreground">{record.state} · {record.clinic}</td><td className="px-4 py-3 text-muted-foreground">{record.serviceType} · {record.location}</td><td className="px-4 py-3 text-muted-foreground">{record.requiredHours}h</td><td className="px-4 py-3 text-muted-foreground">{record.availability.join(", ")}</td><td className="px-4 py-3 text-muted-foreground">{record.owner}</td><td className="px-4 py-3 text-muted-foreground">{suggested?.name ?? "—"}</td><td className="px-4 py-3 font-semibold text-foreground">{record.matchScore}%</td><td className={cn("px-4 py-3 font-medium", record.daysWaiting > 7 ? "text-destructive" : record.daysWaiting > 3 ? "text-warning" : "text-muted-foreground")}>{record.daysWaiting}d</td><td className="px-4 py-3 text-muted-foreground">{record.nextAction}</td><td className="px-4 py-3">{record.alerts[0] ? <StatusBadge status={record.alerts[0]} variant={record.alerts[0].includes("7") || record.alerts[0].includes("No") ? "destructive" : "warning"} /> : <span className="text-muted-foreground">—</span>}</td><td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><div className="flex gap-1"><Button size="sm" variant="outline" className="h-8" onClick={() => { setSelectedId(record.id); setViewMode("matching"); }}>Open Match</Button>{suggested && <Button size="sm" className="h-8" onClick={() => assignRbt(record, suggested)}>Assign</Button>}<Button size="sm" variant="ghost" className="h-8" onClick={() => setStatus(record, "No Match Available")}>No Match</Button><Button size="sm" variant="ghost" className="h-8" onClick={() => escalate(record)}>Escalate</Button></div></td></tr>; })}</tbody></table>{items.length === 0 && <p className="px-4 py-8 text-center text-sm text-muted-foreground">No records in this queue.</p>}</div></section>; })}</div>}
 
         {viewMode === "table" && <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"><div className="overflow-x-auto"><table className="w-full min-w-[1500px] text-sm"><thead><tr className="border-b border-border/50 bg-muted/20 text-left text-[11px] uppercase tracking-wide text-muted-foreground"><th className="px-3 py-3"><Checkbox checked={checked.length === filteredRecords.length && filteredRecords.length > 0} onCheckedChange={(v) => setChecked(v ? filteredRecords.map((r) => r.id) : [])} /></th>{["clientName", "state", "clinic", "location", "requiredHours", "availability", "status", "owner", "assignedRbtId", "suggestedRbtId", "matchScore", "daysWaiting", "urgency", "nextAction", "alerts"].map((h) => <th key={h} className="px-3 py-3 font-medium"><button onClick={() => setSortKey(h as keyof StaffingRecord)}>{h.replace(/([A-Z])/g, " $1")}</button></th>)}</tr></thead><tbody>{filteredRecords.map((record) => <RecordRow key={record.id} record={record} />)}</tbody></table></div></div>}
 
