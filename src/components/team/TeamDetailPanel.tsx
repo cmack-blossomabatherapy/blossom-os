@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog, ShieldCheck, Save, Loader2, ExternalLink } from "lucide-react";
+import { X, Mail, Phone, MapPin, Calendar, TrendingUp, TrendingDown, Minus, MessageSquare, UserCog, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -300,6 +300,19 @@ function Row({ icon: Icon, value }: { icon: typeof Mail; value: string }) {
       <Icon className="h-3 w-3 shrink-0 text-muted-foreground/70" />
       <span className="truncate">{value}</span>
     </div>
+  );
+}
+
+function formatEmployeeOption(employee: EmployeeOption) {
+  return `${employee.preferred_name || employee.first_name} ${employee.last_name}`;
+}
+
+function QuickToggle({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between rounded-md border border-border/40 bg-secondary/30 px-3 py-2 text-xs text-foreground">
+      <span>{label}</span>
+      <Checkbox checked={checked} disabled={disabled} onCheckedChange={(value) => onChange(value === true)} />
+    </label>
   );
 }
 
