@@ -300,6 +300,8 @@ export default function QA() {
   const [panelTab, setPanelTab] = useState("overview");
   const [filters, setFilters] = useState({ state: "all", owner: "all", bcba: "all", rbt: "all", payor: "all", status: "all", issue: "all", plan: "all", note: "all", date: "all" });
   const [comment, setComment] = useState("");
+  const [newReviewOpen, setNewReviewOpen] = useState(false);
+  const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
@@ -460,6 +462,20 @@ export default function QA() {
     setPanelTab("overview");
   };
 
+  const createQaReview = async () => {
+    const client = clients.find((item) => item.id === newReviewClientId);
+    if (!client) return toast.error("Select an assessment or treatment plan first");
+    const record = qaRecordFromClient(client, records.length);
+    setRecords((current) => [record, ...current]);
+    setSelectedId(record.id);
+    setMode("plan");
+    setNewReviewOpen(false);
+    await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: "Start QA review" });
+    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
+    await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
+    toast.success("New QA Review created", { description: "Initial status set to Awaiting QA Review." });
+  };
+
   return (
     <PageShell
       title="QA & Compliance"
@@ -467,7 +483,7 @@ export default function QA() {
       icon={ClipboardCheck}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm"><Plus className="h-4 w-4" />New QA Review</Button>
+          <Button size="sm" onClick={() => setNewReviewOpen(true)}><Plus className="h-4 w-4" />New QA Review</Button>
           <Button size="sm" variant="outline" onClick={() => selectedIds.length ? bulkPatch({ qaOwner: "QA Team" }, "Bulk assigned QA owner") : toast.info("Select rows first")}>Bulk Actions</Button>
           <Button size="sm" variant="outline"><Download className="h-4 w-4" />Export</Button>
           <Button size="sm" variant="outline"><Sparkles className="h-4 w-4" />Saved Views</Button>
