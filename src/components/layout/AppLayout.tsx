@@ -43,12 +43,12 @@ export function AppLayout() {
   const [mobileMenuFloating, setMobileMenuFloating] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:flex-row">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-background md:h-screen md:overflow-hidden md:flex-row">
       <AppSidebar mobileOpen={mobileMenuOpen} onMobileOpenChange={setMobileMenuOpen} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col md:min-h-0">
         <TopBar title={title} onOpenMobileMenu={() => setMobileMenuOpen(true)} mobileMenuFloating={mobileMenuFloating} />
         <main
-          className="mobile-page flex-1 overflow-auto px-3 pb-6 pt-3 md:p-6"
+          className="mobile-page flex-1 overflow-auto px-3 pb-6 pt-3 md:min-h-0 md:p-6"
           onScroll={(event) => setMobileMenuFloating(event.currentTarget.scrollTop > 48)}
         >
           <Outlet />
