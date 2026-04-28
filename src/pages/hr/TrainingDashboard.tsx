@@ -16,12 +16,10 @@ import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { useLiveTeam } from "@/hooks/useLiveTeam";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { badgeReasonOptions, createTrainingCourse, getStoredTrainingAssignments, getStoredTrainingAuditLog, getStoredTrainingBadges, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingAuditLog, saveStoredTrainingBadges, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingAssignmentRecord, type TrainingAssignmentStatus, type TrainingAuditAction, type TrainingAuditEntry, type TrainingBadge, type TrainingBadgeReason, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
+import { badgeReasonOptions, getStoredTrainingAssignments, getStoredTrainingAuditLog, getStoredTrainingBadges, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingAuditLog, saveStoredTrainingBadges, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingAssignmentStatus, type TrainingAuditAction, type TrainingAuditEntry, type TrainingBadge, type TrainingBadgeReason, type TrainingCourse, type TrainingVersion } from "@/data/training";
 import { TrainingBuilderDialog } from "@/components/training/TrainingBuilderDialog";
 
 const ALL = "All";
-const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
-const difficultyLevels: Difficulty[] = ["Beginner", "Intermediate", "Advanced"];
 type LibraryView = "active" | "archived" | "all";
 type RequirementFilter = "all" | "required" | "optional";
 type AssignmentStatus = TrainingAssignmentStatus;
