@@ -42,7 +42,7 @@ type StaffingRecord = {
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 type MapPoint = { x: number; y: number };
 type MapZoom = "regional" | "local" | "street";
-type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean };
+type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean; sortMarkersByScore: boolean; minScore: number };
 type ClientCluster = { id: string; x: number; y: number; records: StaffingRecord[]; best?: Match; route?: ReturnType<typeof routeStats> };
 type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; route: ReturnType<typeof routeStats> };
 
@@ -196,7 +196,7 @@ function hydrateRecords(records: StaffingRecord[]) {
 
 function storedMapState() {
   if (typeof window === "undefined") return null;
-  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | MapFilters>; } catch { return null; }
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | boolean | number | MapFilters>; } catch { return null; }
 }
 
 const regionAnchors: Record<string, MapPoint> = {
