@@ -355,6 +355,8 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} setMapFocus={setMapFocus} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
+
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.2fr]">
