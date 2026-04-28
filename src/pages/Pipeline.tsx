@@ -164,6 +164,9 @@ export default function Pipeline() {
   const [query, setQuery] = useState("");
   const [selectedSection, setSelectedSection] = useState<string>(ALL);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [pendingBatch, setPendingBatch] = useState<{ type: "move" | "blocker"; blocker?: string } | null>(null);
   const [sortKey, setSortKey] = useState<"risk" | "days" | "revenue" | "name">("risk");
   const [savedView, setSavedView] = useState("Executive Health");
   const [filters, setFilters] = useState<Filters>({ dateRange: "This Month", state: ALL, clinic: ALL, stage: ALL, owner: ALL, payor: ALL, bcba: ALL, rbt: ALL, priority: ALL, atRiskOnly: false, stuckOnly: false });
@@ -190,6 +193,7 @@ export default function Pipeline() {
       .sort((a, b) => sortKey === "days" ? b.daysInStage - a.daysInStage : sortKey === "revenue" ? b.revenueRisk - a.revenueRisk : sortKey === "name" ? a.name.localeCompare(b.name) : ["Critical", "High", "Medium", "Low"].indexOf(a.risk) - ["Critical", "High", "Medium", "Low"].indexOf(b.risk));
   }, [records, selectedSection, filters, query, sortKey]);
   const selected = records.find((r) => r.id === selectedRecordId) ?? null;
+  const selectedBatchRecords = records.filter((record) => selectedIds.includes(record.id));
   const summary = useMemo(() => buildSummary(filtered), [filtered]);
   const kpis = [
     ["Total In Pipeline", filtered.length, "all"], ["New Leads", filtered.filter((r) => r.stage === "New Lead").length, "Intake"], ["Pending Auth", filtered.filter((r) => r.section === "Authorization" || r.section === "Treatment Authorization").length, "Authorization"], ["In QA", filtered.filter((r) => r.section === "QA").length, "QA"], ["Staffing Needed", filtered.filter((r) => r.section === "Staffing" && r.rbt === "Unassigned").length, "Staffing"], ["Pending Start", filtered.filter((r) => r.section === "Scheduling").length, "Scheduling"], ["Active Clients", filtered.filter((r) => r.stage === "Active").length, "Active Services"], ["Reauth Risk", filtered.filter((r) => r.section === "Reauth Loop" || r.reauth.risk !== "Low").length, "Reauth Loop"], ["Stuck Records", filtered.filter((r) => r.daysInStage >= 8 || r.blockers.length).length, "stuck"], ["Avg Time to Active", `${Math.round(filtered.reduce((s, r) => s + r.totalDays, 0) / Math.max(filtered.length, 1))}d`, "all"],
@@ -197,6 +201,7 @@ export default function Pipeline() {
 
   const updateFilter = (key: keyof Filters, value: string | boolean) => setFilters((current) => ({ ...current, [key]: value }));
   const openRecord = (record: PipelineRecord) => setSelectedRecordId(record.id);
+  const toggleSelected = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const moveForward = (record: PipelineRecord) => {
     if (record.blockers.length || record.tasks.some((task) => !task.completed && task.blocker)) {
       toast.error("Missing requirements", { description: record.blockers[0] ?? "Complete required stage tasks before moving forward." });
