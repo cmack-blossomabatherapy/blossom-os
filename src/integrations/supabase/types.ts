@@ -2407,6 +2407,42 @@ export type Database = {
           },
         ]
       }
+      invite_email_logs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          invited_user_id: string | null
+          recipient_email: string
+          resend_message_id: string | null
+          roles: string[]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          invited_user_id?: string | null
+          recipient_email: string
+          resend_message_id?: string | null
+          roles?: string[]
+          status: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          invited_user_id?: string | null
+          recipient_email?: string
+          resend_message_id?: string | null
+          roles?: string[]
+          status?: string
+        }
+        Relationships: []
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
