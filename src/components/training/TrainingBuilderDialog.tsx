@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, FileText, Gauge, ListChecks, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { createTrainingCourse, trainingDepartments, type Difficulty, type TrainingCourse, type TrainingLesson, type TrainingType } from "@/data/training";
+import { supabase } from "@/integrations/supabase/client";
 
 const builderSteps = ["Basics", "Objectives", "SOP", "Tango", "Steps", "Blocks", "Checklist", "Mistakes", "Quiz", "Badge", "Assignment", "Preview"];
 const trainingTypes: TrainingType[] = ["Workflow", "SOP", "System Training", "Policy", "Onboarding", "Clinical", "Tango", "Checklist", "Quiz", "Video"];
@@ -32,6 +33,8 @@ type ChecklistItem = { id: string; label: string; required: boolean };
 type MistakeItem = { id: string; error: string; consequence: string; avoid: string };
 type QuizQuestion = { id: string; type: "Multiple choice" | "True / false"; question: string; options: string[]; answer: string; explanation: string };
 type WalkthroughLink = { id: string; url: string; label: string };
+type AiSourceType = "tango" | "upload" | "paste";
+type AiDraft = { title: string; description: string; departmentId: string; difficulty: Difficulty; type: TrainingType; minutes: number; objectives: string[]; sop: { title?: string; content?: string }; walkthrough?: { url?: string; label?: string; summary?: string }; steps: Array<{ title?: string; description?: string; systemTag?: string }>; checklist: string[]; commonMistakes: Array<{ error?: string; consequence?: string; avoid?: string }>; quiz: Array<{ type?: "Multiple choice" | "True / false"; question?: string; options?: string[]; answer?: string; explanation?: string }>; badge?: { title?: string; description?: string }; qualityScore?: number };
 
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -145,6 +148,13 @@ const draftFromCourse = (course: TrainingCourse): BuilderDraft => ({
 export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, courses = [] }: { open: boolean; onOpenChange: (open: boolean) => void; onSubmit: (course: TrainingCourse) => void; course?: TrainingCourse; courses?: TrainingCourse[] }) {
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<BuilderDraft>(() => emptyDraft());
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiSource, setAiSource] = useState<AiSourceType>("tango");
+  const [aiTangoUrl, setAiTangoUrl] = useState("");
+  const [aiSopText, setAiSopText] = useState("");
+  const [aiFileName, setAiFileName] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiDraft, setAiDraft] = useState<AiDraft | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -158,6 +168,48 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   const patch = <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
   const setList = <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => setDraft((current) => ({ ...current, [key]: value }));
+
+  const generateWithAi = async () => {
+    const body = { sourceType: aiSource, tangoUrl: aiTangoUrl.trim(), sopText: aiSopText.trim(), fileName: aiFileName };
+    if (aiSource === "tango" && !body.tangoUrl) return toast.error("Add a Tango link first");
+    if (aiSource !== "tango" && !body.sopText) return toast.error("Add SOP text first");
+    setAiGenerating(true);
+    const { data, error } = await supabase.functions.invoke("generate-training-draft", { body });
+    setAiGenerating(false);
+    if (error) return toast.error(error.message || "AI training generation failed");
+    setAiDraft(data?.draft as AiDraft);
+    toast.success("AI training draft generated");
+  };
+
+  const acceptAiDraft = () => {
+    if (!aiDraft) return;
+    setDraft((current) => ({
+      ...current,
+      title: aiDraft.title || current.title,
+      description: aiDraft.description || current.description,
+      departmentId: aiDraft.departmentId || current.departmentId,
+      difficulty: aiDraft.difficulty || current.difficulty,
+      type: aiDraft.type || current.type,
+      minutes: aiDraft.minutes || current.minutes,
+      objectives: aiDraft.objectives?.length ? aiDraft.objectives : current.objectives,
+      sopTitle: aiDraft.sop?.title || aiDraft.title || current.sopTitle,
+      sopContent: aiDraft.sop?.content || current.sopContent,
+      sopFileName: aiFileName || current.sopFileName,
+      walkthroughs: aiDraft.walkthrough?.url ? [{ id: uid("tango"), url: aiDraft.walkthrough.url, label: aiDraft.walkthrough.label || "Open Walkthrough" }] : current.walkthroughs,
+      steps: aiDraft.steps?.length ? aiDraft.steps.map((item) => ({ id: uid("step"), title: item.title ?? "", description: item.description ?? "", systemTag: item.systemTag || "Blossom OS" })) : current.steps,
+      checklist: aiDraft.checklist?.length ? aiDraft.checklist.map((label) => ({ id: uid("check"), label, required: true })) : current.checklist,
+      mistakes: aiDraft.commonMistakes?.length ? aiDraft.commonMistakes.map((item) => ({ id: uid("mistake"), error: item.error ?? "", consequence: item.consequence ?? "", avoid: item.avoid ?? "" })) : current.mistakes,
+      quizEnabled: Boolean(aiDraft.quiz?.length),
+      quiz: aiDraft.quiz?.length ? aiDraft.quiz.map((item) => ({ id: uid("quiz"), type: item.type === "True / false" ? "True / false" : "Multiple choice", question: item.question ?? "", options: item.options?.length ? item.options : ["True", "False"], answer: item.answer ?? "", explanation: item.explanation ?? "" })) : current.quiz,
+      badgeTitle: aiDraft.badge?.title || current.badgeTitle,
+      badgeDescription: aiDraft.badge?.description || current.badgeDescription,
+      awardBadge: Boolean(aiDraft.badge?.title) || current.awardBadge,
+      templateName: "AI-generated training draft",
+    }));
+    setStep(11);
+    setAiOpen(false);
+    toast.success("AI draft loaded into the editable builder");
+  };
 
   const applyTemplate = (name: string) => {
     const template = templates.find((item) => item.name === name);
@@ -231,6 +283,7 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
 
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto"><DialogHeader><DialogTitle>{course ? "Edit Training Builder" : "Create Training Builder"}</DialogTitle></DialogHeader>
     <div className="space-y-5">
+      {!course && <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div><div><p className="font-semibold text-primary">Generate Training with AI</p><p className="text-sm text-primary/80">Drop in a Tango link, SOP upload text, or pasted SOP and get a structured draft in seconds.</p></div></div><Button onClick={() => setAiOpen(true)}><Sparkles className="mr-2 h-4 w-4" />Generate Training with AI</Button></div></div>}
       <div className="rounded-2xl border border-border/60 bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Gauge className="h-5 w-5 text-primary" /><div><p className="font-semibold text-foreground">Training Quality Score: {quality}% ({qualityLabel(quality)})</p><p className="text-xs text-muted-foreground">SOP, Tango, steps, checklist, quiz, and common mistakes raise readiness.</p></div></div><StatusBadge status={`Step ${step + 1} of ${builderSteps.length}`} variant="info" /></div>
         <Progress value={quality} className="mt-3 h-2" />
@@ -251,7 +304,24 @@ export function TrainingBuilderDialog({ open, onOpenChange, onSubmit, course, co
       {step === 11 && <PreviewStep draft={draft} quality={quality} blockers={blockers} />}
     </div>
     <DialogFooter className="gap-2 sm:gap-2"><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="outline" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>{step < builderSteps.length - 1 ? <Button onClick={() => setStep((current) => Math.min(builderSteps.length - 1, current + 1))}>Next<ArrowRight className="ml-2 h-4 w-4" /></Button> : <><Button variant="outline" onClick={() => submit("draft")}>Save draft</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Publish</Button><Button onClick={() => submit("published")} disabled={blockers.length > 0}>Assign now</Button></>}</DialogFooter>
+    <AiTrainingDialog open={aiOpen} onOpenChange={setAiOpen} source={aiSource} setSource={setAiSource} tangoUrl={aiTangoUrl} setTangoUrl={setAiTangoUrl} sopText={aiSopText} setSopText={setAiSopText} fileName={aiFileName} setFileName={setAiFileName} generating={aiGenerating} draft={aiDraft} onGenerate={generateWithAi} onAccept={acceptAiDraft} />
   </DialogContent></Dialog>;
+}
+
+function AiTrainingDialog({ open, onOpenChange, source, setSource, tangoUrl, setTangoUrl, sopText, setSopText, fileName, setFileName, generating, draft, onGenerate, onAccept }: { open: boolean; onOpenChange: (open: boolean) => void; source: AiSourceType; setSource: (source: AiSourceType) => void; tangoUrl: string; setTangoUrl: (value: string) => void; sopText: string; setSopText: (value: string) => void; fileName: string; setFileName: (value: string) => void; generating: boolean; draft: AiDraft | null; onGenerate: () => void; onAccept: () => void }) {
+  const readUpload = async (file?: File) => {
+    if (!file) return;
+    setFileName(file.name);
+    const text = await file.text().catch(() => "");
+    setSopText(text);
+    if (!text.trim()) toast.error("Could not read text from this file. Paste the SOP text instead.");
+  };
+
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto"><DialogHeader><DialogTitle>Generate Training with AI</DialogTitle></DialogHeader><div className="space-y-4"><div className="grid gap-2 md:grid-cols-3">{[["tango", "Generate from Tango Link"], ["upload", "Generate from SOP Upload"], ["paste", "Generate from Pasted SOP Text"]].map(([key, label]) => <button key={key} onClick={() => setSource(key as AiSourceType)} className={cn("rounded-xl border p-3 text-left text-sm transition-colors", source === key ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-background text-foreground hover:bg-muted/40")}><Sparkles className="mb-2 h-4 w-4" />{label}</button>)}</div>{source === "tango" && <Field label="Tango URL"><Input value={tangoUrl} onChange={(event) => setTangoUrl(event.target.value)} placeholder="https://app.tango.us/app/workflow/..." /></Field>}{source === "upload" && <div className="space-y-3"><Field label="SOP file"><label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background p-6 text-sm text-muted-foreground hover:bg-muted/40"><Upload className="h-4 w-4" /><input type="file" accept=".txt,.md,.pdf,.doc,.docx" className="hidden" onChange={(event) => void readUpload(event.target.files?.[0])} />Upload PDF, DOC, or TXT</label></Field>{fileName && <StatusBadge status={fileName} variant="default" />}<Field label="Extracted / pasted SOP text"><Textarea value={sopText} onChange={(event) => setSopText(event.target.value)} rows={8} placeholder="If the upload does not extract cleanly, paste the SOP text here before generating." /></Field></div>}{source === "paste" && <Field label="Paste SOP text"><Textarea value={sopText} onChange={(event) => setSopText(event.target.value)} rows={12} placeholder="Paste the SOP, policy, workflow notes, or rough instructions here." /></Field>}<div className="flex flex-wrap gap-2"><Button onClick={onGenerate} disabled={generating}>{generating ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}{draft ? "Regenerate" : "Generate draft"}</Button>{draft && <Button variant="outline" onClick={onAccept}><BadgeCheck className="mr-2 h-4 w-4" />Accept Training</Button>}</div>{draft && <AiDraftPreview draft={draft} />}</div></DialogContent></Dialog>;
+}
+
+function AiDraftPreview({ draft }: { draft: AiDraft }) {
+  return <section className="space-y-4 rounded-2xl border border-primary/30 bg-primary/10 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-medium uppercase tracking-wider text-primary">AI-generated editable preview</p><h3 className="mt-1 text-xl font-semibold text-foreground">{draft.title}</h3><p className="mt-1 text-sm text-muted-foreground">{draft.description}</p></div><StatusBadge status={`AI Quality Score: ${draft.qualityScore ?? 0}%`} variant={(draft.qualityScore ?? 0) >= 75 ? "success" : "warning"} /></div><div className="grid gap-3 md:grid-cols-3"><PreviewCard title="Learning objectives" items={draft.objectives ?? []} /><PreviewCard title="Step-by-step breakdown" items={(draft.steps ?? []).map((step, index) => `${index + 1}. ${step.title ?? "Step"}`)} /><PreviewCard title="Checklist" items={draft.checklist ?? []} /></div><div className="grid gap-3 md:grid-cols-2"><PreviewCard title="Common mistakes" items={(draft.commonMistakes ?? []).map((item) => item.error ?? "").filter(Boolean)} /><PreviewCard title="Quiz" items={(draft.quiz ?? []).map((item) => item.question ?? "").filter(Boolean)} /></div></section>;
 }
 
 function BasicsStep({ draft, patch, applyTemplate, duplicateCourse, courses }: { draft: BuilderDraft; patch: <K extends keyof BuilderDraft>(key: K, value: BuilderDraft[K]) => void; applyTemplate: (name: string) => void; duplicateCourse: (id: string) => void; courses: TrainingCourse[] }) {
@@ -296,7 +366,7 @@ function AssignmentStep({ draft, patch }: { draft: BuilderDraft; patch: <K exten
 }
 
 function PreviewStep({ draft, quality, blockers }: { draft: BuilderDraft; quality: number; blockers: string[] }) {
-  return <section className="space-y-4"><div className="grid gap-3 md:grid-cols-4">{[["Quality", `${quality}%`], ["Objectives", clean(draft.objectives).length], ["Steps", draft.steps.filter((s) => s.title.trim()).length], ["Quiz", draft.quizEnabled ? `${draft.quiz.length} questions` : "Optional"]].map(([label, value]) => <div key={label} className="rounded-xl border border-border/60 bg-background p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold text-foreground">{value}</p></div>)}</div>{blockers.length > 0 && <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 text-destructive" /><div><p className="font-medium text-destructive">Publish blockers</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">{blockers.map((item) => <li key={item}>{item}</li>)}</ul></div></div></div>}<div className="rounded-2xl border border-border/60 bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-2xl font-semibold text-foreground">{draft.title || "Untitled training"}</p><p className="mt-2 max-w-3xl text-sm text-muted-foreground">{draft.description || "Training description preview."}</p></div><StatusBadge status={draft.required ? "Required" : "Optional"} variant={draft.required ? "warning" : "muted"} /></div><div className="mt-5 grid gap-3 md:grid-cols-3"><PreviewCard title="Learning objectives" items={clean(draft.objectives)} /><PreviewCard title="Workflow steps" items={draft.steps.filter((s) => s.title.trim()).map((s, i) => `${i + 1}. ${s.title}`)} /><PreviewCard title="Common mistakes" items={draft.mistakes.filter((m) => m.error.trim()).map((m) => m.error)} /></div></div></section>;
+  return <section className="space-y-4"><div className="grid gap-3 md:grid-cols-4">{[["Quality", `${quality}%`], ["Objectives", clean(draft.objectives).length], ["Steps", draft.steps.filter((s) => s.title.trim()).length], ["Quiz", draft.quizEnabled ? `${draft.quiz.length} questions` : "Optional"]].map(([label, value]) => <div key={label} className="rounded-xl border border-border/60 bg-background p-3"><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold text-foreground">{value}</p></div>)}</div>{blockers.length > 0 && <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3"><div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 text-destructive" /><div><p className="font-medium text-destructive">Publish blockers</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">{blockers.map((item) => <li key={item}>{item}</li>)}</ul></div></div></div>}<div className="rounded-2xl border border-border/60 bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-2xl font-semibold text-foreground">{draft.title || "Untitled training"}</p><p className="mt-2 max-w-3xl text-sm text-muted-foreground">{draft.description || "Training description preview."}</p></div><StatusBadge status={draft.required ? "Required" : "Optional"} variant={draft.required ? "warning" : "muted"} /></div><div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4"><PreviewCard title="Learning objectives" items={clean(draft.objectives)} /><PreviewCard title="Workflow steps" items={draft.steps.filter((s) => s.title.trim()).map((s, i) => `${i + 1}. ${s.title}`)} /><PreviewCard title="Common mistakes" items={draft.mistakes.filter((m) => m.error.trim()).map((m) => m.error)} /><PreviewCard title="Checklist" items={draft.checklist.filter((item) => item.label.trim()).map((item) => item.label)} /></div><div className="mt-4 grid gap-3 md:grid-cols-2"><div className="rounded-xl border border-border/60 bg-background p-4"><p className="text-sm font-medium text-foreground">AI-generated sections</p><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={draft.sopContent.trim() ? "SOP drafted" : "SOP missing"} variant={draft.sopContent.trim() ? "success" : "warning"} /><StatusBadge status={draft.walkthroughs.some((item) => item.url.trim()) ? "Tango attached" : "No Tango"} variant={draft.walkthroughs.some((item) => item.url.trim()) ? "success" : "warning"} /><StatusBadge status={draft.quizEnabled ? "Quiz generated" : "Quiz off"} variant={draft.quizEnabled ? "success" : "muted"} /><StatusBadge status={draft.badgeTitle.trim() ? `Badge: ${draft.badgeTitle}` : "No badge title"} variant={draft.badgeTitle.trim() ? "info" : "muted"} /></div></div><div className="rounded-xl border border-border/60 bg-background p-4"><p className="text-sm font-medium text-foreground">SOP + walkthrough summary</p><p className="mt-2 text-sm text-muted-foreground line-clamp-6">{draft.sopContent.trim() || "Add SOP content to generate the structured training body."}</p></div></div></div></section>;
 }
 
 function ListStep({ title, intro, values, onChange, placeholder }: { title: string; intro: string; values: string[]; onChange: (values: string[]) => void; placeholder: string }) {
