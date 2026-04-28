@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, FileText, Gauge, ListChecks, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 import { createTrainingCourse, trainingDepartments, type Difficulty, type TrainingCourse, type TrainingLesson, type TrainingType } from "@/data/training";
+import { supabase } from "@/integrations/supabase/client";
 
 const builderSteps = ["Basics", "Objectives", "SOP", "Tango", "Steps", "Blocks", "Checklist", "Mistakes", "Quiz", "Badge", "Assignment", "Preview"];
 const trainingTypes: TrainingType[] = ["Workflow", "SOP", "System Training", "Policy", "Onboarding", "Clinical", "Tango", "Checklist", "Quiz", "Video"];
@@ -32,6 +33,8 @@ type ChecklistItem = { id: string; label: string; required: boolean };
 type MistakeItem = { id: string; error: string; consequence: string; avoid: string };
 type QuizQuestion = { id: string; type: "Multiple choice" | "True / false"; question: string; options: string[]; answer: string; explanation: string };
 type WalkthroughLink = { id: string; url: string; label: string };
+type AiSourceType = "tango" | "upload" | "paste";
+type AiDraft = { title: string; description: string; departmentId: string; difficulty: Difficulty; type: TrainingType; minutes: number; objectives: string[]; sop: { title?: string; content?: string }; walkthrough?: { url?: string; label?: string; summary?: string }; steps: Array<{ title?: string; description?: string; systemTag?: string }>; checklist: string[]; commonMistakes: Array<{ error?: string; consequence?: string; avoid?: string }>; quiz: Array<{ type?: "Multiple choice" | "True / false"; question?: string; options?: string[]; answer?: string; explanation?: string }>; badge?: { title?: string; description?: string }; qualityScore?: number };
 
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
