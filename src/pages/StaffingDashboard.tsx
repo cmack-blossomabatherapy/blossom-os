@@ -185,11 +185,11 @@ function decisionEntry(match: Match, decision: MatchDecision["decision"], note: 
 
 export default function StaffingDashboard() {
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
-    const saved = window.localStorage.getItem(STAFFING_RECORDS_KEY);
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
     return saved ? JSON.parse(saved) as StaffingRecord[] : staffingSeed;
   });
   const [rbts, setRbts] = useState<Rbt[]>(() => {
-    const saved = window.localStorage.getItem(STAFFING_RBTS_KEY);
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RBTS_KEY) : null;
     return saved ? JSON.parse(saved) as Rbt[] : rbtSeed;
   });
   const [selectedId, setSelectedId] = useState<string>(staffingSeed[1].id);
