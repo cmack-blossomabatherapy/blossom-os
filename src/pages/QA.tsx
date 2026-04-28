@@ -119,6 +119,7 @@ const CHECKLIST: { key: ChecklistKey; label: string }[] = [
 const today = new Date("2026-04-28T12:00:00");
 const isoDaysAgo = (days: number) => new Date(today.getTime() - days * 86400000).toISOString().slice(0, 10);
 const isoDaysAhead = (days: number) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
+const missingChecklistItems = (record: QARecord) => CHECKLIST.filter((item) => !record.checklist[item.key]);
 const allChecked = (record: QARecord) => Object.values(record.checklist).every(Boolean) && record.issues.every((issue) => issue.resolved);
 
 const statusVariant = (status: QAStatus): "default" | "success" | "warning" | "destructive" | "info" | "muted" => {
@@ -264,6 +265,16 @@ export default function QA() {
   ];
 
   const patchRecord = (id: string, patch: Partial<QARecord>, event?: string) => {
+    if (patch.status === "Ready for Submission") {
+      const record = records.find((item) => item.id === id);
+      if (record && !allChecked(record)) {
+        const missing = missingChecklistItems(record).map((item) => item.label);
+        toast.error("Treatment Plan Review gate incomplete", {
+          description: missing.length ? `Finish: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ` +${missing.length - 3} more` : ""}` : "Resolve all QA issues before marking ready.",
+        });
+        return;
+      }
+    }
     setRecords((current) => current.map((record) => record.id === id ? { ...record, ...patch, timeline: event ? [...record.timeline, { date: isoDaysAgo(0), event }] : record.timeline } : record));
   };
 
@@ -313,7 +324,10 @@ export default function QA() {
 
   const markReady = async (record: QARecord) => {
     if (!allChecked(record)) {
-      toast.error("Complete every checklist item and resolve issues first");
+      const missing = missingChecklistItems(record).map((item) => item.label);
+      toast.error("Treatment Plan Review gate incomplete", {
+        description: missing.length ? `Finish: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ` +${missing.length - 3} more` : ""}` : "Resolve all QA issues before marking ready.",
+      });
       return;
     }
     patchRecord(record.id, { status: "Ready for Submission", planStatus: "Approved", authReadiness: "Ready", risk: "Low", nextAction: "Send to Auth", tasks: record.tasks.map((task) => task.title.includes("Review") || task.title.includes("Resolve") ? { ...task, completed: true } : task) }, "QA approved and ready for auth submission");
@@ -456,7 +470,10 @@ function FlowView({ records, onOpen, onPatch }: { records: QARecord[]; onOpen: (
 
 function TreatmentPlanView({ record, onToggle, onReady, onCorrection, onComment, comment, setComment }: { record: QARecord; onToggle: (r: QARecord, key: ChecklistKey, value: boolean) => void; onReady: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onComment: (r: QARecord) => void; comment: string; setComment: (v: string) => void }) {
   if (!record) return null;
-  return <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]"><div className="rounded-lg border border-border/60 bg-card p-5"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-base font-semibold text-foreground">Treatment plan preview</h3><p className="text-xs text-muted-foreground">{record.clientName} · {record.treatmentPlanSubmitted}</p></div><StatusBadge status={record.planStatus} variant={record.planStatus === "Approved" ? "success" : record.planStatus === "Missing" ? "destructive" : "warning"} /></div><div className="min-h-[620px] rounded-lg border border-dashed border-border bg-muted/20 p-8"><div className="mx-auto max-w-2xl space-y-5 rounded-lg border border-border/60 bg-background p-6"><div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Blossom ABA Therapy</p><h2 className="mt-2 text-2xl font-semibold text-foreground">Treatment Plan QA Packet</h2><p className="text-sm text-muted-foreground">Client info, diagnosis, assessment date, goals, service hours, signatures, formatting, and clinical accuracy are reviewed here.</p></div>{["Assessment summary", "Clinical goals", "Service authorization request", "Caregiver participation", "BCBA signature"].map((line) => <div key={line} className="rounded-md bg-muted/40 p-4"><p className="text-sm font-medium text-foreground">{line}</p><p className="mt-2 h-2 w-full rounded bg-muted" /><p className="mt-2 h-2 w-3/4 rounded bg-muted" /></div>)}</div></div></div><div className="rounded-lg border border-border/60 bg-card p-4"><h3 className="text-sm font-semibold text-foreground">QA checklist</h3><div className="mt-4 space-y-3">{CHECKLIST.map((item) => <label key={item.key} className="flex items-center gap-3 rounded-md border border-border/50 p-3 text-sm"><Checkbox checked={record.checklist[item.key]} onCheckedChange={(v) => onToggle(record, item.key, Boolean(v))} /><span className="text-foreground">{item.label}</span></label>)}</div><Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add QA comment…" className="mt-4" /><div className="mt-3 grid gap-2"><Button onClick={() => toast.success("Review saved")}>Save Review</Button><Button variant="outline" onClick={() => onCorrection(record)}>Request Correction</Button><Button variant="outline" onClick={() => onReady(record)}>Mark Ready for Submission</Button><Button variant="outline" onClick={() => onComment(record)}>Add QA Comment</Button></div></div></div>;
+  const missingItems = missingChecklistItems(record);
+  const unresolvedIssues = record.issues.filter((issue) => !issue.resolved);
+  const canMarkReady = missingItems.length === 0 && unresolvedIssues.length === 0;
+  return <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]"><div className="rounded-lg border border-border/60 bg-card p-5"><div className="mb-4 flex items-center justify-between"><div><h3 className="text-base font-semibold text-foreground">Treatment plan preview</h3><p className="text-xs text-muted-foreground">{record.clientName} · {record.treatmentPlanSubmitted}</p></div><StatusBadge status={record.planStatus} variant={record.planStatus === "Approved" ? "success" : record.planStatus === "Missing" ? "destructive" : "warning"} /></div><div className="min-h-[620px] rounded-lg border border-dashed border-border bg-muted/20 p-8"><div className="mx-auto max-w-2xl space-y-5 rounded-lg border border-border/60 bg-background p-6"><div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Blossom ABA Therapy</p><h2 className="mt-2 text-2xl font-semibold text-foreground">Treatment Plan QA Packet</h2><p className="text-sm text-muted-foreground">Client info, diagnosis, assessment date, goals, service hours, signatures, formatting, and clinical accuracy are reviewed here.</p></div>{["Assessment summary", "Clinical goals", "Service authorization request", "Caregiver participation", "BCBA signature"].map((line) => <div key={line} className="rounded-md bg-muted/40 p-4"><p className="text-sm font-medium text-foreground">{line}</p><p className="mt-2 h-2 w-full rounded bg-muted" /><p className="mt-2 h-2 w-3/4 rounded bg-muted" /></div>)}</div></div></div><div className="rounded-lg border border-border/60 bg-card p-4"><div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold text-foreground">QA checklist</h3><StatusBadge status={canMarkReady ? "Gate clear" : `${missingItems.length + unresolvedIssues.length} blocked`} variant={canMarkReady ? "success" : "warning"} /></div>{!canMarkReady && <div className="mt-3 rounded-md border border-warning/30 bg-warning/10 p-3"><p className="text-xs font-medium text-warning">Mark Ready for Submission is locked until all required checklist items are complete and QA issues are resolved.</p>{missingItems.length > 0 && <p className="mt-2 text-xs text-muted-foreground">Missing: {missingItems.map((item) => item.label).join(", ")}</p>}{unresolvedIssues.length > 0 && <p className="mt-1 text-xs text-muted-foreground">Unresolved issues: {unresolvedIssues.map((issue) => issue.type).join(", ")}</p>}</div>}<div className="mt-4 space-y-3">{CHECKLIST.map((item) => <label key={item.key} className={cn("flex items-center gap-3 rounded-md border p-3 text-sm", record.checklist[item.key] ? "border-success/30 bg-success/5" : "border-warning/40 bg-warning/5")}><Checkbox checked={record.checklist[item.key]} onCheckedChange={(v) => onToggle(record, item.key, Boolean(v))} /><span className="text-foreground">{item.label}</span></label>)}</div><Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add QA comment…" className="mt-4" /><div className="mt-3 grid gap-2"><Button onClick={() => toast.success("Review saved")}>Save Review</Button><Button variant="outline" onClick={() => onCorrection(record)}>Request Correction</Button><Button variant={canMarkReady ? "default" : "outline"} disabled={!canMarkReady} onClick={() => onReady(record)}>Mark Ready for Submission</Button><Button variant="outline" onClick={() => onComment(record)}>Add QA Comment</Button></div></div></div>;
 }
 
 function NotesView({ records, onOpen, onResolve, onTask, onEscalate }: { records: QARecord[]; onOpen: (r: QARecord) => void; onResolve: (r: QARecord) => void; onTask: (r: QARecord) => void; onEscalate: (r: QARecord) => void }) {
