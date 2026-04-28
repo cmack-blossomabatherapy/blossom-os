@@ -88,7 +88,7 @@ function baseTimeline(id: string, owner: string, status: StaffingStatus, client:
   ];
 }
 
-function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | "rejectedRbtIds"> & { rejectedRbtIds?: string[] }): StaffingRecord {
+function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | "rejectedRbtIds" | "decisionHistory"> & { rejectedRbtIds?: string[]; decisionHistory?: MatchDecision[] }): StaffingRecord {
   return {
     ...base,
     rejectedRbtIds: base.rejectedRbtIds ?? [],
@@ -103,6 +103,7 @@ function makeRecord(base: Omit<StaffingRecord, "tasks" | "notes" | "timeline" | 
       { id: `${base.id}-n3`, type: "RBT outreach", text: base.assignedRbtId ? "Assigned RBT accepted match." : "Outreach pending from staffing queue.", timestamp: "2026-04-26T14:00:00Z", user: base.owner },
     ],
     timeline: baseTimeline(base.id, base.owner, base.status, base.client),
+    decisionHistory: base.decisionHistory ?? [],
   };
 }
 
@@ -134,10 +135,12 @@ function scoreMatch(record: StaffingRecord, rbt: Rbt): Match {
   const readyScore = rbt.compliance === "Ready" && rbt.onboarding === "Active" ? 14 : rbt.compliance === "Expiring" ? 7 : 0;
   const experienceScore = rbt.experience.some((skill) => skill === record.location || record.clinicalNotes.toLowerCase().includes(skill.toLowerCase())) ? 8 : 4;
   const urgencyScore = record.priority === "Critical" ? 5 : record.priority === "High" ? 4 : 2;
-  const score = Math.max(0, Math.min(99, distanceFit + overlapScore + capacityFit + readyScore + experienceScore + urgencyScore - (record.rejectedRbtIds.includes(rbt.id) ? 20 : 0)));
+  const penalty = record.rejectedRbtIds.includes(rbt.id) ? 20 : 0;
+  const score = Math.max(0, Math.min(99, distanceFit + overlapScore + capacityFit + readyScore + experienceScore + urgencyScore - penalty));
   return {
     rbt, score, overlap, distanceFit, capacityFit, ready: rbt.compliance === "Ready" && rbt.onboarding === "Active",
     reasons: [rbt.clinic === record.clinic ? "Clinic fit" : rbt.region === record.region ? "Region fit" : "State backup", `${overlap} overlap slots`, `${capacity}h capacity`, rbt.compliance],
+    breakdown: { region: distanceFit, availability: overlapScore, compliance: readyScore, capacity: capacityFit, experience: experienceScore, urgency: urgencyScore, penalty },
   };
 }
 
