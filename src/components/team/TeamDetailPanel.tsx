@@ -154,6 +154,59 @@ export function TeamDetailPanel({ member, onClose }: Props) {
           {manager && <Row icon={UserCog} value={`Reports to ${manager.name}`} />}
         </div>
 
+        <Section title="HR quick panel">
+          {loadingQuick ? (
+            <div className="flex items-center justify-center rounded-lg border border-border/40 bg-secondary/30 py-6">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : employee ? (
+            <div className="space-y-3">
+              <div className="grid gap-2">
+                <Label className="text-[11px] text-muted-foreground">Direct manager</Label>
+                <Select value={directManager?.related_employee_id ?? "none"} onValueChange={(value) => value !== "none" && updateDirectManager(value)} disabled={!canEditQuick || savingQuick}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select manager" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No manager selected</SelectItem>
+                    {employeeOptions.map((option) => <SelectItem key={option.id} value={option.id}>{formatEmployeeOption(option)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Pay type</Label>
+                  <Select value={employee.pay_type} onValueChange={(value) => saveQuickAccess({ pay_type: value as EmployeeQuickRecord["pay_type"] })} disabled={!canEditPayroll || savingQuick}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="hourly">Hourly</SelectItem><SelectItem value="salaried">Salaried</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Pay rate</Label>
+                  <Input type="number" value={employee.pay_rate ?? ""} onChange={(event) => setEmployee({ ...employee, pay_rate: event.target.value ? Number(event.target.value) : null })} onBlur={() => canEditPayroll && saveQuickAccess({ pay_rate: employee.pay_rate })} disabled={!canEditPayroll || savingQuick} className="h-8 text-xs" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Viventium ID</Label>
+                  <Input value={employee.viventium_employee_id ?? ""} onChange={(event) => setEmployee({ ...employee, viventium_employee_id: event.target.value })} onBlur={() => canEditQuick && saveQuickAccess({ viventium_employee_id: employee.viventium_employee_id })} disabled={!canEditQuick || savingQuick} className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Kiosk PIN</Label>
+                  <Input value={employee.kiosk_pin ?? ""} onChange={(event) => setEmployee({ ...employee, kiosk_pin: event.target.value })} onBlur={() => canEditQuick && saveQuickAccess({ kiosk_pin: employee.kiosk_pin })} disabled={!canEditQuick || savingQuick} className="h-8 text-xs" />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <QuickToggle label="Kiosk enabled" checked={employee.kiosk_enabled} disabled={!canEditQuick || savingQuick} onChange={(checked) => saveQuickAccess({ kiosk_enabled: checked })} />
+                <QuickToggle label="Resource hub access" checked={employee.resource_hub_access} disabled={!canEditQuick || savingQuick} onChange={(checked) => saveQuickAccess({ resource_hub_access: checked })} />
+              </div>
+              <Button asChild variant="outline" size="sm" className="h-8 w-full text-xs">
+                <Link to={`/hr/employees/${employee.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Open full HR record</Link>
+              </Button>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs text-muted-foreground">No linked employee record found.</p>
+          )}
+        </Section>
+
         {/* Capacity / Snapshot */}
         <Section title="Workload Snapshot">
           <div className="bg-secondary/30 border border-border/40 rounded-lg p-3">
