@@ -42,6 +42,7 @@ type StaffingRecord = {
 type Match = { rbt: Rbt; score: number; overlap: number; distanceFit: number; capacityFit: number; ready: boolean; reasons: string[]; breakdown: MatchBreakdown };
 type MapPoint = { x: number; y: number };
 type MapZoom = "regional" | "local" | "street";
+type MapFilters = { unassignedOnly: boolean; readyRbtsOnly: boolean; urgentLocalOnly: boolean };
 type ClientCluster = { id: string; x: number; y: number; records: StaffingRecord[]; best?: Match; route?: ReturnType<typeof routeStats> };
 type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; route: ReturnType<typeof routeStats> };
 
@@ -231,7 +232,7 @@ function clusterItems<T>(items: T[], pointForItem: (item: T) => MapPoint, bucket
   return Array.from(groups.entries()).map(([id, group]) => ({ id, x: group.x / group.items.length, y: group.y / group.items.length, items: group.items }));
 }
 
-function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, setMapFocus, setMapZoom, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
+function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, mapFilters, setMapFocus, setMapZoom, setMapFilters, onSelectRecord, onSelectRbt, onAssign }: { records: StaffingRecord[]; rbts: Rbt[]; selected: StaffingRecord; activeMatch?: Match; mapFocus: "all" | "ready" | "urgent"; mapZoom: MapZoom; mapFilters: MapFilters; setMapFocus: (focus: "all" | "ready" | "urgent") => void; setMapZoom: (zoom: MapZoom) => void; setMapFilters: (filters: MapFilters) => void; onSelectRecord: (record: StaffingRecord, match?: Match) => void; onSelectRbt: (id: string) => void; onAssign: (record: StaffingRecord, rbt: Rbt) => void }) {
   const mapMatches = rbts
     .map((rbt) => ({ match: scoreMatch(selected, rbt), route: routeStats(selected, rbt) }))
     .filter((item) => item.match.rbt.state === selected.state)
@@ -275,6 +276,7 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
       <p className="mt-2 text-[11px] text-muted-foreground">{route.withinRadius ? "Within service radius" : "Travel exception may be needed"}</p>
     </div>
   );
+  const toggleMapFilter = (key: keyof MapFilters) => setMapFilters({ ...mapFilters, [key]: !mapFilters[key] });
 
   return (
     <section className="mt-6 overflow-hidden rounded-lg border bg-card shadow-sm">
@@ -288,6 +290,13 @@ function StaffingMap({ records, rbts, selected, activeMatch, mapFocus, mapZoom, 
             <button key={focus} onClick={() => setMapFocus(focus)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapFocus === focus ? "bg-card shadow-sm" : "text-muted-foreground")}>{focus}</button>
           ))}
         </div><div className="flex rounded-md border bg-muted/40 p-1">{(["regional", "local", "street"] as const).map((zoom) => <button key={zoom} onClick={() => setMapZoom(zoom)} className={cn("rounded px-3 py-1.5 text-xs font-medium capitalize", mapZoom === zoom ? "bg-card shadow-sm" : "text-muted-foreground")}>{zoom}</button>)}</div></div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+        <span className="text-xs font-medium text-muted-foreground">Map filters</span>
+        <Button size="sm" variant={mapFilters.unassignedOnly ? "default" : "outline"} onClick={() => toggleMapFilter("unassignedOnly")}>Clients without assignments</Button>
+        <Button size="sm" variant={mapFilters.readyRbtsOnly ? "default" : "outline"} onClick={() => toggleMapFilter("readyRbtsOnly")}>Ready RBTs only</Button>
+        <Button size="sm" variant={mapFilters.urgentLocalOnly ? "default" : "outline"} onClick={() => toggleMapFilter("urgentLocalOnly")}>Urgent in my state/region</Button>
+        {(mapFilters.unassignedOnly || mapFilters.readyRbtsOnly || mapFilters.urgentLocalOnly) && <Button size="sm" variant="outline" onClick={() => setMapFilters({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false })}>Clear</Button>}
       </div>
       <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="relative min-h-[560px] overflow-hidden bg-muted/20">
@@ -375,6 +384,7 @@ export default function StaffingDashboard() {
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<"all" | "ready" | "urgent">("ready");
   const [mapZoom, setMapZoom] = useState<MapZoom>("regional");
+  const [mapFilters, setMapFilters] = useState<MapFilters>({ unassignedOnly: false, readyRbtsOnly: false, urgentLocalOnly: false });
 
   const clinics = useMemo(() => [ALL, ...Array.from(new Set(records.map((r) => r.clinic))).sort()], [records]);
   const rbtNames = useMemo(() => [ALL, ...rbts.map((r) => r.name).sort()], [rbts]);
@@ -382,7 +392,10 @@ export default function StaffingDashboard() {
   const matchesFor = (record: StaffingRecord) => rbts.map((rbt) => scoreMatch(record, rbt)).filter((m) => m.rbt.state === record.state && !record.rejectedRbtIds.includes(m.rbt.id)).sort((a, b) => b.score - a.score).slice(0, 5);
   const selectedMatches = useMemo(() => matchesFor(selected), [selected, rbts]);
   const activeMatch = selectedMatches.find((m) => m.rbt.id === activeMatchId) ?? selectedMatches[0];
-  const mapRbts = useMemo(() => rbts.filter((rbt) => stateFilter === ALL || rbt.state === stateFilter), [rbts, stateFilter]);
+  const mapRbts = useMemo(() => rbts
+    .filter((rbt) => stateFilter === ALL || rbt.state === stateFilter)
+    .filter((rbt) => !mapFilters.readyRbtsOnly || rbt.compliance === "Ready")
+    .filter((rbt) => !mapFilters.urgentLocalOnly || rbt.state === selected.state || rbt.region === selected.region), [rbts, stateFilter, mapFilters.readyRbtsOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
 
   useEffect(() => { window.localStorage.setItem(STAFFING_RECORDS_KEY, JSON.stringify(records)); }, [records]);
   useEffect(() => { window.localStorage.setItem(STAFFING_RBTS_KEY, JSON.stringify(rbts)); }, [rbts]);
@@ -400,7 +413,10 @@ export default function StaffingDashboard() {
       .filter((r) => activeKpi === "all" || (activeKpi === "needed" && r.status === "Staffing Needed") || (activeKpi === "restaffing" && r.status === "Restaffing Needed") || (activeKpi === "matching" && r.status === "Matching in Progress") || (activeKpi === "assigned" && r.status === "RBT Assigned") || (activeKpi === "urgent" && (r.priority === "Critical" || r.daysWaiting > 7)) || activeKpi === "avg" || activeKpi === "available" || activeKpi === "gap")
       .filter((r) => !q || [r.client, r.parent, r.state, r.clinic, r.region, r.owner, r.bcba, r.status, r.nextAction].some((field) => field.toLowerCase().includes(q)));
   }, [activeKpi, bcbaFilter, clientStatus, clinicFilter, ownerFilter, query, rbtFilter, rbts, records, staffingStatus, stateFilter, urgencyFilter]);
-  const mapClients = useMemo(() => filtered.filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed"))), [filtered, mapFocus]);
+  const mapClients = useMemo(() => filtered
+    .filter((record) => mapFocus === "all" || (mapFocus === "ready" && !record.assignedRbtId) || (mapFocus === "urgent" && (record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed")))
+    .filter((record) => !mapFilters.unassignedOnly || !record.assignedRbtId)
+    .filter((record) => !mapFilters.urgentLocalOnly || ((record.priority === "Critical" || record.daysWaiting > 7 || record.status === "Restaffing Needed") && (record.state === selected.state || record.region === selected.region))), [filtered, mapFocus, mapFilters.unassignedOnly, mapFilters.urgentLocalOnly, selected.state, selected.region]);
 
   const demandHours = filtered.filter((r) => !r.assignedRbtId || r.status !== "Ready for Scheduling").reduce((sum, r) => sum + r.requiredHours, 0);
   const availableSupply = rbts.filter((r) => stateFilter === ALL || r.state === stateFilter).reduce((sum, r) => sum + availableHours(r), 0);
@@ -494,7 +510,7 @@ export default function StaffingDashboard() {
         </aside>
       </div>
 
-      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} setMapFocus={setMapFocus} setMapZoom={setMapZoom} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
+      <StaffingMap records={mapClients} rbts={mapRbts} selected={selected} activeMatch={activeMatch} mapFocus={mapFocus} mapZoom={mapZoom} mapFilters={mapFilters} setMapFocus={setMapFocus} setMapZoom={setMapZoom} setMapFilters={setMapFilters} onSelectRecord={(record, match) => { setSelectedId(record.id); setActiveMatchId(match?.rbt.id ?? null); }} onSelectRbt={setActiveMatchId} onAssign={assignRbt} />
 
       <section className="mt-6 grid gap-3 md:grid-cols-4 xl:grid-cols-7">{readiness.map((stage) => <button key={stage.status} onClick={() => setStaffingStatus(stage.status)} className="rounded-lg border bg-card p-4 text-left shadow-sm hover:shadow-md"><div className="flex items-center justify-between"><HealthDot health={stage.health as Health} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></div><div className="mt-3 text-xl font-semibold">{stage.count}</div><div className="text-xs font-medium">{stage.status}</div><div className="mt-2 text-[11px] text-muted-foreground">Oldest {stage.oldest}d · Avg {stage.avgDays}d</div></button>)}</section>
 
