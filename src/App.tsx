@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
+import { canAccessRouteForRoles, hasFullNavigationAccess } from "@/lib/navigationAccess";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -103,7 +104,10 @@ function RoleDashboardRedirect() {
     ? "/leadership-dashboard"
     : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
-  return <Navigate to={route ?? (hasPerm("clients.view") ? "/clients" : "/training")} replace />;
+  const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : "/training");
+  const allowedRoute = hasFullNavigationAccess(roles) || canAccessRouteForRoles(fallbackRoute, roles) ? fallbackRoute : "/training";
+
+  return <Navigate to={allowedRoute} replace />;
 }
 
 const App = () => (
