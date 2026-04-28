@@ -49,6 +49,7 @@ type RbtCluster = { id: string; x: number; y: number; rbts: Rbt[]; best: Match; 
 const ALL = "All";
 const STAFFING_RECORDS_KEY = "blossom.staffing.records.v1";
 const STAFFING_RBTS_KEY = "blossom.staffing.rbts.v1";
+const STAFFING_MAP_STATE_KEY = "blossom.staffing.map-state.v1";
 const auditWeights = { region: 18, availability: 35, compliance: 14, capacity: 25 };
 const today = new Date("2026-04-27T12:00:00Z");
 const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
@@ -191,6 +192,11 @@ function decisionEntry(match: Match, decision: MatchDecision["decision"], note: 
 
 function hydrateRecords(records: StaffingRecord[]) {
   return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
+}
+
+function storedMapState() {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(window.localStorage.getItem(STAFFING_MAP_STATE_KEY) ?? "null") as null | Record<string, string | MapFilters>; } catch { return null; }
 }
 
 const regionAnchors: Record<string, MapPoint> = {
