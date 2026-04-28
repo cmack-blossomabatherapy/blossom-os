@@ -200,41 +200,45 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="right" className="mobile-menu-sheet w-[86vw] max-w-[340px] overflow-y-auto border-0 bg-background p-0 shadow-2xl md:hidden">
-          <div className="sticky top-0 z-10 bg-sidebar px-3 pb-3 pt-[env(safe-area-inset-top)] shadow-[0_14px_30px_-22px_hsl(var(--sidebar-background))]">
-            <div className="rounded-b-xl border border-sidebar-border/70 border-t-0 bg-sidebar-accent/45 p-2.5 shadow-sm">
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex min-h-10 flex-1 items-center rounded-lg bg-sidebar/35 px-2.5 ring-1 ring-sidebar-border/70">
-                  <img src={logo} alt="Blossom ABA Therapy" className="h-6 w-auto object-contain" />
-                </div>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full bg-sidebar/35 text-sidebar-foreground ring-1 ring-sidebar-border/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
-                  <X className="h-4 w-4" />
-                </Button>
+        <SheetContent side="right" className="mobile-menu-sheet flex h-dvh w-[92vw] max-w-[380px] flex-col overflow-hidden border-0 bg-background p-0 shadow-2xl md:hidden">
+          <header className="relative overflow-hidden bg-[linear-gradient(135deg,hsl(var(--sidebar-background)),hsl(var(--sidebar-accent))_50%,hsl(var(--primary)))] px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1rem)] text-primary-foreground">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,hsl(var(--primary-foreground)/0.22),transparent_32%),radial-gradient(circle_at_90%_25%,hsl(var(--primary-glow)/0.28),transparent_34%)]" />
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="flex flex-1 flex-col items-center pt-2">
+                <img src={logoWhite} alt="Blossom ABA Therapy" className="h-12 w-auto object-contain drop-shadow-sm" />
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground/75">Operating System</p>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 px-1 text-sidebar-foreground/85">
-                <p className="text-[10px] font-semibold uppercase tracking-wider">Operating System</p>
-                <span className="text-[10px] font-medium text-sidebar-muted">Mobile Navigation</span>
-              </div>
+              <Button size="icon" variant="ghost" className="absolute right-0 top-0 h-10 w-10 rounded-full bg-primary-foreground/12 text-primary-foreground ring-1 ring-primary-foreground/20 backdrop-blur-md transition-all hover:scale-105 hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
-          <nav className="px-4 py-3" aria-label="Mobile navigation">
+          </header>
+          <nav className="flex-1 space-y-3 overflow-y-auto bg-[linear-gradient(180deg,hsl(var(--secondary)/0.75),hsl(var(--background)))] px-4 py-4" aria-label="Mobile navigation">
             {sections.map((section, i) => {
               const title = section.title ?? `Section ${i + 1}`;
               const activeInSection = section.items.some((item) => isItemActive(item.path));
               const sectionOpen = mobileOpenSections.has(title);
+              const SectionIcon = section.items[0]?.icon ?? LayoutDashboard;
               return (
-              <div key={title} className="border-b border-border/70 py-3 last:border-b-0">
-                <button type="button" onClick={() => toggleMobileSection(title)} className="flex min-h-10 w-full items-center justify-between rounded-lg px-2 text-left transition-colors hover:bg-secondary" aria-expanded={sectionOpen}>
-                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", activeInSection ? "text-primary" : "text-muted-foreground")}>{section.title}</span>
-                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", !sectionOpen && "-rotate-90")} />
+              <div key={title} className="animate-fade-in">
+                <button type="button" onClick={() => toggleMobileSection(title)} className={cn("group flex min-h-[76px] w-full items-center gap-3 rounded-2xl border bg-card/88 p-3 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.985]", activeInSection ? "border-primary/45 shadow-[0_16px_34px_-22px_hsl(var(--primary))] ring-1 ring-primary/20" : "border-border/65 hover:border-primary/25")} aria-expanded={sectionOpen}>
+                  <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors", activeInSection ? "bg-primary text-primary-foreground" : "bg-secondary text-primary group-hover:bg-primary/10")}><SectionIcon className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold uppercase text-foreground">{title}</span>
+                    <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{mobileSectionDescriptions[title] ?? "Workspace tools and records"}</span>
+                  </span>
+                  <ChevronRight className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", sectionOpen && "rotate-90 text-primary")} />
                 </button>
-                {sectionOpen && <div className="space-y-0.5 pt-1">
+                {sectionOpen && <div className="mt-2 space-y-1 rounded-2xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-xl animate-fade-in">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
                     return (
                       <NavLink key={item.path} to={item.path} end={item.path === "/"} onClick={() => onMobileOpenChange?.(false)} className={cn("mobile-menu-item", active && "mobile-menu-item-active")}>
                         <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
-                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{item.label}</span>
+                          {mobileItemDescriptions[item.label] && <span className="block truncate text-[11px] font-normal text-muted-foreground">{mobileItemDescriptions[item.label]}</span>}
+                        </span>
                       </NavLink>
                     );
                   })}
@@ -242,6 +246,18 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               </div>
             );})}
           </nav>
+          <div className="sticky bottom-0 border-t border-border/60 bg-card/92 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 shadow-[0_-18px_34px_-28px_hsl(var(--foreground))] backdrop-blur-xl">
+            <div className="flex items-center gap-3 rounded-2xl border border-border/65 bg-background/70 p-3 shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-16px_hsl(var(--primary))]">{initials}</div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold capitalize text-foreground">{displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
+              </div>
+              <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary" aria-label="Open notifications">
+                <Bell className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
       <aside className="hidden shrink-0 md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-sidebar-border md:bg-sidebar">
