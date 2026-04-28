@@ -312,7 +312,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === "/"}
+                  end={item.path === "/" || item.path === "/hr"}
                   className={({ isActive }) => {
                     const queryAwareActive = item.path.includes("?") ? isItemActive(item.path) : isActive || isItemActive(item.path);
                     return cn("nav-item", queryAwareActive ? "nav-item-active" : "nav-item-inactive");
