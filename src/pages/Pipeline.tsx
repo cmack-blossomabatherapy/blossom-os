@@ -203,8 +203,9 @@ export default function Pipeline() {
   const openRecord = (record: PipelineRecord) => setSelectedRecordId(record.id);
   const toggleSelected = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const moveForward = (record: PipelineRecord) => {
-    if (record.blockers.length || record.tasks.some((task) => !task.completed && task.blocker)) {
-      toast.error("Missing requirements", { description: record.blockers[0] ?? "Complete required stage tasks before moving forward." });
+    const issues = requirementIssues(record);
+    if (issues.length) {
+      toast.error("Missing requirements", { description: issues[0] ?? "Complete required stage tasks before moving forward." });
       return;
     }
     const stages = lifecycleSections.flatMap((section) => stageGroups[section]);
@@ -215,6 +216,25 @@ export default function Pipeline() {
   };
   const addTask = (record: PipelineRecord) => setRecords((current) => current.map((item) => item.id === record.id ? { ...item, tasks: [{ id: `${item.id}-task-${Date.now()}`, title: "Follow up on pipeline requirement", owner: item.owner, dueDate: isoDaysFrom(2), completed: false }, ...item.tasks] } : item));
   const escalate = (record: PipelineRecord) => setRecords((current) => current.map((item) => item.id === record.id ? { ...item, priority: "Critical", risk: "Critical", blockers: Array.from(new Set([...item.blockers, "Escalated by pipeline leadership"])), timeline: [{ id: `${item.id}-esc-${Date.now()}`, title: "Case escalated", description: "Leadership escalation added from Pipeline.", date: today.toISOString(), type: "blocker", user: "Pipeline user" }, ...item.timeline] } : item));
+  const confirmBatch = () => {
+    if (!pendingBatch || selectedBatchRecords.length === 0) return;
+    if (pendingBatch.type === "move") {
+      const eligible = selectedBatchRecords.filter((record) => requirementIssues(record).length === 0 && stageIndex(record.stage) < lifecycleSections.flatMap((section) => stageGroups[section]).length - 1);
+      const blocked = selectedBatchRecords.length - eligible.length;
+      setRecords((current) => current.map((item) => {
+        if (!eligible.some((record) => record.id === item.id)) return item;
+        const stages = lifecycleSections.flatMap((section) => stageGroups[section]);
+        const nextStage = stages[stageIndex(item.stage) + 1];
+        return { ...item, stage: nextStage, section: sectionForStage(nextStage), daysInStage: 0, nextAction: nextActionFor(nextStage, []), timeline: [{ id: `${item.id}-${Date.now()}`, title: "Batch stage changed", description: `Moved from ${item.stage} to ${nextStage}.`, date: today.toISOString(), type: "stage", user: "Pipeline user" }, ...item.timeline] };
+      }));
+      toast.success(`${eligible.length} records moved forward`, { description: blocked ? `${blocked} blocked by missing requirements.` : "All selected records passed requirement checks." });
+    } else {
+      const blocker = pendingBatch.blocker ?? blockerOptions[0];
+      setRecords((current) => current.map((item) => selectedIds.includes(item.id) ? { ...item, blockers: Array.from(new Set([...item.blockers, blocker])), risk: item.risk === "Low" ? "Medium" : item.risk, revenueRisk: item.revenueRisk || Math.round(item.revenue * 0.35), tasks: [{ id: `${item.id}-blocker-${Date.now()}`, title: `Resolve ${blocker.toLowerCase()}`, owner: item.owner, dueDate: isoDaysFrom(2), completed: false, blocker: true }, ...item.tasks], timeline: [{ id: `${item.id}-blocker-${Date.now()}`, title: blocker, description: "Batch blocker added with linked task.", date: today.toISOString(), type: "blocker", user: "Pipeline user" }, ...item.timeline] } : item));
+      toast.success(`${blocker} added to ${selectedBatchRecords.length} records`);
+    }
+    setPendingBatch(null); setBatchOpen(false); setSelectedIds([]);
+  };
 
   return (
     <PageShell title="Pipeline" description="Full lifecycle view from lead intake through active services and reauthorization." icon={Workflow}>
