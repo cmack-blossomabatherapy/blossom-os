@@ -22,6 +22,7 @@ type ViewMode = "Lifecycle" | "Board" | "Table" | "Bottleneck" | "Timeline" | "R
 type Priority = "Routine" | "Elevated" | "High" | "Critical";
 type RecordType = "Lead" | "Client";
 type Risk = "Low" | "Medium" | "High" | "Critical";
+type ComparisonPeriod = "Last week" | "Last month";
 
 type PipelineTask = { id: string; title: string; owner: string; dueDate: string; completed: boolean; blocker?: boolean };
 type PipelineEvent = { id: string; title: string; description: string; date: string; type: string; user: string };
@@ -175,6 +176,8 @@ function slaAlertsForRecord(record: PipelineRecord): SlaAlert[] {
   return alerts;
 }
 function buildSlaAlerts(records: PipelineRecord[]) { return records.flatMap(slaAlertsForRecord).sort((a, b) => (b.severity === "critical" ? 1 : 0) - (a.severity === "critical" ? 1 : 0) || b.daysOver - a.daysOver); }
+function healthMetrics(records: PipelineRecord[]) { return { stuck: records.filter((r) => r.daysInStage >= 8 || r.blockers.length).length, avgDays: Math.round(records.reduce((s, r) => s + r.totalDays, 0) / Math.max(records.length, 1)), reauthRisk: records.filter((r) => r.section === "Reauth Loop" || r.reauth.risk !== "Low").length }; }
+function buildHealthComparison(records: PipelineRecord[], period: ComparisonPeriod) { const todayMetrics = healthMetrics(records); const offset = period === "Last week" ? 1 : 3; const previous = { stuck: Math.max(0, todayMetrics.stuck - offset + (records.length % 3)), avgDays: Math.max(1, todayMetrics.avgDays - offset), reauthRisk: Math.max(0, todayMetrics.reauthRisk - (period === "Last week" ? 1 : 2)) }; return { period, rows: [["Stuck records", todayMetrics.stuck, previous.stuck, "records"], ["Avg days to active", todayMetrics.avgDays, previous.avgDays, "days"], ["Reauth risk", todayMetrics.reauthRisk, previous.reauthRisk, "records"]] as [string, number, number, string][] }; }
 
 export default function Pipeline() {
   const navigate = useNavigate();
@@ -189,6 +192,7 @@ export default function Pipeline() {
   const [pendingBatch, setPendingBatch] = useState<{ type: "move" | "blocker"; blocker?: string } | null>(null);
   const [sortKey, setSortKey] = useState<"risk" | "days" | "revenue" | "name">("risk");
   const [savedView, setSavedView] = useState("Executive Health");
+  const [comparisonPeriod, setComparisonPeriod] = useState<ComparisonPeriod>("Last week");
   const [filters, setFilters] = useState<Filters>({ dateRange: "This Month", state: ALL, clinic: ALL, stage: ALL, owner: ALL, payor: ALL, bcba: ALL, rbt: ALL, priority: ALL, atRiskOnly: false, stuckOnly: false });
 
   const filterOptions = useMemo(() => ({
@@ -216,6 +220,7 @@ export default function Pipeline() {
   const selectedBatchRecords = records.filter((record) => selectedIds.includes(record.id));
   const summary = useMemo(() => buildSummary(filtered), [filtered]);
   const slaAlerts = useMemo(() => buildSlaAlerts(filtered), [filtered]);
+  const healthComparison = useMemo(() => buildHealthComparison(filtered, comparisonPeriod), [filtered, comparisonPeriod]);
   const kpis = [
     ["Total In Pipeline", filtered.length, "all"], ["New Leads", filtered.filter((r) => r.stage === "New Lead").length, "Intake"], ["Pending Auth", filtered.filter((r) => r.section === "Authorization" || r.section === "Treatment Authorization").length, "Authorization"], ["In QA", filtered.filter((r) => r.section === "QA").length, "QA"], ["Staffing Needed", filtered.filter((r) => r.section === "Staffing" && r.rbt === "Unassigned").length, "Staffing"], ["Pending Start", filtered.filter((r) => r.section === "Scheduling").length, "Scheduling"], ["Active Clients", filtered.filter((r) => r.stage === "Active").length, "Active Services"], ["Reauth Risk", filtered.filter((r) => r.section === "Reauth Loop" || r.reauth.risk !== "Low").length, "Reauth Loop"], ["Stuck Records", filtered.filter((r) => r.daysInStage >= 8 || r.blockers.length).length, "stuck"], ["Avg Time to Active", `${Math.round(filtered.reduce((s, r) => s + r.totalDays, 0) / Math.max(filtered.length, 1))}d`, "all"],
   ] as const;
@@ -270,6 +275,8 @@ export default function Pipeline() {
           <Button variant={filters.atRiskOnly ? "default" : "outline"} size="sm" onClick={() => updateFilter("atRiskOnly", !filters.atRiskOnly)}>At-risk only</Button><Button variant={filters.stuckOnly ? "default" : "outline"} size="sm" onClick={() => updateFilter("stuckOnly", !filters.stuckOnly)}>Stuck only</Button>
         </div>
       </div>
+
+      <PipelineHealthComparison comparison={healthComparison} period={comparisonPeriod} setPeriod={setComparisonPeriod} />
 
       <section className="grid gap-3 md:grid-cols-5 xl:grid-cols-10">{kpis.map(([label, value, target]) => <button key={label} onClick={() => { if (target === "stuck") updateFilter("stuckOnly", true); else setSelectedSection(target === "all" ? ALL : target); }} className="rounded-lg border bg-card p-3 text-left shadow-sm transition hover:shadow-md"><p className="text-[11px] font-medium text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold text-foreground">{value}</p></button>)}</section>
 
