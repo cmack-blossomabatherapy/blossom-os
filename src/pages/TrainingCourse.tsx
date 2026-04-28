@@ -23,12 +23,20 @@ export default function TrainingCourse() {
     };
   }, []);
   const course = trainingCourses.find((c) => c.id === courseId);
+  const [completed, setCompleted] = useState<Set<string>>(() => new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
+  const [activeLessonId, setActiveLessonId] = useState(course?.lessons[0]?.id);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [score, setScore] = useState<number | null>(course?.quizScore ?? null);
+
+  useEffect(() => {
+    setCompleted(new Set(course?.lessons.filter((l) => l.completed).map((l) => l.id) ?? []));
+    setActiveLessonId(course?.lessons[0]?.id);
+    setAnswers({});
+    setScore(course?.quizScore ?? null);
+  }, [course?.id]);
+
   if (!course) return <Navigate to="/training" replace />;
   const dept = trainingDepartments.find((d) => d.id === course.departmentId)!;
-  const [completed, setCompleted] = useState<Set<string>>(new Set(course.lessons.filter((l) => l.completed).map((l) => l.id)));
-  const [activeLessonId, setActiveLessonId] = useState(course.lessons[0]?.id);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [score, setScore] = useState<number | null>(course.quizScore ?? null);
   const activeLesson = course.lessons.find((lesson) => lesson.id === activeLessonId) ?? course.lessons[0];
   const progress = useMemo(() => Math.round((completed.size / course.lessons.length) * 100), [completed.size, course.lessons.length]);
   const markComplete = () => { setCompleted((current) => new Set([...current, activeLesson.id])); toast.success("Lesson marked complete"); };
