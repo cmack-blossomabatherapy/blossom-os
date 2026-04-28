@@ -99,6 +99,12 @@ interface QARecord {
   comments: string[];
 }
 
+interface StarterQaSettings {
+  taskTitle: string;
+  dueOffsetDays: number;
+  qaOwner: string;
+}
+
 const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA Team", "Clinical Director"];
 const BCBAS = ["Dr. Mia Hart", "Elena Ruiz", "Jordan Klein", "Nora Patel", "Caleb Stone", "Avery Brooks"];
 const RBTS = ["Sofia Miles", "Noah Grant", "Camila Reed", "Ethan Fox", "Maya Chen", "Liam Price", "Harper Cole"];
@@ -249,7 +255,7 @@ const buildRecords = (clients: Client[]): QARecord[] => {
   });
 };
 
-const qaRecordFromClient = (client: Client, index: number): QARecord => {
+const qaRecordFromClient = (client: Client, index: number, starterSettings: StarterQaSettings): QARecord => {
   const treatmentAuth = client.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
   const treatmentPlanReceived = Boolean(treatmentAuth?.treatmentPlanReceived || treatmentAuth?.treatmentPlanLinked);
   const requirements = documentRequirementsFor(client, treatmentPlanReceived);
@@ -274,7 +280,7 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
     payor: treatmentAuth?.payor ?? client.payor,
     bcba: client.bcba ?? BCBAS[index % BCBAS.length],
     rbt: client.rbt ?? "Unassigned",
-    qaOwner: "QA Team",
+    qaOwner: starterSettings.qaOwner,
     status: "Awaiting Review",
     planStatus: treatmentPlanReceived ? "Submitted" : "Missing",
     noteStatus: client.notesComplianceStatus === "Flagged" ? "Flagged" : "Clean",
@@ -302,7 +308,7 @@ const qaRecordFromClient = (client: Client, index: number): QARecord => {
     checklist,
     issues: missingIssues,
     documents: [...requirements.map(({ checklistKey, ...requirement }) => ({ ...requirement, required: true })), { name: "QA notes", type: "QA", present: true, required: false }],
-    tasks: [{ id: `task-${Date.now()}`, title: "Start treatment plan QA review", owner: "QA Team", dueDate: isoDaysAhead(1), completed: false }, ...missingTasks],
+    tasks: [{ id: `task-${Date.now()}`, title: starterSettings.taskTitle, owner: starterSettings.qaOwner, dueDate: isoDaysAhead(starterSettings.dueOffsetDays), completed: false }, ...missingTasks],
     timeline: [
       { date: client.assessmentDate ?? isoDaysAgo(client.daysSinceAssessment ?? 0), event: "Assessment/treatment plan selected for QA" },
       ...(missingRequirements.length ? [{ date: isoDaysAgo(0), event: `Document requirements generated: ${missingRequirements.map((requirement) => requirement.name).join(", ")}` }] : []),
@@ -325,6 +331,7 @@ export default function QA() {
   const [comment, setComment] = useState("");
   const [newReviewOpen, setNewReviewOpen] = useState(false);
   const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
+  const [starterSettings, setStarterSettings] = useState<StarterQaSettings>({ taskTitle: "Start treatment plan QA review", dueOffsetDays: 1, qaOwner: "QA Team" });
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
@@ -498,12 +505,12 @@ export default function QA() {
   const createQaReview = async () => {
     const client = clients.find((item) => item.id === newReviewClientId);
     if (!client) return toast.error("Select an assessment or treatment plan first");
-    const record = qaRecordFromClient(client, records.length);
+    const record = qaRecordFromClient(client, records.length, starterSettings);
     setRecords((current) => [record, ...current]);
     focusQaRecord(record);
     setFilters((current) => ({ ...current, status: "Awaiting Review", issue: "all", plan: "all", note: "all" }));
     await updateClient(client.id, { stage: "QA Review", qaStatus: "In Review", nextAction: record.issues.length ? "Upload missing QA attachments" : "Start QA review" });
-    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: "Start treatment plan QA review", dueDate: isoDaysAhead(1), completed: false });
+    await addTask(client.id, { id: `qa-start-${Date.now()}`, title: starterSettings.taskTitle, dueDate: isoDaysAhead(starterSettings.dueOffsetDays), completed: false });
     await Promise.all(record.tasks.filter((task) => task.title.startsWith("Upload ")).map((task) => addTask(client.id, task)));
     await appendTimeline(client.id, "New QA Review created from existing assessment/treatment plan", "qa");
     if (record.issues.length) await appendTimeline(client.id, `QA document requirements generated: ${record.documents.filter((doc) => doc.required && !doc.present).map((doc) => doc.name).join(", ")}`, "qa");
@@ -577,7 +584,7 @@ export default function QA() {
         </div>
         <DetailPanel record={selected} panelTab={panelTab} setPanelTab={setPanelTab} onOpenClient={() => navigate(`/clients/${selected.clientId}`)} onStart={startReview} onCorrection={requestCorrection} onReady={markReady} onAuth={sendToAuth} onTask={createCorrectionTask} onToggle={toggleChecklist} onResolveIssue={resolveIssue} onResolveNote={resolveNote} comment={comment} setComment={setComment} onComment={addComment} />
       </section>
-      {newReviewOpen && <NewQaReviewDialog clients={clients} records={records} selectedId={newReviewClientId} onSelect={setNewReviewClientId} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} onReuse={reuseQaReview} />}
+      {newReviewOpen && <NewQaReviewDialog clients={clients} records={records} selectedId={newReviewClientId} starterSettings={starterSettings} onSelect={setNewReviewClientId} onSettingsChange={setStarterSettings} onClose={() => setNewReviewOpen(false)} onCreate={createQaReview} onReuse={reuseQaReview} />}
     </PageShell>
   );
 }
@@ -586,13 +593,13 @@ function FilterSelect({ value, onChange, label, items }: { value: string; onChan
   return <Select value={value} onValueChange={onChange}><SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={label} /></SelectTrigger><SelectContent><SelectItem value="all">{label}</SelectItem>{items.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>;
 }
 
-function NewQaReviewDialog({ clients, records, selectedId, onSelect, onClose, onCreate, onReuse }: { clients: Client[]; records: QARecord[]; selectedId: string; onSelect: (id: string) => void; onClose: () => void; onCreate: () => void; onReuse: (record: QARecord) => void }) {
+function NewQaReviewDialog({ clients, records, selectedId, starterSettings, onSelect, onSettingsChange, onClose, onCreate, onReuse }: { clients: Client[]; records: QARecord[]; selectedId: string; starterSettings: StarterQaSettings; onSelect: (id: string) => void; onSettingsChange: (settings: StarterQaSettings) => void; onClose: () => void; onCreate: () => void; onReuse: (record: QARecord) => void }) {
   const selected = clients.find((client) => client.id === selectedId);
   const options = clients.filter((client) => client.assessmentDate || client.stage === "Assessment Completed" || client.stage === "Treatment Plan Pending" || client.stage === "QA Review" || client.authorizations.some((auth) => auth.type === "Treatment"));
   const treatmentAuth = selected?.authorizations.find((auth) => auth.type === "Treatment" || auth.treatmentPlanReceived || auth.treatmentPlanLinked);
   const requirements = selected ? documentRequirementsFor(selected, Boolean(treatmentAuth?.treatmentPlanReceived || treatmentAuth?.treatmentPlanLinked)) : [];
   const duplicate = selected ? records.find((record) => record.clientId === selected.id && record.timeline.some((event) => event.event.includes("Assessment/treatment plan selected for QA") || event.event.includes("New QA Review created"))) : undefined;
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur-sm"><div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl"><div className="border-b border-border p-5"><h2 className="text-lg font-semibold text-foreground">New QA Review</h2><p className="text-sm text-muted-foreground">Create a QA item from an existing assessment or treatment plan.</p></div><div className="space-y-4 p-5"><label className="space-y-2"><span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Assessment / Treatment Plan</span><Select value={selectedId} onValueChange={onSelect}><SelectTrigger><SelectValue placeholder="Select client assessment" /></SelectTrigger><SelectContent>{options.map((client) => <SelectItem key={client.id} value={client.id}>{client.childName} · {client.state} · {client.stage}</SelectItem>)}</SelectContent></Select></label>{selected && <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-4"><div><p className="text-xs text-muted-foreground">Client</p><p className="text-sm font-medium text-foreground">{selected.childName}</p></div><div><p className="text-xs text-muted-foreground">Assessment Date</p><p className="text-sm font-medium text-foreground">{selected.assessmentDate ?? "Not set"}</p></div><div><p className="text-xs text-muted-foreground">BCBA</p><p className="text-sm font-medium text-foreground">{selected.bcba ?? "Unassigned"}</p></div><div><p className="text-xs text-muted-foreground">Treatment Auth</p><p className="text-sm font-medium text-foreground">{treatmentAuth ? "Available" : "Missing plan"}</p></div></div>}{duplicate && <div className="rounded-lg border border-warning/40 bg-warning/10 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" /><div className="min-w-0"><p className="text-sm font-semibold text-foreground">Possible duplicate QA Review</p><p className="mt-1 text-xs text-muted-foreground">{duplicate.clientName} already has a QA review for this assessment/treatment plan: {duplicate.status} · owner {duplicate.qaOwner} · next action {duplicate.nextAction}.</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => onReuse(duplicate)}>Reuse existing</Button><Button size="sm" onClick={onCreate}>Create new anyway</Button></div></div></div></div>}{requirements.length > 0 && <div className="rounded-lg border border-border/60 p-3"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Generated document requirements</p><div className="mt-3 space-y-2">{requirements.map((requirement) => <div key={requirement.name} className="flex items-center justify-between rounded-md bg-muted/30 p-2"><div><p className="text-sm font-medium text-foreground">{requirement.name}</p><p className="text-xs text-muted-foreground">{requirement.reason}</p></div><StatusBadge status={requirement.present ? "Present" : "Missing"} variant={requirement.present ? "success" : "destructive"} /></div>)}</div></div>}<div className="rounded-md border border-info/30 bg-info/10 p-3 text-xs text-info">New records are created with initial status Awaiting QA Review and a starter QA task due tomorrow.</div></div><div className="flex justify-end gap-2 border-t border-border p-4"><Button variant="outline" onClick={onClose}>Cancel</Button>{duplicate ? <Button variant="outline" onClick={() => onReuse(duplicate)}>Reuse Existing</Button> : null}<Button onClick={onCreate}>{duplicate ? "Create New Anyway" : "Create QA Review"}</Button></div></div></div>;
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur-sm"><div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-xl"><div className="border-b border-border p-5"><h2 className="text-lg font-semibold text-foreground">New QA Review</h2><p className="text-sm text-muted-foreground">Create a QA item from an existing assessment or treatment plan.</p></div><div className="space-y-4 p-5"><label className="space-y-2"><span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Assessment / Treatment Plan</span><Select value={selectedId} onValueChange={onSelect}><SelectTrigger><SelectValue placeholder="Select client assessment" /></SelectTrigger><SelectContent>{options.map((client) => <SelectItem key={client.id} value={client.id}>{client.childName} · {client.state} · {client.stage}</SelectItem>)}</SelectContent></Select></label>{selected && <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/60 bg-muted/20 p-4"><div><p className="text-xs text-muted-foreground">Client</p><p className="text-sm font-medium text-foreground">{selected.childName}</p></div><div><p className="text-xs text-muted-foreground">Assessment Date</p><p className="text-sm font-medium text-foreground">{selected.assessmentDate ?? "Not set"}</p></div><div><p className="text-xs text-muted-foreground">BCBA</p><p className="text-sm font-medium text-foreground">{selected.bcba ?? "Unassigned"}</p></div><div><p className="text-xs text-muted-foreground">Treatment Auth</p><p className="text-sm font-medium text-foreground">{treatmentAuth ? "Available" : "Missing plan"}</p></div></div>}<div className="rounded-lg border border-border/60 p-4"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Starter QA task settings</p><div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_150px_160px]"><label className="space-y-1.5"><span className="text-xs text-muted-foreground">Task title</span><Input value={starterSettings.taskTitle} onChange={(e) => onSettingsChange({ ...starterSettings, taskTitle: e.target.value || "Start treatment plan QA review" })} /></label><label className="space-y-1.5"><span className="text-xs text-muted-foreground">Due offset</span><Select value={String(starterSettings.dueOffsetDays)} onValueChange={(value) => onSettingsChange({ ...starterSettings, dueOffsetDays: Number(value) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="0">Due today</SelectItem><SelectItem value="1">Due tomorrow</SelectItem><SelectItem value="2">Due in 2 days</SelectItem><SelectItem value="3">Due in 3 days</SelectItem><SelectItem value="5">Due in 5 days</SelectItem></SelectContent></Select></label><label className="space-y-1.5"><span className="text-xs text-muted-foreground">QA owner</span><Select value={starterSettings.qaOwner} onValueChange={(value) => onSettingsChange({ ...starterSettings, qaOwner: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{QA_OWNERS.map((owner) => <SelectItem key={owner} value={owner}>{owner}</SelectItem>)}</SelectContent></Select></label></div><p className="mt-2 text-xs text-muted-foreground">Preview: {starterSettings.taskTitle} · {starterSettings.qaOwner} · due {isoDaysAhead(starterSettings.dueOffsetDays)}</p></div>{duplicate && <div className="rounded-lg border border-warning/40 bg-warning/10 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" /><div className="min-w-0"><p className="text-sm font-semibold text-foreground">Possible duplicate QA Review</p><p className="mt-1 text-xs text-muted-foreground">{duplicate.clientName} already has a QA review for this assessment/treatment plan: {duplicate.status} · owner {duplicate.qaOwner} · next action {duplicate.nextAction}.</p><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => onReuse(duplicate)}>Reuse existing</Button><Button size="sm" onClick={onCreate}>Create new anyway</Button></div></div></div></div>}{requirements.length > 0 && <div className="rounded-lg border border-border/60 p-3"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Generated document requirements</p><div className="mt-3 space-y-2">{requirements.map((requirement) => <div key={requirement.name} className="flex items-center justify-between rounded-md bg-muted/30 p-2"><div><p className="text-sm font-medium text-foreground">{requirement.name}</p><p className="text-xs text-muted-foreground">{requirement.reason}</p></div><StatusBadge status={requirement.present ? "Present" : "Missing"} variant={requirement.present ? "success" : "destructive"} /></div>)}</div></div>}<div className="rounded-md border border-info/30 bg-info/10 p-3 text-xs text-info">New records are created with initial status Awaiting QA Review and a starter QA task due tomorrow.</div></div><div className="flex justify-end gap-2 border-t border-border p-4"><Button variant="outline" onClick={onClose}>Cancel</Button>{duplicate ? <Button variant="outline" onClick={() => onReuse(duplicate)}>Reuse Existing</Button> : null}<Button onClick={onCreate}>{duplicate ? "Create New Anyway" : "Create QA Review"}</Button></div></div></div>;
 }
 
 function SlaQueueView(props: { records: QARecord[]; onOpen: (r: QARecord) => void; onStart: (r: QARecord) => void; onIssue: (r: QARecord) => void; onCorrection: (r: QARecord) => void; onTask: (r: QARecord) => void }) {
