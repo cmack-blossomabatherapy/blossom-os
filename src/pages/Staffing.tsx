@@ -595,3 +595,36 @@ export default function Staffing() {
     </PageShell>
   );
 }
+
+function MatchWeightsPanel({ weights, onChange }: { weights: MatchWeights; onChange: (weights: MatchWeights) => void }) {
+  const items: { key: keyof MatchWeights; label: string; detail: string }[] = [
+    { key: "region", label: "Region fit", detail: "State, clinic, and territory proximity" },
+    { key: "availability", label: "Availability", detail: "Client/RBT schedule overlap" },
+    { key: "compliance", label: "Compliance", detail: "Compliance and training readiness" },
+    { key: "capacity", label: "Capacity", detail: "Open hours against required hours" },
+  ];
+  const update = (key: keyof MatchWeights, value: number[]) => onChange({ ...weights, [key]: value[0] ?? weights[key] });
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-foreground">Match Weight Controls</h3>
+          <p className="text-xs text-muted-foreground">Adjust priorities to re-rank suggested RBTs in real time.</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => onChange({ region: 25, availability: 25, compliance: 25, capacity: 25 })}>Reset</Button>
+      </div>
+      <div className="mt-4 space-y-4">
+        {items.map((item) => (
+          <div key={item.key} className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs font-medium text-foreground">{item.label}</Label>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{weights[item.key]}%</span>
+            </div>
+            <Slider value={[weights[item.key]]} min={0} max={60} step={5} onValueChange={(value) => update(item.key, value)} />
+            <p className="text-[11px] text-muted-foreground">{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
