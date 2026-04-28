@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Bot, ExternalLink, FileText, Gauge, ListChecks, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,6 +59,7 @@ interface BuilderDraft {
   sopTitle: string;
   sopContent: string;
   sopFileName: string;
+  sopFileUrl: string;
   sopAsMain: boolean;
   walkthroughs: WalkthroughLink[];
   steps: TrainingStep[];
@@ -95,6 +96,7 @@ const emptyDraft = (): BuilderDraft => ({
   sopTitle: "",
   sopContent: "",
   sopFileName: "",
+  sopFileUrl: "",
   sopAsMain: true,
   walkthroughs: [{ id: uid("tango"), url: "", label: "Open Walkthrough" }],
   steps: [{ id: uid("step"), title: "", description: "", systemTag: "Blossom OS" }],
@@ -133,6 +135,7 @@ const draftFromCourse = (course: TrainingCourse): BuilderDraft => ({
   sopTitle: course.sop?.title ?? "",
   sopContent: course.sop?.content ?? "",
   sopFileName: course.sop?.fileName ?? "",
+  sopFileUrl: course.sop?.fileUrl ?? "",
   sopAsMain: course.sop?.useAsMainContent ?? true,
   walkthroughs: course.walkthroughs?.length ? course.walkthroughs : [{ id: uid("tango"), url: "", label: "Open Walkthrough" }],
   steps: course.trainingSteps?.length ? course.trainingSteps : [{ id: uid("step"), title: "", description: "", systemTag: "Blossom OS" }],
