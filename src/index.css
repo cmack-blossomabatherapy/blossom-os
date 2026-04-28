@@ -146,7 +146,6 @@
 
   @media (min-width: 1024px) {
     .training-scroll-column {
-      position: relative;
       scrollbar-width: thin;
       scrollbar-color: hsl(var(--primary) / 0.45) transparent;
     }
@@ -160,30 +159,6 @@
       border-radius: 999px;
       background: hsl(var(--primary) / 0.4);
       background-clip: content-box;
-    }
-
-    .training-scroll-column::before,
-    .training-scroll-column::after {
-      content: "";
-      position: sticky;
-      left: 0;
-      right: 0;
-      z-index: 30;
-      display: block;
-      height: 24px;
-      pointer-events: none;
-    }
-
-    .training-scroll-column::before {
-      top: 0;
-      margin-bottom: -24px;
-      background: linear-gradient(to bottom, var(--training-scroll-fade-bg, hsl(var(--background))) 10%, transparent);
-    }
-
-    .training-scroll-column::after {
-      bottom: 0;
-      margin-top: -24px;
-      background: linear-gradient(to top, var(--training-scroll-fade-bg, hsl(var(--background))) 10%, transparent);
     }
   }
 }
