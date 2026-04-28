@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Copy, CheckCircle2, UserPlus, Mail } from "lucide-react";
+import { Loader2, Copy, CheckCircle2, UserPlus, Mail, AlertCircle } from "lucide-react";
 import { ROLE_META, type AppRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,9 @@ interface InviteResult {
   tempPassword: string;
   roles: AppRole[];
   welcomeEmailSent?: boolean;
+  welcomeEmailStatus?: "sent" | "failed" | "skipped";
+  welcomeEmailError?: string | null;
+  resendMessageId?: string | null;
 }
 
 export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
@@ -77,7 +80,15 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
       toast.error(data?.error ?? "Failed to invite team member");
       return;
     }
-    setResult({ email: data.email, tempPassword: data.tempPassword, roles: data.roles ?? [], welcomeEmailSent: data.welcomeEmailSent });
+    setResult({
+      email: data.email,
+      tempPassword: data.tempPassword,
+      roles: data.roles ?? [],
+      welcomeEmailSent: data.welcomeEmailSent,
+      welcomeEmailStatus: data.welcomeEmailStatus,
+      welcomeEmailError: data.welcomeEmailError,
+      resendMessageId: data.resendMessageId,
+    });
     toast.success(data.welcomeEmailSent ? "Team member invited and welcome email sent" : "Team member invited");
     onCreated?.();
   };
