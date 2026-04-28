@@ -183,10 +183,14 @@ function decisionEntry(match: Match, decision: MatchDecision["decision"], note: 
   };
 }
 
+function hydrateRecords(records: StaffingRecord[]) {
+  return records.map((record) => ({ ...record, decisionHistory: record.decisionHistory ?? [] }));
+}
+
 export default function StaffingDashboard() {
   const [records, setRecords] = useState<StaffingRecord[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RECORDS_KEY) : null;
-    return saved ? JSON.parse(saved) as StaffingRecord[] : staffingSeed;
+    return saved ? hydrateRecords(JSON.parse(saved) as StaffingRecord[]) : staffingSeed;
   });
   const [rbts, setRbts] = useState<Rbt[]>(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem(STAFFING_RBTS_KEY) : null;
