@@ -93,7 +93,7 @@ export const ONBOARDING_STAGES: { key: OnboardingStatus; label: string; tone: st
   { key: "incomplete",        label: "Incomplete",         tone: "bg-destructive/10 border-destructive/30" },
 ];
 
-export const HR_STATES = ["GA", "NC", "TN", "VA", "MD"] as const;
+export const HR_STATES = ["GA", "NC", "TN", "VA", "MD", "NJ"] as const;
 
 export const RELATIONSHIP_LABELS: Record<RelationshipKind, string> = {
   direct_manager: "Direct Manager",

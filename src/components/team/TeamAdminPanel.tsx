@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
+import { HR_STATES } from "@/lib/hr/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,15 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TEAM_DEPARTMENTS = ["Exec", "Intake", "Auth", "QA", "Scheduling", "Staffing", "Clinics"];
+const HR_DEPARTMENT_BY_TEAM: Record<string, string> = {
+  Exec: "Executive",
+  Intake: "Intake",
+  Auth: "Authorizations",
+  QA: "QA / Compliance",
+  Scheduling: "Scheduling",
+  Staffing: "Staffing",
+  Clinics: "Clinic Operations",
+};
 
 interface ProfileRow {
   user_id: string;
@@ -63,6 +73,55 @@ interface RoleActivity {
   id: string;
   updatedAt: string;
   label: string;
+}
+
+async function syncEmployeeFromTeamMember(
+  member: Member,
+  next: { display_name: string; email: string; job_title: string; department: string; state: string; clinic: string; active: boolean },
+) {
+  const email = next.email.trim().toLowerCase();
+  const displayName = next.display_name.trim() || member.display_name;
+  const [firstName, ...lastNameParts] = displayName.split(/\s+/).filter(Boolean);
+  const state = next.state.trim().toUpperCase();
+  const departmentName = HR_DEPARTMENT_BY_TEAM[next.department.trim()] ?? next.department.trim();
+  const employeeStatus = next.active ? "active" as const : "on_hold" as const;
+  const [{ data: departments }, { data: existing }] = await Promise.all([
+    supabase.from("hr_departments").select("id, name"),
+    supabase.from("employees").select("id").or(`user_id.eq.${member.user_id},email.eq.${email}`).maybeSingle(),
+  ]);
+  const departmentId = (departments ?? []).find((dept) => dept.name === departmentName)?.id ?? null;
+  const employeePayload = {
+    user_id: member.user_id,
+    first_name: firstName || displayName || "Team",
+    last_name: lastNameParts.join(" ") || "Member",
+    email: email || null,
+    job_title: next.job_title.trim() || member.job_title || "Team Member",
+    department_id: departmentId,
+    state: HR_STATES.includes(state as (typeof HR_STATES)[number]) ? state : "GA",
+    clinic: next.clinic.trim() || null,
+    status: employeeStatus,
+  };
+
+  if (existing?.id) {
+    const { error } = await supabase.from("employees").update(employeePayload).eq("id", existing.id);
+    if (error) {
+      toast.error(`Team saved, but Employees sync failed: ${error.message}`);
+      return false;
+    }
+    return true;
+  }
+
+  const { error } = await supabase.from("employees").insert({
+    ...employeePayload,
+    employment_type: "full_time" as never,
+    pay_type: "salaried" as never,
+    work_setting: "admin" as never,
+  });
+  if (error) {
+    toast.error(`Team saved, but Employees sync failed: ${error.message}`);
+    return false;
+  }
+  return true;
 }
 
 /** Live admin view of every team member — edit info, roles, and send welcome email. */
@@ -240,6 +299,7 @@ export function TeamAdminPanel() {
       toast.error(error.message);
       return false;
     }
+    const employeeSynced = await syncEmployeeFromTeamMember(member, next);
     updateMember(member.user_id, {
       display_name: next.display_name.trim() || "(no name)",
       email: next.email.trim(),
@@ -252,7 +312,7 @@ export function TeamAdminPanel() {
       dashboard_access: next.dashboard_access,
       active: next.active,
     });
-    toast.success("Saved");
+    toast.success(employeeSynced ? "Saved and synced to Employees" : "Saved");
     return true;
   };
 
