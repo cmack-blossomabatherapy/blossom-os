@@ -20,8 +20,8 @@ export interface NavigationPreviewSection {
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
-  // Add role keys here when limited roles need more than Intelligence.
-  // Example: hr: { sectionTitles: ["HR Suite"], itemPaths: ["/team"] },
+  // Roles below get Intelligence + the listed paths/sections (no full nav).
+  training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard"] },
 };
 
 const intelligenceRoutePrefixes = ["/training", "/resources"];

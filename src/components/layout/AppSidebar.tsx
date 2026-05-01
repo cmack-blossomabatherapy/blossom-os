@@ -175,6 +175,7 @@ const roleLabels: Record<string, string> = {
   state_director: "State Leadership",
   clinic_director: "Clinic Director",
   dept_manager: "Department Manager",
+  training_admin: "Training Admin",
   staff: "Staff",
   viewer: "Viewer",
 };

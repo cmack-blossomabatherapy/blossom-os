@@ -21,6 +21,7 @@ export type AppRole =
   | "state_director"
   | "clinic_director"
   | "dept_manager"
+  | "training_admin"
   | "staff"
   | "viewer";
 
@@ -57,6 +58,7 @@ export const ROLE_META: RoleMeta[] = [
   { key: "hr_manager", label: "HR Manager", group: "People", description: "Employee operations and performance management", permissionLevel: "Full Module Control", scope: "Employee operations", owners: ["People Ops Managers"], owns: ["Reviews", "Cases", "Training", "Time approvals"], can: ["Manage reviews", "Manage cases", "Assign training", "Approve time workflows"] },
   { key: "clinic_director", label: "Clinic Director", group: "Operations", description: "Clinic-scoped leadership", permissionLevel: "Edit Scoped", scope: "Assigned clinic", owners: ["Clinic Directors"], owns: ["Clinic performance"], can: ["View clinic employees", "View clinic clients", "Track schedules and capacity"] },
   { key: "dept_manager", label: "Department Manager", group: "Operations", description: "Department-scoped leadership", permissionLevel: "View Only", scope: "Assigned department", owners: ["Department Managers"], owns: ["Department performance"], can: ["View department employees", "View reviews", "Track training"] },
+  { key: "training_admin", label: "Training Admin", group: "People", description: "Manages training assignments, completions, and analytics", permissionLevel: "Full Module Control", scope: "Training Admin module only", owners: ["Designated Training Leads"], owns: ["Training assignments", "Training completion tracking", "Training analytics"], can: ["Assign trainings to any employee", "Track training status and completion", "View training statistics and dashboards", "Manage training catalog"], cannot: ["Access other HR modules", "Edit employee records or payroll"] },
   { key: "staff", label: "Staff", group: "Legacy", description: "Basic employee access", permissionLevel: "View Only", scope: "Own training, resources, tasks", owners: ["Staff"], owns: ["Own work"], can: ["Complete training", "View resources", "View announcements", "View assigned tasks"] },
   { key: "viewer", label: "Viewer", group: "Legacy", description: "Read-only system access", permissionLevel: "View Only", scope: "Read-only across allowed modules", owners: ["Auditors"], owns: ["No workflow ownership"], can: ["See data", "Review dashboards"], cannot: ["Edit records", "Override workflows"] },
 ];
