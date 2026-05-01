@@ -153,6 +153,7 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
       ...section,
       items: section.items.filter((item) => {
         if (item.superAdminOnly && !roles.includes("admin")) return false;
+        if (item.allowedRoles && !item.allowedRoles.some((role) => roles.includes(role))) return false;
         if (section.title === "Intelligence" && allowedIntelligencePaths) {
           if (!allowedIntelligencePaths.has(navPathToRoutePrefix(item.path))) return false;
         }
