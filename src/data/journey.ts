@@ -90,6 +90,33 @@ const RBT_UNCERTIFIED_STEPS: JourneyStep[] = [
       "Submit completion certificate to Rebecca",
     ],
     estMinutes: 2400,
+    coordinatorName: "Rebecca Bailey",
+    coordinatorRole: "Training Coordinator",
+    coordinatorEmail: "training@blossomabatherapy.com",
+    moreInfo:
+      "The 40 Hour RBT Course is the BACB-required training that prepares you to sit for the RBT exam. Plan to complete it within 30 days of starting at Blossom. You can pause and resume any time — your progress is saved per module. If a knowledge check is failed twice, schedule a 15-minute review with the training coordinator before retaking.",
+    links: [
+      {
+        label: "Open the 40 Hour Course (CentralReach)",
+        url: "https://members.centralreach.com/",
+        description: "Where the video modules and knowledge checks live.",
+      },
+      {
+        label: "RBT Task List (BACB PDF)",
+        url: "https://www.bacb.com/wp-content/uploads/2022/01/RBT-2nd-Edition-Task-List_220817.pdf",
+        description: "The official BACB task list this course is built around.",
+      },
+      {
+        label: "RBT Handbook (BACB PDF)",
+        url: "https://www.bacb.com/wp-content/uploads/2022/01/RBT-Handbook.pdf",
+        description: "Eligibility, exam, and renewal requirements.",
+      },
+      {
+        label: "Curated RBT Drive (Internal)",
+        url: "/hr/journey/drive",
+        description: "All Blossom training materials, forms, and guides.",
+      },
+    ],
   },
   {
     id: "orientation",
