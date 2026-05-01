@@ -216,14 +216,15 @@
       font-size: 16px;
     }
 
-    /* Subtle scroll hint shadow on horizontal scroll containers */
+    /* Subtle scrollbar on horizontal scroll containers (visual hint there's more) */
     .mobile-page .overflow-x-auto {
-      background:
-        linear-gradient(to right, hsl(var(--card)) 30%, hsl(var(--card) / 0)) left center / 24px 100% no-repeat,
-        linear-gradient(to left, hsl(var(--card)) 30%, hsl(var(--card) / 0)) right center / 24px 100% no-repeat,
-        radial-gradient(farthest-side at left center, hsl(var(--foreground) / 0.12), transparent) left center / 14px 100% no-repeat,
-        radial-gradient(farthest-side at right center, hsl(var(--foreground) / 0.12), transparent) right center / 14px 100% no-repeat;
-      background-attachment: local, local, scroll, scroll;
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+    }
+    .mobile-page .overflow-x-auto::-webkit-scrollbar { height: 4px; }
+    .mobile-page .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.4);
+      border-radius: 999px;
     }
 
     /* Tap feedback on interactive surfaces */
