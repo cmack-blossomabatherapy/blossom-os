@@ -17,6 +17,14 @@ export interface JourneyStep {
   ownerRole: string;
   checklist: string[];
   estMinutes: number;
+  /** Optional helpful links shown in the current stage panel. */
+  links?: { label: string; url: string; description?: string }[];
+  /** Optional training coordinator contact for this stage. */
+  coordinatorName?: string;
+  coordinatorEmail?: string;
+  coordinatorRole?: string;
+  /** Optional richer "more information" body shown below the description. */
+  moreInfo?: string;
 }
 
 export interface TrainingModule {
@@ -36,6 +44,8 @@ export interface JourneyResource {
   url: string;
   category: "Drive" | "BACB" | "Guide" | "Examples" | "System";
   icon: LucideIcon;
+  /** If set, opens internally at this in-app route instead of the external url. */
+  internalRoute?: string;
 }
 
 export interface MatchingInfo {
