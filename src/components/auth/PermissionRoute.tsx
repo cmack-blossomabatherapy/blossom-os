@@ -6,7 +6,7 @@ import type { AppRole } from "@/lib/roles";
 
 interface Props {
   children: ReactNode;
-  permission: string;
+  permission?: string;
   allowedRoles?: AppRole[];
 }
 
@@ -22,7 +22,9 @@ export function PermissionRoute({ children, permission, allowedRoles }: Props) {
   }
   if (!user) return <Navigate to="/auth" replace />;
 
-  if (!hasPerm(permission) || (allowedRoles && !allowedRoles.some((role) => roles.includes(role)))) {
+  const permOk = !permission || hasPerm(permission);
+  const roleOk = !allowedRoles || allowedRoles.some((role) => roles.includes(role));
+  if (!permOk || !roleOk) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
@@ -34,9 +36,11 @@ export function PermissionRoute({ children, permission, allowedRoles }: Props) {
             Your current roles don't include access to this area. If you need access,
             ask a Blossom admin to add the right role to your account.
           </p>
-          <p className="text-[11px] text-muted-foreground/70 mt-3 font-mono">
-            Required permission: {permission}
-          </p>
+          {permission && (
+            <p className="text-[11px] text-muted-foreground/70 mt-3 font-mono">
+              Required permission: {permission}
+            </p>
+          )}
         </div>
       </div>
     );

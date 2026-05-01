@@ -94,7 +94,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Training Hub", icon: Sparkles, path: "/hr/journey", perm: "" },
       { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
-      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
+      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "", allowedRoles: ["rbt", "bcba"] },
     ],
   },
   {

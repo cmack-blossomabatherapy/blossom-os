@@ -75,7 +75,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   { title: "Intelligence", items: [
     { label: "Training Hub", path: "/hr/journey" },
     { label: "Training", path: "/training" },
-    { label: "Resource Hub", path: "/resources" },
+    { label: "Resource Hub", path: "/resources", allowedRoles: ["rbt", "bcba"] },
   ] },
   { title: "HR Suite", items: [
     { label: "HR Dashboard", path: "/hr", perm: "hr.view" },
@@ -168,6 +168,11 @@ export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
   const isTrainingAdminRoute = ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"].some((prefix) => routeMatches(pathname, prefix));
   if (isTrainingAdminRoute && !roles.some((role) => TRAINING_ADMIN_ROLES.includes(role))) return false;
+
+  // /resources (general Resource Hub) is restricted to RBT/BCBA only.
+  if (routeMatches(pathname, "/resources")) {
+    return roles.includes("rbt") || roles.includes("bcba");
+  }
 
   const exceptions = getRoleNavigationExceptions(roles);
   const intelligenceOverrides = exceptions
