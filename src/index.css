@@ -209,11 +209,28 @@
       overscroll-behavior-y: contain;
     }
 
-    /* Prevent iOS auto-zoom on focus for native form controls */
-    .mobile-page :is(select, textarea),
+    /* Prevent iOS Safari auto-zoom on focus.
+       Safari only zooms when the focused control's font-size is < 16px.
+       Force 16px on every interactive form control everywhere on phones —
+       including inside dialogs, sheets, popovers, and command menus that
+       render outside .mobile-page. Desktop scoping is handled by the
+       max-width: 767px media query. */
+    input,
     select,
-    textarea {
-      font-size: 16px;
+    textarea,
+    [contenteditable="true"],
+    [contenteditable=""] {
+      font-size: 16px !important;
+      /* Older iOS heuristic also checks line-height in some cases */
+      line-height: 1.4;
+    }
+
+    /* Same rule on focus, in case a component swaps classes on focus */
+    input:focus,
+    select:focus,
+    textarea:focus,
+    [contenteditable="true"]:focus {
+      font-size: 16px !important;
     }
 
     /* Subtle scrollbar on horizontal scroll containers (visual hint there's more) */
