@@ -108,8 +108,11 @@ function RoleDashboardRedirect() {
     ? "/leadership-dashboard"
     : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
-  const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : "/training");
-  const allowedRoute = hasFullNavigationAccess(roles) || canAccessRouteForRoles(fallbackRoute, roles) ? fallbackRoute : "/training";
+  const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") ? "/hr/journey" : "/training";
+  const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
+  const allowedRoute = hasFullNavigationAccess(roles) || canAccessRouteForRoles(fallbackRoute, roles)
+    ? fallbackRoute
+    : intelligenceFallback;
 
   return <Navigate to={allowedRoute} replace />;
 }
