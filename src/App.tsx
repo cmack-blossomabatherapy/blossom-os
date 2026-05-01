@@ -191,7 +191,7 @@ const App = () => (
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
                   <Route path="/hr/journey" element={<JourneyHub />} />
-                  <Route path="/hr/journey/drive" element={<JourneyHub />} />
+                  <Route path="/hr/journey/drive" element={<JourneyDrive />} />
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                 </Route>
