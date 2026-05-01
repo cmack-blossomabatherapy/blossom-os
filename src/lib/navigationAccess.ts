@@ -75,7 +75,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   { title: "Intelligence", items: [
     { label: "Training Hub", path: "/hr/journey" },
     { label: "Training", path: "/training" },
-    { label: "Resource Hub", path: "/resources" },
+    { label: "Resource Hub", path: "/resources", allowedRoles: ["rbt", "bcba"] },
   ] },
   { title: "HR Suite", items: [
     { label: "HR Dashboard", path: "/hr", perm: "hr.view" },
