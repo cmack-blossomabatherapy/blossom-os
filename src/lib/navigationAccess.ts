@@ -24,7 +24,7 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard"] },
 };
 
-const intelligenceRoutePrefixes = ["/training", "/resources"];
+const intelligenceRoutePrefixes = ["/training", "/resources", "/hr/journey"];
 
 const dashboardPreviewSection: NavigationPreviewSection = {
   title: "Dashboards",
@@ -60,6 +60,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Tasks", path: "/tasks", perm: "tasks.view" },
   ] },
   { title: "Intelligence", items: [
+    { label: "Training Hub", path: "/hr/journey" },
     { label: "Training", path: "/training" },
     { label: "Resource Hub", path: "/resources" },
   ] },
