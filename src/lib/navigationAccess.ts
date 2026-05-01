@@ -27,8 +27,7 @@ export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
-  training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard"] },
-  // Note: training_admin also gets /admin/training-statistics — added below.
+  training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics"] },
   rbt: { intelligenceItemPaths: ["/hr/journey"] },
   bcba: { intelligenceItemPaths: ["/hr/journey"] },
 };
