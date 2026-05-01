@@ -2,14 +2,16 @@ import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, ShieldAlert } from "lucide-react";
+import type { AppRole } from "@/lib/roles";
 
 interface Props {
   children: ReactNode;
   permission: string;
+  allowedRoles?: AppRole[];
 }
 
-export function PermissionRoute({ children, permission }: Props) {
-  const { user, loading, hasPerm } = useAuth();
+export function PermissionRoute({ children, permission, allowedRoles }: Props) {
+  const { user, loading, hasPerm, roles } = useAuth();
 
   if (loading) {
     return (
@@ -20,7 +22,7 @@ export function PermissionRoute({ children, permission }: Props) {
   }
   if (!user) return <Navigate to="/auth" replace />;
 
-  if (!hasPerm(permission)) {
+  if (!hasPerm(permission) || (allowedRoles && !allowedRoles.some((role) => roles.includes(role)))) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
         <div className="max-w-md text-center">

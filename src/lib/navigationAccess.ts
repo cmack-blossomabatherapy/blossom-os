@@ -16,6 +16,7 @@ export interface NavigationPreviewItem {
   path: string;
   perm?: string;
   superAdminOnly?: boolean;
+  allowedRoles?: AppRole[];
 }
 
 export interface NavigationPreviewSection {
@@ -24,10 +25,14 @@ export interface NavigationPreviewSection {
 }
 
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
+export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_admin: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_manager: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
   rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
   bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
 };
@@ -89,9 +94,9 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   ] },
   { title: "Admin", items: [
     { label: "Team", path: "/team", perm: "team.view" },
-    { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
-    { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view" },
-    { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign" },
+    { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+    { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+    { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
     { label: "Role Audit Log", path: "/admin/role-audit", superAdminOnly: true },
     { label: "Reports", path: "/reports", perm: "reports.view" },
     { label: "Automations", path: "/automations", perm: "automations.view" },
@@ -148,6 +153,7 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
       ...section,
       items: section.items.filter((item) => {
         if (item.superAdminOnly && !roles.includes("admin")) return false;
+        if (item.allowedRoles && !item.allowedRoles.some((role) => roles.includes(role))) return false;
         if (section.title === "Intelligence" && allowedIntelligencePaths) {
           if (!allowedIntelligencePaths.has(navPathToRoutePrefix(item.path))) return false;
         }
@@ -160,6 +166,9 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
 
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
+  const isTrainingAdminRoute = ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"].some((prefix) => routeMatches(pathname, prefix));
+  if (isTrainingAdminRoute && !roles.some((role) => TRAINING_ADMIN_ROLES.includes(role))) return false;
+
   const exceptions = getRoleNavigationExceptions(roles);
   const intelligenceOverrides = exceptions
     .map((e) => e.intelligenceItemPaths)

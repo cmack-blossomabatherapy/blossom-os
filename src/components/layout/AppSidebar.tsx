@@ -13,7 +13,7 @@ import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
-import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix } from "@/lib/navigationAccess";
+import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -31,8 +31,6 @@ interface NavSection {
   title?: string;
   items: NavItem[];
 }
-
-const TRAINING_ADMIN_ROLES = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
 const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   ceo: BarChart3,

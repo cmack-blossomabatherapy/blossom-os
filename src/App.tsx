@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
-import { canAccessRouteForRoles, hasFullNavigationAccess } from "@/lib/navigationAccess";
+import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -75,6 +75,7 @@ import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
   const { roles, isAdmin, hasPerm, partOfLeadership, dashboardAccess } = useAuth();
+  const hasTrainingAdminAccess = roles.some((role) => TRAINING_ADMIN_ROLES.includes(role));
   const dashboardRoutes: Record<string, string> = {
     ceo: "/leadership-dashboard",
     intake: "/intake-dashboard",
@@ -108,7 +109,7 @@ function RoleDashboardRedirect() {
     ? "/leadership-dashboard"
     : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
-  const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") ? "/hr/journey" : "/training";
+  const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") || hasTrainingAdminAccess ? "/hr/journey" : "/training";
   const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
   const allowedRoute = hasFullNavigationAccess(roles) || canAccessRouteForRoles(fallbackRoute, roles)
     ? fallbackRoute
@@ -168,9 +169,9 @@ const App = () => (
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
                   <Route path="/resources" element={<ResourceHub readOnly />} />
                   <Route path="/team" element={<PermissionRoute permission="team.view"><Team /></PermissionRoute>} />
-                  <Route path="/admin/training-dashboard" element={<PermissionRoute permission="hr.training.view"><TrainingDashboard /></PermissionRoute>} />
-                  <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view"><TrainingStatistics /></PermissionRoute>} />
-                  <Route path="/admin/training-assign" element={<PermissionRoute permission="hr.training.assign"><TrainingAssign /></PermissionRoute>} />
+                  <Route path="/admin/training-dashboard" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingDashboard /></PermissionRoute>} />
+                  <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingStatistics /></PermissionRoute>} />
+                  <Route path="/admin/training-assign" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingAssign /></PermissionRoute>} />
                   <Route path="/admin/role-audit" element={<RoleAuditLog />} />
                   <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
                   <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
@@ -182,8 +183,8 @@ const App = () => (
                   <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
                   <Route path="/hr/kiosk" element={<PermissionRoute permission="hr.timeclock.kiosk"><TimeClockKiosk /></PermissionRoute>} />
                   <Route path="/hr/reviews" element={<PermissionRoute permission="hr.reviews.view"><Reviews /></PermissionRoute>} />
-                  <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view"><Training /></PermissionRoute>} />
-                  <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view"><TrainingDashboard /></PermissionRoute>} />
+                  <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><Training /></PermissionRoute>} />
+                  <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingDashboard /></PermissionRoute>} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
