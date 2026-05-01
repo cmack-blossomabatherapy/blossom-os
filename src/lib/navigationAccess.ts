@@ -90,6 +90,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   { title: "Admin", items: [
     { label: "Team", path: "/team", perm: "team.view" },
     { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
+    { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view" },
     { label: "Reports", path: "/reports", perm: "reports.view" },
     { label: "Automations", path: "/automations", perm: "automations.view" },
     { label: "Settings", path: "/settings", perm: "settings.view" },
