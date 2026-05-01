@@ -194,7 +194,7 @@ export default function Leads() {
     >
       <LeadKpiStrip leads={leads} activeKpi={activeKpi} onKpiClick={handleKpiClick} />
 
-      <section className="grid gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {intakeSignals.map(({ label, value, icon: Icon }) => (
           <div key={label} className="rounded-lg border border-border/60 bg-card p-3">
             <Icon className="mb-2 h-4 w-4 text-primary" />
