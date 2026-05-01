@@ -1,56 +1,103 @@
-Plan: make all HR Suite data real, including Training Admin, and migrate existing local/mock training content where possible.
 
-## Phase 1 — Audit and stabilize the HR data layer
-- Create a shared HR data/service layer for reads and writes instead of each HR page hand-building queries.
-- Standardize employee joins with departments, managers/relationships, onboarding, documents, trainings, reviews, time clock, payroll, cases, notes, and timeline.
-- Remove the HR Dashboard dependency on `src/data/hrDashboard.ts` and map the existing backend tables into the dashboard’s KPI/action-queue shape.
-- Fix the broken default employee side panel by starting HR Dashboard with no selected employee.
+# Premium Training & Resource Hub for RBTs & BCBAs
 
-## Phase 2 — Convert the main HR Dashboard to backend records
-- Load employees from `employees` and `hr_departments`.
-- Load related HR records from:
-  - `employee_onboarding` and `employee_onboarding_tasks`
-  - `employee_documents_hr`
-  - `employee_trainings` and `training_courses`
-  - `employee_reviews`
-  - `time_clock_punches`, `attendance_exceptions`, `hours_timesheets`
-  - `payroll_runs`, `payroll_run_items`, `employee_bonuses`, `employee_pay_changes`
-  - `employee_cases`, `employee_notes`, `employee_timeline`
-- Recalculate dashboard statuses from real records, not canned labels.
-- Make dashboard actions persist to the backend instead of only changing local React state.
+A new role-aware experience inside the HR Suite that guides RBTs and BCBAs through their lifecycle at Blossom — from training → matching → first case → active. Designed to feel like a modern onboarding platform, not a document library.
 
-## Phase 3 — Convert Training Admin/localStorage to real backend tables
-- Replace localStorage-backed Training Admin data with backend-backed data.
-- Map current Training Admin courses into `training_courses` where the existing schema supports it.
-- Map assignments into `employee_trainings` linked to real employees.
-- Preserve email assignment behavior using the existing training email function.
-- For training fields that do not currently exist in the backend schema, add small schema extensions only where needed, such as metadata JSON for lessons/resources/version history/audit/badges if required.
+## Scope & access
 
-## Phase 4 — Migrate existing local/mock training content safely
-- Add a one-time client-side migration guard that detects local Training Admin content and offers/imports it into backend records without duplicating existing courses.
-- Match employees by email/name when importing assignments; skip unmatched assignment rows with a clear warning.
-- After successful migration, stop reading localStorage as a data source.
+- **New route:** `/hr/journey` (the "Training & Resource Hub" experience)
+- **Visible only to RBTs and BCBAs.** Detection is by job title on the user's `employees` row (RBT, Registered Behavior Technician, BCBA, Board Certified Behavior Analyst). Admins can preview via `?as=rbt-uncertified | rbt-certified | rbt-ready | rbt-active | bcba`.
+- A "Training Hub" entry is added to the HR sidebar group (only rendered when current employee is RBT/BCBA, or admin).
+- Existing pages (`/hr/training`, `/training`, `/hr/resources`, etc.) are untouched.
 
-## Phase 5 — Verify every HR Suite page is backend-backed
-- Confirm these pages only use backend data or derived values from backend data:
-  - HR Dashboard
-  - Employee Directory
-  - Employee Profile tabs
-  - Org Chart
-  - Onboarding Center
-  - Reviews
-  - Training & Compliance
-  - Training Admin
-  - Time Clock / Hours
-  - Payroll
-  - Resource Hub
-  - Announcements
-  - HR Reports
-  - HR Settings
-- Remove or isolate demo files so they are no longer imported by HR Suite screens.
+## Page structure (single page, sectioned)
 
-## Technical notes
-- No backend data will be made public. Existing HR RLS policies remain permission-based.
-- Any schema changes will be minimal and only for missing Training Admin persistence fields.
-- Sensitive fields like pay rate, notes, documents, and payroll remain behind existing HR/payroll permissions.
-- The implementation will be phased so each screen keeps working while mock/static dependencies are removed.
+```text
+┌─────────────────────────────────────────────────────────┐
+│  HERO — Welcome, role chip, current stage, % progress,  │
+│         "Next Step" CTA                                 │
+├─────────────────────────────────────────────────────────┤
+│  LIFECYCLE TRACKER — horizontal stepper (role-specific) │
+│         click step → side sheet with details            │
+├─────────────────────────────────────────────────────────┤
+│  CURRENT STAGE PANEL  │  NOTIFICATIONS / REMINDERS      │
+│  (what to do now,     │  (overdue, ready-to-match,      │
+│   who you're with,    │   case assigned, start date)    │
+│   "Mark Complete")    │                                 │
+├─────────────────────────────────────────────────────────┤
+│  TRAINING MODULES — card grid (Ethics, Notes,           │
+│         Methodology, Shadowing). Status + Start.        │
+├─────────────────────────────────────────────────────────┤
+│  MATCHING / CASE — appears at "Ready" or later          │
+│  (Sarah Uhr, case manager, BCBA, caregiver, start date, │
+│   first-session prep checklist)                         │
+├─────────────────────────────────────────────────────────┤
+│  RESOURCE HUB — curated card grid                       │
+│  (RBT Resource Hub Drive, BACB, Competency guide, …)    │
+├─────────────────────────────────────────────────────────┤
+│  PROGRESS TRACKING — % complete, completed/remaining,   │
+│         estimated time to completion                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+Lifecycle stepper visual:
+
+```text
+●───●───●───◐───○───○───○───○
+40hr  Orient Comp Exam Core Match Case Active
+ ✓     ✓    ✓   ●   ○    ○    ○    ○
+                ↑ you are here
+```
+
+## Lifecycle definitions
+
+- **RBT (uncertified):** 40 Hour Course → Orientation (Rebecca Bailey) → Competency Assessment → RBT Exam → Core Trainings (Ethics, Session Notes, Methodology) → Ready for Matching → Assigned to Case → Active
+- **RBT (certified):** Orientation → Shadow / Session Notes Training → Lead RBT Evaluation → Ready for Matching → Assigned to Case → Active
+- **BCBA:** Orientation → System Training → Clinical Standards → Case Assignment → Active
+
+Each step carries: id, label, description, owner contact, required actions (checklist), status.
+
+## Demo personas (mock, in-memory)
+
+Provided via a `getJourneyForViewer()` helper keyed by employee/email or `?as=` override:
+- **Maya Cohen — RBT (uncertified):** halfway through 40hr, competency pending
+- **Jordan Reed — RBT (certified):** orientation done, shadowing
+- **Priya Patel — RBT (ready):** all training done, awaiting Sarah Uhr match
+- **Devon Banks — RBT (active):** matched to BCBA Rachel Greenspan, caregiver "Lopez Family", start date set
+- **Dr. Alex Stone — BCBA:** in system training
+
+State is stored in `localStorage` per user (`blossom.journey.<userId>`) so "Mark Complete" persists across reloads. No DB schema changes.
+
+## UX details
+
+- Apple-clean layout, soft Blossom-green gradients in hero and active step, rounded-2xl cards, generous whitespace
+- Lifecycle steps clickable → right-side `Sheet` with description, owner, checklist, "Mark Complete"
+- Smooth `transition-all` on step nodes; subtle hover lift on cards
+- Progress bars use existing `<Progress>` token color
+- Empty/locked future stages dimmed with lock icon
+- Mobile: stepper becomes vertical timeline, cards stack
+- Uses semantic tokens only (`bg-primary`, `text-foreground`, gradients via `--gradient-primary` if present, otherwise `from-primary/10 to-primary/5`)
+
+## Files to add
+
+- `src/data/journey.ts` — types, lifecycle definitions per role, demo personas, viewer resolver, localStorage progress helpers
+- `src/pages/hr/JourneyHub.tsx` — the page
+- `src/components/journey/HeroBanner.tsx`
+- `src/components/journey/LifecycleTracker.tsx` (+ `StepDetailSheet`)
+- `src/components/journey/CurrentStagePanel.tsx`
+- `src/components/journey/TrainingModulesGrid.tsx`
+- `src/components/journey/MatchingPanel.tsx`
+- `src/components/journey/ResourceGrid.tsx`
+- `src/components/journey/NotificationsPanel.tsx`
+- `src/components/journey/ProgressSummary.tsx`
+
+## Files to edit
+
+- `src/App.tsx` — add `<Route path="/hr/journey" element={<JourneyHub />} />` (no permission gate; component handles role check + admin preview)
+- `src/components/layout/AppSidebar.tsx` — add "Training Hub" link under HR for RBT/BCBA/admin viewers (conditional)
+
+## Out of scope
+
+- No DB migrations, no edge functions, no real assignment/matching mutations
+- Existing `/hr/training`, `/training`, `/hr/resources` pages unchanged
+- No changes to permissions table
