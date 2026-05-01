@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,14 @@ type QuizDisplayResult = { label: string; shortLabel: string; variant: "success"
 export default function TrainingHub() {
   const { user, roles } = useAuth();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    const urlQ = searchParams.get("q") ?? "";
+    if (urlQ !== query) setQuery(urlQ);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
   const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
