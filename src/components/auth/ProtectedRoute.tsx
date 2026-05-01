@@ -21,7 +21,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!canAccessRouteForRoles(location.pathname, roles)) {
-    return <Navigate to="/training" replace />;
+    const fallback = roles.includes("rbt") || roles.includes("bcba") ? "/hr/journey" : "/training";
+    return <Navigate to={fallback} replace />;
   }
 
   return <>{children}</>;
