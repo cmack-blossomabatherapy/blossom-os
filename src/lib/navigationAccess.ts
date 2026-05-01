@@ -92,6 +92,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
     { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view" },
     { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign" },
+    { label: "Role Audit Log", path: "/admin/role-audit", superAdminOnly: true },
     { label: "Reports", path: "/reports", perm: "reports.view" },
     { label: "Automations", path: "/automations", perm: "automations.view" },
     { label: "Settings", path: "/settings", perm: "settings.view" },
@@ -115,7 +116,7 @@ const sectionRoutePrefixes: Record<string, string[]> = {
   Records: ["/phone-calls", "/documents", "/tasks"],
   Intelligence: intelligenceRoutePrefixes,
   "HR Suite": ["/hr"],
-  Admin: ["/team", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign", "/reports", "/automations", "/settings"],
+  Admin: ["/team", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign", "/admin/role-audit", "/reports", "/automations", "/settings"],
 };
 
 const routeMatches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);

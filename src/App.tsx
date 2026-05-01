@@ -56,6 +56,7 @@ import HRSettings from "./pages/hr/HRSettings";
 import TrainingDashboard from "./pages/hr/TrainingDashboard";
 import TrainingStatistics from "./pages/hr/TrainingStatistics";
 import TrainingAssign from "./pages/hr/TrainingAssign";
+import RoleAuditLog from "./pages/admin/RoleAuditLog";
 import JourneyHub from "./pages/hr/JourneyHub";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
 import IntakeDashboard from "./pages/IntakeDashboard";
@@ -167,6 +168,7 @@ const App = () => (
                   <Route path="/admin/training-dashboard" element={<PermissionRoute permission="hr.training.view"><TrainingDashboard /></PermissionRoute>} />
                   <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view"><TrainingStatistics /></PermissionRoute>} />
                   <Route path="/admin/training-assign" element={<PermissionRoute permission="hr.training.assign"><TrainingAssign /></PermissionRoute>} />
+                  <Route path="/admin/role-audit" element={<RoleAuditLog />} />
                   <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
                   <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
