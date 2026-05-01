@@ -94,9 +94,9 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
   ] },
   { title: "Admin", items: [
     { label: "Team", path: "/team", perm: "team.view" },
-    { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
-    { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view" },
-    { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign" },
+    { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+    { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+    { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
     { label: "Role Audit Log", path: "/admin/role-audit", superAdminOnly: true },
     { label: "Reports", path: "/reports", perm: "reports.view" },
     { label: "Automations", path: "/automations", perm: "automations.view" },
@@ -165,6 +165,9 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
 
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
+  const isTrainingAdminRoute = ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"].some((prefix) => routeMatches(pathname, prefix));
+  if (isTrainingAdminRoute && !roles.some((role) => TRAINING_ADMIN_ROLES.includes(role))) return false;
+
   const exceptions = getRoleNavigationExceptions(roles);
   const intelligenceOverrides = exceptions
     .map((e) => e.intelligenceItemPaths)
