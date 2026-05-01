@@ -14,7 +14,64 @@ interface Props {
 export function DocumentTableView({ documents, selectedId, onSelect }: Props) {
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
-      <table className="w-full text-sm">
+      {/* Mobile card list */}
+      <ul className="md:hidden divide-y divide-border/40">
+        {documents.length === 0 ? (
+          <li className="px-4 py-8 text-center text-xs text-muted-foreground italic">
+            No documents match this view
+          </li>
+        ) : (
+          documents.map((d) => {
+            const requiredDays = daysUntil(d.requiredBy);
+            const overdue = requiredDays !== null && requiredDays < 0;
+            const dueSoon = requiredDays !== null && requiredDays >= 0 && requiredDays <= 2;
+            return (
+              <li
+                key={d.id}
+                onClick={() => onSelect(d.id)}
+                className={cn(
+                  "px-3 py-3 cursor-pointer transition-colors active:bg-muted/30",
+                  selectedId === d.id && "bg-primary/5",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  {d.status === "Missing" ? (
+                    <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  ) : (
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {d.type} · {d.linkedRecordLabel}
+                    </p>
+                  </div>
+                  <StatusBadge status={d.status} variant={docStatusVariant(d.status)} />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span className="truncate">{d.owner} · {formatDocDate(d.uploadedAt)}</span>
+                  {d.requiredBy ? (
+                    <span className={cn(
+                      "font-medium tabular-nums shrink-0",
+                      overdue ? "text-destructive" : dueSoon ? "text-warning" : "text-muted-foreground",
+                    )}>
+                      Due {formatDocDate(d.requiredBy)}
+                      {overdue && " · overdue"}
+                      {dueSoon && !overdue && ` · ${requiredDays}d`}
+                    </span>
+                  ) : null}
+                </div>
+                {d.nextAction && (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground truncate">→ {d.nextAction}</p>
+                )}
+              </li>
+            );
+          })
+        )}
+      </ul>
+
+      {/* Desktop table */}
+      <table className="hidden md:table w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/30">
             {["Document", "Type", "Linked", "Status", "Owner", "Uploaded", "Required By", "Next Action"].map((h) => (
