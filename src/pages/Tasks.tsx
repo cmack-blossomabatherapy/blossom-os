@@ -75,7 +75,7 @@ export default function Tasks() {
         open={!!selectedTask}
         onOpenChange={(open) => { if (!open) setSelectedId(null); }}
       >
-        <SheetContent side="right" className="xl:hidden p-0 w-full sm:max-w-md md:max-w-lg">
+        <SheetContent side="right" className="xl:hidden p-0 w-full sm:max-w-md md:max-w-lg flex flex-col [&>div]:rounded-none [&>div]:border-0 [&>div]:max-h-none [&>div]:h-full">
           <TaskDetailPanel task={selectedTask} onClose={() => setSelectedId(null)} />
         </SheetContent>
       </Sheet>
