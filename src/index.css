@@ -199,3 +199,44 @@
     }
   }
 }
+
+@layer utilities {
+  /* Honor iOS safe areas for the main scroll container */
+  @media (max-width: 767px) {
+    .mobile-page {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Prevent iOS auto-zoom on focus for native form controls */
+    .mobile-page :is(select, textarea),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+
+    /* Subtle scrollbar on horizontal scroll containers (visual hint there's more) */
+    .mobile-page .overflow-x-auto {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+    }
+    .mobile-page .overflow-x-auto::-webkit-scrollbar { height: 4px; }
+    .mobile-page .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.4);
+      border-radius: 999px;
+    }
+
+    /* Tap feedback on interactive surfaces */
+    .mobile-page a,
+    .mobile-page button,
+    .mobile-page [role="button"] {
+      -webkit-tap-highlight-color: hsl(var(--primary) / 0.12);
+    }
+
+    /* Smaller, denser KPI cards on phones */
+    .mobile-page .kpi-card {
+      @apply p-3;
+    }
+  }
+}
