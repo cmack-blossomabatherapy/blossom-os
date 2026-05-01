@@ -35,7 +35,7 @@ export function CallControlBar({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[240px] max-w-sm">
+        <div className="relative flex-1 min-w-0 sm:min-w-[240px] max-w-full sm:max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search phone, name, lead, client…"
@@ -44,17 +44,17 @@ export function CallControlBar({
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Button variant="outline" size="sm" className="h-8 text-xs">
+        <Button variant="outline" size="sm" className="h-8 text-xs shrink-0">
           <Filter className="h-3.5 w-3.5 mr-1.5" />
           Filters
         </Button>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           <div className="flex items-center gap-0.5 bg-muted rounded-md p-1">
             <ModeBtn current={viewMode} mode="table" onClick={onViewModeChange} icon={TableIcon} label="Table" />
             <ModeBtn current={viewMode} mode="queue" onClick={onViewModeChange} icon={ListTodo} label="Queue" />
             <ModeBtn current={viewMode} mode="timeline" onClick={onViewModeChange} icon={Clock} label="Timeline" />
           </div>
-          <Button size="sm" className="h-8 text-xs">
+          <Button size="sm" className="h-8 text-xs shrink-0">
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Log Call
           </Button>
         </div>
