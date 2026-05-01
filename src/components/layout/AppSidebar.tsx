@@ -101,6 +101,7 @@ const navSections: NavSection[] = [
       { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view" },
       { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view" },
       { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign" },
+      { label: "Role Audit Log", icon: History, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
