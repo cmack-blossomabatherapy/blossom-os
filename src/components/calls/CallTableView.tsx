@@ -18,7 +18,65 @@ interface Props {
 export function CallTableView({ calls, selectedId, onSelect }: Props) {
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
-      <table className="w-full text-sm">
+      {/* Mobile card list */}
+      <ul className="md:hidden divide-y divide-border/40">
+        {calls.length === 0 ? (
+          <li className="px-4 py-8 text-center text-xs text-muted-foreground italic">
+            No calls match this view
+          </li>
+        ) : (
+          calls.map((c) => {
+            const unlinked = !c.linkedLeadId && !c.linkedClientId;
+            return (
+              <li
+                key={c.id}
+                onClick={() => onSelect(c.id)}
+                className={cn(
+                  "px-3 py-3 cursor-pointer transition-colors active:bg-muted/30",
+                  selectedId === c.id && "bg-primary/5",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {c.callerName ?? "Unknown"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground tabular-nums">{c.phoneNumber}</p>
+                  </div>
+                  <StatusBadge status={c.status} variant={callStatusVariant(c.status)} />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <StatusBadge status={c.type} variant={callTypeVariant(c.type)} />
+                  {unlinked ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-destructive font-medium">
+                      <AlertTriangle className="h-3 w-3" /> Unlinked
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-foreground font-mono">
+                      <Link2 className="h-3 w-3 text-primary" />
+                      {c.linkedLeadId ?? c.linkedClientId}
+                    </span>
+                  )}
+                  <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+                    {timeSinceCall(c.callTime)}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span className="truncate">
+                    {c.assignedTo ?? <span className="italic">Unassigned</span>} · {formatCallTime(c.callTime)}
+                  </span>
+                </div>
+                {c.nextAction && (
+                  <p className="mt-1 text-[11px] text-muted-foreground truncate">→ {c.nextAction}</p>
+                )}
+              </li>
+            );
+          })
+        )}
+      </ul>
+
+      {/* Desktop table */}
+      <table className="hidden md:table w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/30">
             {["Caller", "Type", "Status", "Linked", "Owner", "Call Time", "Time Since", "Next Action"].map((h) => (
