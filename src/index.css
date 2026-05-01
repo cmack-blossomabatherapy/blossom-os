@@ -199,3 +199,43 @@
     }
   }
 }
+
+@layer utilities {
+  /* Honor iOS safe areas for the main scroll container */
+  @media (max-width: 767px) {
+    .mobile-page {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Prevent iOS auto-zoom on focus for native form controls */
+    .mobile-page :is(select, textarea),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+
+    /* Subtle scroll hint shadow on horizontal scroll containers */
+    .mobile-page .overflow-x-auto {
+      background:
+        linear-gradient(to right, hsl(var(--card)) 30%, hsl(var(--card) / 0)) left center / 24px 100% no-repeat,
+        linear-gradient(to left, hsl(var(--card)) 30%, hsl(var(--card) / 0)) right center / 24px 100% no-repeat,
+        radial-gradient(farthest-side at left center, hsl(var(--foreground) / 0.12), transparent) left center / 14px 100% no-repeat,
+        radial-gradient(farthest-side at right center, hsl(var(--foreground) / 0.12), transparent) right center / 14px 100% no-repeat;
+      background-attachment: local, local, scroll, scroll;
+    }
+
+    /* Tap feedback on interactive surfaces */
+    .mobile-page a,
+    .mobile-page button,
+    .mobile-page [role="button"] {
+      -webkit-tap-highlight-color: hsl(var(--primary) / 0.12);
+    }
+
+    /* Smaller, denser KPI cards on phones */
+    .mobile-page .kpi-card {
+      @apply p-3;
+    }
+  }
+}
