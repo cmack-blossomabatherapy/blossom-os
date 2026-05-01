@@ -89,6 +89,7 @@ const navSections: NavSection[] = [
   {
     title: "Intelligence",
     items: [
+      { label: "Training Hub", icon: Sparkles, path: "/hr/journey", perm: "" },
       { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
       { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
     ],
@@ -109,7 +110,6 @@ const hrSection: { title: string; items: NavItem[] } = {
   title: "HR Suite",
   items: [
     { label: "HR Dashboard", icon: HeartHandshake, path: "/hr", perm: "hr.view" },
-    { label: "Training Hub",  icon: Sparkles,       path: "/hr/journey", perm: "hr.view" },
     { label: "Employees",    icon: IdCard,         path: "/hr/directory", perm: "hr.employees.view" },
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
