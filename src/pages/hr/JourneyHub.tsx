@@ -134,16 +134,16 @@ export default function JourneyHub() {
             <span className="text-muted-foreground">— viewing as {data.viewerName}</span>
           </div>
           <Select
-            value={override ?? ""}
+            value={override ?? "__self__"}
             onValueChange={(v) => {
               const next = new URLSearchParams(params);
-              if (v) next.set("as", v); else next.delete("as");
+              if (v && v !== "__self__") next.set("as", v); else next.delete("as");
               setParams(next, { replace: true });
             }}
           >
             <SelectTrigger className="h-8 w-[260px] text-xs"><SelectValue placeholder="Use my real role" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Use my real role</SelectItem>
+              <SelectItem value="__self__">Use my real role</SelectItem>
               {DEMO_OPTIONS.map((opt) => (
                 <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
               ))}
