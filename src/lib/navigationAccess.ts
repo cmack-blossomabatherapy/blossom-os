@@ -113,7 +113,7 @@ const sectionRoutePrefixes: Record<string, string[]> = {
   Records: ["/phone-calls", "/documents", "/tasks"],
   Intelligence: intelligenceRoutePrefixes,
   "HR Suite": ["/hr"],
-  Admin: ["/team", "/admin/training-dashboard", "/reports", "/automations", "/settings"],
+  Admin: ["/team", "/admin/training-dashboard", "/admin/training-statistics", "/reports", "/automations", "/settings"],
 };
 
 const routeMatches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
