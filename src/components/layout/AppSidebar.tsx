@@ -5,7 +5,7 @@ import {
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
@@ -109,6 +109,7 @@ const hrSection: { title: string; items: NavItem[] } = {
   title: "HR Suite",
   items: [
     { label: "HR Dashboard", icon: HeartHandshake, path: "/hr", perm: "hr.view" },
+    { label: "Training Hub",  icon: Sparkles,       path: "/hr/journey", perm: "hr.view" },
     { label: "Employees",    icon: IdCard,         path: "/hr/directory", perm: "hr.employees.view" },
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
