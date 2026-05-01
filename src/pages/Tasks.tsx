@@ -8,6 +8,7 @@ import { TaskTimelineView } from "@/components/tasks/TaskTimelineView";
 import { TaskWorkflowView } from "@/components/tasks/TaskWorkflowView";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { mockTasks, filterTasksByView, findTask, type TaskSavedView } from "@/data/tasks";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export default function Tasks() {
   const [viewMode, setViewMode] = useState<TaskViewMode>("queue");
@@ -64,10 +65,20 @@ export default function Tasks() {
             <TaskWorkflowView tasks={filteredTasks} selectedId={selectedId} onSelect={setSelectedId} />
           )}
         </div>
-        <div>
+        <div className="hidden xl:block">
           <TaskDetailPanel task={selectedTask} onClose={() => setSelectedId(null)} />
         </div>
       </div>
+
+      {/* Mobile/tablet: open detail in a Sheet */}
+      <Sheet
+        open={!!selectedTask}
+        onOpenChange={(open) => { if (!open) setSelectedId(null); }}
+      >
+        <SheetContent side="right" className="xl:hidden p-0 w-full sm:max-w-md md:max-w-lg flex flex-col [&>div]:rounded-none [&>div]:border-0 [&>div]:max-h-none [&>div]:h-full">
+          <TaskDetailPanel task={selectedTask} onClose={() => setSelectedId(null)} />
+        </SheetContent>
+      </Sheet>
     </PageShell>
   );
 }
