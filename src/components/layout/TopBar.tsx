@@ -108,7 +108,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Profile">
+            <Button size="icon" variant="ghost" className="hidden h-8 w-8 sm:inline-flex" aria-label="Profile">
               {initials ? (
                 <span className="h-7 w-7 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
                   {initials}
