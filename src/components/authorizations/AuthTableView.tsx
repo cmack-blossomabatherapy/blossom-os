@@ -11,7 +11,69 @@ interface Props {
 export function AuthTableView({ auths, onSelect }: Props) {
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile card list */}
+      <ul className="md:hidden divide-y divide-border/40">
+        {auths.map((a) => {
+          const alert = getAuthAlert(a);
+          const days = daysUntil(a.expirationDate);
+          const tone = expirationTone(days);
+          const docsComplete = a.documents.every((d) => !d.required || d.received);
+          return (
+            <li
+              key={a.id}
+              onClick={() => onSelect(a)}
+              className="px-3 py-3 cursor-pointer transition-colors active:bg-muted/30"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">{a.clientName}</p>
+                  <p className="font-mono text-[11px] text-muted-foreground truncate">
+                    {a.id} · {a.payor} · {a.state}
+                  </p>
+                </div>
+                <StatusBadge status={a.stage} variant={stageVariant(a.stage)} />
+              </div>
+              {alert && (
+                <div className={cn(
+                  "mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                  alert.type === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                )}>
+                  <AlertCircle className="h-2.5 w-2.5" />
+                  {alert.message}
+                </div>
+              )}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                <StatusBadge status={a.qaStatus} variant={qaVariant(a.qaStatus)} />
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  Docs {docsComplete ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-destructive" />}
+                </span>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  TP {a.treatmentPlanReceived ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-muted-foreground/40" />}
+                </span>
+                {days !== null && (
+                  <span className={cn(
+                    "ml-auto font-semibold",
+                    tone === "destructive" && "text-destructive",
+                    tone === "warning" && "text-warning",
+                    tone === "success" && "text-success",
+                  )}>
+                    {days}d left
+                  </span>
+                )}
+              </div>
+              <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                <span className="truncate">{a.coordinator}</span>
+                <span className="shrink-0">{a.expirationDate ? `exp ${a.expirationDate}` : "—"}</span>
+              </div>
+              {a.nextAction && (
+                <p className="mt-1 text-[11px] text-muted-foreground truncate">→ {a.nextAction}</p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
