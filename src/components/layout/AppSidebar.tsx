@@ -23,12 +23,16 @@ interface NavItem {
   path: string;
   perm: string;
   superAdminOnly?: boolean;
+  /** If set, the item is only visible when the user has at least one of these roles. */
+  allowedRoles?: string[];
 }
 
 interface NavSection {
   title?: string;
   items: NavItem[];
 }
+
+const TRAINING_ADMIN_ROLES = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
 const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   ceo: BarChart3,
@@ -99,9 +103,9 @@ const navSections: NavSection[] = [
     title: "Admin",
     items: [
       { label: "Team", icon: UsersRound, path: "/team", perm: "team.view" },
-      { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view" },
-      { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view" },
-      { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign" },
+      { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+      { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
+      { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
@@ -118,7 +122,7 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
     { label: "Onboarding",   icon: GraduationCap,  path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews",      icon: Star,           path: "/hr/reviews",   perm: "hr.reviews.view" },
-    { label: "Training Admin", icon: GraduationCap, path: "/hr/training", perm: "hr.training.view" },
+    { label: "Training Admin", icon: GraduationCap, path: "/hr/training", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
     { label: "Time Clock",   icon: Timer,          path: "/hr/time-clock", perm: "hr.timeclock.view" },
     { label: "Hours",        icon: FileSpreadsheet,path: "/hr/hours",      perm: "hr.hours.view" },
     { label: "Payroll",      icon: Wallet,         path: "/hr/payroll",   perm: "hr.payroll.runs.view" },
@@ -221,7 +225,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const sections = allSections
     .map((s) => ({
       ...s,
-        items: s.items.filter((item) => (!item.superAdminOnly || isAdmin) && (!item.perm || hasPerm(item.perm))),
+        items: s.items.filter((item) =>
+          (!item.superAdminOnly || isAdmin) &&
+          (!item.perm || hasPerm(item.perm)) &&
+          (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never))),
+        ),
     }))
     .filter((s) => s.items.length > 0);
 
