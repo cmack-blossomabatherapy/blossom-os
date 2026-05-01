@@ -3,6 +3,12 @@ import type { AppRole } from "@/lib/roles";
 export interface RoleNavigationException {
   sectionTitles?: string[];
   itemPaths?: string[];
+  /**
+   * If set, this role only sees these intelligence items (and access to other
+   * intelligence routes is denied). Used for RBT/BCBA who should only see the
+   * Training Hub, not the general Training catalog or Resource Hub.
+   */
+  intelligenceItemPaths?: string[];
 }
 
 export interface NavigationPreviewItem {
@@ -22,6 +28,8 @@ export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard"] },
+  rbt: { intelligenceItemPaths: ["/hr/journey"] },
+  bcba: { intelligenceItemPaths: ["/hr/journey"] },
 };
 
 const intelligenceRoutePrefixes = ["/training", "/resources", "/hr/journey"];
@@ -124,12 +132,22 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
   const exceptions = getRoleNavigationExceptions(roles);
   const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
   const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []).map(navPathToRoutePrefix));
+  const intelligenceOverrides = exceptions
+    .map((e) => e.intelligenceItemPaths)
+    .filter((p): p is string[] => Array.isArray(p));
+  const restrictedIntelligence = !isFullNavigation && intelligenceOverrides.length > 0;
+  const allowedIntelligencePaths = restrictedIntelligence
+    ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
+    : null;
 
   return baseSections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
         if (item.superAdminOnly && !roles.includes("admin")) return false;
+        if (section.title === "Intelligence" && allowedIntelligencePaths) {
+          if (!allowedIntelligencePaths.has(navPathToRoutePrefix(item.path))) return false;
+        }
         if (!isFullNavigation && section.title !== "Intelligence" && !allowedSections.has(section.title) && !allowedPaths.has(navPathToRoutePrefix(item.path))) return false;
         return !item.perm || hasPermission(item.perm);
       }),
@@ -139,9 +157,17 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
 
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
-  if (intelligenceRoutePrefixes.some((prefix) => routeMatches(pathname, prefix))) return true;
-
   const exceptions = getRoleNavigationExceptions(roles);
+  const intelligenceOverrides = exceptions
+    .map((e) => e.intelligenceItemPaths)
+    .filter((p): p is string[] => Array.isArray(p));
+  const matchesIntelligence = intelligenceRoutePrefixes.some((prefix) => routeMatches(pathname, prefix));
+  if (matchesIntelligence) {
+    if (intelligenceOverrides.length === 0) return true;
+    const allowed = intelligenceOverrides.flat().map(navPathToRoutePrefix);
+    return allowed.some((prefix) => routeMatches(pathname, prefix));
+  }
+
   const allowedPrefixes = exceptions.flatMap((exception) => [
     ...(exception.sectionTitles ?? []).flatMap((title) => sectionRoutePrefixes[title] ?? []),
     ...(exception.itemPaths ?? []).map(navPathToRoutePrefix),

@@ -129,11 +129,26 @@ const limitedNavigationSections = (roles: string[]): NavSection[] => {
   const exceptions = getRoleNavigationExceptions(roles as never);
   const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
   const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []));
+  const intelligenceOverrides = exceptions
+    .map((e) => e.intelligenceItemPaths)
+    .filter((p): p is string[] => Array.isArray(p));
+  const allowedIntelligencePaths = intelligenceOverrides.length > 0
+    ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
+    : null;
 
   return [...navSections, hrSection]
     .map((section) => ({
       ...section,
-      items: allowedSections.has(section.title ?? "") ? section.items : section.items.filter((item) => allowedPaths.has(navPathToRoutePrefix(item.path))),
+      items: (() => {
+        const inAllowedSection = allowedSections.has(section.title ?? "");
+        const baseItems = inAllowedSection
+          ? section.items
+          : section.items.filter((item) => allowedPaths.has(navPathToRoutePrefix(item.path)));
+        if (section.title === "Intelligence" && allowedIntelligencePaths) {
+          return baseItems.filter((item) => allowedIntelligencePaths.has(navPathToRoutePrefix(item.path)));
+        }
+        return baseItems;
+      })(),
     }))
     .filter((section) => section.items.length > 0);
 };
@@ -176,6 +191,8 @@ const roleLabels: Record<string, string> = {
   clinic_director: "Clinic Director",
   dept_manager: "Department Manager",
   training_admin: "Training Admin",
+  rbt: "RBT (Registered Behavior Technician)",
+  bcba: "BCBA (Board Certified Behavior Analyst)",
   staff: "Staff",
   viewer: "Viewer",
 };

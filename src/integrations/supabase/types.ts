@@ -3552,6 +3552,8 @@ export type Database = {
         | "clinic_director"
         | "dept_manager"
         | "training_admin"
+        | "rbt"
+        | "bcba"
       assessment_document_type: "Assessment Notes" | "Treatment Plan"
       assessment_location: "Home" | "School" | "Clinic"
       assessment_status:
@@ -4077,6 +4079,8 @@ export const Constants = {
         "clinic_director",
         "dept_manager",
         "training_admin",
+        "rbt",
+        "bcba",
       ],
       assessment_document_type: ["Assessment Notes", "Treatment Plan"],
       assessment_location: ["Home", "School", "Clinic"],
