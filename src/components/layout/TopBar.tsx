@@ -1,12 +1,10 @@
-import { Search, Plus, CalendarDays, User, UserPlus, FileText, ListPlus, Phone, LogOut, Shield, Menu } from "lucide-react";
+import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "./NotificationBell";
 import { useNavigate } from "react-router-dom";
 import { useState, KeyboardEvent } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
-import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/blossom-logo.png";
@@ -20,7 +18,6 @@ interface TopBarProps {
 export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: TopBarProps) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [newLeadOpen, setNewLeadOpen] = useState(false);
   const { user, roles, isAdmin, signOut } = useAuth();
   const primaryRole = roles[0] ?? "viewer";
   const initials = (user?.user_metadata?.display_name ?? user?.email ?? "U")
@@ -33,11 +30,9 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
 
   const submitSearch = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && q.trim()) {
-      navigate(`/leads?q=${encodeURIComponent(q.trim())}`);
+      navigate(`/hr/journey?q=${encodeURIComponent(q.trim())}`);
     }
   };
-
-  const todayIso = new Date().toISOString().split("T")[0];
 
   return (
     <>
@@ -59,50 +54,10 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={submitSearch}
-            placeholder="Search leads, clients, calls…"
+            placeholder="Search trainings…"
             className="h-8 w-full bg-secondary/50 pl-8 text-sm focus:bg-card md:w-64"
           />
         </div>
-
-        <Button
-          size="sm"
-          variant="outline"
-          className="hidden h-8 gap-1.5 text-xs sm:inline-flex"
-          onClick={() => navigate("/scheduling")}
-        >
-          <CalendarDays className="h-3 w-3" />
-          Schedule
-        </Button>
-
-        <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" className="h-8 w-8 sm:w-auto sm:gap-1.5 sm:px-3 sm:text-xs">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Create</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Create new</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => setNewLeadOpen(true)}>
-              <UserPlus className="h-3.5 w-3.5 mr-2" /> New lead
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { navigate("/tasks"); toast.info("Open the Tasks page to create a task"); }}>
-              <ListPlus className="h-3.5 w-3.5 mr-2" /> New task
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/phone-calls")}>
-              <Phone className="h-3.5 w-3.5 mr-2" /> Log call
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/documents")}>
-              <FileText className="h-3.5 w-3.5 mr-2" /> Upload document
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/scheduling?date=${todayIso}`)}>
-              <CalendarDays className="h-3.5 w-3.5 mr-2" /> Schedule session
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <NotificationBell />
 
@@ -150,7 +105,6 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
         </Button>
       </div>
 
-      <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} onCreated={(lead) => navigate(`/leads/${lead.id}`)} />
     </header>
     <Button
       size="icon"
