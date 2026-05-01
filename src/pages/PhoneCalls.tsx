@@ -7,6 +7,7 @@ import { CallQueueView } from "@/components/calls/CallQueueView";
 import { CallTimelineView } from "@/components/calls/CallTimelineView";
 import { CallDetailPanel } from "@/components/calls/CallDetailPanel";
 import { mockPhoneCalls, filterCallsByView, findCall, type CallSavedView } from "@/data/calls";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export default function PhoneCalls() {
   const [viewMode, setViewMode] = useState<CallViewMode>("table");
@@ -59,10 +60,23 @@ export default function PhoneCalls() {
             <CallTimelineView calls={filteredCalls} selectedId={selectedId} onSelect={setSelectedId} />
           )}
         </div>
-        <div>
+        <div className="hidden xl:block">
           <CallDetailPanel call={selectedCall} onClose={() => setSelectedId(null)} />
         </div>
       </div>
+
+      {/* Mobile/tablet: open detail in a Sheet */}
+      <Sheet
+        open={!!selectedCall}
+        onOpenChange={(open) => { if (!open) setSelectedId(null); }}
+      >
+        <SheetContent
+          side="right"
+          className="xl:hidden p-0 w-full sm:max-w-md md:max-w-lg flex flex-col [&>div]:rounded-none [&>div]:border-0 [&>div]:max-h-none [&>div]:h-full"
+        >
+          <CallDetailPanel call={selectedCall} onClose={() => setSelectedId(null)} />
+        </SheetContent>
+      </Sheet>
     </PageShell>
   );
 }
