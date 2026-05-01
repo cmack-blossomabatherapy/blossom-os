@@ -417,7 +417,7 @@ export default function Authorizations() {
           </div>
         </div>
 
-        <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-8">
+        <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
           <FilterSelect label="State" value={filters.state} options={options.states} onChange={(value) => setFilters({ ...filters, state: value })} />
           <FilterSelect label="Client" value="All" options={["All", ...records.slice(0, 8).map((record) => record.clientName)]} onChange={(value) => setQuery(value === "All" ? "" : value)} />
           <FilterSelect label="Payor" value={filters.payor} options={options.payors} onChange={(value) => setFilters({ ...filters, payor: value })} />
@@ -447,7 +447,7 @@ export default function Authorizations() {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <section className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
         {metrics.map(({ label, value, icon: Icon }) => <MetricCard key={label} label={label} value={value} icon={Icon} active={activeKpi === label} onClick={() => setActiveKpi(activeKpi === label ? "all" : label)} />)}
       </section>
 
