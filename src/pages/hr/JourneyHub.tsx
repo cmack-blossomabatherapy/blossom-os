@@ -14,6 +14,9 @@ import {
   resolveJourney, isJourneyEligible, loadProgress, saveProgress,
   computeStepStatuses, DEMO_OPTIONS, type DemoKey, type JourneyData,
 } from "@/data/journey";
+import {
+  getJourneyResourcesFor, JOURNEY_RESOURCES_UPDATED_EVENT,
+} from "@/data/journeyResources";
 
 import { HeroBanner } from "@/components/journey/HeroBanner";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
@@ -59,6 +62,21 @@ export default function JourneyHub() {
     () => resolveJourney({ override, jobTitle, displayName }),
     [override, jobTitle, displayName],
   );
+
+  // Admin-managed resources override the static defaults baked into the journey demo.
+  const audience: "rbt" | "bcba" = roles?.includes("bcba") && !roles?.includes("rbt") ? "bcba" : "rbt";
+  const [adminResources, setAdminResources] = useState(() => getJourneyResourcesFor(audience));
+  useEffect(() => {
+    const refresh = () => setAdminResources(getJourneyResourcesFor(audience));
+    refresh();
+    window.addEventListener(JOURNEY_RESOURCES_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_RESOURCES_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, [audience]);
+  const resources = adminResources.length ? adminResources : data.resources;
 
   const userKey = (user?.id ?? "anon") + ":" + key;
   const [progress, setProgress] = useState(() => loadProgress(userKey));
@@ -192,7 +210,7 @@ export default function JourneyHub() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <ResourceGrid resources={data.resources} />
+          <ResourceGrid resources={resources} />
         </div>
         <ProgressSummary
           percent={percent}

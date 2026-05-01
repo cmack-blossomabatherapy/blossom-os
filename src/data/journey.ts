@@ -351,7 +351,7 @@ const STEPS_BY_ROLE: Record<JourneyRole, JourneyStep[]> = {
 /*  Resources                                                          */
 /* ------------------------------------------------------------------ */
 
-const RBT_RESOURCES: JourneyResource[] = [
+export const DEFAULT_RBT_RESOURCES: JourneyResource[] = [
   {
     id: "drive", title: "RBT Resource Hub",
     description: "Curated Google Drive with all RBT training materials, forms, and guides.",
@@ -376,7 +376,7 @@ const RBT_RESOURCES: JourneyResource[] = [
   },
 ];
 
-const BCBA_RESOURCES: JourneyResource[] = [
+export const DEFAULT_BCBA_RESOURCES: JourneyResource[] = [
   {
     id: "cr", title: "CentralReach Playbook",
     description: "Step-by-step CentralReach workflows for treatment plans and authorizations.",
@@ -411,7 +411,7 @@ const DEMO: Record<string, JourneyData> = {
     steps: RBT_UNCERTIFIED_STEPS,
     currentStepIndex: 0,
     modules: rbtModules("rbt40"),
-    resources: RBT_RESOURCES,
+    resources: DEFAULT_RBT_RESOURCES,
     notifications: [
       { id: "n1", tone: "info", title: "Keep going on the 40 Hour Course", detail: "You're 50% through. Aim to finish this week." },
       { id: "n2", tone: "warning", title: "Competency assessment not scheduled", detail: "Reach out to Rebecca to book once you finish the course." },
@@ -424,7 +424,7 @@ const DEMO: Record<string, JourneyData> = {
     steps: RBT_CERTIFIED_STEPS,
     currentStepIndex: 1, // shadowing
     modules: rbtModules("shadow"),
-    resources: RBT_RESOURCES,
+    resources: DEFAULT_RBT_RESOURCES,
     notifications: [
       { id: "n1", tone: "info", title: "Two more shadow sessions to go", detail: "Submit your practice note after session 3." },
     ],
@@ -436,7 +436,7 @@ const DEMO: Record<string, JourneyData> = {
     steps: RBT_CERTIFIED_STEPS,
     currentStepIndex: 3, // Ready
     modules: rbtModules("ready"),
-    resources: RBT_RESOURCES,
+    resources: DEFAULT_RBT_RESOURCES,
     matching: {
       staffingOwner: "Sarah Uhr",
       caseManagerOptions: ["Rachel Greenspan", "Ahuva Florens", "Nicky Newman"],
@@ -457,7 +457,7 @@ const DEMO: Record<string, JourneyData> = {
     steps: RBT_CERTIFIED_STEPS,
     currentStepIndex: 5, // Active
     modules: rbtModules("active"),
-    resources: RBT_RESOURCES,
+    resources: DEFAULT_RBT_RESOURCES,
     matching: {
       staffingOwner: "Sarah Uhr",
       caseManagerOptions: ["Rachel Greenspan", "Ahuva Florens", "Nicky Newman"],
@@ -484,7 +484,7 @@ const DEMO: Record<string, JourneyData> = {
     steps: BCBA_STEPS,
     currentStepIndex: 1, // System
     modules: bcbaModules(),
-    resources: BCBA_RESOURCES,
+    resources: DEFAULT_BCBA_RESOURCES,
     notifications: [
       { id: "n1", tone: "info", title: "Finish CentralReach module this week", detail: "Required before your first case assignment." },
     ],
