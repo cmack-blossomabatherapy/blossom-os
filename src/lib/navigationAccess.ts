@@ -16,6 +16,7 @@ export interface NavigationPreviewItem {
   path: string;
   perm?: string;
   superAdminOnly?: boolean;
+  allowedRoles?: AppRole[];
 }
 
 export interface NavigationPreviewSection {
@@ -24,10 +25,14 @@ export interface NavigationPreviewSection {
 }
 
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
+export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_admin: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_manager: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
   rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
   bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
 };
