@@ -355,7 +355,9 @@ const RBT_RESOURCES: JourneyResource[] = [
   {
     id: "drive", title: "RBT Resource Hub",
     description: "Curated Google Drive with all RBT training materials, forms, and guides.",
-    url: "https://drive.google.com/", category: "Drive", icon: BookOpen,
+    url: "https://drive.google.com/drive/folders/13iq1d2GMtdiY-6U0oRUuLYODQ3l2BaEZ?usp=drive_link",
+    internalRoute: "/hr/journey/drive",
+    category: "Drive", icon: BookOpen,
   },
   {
     id: "bacb", title: "BACB Certification Info",
