@@ -8,6 +8,7 @@ import { DocumentTimelineView } from "@/components/documents/DocumentTimelineVie
 import { DocumentDetailPanel } from "@/components/documents/DocumentDetailPanel";
 import { MissingDocumentsBanner } from "@/components/documents/MissingDocumentsBanner";
 import { mockDocuments, filterDocsByView, findDocument, type DocSavedView } from "@/data/documents";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export default function Documents() {
   const [viewMode, setViewMode] = useState<DocViewMode>("table");
@@ -64,10 +65,20 @@ export default function Documents() {
             <DocumentTimelineView documents={filteredDocs} selectedId={selectedId} onSelect={setSelectedId} />
           )}
         </div>
-        <div>
+        <div className="hidden xl:block">
           <DocumentDetailPanel document={selectedDoc} onClose={() => setSelectedId(null)} />
         </div>
       </div>
+
+      {/* Mobile/tablet: open detail in a Sheet */}
+      <Sheet
+        open={!!selectedDoc}
+        onOpenChange={(open) => { if (!open) setSelectedId(null); }}
+      >
+        <SheetContent side="right" className="xl:hidden p-0 w-full sm:max-w-md md:max-w-lg">
+          <DocumentDetailPanel document={selectedDoc} onClose={() => setSelectedId(null)} />
+        </SheetContent>
+      </Sheet>
     </PageShell>
   );
 }
