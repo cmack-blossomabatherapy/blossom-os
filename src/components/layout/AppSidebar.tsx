@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, ShieldCheck, Calendar,
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon,
+  History as HistoryIcon, Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
@@ -174,9 +175,6 @@ const mobileItemDescriptions: Record<string, string> = {
   "Resource Hub": "Guides and internal tools",
 };
 
-const limitedRoleMessage = "Only Intelligence is available. Other menu areas are restricted for your role.";
-const limitedRoleExceptionMessage = "Your role has limited access. Additional menu areas appear only when an exception is configured.";
-
 const roleLabels: Record<string, string> = {
   admin: "Super Admin / Systems",
   exec: "Executive",
@@ -205,12 +203,14 @@ const roleLabels: Record<string, string> = {
 
 export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles } = useAuth();
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
+  const [navQuery, setNavQuery] = useState("");
+  const [mobileNavQuery, setMobileNavQuery] = useState("");
   const hasFullNavigation = hasFullNavigationAccess(roles);
   const limitedSections = limitedNavigationSections(roles);
-  const hasNavigationExceptions = !hasFullNavigation && limitedSections.some((section) => section.title !== "Intelligence");
 
   const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : limitedSections;
   // Insert HR Suite before Admin so it sits with the operations modules
@@ -220,7 +220,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     else allSections.push(hrSection);
   }
 
-  const sections = allSections
+  const baseSections = allSections
     .map((s) => ({
       ...s,
         items: s.items.filter((item) =>
@@ -230,6 +230,30 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         ),
     }))
     .filter((s) => s.items.length > 0);
+
+  const filterSectionsByQuery = (q: string) => {
+    const trimmed = q.trim().toLowerCase();
+    if (!trimmed) return baseSections;
+    return baseSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) =>
+          item.label.toLowerCase().includes(trimmed) ||
+          (section.title ?? "").toLowerCase().includes(trimmed),
+        ),
+      }))
+      .filter((s) => s.items.length > 0);
+  };
+
+  const sections = useMemo(() => filterSectionsByQuery(navQuery), [baseSections, navQuery]);
+  const mobileSections = useMemo(() => filterSectionsByQuery(mobileNavQuery), [baseSections, mobileNavQuery]);
+
+  const submitNavSearch = (q: string, isMobile: boolean) => (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || !q.trim()) return;
+    const target = `/hr/journey?q=${encodeURIComponent(q.trim())}`;
+    navigate(target);
+    if (isMobile) onMobileOpenChange?.(false);
+  };
 
   const isItemActive = (path: string) => {
     if (path === "/hr") {
@@ -265,7 +289,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     });
   };
 
-  const activeSectionTitles = new Set(sections.filter((section) => section.title && section.items.some((item) => isItemActive(item.path))).map((section) => section.title!));
+  const activeSectionTitles = new Set(baseSections.filter((section) => section.title && section.items.some((item) => isItemActive(item.path))).map((section) => section.title!));
   const toggleMobileSection = (title: string) => setMobileOpenSections((current) => { const next = new Set(current); if (next.has(title)) next.delete(title); else next.add(title); return next; });
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0]?.replace(/[._-]/g, " ") || "Blossom User";
   const initials = displayName.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "BU";
@@ -274,6 +298,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   useEffect(() => {
     if (mobileOpen) setMobileOpenSections(activeSectionTitles);
   }, [location.pathname, location.search, mobileOpen]);
+
+  useEffect(() => {
+    if (mobileNavQuery.trim()) setMobileOpenSections(new Set(mobileSections.map((s) => s.title ?? "")));
+  }, [mobileNavQuery, mobileSections]);
 
   return (
     <>
@@ -292,7 +320,17 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             </div>
           </header>
           <nav className="flex-1 space-y-3 overflow-y-auto bg-[linear-gradient(180deg,hsl(var(--secondary)/0.75),hsl(var(--background)))] px-4 py-4" aria-label="Mobile navigation">
-            {sections.map((section, i) => {
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={mobileNavQuery}
+                onChange={(e) => setMobileNavQuery(e.target.value)}
+                onKeyDown={submitNavSearch(mobileNavQuery, true)}
+                placeholder="Search menu or trainings…"
+                className="h-11 rounded-xl border-border/60 bg-card/80 pl-9 text-sm shadow-sm backdrop-blur-xl"
+              />
+            </div>
+            {mobileSections.map((section, i) => {
               const title = section.title ?? `Section ${i + 1}`;
               const activeInSection = section.items.some((item) => isItemActive(item.path));
               const sectionOpen = mobileOpenSections.has(title);
@@ -323,14 +361,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 </div>}
               </div>
             );})}
-            {!hasFullNavigation && (
-              <div className="rounded-2xl border border-border/60 bg-card/86 p-3 text-xs leading-relaxed text-muted-foreground shadow-sm backdrop-blur-xl">
-                <div className="mb-1 flex items-center gap-2 font-semibold text-foreground">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span>Intelligence-only access</span>
-                </div>
-                <p>{hasNavigationExceptions ? limitedRoleExceptionMessage : limitedRoleMessage}</p>
-              </div>
+            {mobileNavQuery.trim() && mobileSections.length === 0 && (
+              <p className="rounded-2xl border border-border/60 bg-card/80 p-4 text-center text-xs text-muted-foreground shadow-sm">
+                No menu matches. Press Enter to search trainings for “{mobileNavQuery.trim()}”.
+              </p>
             )}
           </nav>
           <div className="sticky bottom-0 border-t border-border/60 bg-card/92 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 shadow-[0_-18px_34px_-28px_hsl(var(--foreground))] backdrop-blur-xl">
@@ -356,6 +390,16 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
       {/* Navigation */}
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
+        <div className="relative px-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-muted" />
+          <Input
+            value={navQuery}
+            onChange={(e) => setNavQuery(e.target.value)}
+            onKeyDown={submitNavSearch(navQuery, false)}
+            placeholder="Search…"
+            className="h-8 rounded-md border-sidebar-border bg-sidebar-accent/40 pl-8 text-xs text-sidebar-foreground placeholder:text-sidebar-muted focus-visible:ring-sidebar-primary"
+          />
+        </div>
         {sections.map((section, i) => {
           const activeInSection = section.items.some((item) => isItemActive(item.path));
           const sectionOpen = !section.title || activeInSection || openSections.has(section.title);
@@ -391,14 +435,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           </div>
         );
         })}
-        {!hasFullNavigation && (
-          <div className="rounded-md border border-sidebar-border bg-sidebar-accent/60 px-3 py-2 text-[11px] leading-relaxed text-sidebar-muted">
-            <div className="mb-1 flex items-center gap-2 font-semibold text-sidebar-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-sidebar-primary" />
-              <span>Intelligence-only access</span>
-            </div>
-            <p>{hasNavigationExceptions ? limitedRoleExceptionMessage : limitedRoleMessage}</p>
-          </div>
+        {navQuery.trim() && sections.length === 0 && (
+          <p className="rounded-md border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-[11px] text-sidebar-muted">
+            No menu matches. Press Enter to search trainings.
+          </p>
         )}
       </nav>
       </aside>
