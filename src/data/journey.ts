@@ -351,7 +351,7 @@ const STEPS_BY_ROLE: Record<JourneyRole, JourneyStep[]> = {
 /*  Resources                                                          */
 /* ------------------------------------------------------------------ */
 
-export const DEFAULT_DEFAULT_RBT_RESOURCES: JourneyResource[] = [
+export const DEFAULT_RBT_RESOURCES: JourneyResource[] = [
   {
     id: "drive", title: "RBT Resource Hub",
     description: "Curated Google Drive with all RBT training materials, forms, and guides.",
@@ -376,7 +376,7 @@ export const DEFAULT_DEFAULT_RBT_RESOURCES: JourneyResource[] = [
   },
 ];
 
-export const DEFAULT_DEFAULT_BCBA_RESOURCES: JourneyResource[] = [
+export const DEFAULT_BCBA_RESOURCES: JourneyResource[] = [
   {
     id: "cr", title: "CentralReach Playbook",
     description: "Step-by-step CentralReach workflows for treatment plans and authorizations.",
