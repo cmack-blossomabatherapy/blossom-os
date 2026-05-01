@@ -27,7 +27,7 @@ export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
-  training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics"] },
+  training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
   rbt: { intelligenceItemPaths: ["/hr/journey"] },
   bcba: { intelligenceItemPaths: ["/hr/journey"] },
 };
@@ -91,6 +91,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Team", path: "/team", perm: "team.view" },
     { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view" },
     { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view" },
+    { label: "Assign Trainings", path: "/admin/training-assign", perm: "hr.training.assign" },
     { label: "Reports", path: "/reports", perm: "reports.view" },
     { label: "Automations", path: "/automations", perm: "automations.view" },
     { label: "Settings", path: "/settings", perm: "settings.view" },
@@ -114,7 +115,7 @@ const sectionRoutePrefixes: Record<string, string[]> = {
   Records: ["/phone-calls", "/documents", "/tasks"],
   Intelligence: intelligenceRoutePrefixes,
   "HR Suite": ["/hr"],
-  Admin: ["/team", "/admin/training-dashboard", "/admin/training-statistics", "/reports", "/automations", "/settings"],
+  Admin: ["/team", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign", "/reports", "/automations", "/settings"],
 };
 
 const routeMatches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
