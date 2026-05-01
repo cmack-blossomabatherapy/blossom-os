@@ -5,7 +5,7 @@ import {
   UserPlus, ClipboardCheck, Building2, Phone, FileText,
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
-  Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell,
+  Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
