@@ -6,6 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
+  History as HistoryIcon,
 } from "lucide-react";
 import logo from "@/assets/blossom-logo-full.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
@@ -101,7 +102,7 @@ const navSections: NavSection[] = [
       { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view" },
       { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view" },
       { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign" },
-      { label: "Role Audit Log", icon: History, path: "/admin/role-audit", perm: "", superAdminOnly: true },
+      { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
