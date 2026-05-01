@@ -25,7 +25,7 @@ import { NotificationsPanel } from "@/components/journey/NotificationsPanel";
 import { ProgressSummary } from "@/components/journey/ProgressSummary";
 
 export default function JourneyHub() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, roles } = useAuth();
   const [params, setParams] = useSearchParams();
   const [jobTitle, setJobTitle] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -52,7 +52,8 @@ export default function JourneyHub() {
   }, [user]);
 
   const override = params.get("as");
-  const eligible = isJourneyEligible(jobTitle) || isAdmin || !!override;
+  const hasRoleAccess = roles?.includes("rbt") || roles?.includes("bcba");
+  const eligible = isJourneyEligible(jobTitle) || hasRoleAccess || isAdmin || !!override;
 
   const { data, key } = useMemo(
     () => resolveJourney({ override, jobTitle, displayName }),
