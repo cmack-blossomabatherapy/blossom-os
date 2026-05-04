@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, BookOpen, ExternalLink, Pencil, Pin, PinOff, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, ExternalLink, FileText, Loader2, Paperclip, Pencil, Pin, PinOff, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,17 @@ const blankDraft = (): EditState => ({
   audience: "rbt", iconName: "BookOpen", internalRoute: "", pinned: false,
 });
 
+const RESOURCE_BUCKET = "journey-resources";
+const ACCEPTED_FILE_TYPES = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv";
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
+function formatBytes(bytes?: number) {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
   const [items, setItems] = useState<StoredJourneyResource[]>(() => getStoredJourneyResources());
   const [audience, setAudience] = useState<"all" | JourneyAudience>("all");
@@ -43,6 +55,7 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<EditState>(blankDraft());
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const refresh = () => setItems(getStoredJourneyResources());
@@ -87,7 +100,9 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
 
   function save() {
     if (!draft.title?.trim()) return toast.error("Title is required");
-    if (!draft.url?.trim() && !draft.internalRoute?.trim()) return toast.error("Add a URL or internal route");
+    if (!draft.url?.trim() && !draft.internalRoute?.trim() && !draft.fileUrl) {
+      return toast.error("Add a URL, internal route, or upload a file");
+    }
     const now = new Date().toISOString();
     if (draft.id) {
       const next = items.map((r) => r.id === draft.id ? { ...r, ...draft, updatedAt: now } as StoredJourneyResource : r);
@@ -105,6 +120,11 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
         category: (draft.category ?? "Drive") as JourneyResourceCategory,
         audience: audienceVal,
         iconName: draft.iconName ?? "BookOpen",
+        fileUrl: draft.fileUrl,
+        fileName: draft.fileName,
+        fileType: draft.fileType,
+        fileSize: draft.fileSize,
+        filePath: draft.filePath,
         pinned: !!draft.pinned,
         position: maxPos + 1,
         createdAt: now,
@@ -116,9 +136,52 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
     setOpen(false);
   }
 
+  async function handleFileUpload(file: File | undefined) {
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File is too large (25 MB max).");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "bin";
+      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from(RESOURCE_BUCKET).upload(path, file, {
+        contentType: file.type || undefined, upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from(RESOURCE_BUCKET).getPublicUrl(path);
+      setDraft((d) => ({
+        ...d,
+        fileUrl: data.publicUrl,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        filePath: path,
+        title: d.title?.trim() ? d.title : file.name.replace(/\.[^.]+$/, ""),
+        iconName: d.iconName === "BookOpen" ? "FileText" : d.iconName,
+      }));
+      toast.success("File uploaded");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function clearAttachment() {
+    if (draft.filePath) {
+      try { await supabase.storage.from(RESOURCE_BUCKET).remove([draft.filePath]); } catch { /* noop */ }
+    }
+    setDraft((d) => ({ ...d, fileUrl: undefined, fileName: undefined, fileType: undefined, fileSize: undefined, filePath: undefined }));
+  }
+
   function remove(r: StoredJourneyResource) {
     if (!canManage) return;
     if (!confirm(`Delete “${r.title}”?`)) return;
+    if (r.filePath) {
+      supabase.storage.from(RESOURCE_BUCKET).remove([r.filePath]).catch(() => { /* noop */ });
+    }
     persist(items.filter((x) => x.id !== r.id));
     toast.success("Resource removed");
   }
@@ -216,6 +279,12 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
                         <span className="truncate">{r.internalRoute || r.url}</span>
                       </a>
                     )}
+                    {r.fileUrl && (
+                      <a href={r.fileUrl} target="_blank" rel="noreferrer" className="text-[11px] text-primary inline-flex items-center gap-1 hover:underline mt-1 truncate max-w-full">
+                        <Paperclip className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{r.fileName ?? "Attached file"} {r.fileSize ? `· ${formatBytes(r.fileSize)}` : ""}</span>
+                      </a>
+                    )}
                   </div>
                 </div>
                 {canManage && (
@@ -304,6 +373,31 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
               <Label className="text-xs text-muted-foreground">Internal route (optional)</Label>
               <Input value={draft.internalRoute ?? ""} onChange={(e) => setDraft({ ...draft, internalRoute: e.target.value })} placeholder="/hr/journey/drive" />
               <p className="text-[11px] text-muted-foreground mt-1">If set, the tile opens this in-app route instead of the external URL.</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">File attachment (PDF, Doc, etc.)</Label>
+              {draft.fileUrl ? (
+                <div className="flex items-center gap-2 mt-1 rounded-md border border-border/60 px-3 py-2 bg-muted/30">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{draft.fileName}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatBytes(draft.fileSize)}</p>
+                  </div>
+                  <a href={draft.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Open</a>
+                  <Button type="button" size="sm" variant="ghost" onClick={clearAttachment}><X className="h-3.5 w-3.5" /></Button>
+                </div>
+              ) : (
+                <label className={cn(
+                  "mt-1 flex items-center justify-center gap-2 rounded-md border border-dashed border-border/70 px-3 py-3 text-xs text-muted-foreground cursor-pointer hover:border-primary/40 hover:text-foreground transition-colors",
+                  uploading && "opacity-60 cursor-wait",
+                )}>
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <span>{uploading ? "Uploading…" : "Click to upload (PDF, Doc, up to 25 MB)"}</span>
+                  <input type="file" accept={ACCEPTED_FILE_TYPES} className="hidden" disabled={uploading}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; handleFileUpload(f); }} />
+                </label>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">When attached, the resource tile opens this file directly.</p>
             </div>
           </div>
           <DialogFooter>
