@@ -219,7 +219,7 @@ export default function JourneyHub() {
       </div>
 
       <TrainingModulesGrid
-        modules={data.modules}
+        modules={modules}
         completed={progress.modules}
         onToggle={toggleModule}
       />
@@ -228,7 +228,7 @@ export default function JourneyHub() {
         <FollowupCalendar
           userId={user.id}
           audience={audience}
-          modules={data.modules}
+          modules={modules}
         />
       )}
 
