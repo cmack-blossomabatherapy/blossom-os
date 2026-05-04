@@ -17,6 +17,9 @@ import {
 import {
   getJourneyResourcesFor, JOURNEY_RESOURCES_UPDATED_EVENT,
 } from "@/data/journeyResources";
+import {
+  applyModuleOverrides, JOURNEY_MODULE_OVERRIDES_EVENT,
+} from "@/data/journeyModuleOverrides";
 
 import { HeroBanner } from "@/components/journey/HeroBanner";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
@@ -78,6 +81,22 @@ export default function JourneyHub() {
     };
   }, [audience]);
   const resources = adminResources.length ? adminResources : data.resources;
+
+  // Admin-managed module overrides (links, coordinator, more info)
+  const [moduleVersion, setModuleVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => setModuleVersion((v) => v + 1);
+    window.addEventListener(JOURNEY_MODULE_OVERRIDES_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_MODULE_OVERRIDES_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const modules = useMemo(
+    () => applyModuleOverrides(data.modules, audience),
+    [data.modules, audience, moduleVersion],
+  );
 
   const userKey = (user?.id ?? "anon") + ":" + key;
   const [progress, setProgress] = useState(() => loadProgress(userKey));
@@ -200,7 +219,7 @@ export default function JourneyHub() {
       </div>
 
       <TrainingModulesGrid
-        modules={data.modules}
+        modules={modules}
         completed={progress.modules}
         onToggle={toggleModule}
       />
@@ -209,7 +228,7 @@ export default function JourneyHub() {
         <FollowupCalendar
           userId={user.id}
           audience={audience}
-          modules={data.modules}
+          modules={modules}
         />
       )}
 
