@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { badgeReasonOptions, createTrainingCourse, getStoredTrainingAssignments, getStoredTrainingAuditLog, getStoredTrainingBadges, getStoredTrainingCourses, saveStoredTrainingAssignments, saveStoredTrainingAuditLog, saveStoredTrainingBadges, saveStoredTrainingCourses, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_AUDIT_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type Difficulty, type TrainingAssignmentRecord, type TrainingAssignmentStatus, type TrainingAuditAction, type TrainingAuditEntry, type TrainingBadge, type TrainingBadgeReason, type TrainingCourse, type TrainingType, type TrainingVersion } from "@/data/training";
 import { TrainingBuilderDialog } from "@/components/training/TrainingBuilderDialog";
 import { JourneyResourcesPanel } from "@/components/training/JourneyResourcesPanel";
+import { JourneyModulesPanel } from "@/components/training/JourneyModulesPanel";
 
 const ALL = "All";
 const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
