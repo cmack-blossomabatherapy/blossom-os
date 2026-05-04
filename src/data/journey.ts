@@ -499,37 +499,92 @@ const DEMO: Record<string, JourneyData> = {
   },
 };
 
+const RBT_COORDINATOR = {
+  coordinatorName: "Rebecca Bailey",
+  coordinatorRole: "Training Coordinator",
+  coordinatorEmail: "training@blossomaba.com",
+};
+const BCBA_COORDINATOR = {
+  coordinatorName: "Clinical Director",
+  coordinatorRole: "BCBA Training Lead",
+  coordinatorEmail: "clinical@blossomaba.com",
+};
+
 function rbtModules(stage: string): TrainingModule[] {
   return [
     {
       id: "ethics", title: "Ethics Training",
       description: "BACB ethics code applied to day-to-day RBT decisions and edge cases.",
       assignedBy: "Rebecca Bailey", estMinutes: 60, category: "Compliance", stepId: "core",
+      ...RBT_COORDINATOR,
+      moreInfo: "Covers the BACB Ethics Code for Behavior Analysts with RBT-specific scenarios. Required before working independently with a client.",
+      links: [
+        { label: "BACB Ethics Code", url: "https://www.bacb.com/ethics-information/", description: "Official BACB ethics resources." },
+        { label: "RBT Resource Hub", url: "/hr/journey/drive", description: "Internal Drive with training videos and PDFs." },
+      ],
     },
     {
       id: "notes", title: "Session Note Training",
       description: "Write clean, billable session notes that pass Blossom QA on the first try.",
       assignedBy: "Rebecca Bailey", estMinutes: 75, category: "Operations", stepId: "core",
+      ...RBT_COORDINATOR,
+      moreInfo: "Step-by-step training on Blossom session note expectations, common QA flags, and how to use templates.",
+      links: [
+        { label: "Session note template", url: "/hr/journey/drive", description: "Drive folder with current templates." },
+        { label: "QA examples", url: "/hr/journey/drive", description: "Approved vs flagged note examples." },
+      ],
     },
     {
       id: "method", title: "Methodology Training",
       description: "Core ABA methodology refresher: DTT, NET, prompting, and reinforcement.",
       assignedBy: "Rebecca Bailey", estMinutes: 90, category: "Methodology", stepId: "core",
+      ...RBT_COORDINATOR,
+      moreInfo: "Refresher on Discrete Trial Training, Natural Environment Teaching, prompting hierarchies, and reinforcement schedules.",
+      links: [
+        { label: "Methodology slides", url: "/hr/journey/drive" },
+      ],
     },
     {
       id: "shadow", title: "Shadowing / Observation",
       description: "Structured shadowing with a Lead RBT before working independently.",
       assignedBy: "Lead RBT", estMinutes: 360, category: "Clinical", stepId: "shadow",
+      ...RBT_COORDINATOR,
+      moreInfo: "Schedule three shadow sessions with a Lead RBT. Submit your shadow log to the training coordinator when complete.",
     },
   ];
 }
 
 function bcbaModules(): TrainingModule[] {
   return [
-    { id: "cr", title: "CentralReach Deep Dive", description: "Treatment plans, auths, and progress reports inside CR.", assignedBy: "Rebecca Bailey", estMinutes: 120, category: "Operations", stepId: "system" },
-    { id: "ethics", title: "Clinical Ethics", description: "BACB ethics for BCBAs with case studies.", assignedBy: "Clinical Director", estMinutes: 90, category: "Compliance", stepId: "clinical" },
-    { id: "supervision", title: "Supervision Standards", description: "How Blossom runs supervision and QA cadence.", assignedBy: "Clinical Director", estMinutes: 60, category: "Clinical", stepId: "clinical" },
-    { id: "intake", title: "Intake & Assessment", description: "Onboarding new clients and writing the first treatment plan.", assignedBy: "Operations", estMinutes: 75, category: "Clinical", stepId: "case" },
+    {
+      id: "cr", title: "CentralReach Deep Dive",
+      description: "Treatment plans, auths, and progress reports inside CR.",
+      assignedBy: "Rebecca Bailey", estMinutes: 120, category: "Operations", stepId: "system",
+      ...BCBA_COORDINATOR,
+      links: [
+        { label: "CentralReach Help Center", url: "https://help.centralreach.com/" },
+        { label: "BCBA Resource Hub", url: "/hr/journey/drive" },
+      ],
+    },
+    {
+      id: "ethics", title: "Clinical Ethics",
+      description: "BACB ethics for BCBAs with case studies.",
+      assignedBy: "Clinical Director", estMinutes: 90, category: "Compliance", stepId: "clinical",
+      ...BCBA_COORDINATOR,
+      links: [{ label: "BACB Ethics Code", url: "https://www.bacb.com/ethics-information/" }],
+    },
+    {
+      id: "supervision", title: "Supervision Standards",
+      description: "How Blossom runs supervision and QA cadence.",
+      assignedBy: "Clinical Director", estMinutes: 60, category: "Clinical", stepId: "clinical",
+      ...BCBA_COORDINATOR,
+    },
+    {
+      id: "intake", title: "Intake & Assessment",
+      description: "Onboarding new clients and writing the first treatment plan.",
+      assignedBy: "Operations", estMinutes: 75, category: "Clinical", stepId: "case",
+      ...BCBA_COORDINATOR,
+    },
   ];
 }
 
