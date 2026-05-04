@@ -279,6 +279,12 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
                         <span className="truncate">{r.internalRoute || r.url}</span>
                       </a>
                     )}
+                    {r.fileUrl && (
+                      <a href={r.fileUrl} target="_blank" rel="noreferrer" className="text-[11px] text-primary inline-flex items-center gap-1 hover:underline mt-1 truncate max-w-full">
+                        <Paperclip className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{r.fileName ?? "Attached file"} {r.fileSize ? `· ${formatBytes(r.fileSize)}` : ""}</span>
+                      </a>
+                    )}
                   </div>
                 </div>
                 {canManage && (
