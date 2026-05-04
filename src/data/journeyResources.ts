@@ -29,6 +29,13 @@ export interface StoredJourneyResource {
   category: JourneyResourceCategory;
   iconName: string;
   internalRoute?: string;
+  /** Public URL of an uploaded file attachment (PDF/Doc). When present, the tile opens this. */
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+  /** Storage path inside the journey-resources bucket — used to delete the object. */
+  filePath?: string;
   pinned?: boolean;
   position: number;
   createdAt: string;
@@ -93,7 +100,7 @@ export function toJourneyResource(r: StoredJourneyResource): JourneyResource {
     id: r.id,
     title: r.title,
     description: r.description,
-    url: r.url,
+    url: r.fileUrl || r.url,
     category: r.category as JourneyResource["category"],
     icon: JOURNEY_RESOURCE_ICONS[r.iconName] ?? BookOpen,
     internalRoute: r.internalRoute,
