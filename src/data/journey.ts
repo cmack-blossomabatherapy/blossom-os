@@ -411,6 +411,17 @@ export const DEFAULT_BCBA_RESOURCES: JourneyResource[] = [
 /*  Demo personas                                                      */
 /* ------------------------------------------------------------------ */
 
+const RBT_COORDINATOR = {
+  coordinatorName: "Rebecca Bailey",
+  coordinatorRole: "Training Coordinator",
+  coordinatorEmail: "training@blossomaba.com",
+};
+const BCBA_COORDINATOR = {
+  coordinatorName: "Clinical Director",
+  coordinatorRole: "BCBA Training Lead",
+  coordinatorEmail: "clinical@blossomaba.com",
+};
+
 const DEMO: Record<string, JourneyData> = {
   "rbt-uncertified": {
     viewerName: "Maya Cohen",
@@ -497,17 +508,6 @@ const DEMO: Record<string, JourneyData> = {
       { id: "n1", tone: "info", title: "Finish CentralReach module this week", detail: "Required before your first case assignment." },
     ],
   },
-};
-
-const RBT_COORDINATOR = {
-  coordinatorName: "Rebecca Bailey",
-  coordinatorRole: "Training Coordinator",
-  coordinatorEmail: "training@blossomaba.com",
-};
-const BCBA_COORDINATOR = {
-  coordinatorName: "Clinical Director",
-  coordinatorRole: "BCBA Training Lead",
-  coordinatorEmail: "clinical@blossomaba.com",
 };
 
 function rbtModules(stage: string): TrainingModule[] {
