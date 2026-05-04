@@ -26,6 +26,7 @@ import { MatchingPanel } from "@/components/journey/MatchingPanel";
 import { ResourceGrid } from "@/components/journey/ResourceGrid";
 import { NotificationsPanel } from "@/components/journey/NotificationsPanel";
 import { ProgressSummary } from "@/components/journey/ProgressSummary";
+import { FollowupCalendar } from "@/components/journey/FollowupCalendar";
 
 export default function JourneyHub() {
   const { user, isAdmin, roles } = useAuth();
@@ -203,6 +204,14 @@ export default function JourneyHub() {
         completed={progress.modules}
         onToggle={toggleModule}
       />
+
+      {user && (
+        <FollowupCalendar
+          userId={user.id}
+          audience={audience}
+          modules={data.modules}
+        />
+      )}
 
       {showMatching && data.matching && (
         <MatchingPanel matching={data.matching} variant={matchingVariant} />
