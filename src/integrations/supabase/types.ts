@@ -3221,6 +3221,69 @@ export type Database = {
         }
         Relationships: []
       }
+      training_followups: {
+        Row: {
+          audience: Database["public"]["Enums"]["training_audience"]
+          completed_at: string | null
+          coordinator_email: string | null
+          coordinator_name: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string
+          employee_id: string | null
+          id: string
+          last_reminder_sent_at: string | null
+          module_id: string
+          module_title: string
+          notes: string | null
+          reminder_log: Json
+          reminder_offsets_days: number[]
+          status: Database["public"]["Enums"]["training_followup_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience?: Database["public"]["Enums"]["training_audience"]
+          completed_at?: string | null
+          coordinator_email?: string | null
+          coordinator_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          employee_id?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          module_id: string
+          module_title: string
+          notes?: string | null
+          reminder_log?: Json
+          reminder_offsets_days?: number[]
+          status?: Database["public"]["Enums"]["training_followup_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["training_audience"]
+          completed_at?: string | null
+          coordinator_email?: string | null
+          coordinator_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          employee_id?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          module_id?: string
+          module_title?: string
+          notes?: string | null
+          reminder_log?: Json
+          reminder_offsets_days?: number[]
+          status?: Database["public"]["Enums"]["training_followup_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_lesson_progress: {
         Row: {
           completed: boolean
@@ -3314,6 +3377,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_module_defaults: {
+        Row: {
+          active: boolean
+          audience: Database["public"]["Enums"]["training_audience"]
+          coordinator_email: string | null
+          coordinator_name: string | null
+          coordinator_role: string | null
+          created_at: string
+          default_offset_days: number
+          id: string
+          module_id: string
+          module_title: string
+          reminder_offsets_days: number[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          audience?: Database["public"]["Enums"]["training_audience"]
+          coordinator_email?: string | null
+          coordinator_name?: string | null
+          coordinator_role?: string | null
+          created_at?: string
+          default_offset_days?: number
+          id?: string
+          module_id: string
+          module_title: string
+          reminder_offsets_days?: number[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          audience?: Database["public"]["Enums"]["training_audience"]
+          coordinator_email?: string | null
+          coordinator_name?: string | null
+          coordinator_role?: string | null
+          created_at?: string
+          default_offset_days?: number
+          id?: string
+          module_id?: string
+          module_title?: string
+          reminder_offsets_days?: number[]
+          updated_at?: string
+        }
+        Relationships: []
       }
       training_progress: {
         Row: {
@@ -3957,6 +4065,8 @@ export type Database = {
         | "approved"
         | "rejected"
         | "locked"
+      training_audience: "rbt" | "bcba" | "both"
+      training_followup_status: "pending" | "completed" | "snoozed" | "skipped"
       training_status:
         | "assigned"
         | "in_progress"
@@ -4523,6 +4633,8 @@ export const Constants = {
         "rejected",
         "locked",
       ],
+      training_audience: ["rbt", "bcba", "both"],
+      training_followup_status: ["pending", "completed", "snoozed", "skipped"],
       training_status: [
         "assigned",
         "in_progress",
