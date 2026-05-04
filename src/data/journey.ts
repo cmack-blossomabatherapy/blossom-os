@@ -35,6 +35,14 @@ export interface TrainingModule {
   estMinutes: number;
   category: "Compliance" | "Clinical" | "Operations" | "Methodology";
   stepId?: string; // links to a lifecycle step
+  /** Helpful links shown in the module detail dialog. */
+  links?: { label: string; url: string; description?: string }[];
+  /** Training coordinator / point of contact for this module. */
+  coordinatorName?: string;
+  coordinatorEmail?: string;
+  coordinatorRole?: string;
+  /** Longer description shown in the module detail dialog. */
+  moreInfo?: string;
 }
 
 export interface JourneyResource {
