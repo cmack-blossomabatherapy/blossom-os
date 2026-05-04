@@ -368,6 +368,31 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
               <Input value={draft.internalRoute ?? ""} onChange={(e) => setDraft({ ...draft, internalRoute: e.target.value })} placeholder="/hr/journey/drive" />
               <p className="text-[11px] text-muted-foreground mt-1">If set, the tile opens this in-app route instead of the external URL.</p>
             </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">File attachment (PDF, Doc, etc.)</Label>
+              {draft.fileUrl ? (
+                <div className="flex items-center gap-2 mt-1 rounded-md border border-border/60 px-3 py-2 bg-muted/30">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{draft.fileName}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatBytes(draft.fileSize)}</p>
+                  </div>
+                  <a href={draft.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Open</a>
+                  <Button type="button" size="sm" variant="ghost" onClick={clearAttachment}><X className="h-3.5 w-3.5" /></Button>
+                </div>
+              ) : (
+                <label className={cn(
+                  "mt-1 flex items-center justify-center gap-2 rounded-md border border-dashed border-border/70 px-3 py-3 text-xs text-muted-foreground cursor-pointer hover:border-primary/40 hover:text-foreground transition-colors",
+                  uploading && "opacity-60 cursor-wait",
+                )}>
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <span>{uploading ? "Uploading…" : "Click to upload (PDF, Doc, up to 25 MB)"}</span>
+                  <input type="file" accept={ACCEPTED_FILE_TYPES} className="hidden" disabled={uploading}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; handleFileUpload(f); }} />
+                </label>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">When attached, the resource tile opens this file directly.</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
