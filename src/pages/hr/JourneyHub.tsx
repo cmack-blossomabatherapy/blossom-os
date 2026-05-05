@@ -70,7 +70,7 @@ export default function JourneyHub() {
   const hasRoleAccess = roles?.includes("rbt") || roles?.includes("bcba");
   const eligible = isJourneyEligible(jobTitle) || hasRoleAccess || isAdmin || !!override;
 
-  const { data, key } = useMemo(
+  const { data: rawData, key } = useMemo(
     () => resolveJourney({ override, jobTitle, displayName }),
     [override, jobTitle, displayName],
   );
