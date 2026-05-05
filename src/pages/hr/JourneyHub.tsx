@@ -130,6 +130,18 @@ export default function JourneyHub() {
     updateProgress({ ...progress, modules: { ...progress.modules, [id]: next } });
   };
 
+  const toggleChecklistItem = (stepId: string, idx: number) => {
+    const stepItems = progress.checklistItems?.[stepId] ?? {};
+    const next = !stepItems[idx];
+    updateProgress({
+      ...progress,
+      checklistItems: {
+        ...(progress.checklistItems ?? {}),
+        [stepId]: { ...stepItems, [idx]: next },
+      },
+    });
+  };
+
   if (loading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading your journey…</div>;
   }
