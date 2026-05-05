@@ -452,6 +452,18 @@ function StepDetailSheet({
             </div>
           )}
 
+          {/* Attachments */}
+          {ownerUserId && (
+            <StepAttachments
+              ownerUserId={ownerUserId}
+              journeyKey={journeyKey}
+              stepId={step.id}
+              currentUserId={currentUserId}
+              currentUserName={currentUserName}
+              isAdmin={isAdmin}
+            />
+          )}
+
           {/* Quick resources */}
           {relatedResources.length > 0 && (
             <div>
