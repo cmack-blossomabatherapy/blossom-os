@@ -273,7 +273,9 @@ export default function JourneyHub() {
 }
 
 function StepDetailSheet({
-  open, onOpenChange, data, index, statuses, modules, resources, onMarkComplete,
+  open, onOpenChange, data, index, statuses, modules, resources,
+  journeyKey, ownerUserId, currentUserId, currentUserName, isAdmin,
+  onMarkComplete,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -282,6 +284,11 @@ function StepDetailSheet({
   statuses: ReturnType<typeof computeStepStatuses>["statuses"];
   modules: ReturnType<typeof applyModuleOverrides>;
   resources: typeof data.resources;
+  journeyKey: string;
+  ownerUserId: string;
+  currentUserId: string;
+  currentUserName?: string | null;
+  isAdmin?: boolean;
   onMarkComplete: (stepId: string) => void;
 }) {
   const step = data.steps[index];
