@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sparkles, ShieldAlert, Eye } from "lucide-react";
+import {
+  Sparkles, ShieldAlert, Eye, Clock, User, Mail, ExternalLink, ArrowRight,
+  Info, CheckCircle2, BookOpen, LifeBuoy,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -254,6 +258,8 @@ export default function JourneyHub() {
         data={data}
         index={sheetIndex}
         statuses={statuses}
+        modules={modules}
+        resources={resources}
         onMarkComplete={(stepId) => { markStepComplete(stepId); setSheetOpen(false); }}
       />
     </div>
