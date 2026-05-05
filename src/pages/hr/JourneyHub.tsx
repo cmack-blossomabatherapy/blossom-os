@@ -267,57 +267,213 @@ export default function JourneyHub() {
 }
 
 function StepDetailSheet({
-  open, onOpenChange, data, index, statuses, onMarkComplete,
+  open, onOpenChange, data, index, statuses, modules, resources, onMarkComplete,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   data: JourneyData;
   index: number;
   statuses: ReturnType<typeof computeStepStatuses>["statuses"];
+  modules: ReturnType<typeof applyModuleOverrides>;
+  resources: typeof data.resources;
   onMarkComplete: (stepId: string) => void;
 }) {
   const step = data.steps[index];
   if (!step) return null;
   const status = statuses[index];
   const Icon = step.icon;
+  const isComplete = status === "completed";
+  const relatedModules = modules.filter((m) => m.stepId === step.id);
+  const relatedResources = resources.slice(0, 4);
+  const estLabel = step.estMinutes
+    ? step.estMinutes < 60
+      ? `${step.estMinutes} min`
+      : `${Math.round(step.estMinutes / 60)} hr`
+    : "Ongoing";
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${isComplete ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
               <Icon className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Step {index + 1} of {data.steps.length}</p>
-              <SheetTitle>{step.label}</SheetTitle>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Step {index + 1} of {data.steps.length}</p>
+                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  isComplete ? "bg-primary/10 text-primary border-primary/30"
+                  : status === "in_progress" ? "bg-warning/10 text-warning border-warning/30"
+                  : status === "available" ? "bg-info/10 text-info border-info/30"
+                  : "bg-muted text-muted-foreground border-border"
+                }`}>
+                  {isComplete ? "Complete" : status === "in_progress" ? "In progress" : status === "available" ? "Available" : "Locked"}
+                </span>
+              </div>
+              <SheetTitle className="mt-0.5">{step.label}</SheetTitle>
             </div>
           </div>
           <SheetDescription>{step.description}</SheetDescription>
         </SheetHeader>
 
-        <div className="mt-5 space-y-4">
-          <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Owner</p>
-            <p className="text-sm font-medium text-foreground mt-1">{step.ownerName}</p>
-            <p className="text-[11px] text-muted-foreground">{step.ownerRole}</p>
+        <div className="mt-5 space-y-5">
+          {/* Owner + estimated time */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Owner</p>
+              <p className="text-sm font-medium text-foreground mt-1 flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground" /> {step.ownerName}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{step.ownerRole}</p>
+            </div>
+            <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Estimated time</p>
+              <p className="text-sm font-medium text-foreground mt-1 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" /> {estLabel}
+              </p>
+            </div>
           </div>
 
+          {/* More information */}
+          {step.moreInfo && (
+            <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-primary" /> More information
+              </p>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{step.moreInfo}</p>
+            </div>
+          )}
+
+          {/* Checklist */}
           <div>
-            <p className="text-xs font-semibold text-foreground mb-2">Required actions</p>
+            <p className="text-xs font-semibold text-foreground mb-2">What you need to do</p>
             <ul className="space-y-1.5">
               {step.checklist.map((item, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <div className="mt-0.5 h-4 w-4 rounded-full border border-primary/40 flex items-center justify-center shrink-0">
+                    {isComplete && <CheckCircle2 className="h-3 w-3 text-primary" />}
+                  </div>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {status !== "completed" ? (
+          {/* Helpful links */}
+          {step.links && step.links.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-2">Helpful links</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {step.links.map((link) => {
+                  const internal = link.url.startsWith("/");
+                  const inner = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground">{link.label}</p>
+                        {internal
+                          ? <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
+                          : <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0" />}
+                      </div>
+                      {link.description && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{link.description}</p>}
+                    </>
+                  );
+                  const cls = "group rounded-lg border border-border/40 p-3 hover:border-primary/40 hover:bg-muted/30 transition-colors block";
+                  return internal
+                    ? <Link key={link.url} to={link.url} className={cls} onClick={() => onOpenChange(false)}>{inner}</Link>
+                    : <a key={link.url} href={link.url} target="_blank" rel="noreferrer" className={cls}>{inner}</a>;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Coordinator */}
+          {(step.coordinatorEmail || step.coordinatorName) && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wider text-primary font-semibold">Training coordinator</p>
+                <p className="text-sm font-medium text-foreground mt-1 truncate">
+                  {step.coordinatorName ?? step.ownerName}
+                  {step.coordinatorRole && <span className="text-muted-foreground"> · {step.coordinatorRole}</span>}
+                </p>
+                {step.coordinatorEmail && <p className="text-xs text-muted-foreground truncate">{step.coordinatorEmail}</p>}
+              </div>
+              {step.coordinatorEmail && (
+                <Button asChild variant="outline" size="sm" className="rounded-lg shrink-0">
+                  <a href={`mailto:${step.coordinatorEmail}?subject=${encodeURIComponent(`Question about: ${step.label}`)}`}>
+                    <Mail className="h-3.5 w-3.5" /> Email coordinator
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Related training modules */}
+          {relatedModules.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5 text-primary" /> Related training modules
+              </p>
+              <div className="space-y-2">
+                {relatedModules.map((m) => (
+                  <div key={m.id} className="rounded-lg border border-border/40 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{m.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{m.description}</p>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border whitespace-nowrap">
+                        {m.estMinutes} min
+                      </span>
+                    </div>
+                    {m.coordinatorEmail && (
+                      <a
+                        href={`mailto:${m.coordinatorEmail}?subject=${encodeURIComponent(`Question about: ${m.title}`)}`}
+                        className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <Mail className="h-3 w-3" /> {m.coordinatorName ?? m.coordinatorEmail}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick resources */}
+          {relatedResources.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <LifeBuoy className="h-3.5 w-3.5 text-primary" /> Quick resources
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {relatedResources.map((r) => {
+                  const ResourceIcon = r.icon;
+                  const inner = (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <ResourceIcon className="h-3.5 w-3.5" />
+                        </div>
+                        {r.internalRoute
+                          ? <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          : <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mt-2">{r.category}</p>
+                      <p className="text-sm font-medium text-foreground mt-0.5 line-clamp-1">{r.title}</p>
+                    </>
+                  );
+                  const cls = "rounded-lg border border-border/40 p-3 hover:border-primary/40 hover:bg-muted/30 transition-colors block";
+                  return r.internalRoute
+                    ? <Link key={r.id} to={r.internalRoute} className={cls} onClick={() => onOpenChange(false)}>{inner}</Link>
+                    : <a key={r.id} href={r.url} target="_blank" rel="noreferrer" className={cls}>{inner}</a>;
+                })}
+              </div>
+            </div>
+          )}
+
+          {!isComplete ? (
             <Button className="w-full rounded-xl" onClick={() => onMarkComplete(step.id)}>
-              Mark this step complete
+              <CheckCircle2 className="h-4 w-4" /> Mark this step complete
             </Button>
           ) : (
             <div className="text-center text-xs text-primary font-medium py-2">✓ This step is complete</div>
