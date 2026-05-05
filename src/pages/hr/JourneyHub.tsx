@@ -34,6 +34,7 @@ import { ResourceGrid } from "@/components/journey/ResourceGrid";
 import { NotificationsPanel } from "@/components/journey/NotificationsPanel";
 import { ProgressSummary } from "@/components/journey/ProgressSummary";
 import { FollowupCalendar } from "@/components/journey/FollowupCalendar";
+import { StepAttachments } from "@/components/journey/StepAttachments";
 
 export default function JourneyHub() {
   const { user, isAdmin, roles } = useAuth();
@@ -260,6 +261,11 @@ export default function JourneyHub() {
         statuses={statuses}
         modules={modules}
         resources={resources}
+        journeyKey={key}
+        ownerUserId={user?.id ?? ""}
+        currentUserId={user?.id ?? ""}
+        currentUserName={displayName}
+        isAdmin={!!isAdmin}
         onMarkComplete={(stepId) => { markStepComplete(stepId); setSheetOpen(false); }}
       />
     </div>
@@ -267,7 +273,9 @@ export default function JourneyHub() {
 }
 
 function StepDetailSheet({
-  open, onOpenChange, data, index, statuses, modules, resources, onMarkComplete,
+  open, onOpenChange, data, index, statuses, modules, resources,
+  journeyKey, ownerUserId, currentUserId, currentUserName, isAdmin,
+  onMarkComplete,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -276,6 +284,11 @@ function StepDetailSheet({
   statuses: ReturnType<typeof computeStepStatuses>["statuses"];
   modules: ReturnType<typeof applyModuleOverrides>;
   resources: typeof data.resources;
+  journeyKey: string;
+  ownerUserId: string;
+  currentUserId: string;
+  currentUserName?: string | null;
+  isAdmin?: boolean;
   onMarkComplete: (stepId: string) => void;
 }) {
   const step = data.steps[index];
@@ -437,6 +450,18 @@ function StepDetailSheet({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Attachments */}
+          {ownerUserId && (
+            <StepAttachments
+              ownerUserId={ownerUserId}
+              journeyKey={journeyKey}
+              stepId={step.id}
+              currentUserId={currentUserId}
+              currentUserName={currentUserName}
+              isAdmin={isAdmin}
+            />
           )}
 
           {/* Quick resources */}

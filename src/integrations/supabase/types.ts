@@ -2443,6 +2443,54 @@ export type Database = {
         }
         Relationships: []
       }
+      journey_step_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          journey_key: string
+          mime_type: string | null
+          notes: string | null
+          size_bytes: number | null
+          step_id: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+          uploaded_by_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          journey_key: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          step_id: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+          uploaded_by_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          journey_key?: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          step_id?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+          uploaded_by_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
