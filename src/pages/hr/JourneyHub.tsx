@@ -278,6 +278,8 @@ export default function JourneyHub() {
         currentUserId={user?.id ?? ""}
         currentUserName={displayName}
         isAdmin={!!isAdmin}
+        checklistProgress={progress.checklistItems ?? {}}
+        onToggleChecklistItem={toggleChecklistItem}
         onMarkComplete={(stepId) => { markStepComplete(stepId); setSheetOpen(false); }}
       />
     </div>
@@ -287,6 +289,7 @@ export default function JourneyHub() {
 function StepDetailSheet({
   open, onOpenChange, data, index, statuses, modules, resources,
   journeyKey, ownerUserId, currentUserId, currentUserName, isAdmin,
+  checklistProgress, onToggleChecklistItem,
   onMarkComplete,
 }: {
   open: boolean;
@@ -301,6 +304,8 @@ function StepDetailSheet({
   currentUserId: string;
   currentUserName?: string | null;
   isAdmin?: boolean;
+  checklistProgress: Record<string, Record<number, boolean>>;
+  onToggleChecklistItem: (stepId: string, idx: number) => void;
   onMarkComplete: (stepId: string) => void;
 }) {
   const step = data.steps[index];
@@ -315,6 +320,13 @@ function StepDetailSheet({
       ? `${step.estMinutes} min`
       : `${Math.round(step.estMinutes / 60)} hr`
     : "Ongoing";
+  const stepChecks = checklistProgress[step.id] ?? {};
+  const total = step.checklist.length;
+  const checkedCount = isComplete
+    ? total
+    : step.checklist.reduce((acc, _, i) => acc + (stepChecks[i] ? 1 : 0), 0);
+  const checkPercent = total ? Math.round((checkedCount / total) * 100) : 0;
+  const allChecked = total > 0 && checkedCount === total;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -371,17 +383,53 @@ function StepDetailSheet({
 
           {/* Checklist */}
           <div>
-            <p className="text-xs font-semibold text-foreground mb-2">What you need to do</p>
-            <ul className="space-y-1.5">
-              {step.checklist.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <div className="mt-0.5 h-4 w-4 rounded-full border border-primary/40 flex items-center justify-center shrink-0">
-                    {isComplete && <CheckCircle2 className="h-3 w-3 text-primary" />}
-                  </div>
-                  <span>{item}</span>
-                </li>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-foreground">Completion checklist</p>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {checkedCount}/{total} done
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-3">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${checkPercent}%` }}
+              />
+            </div>
+            <ul className="space-y-1">
+              {step.checklist.map((item, i) => {
+                const checked = isComplete || !!stepChecks[i];
+                return (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      onClick={() => !isComplete && onToggleChecklistItem(step.id, i)}
+                      disabled={isComplete}
+                      className={`w-full flex items-start gap-2.5 text-sm text-left rounded-lg px-2 py-1.5 transition-colors ${
+                        isComplete ? "cursor-default" : "hover:bg-muted/40"
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                          checked
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/40"
+                        }`}
+                      >
+                        {checked && <CheckCircle2 className="h-3 w-3" />}
+                      </div>
+                      <span className={checked ? "text-muted-foreground line-through" : "text-foreground"}>
+                        {item}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
+            {!isComplete && allChecked && (
+              <p className="mt-2 text-[11px] text-primary font-medium">
+                All items checked — you can mark this step complete below.
+              </p>
+            )}
           </div>
 
           {/* Helpful links */}
