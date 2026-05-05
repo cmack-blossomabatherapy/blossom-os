@@ -24,6 +24,9 @@ import {
 import {
   applyModuleOverrides, JOURNEY_MODULE_OVERRIDES_EVENT,
 } from "@/data/journeyModuleOverrides";
+import {
+  applyChecklistOverrides, JOURNEY_CHECKLIST_OVERRIDES_EVENT,
+} from "@/data/journeyChecklistOverrides";
 
 import { HeroBanner } from "@/components/journey/HeroBanner";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
@@ -67,7 +70,7 @@ export default function JourneyHub() {
   const hasRoleAccess = roles?.includes("rbt") || roles?.includes("bcba");
   const eligible = isJourneyEligible(jobTitle) || hasRoleAccess || isAdmin || !!override;
 
-  const { data, key } = useMemo(
+  const { data: rawData, key } = useMemo(
     () => resolveJourney({ override, jobTitle, displayName }),
     [override, jobTitle, displayName],
   );
@@ -85,7 +88,7 @@ export default function JourneyHub() {
       window.removeEventListener("storage", refresh);
     };
   }, [audience]);
-  const resources = adminResources.length ? adminResources : data.resources;
+  const resources = adminResources.length ? adminResources : rawData.resources;
 
   // Admin-managed module overrides (links, coordinator, more info)
   const [moduleVersion, setModuleVersion] = useState(0);
@@ -99,8 +102,28 @@ export default function JourneyHub() {
     };
   }, []);
   const modules = useMemo(
-    () => applyModuleOverrides(data.modules, audience),
-    [data.modules, audience, moduleVersion],
+    () => applyModuleOverrides(rawData.modules, audience),
+    [rawData.modules, audience, moduleVersion],
+  );
+
+  // Admin-managed checklist template overrides (with versioning)
+  const [checklistVersion, setChecklistVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => setChecklistVersion((v) => v + 1);
+    window.addEventListener(JOURNEY_CHECKLIST_OVERRIDES_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_CHECKLIST_OVERRIDES_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const stepsWithChecklists = useMemo(
+    () => applyChecklistOverrides(rawData.steps, audience),
+    [rawData.steps, audience, checklistVersion],
+  );
+  const data = useMemo(
+    () => ({ ...rawData, steps: stepsWithChecklists }),
+    [rawData, stepsWithChecklists],
   );
 
   const userKey = (user?.id ?? "anon") + ":" + key;
