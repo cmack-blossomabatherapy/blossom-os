@@ -7,6 +7,7 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -144,8 +145,28 @@ export default function JourneyHub() {
     saveProgress(userKey, next);
   };
 
-  const markStepComplete = (stepId: string) => {
+  const isStepChecklistComplete = (stepId: string) => {
+    const step = data.steps.find((s) => s.id === stepId);
+    if (!step) return true;
+    const total = step.checklist.length;
+    if (total === 0) return true;
+    const items = progress.checklistItems?.[stepId] ?? {};
+    return step.checklist.every((_, i) => !!items[i]);
+  };
+
+  const markStepComplete = (stepId: string): boolean => {
+    if (!isStepChecklistComplete(stepId)) {
+      const step = data.steps.find((s) => s.id === stepId);
+      const total = step?.checklist.length ?? 0;
+      const done = step ? step.checklist.reduce(
+        (acc, _, i) => acc + ((progress.checklistItems?.[stepId]?.[i]) ? 1 : 0),
+        0,
+      ) : 0;
+      toast.error(`Finish all checklist items first (${done}/${total} done)`);
+      return false;
+    }
     updateProgress({ ...progress, steps: { ...progress.steps, [stepId]: true } });
+    return true;
   };
 
   const toggleModule = (id: string) => {
