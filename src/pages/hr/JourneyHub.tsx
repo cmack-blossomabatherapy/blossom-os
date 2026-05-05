@@ -274,6 +274,14 @@ export default function JourneyHub() {
             step={currentStep}
             status={currentStatus}
             onMarkComplete={() => markStepComplete(currentStep.id)}
+            canComplete={isStepChecklistComplete(currentStep.id)}
+            checklistProgress={{
+              total: currentStep.checklist.length,
+              done: currentStep.checklist.reduce(
+                (acc, _, i) => acc + ((progress.checklistItems?.[currentStep.id]?.[i]) ? 1 : 0),
+                0,
+              ),
+            }}
           />
         </div>
         <NotificationsPanel items={data.notifications} />
