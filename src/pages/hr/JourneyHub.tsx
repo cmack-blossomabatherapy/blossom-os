@@ -332,7 +332,7 @@ export default function JourneyHub() {
         isAdmin={!!isAdmin}
         checklistProgress={progress.checklistItems ?? {}}
         onToggleChecklistItem={toggleChecklistItem}
-        onMarkComplete={(stepId) => { markStepComplete(stepId); setSheetOpen(false); }}
+        onMarkComplete={(stepId) => { if (markStepComplete(stepId)) setSheetOpen(false); }}
       />
     </div>
   );
