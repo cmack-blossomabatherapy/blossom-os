@@ -8,9 +8,13 @@ interface Props {
   step: JourneyStep;
   status: StepStatus;
   onMarkComplete: () => void;
+  /** When false, the complete button is disabled (checklist not finished). */
+  canComplete?: boolean;
+  /** Progress hint shown next to the button. */
+  checklistProgress?: { done: number; total: number };
 }
 
-export function CurrentStagePanel({ step, status, onMarkComplete }: Props) {
+export function CurrentStagePanel({ step, status, onMarkComplete, canComplete = true, checklistProgress }: Props) {
   const Icon = step.icon;
   const isComplete = status === "completed";
   return (
@@ -133,9 +137,21 @@ export function CurrentStagePanel({ step, status, onMarkComplete }: Props) {
       )}
 
       {!isComplete && (
-        <Button onClick={onMarkComplete} className="w-full mt-5 rounded-xl">
-          <Check className="h-4 w-4" /> Mark this stage complete
-        </Button>
+        <div className="mt-5 space-y-1.5">
+          <Button
+            onClick={onMarkComplete}
+            disabled={!canComplete}
+            className="w-full rounded-xl"
+          >
+            <Check className="h-4 w-4" /> Mark this stage complete
+          </Button>
+          {!canComplete && checklistProgress && (
+            <p className="text-[11px] text-muted-foreground text-center">
+              Finish all {checklistProgress.total} checklist items to enable
+              {" "}({checklistProgress.done}/{checklistProgress.total} done).
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

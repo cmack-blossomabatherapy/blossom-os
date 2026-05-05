@@ -7,6 +7,7 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -144,8 +145,28 @@ export default function JourneyHub() {
     saveProgress(userKey, next);
   };
 
-  const markStepComplete = (stepId: string) => {
+  const isStepChecklistComplete = (stepId: string) => {
+    const step = data.steps.find((s) => s.id === stepId);
+    if (!step) return true;
+    const total = step.checklist.length;
+    if (total === 0) return true;
+    const items = progress.checklistItems?.[stepId] ?? {};
+    return step.checklist.every((_, i) => !!items[i]);
+  };
+
+  const markStepComplete = (stepId: string): boolean => {
+    if (!isStepChecklistComplete(stepId)) {
+      const step = data.steps.find((s) => s.id === stepId);
+      const total = step?.checklist.length ?? 0;
+      const done = step ? step.checklist.reduce(
+        (acc, _, i) => acc + ((progress.checklistItems?.[stepId]?.[i]) ? 1 : 0),
+        0,
+      ) : 0;
+      toast.error(`Finish all checklist items first (${done}/${total} done)`);
+      return false;
+    }
     updateProgress({ ...progress, steps: { ...progress.steps, [stepId]: true } });
+    return true;
   };
 
   const toggleModule = (id: string) => {
@@ -253,6 +274,14 @@ export default function JourneyHub() {
             step={currentStep}
             status={currentStatus}
             onMarkComplete={() => markStepComplete(currentStep.id)}
+            canComplete={isStepChecklistComplete(currentStep.id)}
+            checklistProgress={{
+              total: currentStep.checklist.length,
+              done: currentStep.checklist.reduce(
+                (acc, _, i) => acc + ((progress.checklistItems?.[currentStep.id]?.[i]) ? 1 : 0),
+                0,
+              ),
+            }}
           />
         </div>
         <NotificationsPanel items={data.notifications} />
@@ -303,7 +332,7 @@ export default function JourneyHub() {
         isAdmin={!!isAdmin}
         checklistProgress={progress.checklistItems ?? {}}
         onToggleChecklistItem={toggleChecklistItem}
-        onMarkComplete={(stepId) => { markStepComplete(stepId); setSheetOpen(false); }}
+        onMarkComplete={(stepId) => { if (markStepComplete(stepId)) setSheetOpen(false); }}
       />
     </div>
   );
@@ -580,9 +609,20 @@ function StepDetailSheet({
           )}
 
           {!isComplete ? (
-            <Button className="w-full rounded-xl" onClick={() => onMarkComplete(step.id)}>
-              <CheckCircle2 className="h-4 w-4" /> Mark this step complete
-            </Button>
+            <div className="space-y-1.5">
+              <Button
+                className="w-full rounded-xl"
+                onClick={() => onMarkComplete(step.id)}
+                disabled={total > 0 && !allChecked}
+              >
+                <CheckCircle2 className="h-4 w-4" /> Mark this step complete
+              </Button>
+              {total > 0 && !allChecked && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Check all {total} items to enable ({checkedCount}/{total} done).
+                </p>
+              )}
+            </div>
           ) : (
             <div className="text-center text-xs text-primary font-medium py-2">✓ This step is complete</div>
           )}
