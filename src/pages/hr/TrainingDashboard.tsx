@@ -20,6 +20,7 @@ import { badgeReasonOptions, createTrainingCourse, getStoredTrainingAssignments,
 import { TrainingBuilderDialog } from "@/components/training/TrainingBuilderDialog";
 import { JourneyResourcesPanel } from "@/components/training/JourneyResourcesPanel";
 import { JourneyModulesPanel } from "@/components/training/JourneyModulesPanel";
+import { JourneyChecklistsPanel } from "@/components/training/JourneyChecklistsPanel";
 
 const ALL = "All";
 const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
