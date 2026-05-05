@@ -24,6 +24,9 @@ import {
 import {
   applyModuleOverrides, JOURNEY_MODULE_OVERRIDES_EVENT,
 } from "@/data/journeyModuleOverrides";
+import {
+  applyChecklistOverrides, JOURNEY_CHECKLIST_OVERRIDES_EVENT,
+} from "@/data/journeyChecklistOverrides";
 
 import { HeroBanner } from "@/components/journey/HeroBanner";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
@@ -101,6 +104,26 @@ export default function JourneyHub() {
   const modules = useMemo(
     () => applyModuleOverrides(data.modules, audience),
     [data.modules, audience, moduleVersion],
+  );
+
+  // Admin-managed checklist template overrides (with versioning)
+  const [checklistVersion, setChecklistVersion] = useState(0);
+  useEffect(() => {
+    const refresh = () => setChecklistVersion((v) => v + 1);
+    window.addEventListener(JOURNEY_CHECKLIST_OVERRIDES_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_CHECKLIST_OVERRIDES_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const stepsWithChecklists = useMemo(
+    () => applyChecklistOverrides(data.steps, audience),
+    [data.steps, audience, checklistVersion],
+  );
+  const dataWithChecklists = useMemo(
+    () => ({ ...data, steps: stepsWithChecklists }),
+    [data, stepsWithChecklists],
   );
 
   const userKey = (user?.id ?? "anon") + ":" + key;
