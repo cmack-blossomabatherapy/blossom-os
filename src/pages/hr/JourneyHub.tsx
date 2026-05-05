@@ -609,9 +609,20 @@ function StepDetailSheet({
           )}
 
           {!isComplete ? (
-            <Button className="w-full rounded-xl" onClick={() => onMarkComplete(step.id)}>
-              <CheckCircle2 className="h-4 w-4" /> Mark this step complete
-            </Button>
+            <div className="space-y-1.5">
+              <Button
+                className="w-full rounded-xl"
+                onClick={() => onMarkComplete(step.id)}
+                disabled={total > 0 && !allChecked}
+              >
+                <CheckCircle2 className="h-4 w-4" /> Mark this step complete
+              </Button>
+              {total > 0 && !allChecked && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Check all {total} items to enable ({checkedCount}/{total} done).
+                </p>
+              )}
+            </div>
           ) : (
             <div className="text-center text-xs text-primary font-medium py-2">✓ This step is complete</div>
           )}
