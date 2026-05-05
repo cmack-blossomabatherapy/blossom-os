@@ -118,12 +118,12 @@ export default function JourneyHub() {
     };
   }, []);
   const stepsWithChecklists = useMemo(
-    () => applyChecklistOverrides(data.steps, audience),
-    [data.steps, audience, checklistVersion],
+    () => applyChecklistOverrides(rawData.steps, audience),
+    [rawData.steps, audience, checklistVersion],
   );
-  const dataWithChecklists = useMemo(
-    () => ({ ...data, steps: stepsWithChecklists }),
-    [data, stepsWithChecklists],
+  const data = useMemo(
+    () => ({ ...rawData, steps: stepsWithChecklists }),
+    [rawData, stepsWithChecklists],
   );
 
   const userKey = (user?.id ?? "anon") + ":" + key;
