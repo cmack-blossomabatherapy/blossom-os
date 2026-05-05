@@ -634,17 +634,23 @@ export interface JourneyProgress {
   steps: Record<string, boolean>;
   /** module id -> completed */
   modules: Record<string, boolean>;
+  /** step id -> { checklist item index -> completed } */
+  checklistItems?: Record<string, Record<number, boolean>>;
 }
 
 export function loadProgress(userKey: string): JourneyProgress {
-  if (typeof window === "undefined") return { steps: {}, modules: {} };
+  if (typeof window === "undefined") return { steps: {}, modules: {}, checklistItems: {} };
   try {
     const raw = localStorage.getItem(`blossom.journey.${userKey}`);
-    if (!raw) return { steps: {}, modules: {} };
+    if (!raw) return { steps: {}, modules: {}, checklistItems: {} };
     const parsed = JSON.parse(raw);
-    return { steps: parsed.steps ?? {}, modules: parsed.modules ?? {} };
+    return {
+      steps: parsed.steps ?? {},
+      modules: parsed.modules ?? {},
+      checklistItems: parsed.checklistItems ?? {},
+    };
   } catch {
-    return { steps: {}, modules: {} };
+    return { steps: {}, modules: {}, checklistItems: {} };
   }
 }
 
