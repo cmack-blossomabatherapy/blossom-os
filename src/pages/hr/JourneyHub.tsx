@@ -88,7 +88,7 @@ export default function JourneyHub() {
       window.removeEventListener("storage", refresh);
     };
   }, [audience]);
-  const resources = adminResources.length ? adminResources : data.resources;
+  const resources = adminResources.length ? adminResources : rawData.resources;
 
   // Admin-managed module overrides (links, coordinator, more info)
   const [moduleVersion, setModuleVersion] = useState(0);
@@ -102,8 +102,8 @@ export default function JourneyHub() {
     };
   }, []);
   const modules = useMemo(
-    () => applyModuleOverrides(data.modules, audience),
-    [data.modules, audience, moduleVersion],
+    () => applyModuleOverrides(rawData.modules, audience),
+    [rawData.modules, audience, moduleVersion],
   );
 
   // Admin-managed checklist template overrides (with versioning)
