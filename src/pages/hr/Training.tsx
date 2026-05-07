@@ -291,7 +291,10 @@ export default function Training() {
                       <h3 className="text-lg font-bold">{activeTrack.name}</h3>
                       <p className="text-xs text-muted-foreground">{activeTrack.description}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => setTrackEditor(activeTrack)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => setStaffAssignTrack(activeTrack)}><Users className="h-3.5 w-3.5 mr-1" /> Assign staff</Button>
+                      <Button size="sm" variant="outline" onClick={() => setTrackEditor(activeTrack)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
+                    </div>
                   </div>
 
                   <div>
