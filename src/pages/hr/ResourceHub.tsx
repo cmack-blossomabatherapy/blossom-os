@@ -10,10 +10,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_META, type AppRole } from "@/lib/roles";
 import {
   RESOURCE_CATEGORY_LABEL, RESOURCE_KIND_LABEL,
   type HRResource, type ResourceCategory, type ResourceKind,
@@ -28,7 +32,7 @@ const KIND_ICON: Record<ResourceKind, typeof FileText> = {
 };
 
 export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }) {
-  const { hasPerm, user } = useAuth();
+  const { hasPerm, user, roles, isAdmin } = useAuth();
   const canManage = !readOnly && hasPerm("hr.resources.manage");
   const [items, setItems] = useState<HRResource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,7 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
   const [kind, setKind] = useState<ResourceKind>("document");
   const [category, setCategory] = useState<ResourceCategory>("general");
   const [url, setUrl] = useState("");
+  const [visibilityRoles, setVisibilityRoles] = useState<AppRole[]>([]);
 
   useEffect(() => { void load(); }, []);
 
@@ -59,11 +64,12 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
     const { error } = await supabase.from("hr_resources").insert({
       title: title.trim(), description: desc.trim() || null,
       kind, category, url: url.trim() || null,
+      visibility_roles: visibilityRoles,
       uploaded_by: user?.id ?? null, uploaded_by_name: user?.email ?? null,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Resource added.");
-    setOpen(false); setTitle(""); setDesc(""); setUrl(""); setKind("document"); setCategory("general");
+    setOpen(false); setTitle(""); setDesc(""); setUrl(""); setKind("document"); setCategory("general"); setVisibilityRoles([]);
     void load();
   }
 
@@ -80,13 +86,24 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
 
   const filtered = useMemo(() => {
     let r = items;
+    if (!isAdmin && !canManage) {
+      r = r.filter((x) =>
+        !x.visibility_roles || x.visibility_roles.length === 0
+          ? true
+          : x.visibility_roles.some((role) => roles.includes(role as AppRole)),
+      );
+    }
     if (cat !== "all") r = r.filter((x) => x.category === cat);
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter((x) => `${x.title} ${x.description ?? ""}`.toLowerCase().includes(q));
     }
     return r;
-  }, [items, cat, search]);
+  }, [items, cat, search, roles, isAdmin, canManage]);
+
+  function toggleRole(r: AppRole) {
+    setVisibilityRoles((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
+  }
 
   return (
     <PageShell
@@ -186,6 +203,34 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
             </div>
             <div><Label className="text-xs text-muted-foreground">URL (optional)</Label><Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" /></div>
             <div><Label className="text-xs text-muted-foreground">Description</Label><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} /></div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-xs text-muted-foreground">Who can access this resource</Label>
+                <span className="text-[10px] text-muted-foreground">
+                  {visibilityRoles.length === 0 ? "Everyone with HR access" : `${visibilityRoles.length} role${visibilityRoles.length === 1 ? "" : "s"} selected`}
+                </span>
+              </div>
+              <ScrollArea className="h-44 rounded-md border border-border/60 p-2">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {ROLE_META.map((r) => (
+                    <label key={r.key} className="flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1 hover:bg-muted/50">
+                      <Checkbox
+                        checked={visibilityRoles.includes(r.key)}
+                        onCheckedChange={() => toggleRole(r.key)}
+                        className="mt-0.5"
+                      />
+                      <span className="leading-tight">
+                        <span className="font-medium text-foreground">{r.label}</span>
+                        <span className="block text-[10px] text-muted-foreground">{r.group}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </ScrollArea>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Leave empty to make the resource available to anyone with HR access.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
