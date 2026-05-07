@@ -259,16 +259,16 @@ export default function AcademyEditor() {
       }
     >
       {/* Track header */}
-      <Card className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <Card className="p-4 md:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-semibold text-foreground">{tree.track.name}</h3>
               <Badge variant={tree.track.is_active ? "default" : "secondary"}>{tree.track.is_active ? "Active" : "Inactive"}</Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">{tree.track.description || "No description."}</p>
           </div>
-          <Button size="sm" onClick={() => setEdit({ kind: "phase", data: { track_id: tree.track.id, color_token: "primary" } })}>
+          <Button size="sm" className="self-start sm:self-auto shrink-0" onClick={() => setEdit({ kind: "phase", data: { track_id: tree.track.id, color_token: "primary" } })}>
             <Plus className="h-4 w-4" /> Add phase
           </Button>
         </div>
@@ -283,8 +283,8 @@ export default function AcademyEditor() {
           const open = openPhases[phase.id] ?? true;
           return (
             <Card key={phase.id} className={cn("overflow-hidden", phase.is_archived && "opacity-60", phase.is_pinned && "ring-1 ring-primary/40")}>
-              <div className="flex items-center justify-between gap-3 px-4 py-3 bg-muted/30">
-                <button className="flex items-center gap-2 flex-1 text-left" onClick={() => setOpenPhases((s) => ({ ...s, [phase.id]: !open }))}>
+              <div className="flex flex-col gap-2 px-3 py-3 bg-muted/30 md:flex-row md:items-center md:justify-between md:gap-3 md:px-4">
+                <button className="flex items-center gap-2 flex-1 text-left flex-wrap min-w-0" onClick={() => setOpenPhases((s) => ({ ...s, [phase.id]: !open }))}>
                   {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   <Badge variant="outline" className="font-mono">P{phase.position}</Badge>
                   <span className="text-sm font-semibold text-foreground">{phase.name}</span>
@@ -293,7 +293,7 @@ export default function AcademyEditor() {
                   {phase.is_pinned && <Badge variant="default" className="text-[10px]"><Pin className="h-3 w-3" /> Pinned</Badge>}
                   {phase.is_archived && <Badge variant="outline" className="text-[10px]">Archived</Badge>}
                 </button>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
                   <IconBtn title="Move up" onClick={() => reorder("academy_phases", phase.id, "position", -1)}><GripVertical className="h-3.5 w-3.5 rotate-90" /></IconBtn>
                   <IconBtn title="Edit" onClick={() => setEdit({ kind: "phase", data: phase })}><Pencil className="h-3.5 w-3.5" /></IconBtn>
                   <IconBtn title={phase.is_pinned ? "Unpin" : "Pin"} onClick={() => togglePin("academy_phases", phase.id, !!phase.is_pinned)}>
@@ -310,7 +310,7 @@ export default function AcademyEditor() {
               </div>
 
               {open && (
-                <div className="p-4 space-y-3">
+                <div className="p-3 md:p-4 space-y-3">
                   {phase.weeks.length === 0 && (
                     <p className="text-xs text-muted-foreground italic px-2">No weeks in this phase yet.</p>
                   )}
@@ -318,8 +318,8 @@ export default function AcademyEditor() {
                     const wOpen = openWeeks[week.id] ?? false;
                     return (
                       <div key={week.id} className={cn("rounded-lg border border-border/60 bg-background", week.is_archived && "opacity-60", week.is_pinned && "ring-1 ring-primary/30")}>
-                        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                          <button className="flex items-center gap-2 flex-1 text-left" onClick={() => setOpenWeeks((s) => ({ ...s, [week.id]: !wOpen }))}>
+                        <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                          <button className="flex items-center gap-2 flex-1 text-left flex-wrap min-w-0" onClick={() => setOpenWeeks((s) => ({ ...s, [week.id]: !wOpen }))}>
                             {wOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
                             <Badge variant="outline" className="font-mono text-[10px]">W{week.week_number}</Badge>
                             <span className="text-sm font-medium text-foreground">{week.title}</span>
@@ -327,7 +327,7 @@ export default function AcademyEditor() {
                             {week.is_pinned && <Pin className="h-3 w-3 text-primary" />}
                             {week.is_archived && <Badge variant="outline" className="text-[10px]">Archived</Badge>}
                           </button>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
                             <IconBtn title="Edit" onClick={() => setEdit({ kind: "week", data: week })}><Pencil className="h-3.5 w-3.5" /></IconBtn>
                             <IconBtn title={week.is_pinned ? "Unpin" : "Pin"} onClick={() => togglePin("academy_weeks", week.id, !!week.is_pinned)}>
                               {week.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
