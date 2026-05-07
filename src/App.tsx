@@ -39,6 +39,9 @@ import HRDashboard from "./pages/hr/HRDashboard";
 import TrainingHub from "./pages/TrainingHub";
 import TrainingDepartment from "./pages/TrainingDepartment";
 import TrainingCourse from "./pages/TrainingCourse";
+import AcademyHome from "./pages/hr/academy/AcademyHome";
+import AcademyWeekDetail from "./pages/hr/academy/WeekDetail";
+import AcademyLeadership from "./pages/hr/academy/LeadershipDashboard";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
@@ -166,6 +169,9 @@ const App = () => (
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/automations" element={<Automations />} />
                   <Route path="/training" element={<TrainingHub />} />
+                  <Route path="/training/academy" element={<AcademyHome />} />
+                  <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
+                  <Route path="/training/academy/leadership" element={<PermissionRoute permission="hr.training.view"><AcademyLeadership /></PermissionRoute>} />
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
