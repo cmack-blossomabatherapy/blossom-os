@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet } from "lucide-react";
+import {
+  ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet,
+  LayoutGrid, BriefcaseBusiness, Network, ListChecks, Star, GraduationCap,
+  Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,22 +119,24 @@ export default function EmployeeProfile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-3">
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-secondary/40 p-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="employment">Employment</TabsTrigger>
-          <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
-          <TabsTrigger value="training">Training</TabsTrigger>
-          {showCompensation && <TabsTrigger value="payroll">Payroll</TabsTrigger>}
-          {showTimeClock && <TabsTrigger value="timeclock">Time / Hours</TabsTrigger>}
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          {showNotes && <TabsTrigger value="notes">Notes</TabsTrigger>}
-          <TabsTrigger value="communication">Communication</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="access">Access</TabsTrigger>
-          {showCases && <TabsTrigger value="cases">Cases</TabsTrigger>}
-        </TabsList>
+        <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto h-auto gap-1 rounded-xl border border-border/60 bg-card/60 p-1 shadow-sm scrollbar-thin">
+            <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
+            <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
+            <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
+            <ProfileTab value="tasks" icon={ListChecks} label="Tasks" />
+            <ProfileTab value="reviews" icon={Star} label="Reviews" />
+            <ProfileTab value="training" icon={GraduationCap} label="Training" />
+            {showCompensation && <ProfileTab value="payroll" icon={Banknote} label="Payroll" />}
+            {showTimeClock && <ProfileTab value="timeclock" icon={Clock} label="Time / Hours" />}
+            <ProfileTab value="documents" icon={FileText} label="Documents" />
+            {showNotes && <ProfileTab value="notes" icon={StickyNote} label="Notes" />}
+            <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
+            <ProfileTab value="timeline" icon={History} label="Timeline" />
+            <ProfileTab value="access" icon={ShieldCheck} label="Access" />
+            {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
+          </TabsList>
+        </div>
 
         <TabsContent value="overview"><OverviewTab employee={employee} department={department} /></TabsContent>
         <TabsContent value="employment"><EmploymentTab employee={employee} department={department} onChange={() => load(employee.id)} /></TabsContent>
@@ -155,6 +161,18 @@ export default function EmployeeProfile() {
 
 function Info({ icon: Icon, children }: { icon: typeof Mail; children: React.ReactNode }) {
   return <span className="inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{children}</span>;
+}
+
+function ProfileTab({ value, icon: Icon, label }: { value: string; icon: typeof Mail; label: string }) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="group shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:text-foreground hover:bg-muted/60 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-primary/20"
+    >
+      <Icon className="h-3.5 w-3.5 transition-colors group-data-[state=active]:text-primary" />
+      <span className="whitespace-nowrap">{label}</span>
+    </TabsTrigger>
+  );
 }
 
 function ProfileStat({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
