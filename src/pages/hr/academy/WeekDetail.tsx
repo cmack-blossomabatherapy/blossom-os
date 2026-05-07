@@ -21,6 +21,7 @@ export default function WeekDetail() {
   const [progress, setProgress] = useState<AcademyProgress[]>([]);
   const [shadowOpen, setShadowOpen] = useState<{ moduleId?: string; suggested?: string; dept?: string } | null>(null);
   const [checkinOpen, setCheckinOpen] = useState<{ moduleId?: string; suggested?: string } | null>(null);
+  const [resourcesByModule, setResourcesByModule] = useState<Record<string, { id: string; label: string; url: string | null; kind: string }[]>>({});
 
   useEffect(() => { void load(); }, [weekId, user?.id]);
 
@@ -31,6 +32,16 @@ export default function WeekDetail() {
       for (const p of cur.phases) {
         const w = p.weeks.find((x) => x.id === weekId);
         if (w) { setWeek(w); setPhaseInfo({ name: p.name, color_token: p.color_token }); break; }
+      }
+    }
+    if (weekId) {
+      const { data: mods } = await supabase.from("academy_modules").select("id").eq("week_id", weekId);
+      const ids = (mods ?? []).map((m: any) => m.id);
+      if (ids.length) {
+        const { data: res } = await supabase.from("academy_module_resources").select("*").in("module_id", ids);
+        const map: Record<string, any[]> = {};
+        (res ?? []).forEach((r: any) => { (map[r.module_id] ??= []).push(r); });
+        setResourcesByModule(map);
       }
     }
     if (user?.id) {
@@ -105,6 +116,7 @@ export default function WeekDetail() {
             progress={progress.find((p) => p.module_id === m.id)}
             enrollmentId={enrollment?.id ?? ""}
             readOnly={!enrollment}
+            resources={resourcesByModule[m.id]}
             onShadow={() => setShadowOpen({ moduleId: m.id, suggested: m.leader_name ?? undefined, dept: m.department ?? undefined })}
             onCheckin={() => setCheckinOpen({ moduleId: m.id, suggested: m.leader_name ?? undefined })}
             onChange={refresh}
