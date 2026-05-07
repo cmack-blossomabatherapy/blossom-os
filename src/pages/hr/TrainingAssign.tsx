@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarIcon, CheckCircle2, ClipboardList, Loader2, Search, Send, Users } from "lucide-react";
+import { AlertTriangle, CalendarIcon, CheckCircle2, ClipboardList, Clock, Loader2, Search, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
 
 type RoleFilter = "all" | "rbt" | "bcba";
 type AssignmentStatus = "assigned" | "in_progress" | "completed" | "overdue" | "expired";
@@ -160,21 +163,22 @@ export default function TrainingAssign() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
-      <div>
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-          <ClipboardList className="h-3.5 w-3.5" /> Training Admin
+    <GlassPageShell
+      eyebrow="Training Admin"
+      eyebrowIcon={ClipboardList}
+      title="Assign Trainings"
+      description="Assign courses to RBTs and BCBAs and track per-user completion status."
+      stats={selectedCourse && courseStats ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <GlassStat icon={Users} tone="primary" label="Assigned" value={courseStats.total} />
+          <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={courseStats.completed} hint={`${courseStats.rate}% rate`} />
+          <GlassStat icon={Clock} tone="primary" label="In progress" value={courseStats.inProgress} />
+          <GlassStat icon={AlertTriangle} tone="destructive" label="Overdue" value={courseStats.overdue} />
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight mt-1">Assign Trainings</h1>
-        <p className="text-sm text-muted-foreground mt-1">Assign courses to RBTs and BCBAs and track per-user completion status.</p>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Pick a course & due date</CardTitle>
-          <CardDescription>Choose what to assign — then select the people below.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-[1fr_240px_auto] gap-3 items-end">
+      ) : undefined}
+    >
+      <GlassPanel title="Pick a course & due date" description="Choose what to assign — then select the people below." icon={Send} iconTone="primary">
+        <div className="grid md:grid-cols-[1fr_240px_auto] gap-3 items-end">
           <div className="space-y-1.5">
             <Label className="text-xs">Training course</Label>
             <Select value={selectedCourse} onValueChange={(v) => { setSelectedCourse(v); setSelected(new Set()); }}>
@@ -197,19 +201,10 @@ export default function TrainingAssign() {
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
             Assign to {selected.size || 0}
           </Button>
-        </CardContent>
-      </Card>
-
-      {selectedCourse && courseStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">Currently assigned</div><div className="text-2xl font-semibold mt-1">{courseStats.total}</div></CardContent></Card>
-          <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">Completed</div><div className="text-2xl font-semibold mt-1 text-success">{courseStats.completed}</div></CardContent></Card>
-          <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">In progress</div><div className="text-2xl font-semibold mt-1 text-info">{courseStats.inProgress}</div></CardContent></Card>
-          <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground">Overdue</div><div className="text-2xl font-semibold mt-1 text-destructive">{courseStats.overdue}</div></CardContent></Card>
         </div>
-      )}
+      </GlassPanel>
 
-      <Card>
+      <Card className="glass-surface border-0">
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
@@ -309,6 +304,6 @@ export default function TrainingAssign() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </GlassPageShell>
   );
 }

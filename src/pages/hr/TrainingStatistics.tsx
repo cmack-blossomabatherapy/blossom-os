@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, BarChart3, BookOpen, CheckCircle2, Clock, GraduationCap, Loader2, TrendingUp, Users } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
 
 type TrainingStatus = "assigned" | "in_progress" | "completed" | "overdue" | "expired";
 
@@ -57,29 +60,6 @@ const isOverdue = (a: AssignmentRow) => {
   if (!a.due_date) return false;
   return new Date(a.due_date).getTime() < Date.now();
 };
-
-function StatCard({ icon: Icon, label, value, hint, tone = "primary" }: { icon: typeof BarChart3; label: string; value: string | number; hint?: string; tone?: "primary" | "success" | "destructive" | "info" }) {
-  const toneMap = {
-    primary: "bg-primary/10 text-primary",
-    success: "bg-success/10 text-success",
-    destructive: "bg-destructive/10 text-destructive",
-    info: "bg-info/10 text-info",
-  } as const;
-  return (
-    <Card>
-      <CardContent className="p-5 flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-          <div className="text-3xl font-semibold tracking-tight">{value}</div>
-          {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
-        </div>
-        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", toneMap[tone])}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function TrainingStatistics() {
   const [loading, setLoading] = useState(true);
@@ -203,18 +183,15 @@ export default function TrainingStatistics() {
   }
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-            <BarChart3 className="h-3.5 w-3.5" /> Training Admin
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight mt-1">Training Statistics</h1>
-          <p className="text-sm text-muted-foreground mt-1">Completion rates, assignment volume, and overdue trainings across the team.</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <GlassPageShell
+      eyebrow="Training Admin"
+      eyebrowIcon={BarChart3}
+      title="Training Statistics"
+      description="Completion rates, assignment volume, and overdue trainings across the team."
+      actions={
+        <>
           <Select value={clinicFilter} onValueChange={setClinicFilter}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="All clinics" /></SelectTrigger>
+            <SelectTrigger className="w-[180px] h-9 bg-background/70 backdrop-blur"><SelectValue placeholder="All clinics" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All clinics</SelectItem>
               {clinics.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -223,26 +200,21 @@ export default function TrainingStatistics() {
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/training-dashboard">Open admin</Link>
           </Button>
+        </>
+      }
+      stats={
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <GlassStat icon={BookOpen} tone="primary" label="Assignments" value={stats.total} hint={`${stats.learners} learners`} />
+          <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={stats.completed} hint={`${stats.completionRate}% rate`} />
+          <GlassStat icon={Clock} tone="primary" label="In progress" value={stats.inProgress} />
+          <GlassStat icon={AlertTriangle} tone="destructive" label="Overdue" value={stats.overdue} hint={stats.overdue > 0 ? "Action needed" : "All clear"} />
+          <GlassStat icon={TrendingUp} tone="primary" label="Completion" value={`${stats.completionRate}%`} />
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard icon={BookOpen} label="Total assignments" value={stats.total} hint={`${stats.learners} learners`} tone="primary" />
-        <StatCard icon={CheckCircle2} label="Completed" value={stats.completed} hint={`${stats.completionRate}% completion`} tone="success" />
-        <StatCard icon={Clock} label="In progress" value={stats.inProgress} tone="info" />
-        <StatCard icon={AlertTriangle} label="Overdue" value={stats.overdue} hint={stats.overdue > 0 ? "Action needed" : "All clear"} tone="destructive" />
-        <StatCard icon={TrendingUp} label="Completion rate" value={`${stats.completionRate}%`} tone="primary" />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Overall completion</CardTitle>
-          <CardDescription>{stats.completed} of {stats.total} assignments completed</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Progress value={stats.completionRate} className="h-3" />
-        </CardContent>
-      </Card>
+      }
+    >
+      <GlassPanel icon={GraduationCap} iconTone="primary" title="Overall completion" description={`${stats.completed} of ${stats.total} assignments completed`}>
+        <Progress value={stats.completionRate} className="h-3" />
+      </GlassPanel>
 
       <Tabs defaultValue="overdue" className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -251,11 +223,11 @@ export default function TrainingStatistics() {
             <TabsTrigger value="courses">By course ({courseStats.length})</TabsTrigger>
             <TabsTrigger value="employees">By employee ({employeeStats.length})</TabsTrigger>
           </TabsList>
-          <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="md:w-[280px]" />
+          <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="md:w-[280px] bg-background/70 backdrop-blur" />
         </div>
 
         <TabsContent value="overdue">
-          <Card>
+          <Card className="glass-surface border-0">
             <CardContent className="p-0">
               {overdueRows.length === 0 ? (
                 <div className="p-10 text-center text-sm text-muted-foreground">No overdue trainings. Great work.</div>
@@ -291,7 +263,7 @@ export default function TrainingStatistics() {
         </TabsContent>
 
         <TabsContent value="courses">
-          <Card>
+          <Card className="glass-surface border-0">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -334,7 +306,7 @@ export default function TrainingStatistics() {
         </TabsContent>
 
         <TabsContent value="employees">
-          <Card>
+          <Card className="glass-surface border-0">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -380,6 +352,6 @@ export default function TrainingStatistics() {
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Users className="h-3.5 w-3.5" /> {stats.learners} unique learners across {courses.length} active courses
       </div>
-    </div>
+    </GlassPageShell>
   );
 }

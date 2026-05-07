@@ -65,9 +65,17 @@ export function TrainingTab({ employee }: { employee: Employee }) {
   }
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> Training & Certifications</h3>
+    <Card className="glass-surface border-0 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/12 text-primary">
+            <GraduationCap className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-[15px] font-semibold tracking-tight">Training & Certifications</h3>
+            <p className="text-xs text-muted-foreground">{items.length} assignment{items.length === 1 ? "" : "s"}</p>
+          </div>
+        </div>
         {canAssign && <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> Assign training</Button>}
       </div>
 
@@ -76,7 +84,7 @@ export function TrainingTab({ employee }: { employee: Employee }) {
       ) : (
         <div className="space-y-2">
           {items.map((t) => (
-            <div key={t.id} className="p-3 rounded-lg border border-border/40">
+            <div key={t.id} className="p-3 rounded-xl border border-border/40 bg-background/50 backdrop-blur-sm transition hover:bg-background/70">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
