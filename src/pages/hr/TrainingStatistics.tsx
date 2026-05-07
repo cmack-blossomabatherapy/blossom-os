@@ -239,7 +239,7 @@ export default function TrainingStatistics() {
           <Card className="glass-surface border-0">
             <CardContent className="p-0">
               {overdueRows.length === 0 ? (
-                <div className="p-10 text-center text-sm text-muted-foreground">No overdue trainings. Great work.</div>
+                <StateView variant="empty" icon={CheckCircle2} title="All caught up" description="No overdue trainings right now. Great work." />
               ) : (
                 <Table>
                   <TableHeader>
@@ -306,7 +306,7 @@ export default function TrainingStatistics() {
                     );
                   })}
                   {courseStats.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-10">No courses match.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="p-0"><StateView variant="empty" compact title="No courses match" description="Try clearing the search or clinic filter." /></TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -349,7 +349,7 @@ export default function TrainingStatistics() {
                     );
                   })}
                   {employeeStats.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-10">No employees match.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="p-0"><StateView variant="empty" compact title="No employees match" description="Try clearing the search or clinic filter." /></TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
