@@ -689,6 +689,68 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_assessments: {
         Row: {
           alerts: string[]
@@ -3061,6 +3123,45 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          id: string
+          metadata: Json
+          search: unknown
+          source_id: string | null
+          source_title: string
+          source_type: string
+          source_url: string | null
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          search?: unknown
+          source_id?: string | null
+          source_title: string
+          source_type: string
+          source_url?: string | null
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          search?: unknown
+          source_id?: string | null
+          source_title?: string
+          source_type?: string
+          source_url?: string | null
+        }
+        Relationships: []
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
@@ -3736,7 +3837,9 @@ export type Database = {
           external_url: string | null
           id: string
           is_active: boolean
+          is_pinned: boolean
           name: string
+          pinned_at: string | null
           provider: string | null
           renewal_months: number | null
           required_default: boolean
@@ -3759,7 +3862,9 @@ export type Database = {
           external_url?: string | null
           id?: string
           is_active?: boolean
+          is_pinned?: boolean
           name: string
+          pinned_at?: string | null
           provider?: string | null
           renewal_months?: number | null
           required_default?: boolean
@@ -3782,7 +3887,9 @@ export type Database = {
           external_url?: string | null
           id?: string
           is_active?: boolean
+          is_pinned?: boolean
           name?: string
+          pinned_at?: string | null
           provider?: string | null
           renewal_months?: number | null
           required_default?: boolean
@@ -4216,6 +4323,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_track_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          due_after_days: number | null
+          id: string
+          required: boolean
+          sort_order: number
+          track_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          due_after_days?: number | null
+          id?: string
+          required?: boolean
+          sort_order?: number
+          track_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          due_after_days?: number | null
+          id?: string
+          required?: boolean
+          sort_order?: number
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_track_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_track_courses_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "training_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_tracks: {
+        Row: {
+          auto_assign_on_hire: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          role_targets: string[]
+          updated_at: string
+        }
+        Insert: {
+          auto_assign_on_hire?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          role_targets?: string[]
+          updated_at?: string
+        }
+        Update: {
+          auto_assign_on_hire?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          role_targets?: string[]
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
