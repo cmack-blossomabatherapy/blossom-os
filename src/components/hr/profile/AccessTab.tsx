@@ -6,7 +6,7 @@ import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as Lin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search } from "lucide-react";
+import { Search, Unlink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/hr/types";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
@@ -29,6 +29,8 @@ export function AccessTab({ employee }: { employee: Employee }) {
   const [accountQuery, setAccountQuery] = useState("");
   const [accountResults, setAccountResults] = useState<{ user_id: string; email: string | null; display_name: string | null }[]>([]);
   const [searchingAccounts, setSearchingAccounts] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
 
   useEffect(() => {
     if (!linkLoginOpen) return;
@@ -148,6 +150,20 @@ export function AccessTab({ employee }: { employee: Employee }) {
     }
     setLinkLoginOpen(false);
     // Force refresh of parent record
+    window.location.reload();
+  }
+
+  async function unlinkLogin() {
+    if (!employee.user_id) return;
+    setUnlinking(true);
+    const { error } = await supabase
+      .from("employees")
+      .update({ user_id: null })
+      .eq("id", employee.id);
+    setUnlinking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Login unlinked from this employee.");
+    setUnlinkOpen(false);
     window.location.reload();
   }
 
