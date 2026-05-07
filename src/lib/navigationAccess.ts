@@ -167,6 +167,16 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
   const allowedIntelligencePaths = restrictedIntelligence
     ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
     : null;
+  const sectionItemRestrictions: Record<string, Set<string>> = {};
+  if (!isFullNavigation) {
+    for (const exception of exceptions) {
+      if (!exception.sectionItemPaths) continue;
+      for (const [title, paths] of Object.entries(exception.sectionItemPaths)) {
+        if (!sectionItemRestrictions[title]) sectionItemRestrictions[title] = new Set();
+        paths.forEach((p) => sectionItemRestrictions[title].add(navPathToRoutePrefix(p)));
+      }
+    }
+  }
 
   return baseSections
     .map((section) => ({
@@ -177,6 +187,8 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
         if (section.title === "Intelligence" && allowedIntelligencePaths) {
           if (!allowedIntelligencePaths.has(navPathToRoutePrefix(item.path))) return false;
         }
+        const sectionRestriction = sectionItemRestrictions[section.title];
+        if (sectionRestriction && !sectionRestriction.has(navPathToRoutePrefix(item.path))) return false;
         if (!isFullNavigation && section.title !== "Intelligence" && !allowedSections.has(section.title) && !allowedPaths.has(navPathToRoutePrefix(item.path))) return false;
         return !item.perm || hasPermission(item.perm);
       }),
