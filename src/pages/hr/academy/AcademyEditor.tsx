@@ -59,6 +59,10 @@ export default function AcademyEditor() {
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // edit dialog state
   type EditTarget =
