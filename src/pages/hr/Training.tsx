@@ -362,10 +362,12 @@ export default function Training() {
             </div>
           </GlassPanel>
         </TabsContent>
+
+        {/* ACADEMY EDITOR */}
+        <TabsContent value="academy">
+          <AcademyEditor />
+        </TabsContent>
       </Tabs>
-
-      <TabsAcademyMount tab={tab} />
-
       <StaffAssignDialog
         open={!!staffAssignTrack}
         onClose={() => setStaffAssignTrack(null)}
