@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as LinkIcon } from "lucide-react";
+import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as LinkIcon, Mail, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/hr/types";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
@@ -13,9 +14,12 @@ import { toast } from "sonner";
 export function AccessTab({ employee }: { employee: Employee }) {
   const { isAdmin, hasPerm } = useAuth();
   const canManageRoles = isAdmin || hasPerm("settings.manage");
+  const canSendLink = isAdmin || hasPerm("hr.employees.edit");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkResult, setLinkResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!employee.user_id) {
@@ -74,6 +78,29 @@ export function AccessTab({ employee }: { employee: Employee }) {
     { label: "CentralReach", on: false, hint: "Manual setup required" },
   ];
 
+  async function sendMagicLink() {
+    if (!employee.email) {
+      toast.error("Add an email to this employee before sending a sign-in link.");
+      return;
+    }
+    setSendingLink(true);
+    setLinkResult(null);
+    const { data, error } = await supabase.functions.invoke("admin-employee-magic-link", {
+      body: { employeeId: employee.id, siteUrl: window.location.origin },
+    });
+    setSendingLink(false);
+    if (error) { toast.error(error.message); return; }
+    if (data?.emailSent) {
+      toast.success(`Sign-in link sent to ${employee.email}`);
+      setLinkResult(`Sign-in link emailed to ${employee.email}. They'll be asked to set a password after signing in.`);
+    } else if (data?.magicLink) {
+      toast.warning("Email service unavailable — copy the link manually.");
+      setLinkResult(data.magicLink);
+    } else {
+      toast.error(data?.emailError ?? "Could not send sign-in link.");
+    }
+  }
+
   const roleToggles: { key: AppRole; title: string; desc: string; icon: typeof GraduationCap }[] = [
     {
       key: "training_admin",
@@ -93,6 +120,35 @@ export function AccessTab({ employee }: { employee: Employee }) {
               No login linked
             </Badge>
           )}
+        </div>
+        <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 p-3">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {employee.user_id ? "Send a new sign-in link" : "Send sign-in link to activate account"}
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {employee.email
+                  ? <>Emails <span className="font-medium text-foreground">{employee.email}</span> a one-click sign-in link. They'll set their own password right after.</>
+                  : "Add an email to this employee first."}
+              </p>
+              {linkResult && (
+                <p className="mt-2 text-[11px] break-all text-muted-foreground">{linkResult}</p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={sendMagicLink}
+              disabled={!canSendLink || !employee.email || sendingLink}
+              className="shrink-0"
+            >
+              {sendingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {employee.user_id ? "Resend link" : "Send link"}
+            </Button>
+          </div>
         </div>
         <div className="space-y-2">
           {roleToggles.map((rt) => {
