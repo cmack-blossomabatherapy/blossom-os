@@ -276,6 +276,7 @@ export default function Training() {
                     <div className="flex flex-wrap items-center gap-1">
                       <Button variant="ghost" size="sm" onClick={() => togglePin(c)} title={c.is_pinned ? "Unpin" : "Pin"}>{c.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}</Button>
                       <Button variant="ghost" size="sm" onClick={() => setAssignOpen(c)}><Send className="h-3.5 w-3.5 mr-1" /> Assign</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setLessonsCourse(c)}><ListChecks className="h-3.5 w-3.5 mr-1" /> Lessons</Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditor(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => duplicateCourse(c)} title="Duplicate">⧉</Button>
                       <Button variant="ghost" size="sm" onClick={() => toggleArchive(c)} title={c.is_active ? "Archive" : "Restore"}>{c.is_active ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}</Button>
