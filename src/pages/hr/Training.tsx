@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { AcademyEditor } from "@/components/training/AcademyEditor";
 import { StaffAssignDialog } from "@/components/training/StaffAssignDialog";
 import { TrackCoursesSortable } from "@/components/training/TrackCoursesSortable";
+import { LessonsQuizzesEditor } from "@/components/training/LessonsQuizzesEditor";
 
 type Course = {
   id: string; title: string; name: string; description: string | null;
@@ -58,6 +59,7 @@ export default function Training() {
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [staffAssignTrack, setStaffAssignTrack] = useState<Track | null>(null);
   const [trackRoleFilter, setTrackRoleFilter] = useState<"all" | "rbt" | "bcba">("all");
+  const [lessonsCourse, setLessonsCourse] = useState<Course | null>(null);
 
   useEffect(() => { void load(); }, []);
 
