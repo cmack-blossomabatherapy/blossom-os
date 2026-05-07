@@ -108,6 +108,7 @@ const navSections: NavSection[] = [
       { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
+      { label: "Assign Tracks", icon: GraduationCap, path: "/admin/track-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
