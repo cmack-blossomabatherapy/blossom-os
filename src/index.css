@@ -221,13 +221,25 @@
     @apply bg-card rounded-xl border border-border/60 p-4 shadow-sm hover:shadow-md transition-shadow;
   }
   .nav-item {
-    @apply flex min-h-11 items-center justify-start gap-1 rounded-lg px-2 py-2 text-left text-[11px] font-medium transition-colors md:min-h-0 md:gap-3 md:px-3 md:text-sm;
+    @apply relative flex min-h-11 items-center justify-start gap-1 rounded-xl px-2 py-2 text-left text-[11px] font-medium transition-all duration-200 md:min-h-0 md:gap-3 md:px-3 md:py-2 md:text-[13px];
   }
   .nav-item-active {
-    @apply bg-sidebar-accent text-sidebar-accent-foreground;
+    @apply bg-sidebar-accent/80 text-sidebar-accent-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.08),0_8px_20px_-12px_hsl(var(--sidebar-primary)/0.6)];
+  }
+  .nav-item-active::before {
+    content: "";
+    @apply absolute left-0 top-1/2 hidden h-5 w-[3px] -translate-y-1/2 rounded-full bg-sidebar-primary md:block;
   }
   .nav-item-inactive {
-    @apply text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground;
+    @apply text-sidebar-foreground/90 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground;
+  }
+  .sidebar-shell {
+    background:
+      radial-gradient(120% 60% at 0% 0%, hsl(var(--sidebar-primary) / 0.16) 0%, transparent 55%),
+      radial-gradient(80% 50% at 100% 100%, hsl(var(--accent) / 0.08) 0%, transparent 60%),
+      linear-gradient(180deg, hsl(var(--sidebar-background)) 0%, hsl(195 38% 12%) 100%);
+    border-right: 1px solid hsl(var(--sidebar-border) / 0.6);
+    box-shadow: inset -1px 0 0 hsl(0 0% 100% / 0.03);
   }
   .mobile-menu-item {
     @apply flex min-h-11 items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary;

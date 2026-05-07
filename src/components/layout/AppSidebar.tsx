@@ -414,23 +414,23 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           </div>
         </SheetContent>
       </Sheet>
-      <aside className="hidden shrink-0 md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col md:border-r md:border-sidebar-border md:bg-sidebar">
+      <aside className="sidebar-shell hidden shrink-0 md:sticky md:top-0 md:flex md:h-screen md:w-60 md:flex-col">
       {/* Logo */}
-      <div className="hidden h-20 items-center justify-center border-b border-sidebar-border bg-sidebar px-4 md:flex">
-        <img src={logo} alt="Blossom ABA Therapy" className="max-h-14 w-full object-contain" />
+      <div className="hidden h-20 items-center justify-center border-b border-sidebar-border/50 px-4 md:flex">
+        <img src={logoWhite} alt="Blossom ABA Therapy" className="max-h-12 w-auto object-contain drop-shadow-[0_4px_12px_hsl(var(--sidebar-primary)/0.35)]" />
       </div>
 
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
+      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
         <div className="relative px-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-muted" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-muted" />
           <Input
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
             onKeyDown={submitNavSearch(navQuery, false)}
             placeholder="Search…"
-            className="h-8 rounded-md border-sidebar-border bg-sidebar-accent/40 pl-8 text-xs text-sidebar-foreground placeholder:text-sidebar-muted focus-visible:ring-sidebar-primary"
+            className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-9 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
           />
         </div>
         {sections.map((section, i) => {
@@ -442,14 +442,14 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               <button
                 type="button"
                 onClick={() => toggleSection(section.title!)}
-                className="mb-1 flex w-full items-center justify-between rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-muted transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:mb-1.5 md:px-3 md:text-[11px]"
+                className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted/80 transition-colors hover:text-sidebar-foreground"
                 aria-expanded={sectionOpen}
               >
                 <span>{section.title}</span>
-                <ChevronDown className={cn("h-3 w-3 transition-transform", !sectionOpen && "-rotate-90")} />
+                <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", !sectionOpen && "-rotate-90")} />
               </button>
             )}
-            {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5">
+            {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5 md:pl-1">
               {section.items.map((item) => (
                 item.path === "/training" && !academyComplete ? (
                   <Tooltip key={item.path}>
