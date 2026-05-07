@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles, Layers, GraduationCap } from "lucide-react";
+import { ArrowRight, Award, CheckCircle2, Clock, Flame, Play, Search, Sparkles, Layers, GraduationCap } from "lucide-react";
 import { Pin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ type LiveBadge = { id: string; title: string; description: string | null; icon: 
 type CourseDisplayStatus = { status: string; progress: number; dueDate?: string; required: boolean };
 
 export default function TrainingHub() {
-  const { user, roles } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
