@@ -70,7 +70,7 @@ export default function EmployeeDirectory() {
         ) : null
       }
       stats={
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
           <GlassStat icon={Users} tone="primary" label="Total" value={employees.length} />
           <GlassStat tone="success" label="Active" value={employees.filter((e) => e.status === "active").length} />
           <GlassStat tone="warning" label="Pending" value={employees.filter((e) => e.status === "pending_start").length} />
@@ -118,7 +118,25 @@ export default function EmployeeDirectory() {
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">No employees match these filters.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="divide-y divide-border/40 md:hidden">
+            {filtered.map((e) => (
+              <li key={e.id}>
+                <Link to={`/hr/employees/${e.id}`} className="flex items-center gap-3 p-3 active:bg-muted/30">
+                  <EmployeeAvatar employee={e} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-foreground truncate">{employeeFullName(e)}</p>
+                      <EmployeeStatusBadge status={e.status as EmployeeStatus} />
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{e.job_title} · {deptName(e.department_id)}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{e.state}{e.clinic ? ` · ${e.clinic}` : ""}</p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/30">
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -154,6 +172,7 @@ export default function EmployeeDirectory() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </GlassPanel>
 
