@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, ArrowRight, Bell, Briefcase, CalendarCheck, CheckCircle2, Clock, Download, FileText,
-  Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, UserCheck,
-  UserCog, UserPlus, Users, Wallet,
+  Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, SlidersHorizontal,
+  UserCheck, UserCog, UserPlus, Users, Wallet, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
