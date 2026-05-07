@@ -70,7 +70,7 @@ export default function HRSettings() {
         canEdit={canEdit}
         onSave={() => save("pto.accrual")}
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Hours per pay period" type="number"
             value={String(draft["pto.accrual"]?.hours_per_pay_period ?? "")}
             onChange={(v) => update("pto.accrual", "hours_per_pay_period", parseFloat(v) || 0)}
@@ -93,7 +93,7 @@ export default function HRSettings() {
         canEdit={canEdit}
         onSave={() => save("overtime.threshold")}
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Weekly hours" type="number"
             value={String(draft["overtime.threshold"]?.weekly_hours ?? "")}
             onChange={(v) => update("overtime.threshold", "weekly_hours", parseFloat(v) || 0)}
@@ -116,7 +116,7 @@ export default function HRSettings() {
         canEdit={canEdit}
         onSave={() => save("kiosk.geofence")}
       >
-        <div className="grid grid-cols-2 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:items-end">
           <div className="flex items-center gap-3 pb-2">
             <Switch
               checked={Boolean(draft["kiosk.geofence"]?.enabled)}
@@ -140,7 +140,7 @@ export default function HRSettings() {
         canEdit={canEdit}
         onSave={() => save("payroll.cycle")}
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Frequency</Label>
             <Select
