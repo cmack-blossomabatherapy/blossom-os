@@ -456,7 +456,49 @@ function Card({ title, icon: Icon, subtitle, children }: { title: string; icon: 
 function toneClass(tone: Tone) { return tone === "success" ? "bg-success/10 text-success" : tone === "warning" ? "bg-warning/15 text-warning" : tone === "critical" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"; }
 function StatusPill({ label, tone }: { label: string; tone: Tone }) { return <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold", toneClass(tone))}>{label}</span>; }
 function employeeIssue(employee: HrEmployee) { return issueText(employee); }
-function QueueColumn({ title, rows, onSelect, onReady }: { title: string; rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void; onReady: (employee: HrEmployee) => void }) { return <div className="rounded-lg border border-border/60 bg-background p-3"><div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold text-foreground">{title}</p><span className="text-xs text-muted-foreground">{rows.length}</span></div><div className="space-y-2">{rows.slice(0, 5).map((employee) => <div key={`${title}-${employee.id}`} className="rounded-lg border border-border/50 bg-card p-3"><button type="button" onClick={() => onSelect(employee)} className="w-full text-left"><div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-foreground">{employee.employee}</p><StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} /></div><p className="mt-1 text-xs text-muted-foreground">{employee.role} · {employee.state} · {employee.department}</p><p className="mt-2 text-xs font-medium text-foreground">{employeeIssue(employee)}</p><p className="mt-1 text-xs text-muted-foreground">Manager: {employee.manager ?? "Unassigned"}</p></button><div className="mt-3 grid grid-cols-2 gap-1.5"><QuickAction label="Open" icon={ArrowRight} onClick={() => onSelect(employee)} /><QuickAction label="Training" icon={GraduationCap} onClick={() => toast.success(`Open Training Admin to assign ${employee.employee}`)} /><QuickAction label="Review" icon={CalendarCheck} onClick={() => toast.success(`Open Reviews to schedule ${employee.employee}`)} /><QuickAction label="Doc" icon={FileText} onClick={() => toast.success(`Open profile documents for ${employee.employee}`)} /><QuickAction label="Done" icon={CheckCircle2} onClick={() => toast.success(`Use the source workflow to complete ${employee.employee}'s task`)} /><QuickAction label="Remind" icon={Send} onClick={() => toast.success(`Reminder queued for ${employee.employee}`)} /></div>{employee.onboardingStatus !== "Ready For Start" && <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => void onReady(employee)}>Mark Ready</Button>}</div>)}{rows.length === 0 && <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">No current items.</p>}</div></div>; }
+function QueueColumn({ title, tone = "info", rows, onSelect, onReady }: { title: string; tone?: Tone; rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void; onReady: (employee: HrEmployee) => void }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-1.5 w-1.5 rounded-full", tone === "critical" ? "bg-destructive" : tone === "warning" ? "bg-warning" : "bg-primary")} />
+          <p className="text-[13px] font-semibold text-foreground">{title}</p>
+        </div>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground tabular-nums">{rows.length}</span>
+      </div>
+      <div className="space-y-2">
+        {rows.slice(0, 5).map((employee) => (
+          <div key={`${title}-${employee.id}`} className="group rounded-xl border border-border/50 bg-card p-3 transition-all hover:border-primary/30 hover:shadow-sm">
+            <button type="button" onClick={() => onSelect(employee)} className="w-full text-left">
+              <div className="flex items-start justify-between gap-2">
+                <p className="truncate text-sm font-medium text-foreground">{employee.employee}</p>
+                <StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} />
+              </div>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{employee.role} · {employee.state}</p>
+              <p className="mt-2 line-clamp-2 text-xs font-medium text-foreground/90">{employeeIssue(employee)}</p>
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">Manager · {employee.manager ?? "Unassigned"}</p>
+            </button>
+            <div className="mt-2.5 flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+              <QuickAction label="Open" icon={ArrowRight} onClick={() => onSelect(employee)} />
+              <QuickAction label="Remind" icon={Send} onClick={() => toast.success(`Reminder queued for ${employee.employee}`)} />
+              {employee.onboardingStatus !== "Ready For Start" && (
+                <Button variant="outline" size="sm" className="ml-auto h-7 px-2.5 text-[11px]" onClick={() => void onReady(employee)}>
+                  <CheckCircle2 className="mr-1 h-3 w-3" />Mark Ready
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {rows.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-8 text-center">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <p className="text-xs font-medium text-muted-foreground">All clear</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function QuickAction({ label, icon: Icon, onClick }: { label: string; icon: typeof ArrowRight; onClick: () => void }) { return <Button type="button" variant="ghost" size="sm" className="h-8 justify-start gap-1.5 px-2 text-xs" onClick={onClick}><Icon className="h-3.5 w-3.5" />{label}</Button>; }
 function HealthSnapshot({ rows }: { rows: HrEmployee[] }) { const items = [["Ready for assignment", rows.filter((e) => e.staffingReady).length, "success"], ["Onboarding blocked", rows.filter((e) => e.onboardingStatus === "Missing Docs" || !e.onboarding.backgroundCheck || !e.onboarding.i9).length, "critical"], ["Reviews due", rows.filter((e) => ["Due Soon", "Overdue"].includes(e.reviewStatus)).length, "warning"], ["Training overdue", rows.filter((e) => e.trainingStatus === "Overdue").length, "critical"], ["Payroll exceptions", rows.filter((e) => e.payrollStatus !== "Ready").length, "critical"], ["Manager gaps", rows.filter((e) => !e.manager).length, "warning"]] as const; return <div className="grid gap-3 sm:grid-cols-2">{items.map(([label, value, tone]) => <div key={label} className="rounded-lg border border-border/60 bg-background p-4"><StatusPill label={label} tone={tone} /><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p></div>)}</div>; }
 function LifecycleBoard({ rows }: { rows: HrEmployee[] }) { const stages: DashboardStatus[] = ["Pre-Hire", "Onboarding", "Training", "Active", "Review Due", "At Risk", "Inactive", "Terminated"]; return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">{stages.map((stage) => { const matching = rows.filter((employee) => employee.status === stage); const oldest = matching.length ? Math.max(...matching.map((employee) => daysSince(employee.stageEnteredAt))) : 0; const average = avg(matching.map((employee) => daysSince(employee.stageEnteredAt))); const tone = stage === "At Risk" || oldest > 21 ? "critical" : oldest > 10 ? "warning" : "success"; return <div key={stage} className="rounded-lg border border-border/60 bg-background p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold text-foreground">{stage}</p><StatusPill label={tone === "success" ? "Green" : tone === "warning" ? "Yellow" : "Red"} tone={tone} /></div><p className="mt-3 text-2xl font-semibold text-foreground">{matching.length}</p><p className="mt-2 text-xs text-muted-foreground">Oldest {oldest}d · Avg {average}d</p></div>; })}</div>; }
