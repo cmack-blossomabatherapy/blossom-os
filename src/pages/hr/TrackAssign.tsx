@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Search, Send, Users, CalendarIcon, Loader2, CheckCircle2, AlertTriangle, Compass, Trash2 } from "lucide-react";
+import { GraduationCap, Search, Send, Users, CalendarIcon, Loader2, CheckCircle2, AlertTriangle, Compass, Trash2, History, UserPlus, UserMinus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,17 @@ interface TrainingTrack { id: string; name: string; description: string | null; 
 interface AcademyTrack { id: string; name: string; description: string | null; is_active: boolean; }
 interface TrainingEnrollment { id: string; track_id: string; employee_id: string; status: string; due_date: string | null; completed_at: string | null; }
 interface AcademyEnrollment { id: string; track_id: string; employee_id: string; status: string; path: string; start_date: string; }
+interface AcademyAuditRow {
+  id: string;
+  action: "assigned" | "removed" | "updated";
+  employee_name: string | null;
+  track_name: string | null;
+  track_id: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
+  details: any;
+  created_at: string;
+}
 
 const trainingStatusMeta: Record<string, { label: string; tone: string }> = {
   assigned: { label: "Assigned", tone: "bg-muted text-muted-foreground" },
@@ -77,6 +88,23 @@ export default function TrackAssign() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmRemove, setConfirmRemove] = useState<{ id: string; name: string; table: "training_track_enrollments" | "academy_enrollments" } | null>(null);
+  const [auditRows, setAuditRows] = useState<AcademyAuditRow[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditScope, setAuditScope] = useState<"all" | "track">("all");
+
+  const loadAudit = async (trackId?: string) => {
+    setAuditLoading(true);
+    let q = supabase
+      .from("academy_enrollment_audit")
+      .select("id,action,employee_name,track_name,track_id,actor_name,actor_email,details,created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (trackId) q = q.eq("track_id", trackId);
+    const { data, error } = await q;
+    setAuditLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setAuditRows((data ?? []) as AcademyAuditRow[]);
+  };
 
   const loadAll = async () => {
     setLoading(true);
@@ -112,6 +140,10 @@ export default function TrackAssign() {
 
   useEffect(() => { void loadAll(); }, []);
   useEffect(() => { setSelected(new Set()); setSelectedTrack(""); }, [mode]);
+  useEffect(() => {
+    if (mode !== "academy") return;
+    void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
+  }, [mode, auditScope, selectedTrack]);
 
   const tracks = mode === "training" ? trainingTracks : academyTracks;
   const currentTrack = tracks.find((t) => t.id === selectedTrack) ?? null;
@@ -202,6 +234,7 @@ export default function TrackAssign() {
     toast.success(`Enrolled ${selected.size} ${selected.size === 1 ? "person" : "people"} in ${currentTrack?.name}.`);
     setSelected(new Set());
     void loadAll();
+    if (mode === "academy") void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
   };
 
   const handleRemove = async () => {
@@ -211,6 +244,7 @@ export default function TrackAssign() {
     toast.success("Enrollment removed.");
     setConfirmRemove(null);
     void loadAll();
+    if (mode === "academy") void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
   };
 
   if (loading) {
@@ -419,6 +453,81 @@ export default function TrackAssign() {
               )}
             </CardContent>
           </Card>
+
+          {mode === "academy" && (
+            <Card className="glass-surface border-0">
+              <CardHeader className="pb-3">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2"><History className="h-4 w-4" /> Activity Log</CardTitle>
+                    <CardDescription>Recent Academy enrollment activity {auditScope === "track" && currentTrack ? `for ${currentTrack.name}` : "across all tracks"}.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={auditScope} onValueChange={(v) => setAuditScope(v as "all" | "track")}>
+                      <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All tracks</SelectItem>
+                        <SelectItem value="track" disabled={!selectedTrack}>Selected track only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="sm" onClick={() => loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined)} disabled={auditLoading}>
+                      {auditLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {auditRows.length === 0 ? (
+                  <StateView variant="empty" icon={History} title="No activity yet" description="Enrollment changes will appear here." />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">When</TableHead>
+                        <TableHead className="w-[120px]">Action</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Track</TableHead>
+                        <TableHead>By</TableHead>
+                        <TableHead>Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditRows.map((row) => {
+                        const actionMeta = row.action === "assigned"
+                          ? { icon: UserPlus, tone: "bg-success/15 text-success", label: "Assigned" }
+                          : row.action === "removed"
+                          ? { icon: UserMinus, tone: "bg-destructive/15 text-destructive", label: "Removed" }
+                          : { icon: RefreshCw, tone: "bg-info/15 text-info", label: "Updated" };
+                        const Icon = actionMeta.icon;
+                        const detailText = row.action === "updated" && row.details?.from && row.details?.to
+                          ? `${row.details.from.status} → ${row.details.to.status}`
+                          : row.details?.path ? String(row.details.path).replace("_", " ") : "—";
+                        return (
+                          <TableRow key={row.id}>
+                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                              {new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(row.created_at))}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={cn("border-transparent gap-1", actionMeta.tone)}>
+                                <Icon className="h-3 w-3" /> {actionMeta.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">{row.employee_name || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{row.track_name || "—"}</TableCell>
+                            <TableCell className="text-sm">
+                              <div>{row.actor_name || row.actor_email || "System"}</div>
+                              {row.actor_email && row.actor_name && <div className="text-xs text-muted-foreground">{row.actor_email}</div>}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{detailText}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

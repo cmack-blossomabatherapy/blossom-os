@@ -129,6 +129,51 @@ export type Database = {
           },
         ]
       }
+      academy_enrollment_audit: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_name: string | null
+          actor_user_id: string | null
+          created_at: string
+          details: Json
+          employee_id: string
+          employee_name: string | null
+          enrollment_id: string | null
+          id: string
+          track_id: string | null
+          track_name: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          employee_id: string
+          employee_name?: string | null
+          enrollment_id?: string | null
+          id?: string
+          track_id?: string | null
+          track_name?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          details?: Json
+          employee_id?: string
+          employee_name?: string | null
+          enrollment_id?: string | null
+          id?: string
+          track_id?: string | null
+          track_name?: string | null
+        }
+        Relationships: []
+      }
       academy_enrollments: {
         Row: {
           assigned_state: string | null
