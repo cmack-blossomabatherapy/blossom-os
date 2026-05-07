@@ -142,6 +142,14 @@ const limitedNavigationSections = (roles: string[]): NavSection[] => {
   const allowedIntelligencePaths = intelligenceOverrides.length > 0
     ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
     : null;
+  const sectionItemRestrictions: Record<string, Set<string>> = {};
+  for (const exception of exceptions) {
+    if (!exception.sectionItemPaths) continue;
+    for (const [title, paths] of Object.entries(exception.sectionItemPaths)) {
+      if (!sectionItemRestrictions[title]) sectionItemRestrictions[title] = new Set();
+      paths.forEach((p) => sectionItemRestrictions[title].add(navPathToRoutePrefix(p)));
+    }
+  }
 
   return [...navSections, hrSection]
     .map((section) => ({
@@ -151,10 +159,15 @@ const limitedNavigationSections = (roles: string[]): NavSection[] => {
         const baseItems = inAllowedSection
           ? section.items
           : section.items.filter((item) => allowedPaths.has(navPathToRoutePrefix(item.path)));
+        let result = baseItems;
         if (section.title === "Intelligence" && allowedIntelligencePaths) {
-          return baseItems.filter((item) => allowedIntelligencePaths.has(navPathToRoutePrefix(item.path)));
+          result = result.filter((item) => allowedIntelligencePaths.has(navPathToRoutePrefix(item.path)));
         }
-        return baseItems;
+        const restriction = sectionItemRestrictions[section.title ?? ""];
+        if (restriction) {
+          result = result.filter((item) => restriction.has(navPathToRoutePrefix(item.path)));
+        }
+        return result;
       })(),
     }))
     .filter((section) => section.items.length > 0);
