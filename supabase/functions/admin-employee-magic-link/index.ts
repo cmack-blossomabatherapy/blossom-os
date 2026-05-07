@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const employeeId: string | undefined = body.employeeId;
+  const skipEmail: boolean = body.skipEmail === true;
   const siteUrl: string = typeof body.siteUrl === "string" && body.siteUrl.startsWith("http")
     ? body.siteUrl.replace(/\/$/, "")
     : "https://blossom-os.lovable.app";
@@ -121,6 +122,12 @@ Deno.serve(async (req) => {
     }
 
     await admin.from("employees").update({ user_id: userId }).eq("id", employee.id);
+  }
+
+  if (skipEmail) {
+    return new Response(JSON.stringify({ ok: true, userId, createdAccount, emailSent: false }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Generate a magic link the user can click to sign in.
