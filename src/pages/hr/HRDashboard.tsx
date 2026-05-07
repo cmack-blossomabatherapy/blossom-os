@@ -234,6 +234,7 @@ export default function HRDashboard() {
         workload: employeeTimesheets.reduce((sum, sheet) => sum + Number(sheet.total_hours || 0), 0),
         riskLevel: risk,
         staffingReady: employee.status === "active" && !missingRequiredDocs && training !== "Overdue" && review !== "Overdue",
+        grandfathered: !!(employee as any).grandfathered,
         nextAction,
         onboarding: {
           viventium: !!employee.viventium_employee_id,
