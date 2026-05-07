@@ -11,7 +11,7 @@ interface Props {
 
 export function LifecycleTracker({ steps, statuses, onSelect, selectedIndex }: Props) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-6">
+    <div className="glass-surface rounded-3xl p-5 md:p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h3 className="text-base font-semibold text-foreground">Your journey</h3>

@@ -4,7 +4,7 @@ import type { JourneyResource } from "@/data/journey";
 
 export function ResourceGrid({ resources }: { resources: JourneyResource[] }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-6">
+    <div className="glass-surface rounded-3xl p-5 md:p-6">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-foreground">Resources</h3>
         <p className="text-xs text-muted-foreground mt-0.5">Everything you need, in one place.</p>
