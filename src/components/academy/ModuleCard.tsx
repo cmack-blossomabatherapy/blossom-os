@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare, Loader2 } from "lucide-react";
+import { Check, BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare, Loader2, ExternalLink, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODULE_TYPE_META, type AcademyModule, type AcademyProgress } from "@/lib/academy/types";
 import { upsertProgress } from "@/lib/academy/api";
@@ -9,8 +9,10 @@ import { toast } from "sonner";
 
 const ICON: Record<string, any> = { BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare };
 
+export interface ModuleResource { id: string; label: string; url: string | null; kind: string }
+
 export function ModuleCard({
-  module, progress, enrollmentId, onShadow, onCheckin, onChange, readOnly,
+  module, progress, enrollmentId, onShadow, onCheckin, onChange, readOnly, resources,
 }: {
   module: AcademyModule;
   progress?: AcademyProgress;
@@ -19,6 +21,7 @@ export function ModuleCard({
   onCheckin: () => void;
   onChange: () => void;
   readOnly?: boolean;
+  resources?: ModuleResource[];
 }) {
   const meta = MODULE_TYPE_META[module.module_type];
   const Icon = ICON[meta.icon] ?? BookOpen;
@@ -69,6 +72,37 @@ export function ModuleCard({
               {module.leader_name && <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {module.leader_name}</span>}
               {module.department && <span>· {module.department}</span>}
             </div>
+          )}
+
+          {resources && resources.length > 0 && (
+            <div className="mt-3 rounded-xl border border-border/60 bg-muted/20 p-2.5">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {module.module_type === "video" ? "Watch" : module.module_type === "sop" ? "Read" : "Resources"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {resources.map((r) => {
+                  const RIcon = module.module_type === "video" ? PlayCircle : module.module_type === "sop" ? FileText : Link2;
+                  return r.url ? (
+                    <a key={r.id} href={r.url} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
+                      <RIcon className="h-3.5 w-3.5" />
+                      <span>{r.label}</span>
+                      <ExternalLink className="h-3 w-3 opacity-60" />
+                    </a>
+                  ) : (
+                    <span key={r.id} className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-2.5 py-1 text-xs text-muted-foreground">
+                      <RIcon className="h-3.5 w-3.5" />{r.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {(module.module_type === "video" || module.module_type === "sop") && (!resources || resources.length === 0) && (
+            <p className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
+              {module.module_type === "video" ? "No video link added yet." : "No document attached yet."} An admin can add one in Training Admin → Operations Academy.
+            </p>
           )}
 
           {module.module_type === "reflection" && !isComplete && !readOnly && (
