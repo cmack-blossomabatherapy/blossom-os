@@ -653,3 +653,178 @@ function sortPinned<T extends { is_pinned?: boolean; pinned_at?: string | null }
     return 0;
   });
 }
+
+function AIGenerateDialog({
+  target,
+  onClose,
+  onApply,
+}: {
+  target: { kind: "module" | "week"; data: any } | null;
+  onClose: () => void;
+  onApply: (generated: any) => void;
+}) {
+  const [mode, setMode] = useState<"both" | "module" | "quiz">("both");
+  const [tone, setTone] = useState<"Simple" | "Detailed" | "Technical">("Detailed");
+  const [complexity, setComplexity] = useState<"easy" | "medium" | "hard">("medium");
+  const [count, setCount] = useState(5);
+  const [extra, setExtra] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!target) { setPreview(null); setExtra(""); }
+  }, [target]);
+
+  if (!target) return null;
+  const isWeek = target.kind === "week";
+
+  async function generate() {
+    setLoading(true);
+    setPreview(null);
+    try {
+      const payload: any = {
+        mode: isWeek ? "module" : mode,
+        tone,
+        quizComplexity: complexity,
+        quizQuestionCount: count,
+        extraInstructions: extra || undefined,
+      };
+      if (isWeek) {
+        payload.weekId = target.data.id;
+        payload.weekTitle = target.data.title;
+        payload.weekObjective = target.data.objective;
+        payload.weekOutcomes = target.data.outcomes;
+      } else {
+        payload.moduleId = target.data.id;
+        payload.weekId = target.data.week_id;
+        payload.moduleTitle = target.data.title;
+        payload.moduleType = target.data.module_type;
+        payload.moduleDescriptionSeed = target.data.description;
+        payload.leaderName = target.data.leader_name;
+        payload.department = target.data.department;
+      }
+      const { data, error } = await supabase.functions.invoke("generate-academy-module-content", { body: payload });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPreview((data as any).draft);
+    } catch (e: any) {
+      toast.error(e?.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Generate {isWeek ? "week module content" : "module content & quiz"} with AI
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {!isWeek && (
+            <Field label="What to generate">
+              <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Module content + quiz</SelectItem>
+                  <SelectItem value="module">Module content only</SelectItem>
+                  <SelectItem value="quiz">Quiz only</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Tone">
+              <Select value={tone} onValueChange={(v) => setTone(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Simple">Simple</SelectItem>
+                  <SelectItem value="Detailed">Detailed</SelectItem>
+                  <SelectItem value="Technical">Technical</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Quiz difficulty">
+              <Select value={complexity} onValueChange={(v) => setComplexity(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="# Questions">
+              <Input type="number" min={3} max={10} value={count} onChange={(e) => setCount(Math.max(3, Math.min(10, parseInt(e.target.value) || 5)))} />
+            </Field>
+          </div>
+          <Field label="Extra instructions (optional)">
+            <Textarea rows={2} placeholder="e.g. Focus on CentralReach intake workflow" value={extra} onChange={(e) => setExtra(e.target.value)} />
+          </Field>
+          <Button onClick={generate} disabled={loading} className="w-full">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            {loading ? "Generating…" : "Generate"}
+          </Button>
+
+          {preview && (
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Preview</p>
+              {preview.title && <p className="text-sm font-medium">{preview.title}</p>}
+              {preview.description && <p className="text-xs text-muted-foreground">{preview.description}</p>}
+              {preview.key_points?.length > 0 && (
+                <div className="text-xs">
+                  <span className="font-medium">Key points:</span>
+                  <ul className="list-disc pl-4 text-muted-foreground">
+                    {preview.key_points.map((k: string, i: number) => <li key={i}>{k}</li>)}
+                  </ul>
+                </div>
+              )}
+              {preview.activities?.length > 0 && (
+                <div className="text-xs">
+                  <span className="font-medium">Activities:</span>
+                  <ul className="list-disc pl-4 text-muted-foreground">
+                    {preview.activities.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                  </ul>
+                </div>
+              )}
+              {preview.content_markdown && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer font-medium">Module content ({preview.content_markdown.length} chars)</summary>
+                  <pre className="whitespace-pre-wrap text-muted-foreground mt-1 max-h-48 overflow-y-auto">{preview.content_markdown}</pre>
+                </details>
+              )}
+              {preview.quiz?.length > 0 && (
+                <details className="text-xs" open>
+                  <summary className="cursor-pointer font-medium">Quiz ({preview.quiz.length} questions)</summary>
+                  <ol className="list-decimal pl-4 space-y-1 mt-1 text-muted-foreground">
+                    {preview.quiz.map((q: any, i: number) => (
+                      <li key={i}>
+                        <div className="text-foreground">{q.question}</div>
+                        {q.options?.length > 0 && (
+                          <ul className="list-disc pl-4">
+                            {q.options.map((o: string, j: number) => (
+                              <li key={j} className={o === q.answer ? "text-primary font-medium" : ""}>{o}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => preview && onApply(preview)} disabled={!preview}>
+            <Save className="h-4 w-4" /> Apply to form
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
