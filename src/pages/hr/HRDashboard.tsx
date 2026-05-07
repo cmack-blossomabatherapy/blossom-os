@@ -286,7 +286,7 @@ export default function HRDashboard() {
   const reviewsDueRows = filtered.filter((employee) => ["Due Soon", "Overdue"].includes(employee.reviewStatus));
   const timeIssueRows = filtered.filter((employee) => employee.timeClockStatus !== "Clean");
   const payrollExceptionRows = filtered.filter((employee) => employee.payrollStatus !== "Ready");
-  const riskRows = filtered.filter((employee) => ["High", "Critical"].includes(employee.riskLevel) || !employee.manager || (employee.status === "Inactive" && employee.staffingReady));
+  const riskRows = filtered.filter((employee) => !employee.grandfathered && (["High", "Critical"].includes(employee.riskLevel) || !employee.manager || (employee.status === "Inactive" && employee.staffingReady)));
   const onboardingRows = filtered.filter((employee) => ["Pre-Hire", "Onboarding", "Training"].includes(employee.status));
   const activeRows = filtered.filter((employee) => employee.status === "Active" || employee.status === "Review Due");
 
@@ -315,7 +315,7 @@ export default function HRDashboard() {
   const queue = {
     urgent: filtered.filter((employee) => employee.riskLevel === "Critical" || employee.trainingStatus === "Overdue" || employee.reviewStatus === "Overdue" || employee.payrollStatus === "Exception" || employee.documents.some((doc) => doc.status === "Missing")),
     today: filtered.filter((employee) => employee.tasks.some((task) => !task.completed && ["Today", "Tomorrow"].includes(task.dueDate)) || employee.reviews.some((review) => ["Due Soon", "Overdue"].includes(review.status))),
-    risks: filtered.filter((employee) => ["High", "Critical"].includes(employee.riskLevel) || !employee.manager || employee.workload >= 40 || (employee.role.includes("RBT") && !employee.staffingReady && employee.status !== "Terminated")),
+    risks: filtered.filter((employee) => !employee.grandfathered && (["High", "Critical"].includes(employee.riskLevel) || !employee.manager || employee.workload >= 40 || (employee.role.includes("RBT") && !employee.staffingReady && employee.status !== "Terminated"))),
   };
 
   async function markReady(employee: HrEmployee) {
