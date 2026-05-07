@@ -39,6 +39,7 @@ import HRDashboard from "./pages/hr/HRDashboard";
 import TrainingHub from "./pages/TrainingHub";
 import TrainingDepartment from "./pages/TrainingDepartment";
 import TrainingCourse from "./pages/TrainingCourse";
+import { AcademyGate } from "./components/auth/AcademyGate";
 import AcademyHome from "./pages/hr/academy/AcademyHome";
 import AcademyWeekDetail from "./pages/hr/academy/WeekDetail";
 import AcademyLeadership from "./pages/hr/academy/LeadershipDashboard";
