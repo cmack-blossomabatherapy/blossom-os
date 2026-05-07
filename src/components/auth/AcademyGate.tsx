@@ -1,16 +1,25 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Lock, Compass, ArrowRight } from "lucide-react";
 import { useAcademyComplete } from "@/hooks/useAcademyComplete";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { logAcademyEvent } from "@/lib/academy/audit";
 
 /**
  * Gates a route behind Operations Academy completion.
  * Admins / training & HR roles bypass automatically (handled inside the hook).
  */
 export function AcademyGate({ children }: { children: ReactNode }) {
-  const { loading, complete } = useAcademyComplete();
+  const { loading, complete, bypass } = useAcademyComplete();
+  useEffect(() => {
+    if (loading) return;
+    void logAcademyEvent({
+      event_type: complete ? "gate_unlocked" : "gate_blocked",
+      complete,
+      bypass,
+    });
+  }, [loading, complete, bypass]);
   if (loading) return null;
   if (complete) return <>{children}</>;
   return (
