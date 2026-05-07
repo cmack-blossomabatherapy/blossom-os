@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Plus, Sparkles, Search, Pin, PinOff, Trash2, Pencil, Users, AlertTriangle, CheckCircle2, ListChecks, Wand2, Send, Archive, ArchiveRestore, Loader2 } from "lucide-react";
+import { GraduationCap, Plus, Sparkles, Search, Pin, PinOff, Trash2, Pencil, Users, AlertTriangle, CheckCircle2, ListChecks, Wand2, Send, Archive, ArchiveRestore, Loader2, FileText, X } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
