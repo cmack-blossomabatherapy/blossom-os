@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet,
   LayoutGrid, BriefcaseBusiness, Network, ListChecks, Star, GraduationCap,
   Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle,
-  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
