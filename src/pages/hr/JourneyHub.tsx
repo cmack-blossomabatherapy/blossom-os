@@ -275,6 +275,8 @@ export default function JourneyHub() {
             status={currentStatus}
             onMarkComplete={() => markStepComplete(currentStep.id)}
             canComplete={isStepChecklistComplete(currentStep.id)}
+            checkedItems={progress.checklistItems?.[currentStep.id] ?? {}}
+            onToggleChecklistItem={(idx) => toggleChecklistItem(currentStep.id, idx)}
             checklistProgress={{
               total: currentStep.checklist.length,
               done: currentStep.checklist.reduce(
