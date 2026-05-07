@@ -234,6 +234,7 @@ export default function TrackAssign() {
     toast.success(`Enrolled ${selected.size} ${selected.size === 1 ? "person" : "people"} in ${currentTrack?.name}.`);
     setSelected(new Set());
     void loadAll();
+    if (mode === "academy") void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
   };
 
   const handleRemove = async () => {
@@ -243,6 +244,7 @@ export default function TrackAssign() {
     toast.success("Enrollment removed.");
     setConfirmRemove(null);
     void loadAll();
+    if (mode === "academy") void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
   };
 
   if (loading) {
