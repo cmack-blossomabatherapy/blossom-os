@@ -187,7 +187,7 @@ export default function AcademyHome() {
         <GlassStat icon={Target} tone="primary" label="Modules complete" value={completedModules} hint={`of ${allModules.length} total`} />
         <GlassStat icon={Flame} tone="warning" label="Shadow hours" value={totalShadowHrs.toFixed(1)} hint="logged in field" />
         <GlassStat icon={BookMarked} tone="success" label="Check-ins" value={checkins.length} hint="leader sync sessions" />
-        <GlassStat icon={Trophy} tone="accent" label="Reflections" value={progress.filter((p) => p.reflection).length} hint="submitted with depth" />
+        <GlassStat icon={Trophy} tone="primary" label="Reflections" value={progress.filter((p) => p.reflection).length} hint="submitted with depth" />
       </section>
 
       {/* Roadmap */}
