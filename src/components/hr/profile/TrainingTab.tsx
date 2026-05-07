@@ -3,6 +3,7 @@ import { GraduationCap, Plus, ExternalLink, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateView } from "@/components/shared/StateView";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export function TrainingTab({ employee }: { employee: Employee }) {
   const [items, setItems] = useState<Row[]>([]);
   const [courses, setCourses] = useState<TrainingCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [courseId, setCourseId] = useState<string>("");
   const [dueDate, setDueDate] = useState("");
@@ -32,10 +34,12 @@ export function TrainingTab({ employee }: { employee: Employee }) {
 
   async function load() {
     setLoading(true);
+    setError(null);
     const [a, b] = await Promise.all([
       supabase.from("employee_trainings").select("*, course:training_courses(name, category, provider, external_url)").eq("employee_id", employee.id).order("assigned_at", { ascending: false }),
       supabase.from("training_courses").select("*").eq("is_active", true).order("name"),
     ]);
+    if (a.error || b.error) { setError((a.error || b.error)!.message); setLoading(false); return; }
     setItems((a.data ?? []) as unknown as Row[]);
     setCourses((b.data ?? []) as TrainingCourse[]);
     setLoading(false);
@@ -79,8 +83,19 @@ export function TrainingTab({ employee }: { employee: Employee }) {
         {canAssign && <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> Assign training</Button>}
       </div>
 
-      {loading ? <Skeleton className="h-24" /> : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">No training assignments yet.</p>
+      {loading ? (
+        <div className="space-y-2"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div>
+      ) : error ? (
+        <StateView variant="error" compact title="Couldn't load trainings" description={error} onRetry={load} />
+      ) : items.length === 0 ? (
+        <StateView
+          variant="empty"
+          compact
+          icon={GraduationCap}
+          title="No trainings assigned"
+          description="When this employee is assigned a course it will show up here."
+          action={canAssign ? <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5 mr-1" /> Assign training</Button> : undefined}
+        />
       ) : (
         <div className="space-y-2">
           {items.map((t) => (

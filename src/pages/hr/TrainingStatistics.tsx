@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
+import { StateView } from "@/components/shared/StateView";
 
 type TrainingStatus = "assigned" | "in_progress" | "completed" | "overdue" | "expired";
 
@@ -63,30 +64,30 @@ const isOverdue = (a: AssignmentRow) => {
 
 export default function TrainingStatistics() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [search, setSearch] = useState("");
   const [clinicFilter, setClinicFilter] = useState<string>("all");
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      const [a, c, e] = await Promise.all([
-        supabase.from("employee_trainings").select("id,employee_id,course_id,status,assigned_at,due_date,completed_at"),
-        supabase.from("training_courses").select("id,title,name,category,training_type"),
-        supabase.from("employees").select("id,first_name,last_name,job_title,clinic"),
-      ]);
-      if (cancelled) return;
-      setAssignments((a.data as AssignmentRow[]) ?? []);
-      setCourses((c.data as CourseRow[]) ?? []);
-      setEmployees((e.data as EmployeeRow[]) ?? []);
-      setLoading(false);
-    };
-    load();
-    return () => { cancelled = true; };
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const [a, c, e] = await Promise.all([
+      supabase.from("employee_trainings").select("id,employee_id,course_id,status,assigned_at,due_date,completed_at"),
+      supabase.from("training_courses").select("id,title,name,category,training_type"),
+      supabase.from("employees").select("id,first_name,last_name,job_title,clinic"),
+    ]);
+    const firstError = a.error || c.error || e.error;
+    if (firstError) { setError(firstError.message); setLoading(false); return; }
+    setAssignments((a.data as AssignmentRow[]) ?? []);
+    setCourses((c.data as CourseRow[]) ?? []);
+    setEmployees((e.data as EmployeeRow[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c.id, c])), [courses]);
   const employeeMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
@@ -176,9 +177,17 @@ export default function TrainingStatistics() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center gap-3 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading training statistics…
-      </div>
+      <GlassPageShell eyebrow="Training Admin" eyebrowIcon={BarChart3} title="Training Statistics" description="Loading training statistics…">
+        <GlassPanel><StateView variant="loading" title="Loading statistics" description="Crunching completion data across the team." /></GlassPanel>
+      </GlassPageShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <GlassPageShell eyebrow="Training Admin" eyebrowIcon={BarChart3} title="Training Statistics" description="We hit a snag loading this view.">
+        <GlassPanel><StateView variant="error" title="Couldn't load training stats" description={error} onRetry={load} /></GlassPanel>
+      </GlassPageShell>
     );
   }
 
@@ -230,7 +239,7 @@ export default function TrainingStatistics() {
           <Card className="glass-surface border-0">
             <CardContent className="p-0">
               {overdueRows.length === 0 ? (
-                <div className="p-10 text-center text-sm text-muted-foreground">No overdue trainings. Great work.</div>
+                <StateView variant="empty" icon={CheckCircle2} title="All caught up" description="No overdue trainings right now. Great work." />
               ) : (
                 <Table>
                   <TableHeader>
@@ -297,7 +306,7 @@ export default function TrainingStatistics() {
                     );
                   })}
                   {courseStats.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-10">No courses match.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="p-0"><StateView variant="empty" compact title="No courses match" description="Try clearing the search or clinic filter." /></TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -340,7 +349,7 @@ export default function TrainingStatistics() {
                     );
                   })}
                   {employeeStats.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-10">No employees match.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="p-0"><StateView variant="empty" compact title="No employees match" description="Try clearing the search or clinic filter." /></TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
