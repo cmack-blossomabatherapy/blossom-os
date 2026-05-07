@@ -6,7 +6,7 @@ import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as Lin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Search } from "lucide-react";
+import { Search, Unlink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/hr/types";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
@@ -29,6 +29,8 @@ export function AccessTab({ employee }: { employee: Employee }) {
   const [accountQuery, setAccountQuery] = useState("");
   const [accountResults, setAccountResults] = useState<{ user_id: string; email: string | null; display_name: string | null }[]>([]);
   const [searchingAccounts, setSearchingAccounts] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
 
   useEffect(() => {
     if (!linkLoginOpen) return;
@@ -151,6 +153,20 @@ export function AccessTab({ employee }: { employee: Employee }) {
     window.location.reload();
   }
 
+  async function unlinkLogin() {
+    if (!employee.user_id) return;
+    setUnlinking(true);
+    const { error } = await supabase
+      .from("employees")
+      .update({ user_id: null })
+      .eq("id", employee.id);
+    setUnlinking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Login unlinked from this employee.");
+    setUnlinkOpen(false);
+    window.location.reload();
+  }
+
   const roleToggles: { key: AppRole; title: string; desc: string; icon: typeof GraduationCap }[] = [
     {
       key: "training_admin",
@@ -165,10 +181,20 @@ export function AccessTab({ employee }: { employee: Employee }) {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Module access &amp; roles</h3>
-          {!employee.user_id && (
+          {!employee.user_id ? (
             <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
               No login linked
             </Badge>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setUnlinkOpen(true)}
+              disabled={!canSendLink}
+              className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
+            >
+              <Unlink className="h-3.5 w-3.5" /> Unlink login
+            </Button>
           )}
         </div>
         {!employee.user_id && (
@@ -350,6 +376,24 @@ export function AccessTab({ employee }: { employee: Employee }) {
             <Button onClick={linkExistingLogin} disabled={linkingLogin || !linkEmail.trim()}>
               {linkingLogin ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
               Link &amp; notify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unlink login</DialogTitle>
+            <DialogDescription>
+              This will disconnect the Blossom OS login from {employee.first_name} {employee.last_name}'s employee record. The user account itself stays active — you can re-link any login later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setUnlinkOpen(false)} disabled={unlinking}>Cancel</Button>
+            <Button variant="destructive" onClick={unlinkLogin} disabled={unlinking}>
+              {unlinking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlink className="h-3.5 w-3.5" />}
+              Unlink
             </Button>
           </DialogFooter>
         </DialogContent>
