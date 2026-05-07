@@ -364,6 +364,17 @@ export default function Training() {
         </TabsContent>
       </Tabs>
 
+      <TabsAcademyMount tab={tab} />
+
+      <StaffAssignDialog
+        open={!!staffAssignTrack}
+        onClose={() => setStaffAssignTrack(null)}
+        trackId={staffAssignTrack?.id ?? null}
+        trackName={staffAssignTrack?.name ?? ""}
+        kind="training"
+        onAssigned={load}
+      />
+
       {/* COURSE EDITOR */}
       <Dialog open={!!editor} onOpenChange={(o) => !o && setEditor(null)}>
         <DialogContent className="max-w-2xl">
