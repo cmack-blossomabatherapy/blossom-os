@@ -71,6 +71,15 @@ export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }
       description: `Employee record created for ${first} ${last}`,
     });
     toast.success("Employee added.");
+    if (email.trim()) {
+      // Best-effort: provision an auth account so the Access tab is ready to send a sign-in link.
+      const { error: linkErr } = await supabase.functions.invoke("admin-employee-magic-link", {
+        body: { employeeId: data.id, siteUrl: window.location.origin, skipEmail: true },
+      });
+      if (linkErr) {
+        toast.warning("Employee created, but couldn't auto-create their login. You can still send a sign-in link from the Access tab.");
+      }
+    }
     reset();
     onCreated();
   }
