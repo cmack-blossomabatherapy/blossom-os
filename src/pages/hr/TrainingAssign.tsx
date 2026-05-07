@@ -256,6 +256,7 @@ export default function TrainingAssign() {
               description="No employees have the RBT or BCBA role. Assign roles in Team or an employee profile to enable training assignments."
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -325,6 +326,7 @@ export default function TrainingAssign() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
