@@ -4535,6 +4535,18 @@ export type Database = {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
       }
+      refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
+      upsert_knowledge_chunk: {
+        Args: {
+          _content: string
+          _metadata: Json
+          _source_id: string
+          _source_title: string
+          _source_type: string
+          _source_url: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       academy_enrollment_status:
