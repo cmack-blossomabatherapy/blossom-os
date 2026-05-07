@@ -206,7 +206,7 @@ export default function Training() {
       stats={
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <GlassStat icon={ListChecks} tone="primary" label="Active courses" value={stats.active} />
-          <GlassStat icon={Pin} tone="info" label="Pinned" value={stats.pinned} />
+          <GlassStat icon={Pin} tone="warning" label="Pinned" value={stats.pinned} />
           <GlassStat icon={Users} tone="success" label="Assignments" value={stats.assignments} />
           <GlassStat icon={AlertTriangle} tone="destructive" label="Overdue" value={stats.overdue} />
         </div>
