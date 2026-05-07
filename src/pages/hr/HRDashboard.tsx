@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, ArrowRight, Bell, Briefcase, CalendarCheck, CheckCircle2, Clock, Download, FileText,
-  Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, UserCheck,
-  UserCog, UserPlus, Users, Wallet,
+  Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, SlidersHorizontal,
+  UserCheck, UserCog, UserPlus, Users, Wallet, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -154,6 +154,7 @@ export default function HRDashboard() {
   const [query, setQuery] = useState("");
   const [activeKpi, setActiveKpi] = useState<KpiKey>("active");
   const [selectedEmployee, setSelectedEmployee] = useState<HrEmployee | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => { void loadDashboard(); }, []);
 
@@ -328,47 +329,101 @@ export default function HRDashboard() {
     await loadDashboard();
   }
 
+  const activeFilterCount = [stateFilter, departmentFilter, roleFilter, managerFilter, statusFilter, trainingFilter, reviewFilter].filter((v) => v !== ALL).length + (query ? 1 : 0);
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <header className="space-y-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">HR Dashboard</h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Employee lifecycle, onboarding, training, reviews, and workforce health.</p>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <header className="space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />HR Operations
+            </div>
+            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">HR Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Lifecycle, onboarding, training, reviews and workforce health — at a glance.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => toast.success("HR dashboard export prepared")}><Download className="mr-2 h-4 w-4" />Export</Button>
-            <Button size="sm" className="shadow-sm" onClick={() => void loadDashboard()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees…" className="h-9 w-[260px] pl-9" />
+            </div>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setFiltersOpen((v) => !v)}>
+              <SlidersHorizontal className="mr-2 h-4 w-4" />Filters{activeFilterCount > 0 && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">{activeFilterCount}</span>}
+              <ChevronDown className={cn("ml-1 h-3.5 w-3.5 transition-transform", filtersOpen && "rotate-180")} />
+            </Button>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => toast.success("HR dashboard export prepared")}><Download className="mr-2 h-4 w-4" />Export</Button>
+            <Button size="sm" className="h-9 shadow-sm" onClick={() => void loadDashboard()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           </div>
         </div>
-        <div className="sticky top-0 z-20 rounded-xl border border-border/60 bg-card/95 p-4 shadow-sm backdrop-blur-xl">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Filter className="h-4 w-4 text-primary" />HR Filters</div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9">
-            <Select value={dateRange} onValueChange={setDateRange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["Today", "This Week", "This Month", "Quarter to Date", "Year to Date", "Custom Range"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
-            <FilterSelect value={stateFilter} setValue={setStateFilter} items={states} allLabel="All States" />
-            <FilterSelect value={departmentFilter} setValue={setDepartmentFilter} items={departments} allLabel="All Departments" />
-            <FilterSelect value={roleFilter} setValue={setRoleFilter} items={roles} allLabel="All Roles" />
-            <FilterSelect value={managerFilter} setValue={setManagerFilter} items={managers} allLabel="All Managers" />
-            <FilterSelect value={statusFilter} setValue={setStatusFilter} items={statuses} allLabel="All Statuses" />
-            <FilterSelect value={trainingFilter} setValue={setTrainingFilter} items={trainingStatuses} allLabel="All Training" />
-            <FilterSelect value={reviewFilter} setValue={setReviewFilter} items={reviewStatuses} allLabel="All Reviews" />
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees…" className="pl-9" /></div>
+        {filtersOpen && (
+          <div className="rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm backdrop-blur-xl animate-fade-in">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+              <Select value={dateRange} onValueChange={setDateRange}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent>{["Today", "This Week", "This Month", "Quarter to Date", "Year to Date", "Custom Range"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
+              <FilterSelect value={stateFilter} setValue={setStateFilter} items={states} allLabel="All States" />
+              <FilterSelect value={departmentFilter} setValue={setDepartmentFilter} items={departments} allLabel="All Departments" />
+              <FilterSelect value={roleFilter} setValue={setRoleFilter} items={roles} allLabel="All Roles" />
+              <FilterSelect value={managerFilter} setValue={setManagerFilter} items={managers} allLabel="All Managers" />
+              <FilterSelect value={statusFilter} setValue={setStatusFilter} items={statuses} allLabel="All Statuses" />
+              <FilterSelect value={trainingFilter} setValue={setTrainingFilter} items={trainingStatuses} allLabel="All Training" />
+              <FilterSelect value={reviewFilter} setValue={setReviewFilter} items={reviewStatuses} allLabel="All Reviews" />
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
-      {loading ? <Skeleton className="h-[520px] rounded-xl" /> : (
+      {loading ? <Skeleton className="h-[520px] rounded-2xl" /> : (
         <>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {kpis.map((kpi) => <button key={kpi.key} type="button" onClick={() => setActiveKpi(kpi.key)} className={cn("rounded-xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md", activeKpi === kpi.key ? "border-primary ring-2 ring-primary/15" : "border-border/60")}>
-              <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{kpi.title}</p><p className="mt-2 text-2xl font-semibold text-foreground">{kpi.value}</p></div><span className={cn("rounded-lg p-2", toneClass(kpi.tone))}><kpi.icon className="h-4 w-4" /></span></div>
-              <p className="mt-3 text-xs text-muted-foreground">{kpi.subtext}</p>
-            </button>)}
+          <section className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+            {kpis.map((kpi) => (
+              <button key={kpi.key} type="button" onClick={() => setActiveKpi(kpi.key)}
+                className={cn(
+                  "group relative overflow-hidden rounded-2xl border bg-card px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md",
+                  activeKpi === kpi.key ? "border-primary/40 shadow-[0_8px_28px_-12px_hsl(var(--primary)/0.35)] ring-1 ring-primary/20" : "border-border/60 shadow-sm"
+                )}
+              >
+                {activeKpi === kpi.key && <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />}
+                <div className="flex items-center justify-between">
+                  <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", toneClass(kpi.tone))}>
+                    <kpi.icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{kpi.tone === "critical" ? "Action" : kpi.tone === "warning" ? "Watch" : "Healthy"}</span>
+                </div>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground tabular-nums">{kpi.value}</p>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kpi.title}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground/80 line-clamp-1">{kpi.subtext}</p>
+              </button>
+            ))}
           </section>
-          <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"><Card title="HR Action Queue" icon={ListChecks}><div className="grid gap-3 lg:grid-cols-3"><QueueColumn title="Urgent Now" rows={queue.urgent} onSelect={setSelectedEmployee} onReady={markReady} /><QueueColumn title="Follow-Up Today" rows={queue.today} onSelect={setSelectedEmployee} onReady={markReady} /><QueueColumn title="Workforce Risks" rows={queue.risks} onSelect={setSelectedEmployee} onReady={markReady} /></div></Card><Card title="Workforce Health Snapshot" icon={HeartHandshake}><HealthSnapshot rows={filtered} /></Card></section>
-          <Card title="Employee Lifecycle Board" icon={Briefcase}><LifecycleBoard rows={filtered} /></Card>
-          <section className="grid gap-6 xl:grid-cols-3"><Card title="Onboarding Readiness" icon={UserCheck}><OnboardingPanel rows={filtered} /></Card><Card title="Training & Compliance" icon={GraduationCap}><TrainingPanel rows={filtered} /></Card><Card title="Reviews & Performance" icon={CalendarCheck}><ReviewsPanel rows={filtered} /></Card></section>
-          <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]"><Card title="Workforce Structure Snapshot" icon={UserCog}><StructureSnapshot rows={filtered} /></Card><Card title="HR Worklist" icon={Users}><Worklist rows={kpiRows} onSelect={setSelectedEmployee} /></Card></section>
+
+          <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+            <Card title="HR Action Queue" icon={ListChecks} subtitle="Prioritized work needing attention today">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <QueueColumn title="Urgent Now" tone="critical" rows={queue.urgent} onSelect={setSelectedEmployee} onReady={markReady} />
+                <QueueColumn title="Follow-Up Today" tone="warning" rows={queue.today} onSelect={setSelectedEmployee} onReady={markReady} />
+                <QueueColumn title="Workforce Risks" tone="info" rows={queue.risks} onSelect={setSelectedEmployee} onReady={markReady} />
+              </div>
+            </Card>
+            <Card title="Workforce Health" icon={HeartHandshake} subtitle="Live snapshot across your filtered cohort">
+              <HealthSnapshot rows={filtered} />
+            </Card>
+          </section>
+
+          <Card title="Employee Lifecycle" icon={Briefcase} subtitle="Stage distribution and aging across the workforce">
+            <LifecycleBoard rows={filtered} />
+          </Card>
+
+          <section className="grid gap-5 xl:grid-cols-3">
+            <Card title="Onboarding Readiness" icon={UserCheck}><OnboardingPanel rows={filtered} /></Card>
+            <Card title="Training & Compliance" icon={GraduationCap}><TrainingPanel rows={filtered} /></Card>
+            <Card title="Reviews & Performance" icon={CalendarCheck}><ReviewsPanel rows={filtered} /></Card>
+          </section>
+
+          <section className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+            <Card title="Workforce Structure" icon={UserCog}><StructureSnapshot rows={filtered} /></Card>
+            <Card title="HR Worklist" icon={Users} subtitle={`${kpiRows.length} employees · ${kpis.find((k) => k.key === activeKpi)?.title ?? ""}`}>
+              <Worklist rows={kpiRows} onSelect={setSelectedEmployee} />
+            </Card>
+          </section>
         </>
       )}
       <EmployeePanel employee={selectedEmployee} onOpenChange={(open) => !open && setSelectedEmployee(null)} onReady={markReady} />
@@ -382,14 +437,113 @@ const REVIEW_SCORE = { exceeds: 95, meets: 85, developing: 70, needs_improvement
 function FilterSelect({ value, setValue, items, allLabel }: { value: string; setValue: (value: string) => void; items: string[]; allLabel: string }) {
   return <Select value={value} onValueChange={setValue}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{items.map((item) => <SelectItem key={item} value={item}>{item === ALL ? allLabel : item}</SelectItem>)}</SelectContent></Select>;
 }
-function Card({ title, icon: Icon, children }: { title: string; icon: typeof Users; children: React.ReactNode }) { return <section className="rounded-xl border border-border/60 bg-card p-5 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-base font-semibold text-foreground"><Icon className="h-4 w-4 text-primary" />{title}</h2></div>{children}</section>; }
+function Card({ title, icon: Icon, subtitle, children }: { title: string; icon: typeof Users; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="space-y-0.5">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-foreground">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-3.5 w-3.5" /></span>
+            {title}
+          </h2>
+          {subtitle && <p className="pl-9 text-xs text-muted-foreground">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
 function toneClass(tone: Tone) { return tone === "success" ? "bg-success/10 text-success" : tone === "warning" ? "bg-warning/15 text-warning" : tone === "critical" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"; }
 function StatusPill({ label, tone }: { label: string; tone: Tone }) { return <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold", toneClass(tone))}>{label}</span>; }
 function employeeIssue(employee: HrEmployee) { return issueText(employee); }
-function QueueColumn({ title, rows, onSelect, onReady }: { title: string; rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void; onReady: (employee: HrEmployee) => void }) { return <div className="rounded-lg border border-border/60 bg-background p-3"><div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold text-foreground">{title}</p><span className="text-xs text-muted-foreground">{rows.length}</span></div><div className="space-y-2">{rows.slice(0, 5).map((employee) => <div key={`${title}-${employee.id}`} className="rounded-lg border border-border/50 bg-card p-3"><button type="button" onClick={() => onSelect(employee)} className="w-full text-left"><div className="flex items-start justify-between gap-2"><p className="text-sm font-medium text-foreground">{employee.employee}</p><StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} /></div><p className="mt-1 text-xs text-muted-foreground">{employee.role} · {employee.state} · {employee.department}</p><p className="mt-2 text-xs font-medium text-foreground">{employeeIssue(employee)}</p><p className="mt-1 text-xs text-muted-foreground">Manager: {employee.manager ?? "Unassigned"}</p></button><div className="mt-3 grid grid-cols-2 gap-1.5"><QuickAction label="Open" icon={ArrowRight} onClick={() => onSelect(employee)} /><QuickAction label="Training" icon={GraduationCap} onClick={() => toast.success(`Open Training Admin to assign ${employee.employee}`)} /><QuickAction label="Review" icon={CalendarCheck} onClick={() => toast.success(`Open Reviews to schedule ${employee.employee}`)} /><QuickAction label="Doc" icon={FileText} onClick={() => toast.success(`Open profile documents for ${employee.employee}`)} /><QuickAction label="Done" icon={CheckCircle2} onClick={() => toast.success(`Use the source workflow to complete ${employee.employee}'s task`)} /><QuickAction label="Remind" icon={Send} onClick={() => toast.success(`Reminder queued for ${employee.employee}`)} /></div>{employee.onboardingStatus !== "Ready For Start" && <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => void onReady(employee)}>Mark Ready</Button>}</div>)}{rows.length === 0 && <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">No current items.</p>}</div></div>; }
+function QueueColumn({ title, tone = "info", rows, onSelect, onReady }: { title: string; tone?: Tone; rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void; onReady: (employee: HrEmployee) => void }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-1.5 w-1.5 rounded-full", tone === "critical" ? "bg-destructive" : tone === "warning" ? "bg-warning" : "bg-primary")} />
+          <p className="text-[13px] font-semibold text-foreground">{title}</p>
+        </div>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground tabular-nums">{rows.length}</span>
+      </div>
+      <div className="space-y-2">
+        {rows.slice(0, 5).map((employee) => (
+          <div key={`${title}-${employee.id}`} className="group rounded-xl border border-border/50 bg-card p-3 transition-all hover:border-primary/30 hover:shadow-sm">
+            <button type="button" onClick={() => onSelect(employee)} className="w-full text-left">
+              <div className="flex items-start justify-between gap-2">
+                <p className="truncate text-sm font-medium text-foreground">{employee.employee}</p>
+                <StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} />
+              </div>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{employee.role} · {employee.state}</p>
+              <p className="mt-2 line-clamp-2 text-xs font-medium text-foreground/90">{employeeIssue(employee)}</p>
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">Manager · {employee.manager ?? "Unassigned"}</p>
+            </button>
+            <div className="mt-2.5 flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+              <QuickAction label="Open" icon={ArrowRight} onClick={() => onSelect(employee)} />
+              <QuickAction label="Remind" icon={Send} onClick={() => toast.success(`Reminder queued for ${employee.employee}`)} />
+              {employee.onboardingStatus !== "Ready For Start" && (
+                <Button variant="outline" size="sm" className="ml-auto h-7 px-2.5 text-[11px]" onClick={() => void onReady(employee)}>
+                  <CheckCircle2 className="mr-1 h-3 w-3" />Mark Ready
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {rows.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/60 bg-muted/30 px-3 py-8 text-center">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <p className="text-xs font-medium text-muted-foreground">All clear</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function QuickAction({ label, icon: Icon, onClick }: { label: string; icon: typeof ArrowRight; onClick: () => void }) { return <Button type="button" variant="ghost" size="sm" className="h-8 justify-start gap-1.5 px-2 text-xs" onClick={onClick}><Icon className="h-3.5 w-3.5" />{label}</Button>; }
-function HealthSnapshot({ rows }: { rows: HrEmployee[] }) { const items = [["Ready for assignment", rows.filter((e) => e.staffingReady).length, "success"], ["Onboarding blocked", rows.filter((e) => e.onboardingStatus === "Missing Docs" || !e.onboarding.backgroundCheck || !e.onboarding.i9).length, "critical"], ["Reviews due", rows.filter((e) => ["Due Soon", "Overdue"].includes(e.reviewStatus)).length, "warning"], ["Training overdue", rows.filter((e) => e.trainingStatus === "Overdue").length, "critical"], ["Payroll exceptions", rows.filter((e) => e.payrollStatus !== "Ready").length, "critical"], ["Manager gaps", rows.filter((e) => !e.manager).length, "warning"]] as const; return <div className="grid gap-3 sm:grid-cols-2">{items.map(([label, value, tone]) => <div key={label} className="rounded-lg border border-border/60 bg-background p-4"><StatusPill label={label} tone={tone} /><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p></div>)}</div>; }
-function LifecycleBoard({ rows }: { rows: HrEmployee[] }) { const stages: DashboardStatus[] = ["Pre-Hire", "Onboarding", "Training", "Active", "Review Due", "At Risk", "Inactive", "Terminated"]; return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">{stages.map((stage) => { const matching = rows.filter((employee) => employee.status === stage); const oldest = matching.length ? Math.max(...matching.map((employee) => daysSince(employee.stageEnteredAt))) : 0; const average = avg(matching.map((employee) => daysSince(employee.stageEnteredAt))); const tone = stage === "At Risk" || oldest > 21 ? "critical" : oldest > 10 ? "warning" : "success"; return <div key={stage} className="rounded-lg border border-border/60 bg-background p-4"><div className="flex items-start justify-between"><p className="text-sm font-semibold text-foreground">{stage}</p><StatusPill label={tone === "success" ? "Green" : tone === "warning" ? "Yellow" : "Red"} tone={tone} /></div><p className="mt-3 text-2xl font-semibold text-foreground">{matching.length}</p><p className="mt-2 text-xs text-muted-foreground">Oldest {oldest}d · Avg {average}d</p></div>; })}</div>; }
+function HealthSnapshot({ rows }: { rows: HrEmployee[] }) {
+  const items = [
+    ["Ready for assignment", rows.filter((e) => e.staffingReady).length, "success"],
+    ["Onboarding blocked", rows.filter((e) => e.onboardingStatus === "Missing Docs" || !e.onboarding.backgroundCheck || !e.onboarding.i9).length, "critical"],
+    ["Reviews due", rows.filter((e) => ["Due Soon", "Overdue"].includes(e.reviewStatus)).length, "warning"],
+    ["Training overdue", rows.filter((e) => e.trainingStatus === "Overdue").length, "critical"],
+    ["Payroll exceptions", rows.filter((e) => e.payrollStatus !== "Ready").length, "critical"],
+    ["Manager gaps", rows.filter((e) => !e.manager).length, "warning"],
+  ] as const;
+  return (
+    <div className="grid gap-2.5 sm:grid-cols-2">
+      {items.map(([label, value, tone]) => (
+        <div key={label} className="rounded-xl border border-border/60 bg-background/60 p-3.5">
+          <div className="flex items-center justify-between">
+            <span className={cn("h-1.5 w-1.5 rounded-full", tone === "critical" ? "bg-destructive" : tone === "warning" ? "bg-warning" : "bg-success")} />
+            <p className={cn("text-xl font-semibold tabular-nums", tone === "critical" && value > 0 ? "text-destructive" : "text-foreground")}>{value}</p>
+          </div>
+          <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+function LifecycleBoard({ rows }: { rows: HrEmployee[] }) {
+  const stages: DashboardStatus[] = ["Pre-Hire", "Onboarding", "Training", "Active", "Review Due", "At Risk", "Inactive", "Terminated"];
+  return (
+    <div className="grid gap-2.5 grid-cols-2 md:grid-cols-4 2xl:grid-cols-8">
+      {stages.map((stage) => {
+        const matching = rows.filter((employee) => employee.status === stage);
+        const oldest = matching.length ? Math.max(...matching.map((employee) => daysSince(employee.stageEnteredAt))) : 0;
+        const average = avg(matching.map((employee) => daysSince(employee.stageEnteredAt)));
+        const tone: Tone = stage === "At Risk" || oldest > 21 ? "critical" : oldest > 10 ? "warning" : "success";
+        return (
+          <div key={stage} className="relative overflow-hidden rounded-xl border border-border/60 bg-background/60 p-3.5">
+            <span className={cn("absolute left-0 top-0 h-full w-0.5", tone === "critical" ? "bg-destructive" : tone === "warning" ? "bg-warning" : "bg-success")} />
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{stage}</p>
+            <p className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{matching.length}</p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">Oldest <span className="text-foreground/80 tabular-nums">{oldest}d</span> · Avg <span className="text-foreground/80 tabular-nums">{average}d</span></p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function OnboardingPanel({ rows }: { rows: HrEmployee[] }) { const statuses = ["Not Started", "In Progress", "Missing Docs", "Ready For Orientation", "Ready For Start", "Active"]; const checklist = ["viventium", "backgroundCheck", "i9", "orientation", "stateTraining", "centralReach", "complianceDocs"] as const; const labels: Record<(typeof checklist)[number], string> = { viventium: "Viventium onboarding", backgroundCheck: "Background check", i9: "I-9 / E-Verify", orientation: "Orientation", stateTraining: "State training", centralReach: "CentralReach account", complianceDocs: "Compliance documents" }; return <div className="space-y-4"><div className="grid grid-cols-2 gap-2">{statuses.map((status) => <div key={status} className="rounded-lg bg-background p-3 ring-1 ring-border/60"><p className="text-xs text-muted-foreground">{status}</p><p className="text-xl font-semibold text-foreground">{rows.filter((e) => e.onboardingStatus === status).length}</p></div>)}</div><Separator />{checklist.map((key) => { const complete = rows.filter((employee) => employee.onboarding[key]).length; return <div key={key} className="space-y-1"><div className="flex justify-between text-sm"><span className="text-foreground">{labels[key]}</span><span className="text-muted-foreground">{pct(rows.length ? (complete / rows.length) * 100 : 0)}</span></div><Progress value={rows.length ? (complete / rows.length) * 100 : 0} className="h-2" /></div>; })}</div>; }
 function TrainingPanel({ rows }: { rows: HrEmployee[] }) { const assigned = rows.flatMap((e) => e.trainings).length; const complete = rows.flatMap((e) => e.trainings).filter((t) => t.status === "Complete").length; const overdue = rows.flatMap((e) => e.trainings).filter((t) => t.status === "Overdue").length; return <div className="space-y-4"><div className="grid grid-cols-3 gap-2 text-center"><Metric label="Assigned" value={assigned} /><Metric label="Complete" value={complete} /><Metric label="Overdue" value={overdue} critical={overdue > 0} /></div><Breakdown title="By Department" rows={groupCount(rows, (e) => e.department)} /><Breakdown title="By Role" rows={groupCount(rows, (e) => e.role)} /><Breakdown title="By State" rows={groupCount(rows, (e) => e.state)} /></div>; }
 function ReviewsPanel({ rows }: { rows: HrEmployee[] }) { const reviews = rows.flatMap((e) => e.reviews); const due = reviews.filter((review) => review.status === "Due Soon").length; const overdue = reviews.filter((review) => review.status === "Overdue").length; const completed = reviews.filter((review) => review.status === "Completed").length; return <div className="space-y-4"><div className="grid grid-cols-3 gap-2 text-center"><Metric label="Due soon" value={due} /><Metric label="Overdue" value={overdue} critical={overdue > 0} /><Metric label="Completed" value={completed} /></div>{["30-day", "60-day", "90-day", "Annual"].map((label) => <div key={label} className="flex items-center justify-between rounded-lg bg-background p-3 ring-1 ring-border/60"><span className="text-sm text-foreground">{label} reviews</span><span className="text-sm font-semibold text-foreground">{reviews.filter((review) => review.name.toLowerCase().includes(label.toLowerCase().split("-")[0])).length}</span></div>)}<p className="rounded-lg bg-success/10 p-3 text-sm text-success">{reviews.filter((r) => r.bonusEligible).length} employees currently bonus eligible.</p></div>; }
@@ -397,7 +551,45 @@ function Metric({ label, value, critical }: { label: string; value: number; crit
 function groupCount<T extends string>(rows: HrEmployee[], get: (employee: HrEmployee) => T) { return Object.entries(rows.reduce<Record<string, number>>((acc, employee) => ({ ...acc, [get(employee)]: (acc[get(employee)] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1]).slice(0, 5); }
 function Breakdown({ title, rows }: { title: string; rows: [string, number][] }) { return <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p><div className="space-y-2">{rows.map(([label, count]) => <div key={label} className="flex items-center justify-between text-sm"><span className="text-foreground">{label}</span><span className="font-medium text-muted-foreground">{count}</span></div>)}</div></div>; }
 function StructureSnapshot({ rows }: { rows: HrEmployee[] }) { return <div className="space-y-5"><Breakdown title="Headcount by State" rows={groupCount(rows, (e) => e.state)} /><Breakdown title="Headcount by Department" rows={groupCount(rows, (e) => e.department)} /><Breakdown title="Headcount by Role" rows={groupCount(rows, (e) => e.role)} /><div className="rounded-lg border border-warning/30 bg-warning/10 p-3"><p className="text-sm font-semibold text-foreground">Reporting gaps</p><p className="mt-1 text-sm text-muted-foreground">{rows.filter((e) => !e.manager).length} employees without manager assigned.</p></div></div>; }
-function Worklist({ rows, onSelect }: { rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void }) { return <div className="overflow-x-auto"><table className="w-full min-w-[1320px] text-sm"><thead className="text-left text-xs uppercase tracking-wide text-muted-foreground"><tr>{["Employee", "Role", "State", "Department", "Manager", "Status", "Onboarding", "Training", "Review", "Time Clock", "Payroll", "Next Action", "Alerts"].map((header) => <th key={header} className="px-3 py-2 font-semibold">{header}</th>)}</tr></thead><tbody className="divide-y divide-border/50">{rows.map((employee) => <tr key={employee.id} onClick={() => onSelect(employee)} className="cursor-pointer hover:bg-muted/30"><td className="px-3 py-3 font-medium text-foreground">{employee.employee}<p className="text-xs text-muted-foreground">{employee.email}</p></td><td className="px-3 py-3">{employee.role}</td><td className="px-3 py-3">{employee.state}</td><td className="px-3 py-3">{employee.department}</td><td className="px-3 py-3">{employee.manager ?? "—"}</td><td className="px-3 py-3"><StatusPill label={employee.status} tone={employee.status === "At Risk" ? "critical" : employee.status === "Onboarding" || employee.status === "Training" ? "warning" : "success"} /></td><td className="px-3 py-3">{employee.onboardingStatus}</td><td className="px-3 py-3">{employee.trainingStatus}</td><td className="px-3 py-3">{employee.reviewStatus}</td><td className="px-3 py-3">{employee.timeClockStatus}</td><td className="px-3 py-3">{employee.payrollStatus}</td><td className="px-3 py-3">{employee.nextAction}</td><td className="px-3 py-3"><StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} /></td></tr>)}</tbody></table></div>; }
+function Worklist({ rows, onSelect }: { rows: HrEmployee[]; onSelect: (employee: HrEmployee) => void }) {
+  return (
+    <div className="-mx-2 overflow-x-auto">
+      <table className="w-full min-w-[920px] text-sm">
+        <thead>
+          <tr className="border-b border-border/60 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {["Employee", "Role / Dept", "Manager", "Status", "Training", "Review", "Next Action", "Risk"].map((header) => (
+              <th key={header} className="px-3 py-2.5 font-semibold">{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/40">
+          {rows.slice(0, 25).map((employee) => (
+            <tr key={employee.id} onClick={() => onSelect(employee)} className="cursor-pointer transition-colors hover:bg-muted/40">
+              <td className="px-3 py-3">
+                <p className="font-medium text-foreground">{employee.employee}</p>
+                <p className="text-xs text-muted-foreground">{employee.email}</p>
+              </td>
+              <td className="px-3 py-3">
+                <p className="text-foreground">{employee.role}</p>
+                <p className="text-xs text-muted-foreground">{employee.department} · {employee.state}</p>
+              </td>
+              <td className="px-3 py-3 text-muted-foreground">{employee.manager ?? "—"}</td>
+              <td className="px-3 py-3"><StatusPill label={employee.status} tone={employee.status === "At Risk" ? "critical" : employee.status === "Onboarding" || employee.status === "Training" ? "warning" : "success"} /></td>
+              <td className="px-3 py-3 text-xs text-muted-foreground">{employee.trainingStatus}</td>
+              <td className="px-3 py-3 text-xs text-muted-foreground">{employee.reviewStatus}</td>
+              <td className="px-3 py-3 text-xs text-foreground/80">{employee.nextAction}</td>
+              <td className="px-3 py-3"><StatusPill label={employee.riskLevel} tone={healthTone(employee.riskLevel)} /></td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={8} className="px-3 py-12 text-center text-sm text-muted-foreground">No employees match this filter.</td></tr>
+          )}
+        </tbody>
+      </table>
+      {rows.length > 25 && <p className="px-3 py-3 text-xs text-muted-foreground">Showing first 25 of {rows.length}.</p>}
+    </div>
+  );
+}
 function EmployeePanel({ employee, onOpenChange, onReady }: { employee: HrEmployee | null; onOpenChange: (open: boolean) => void; onReady: (employee: HrEmployee) => void }) { return <Sheet open={!!employee} onOpenChange={onOpenChange}><SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl"><SheetHeader>{employee && <><SheetTitle>{employee.employee}</SheetTitle><SheetDescription>{employee.role} · {employee.department} · {employee.state}</SheetDescription></>}</SheetHeader>{employee && <div className="mt-4 space-y-4"><div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => void onReady(employee)}><UserCheck className="mr-2 h-4 w-4" />Mark Ready</Button><Button size="sm" variant="outline" onClick={() => toast.success(`Reminder queued for ${employee.employee}`)}><Bell className="mr-2 h-4 w-4" />Send Reminder</Button></div><Tabs defaultValue="overview"><TabsList className="grid h-auto grid-cols-3 gap-1 md:grid-cols-5">{["overview", "onboarding", "training", "reviews", "time", "documents", "communications", "tasks", "timeline"].map((tab) => <TabsTrigger key={tab} value={tab} className="capitalize">{tab === "time" ? "Time" : tab}</TabsTrigger>)}</TabsList><TabsContent value="overview"><PanelBlock items={[["Employee", employee.employee], ["Role", employee.role], ["State", employee.state], ["Department", employee.department], ["Manager", employee.manager ?? "Unassigned"], ["Status", employee.status], ["Start date", employee.startDate], ["Risk level", employee.riskLevel]]} /></TabsContent><TabsContent value="onboarding"><Checklist employee={employee} /></TabsContent><TabsContent value="training"><List items={employee.trainings.map((t) => `${t.name} · ${t.status} · Due ${t.dueDate}${t.certificate ? ` · ${t.certificate}` : ""}`)} /></TabsContent><TabsContent value="reviews"><List items={employee.reviews.map((r) => `${r.name} · ${r.status} · ${r.dueDate} · ${r.score ? `${r.score}/100` : "not scored"} · ${r.bonusEligible ? "bonus eligible" : "no bonus"}`)} /></TabsContent><TabsContent value="time"><PanelBlock items={[["Time clock", employee.timeClockStatus], ["Payroll readiness", employee.payrollStatus], ["Hours this period", String(employee.timeEntries.reduce((s, e) => s + e.hours, 0))], ["Exceptions", String(employee.timeEntries.filter((e) => e.status !== "Clean").length)]]} /><List items={employee.timeEntries.map((entry) => `${entry.date} · ${entry.hours}h · ${entry.status} · ${entry.note}`)} /></TabsContent><TabsContent value="documents"><List items={employee.documents.map((d) => `${d.name} · ${d.category} · ${d.status}`)} /></TabsContent><TabsContent value="communications"><List items={employee.communications.map((c) => `${c.date} · ${c.author} · ${c.type}: ${c.note}`)} /></TabsContent><TabsContent value="tasks"><List items={employee.tasks.map((t) => `${t.completed ? "Complete" : "Open"} · ${t.title} · ${t.owner} · ${t.dueDate}`)} /></TabsContent><TabsContent value="timeline"><div className="space-y-3">{employee.timeline.map((event, index) => <div key={`${event.title}-${index}`} className="flex gap-3"><span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span><div className="rounded-lg bg-background p-3 ring-1 ring-border/60"><p className="text-sm font-medium text-foreground">{event.title}</p><p className="text-xs text-muted-foreground">{event.date} · {event.detail}</p></div></div>)}</div></TabsContent></Tabs></div>}</SheetContent></Sheet>; }
 function PanelBlock({ items }: { items: Array<[string, string]> }) { return <div className="mt-4 grid gap-3 sm:grid-cols-2">{items.map(([label, value]) => <div key={label} className="rounded-lg border border-border/60 bg-background p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium text-foreground">{value}</p></div>)}<Separator className="sm:col-span-2" /></div>; }
 function List({ items }: { items: string[] }) { return <div className="mt-4 space-y-2">{items.length ? items.map((item) => <p key={item} className="rounded-lg bg-background p-3 text-sm text-foreground ring-1 ring-border/60">{item}</p>) : <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">No records yet.</p>}</div>; }
