@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { AcademyEditor } from "@/components/training/AcademyEditor";
 import { StaffAssignDialog } from "@/components/training/StaffAssignDialog";
+import { TrackCoursesSortable } from "@/components/training/TrackCoursesSortable";
 
 type Course = {
   id: string; title: string; name: string; description: string | null;
