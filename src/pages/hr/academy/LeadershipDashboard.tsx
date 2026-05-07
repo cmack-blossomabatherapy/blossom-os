@@ -71,7 +71,7 @@ export default function LeadershipDashboard() {
         <p className="text-sm text-muted-foreground">Cohort progress, readiness, and risk across all trainees.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-4">
         <KPI icon={Users} label="Active trainees" value={stats.active} />
         <KPI icon={TrendingUp} label="Avg readiness" value={`${stats.avg}%`} />
         <KPI icon={CheckCircle2} label="On track (≥70%)" value={stats.onTrack} tone="emerald" />

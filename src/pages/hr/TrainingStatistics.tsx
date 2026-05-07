@@ -212,7 +212,7 @@ export default function TrainingStatistics() {
         </>
       }
       stats={
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-5">
           <GlassStat icon={BookOpen} tone="primary" label="Assignments" value={stats.total} hint={`${stats.learners} learners`} />
           <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={stats.completed} hint={`${stats.completionRate}% rate`} />
           <GlassStat icon={Clock} tone="primary" label="In progress" value={stats.inProgress} />
