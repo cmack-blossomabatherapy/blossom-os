@@ -65,11 +65,14 @@ export function StaffAssignDialog({
         const { error } = await supabase.from("training_track_enrollments").upsert(rows, { onConflict: "track_id,employee_id" });
         if (error) throw error;
       } else {
-        const rows = selectedIds.map((eid) => ({
-          track_id: trackId, employee_id: eid, status: "active" as const,
-        }));
-        const { error } = await supabase.from("academy_enrollments").upsert(rows as any, { onConflict: "track_id,employee_id" } as any);
-        if (error) throw error;
+        const fresh = selectedIds.filter((eid) => !enrolled.has(eid));
+        if (fresh.length) {
+          const rows = fresh.map((eid) => ({
+            track_id: trackId, employee_id: eid,
+          }));
+          const { error } = await supabase.from("academy_enrollments").insert(rows as any);
+          if (error) throw error;
+        }
       }
       toast.success(`Assigned ${selectedIds.length} staff to ${trackName}.`);
       onAssigned?.();
