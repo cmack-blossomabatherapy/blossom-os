@@ -22,8 +22,8 @@ export function GlassPageShell({
   title, description, eyebrow, eyebrowIcon, actions, stats, children, className,
 }: GlassPageShellProps) {
   return (
-    <div className={cn("aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full", className)}>
-      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
+    <div className={cn("aurora-bg -mx-3 -my-3 px-3 py-3 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full", className)}>
+      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 animate-fade-in">
         <GlassHero
           eyebrow={eyebrow}
           eyebrowIcon={eyebrowIcon}
