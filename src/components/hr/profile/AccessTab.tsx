@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 export function AccessTab({ employee }: { employee: Employee }) {
   const { isAdmin, hasPerm } = useAuth();
-  const canManageRoles = isAdmin || hasPerm("settings.manage");
+  const canManageRoles = isAdmin || hasPerm("settings.manage") || hasPerm("hr.employees.edit");
   const canSendLink = isAdmin || hasPerm("hr.employees.edit");
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
