@@ -14,6 +14,528 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_checkins: {
+        Row: {
+          action_items: string | null
+          agenda: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          enrollment_id: string
+          id: string
+          leader_rating: number | null
+          meeting_date: string
+          module_id: string | null
+          notes: string | null
+          with_employee_id: string | null
+          with_name: string | null
+        }
+        Insert: {
+          action_items?: string | null
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          enrollment_id: string
+          id?: string
+          leader_rating?: number | null
+          meeting_date?: string
+          module_id?: string | null
+          notes?: string | null
+          with_employee_id?: string | null
+          with_name?: string | null
+        }
+        Update: {
+          action_items?: string | null
+          agenda?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          enrollment_id?: string
+          id?: string
+          leader_rating?: number | null
+          meeting_date?: string
+          module_id?: string | null
+          notes?: string | null
+          with_employee_id?: string | null
+          with_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_checkins_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_checkins_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_checkins_with_employee_id_fkey"
+            columns: ["with_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_enrollments: {
+        Row: {
+          assigned_state: string | null
+          created_at: string
+          current_week_id: string | null
+          employee_id: string
+          id: string
+          mentor_employee_id: string | null
+          notes: string | null
+          path: Database["public"]["Enums"]["academy_path"]
+          start_date: string
+          status: Database["public"]["Enums"]["academy_enrollment_status"]
+          track_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_state?: string | null
+          created_at?: string
+          current_week_id?: string | null
+          employee_id: string
+          id?: string
+          mentor_employee_id?: string | null
+          notes?: string | null
+          path?: Database["public"]["Enums"]["academy_path"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["academy_enrollment_status"]
+          track_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_state?: string | null
+          created_at?: string
+          current_week_id?: string | null
+          employee_id?: string
+          id?: string
+          mentor_employee_id?: string | null
+          notes?: string | null
+          path?: Database["public"]["Enums"]["academy_path"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["academy_enrollment_status"]
+          track_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_enrollments_current_week_id_fkey"
+            columns: ["current_week_id"]
+            isOneToOne: false
+            referencedRelation: "academy_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_mentor_employee_id_fkey"
+            columns: ["mentor_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_module_resources: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          module_id: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label: string
+          module_id: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          module_id?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_module_resources_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_modules: {
+        Row: {
+          applies_to: Database["public"]["Enums"]["academy_path"]
+          applies_to_new_state_only: boolean
+          created_at: string
+          department: string | null
+          description: string | null
+          duration_label: string | null
+          id: string
+          is_required: boolean
+          leader_name: string | null
+          module_type: Database["public"]["Enums"]["academy_module_type"]
+          position: number
+          quiz: Json | null
+          title: string
+          week_id: string
+        }
+        Insert: {
+          applies_to?: Database["public"]["Enums"]["academy_path"]
+          applies_to_new_state_only?: boolean
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          duration_label?: string | null
+          id?: string
+          is_required?: boolean
+          leader_name?: string | null
+          module_type: Database["public"]["Enums"]["academy_module_type"]
+          position?: number
+          quiz?: Json | null
+          title: string
+          week_id: string
+        }
+        Update: {
+          applies_to?: Database["public"]["Enums"]["academy_path"]
+          applies_to_new_state_only?: boolean
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          duration_label?: string | null
+          id?: string
+          is_required?: boolean
+          leader_name?: string | null
+          module_type?: Database["public"]["Enums"]["academy_module_type"]
+          position?: number
+          quiz?: Json | null
+          title?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_modules_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "academy_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_phases: {
+        Row: {
+          color_token: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          tagline: string | null
+          track_id: string
+        }
+        Insert: {
+          color_token?: string
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          tagline?: string | null
+          track_id: string
+        }
+        Update: {
+          color_token?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          tagline?: string | null
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_phases_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          enrollment_id: string
+          id: string
+          module_id: string
+          reflection: string | null
+          score: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["academy_module_status"]
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+          verified_by_name: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          module_id: string
+          reflection?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["academy_module_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          module_id?: string
+          reflection?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["academy_module_status"]
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_quiz_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          enrollment_id: string
+          id: string
+          module_id: string
+          passed: boolean
+          score: number
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          module_id: string
+          passed?: boolean
+          score?: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          module_id?: string
+          passed?: boolean
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_attempts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_quiz_attempts_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_shadow_sessions: {
+        Row: {
+          created_at: string
+          department: string | null
+          enrollment_id: string
+          hours: number
+          id: string
+          mentor_signoff: boolean
+          module_id: string | null
+          notes: string | null
+          session_date: string
+          shadowed_employee_id: string | null
+          shadowed_name: string | null
+          signoff_at: string | null
+          signoff_by: string | null
+          signoff_by_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          enrollment_id: string
+          hours?: number
+          id?: string
+          mentor_signoff?: boolean
+          module_id?: string | null
+          notes?: string | null
+          session_date?: string
+          shadowed_employee_id?: string | null
+          shadowed_name?: string | null
+          signoff_at?: string | null
+          signoff_by?: string | null
+          signoff_by_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          enrollment_id?: string
+          hours?: number
+          id?: string
+          mentor_signoff?: boolean
+          module_id?: string | null
+          notes?: string | null
+          session_date?: string
+          shadowed_employee_id?: string | null
+          shadowed_name?: string | null
+          signoff_at?: string | null
+          signoff_by?: string | null
+          signoff_by_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_shadow_sessions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_shadow_sessions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_shadow_sessions_shadowed_employee_id_fkey"
+            columns: ["shadowed_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_tracks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      academy_weeks: {
+        Row: {
+          created_at: string
+          id: string
+          objective: string | null
+          outcomes: string[]
+          phase_id: string
+          title: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective?: string | null
+          outcomes?: string[]
+          phase_id: string
+          title: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective?: string | null
+          outcomes?: string[]
+          phase_id?: string
+          title?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_weeks_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "academy_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_documents: {
         Row: {
           assessment_id: string
@@ -3718,12 +4240,36 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
       }
     }
     Enums: {
+      academy_enrollment_status:
+        | "not_started"
+        | "active"
+        | "paused"
+        | "completed"
+        | "withdrawn"
+      academy_module_status:
+        | "locked"
+        | "available"
+        | "in_progress"
+        | "submitted"
+        | "completed"
+        | "waived"
+      academy_module_type:
+        | "training"
+        | "shadowing"
+        | "meeting"
+        | "video"
+        | "sop"
+        | "quiz"
+        | "reflection"
+        | "task"
+      academy_path: "new_state" | "existing_state" | "either"
       active_service_status:
         | "Active"
         | "Services on Pause"
@@ -4124,7 +4670,20 @@ export type Database = {
         | "completed"
         | "expired"
         | "waived"
-      work_setting: "clinic" | "home" | "hybrid" | "admin" | "field"
+      work_setting:
+        | "clinic"
+        | "home"
+        | "hybrid"
+        | "admin"
+        | "field"
+        | "office"
+        | "leadership"
+        | "intake"
+        | "recruiting"
+        | "scheduling"
+        | "state_director"
+        | "operations"
+        | "systems"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4252,6 +4811,32 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      academy_enrollment_status: [
+        "not_started",
+        "active",
+        "paused",
+        "completed",
+        "withdrawn",
+      ],
+      academy_module_status: [
+        "locked",
+        "available",
+        "in_progress",
+        "submitted",
+        "completed",
+        "waived",
+      ],
+      academy_module_type: [
+        "training",
+        "shadowing",
+        "meeting",
+        "video",
+        "sop",
+        "quiz",
+        "reflection",
+        "task",
+      ],
+      academy_path: ["new_state", "existing_state", "either"],
       active_service_status: [
         "Active",
         "Services on Pause",
@@ -4693,7 +5278,21 @@ export const Constants = {
         "expired",
         "waived",
       ],
-      work_setting: ["clinic", "home", "hybrid", "admin", "field"],
+      work_setting: [
+        "clinic",
+        "home",
+        "hybrid",
+        "admin",
+        "field",
+        "office",
+        "leadership",
+        "intake",
+        "recruiting",
+        "scheduling",
+        "state_director",
+        "operations",
+        "systems",
+      ],
     },
   },
 } as const
