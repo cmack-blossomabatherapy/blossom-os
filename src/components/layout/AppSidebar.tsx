@@ -227,6 +227,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [mobileNavQuery, setMobileNavQuery] = useState("");
   const hasFullNavigation = hasFullNavigationAccess(roles);
   const limitedSections = limitedNavigationSections(roles);
+  const { complete: academyComplete } = useAcademyComplete();
 
   const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : limitedSections;
   // Insert HR Suite before Admin so it sits with the operations modules
