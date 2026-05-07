@@ -9,6 +9,11 @@ export interface RoleNavigationException {
    * Training Hub, not the general Training catalog or Resource Hub.
    */
   intelligenceItemPaths?: string[];
+  /**
+   * If set, restricts which item paths are visible within a given allowed section.
+   * Map of section title -> allowed item paths within that section.
+   */
+  sectionItemPaths?: Record<string, string[]>;
 }
 
 export interface NavigationPreviewItem {
@@ -30,9 +35,24 @@ export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr",
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
-  hr: { sectionTitles: ["HR Suite"] },
-  hr_admin: { sectionTitles: ["HR Suite"] },
-  hr_manager: { sectionTitles: ["HR Suite"] },
+  hr: {
+    sectionTitles: ["HR Suite"],
+    sectionItemPaths: {
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+    },
+  },
+  hr_admin: {
+    sectionTitles: ["HR Suite"],
+    sectionItemPaths: {
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+    },
+  },
+  hr_manager: {
+    sectionTitles: ["HR Suite"],
+    sectionItemPaths: {
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+    },
+  },
   rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
   bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
 };
@@ -147,6 +167,16 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
   const allowedIntelligencePaths = restrictedIntelligence
     ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
     : null;
+  const sectionItemRestrictions: Record<string, Set<string>> = {};
+  if (!isFullNavigation) {
+    for (const exception of exceptions) {
+      if (!exception.sectionItemPaths) continue;
+      for (const [title, paths] of Object.entries(exception.sectionItemPaths)) {
+        if (!sectionItemRestrictions[title]) sectionItemRestrictions[title] = new Set();
+        paths.forEach((p) => sectionItemRestrictions[title].add(navPathToRoutePrefix(p)));
+      }
+    }
+  }
 
   return baseSections
     .map((section) => ({
@@ -157,6 +187,8 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
         if (section.title === "Intelligence" && allowedIntelligencePaths) {
           if (!allowedIntelligencePaths.has(navPathToRoutePrefix(item.path))) return false;
         }
+        const sectionRestriction = sectionItemRestrictions[section.title];
+        if (sectionRestriction && !sectionRestriction.has(navPathToRoutePrefix(item.path))) return false;
         if (!isFullNavigation && section.title !== "Intelligence" && !allowedSections.has(section.title) && !allowedPaths.has(navPathToRoutePrefix(item.path))) return false;
         return !item.perm || hasPermission(item.perm);
       }),
