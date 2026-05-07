@@ -167,8 +167,8 @@ export default function AcademyHome() {
         subtitle="Master the systems, workflows, leadership structure, and operational standards that power Blossom."
         right={
           readiness && (
-            <div className="glass-surface flex items-center gap-5 rounded-3xl p-5">
-              <ReadinessRing value={readiness.overall} size={132} label="Operational Readiness" />
+            <div className="glass-surface flex items-center gap-4 sm:gap-5 rounded-3xl p-4 sm:p-5">
+              <ReadinessRing value={readiness.overall} size={108} label="Operational Readiness" />
               <div className="space-y-1.5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Current focus</p>
                 {currentWeek && <p className="text-sm font-semibold leading-tight">Week {currentWeek.week_number} · {currentWeek.title}</p>}
@@ -187,7 +187,7 @@ export default function AcademyHome() {
       </GlassHero>
 
       {/* Stat strip */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-4">
         <GlassStat icon={Target} tone="primary" label="Modules complete" value={completedModules} hint={`of ${allModules.length} total`} />
         <GlassStat icon={Flame} tone="warning" label="Shadow hours" value={totalShadowHrs.toFixed(1)} hint="logged in field" />
         <GlassStat icon={BookMarked} tone="success" label="Check-ins" value={checkins.length} hint="leader sync sessions" />
@@ -211,7 +211,7 @@ export default function AcademyHome() {
             </Link>
           }
         >
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {upcomingModules.map((m) => (
               <Link key={m.id} to={`/training/academy/week/${currentWeek.id}`} className="glass-tile group flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -230,8 +230,8 @@ export default function AcademyHome() {
 
 function PageWrap({ children }: { children: React.ReactNode }) {
   return (
-    <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
-      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">{children}</div>
+    <div className="aurora-bg -mx-3 -my-3 px-3 py-3 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
+      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 animate-fade-in">{children}</div>
     </div>
   );
 }
@@ -240,7 +240,7 @@ function RoadmapPreview({ curriculum }: { curriculum: AcademyCurriculum }) {
   const flat = curriculum.phases.flatMap((p) => p.weeks.map((w) => ({ ...w, phaseColor: p.color_token, phaseName: p.name })));
   return (
     <GlassPanel title="Curriculum overview" description="A glimpse of every week ahead" icon={Compass}>
-      <div className="grid gap-3 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {flat.map((w) => (
           <div key={w.id} className={cn("glass-tile flex flex-col gap-2")}>
             <PhaseBadge name={w.phaseName} colorToken={w.phaseColor} />

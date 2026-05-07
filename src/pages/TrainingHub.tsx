@@ -124,15 +124,15 @@ export default function TrainingHub() {
   const visibleTrainingDepartments = trainingDepartments;
 
   return (
-    <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
-      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
+    <div className="aurora-bg -mx-3 -my-3 px-3 py-3 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
+      <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 animate-fade-in">
         <GlassHero
           eyebrow="Internal learning OS"
           eyebrowIcon={Sparkles}
           title="Blossom Training Hub"
           subtitle={<>Learn the systems, workflows, and standards that keep Blossom running smoothly. <span className="font-medium text-foreground">Welcome back, {displayName}.</span></>}
           right={
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
               <GlassStat icon={GraduationCap} tone="primary" label="Assigned" value={assignments.length} />
               <GlassStat icon={Flame} tone="warning" label="In progress" value={continueCourses.length} />
               <GlassStat icon={Award} tone="success" label="Badges" value={badges.length} />
@@ -145,7 +145,7 @@ export default function TrainingHub() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search topics, SOPs, systems, departments..."
-              className="h-14 rounded-2xl border-border/60 bg-background/70 pl-12 text-base shadow-sm backdrop-blur-md focus-visible:ring-primary/40"
+              className="h-12 md:h-14 rounded-2xl border-border/60 bg-background/70 pl-12 text-sm md:text-base shadow-sm backdrop-blur-md focus-visible:ring-primary/40"
             />
           </div>
         </GlassHero>
@@ -156,7 +156,7 @@ export default function TrainingHub() {
             description={`${searched.length} trainings`}
             icon={Search}
           >
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {searched.slice(0, 6).map((course) => (
                 <CourseCard key={course.id} course={course} compact training={courseStatus(course)} />
               ))}
@@ -171,7 +171,7 @@ export default function TrainingHub() {
             icon={Pin}
             iconTone="warning"
           >
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {pinnedCourses.map((p) => (
                 <Link
                   key={p.id}
@@ -201,7 +201,7 @@ export default function TrainingHub() {
           iconTone="warning"
         >
           {continueCourses.length ? (
-            <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid items-stretch gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {continueCourses.map((course) => (
                 <CourseCard key={course.id} course={course} training={courseStatus(course)} />
               ))}
@@ -219,7 +219,7 @@ export default function TrainingHub() {
           bodyClassName="p-0"
         >
           {requiredCourses.length ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-px">
               <table className="w-full text-sm">
                 <thead className="bg-muted/30 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <tr>
@@ -260,20 +260,20 @@ export default function TrainingHub() {
 
         <GlassPanel title="Completed training" description="Required trainings completed with passing quiz results when a quiz is included." icon={CheckCircle2} iconTone="success">
           {completedCourses.length ? (
-            <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid items-stretch gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {completedCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} />)}
             </div>
           ) : <EmptyState text="Completed trainings will appear here after you finish the lessons and pass the quiz." />}
         </GlassPanel>
 
         <GlassPanel title="Department training library" description="Choose a department path and build confidence step by step." icon={Layers}>
-          <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid items-stretch gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {visibleTrainingDepartments.map((dept) => {
               const Icon = iconMap[dept.icon];
               const deptCourses = visibleCourses.filter((c) => (c.category ?? "").toLowerCase() === dept.id.toLowerCase() || (c.category ?? "").toLowerCase() === dept.name.toLowerCase());
               const completion = deptCourses.length ? Math.round(deptCourses.reduce((sum, c) => sum + courseStatus(c).progress, 0) / deptCourses.length) : 0;
               return (
-                <Link key={dept.id} to={`/training/department/${dept.slug}`} className="glass-tile group flex min-h-[260px] flex-col">
+                <Link key={dept.id} to={`/training/department/${dept.slug}`} className="glass-tile group flex min-h-[220px] sm:min-h-[260px] flex-col p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset ring-white/40", dept.accent)}>
                       <Icon className="h-5 w-5" />
@@ -295,7 +295,7 @@ export default function TrainingHub() {
         </GlassPanel>
 
         <GlassPanel title="My badges" icon={Award} iconTone="warning">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {badges.length ? badges.map((badge) => (
               <div key={badge.id} className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-3 backdrop-blur">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/15 text-lg ring-1 ring-warning/20">{badge.icon ?? "🏅"}</div>

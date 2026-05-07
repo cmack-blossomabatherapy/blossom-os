@@ -114,7 +114,7 @@ export default function NotificationSettings() {
       ) : null}
     >
       <Tabs defaultValue="training" className="w-full">
-        <TabsList>
+        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap no-scrollbar">
           <TabsTrigger value="training">Training</TabsTrigger>
           <TabsTrigger value="onboarding" disabled>Onboarding <Badge variant="secondary" className="ml-2">Soon</Badge></TabsTrigger>
           <TabsTrigger value="reviews" disabled>Reviews <Badge variant="secondary" className="ml-2">Soon</Badge></TabsTrigger>
@@ -125,7 +125,7 @@ export default function NotificationSettings() {
 
         <TabsContent value="training" className="space-y-4 mt-4">
           {/* Master toggle */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Training notifications</h3>
@@ -136,20 +136,20 @@ export default function NotificationSettings() {
           </Card>
 
           {/* Default channels */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <h3 className="text-sm font-semibold text-foreground mb-1">Default delivery channels</h3>
             <p className="text-xs text-muted-foreground mb-4">Channels available across all training events. Disable a channel here to turn it off everywhere.</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <ChannelRow label="In-app notifications" checked={draft.channels.in_app} onChange={(v) => set("channels", { ...draft.channels, in_app: v })} disabled={!canEdit} />
               <ChannelRow label="Email" checked={draft.channels.email} onChange={(v) => set("channels", { ...draft.channels, email: v })} disabled={!canEdit} />
             </div>
           </Card>
 
           {/* Recipients */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <h3 className="text-sm font-semibold text-foreground mb-1">Default recipients</h3>
             <p className="text-xs text-muted-foreground mb-4">Who receives training notifications by default.</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <ChannelRow label="Assignee (employee)" checked={draft.recipients.assignee} onChange={(v) => set("recipients", { ...draft.recipients, assignee: v })} disabled={!canEdit} />
               <ChannelRow label="Supervisor" checked={draft.recipients.supervisor} onChange={(v) => set("recipients", { ...draft.recipients, supervisor: v })} disabled={!canEdit} />
               <ChannelRow label="HR admins" checked={draft.recipients.hr_admin} onChange={(v) => set("recipients", { ...draft.recipients, hr_admin: v })} disabled={!canEdit} />
@@ -157,27 +157,27 @@ export default function NotificationSettings() {
           </Card>
 
           {/* Event rules */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <h3 className="text-sm font-semibold text-foreground mb-1">Event rules</h3>
             <p className="text-xs text-muted-foreground mb-4">Toggle individual notifications and pick the channels they go through.</p>
             <div className="divide-y">
               {EVENT_META.map((evt) => {
                 const cfg = draft.events[evt.key] ?? { enabled: false, channels: [] };
                 return (
-                  <div key={evt.key} className="py-4 first:pt-0 last:pb-0 grid grid-cols-12 gap-3 items-center">
-                    <div className="col-span-5">
+                  <div key={evt.key} className="py-4 first:pt-0 last:pb-0 grid grid-cols-1 md:grid-cols-12 gap-3 md:items-center">
+                    <div className="md:col-span-5">
                       <div className="text-sm font-medium text-foreground">{evt.label}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{evt.description}</div>
                     </div>
-                    <div className="col-span-2 flex items-center gap-2">
+                    <div className="md:col-span-2 flex items-center gap-2">
                       <Switch checked={cfg.enabled} onCheckedChange={(v) => setEvent(evt.key, { enabled: v })} disabled={!canEdit || !draft.enabled} />
                       <span className="text-xs text-muted-foreground">{cfg.enabled ? "On" : "Off"}</span>
                     </div>
-                    <div className="col-span-3 flex items-center gap-2">
+                    <div className="md:col-span-3 flex items-center gap-2 flex-wrap">
                       <ChannelChip label="In-app" active={cfg.channels.includes("in_app")} onToggle={() => toggleEventChannel(evt.key, "in_app")} disabled={!canEdit || !cfg.enabled || !draft.channels.in_app} />
                       <ChannelChip label="Email" active={cfg.channels.includes("email")} onToggle={() => toggleEventChannel(evt.key, "email")} disabled={!canEdit || !cfg.enabled || !draft.channels.email} />
                     </div>
-                    <div className="col-span-2">
+                    <div className="md:col-span-2">
                       {evt.hasLeadDays ? (
                         <div className="flex items-center gap-2">
                           <Input
@@ -201,7 +201,7 @@ export default function NotificationSettings() {
           </Card>
 
           {/* Digest */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Manager digest</h3>
@@ -209,7 +209,7 @@ export default function NotificationSettings() {
               </div>
               <Switch checked={draft.digest.enabled} onCheckedChange={(v) => set("digest", { ...draft.digest, enabled: v })} disabled={!canEdit} />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs text-muted-foreground">Frequency</Label>
                 <Select value={draft.digest.frequency} onValueChange={(v) => set("digest", { ...draft.digest, frequency: v as "daily" | "weekly" })} disabled={!canEdit || !draft.digest.enabled}>
@@ -237,7 +237,7 @@ export default function NotificationSettings() {
           </Card>
 
           {/* Quiet hours */}
-          <Card className="p-5">
+          <Card className="p-4 md:p-5">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Quiet hours</h3>

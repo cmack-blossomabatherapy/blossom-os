@@ -235,7 +235,7 @@ export default function TrackAssign() {
       title="Track Assignments"
       description="Assign Training Tracks (multi-course paths) or Operations Academy tracks to specific staff."
       stats={selectedTrack && stats ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-4">
           <GlassStat icon={Users} tone="primary" label="Enrolled" value={stats.total} />
           <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={stats.completed} hint={`${stats.rate}% rate`} />
           <GlassStat icon={mode === "training" ? AlertTriangle : Compass} tone={mode === "training" ? "destructive" : "primary"} label={mode === "training" ? "Overdue" : "Active"} value={mode === "training" ? stats.overdue : stats.inProgress} />
