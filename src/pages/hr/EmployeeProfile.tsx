@@ -120,24 +120,26 @@ export default function EmployeeProfile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-3">
-        <ScrollableTabBar>
-          <TabsList className="inline-flex w-max flex-nowrap h-auto gap-1 rounded-xl bg-transparent p-1">
-            <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
-            <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
-            <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
-            <ProfileTab value="tasks" icon={ListChecks} label="Tasks" />
-            <ProfileTab value="reviews" icon={Star} label="Reviews" />
-            <ProfileTab value="training" icon={GraduationCap} label="Training" />
-            {showCompensation && <ProfileTab value="payroll" icon={Banknote} label="Payroll" />}
-            {showTimeClock && <ProfileTab value="timeclock" icon={Clock} label="Time / Hours" />}
-            <ProfileTab value="documents" icon={FileText} label="Documents" />
-            {showNotes && <ProfileTab value="notes" icon={StickyNote} label="Notes" />}
-            <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
-            <ProfileTab value="timeline" icon={History} label="Timeline" />
-            <ProfileTab value="access" icon={ShieldCheck} label="Access" />
-            {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
-          </TabsList>
-        </ScrollableTabBar>
+        <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+          <div className="rounded-xl border border-border/60 bg-card/60 p-1.5 shadow-sm">
+            <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-lg bg-transparent p-0">
+              <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
+              <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
+              <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
+              <ProfileTab value="tasks" icon={ListChecks} label="Tasks" />
+              <ProfileTab value="reviews" icon={Star} label="Reviews" />
+              <ProfileTab value="training" icon={GraduationCap} label="Training" />
+              {showCompensation && <ProfileTab value="payroll" icon={Banknote} label="Payroll" />}
+              {showTimeClock && <ProfileTab value="timeclock" icon={Clock} label="Time / Hours" />}
+              <ProfileTab value="documents" icon={FileText} label="Documents" />
+              {showNotes && <ProfileTab value="notes" icon={StickyNote} label="Notes" />}
+              <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
+              <ProfileTab value="timeline" icon={History} label="Timeline" />
+              <ProfileTab value="access" icon={ShieldCheck} label="Access" />
+              {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
+            </TabsList>
+          </div>
+        </div>
 
         <TabsContent value="overview"><OverviewTab employee={employee} department={department} /></TabsContent>
         <TabsContent value="employment"><EmploymentTab employee={employee} department={department} onChange={() => load(employee.id)} /></TabsContent>
