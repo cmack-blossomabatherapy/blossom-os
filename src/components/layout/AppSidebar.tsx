@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass,
+  History as HistoryIcon, Search, Compass, Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -17,6 +17,8 @@ import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useAcademyComplete } from "@/hooks/useAcademyComplete";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NavItem {
   label: string;
@@ -225,6 +227,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [mobileNavQuery, setMobileNavQuery] = useState("");
   const hasFullNavigation = hasFullNavigationAccess(roles);
   const limitedSections = limitedNavigationSections(roles);
+  const { complete: academyComplete } = useAcademyComplete();
 
   const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : limitedSections;
   // Insert HR Suite before Admin so it sits with the operations modules
@@ -362,6 +365,22 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 {sectionOpen && <div className="mt-2 space-y-1 rounded-2xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-xl animate-fade-in">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
+                    if (item.path === "/training" && !academyComplete) {
+                      return (
+                        <button
+                          key={item.path}
+                          type="button"
+                          aria-disabled="true"
+                          className="mobile-menu-item w-full cursor-not-allowed opacity-50"
+                        >
+                          <span className="mobile-menu-icon"><Lock className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{item.label}</span>
+                            <span className="block truncate text-[11px] font-normal text-muted-foreground">Locked — finish Operations Academy</span>
+                          </span>
+                        </button>
+                      );
+                    }
                     return (
                       <NavLink key={item.path} to={item.path} end={item.path === "/"} onClick={() => onMobileOpenChange?.(false)} className={cn("mobile-menu-item", active && "mobile-menu-item-active")}>
                         <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
@@ -432,6 +451,22 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             )}
             {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5">
               {section.items.map((item) => (
+                item.path === "/training" && !academyComplete ? (
+                  <Tooltip key={item.path}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => e.preventDefault()}
+                        aria-disabled="true"
+                        className={cn("nav-item nav-item-inactive w-full cursor-not-allowed opacity-50")}
+                      >
+                        <Lock className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Unlocks after you finish Operations Academy</TooltipContent>
+                  </Tooltip>
+                ) : (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -444,6 +479,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
+                )
               ))}
             </div>}
           </div>
