@@ -169,7 +169,7 @@ const App = () => (
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/automations" element={<Automations />} />
-                  <Route path="/training" element={<TrainingHub />} />
+                  <Route path="/training" element={<AcademyGate><TrainingHub /></AcademyGate>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
                   <Route path="/training/academy/leadership" element={<PermissionRoute permission="hr.training.view"><AcademyLeadership /></PermissionRoute>} />
