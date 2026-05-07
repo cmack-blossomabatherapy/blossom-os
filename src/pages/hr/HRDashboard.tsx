@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, Bell, Briefcase, CalendarCheck, CheckCircle2, Clock, Download, FileText,
   Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, SlidersHorizontal,
   UserCheck, UserCog, UserPlus, Users, Wallet, ChevronDown,
+  ExternalLink, Upload, MessageSquare, Plus, Mail, Phone, MapPin, Calendar, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -590,7 +594,285 @@ function Worklist({ rows, onSelect }: { rows: HrEmployee[]; onSelect: (employee:
     </div>
   );
 }
-function EmployeePanel({ employee, onOpenChange, onReady }: { employee: HrEmployee | null; onOpenChange: (open: boolean) => void; onReady: (employee: HrEmployee) => void }) { return <Sheet open={!!employee} onOpenChange={onOpenChange}><SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl"><SheetHeader>{employee && <><SheetTitle>{employee.employee}</SheetTitle><SheetDescription>{employee.role} · {employee.department} · {employee.state}</SheetDescription></>}</SheetHeader>{employee && <div className="mt-4 space-y-4"><div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => void onReady(employee)}><UserCheck className="mr-2 h-4 w-4" />Mark Ready</Button><Button size="sm" variant="outline" onClick={() => toast.success(`Reminder queued for ${employee.employee}`)}><Bell className="mr-2 h-4 w-4" />Send Reminder</Button></div><Tabs defaultValue="overview"><TabsList className="grid h-auto grid-cols-3 gap-1 md:grid-cols-5">{["overview", "onboarding", "training", "reviews", "time", "documents", "communications", "tasks", "timeline"].map((tab) => <TabsTrigger key={tab} value={tab} className="capitalize">{tab === "time" ? "Time" : tab}</TabsTrigger>)}</TabsList><TabsContent value="overview"><PanelBlock items={[["Employee", employee.employee], ["Role", employee.role], ["State", employee.state], ["Department", employee.department], ["Manager", employee.manager ?? "Unassigned"], ["Status", employee.status], ["Start date", employee.startDate], ["Risk level", employee.riskLevel]]} /></TabsContent><TabsContent value="onboarding"><Checklist employee={employee} /></TabsContent><TabsContent value="training"><List items={employee.trainings.map((t) => `${t.name} · ${t.status} · Due ${t.dueDate}${t.certificate ? ` · ${t.certificate}` : ""}`)} /></TabsContent><TabsContent value="reviews"><List items={employee.reviews.map((r) => `${r.name} · ${r.status} · ${r.dueDate} · ${r.score ? `${r.score}/100` : "not scored"} · ${r.bonusEligible ? "bonus eligible" : "no bonus"}`)} /></TabsContent><TabsContent value="time"><PanelBlock items={[["Time clock", employee.timeClockStatus], ["Payroll readiness", employee.payrollStatus], ["Hours this period", String(employee.timeEntries.reduce((s, e) => s + e.hours, 0))], ["Exceptions", String(employee.timeEntries.filter((e) => e.status !== "Clean").length)]]} /><List items={employee.timeEntries.map((entry) => `${entry.date} · ${entry.hours}h · ${entry.status} · ${entry.note}`)} /></TabsContent><TabsContent value="documents"><List items={employee.documents.map((d) => `${d.name} · ${d.category} · ${d.status}`)} /></TabsContent><TabsContent value="communications"><List items={employee.communications.map((c) => `${c.date} · ${c.author} · ${c.type}: ${c.note}`)} /></TabsContent><TabsContent value="tasks"><List items={employee.tasks.map((t) => `${t.completed ? "Complete" : "Open"} · ${t.title} · ${t.owner} · ${t.dueDate}`)} /></TabsContent><TabsContent value="timeline"><div className="space-y-3">{employee.timeline.map((event, index) => <div key={`${event.title}-${index}`} className="flex gap-3"><span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span><div className="rounded-lg bg-background p-3 ring-1 ring-border/60"><p className="text-sm font-medium text-foreground">{event.title}</p><p className="text-xs text-muted-foreground">{event.date} · {event.detail}</p></div></div>)}</div></TabsContent></Tabs></div>}</SheetContent></Sheet>; }
+function EmployeePanel({ employee, onOpenChange, onReady }: { employee: HrEmployee | null; onOpenChange: (open: boolean) => void; onReady: (employee: HrEmployee) => void }) {
+  return (
+    <Sheet open={!!employee} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-2xl">
+        {employee && <EmployeePanelContent employee={employee} onReady={onReady} />}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function EmployeePanelContent({ employee, onReady }: { employee: HrEmployee; onReady: (employee: HrEmployee) => void }) {
+  const [comms, setComms] = useState<HrCommunication[]>(employee.communications);
+  const [tasks, setTasks] = useState<HrTask[]>(employee.tasks);
+  const [docs, setDocs] = useState<HrDocument[]>(employee.documents);
+  const [timeline, setTimeline] = useState<HrTimelineEvent[]>(employee.timeline);
+  const [newComm, setNewComm] = useState("");
+  const [newTask, setNewTask] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setComms(employee.communications);
+    setTasks(employee.tasks);
+    setDocs(employee.documents);
+    setTimeline(employee.timeline);
+  }, [employee.id]);
+
+  const initials = employee.employee.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  const openHours = tasks.filter((t) => !t.completed).length;
+  const totalHours = employee.timeEntries.reduce((s, e) => s + e.hours, 0);
+  const exceptions = employee.timeEntries.filter((e) => e.status !== "Clean").length;
+
+  function addTimeline(title: string, detail: string) {
+    setTimeline((prev) => [{ title, date: new Date().toISOString().slice(0, 10), detail }, ...prev]);
+  }
+
+  function addComm() {
+    if (!newComm.trim()) return;
+    const entry: HrCommunication = { author: "You", note: newComm.trim(), date: new Date().toISOString().slice(0, 10), type: "HR" };
+    setComms((prev) => [entry, ...prev]);
+    addTimeline("Note added", entry.note);
+    setNewComm("");
+    toast.success("Note logged");
+  }
+
+  function addTask() {
+    if (!newTask.trim()) return;
+    const t: HrTask = { id: crypto.randomUUID(), title: newTask.trim(), owner: "You", dueDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10), completed: false, type: "Manual" };
+    setTasks((prev) => [t, ...prev]);
+    addTimeline("Task created", t.title);
+    setNewTask("");
+    toast.success("Task added");
+  }
+
+  function toggleTask(id: string) {
+    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, completed: !t.completed } : t));
+  }
+
+  function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const doc: HrDocument = { name: file.name, category: "Uploaded", status: "Complete" };
+    setDocs((prev) => [doc, ...prev]);
+    addTimeline("Document uploaded", file.name);
+    toast.success(`${file.name} uploaded`);
+    e.target.value = "";
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="border-b border-border/60 bg-gradient-to-br from-primary/5 via-background to-background p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-sm">{initials}</div>
+          <div className="flex-1 min-w-0">
+            <SheetHeader className="space-y-1 text-left">
+              <SheetTitle className="text-xl">{employee.employee}</SheetTitle>
+              <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" />{employee.role}</span>
+                <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{employee.department}</span>
+                <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{employee.state}</span>
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge variant="secondary" className="text-[10px]">{employee.status}</Badge>
+              <Badge variant="outline" className="text-[10px]">Risk: {employee.riskLevel}</Badge>
+              {employee.manager && <Badge variant="outline" className="text-[10px]">Mgr: {employee.manager}</Badge>}
+            </div>
+          </div>
+        </div>
+
+        {/* Action bar */}
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Button asChild size="sm" className="h-9 justify-start gap-2 shadow-sm">
+            <Link to={`/hr/employees/${employee.id}`}><ExternalLink className="h-4 w-4" />Open File</Link>
+          </Button>
+          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => void onReady(employee)}>
+            <UserCheck className="h-4 w-4" />Mark Ready
+          </Button>
+          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => { window.location.href = `mailto:${employee.email}`; }}>
+            <Mail className="h-4 w-4" />Email
+          </Button>
+          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => { toast.success(`Reminder queued for ${employee.employee}`); addTimeline("Reminder sent", "HR sent a reminder"); }}>
+            <Bell className="h-4 w-4" />Remind
+          </Button>
+        </div>
+
+        {/* Quick stats */}
+        <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+          {[
+            { label: "Tasks", value: openHours, sub: "open" },
+            { label: "Hours", value: totalHours, sub: "this period" },
+            { label: "Trainings", value: employee.trainings.length, sub: employee.trainingStatus.toLowerCase() },
+            { label: "Issues", value: exceptions, sub: "exceptions" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-lg border border-border/60 bg-background/80 px-2 py-2">
+              <p className="text-lg font-semibold tabular-nums text-foreground">{s.value}</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.label}</p>
+              <p className="text-[10px] text-muted-foreground/70">{s.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex-1 overflow-y-auto p-6 pt-4">
+        <Tabs defaultValue="overview">
+          <TabsList className="grid h-auto w-full grid-cols-4 gap-1 bg-muted/50 p-1 lg:grid-cols-7">
+            <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+            <TabsTrigger value="training" className="text-xs">Training</TabsTrigger>
+            <TabsTrigger value="documents" className="text-xs">Docs</TabsTrigger>
+            <TabsTrigger value="comms" className="text-xs">Comms</TabsTrigger>
+            <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
+            <TabsTrigger value="time" className="text-xs">Time</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-xs">Activity</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="mt-4 space-y-3">
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Next Action</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{employee.nextAction || "All caught up"}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                ["Email", employee.email],
+                ["Start date", formatShortDate(employee.startDate)],
+                ["Manager", employee.manager ?? "Unassigned"],
+                ["Onboarding", employee.onboardingStatus],
+                ["Training", employee.trainingStatus],
+                ["Reviews", employee.reviewStatus],
+                ["Time clock", employee.timeClockStatus],
+                ["Payroll", employee.payrollStatus],
+              ].map(([label, value]) => (
+                <div key={label as string} className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+                  <p className="mt-0.5 truncate text-sm font-medium text-foreground">{value as string}</p>
+                </div>
+              ))}
+            </div>
+            <Checklist employee={employee} />
+          </TabsContent>
+
+          <TabsContent value="training" className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Assigned Trainings</p>
+              <Button asChild variant="outline" size="sm" className="h-8 gap-1.5"><Link to="/hr/training"><GraduationCap className="h-3.5 w-3.5" />Training Admin</Link></Button>
+            </div>
+            {employee.trainings.length ? employee.trainings.map((t, i) => (
+              <div key={i} className="rounded-lg border border-border/60 bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.category} · Due {formatShortDate(t.dueDate)}{t.certificate ? ` · ${t.certificate}` : ""}</p>
+                  </div>
+                  <Badge variant={t.status === "Overdue" ? "destructive" : t.status === "Complete" ? "secondary" : "outline"} className="shrink-0 text-[10px]">{t.status}</Badge>
+                </div>
+              </div>
+            )) : <EmptyState icon={GraduationCap} message="No trainings assigned" />}
+          </TabsContent>
+
+          <TabsContent value="documents" className="mt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Documents</p>
+              <input ref={fileRef} type="file" className="hidden" onChange={onUpload} />
+              <Button size="sm" className="h-8 gap-1.5" onClick={() => fileRef.current?.click()}><Upload className="h-3.5 w-3.5" />Upload</Button>
+            </div>
+            {docs.length ? docs.map((d, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{d.name}</p>
+                    <p className="text-xs text-muted-foreground">{d.category}</p>
+                  </div>
+                </div>
+                <Badge variant={d.status === "Missing" || d.status === "Expired" ? "destructive" : "secondary"} className="text-[10px]">{d.status}</Badge>
+              </div>
+            )) : <EmptyState icon={FileText} message="No documents on file" />}
+          </TabsContent>
+
+          <TabsContent value="comms" className="mt-4 space-y-3">
+            <div className="rounded-lg border border-border/60 bg-card p-3">
+              <Textarea value={newComm} onChange={(e) => setNewComm(e.target.value)} placeholder={`Log a note about ${employee.employee.split(" ")[0]}…`} className="min-h-[72px] resize-none border-0 p-0 shadow-none focus-visible:ring-0" />
+              <div className="mt-2 flex justify-end">
+                <Button size="sm" className="h-8 gap-1.5" onClick={addComm} disabled={!newComm.trim()}><MessageSquare className="h-3.5 w-3.5" />Add Note</Button>
+              </div>
+            </div>
+            {comms.length ? comms.map((c, i) => (
+              <div key={i} className="rounded-lg border border-border/60 bg-card p-3">
+                <div className="flex items-center justify-between text-xs text-muted-foreground"><span className="font-medium text-foreground">{c.author}</span><span>{formatShortDate(c.date)} · {c.type}</span></div>
+                <p className="mt-1 text-sm text-foreground">{c.note}</p>
+              </div>
+            )) : <EmptyState icon={MessageSquare} message="No communications yet" />}
+          </TabsContent>
+
+          <TabsContent value="tasks" className="mt-4 space-y-3">
+            <div className="flex gap-2">
+              <Input value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Add a task…" className="h-9" onKeyDown={(e) => { if (e.key === "Enter") addTask(); }} />
+              <Button size="sm" className="h-9 gap-1.5" onClick={addTask} disabled={!newTask.trim()}><Plus className="h-3.5 w-3.5" />Add</Button>
+            </div>
+            {tasks.length ? tasks.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3">
+                <button type="button" onClick={() => toggleTask(t.id)} className="flex items-center gap-2.5 text-left min-w-0">
+                  <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", t.completed ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30")}>
+                    {t.completed && <CheckCircle2 className="h-3.5 w-3.5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn("truncate text-sm", t.completed ? "text-muted-foreground line-through" : "font-medium text-foreground")}>{t.title}</p>
+                    <p className="text-xs text-muted-foreground">{t.owner} · Due {formatShortDate(t.dueDate)}</p>
+                  </div>
+                </button>
+                <Badge variant="outline" className="shrink-0 text-[10px]">{t.type}</Badge>
+              </div>
+            )) : <EmptyState icon={ListChecks} message="No open tasks" />}
+          </TabsContent>
+
+          <TabsContent value="time" className="mt-4 space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[["Status", employee.timeClockStatus], ["Payroll", employee.payrollStatus], ["Hours", `${totalHours}h`], ["Exceptions", String(exceptions)]].map(([l, v]) => (
+                <div key={l} className="rounded-lg border border-border/60 bg-card px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{l}</p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground">{v}</p>
+                </div>
+              ))}
+            </div>
+            {employee.timeEntries.length ? employee.timeEntries.map((e, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3">
+                <div><p className="text-sm font-medium text-foreground">{formatShortDate(e.date)} · {e.hours}h</p><p className="text-xs text-muted-foreground">{e.note}</p></div>
+                <Badge variant={e.status === "Clean" ? "secondary" : "destructive"} className="text-[10px]">{e.status}</Badge>
+              </div>
+            )) : <EmptyState icon={Clock} message="No time entries this period" />}
+          </TabsContent>
+
+          <TabsContent value="timeline" className="mt-4">
+            {timeline.length ? (
+              <div className="relative space-y-0 pl-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border">
+                {timeline.map((event, index) => (
+                  <div key={`${event.title}-${index}`} className="relative pb-4">
+                    <span className="absolute -left-[18px] top-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary ring-4 ring-background" />
+                    <p className="text-sm font-medium text-foreground">{event.title}</p>
+                    <p className="text-xs text-muted-foreground">{formatShortDate(event.date)} · {event.detail}</p>
+                  </div>
+                ))}
+              </div>
+            ) : <EmptyState icon={Activity} message="No activity yet" />}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, message }: { icon: typeof Activity; message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 py-10 text-center">
+      <Icon className="h-6 w-6 text-muted-foreground/60" />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
 function PanelBlock({ items }: { items: Array<[string, string]> }) { return <div className="mt-4 grid gap-3 sm:grid-cols-2">{items.map(([label, value]) => <div key={label} className="rounded-lg border border-border/60 bg-background p-3"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium text-foreground">{value}</p></div>)}<Separator className="sm:col-span-2" /></div>; }
 function List({ items }: { items: string[] }) { return <div className="mt-4 space-y-2">{items.length ? items.map((item) => <p key={item} className="rounded-lg bg-background p-3 text-sm text-foreground ring-1 ring-border/60">{item}</p>) : <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">No records yet.</p>}</div>; }
 function Checklist({ employee }: { employee: HrEmployee }) { const items = [["viventium", "Viventium status"], ["backgroundCheck", "Background check"], ["i9", "I-9 / E-Verify"], ["orientation", "Orientation"], ["centralReach", "CentralReach account"], ["complianceDocs", "Required documents"]] as const; return <div className="mt-4 space-y-2">{items.map(([key, label]) => <div key={key} className="flex w-full items-center justify-between rounded-lg bg-background p-3 text-left ring-1 ring-border/60"><span className="text-sm font-medium text-foreground">{label}</span>{employee.onboarding[key] ? <CheckCircle2 className="h-4 w-4 text-success" /> : <AlertTriangle className="h-4 w-4 text-warning" />}</div>)}</div>; }
