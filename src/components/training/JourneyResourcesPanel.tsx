@@ -162,6 +162,21 @@ export function JourneyResourcesPanel({ canManage }: { canManage: boolean }) {
         iconName: d.iconName === "BookOpen" ? "FileText" : d.iconName,
       }));
       toast.success("File uploaded");
+      // Auto-extract text from PDFs and ingest into AI knowledge base
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith(".pdf") || lower.endsWith(".txt") || lower.endsWith(".md")) {
+        try {
+          const { extractAndIngestPdf } = await import("@/lib/knowledgeIngest");
+          const result = await extractAndIngestPdf({
+            bucket: RESOURCE_BUCKET,
+            storage_path: path,
+            source_type: "journey_resource",
+            source_title: file.name.replace(/\.[^.]+$/, ""),
+            source_url: data.publicUrl,
+          });
+          if (result.inserted) toast.success(`Indexed for AI search (${result.inserted} chunks)`);
+        } catch { /* non-blocking */ }
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Upload failed");
     } finally {
