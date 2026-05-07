@@ -57,6 +57,7 @@ import Announcements from "./pages/hr/Announcements";
 import ResourceHub from "./pages/hr/ResourceHub";
 import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
+import NotificationSettings from "./pages/hr/NotificationSettings";
 import HRAssistant from "./pages/hr/HRAssistant";
 import TrainingDashboard from "./pages/hr/TrainingDashboard";
 import TrainingStatistics from "./pages/hr/TrainingStatistics";
@@ -203,6 +204,7 @@ const App = () => (
                   <Route path="/hr/journey/drive" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyDrive /></PermissionRoute>} />
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
+                  <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
