@@ -222,6 +222,49 @@ export default function AcademyEditor() {
     await load();
   }
 
+  async function persistOrder(table: "academy_phases" | "academy_weeks", field: "position" | "week_number", orderedIds: string[]) {
+    const updates = orderedIds.map((id, idx) =>
+      supabase.from(table as any).update({ [field]: idx + 1 }).eq("id", id),
+    );
+    const results = await Promise.all(updates);
+    const err = results.find((r) => r.error)?.error;
+    if (err) { toast.error(err.message); return; }
+    toast.success("Order updated");
+    await load();
+  }
+
+  function onPhaseDragEnd(e: DragEndEvent) {
+    if (!tree) return;
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = sortPinned(tree.phases).filter((p) => showArchived || !p.is_archived).map((p) => p.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    // optimistic
+    const map = new Map(tree.phases.map((p) => [p.id, p]));
+    setTree({ ...tree, phases: next.map((id, i) => ({ ...(map.get(id) as PhaseFull), position: i + 1 })) });
+    persistOrder("academy_phases", "position", next);
+  }
+
+  function onWeekDragEnd(phaseId: string, e: DragEndEvent) {
+    if (!tree) return;
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const phase = tree.phases.find((p) => p.id === phaseId);
+    if (!phase) return;
+    const ids = sortPinned(phase.weeks).filter((w) => showArchived || !w.is_archived).map((w) => w.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    const map = new Map(phase.weeks.map((w) => [w.id, w]));
+    const newWeeks = next.map((id, i) => ({ ...(map.get(id) as WeekFull), week_number: i + 1 }));
+    setTree({ ...tree, phases: tree.phases.map((p) => p.id === phaseId ? { ...p, weeks: newWeeks } : p) });
+    persistOrder("academy_weeks", "week_number", next);
+  }
+
   async function createTrack() {
     const { data, error } = await supabase.from("academy_tracks").insert({
       name: "Operations Academy", description: "Onboarding curriculum for office operations.", is_active: true,
