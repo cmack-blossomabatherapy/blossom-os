@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle, ArrowRight, Bell, Briefcase, CalendarCheck, CheckCircle2, Clock, Download, FileText,
   Filter, GraduationCap, HeartHandshake, ListChecks, RefreshCw, Search, Send, SlidersHorizontal,
   UserCheck, UserCog, UserPlus, Users, Wallet, ChevronDown,
+  ExternalLink, Upload, MessageSquare, Plus, Mail, Phone, MapPin, Calendar, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
