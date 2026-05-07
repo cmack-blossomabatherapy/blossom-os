@@ -4531,9 +4531,22 @@ export type Database = {
         Returns: boolean
       }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
+      log_employee_timeline_event: {
+        Args: {
+          _description: string
+          _employee_id: string
+          _event_type: string
+          _metadata?: Json
+        }
+        Returns: undefined
+      }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
+      }
+      recalc_course_progress: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: undefined
       }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
       upsert_knowledge_chunk: {
