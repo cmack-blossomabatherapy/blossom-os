@@ -144,6 +144,7 @@ export default function AcademyEditor() {
         applies_to: (d.applies_to ?? "either") as AcademyPath,
         applies_to_new_state_only: d.applies_to_new_state_only ?? false,
         position: nextPos,
+        quiz: (d as any).quiz ?? undefined,
       }).select("*").single();
     } else if (edit.kind === "resource") {
       const d = edit.data;
