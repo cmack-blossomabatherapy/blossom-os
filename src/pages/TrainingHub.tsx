@@ -29,7 +29,7 @@ type LiveCourse = {
 };
 type LiveAssignment = { id: string; course_id: string; status: string; due_date: string | null; completed_at: string | null };
 type LiveProgress = { course_id: string; status: string; progress_percentage: number; quiz_score: number | null; last_opened_at: string | null };
-type LiveBadge = { id: string; title: string; description: string | null; icon_emoji: string | null; earned_at: string | null };
+type LiveBadge = { id: string; title: string; description: string | null; icon: string | null; earned_at: string | null };
 
 type CourseDisplayStatus = { status: string; progress: number; dueDate?: string; required: boolean };
 
@@ -72,14 +72,14 @@ export default function TrainingHub() {
           ? supabase.from("training_progress").select("course_id,status,progress_percentage,quiz_score,last_opened_at").eq("user_id", userId)
           : Promise.resolve({ data: [], error: null } as never),
         userId
-          ? supabase.from("user_training_badges").select("id,earned_at,badge:training_badges(title,description,icon_emoji)").eq("user_id", userId)
+          ? supabase.from("user_training_badges").select("id,earned_at,badge:training_badges(title,description,icon)").eq("user_id", userId)
           : Promise.resolve({ data: [], error: null } as never),
       ]);
       if (!active) return;
       setCourses((c.data ?? []) as never);
       setAssignments((a.data ?? []) as never);
       setProgress((p.data ?? []) as never);
-      setBadges(((b.data ?? []) as Array<{ id: string; earned_at: string | null; badge: { title: string; description: string | null; icon_emoji: string | null } | null }>).map((row) => ({ id: row.id, earned_at: row.earned_at, title: row.badge?.title ?? "Badge", description: row.badge?.description ?? null, icon_emoji: row.badge?.icon_emoji ?? "🏅" })));
+      setBadges(((b.data ?? []) as unknown as Array<{ id: string; earned_at: string | null; badge: { title: string; description: string | null; icon: string | null } | null }>).map((row) => ({ id: row.id, earned_at: row.earned_at, title: row.badge?.title ?? "Badge", description: row.badge?.description ?? null, icon: row.badge?.icon ?? "🏅" })));
       setLoading(false);
     })();
     return () => { active = false; };
@@ -298,7 +298,7 @@ export default function TrainingHub() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {badges.length ? badges.map((badge) => (
               <div key={badge.id} className="flex items-center gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-3 backdrop-blur">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/15 text-lg ring-1 ring-warning/20">{badge.icon_emoji ?? "🏅"}</div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/15 text-lg ring-1 ring-warning/20">{badge.icon ?? "🏅"}</div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">{badge.title}</p>
                   {badge.description && <p className="text-xs text-muted-foreground">{badge.description}</p>}
