@@ -12,9 +12,13 @@ interface Props {
   canComplete?: boolean;
   /** Progress hint shown next to the button. */
   checklistProgress?: { done: number; total: number };
+  /** Per-item checked state, keyed by checklist index. */
+  checkedItems?: Record<number, boolean>;
+  /** Toggle a single checklist item. When omitted, items render read-only. */
+  onToggleChecklistItem?: (idx: number) => void;
 }
 
-export function CurrentStagePanel({ step, status, onMarkComplete, canComplete = true, checklistProgress }: Props) {
+export function CurrentStagePanel({ step, status, onMarkComplete, canComplete = true, checklistProgress, checkedItems, onToggleChecklistItem }: Props) {
   const Icon = step.icon;
   const isComplete = status === "completed";
   return (
@@ -64,14 +68,31 @@ export function CurrentStagePanel({ step, status, onMarkComplete, canComplete = 
       <div className="mt-4">
         <p className="text-xs font-semibold text-foreground mb-2">What you need to do</p>
         <ul className="space-y-1.5">
-          {step.checklist.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <div className="mt-0.5 h-4 w-4 rounded-full border border-primary/40 flex items-center justify-center shrink-0">
-                {isComplete && <Check className="h-2.5 w-2.5 text-primary" />}
-              </div>
-              <span>{item}</span>
-            </li>
-          ))}
+          {step.checklist.map((item, i) => {
+            const checked = isComplete || !!checkedItems?.[i];
+            const interactive = !!onToggleChecklistItem && !isComplete;
+            const Wrapper: any = interactive ? "button" : "div";
+            return (
+              <li key={i}>
+                <Wrapper
+                  {...(interactive ? { type: "button", onClick: () => onToggleChecklistItem!(i) } : {})}
+                  className={cn(
+                    "flex w-full items-start gap-2 rounded-md text-left text-sm",
+                    interactive && "px-1.5 py-1 -mx-1.5 hover:bg-muted/50 transition-colors cursor-pointer",
+                    checked ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  <div className={cn(
+                    "mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                    checked ? "border-primary bg-primary text-primary-foreground" : "border-primary/40",
+                  )}>
+                    {checked && <Check className="h-2.5 w-2.5" />}
+                  </div>
+                  <span className={cn(checked && "line-through opacity-70")}>{item}</span>
+                </Wrapper>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
