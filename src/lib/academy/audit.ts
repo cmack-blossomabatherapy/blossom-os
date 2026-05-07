@@ -28,7 +28,7 @@ export async function logAcademyEvent(payload: AcademyAuditPayload): Promise<voi
   try {
     const { data: u } = await supabase.auth.getUser();
     const user = u.user ?? null;
-    await supabase.from("academy_audit_log").insert({
+    await supabase.from("academy_audit_log").insert([{
       event_type: payload.event_type,
       user_id: user?.id ?? null,
       user_email: user?.email ?? null,
@@ -39,7 +39,7 @@ export async function logAcademyEvent(payload: AcademyAuditPayload): Promise<voi
       bypass: payload.bypass ?? null,
       details: payload.details ?? {},
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    });
+    }] as never);
   } catch {
     // intentionally silent
   }
