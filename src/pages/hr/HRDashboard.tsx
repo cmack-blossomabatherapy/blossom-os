@@ -154,6 +154,7 @@ export default function HRDashboard() {
   const [query, setQuery] = useState("");
   const [activeKpi, setActiveKpi] = useState<KpiKey>("active");
   const [selectedEmployee, setSelectedEmployee] = useState<HrEmployee | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => { void loadDashboard(); }, []);
 
