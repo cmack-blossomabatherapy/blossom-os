@@ -60,6 +60,9 @@ export default function Training() {
   const [staffAssignTrack, setStaffAssignTrack] = useState<Track | null>(null);
   const [trackRoleFilter, setTrackRoleFilter] = useState<"all" | "rbt" | "bcba">("all");
   const [lessonsCourse, setLessonsCourse] = useState<Course | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => { void load(); }, []);
 
@@ -202,6 +205,60 @@ export default function Training() {
     await load();
   }
 
+  // ── Bulk actions
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  function selectAllVisible(checked: boolean) {
+    setSelected(checked ? new Set(filtered.map((c) => c.id)) : new Set());
+  }
+  async function bulkSetArchive(archive: boolean) {
+    if (!selected.size) return;
+    setBulkBusy(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("training_courses")
+      .update({ is_active: !archive, status: archive ? "archived" : "active" })
+      .in("id", ids);
+    setBulkBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${ids.length} course${ids.length === 1 ? "" : "s"} ${archive ? "archived" : "restored"}.`);
+    setSelected(new Set());
+    await load();
+  }
+  async function bulkSetPin(pin: boolean) {
+    if (!selected.size) return;
+    setBulkBusy(true);
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("training_courses")
+      .update({ is_pinned: pin, pinned_at: pin ? new Date().toISOString() : null })
+      .in("id", ids);
+    setBulkBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${ids.length} course${ids.length === 1 ? "" : "s"} ${pin ? "pinned" : "unpinned"}.`);
+    setSelected(new Set());
+    await load();
+  }
+  async function bulkAssign(target: { role?: string; user_id?: string }, dueDate: string | null, required: boolean) {
+    if (!selected.size) return;
+    setBulkBusy(true);
+    const rows = Array.from(selected).map((course_id) => ({
+      course_id, required, due_date: dueDate || null,
+      assigned_to_user_id: target.user_id ?? null,
+      assigned_to_role: target.role ?? null,
+    }));
+    const { error } = await supabase.from("training_assignments").insert(rows);
+    setBulkBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Assigned ${rows.length} course${rows.length === 1 ? "" : "s"}.`);
+    setBulkAssignOpen(false);
+    setSelected(new Set());
+    await load();
+  }
+
   // ── Knowledge ingest helper
   async function ingest(body: any) {
     try {
@@ -250,17 +307,41 @@ export default function Training() {
         {/* CATALOG */}
         <TabsContent value="catalog">
           <GlassPanel bodyClassName="p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
               <div className="relative max-w-sm flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courses…" className="pl-9 h-9" />
               </div>
+              {filtered.length > 0 && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={filtered.length > 0 && filtered.every((c) => selected.has(c.id))}
+                    onCheckedChange={(v) => selectAllVisible(!!v)}
+                  />
+                  Select all
+                </label>
+              )}
             </div>
+
+            {selected.size > 0 && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">{selected.size} selected</p>
+                <div className="flex flex-wrap gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => bulkSetPin(true)} disabled={bulkBusy}><Pin className="h-3.5 w-3.5 mr-1" /> Pin</Button>
+                  <Button size="sm" variant="ghost" onClick={() => bulkSetPin(false)} disabled={bulkBusy}><PinOff className="h-3.5 w-3.5 mr-1" /> Unpin</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setBulkAssignOpen(true)} disabled={bulkBusy}><Send className="h-3.5 w-3.5 mr-1" /> Assign</Button>
+                  <Button size="sm" variant="ghost" onClick={() => bulkSetArchive(true)} disabled={bulkBusy}><Archive className="h-3.5 w-3.5 mr-1" /> Archive</Button>
+                  <Button size="sm" variant="ghost" onClick={() => bulkSetArchive(false)} disabled={bulkBusy}><ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} disabled={bulkBusy}>Clear</Button>
+                </div>
+              </div>
+            )}
 
             {loading ? <Skeleton className="h-40" /> : (
               <div className="space-y-2">
                 {filtered.map((c) => (
-                  <div key={c.id} className={cn("flex flex-wrap items-start gap-3 rounded-xl border p-3 transition-colors", c.is_pinned ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card/40")}>
+                  <div key={c.id} className={cn("flex flex-wrap items-start gap-3 rounded-xl border p-3 transition-colors", selected.has(c.id) ? "border-primary/60 bg-primary/10" : c.is_pinned ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card/40")}>
+                    <Checkbox className="mt-1" checked={selected.has(c.id)} onCheckedChange={() => toggleSelect(c.id)} />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-foreground">{c.title}</p>
@@ -484,6 +565,9 @@ export default function Training() {
       {/* ASSIGN DIALOG */}
       <AssignDialog course={assignOpen} onClose={() => setAssignOpen(null)} onAssign={quickAssign} />
 
+      {/* BULK ASSIGN DIALOG */}
+      <BulkAssignDialog open={bulkAssignOpen} count={selected.size} onClose={() => setBulkAssignOpen(false)} onAssign={bulkAssign} />
+
       {/* TRACK EDITOR */}
       <Dialog open={!!trackEditor} onOpenChange={(o) => !o && setTrackEditor(null)}>
         <DialogContent>
@@ -557,6 +641,28 @@ function AssignDialog({ course, onClose, onAssign }: { course: Course | null; on
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button onClick={() => course && onAssign(course, { role }, due || null, required)}>Assign</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BulkAssignDialog({ open, count, onClose, onAssign }: { open: boolean; count: number; onClose: () => void; onAssign: (t: { role?: string; user_id?: string }, due: string | null, req: boolean) => void }) {
+  const [role, setRole] = useState<string>("rbt");
+  const [due, setDue] = useState<string>("");
+  const [required, setRequired] = useState(true);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Bulk assign trainings</DialogTitle><DialogDescription>Assign {count} selected course{count === 1 ? "" : "s"} to a role.</DialogDescription></DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Assign to role</Label><Select value={role} onValueChange={setRole}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROLE_OPTIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
+          <div><Label>Due date</Label><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></div>
+          <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2"><Label>Required</Label><Switch checked={required} onCheckedChange={setRequired} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onAssign({ role }, due || null, required)}>Assign {count}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
