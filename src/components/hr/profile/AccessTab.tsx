@@ -181,10 +181,20 @@ export function AccessTab({ employee }: { employee: Employee }) {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Module access &amp; roles</h3>
-          {!employee.user_id && (
+          {!employee.user_id ? (
             <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
               No login linked
             </Badge>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setUnlinkOpen(true)}
+              disabled={!canSendLink}
+              className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
+            >
+              <Unlink className="h-3.5 w-3.5" /> Unlink login
+            </Button>
           )}
         </div>
         {!employee.user_id && (
