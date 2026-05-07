@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles, Layers, GraduationCap } from "lucide-react";
+import { Pin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +12,8 @@ import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainin
 import { GlassHero } from "@/components/shared/GlassHero";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 const executiveOnlyDepartmentIds = new Set(["exec", "ops", "systems", "hr", "finance"]);
