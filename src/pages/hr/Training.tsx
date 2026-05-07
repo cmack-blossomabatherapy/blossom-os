@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Plus, Sparkles, Search, Pin, PinOff, Trash2, Pencil, Users, AlertTriangle, CheckCircle2, ListChecks, Wand2, Send, Archive, ArchiveRestore, Loader2 } from "lucide-react";
+import { GraduationCap, Plus, Sparkles, Search, Pin, PinOff, Trash2, Pencil, Users, AlertTriangle, CheckCircle2, ListChecks, Wand2, Send, Archive, ArchiveRestore, Loader2, FileText, X } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
@@ -565,8 +565,13 @@ function AssignDialog({ course, onClose, onAssign }: { course: Course | null; on
 
 function AIGenerator({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const [prompt, setPrompt] = useState("");
+  const [quizCount, setQuizCount] = useState(5);
+  const [quizComplexity, setQuizComplexity] = useState<"easy" | "medium" | "hard">("medium");
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<any>(null);
+
+  function reset() { setDraft(null); setPrompt(""); }
 
   async function generate() {
     if (!prompt.trim()) return;
@@ -576,7 +581,7 @@ function AIGenerator({ open, onClose, onCreated }: { open: boolean; onClose: () 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-training-draft`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token}` },
-        body: JSON.stringify({ sourceType: "paste", sopText: prompt, tone: "Detailed", quizComplexity: "medium", quizQuestionCount: 5, sectionMode: "full" }),
+        body: JSON.stringify({ sourceType: "paste", sopText: prompt, tone: "Detailed", quizComplexity, quizQuestionCount: quizCount, sectionMode: "full" }),
       });
       const json = await resp.json();
       if (!resp.ok) { toast.error(json.error || "Generation failed"); return; }
@@ -584,52 +589,197 @@ function AIGenerator({ open, onClose, onCreated }: { open: boolean; onClose: () 
     } finally { setBusy(false); }
   }
 
-  async function saveDraft() {
+  function patch(p: any) { setDraft((d: any) => ({ ...d, ...p })); }
+  function patchLesson(i: number, p: any) {
+    setDraft((d: any) => ({ ...d, lessons: d.lessons.map((l: any, idx: number) => idx === i ? { ...l, ...p } : l) }));
+  }
+  function removeLesson(i: number) {
+    setDraft((d: any) => ({ ...d, lessons: d.lessons.filter((_: any, idx: number) => idx !== i) }));
+  }
+  function addLesson() {
+    setDraft((d: any) => ({ ...d, lessons: [...(d.lessons ?? []), { title: "New lesson", description: "", lesson_type: "Written SOP", content: "", is_required: true }] }));
+  }
+  function patchQuiz(i: number, p: any) {
+    setDraft((d: any) => ({ ...d, quiz: d.quiz.map((q: any, idx: number) => idx === i ? { ...q, ...p } : q) }));
+  }
+  function removeQuiz(i: number) {
+    setDraft((d: any) => ({ ...d, quiz: d.quiz.filter((_: any, idx: number) => idx !== i) }));
+  }
+  function addQuiz() {
+    setDraft((d: any) => ({ ...d, quiz: [...(d.quiz ?? []), { type: "Multiple choice", question: "New question", options: ["Option A", "Option B"], answer: "Option A", explanation: "" }] }));
+  }
+
+  async function saveAll(activate: boolean) {
     if (!draft) return;
-    const { error } = await supabase.from("training_courses").insert({
-      title: draft.title, name: draft.title, description: draft.description,
-      training_type: draft.type ?? "SOP", difficulty: draft.difficulty ?? "Beginner",
-      estimated_minutes: draft.minutes ?? 30, role_visibility: [], required_default: false,
-      is_active: false, status: "draft",
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success("Draft saved! Edit it in the catalog.");
-    setDraft(null); setPrompt(""); onClose(); onCreated();
+    setSaving(true);
+    try {
+      const { data: course, error: cErr } = await supabase.from("training_courses").insert({
+        title: draft.title, name: draft.title, description: draft.description,
+        training_type: draft.type ?? "SOP", difficulty: draft.difficulty ?? "Beginner",
+        estimated_minutes: draft.minutes ?? 30, role_visibility: [], required_default: false,
+        is_active: activate, status: activate ? "active" : "draft",
+      }).select("id").single();
+      if (cErr || !course) { toast.error(cErr?.message || "Failed to save course"); return; }
+
+      const lessons = (draft.lessons ?? []).filter((l: any) => l.title?.trim());
+      if (lessons.length) {
+        const rows = lessons.map((l: any, i: number) => ({
+          course_id: course.id, title: l.title, description: l.description ?? "",
+          lesson_type: l.lesson_type ?? "Written SOP", content: l.content ?? "",
+          resource_url: l.resource_url || null, video_url: l.video_url || null, tango_url: l.tango_url || null,
+          sort_order: i + 1, is_required: l.is_required !== false,
+        }));
+        const { error: lErr } = await supabase.from("training_lessons").insert(rows);
+        if (lErr) toast.error(`Lessons: ${lErr.message}`);
+      }
+
+      const quiz = (draft.quiz ?? []).filter((q: any) => q.question?.trim());
+      if (quiz.length) {
+        const { data: qz, error: qErr } = await supabase.from("training_quizzes").insert({
+          course_id: course.id, title: `${draft.title} — Quiz`, passing_score: 80,
+        }).select("id").single();
+        if (qErr || !qz) {
+          toast.error(`Quiz: ${qErr?.message ?? "failed"}`);
+        } else {
+          const qRows = quiz.map((q: any, i: number) => ({
+            quiz_id: qz.id,
+            question: q.question,
+            question_type: q.type === "True / false" ? "True/False" : "Multiple choice",
+            options: Array.isArray(q.options) && q.options.length ? q.options : (q.type === "True / false" ? ["True", "False"] : []),
+            correct_answer: q.answer ?? null,
+            sort_order: i + 1,
+          }));
+          const { error: qqErr } = await supabase.from("training_quiz_questions").insert(qRows);
+          if (qqErr) toast.error(`Questions: ${qqErr.message}`);
+        }
+      }
+
+      toast.success(activate ? "Course published!" : "Draft saved.");
+      reset(); onClose(); onCreated();
+    } finally { setSaving(false); }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Generate training with AI</DialogTitle><DialogDescription>Describe the training you want. AI will draft a full course, lessons, and a quiz.</DialogDescription></DialogHeader>
+    <Dialog open={open} onOpenChange={(o) => !o && (reset(), onClose())}>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Generate training with AI</DialogTitle>
+          <DialogDescription>{draft ? "Review and edit each section before saving." : "Describe the training you want. AI drafts the course, lessons, and quiz for your review."}</DialogDescription>
+        </DialogHeader>
+
         {!draft ? (
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto pr-1">
             <Textarea rows={6} placeholder="e.g. A 4-lesson onboarding for new RBTs covering parent escalations, session note basics, and clock-in procedures…" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-            <div className="rounded-lg border border-border/60 p-3">
-              <p className="text-sm font-bold">{draft.title}</p>
-              <p className="text-xs text-muted-foreground mt-1">{draft.description}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <Badge variant="outline">{draft.type}</Badge><Badge variant="outline">{draft.difficulty}</Badge><Badge variant="outline">{draft.minutes} min</Badge>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Quiz questions</Label>
+                <Input type="number" min={3} max={10} value={quizCount} onChange={(e) => setQuizCount(Math.max(3, Math.min(10, parseInt(e.target.value) || 5)))} />
+              </div>
+              <div>
+                <Label>Quiz difficulty</Label>
+                <Select value={quizComplexity} onValueChange={(v: any) => setQuizComplexity(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">Easy — recall</SelectItem>
+                    <SelectItem value="medium">Medium — applied</SelectItem>
+                    <SelectItem value="hard">Hard — scenario</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            {draft.sop && <div className="rounded-lg border border-border/60 p-3"><p className="text-xs font-semibold mb-1">SOP</p><p className="text-xs text-muted-foreground whitespace-pre-wrap">{String(draft.sop.content ?? "").slice(0, 400)}…</p></div>}
-            {Array.isArray(draft.steps) && draft.steps.length > 0 && <div className="rounded-lg border border-border/60 p-3"><p className="text-xs font-semibold mb-2">{draft.steps.length} steps</p><ul className="text-xs text-muted-foreground space-y-1">{draft.steps.slice(0, 6).map((s: any, i: number) => <li key={i}>• {s.title}</li>)}</ul></div>}
-            {Array.isArray(draft.quiz) && <div className="rounded-lg border border-border/60 p-3"><p className="text-xs font-semibold mb-1">{draft.quiz.length}-question quiz</p></div>}
+          </div>
+        ) : (
+          <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+            {/* Course meta */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><FileText className="h-3.5 w-3.5" /> Course</div>
+              <Input value={draft.title} onChange={(e) => patch({ title: e.target.value })} placeholder="Title" />
+              <Textarea rows={2} value={draft.description} onChange={(e) => patch({ description: e.target.value })} placeholder="Description" />
+              <div className="grid grid-cols-3 gap-2">
+                <Select value={draft.type} onValueChange={(v) => patch({ type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TYPE_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={draft.difficulty} onValueChange={(v) => patch({ difficulty: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{DIFFICULTY.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input type="number" value={draft.minutes} onChange={(e) => patch({ minutes: parseInt(e.target.value) || 30 })} placeholder="Minutes" />
+              </div>
+            </div>
+
+            {/* Lessons */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"><ListChecks className="h-3.5 w-3.5" /> Lessons ({(draft.lessons ?? []).length})</div>
+                <Button size="sm" variant="ghost" onClick={addLesson}><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+              </div>
+              {(draft.lessons ?? []).map((l: any, i: number) => (
+                <div key={i} className="rounded-md border border-border/50 bg-card/40 p-2 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Badge variant="outline" className="h-5 mt-1.5">{i + 1}</Badge>
+                    <Input value={l.title} onChange={(e) => patchLesson(i, { title: e.target.value })} className="flex-1" />
+                    <Select value={l.lesson_type} onValueChange={(v) => patchLesson(i, { lesson_type: v })}>
+                      <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>{["Written SOP", "Video", "Tango Walkthrough", "Reading", "Practice", "Discussion"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button size="sm" variant="ghost" onClick={() => removeLesson(i)} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                  <Textarea rows={3} value={l.content} onChange={(e) => patchLesson(i, { content: e.target.value })} placeholder="Lesson content (markdown)" className="text-xs" />
+                </div>
+              ))}
+            </div>
+
+            {/* Quiz */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quiz ({(draft.quiz ?? []).length})</div>
+                <Button size="sm" variant="ghost" onClick={addQuiz}><Plus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+              </div>
+              {(draft.quiz ?? []).map((q: any, i: number) => (
+                <div key={i} className="rounded-md border border-border/50 bg-card/40 p-2 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Badge variant="outline" className="h-5 mt-1.5">Q{i + 1}</Badge>
+                    <Input value={q.question} onChange={(e) => patchQuiz(i, { question: e.target.value })} className="flex-1" />
+                    <Select value={q.type} onValueChange={(v) => patchQuiz(i, { type: v, options: v === "True / false" ? ["True", "False"] : (q.options ?? []) })}>
+                      <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Multiple choice">Multiple choice</SelectItem><SelectItem value="True / false">True / False</SelectItem></SelectContent>
+                    </Select>
+                    <Button size="sm" variant="ghost" onClick={() => removeQuiz(i)} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
+                  {(q.options ?? []).map((opt: string, oi: number) => (
+                    <div key={oi} className="flex items-center gap-2 pl-6">
+                      <input type="radio" checked={q.answer === opt} onChange={() => patchQuiz(i, { answer: opt })} className="h-3.5 w-3.5" />
+                      <Input value={opt} onChange={(e) => {
+                        const next = [...q.options]; next[oi] = e.target.value;
+                        patchQuiz(i, { options: next, answer: q.answer === opt ? e.target.value : q.answer });
+                      }} className="h-7 text-xs" />
+                      <Button size="sm" variant="ghost" onClick={() => patchQuiz(i, { options: q.options.filter((_: any, x: number) => x !== oi) })}><X className="h-3 w-3" /></Button>
+                    </div>
+                  ))}
+                  {q.type !== "True / false" && (
+                    <Button size="sm" variant="ghost" className="ml-6 text-xs" onClick={() => patchQuiz(i, { options: [...(q.options ?? []), `Option ${String.fromCharCode(65 + (q.options?.length ?? 0))}`] })}><Plus className="h-3 w-3 mr-1" /> Add option</Button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
-        <DialogFooter>
+
+        <DialogFooter className="border-t border-border/40 pt-3">
           {!draft ? (
             <>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button onClick={generate} disabled={busy || !prompt.trim()}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Wand2 className="h-3.5 w-3.5 mr-1.5" /> Generate</>}</Button>
             </>
           ) : (
-            <>
-              <Button variant="ghost" onClick={() => setDraft(null)}>Try again</Button>
-              <Button onClick={saveDraft}>Save as draft</Button>
-            </>
+            <div className="flex w-full items-center justify-between gap-2">
+              <Button variant="ghost" onClick={reset} disabled={saving}>← Regenerate</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => saveAll(false)} disabled={saving || !draft.title?.trim()}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save as draft"}</Button>
+                <Button onClick={() => saveAll(true)} disabled={saving || !draft.title?.trim()}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publish course"}</Button>
+              </div>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>
