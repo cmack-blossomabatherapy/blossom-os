@@ -43,6 +43,7 @@ import { AcademyGate } from "./components/auth/AcademyGate";
 import AcademyHome from "./pages/hr/academy/AcademyHome";
 import AcademyWeekDetail from "./pages/hr/academy/WeekDetail";
 import AcademyLeadership from "./pages/hr/academy/LeadershipDashboard";
+import AcademyEditor from "./pages/hr/academy/AcademyEditor";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
@@ -175,6 +176,7 @@ const App = () => (
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
                   <Route path="/training/academy/leadership" element={<PermissionRoute permission="hr.training.view"><AcademyLeadership /></PermissionRoute>} />
+                  <Route path="/training/academy/editor" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><AcademyEditor /></PermissionRoute>} />
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
