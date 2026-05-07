@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Compass, Users, ArrowRight, Calendar, GraduationCap } from "lucide-react";
+import { Sparkles, Compass, Users, ArrowRight, Calendar, GraduationCap, Target, BookMarked, Flame, Trophy } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCurriculum, getMyEnrollment, listProgress, listShadowSessions, listCheckins, computeReadiness, enrollEmployee } from "@/lib/academy/api";
@@ -13,6 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { GlassHero } from "@/components/shared/GlassHero";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
+import { cn } from "@/lib/utils";
 
 export default function AcademyHome() {
   const { user, hasPerm } = useAuth();
@@ -83,45 +87,63 @@ export default function AcademyHome() {
 
   if (loading) return <div className="space-y-4"><Skeleton className="h-48" /><Skeleton className="h-64" /></div>;
 
-  if (!curriculum) return <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">Academy curriculum not yet seeded.</div>;
+  if (!curriculum) {
+    return (
+      <PageWrap>
+        <GlassHero
+          eyebrow="Operations Academy"
+          eyebrowIcon={Sparkles}
+          title="Curriculum not yet seeded"
+          subtitle="Once your admin loads the academy curriculum, your five-week immersion will appear here."
+        />
+      </PageWrap>
+    );
+  }
 
   // Not enrolled
   if (!enrollment) {
     return (
-      <div className="space-y-6">
-        <Hero curriculum={curriculum} />
-        <div className="rounded-2xl border bg-card p-8">
-          <div className="mx-auto max-w-xl text-center">
-            <h2 className="text-xl font-semibold tracking-tight">Begin your academy journey</h2>
-            <p className="mt-2 text-sm text-muted-foreground">A 5-week guided immersion across systems, departments, leadership, and ownership.</p>
-            {employee ? (
-              <div className="mt-6 space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs text-muted-foreground">Track:</span>
-                  <Select value={path} onValueChange={(v) => setPath(v as any)}>
-                    <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="existing_state">Existing State Operations</SelectItem>
-                      <SelectItem value="new_state">New State Launch</SelectItem>
-                    </SelectContent>
-                  </Select>
+      <PageWrap>
+        <GlassHero
+          eyebrow="Operations Academy"
+          eyebrowIcon={Sparkles}
+          title={curriculum.track.name}
+          subtitle={curriculum.track.description}
+          right={
+            <div className="glass-surface rounded-3xl p-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Begin your journey</p>
+              <p className="mt-1 text-sm font-medium text-foreground">A five-week guided immersion across systems, departments, leadership, and ownership.</p>
+              {employee ? (
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="text-[11px] font-medium text-muted-foreground">Choose your track</label>
+                    <Select value={path} onValueChange={(v) => setPath(v as any)}>
+                      <SelectTrigger className="mt-1 h-10 bg-background/60 backdrop-blur"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="existing_state">Existing State Operations</SelectItem>
+                        <SelectItem value="new_state">New State Launch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={enroll} className="w-full gap-2" size="lg">
+                    <Sparkles className="h-4 w-4" /> Enroll me
+                  </Button>
                 </div>
-                <Button onClick={enroll}><Sparkles className="h-4 w-4" /> Enroll me</Button>
-              </div>
-            ) : (
-              <p className="mt-6 text-xs text-muted-foreground">No employee record linked to your account. Ask HR to link your login.</p>
-            )}
-            {hasPerm("hr.training.view") && (
-              <div className="mt-8 border-t pt-6">
-                <Link to="/training/academy/leadership" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
-                  Open leadership cohort dashboard <ArrowRight className="h-3.5 w-3.5" />
+              ) : (
+                <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
+                  No employee record linked to your account. Ask HR to link your login.
+                </div>
+              )}
+              {hasPerm("hr.training.view") && (
+                <Link to="/training/academy/leadership" className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+                  Leadership cohort dashboard <ArrowRight className="h-3 w-3" />
                 </Link>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
+            </div>
+          }
+        />
         <RoadmapPreview curriculum={curriculum} />
-      </div>
+      </PageWrap>
     );
   }
 
@@ -130,122 +152,101 @@ export default function AcademyHome() {
   const upcomingModules = currentWeek?.modules
     .filter((m) => (m.applies_to === "either" || m.applies_to === enrollment.path) && !progress.find((p) => p.module_id === m.id && p.status === "completed"))
     .slice(0, 4) ?? [];
+  const completedModules = progress.filter((p) => p.status === "completed").length;
 
   return (
-    <div className="space-y-6">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--primary)/0.18),_transparent_60%)]" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-3 max-w-xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-primary">
-                <Sparkles className="h-3 w-3" /> Operations Academy
-              </span>
-              {phaseForCurrent && <PhaseBadge name={phaseForCurrent.name} colorToken={phaseForCurrent.color_token} />}
+    <PageWrap>
+      <GlassHero
+        eyebrow="Operations Academy"
+        eyebrowIcon={Sparkles}
+        title="Blossom Operations Academy"
+        subtitle="Master the systems, workflows, leadership structure, and operational standards that power Blossom."
+        right={
+          readiness && (
+            <div className="glass-surface flex items-center gap-5 rounded-3xl p-5">
+              <ReadinessRing value={readiness.overall} size={132} label="Operational Readiness" />
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Current focus</p>
+                {currentWeek && <p className="text-sm font-semibold leading-tight">Week {currentWeek.week_number} · {currentWeek.title}</p>}
+                {phaseForCurrent && <PhaseBadge name={phaseForCurrent.name} colorToken={phaseForCurrent.color_token} />}
+                <p className="pt-1 text-[11px] text-muted-foreground">Day {daysIn} of program · {enrollment.path === "new_state" ? "New State Launch" : "Existing State"}</p>
+              </div>
             </div>
-            <h1 className="text-3xl font-semibold leading-tight tracking-tight">Blossom Operations Academy</h1>
-            <p className="text-sm text-muted-foreground">Master the systems, workflows, leadership structure, and operational standards that power Blossom.</p>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-              <span><Calendar className="inline h-3 w-3 mr-1" /> Day {daysIn} of program</span>
-              {currentWeek && <span><GraduationCap className="inline h-3 w-3 mr-1" /> Week {currentWeek.week_number}: {currentWeek.title}</span>}
-              <span><Users className="inline h-3 w-3 mr-1" /> Path: {enrollment.path === "new_state" ? "New State Launch" : "Existing State"}</span>
-            </div>
-          </div>
-          {readiness && <ReadinessRing value={readiness.overall} size={120} label="Operational Readiness" />}
+          )
+        }
+      >
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Day {daysIn}</span>
+          {currentWeek && <span className="inline-flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> Week {currentWeek.week_number}: {currentWeek.title}</span>}
+          <span className="inline-flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {enrollment.path === "new_state" ? "New State Launch" : "Existing State"}</span>
         </div>
-      </section>
+      </GlassHero>
 
       {/* Stat strip */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Modules complete" value={progress.filter((p) => p.status === "completed").length} suffix={` / ${allModules.length}`} />
-        <Stat label="Shadow hours" value={totalShadowHrs.toFixed(1)} />
-        <Stat label="Check-ins logged" value={checkins.length} />
-        <Stat label="Reflections submitted" value={progress.filter((p) => p.reflection).length} />
+        <GlassStat icon={Target} tone="primary" label="Modules complete" value={completedModules} hint={`of ${allModules.length} total`} />
+        <GlassStat icon={Flame} tone="warning" label="Shadow hours" value={totalShadowHrs.toFixed(1)} hint="logged in field" />
+        <GlassStat icon={BookMarked} tone="success" label="Check-ins" value={checkins.length} hint="leader sync sessions" />
+        <GlassStat icon={Trophy} tone="accent" label="Reflections" value={progress.filter((p) => p.reflection).length} hint="submitted with depth" />
       </section>
 
       {/* Roadmap */}
-      <section>
-        <SectionHeader title="Your roadmap" subtitle="Five weeks. Four phases. One operational standard." icon={Compass} />
+      <GlassPanel title="Your roadmap" description="Five weeks. Four phases. One operational standard." icon={Compass}>
         <RoadmapTimeline weeks={flatWeeks} progress={progress} currentWeekId={currentWeek?.id ?? null} />
-      </section>
+      </GlassPanel>
 
       {/* Upcoming */}
       {currentWeek && upcomingModules.length > 0 && (
-        <section className="rounded-2xl border bg-card p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold tracking-tight">Up next this week</h2>
-            <Link to={`/training/academy/week/${currentWeek.id}`} className="text-xs text-primary hover:underline inline-flex items-center gap-1">Open week <ArrowRight className="h-3 w-3" /></Link>
-          </div>
+        <GlassPanel
+          title="Up next this week"
+          description={`Week ${currentWeek.week_number} — ${currentWeek.title}`}
+          icon={ArrowRight}
+          actions={
+            <Link to={`/training/academy/week/${currentWeek.id}`} className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1">
+              Open week <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+        >
           <div className="grid gap-2 md:grid-cols-2">
             {upcomingModules.map((m) => (
-              <Link key={m.id} to={`/training/academy/week/${currentWeek.id}`} className="flex items-center justify-between rounded-xl border bg-muted/20 px-3 py-2 hover:bg-muted/40">
+              <Link key={m.id} to={`/training/academy/week/${currentWeek.id}`} className="glass-tile group flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{m.title}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">{m.title}</p>
                   <p className="truncate text-[11px] text-muted-foreground">{m.module_type} · {m.duration_label ?? ""} {m.leader_name ? `· ${m.leader_name}` : ""}</p>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
               </Link>
             ))}
           </div>
-        </section>
+        </GlassPanel>
       )}
-    </div>
+    </PageWrap>
   );
 }
 
-function Stat({ label, value, suffix }: { label: string; value: number | string; suffix?: string }) {
+function PageWrap({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border bg-card p-4">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}<span className="text-sm font-normal text-muted-foreground">{suffix}</span></p>
+    <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
+      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">{children}</div>
     </div>
-  );
-}
-
-function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon: any }) {
-  return (
-    <div className="mb-3 flex items-start gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-3.5 w-3.5" /></span>
-      <div>
-        <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
-
-function Hero({ curriculum }: { curriculum: AcademyCurriculum }) {
-  return (
-    <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-8">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(var(--primary)/0.18),_transparent_60%)]" />
-      <div className="relative max-w-2xl">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-primary">
-          <Sparkles className="h-3 w-3" /> Operations Academy
-        </span>
-        <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-tight">{curriculum.track.name}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{curriculum.track.description}</p>
-      </div>
-    </section>
   );
 }
 
 function RoadmapPreview({ curriculum }: { curriculum: AcademyCurriculum }) {
   const flat = curriculum.phases.flatMap((p) => p.weeks.map((w) => ({ ...w, phaseColor: p.color_token, phaseName: p.name })));
   return (
-    <section>
-      <h2 className="mb-3 text-[15px] font-semibold tracking-tight">Curriculum overview</h2>
-      <div className="grid gap-4 lg:grid-cols-5">
+    <GlassPanel title="Curriculum overview" description="A glimpse of every week ahead" icon={Compass}>
+      <div className="grid gap-3 lg:grid-cols-5">
         {flat.map((w) => (
-          <div key={w.id} className="rounded-2xl border bg-card p-4">
+          <div key={w.id} className={cn("glass-tile flex flex-col gap-2")}>
             <PhaseBadge name={w.phaseName} colorToken={w.phaseColor} />
-            <p className="mt-2 text-[11px] uppercase tracking-wider text-muted-foreground">Week {w.week_number}</p>
-            <h3 className="mt-1 text-sm font-semibold leading-tight">{w.title}</h3>
-            <p className="mt-1 text-xs text-muted-foreground line-clamp-3">{w.objective}</p>
-            <p className="mt-2 text-[11px] text-muted-foreground">{w.modules.length} modules</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Week {w.week_number}</p>
+            <h3 className="text-sm font-semibold leading-tight text-foreground">{w.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-3 flex-1">{w.objective}</p>
+            <p className="pt-1 text-[11px] font-medium text-primary">{w.modules.length} modules</p>
           </div>
         ))}
       </div>
-    </section>
+    </GlassPanel>
   );
 }
