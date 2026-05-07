@@ -79,26 +79,26 @@ export default function EmployeeDirectory() {
     >
       <GlassPanel bodyClassName="p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[220px]">
+          <div className="relative w-full sm:flex-1 sm:min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, title, code, email…" className="pl-9 h-9" />
           </div>
           <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="h-9 w-[140px]"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectTrigger className="h-9 flex-1 sm:flex-none sm:w-[140px]"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue placeholder="State" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All states</SelectItem>
               {HR_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={deptFilter} onValueChange={setDeptFilter}>
-            <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Department" /></SelectTrigger>
+            <SelectTrigger className="h-9 flex-1 sm:flex-none sm:w-[200px]"><SelectValue placeholder="Department" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All departments</SelectItem>
               {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="h-9 flex-1 sm:flex-none sm:w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
