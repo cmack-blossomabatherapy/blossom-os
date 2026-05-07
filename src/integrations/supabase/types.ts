@@ -4369,6 +4369,63 @@ export type Database = {
           },
         ]
       }
+      training_track_enrollments: {
+        Row: {
+          assigned_by: string | null
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          started_at: string | null
+          status: string
+          track_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          track_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          track_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_track_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_track_enrollments_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "training_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_tracks: {
         Row: {
           auto_assign_on_hire: boolean
