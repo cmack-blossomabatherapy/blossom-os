@@ -1585,6 +1585,7 @@ export type Database = {
           employee_code: string | null
           employment_type: Database["public"]["Enums"]["employment_type"]
           first_name: string
+          grandfathered: boolean
           hire_date: string | null
           id: string
           job_title: string
@@ -1620,6 +1621,7 @@ export type Database = {
           employee_code?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
           first_name: string
+          grandfathered?: boolean
           hire_date?: string | null
           id?: string
           job_title: string
@@ -1655,6 +1657,7 @@ export type Database = {
           employee_code?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
           first_name?: string
+          grandfathered?: boolean
           hire_date?: string | null
           id?: string
           job_title?: string

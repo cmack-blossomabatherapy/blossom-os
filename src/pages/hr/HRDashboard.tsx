@@ -53,6 +53,7 @@ interface HrEmployee {
   workload: number;
   riskLevel: RiskLevel;
   staffingReady: boolean;
+  grandfathered: boolean;
   nextAction: string;
   onboarding: { viventium: boolean; backgroundCheck: boolean; i9: boolean; orientation: boolean; stateTraining: boolean; centralReach: boolean; complianceDocs: boolean; };
   trainings: HrTraining[];
@@ -210,7 +211,7 @@ export default function HRDashboard() {
       const risk = riskLevel(status, training, review, time, payroll, manager, missingRequiredDocs);
       const onboardingStatus = employeeOnboarding ? toTitle(employeeOnboarding.status) : status === "Pre-Hire" ? "Not Started" : "Active";
       const nextAction = issueText({
-        id, employee: employeeFullName(employee), email: employee.email ?? "", role: employee.job_title, state: employee.state, department: departments.get(employee.department_id ?? "")?.name ?? "Unassigned", manager, status, onboardingStatus, onboardingRecordId: employeeOnboarding?.id ?? null, trainingStatus: training, reviewStatus: review, timeClockStatus: time, payrollStatus: payroll, startDate: employee.start_date ?? employee.hire_date ?? "—", stageEnteredAt: employeeOnboarding?.stage_entered_at ?? employee.updated_at, workload: employeeTimesheets.reduce((sum, sheet) => sum + Number(sheet.total_hours || 0), 0), riskLevel: risk, staffingReady: false, nextAction: "Review employee record", onboarding: { viventium: !!employee.viventium_employee_id, backgroundCheck: !employeeDocs.some((d) => d.doc_type?.includes("background") && d.status !== "verified"), i9: employeeDocs.some((d) => d.doc_type?.toLowerCase().includes("i9") && ["uploaded", "verified"].includes(d.status)), orientation: employeeOnboardingTasks.some((t) => t.title?.toLowerCase().includes("orientation") && t.completed), stateTraining: employeeTrainings.some((t) => t.course?.category?.toLowerCase().includes("state") && t.status === "completed"), centralReach: !employeeOnboardingTasks.some((t) => t.title?.toLowerCase().includes("centralreach") && !t.completed), complianceDocs: !missingRequiredDocs }, trainings: [], reviews: [], documents, timeEntries: [], communications: [], tasks: [], timeline: []
+        id, employee: employeeFullName(employee), email: employee.email ?? "", role: employee.job_title, state: employee.state, department: departments.get(employee.department_id ?? "")?.name ?? "Unassigned", manager, status, onboardingStatus, onboardingRecordId: employeeOnboarding?.id ?? null, trainingStatus: training, reviewStatus: review, timeClockStatus: time, payrollStatus: payroll, startDate: employee.start_date ?? employee.hire_date ?? "—", stageEnteredAt: employeeOnboarding?.stage_entered_at ?? employee.updated_at, workload: employeeTimesheets.reduce((sum, sheet) => sum + Number(sheet.total_hours || 0), 0), riskLevel: risk, staffingReady: false, grandfathered: !!(employee as any).grandfathered, nextAction: "Review employee record", onboarding: { viventium: !!employee.viventium_employee_id, backgroundCheck: !employeeDocs.some((d) => d.doc_type?.includes("background") && d.status !== "verified"), i9: employeeDocs.some((d) => d.doc_type?.toLowerCase().includes("i9") && ["uploaded", "verified"].includes(d.status)), orientation: employeeOnboardingTasks.some((t) => t.title?.toLowerCase().includes("orientation") && t.completed), stateTraining: employeeTrainings.some((t) => t.course?.category?.toLowerCase().includes("state") && t.status === "completed"), centralReach: !employeeOnboardingTasks.some((t) => t.title?.toLowerCase().includes("centralreach") && !t.completed), complianceDocs: !missingRequiredDocs }, trainings: [], reviews: [], documents, timeEntries: [], communications: [], tasks: [], timeline: []
       });
 
       return {
@@ -233,6 +234,7 @@ export default function HRDashboard() {
         workload: employeeTimesheets.reduce((sum, sheet) => sum + Number(sheet.total_hours || 0), 0),
         riskLevel: risk,
         staffingReady: employee.status === "active" && !missingRequiredDocs && training !== "Overdue" && review !== "Overdue",
+        grandfathered: !!(employee as any).grandfathered,
         nextAction,
         onboarding: {
           viventium: !!employee.viventium_employee_id,
@@ -285,7 +287,7 @@ export default function HRDashboard() {
   const reviewsDueRows = filtered.filter((employee) => ["Due Soon", "Overdue"].includes(employee.reviewStatus));
   const timeIssueRows = filtered.filter((employee) => employee.timeClockStatus !== "Clean");
   const payrollExceptionRows = filtered.filter((employee) => employee.payrollStatus !== "Ready");
-  const riskRows = filtered.filter((employee) => ["High", "Critical"].includes(employee.riskLevel) || !employee.manager || (employee.status === "Inactive" && employee.staffingReady));
+  const riskRows = filtered.filter((employee) => !employee.grandfathered && (["High", "Critical"].includes(employee.riskLevel) || !employee.manager || (employee.status === "Inactive" && employee.staffingReady)));
   const onboardingRows = filtered.filter((employee) => ["Pre-Hire", "Onboarding", "Training"].includes(employee.status));
   const activeRows = filtered.filter((employee) => employee.status === "Active" || employee.status === "Review Due");
 
@@ -314,7 +316,7 @@ export default function HRDashboard() {
   const queue = {
     urgent: filtered.filter((employee) => employee.riskLevel === "Critical" || employee.trainingStatus === "Overdue" || employee.reviewStatus === "Overdue" || employee.payrollStatus === "Exception" || employee.documents.some((doc) => doc.status === "Missing")),
     today: filtered.filter((employee) => employee.tasks.some((task) => !task.completed && ["Today", "Tomorrow"].includes(task.dueDate)) || employee.reviews.some((review) => ["Due Soon", "Overdue"].includes(review.status))),
-    risks: filtered.filter((employee) => ["High", "Critical"].includes(employee.riskLevel) || !employee.manager || employee.workload >= 40 || (employee.role.includes("RBT") && !employee.staffingReady && employee.status !== "Terminated")),
+    risks: filtered.filter((employee) => !employee.grandfathered && (["High", "Critical"].includes(employee.riskLevel) || !employee.manager || employee.workload >= 40 || (employee.role.includes("RBT") && !employee.staffingReady && employee.status !== "Terminated"))),
   };
 
   async function markReady(employee: HrEmployee) {
