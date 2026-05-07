@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore } from "lucide-react";
+import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore, Sparkles, Wand2 } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import { MODULE_TYPE_META } from "@/lib/academy/types";
 
 type Flags = { is_pinned?: boolean; is_archived?: boolean; pinned_at?: string | null; archived_at?: string | null };
 type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string } & Flags;
-type WeekFull = AcademyWeek & Flags & { modules: (AcademyModule & Flags & { resources: ModuleResource[] })[] };
+type ModuleFull = AcademyModule & Flags & { resources: ModuleResource[]; content_markdown?: string | null; key_points?: string[] | null; activities?: string[] | null; objectives?: string[] | null };
+type WeekFull = AcademyWeek & Flags & { modules: ModuleFull[] };
 type PhaseFull = AcademyPhase & Flags & { weeks: WeekFull[] };
 type Tree = { track: AcademyTrack & Flags; phases: PhaseFull[] } | null;
 
@@ -50,6 +51,7 @@ export default function AcademyEditor() {
     | { kind: "resource"; data: Partial<ModuleResource> & { module_id: string } };
   const [edit, setEdit] = useState<EditTarget | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string; table: string } | null>(null);
+  const [aiTarget, setAiTarget] = useState<{ kind: "module"; data: any } | { kind: "week"; data: any } | null>(null);
 
   useEffect(() => { void load(); }, []);
 
@@ -445,12 +447,60 @@ export default function AcademyEditor() {
             </DialogTitle>
           </DialogHeader>
           {edit && <EditForm edit={edit} setEdit={setEdit} />}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
-            <Button onClick={save}><Save className="h-4 w-4" /> Save</Button>
+          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+            <div>
+              {(edit?.kind === "module" || edit?.kind === "week") && (
+                <Button variant="ghost" size="sm" onClick={() => setAiTarget({ kind: edit.kind, data: edit.data } as any)}>
+                  <Sparkles className="h-4 w-4" /> Generate with AI
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
+              <Button onClick={save}><Save className="h-4 w-4" /> Save</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AIGenerateDialog
+        target={aiTarget}
+        onClose={() => setAiTarget(null)}
+        onApply={(generated) => {
+          if (!aiTarget || !edit) return;
+          if (edit.kind === "module") {
+            const newDesc = generated.description || edit.data.description || "";
+            const composed = [
+              newDesc,
+              generated.key_points?.length ? "\n\n**Key points:**\n" + generated.key_points.map((k: string) => `- ${k}`).join("\n") : "",
+              generated.activities?.length ? "\n\n**Activities:**\n" + generated.activities.map((a: string) => `- ${a}`).join("\n") : "",
+              generated.content_markdown ? "\n\n" + generated.content_markdown : "",
+            ].join("").trim();
+            setEdit({
+              ...edit,
+              data: {
+                ...edit.data,
+                title: edit.data.title || generated.title,
+                description: composed,
+                duration_label: edit.data.duration_label || generated.duration_label,
+                quiz: generated.quiz?.length ? generated.quiz : (edit.data as any).quiz,
+              },
+            });
+          } else if (edit.kind === "week") {
+            setEdit({
+              ...edit,
+              data: {
+                ...edit.data,
+                title: edit.data.title || generated.title,
+                objective: edit.data.objective || generated.description,
+                outcomes: (edit.data.outcomes && edit.data.outcomes.length ? edit.data.outcomes : generated.objectives) ?? [],
+              },
+            });
+          }
+          setAiTarget(null);
+          toast.success("AI content applied — review and save");
+        }}
+      />
 
       {/* Delete confirm */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
