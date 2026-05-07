@@ -89,45 +89,14 @@ export function AssistantWidget() {
         throw new Error(err.error || "Failed");
       }
 
-      const reader = resp.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      let assistantText = "";
-      let convId = activeConv;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf("\n")) !== -1) {
-          let line = buf.slice(0, nl);
-          buf = buf.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ") && !line.startsWith("event: ")) continue;
-          if (line.startsWith("event: meta")) continue;
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (!json || json === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(json);
-            if (parsed.conversationId) {
-              convId = parsed.conversationId;
-              setActiveConv(convId);
-              continue;
-            }
-            const c = parsed?.choices?.[0]?.delta?.content;
-            if (c) {
-              assistantText += c;
-              setMessages((m) => {
-                const next = [...m];
-                next[next.length - 1] = { role: "assistant", content: assistantText };
-                return next;
-              });
-            }
-          } catch { /* partial */ }
-        }
-      }
+      const json = await resp.json();
+      if (json.conversationId) setActiveConv(json.conversationId);
+      const assistantText = json.content || "_(no response)_";
+      setMessages((m) => {
+        const next = [...m];
+        next[next.length - 1] = { role: "assistant", content: assistantText };
+        return next;
+      });
       void loadConvs();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Assistant error";
