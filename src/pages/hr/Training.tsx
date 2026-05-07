@@ -647,6 +647,28 @@ function AssignDialog({ course, onClose, onAssign }: { course: Course | null; on
   );
 }
 
+function BulkAssignDialog({ open, count, onClose, onAssign }: { open: boolean; count: number; onClose: () => void; onAssign: (t: { role?: string; user_id?: string }, due: string | null, req: boolean) => void }) {
+  const [role, setRole] = useState<string>("rbt");
+  const [due, setDue] = useState<string>("");
+  const [required, setRequired] = useState(true);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Bulk assign trainings</DialogTitle><DialogDescription>Assign {count} selected course{count === 1 ? "" : "s"} to a role.</DialogDescription></DialogHeader>
+        <div className="space-y-3">
+          <div><Label>Assign to role</Label><Select value={role} onValueChange={setRole}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROLE_OPTIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
+          <div><Label>Due date</Label><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></div>
+          <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2"><Label>Required</Label><Switch checked={required} onCheckedChange={setRequired} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onAssign({ role }, due || null, required)}>Assign {count}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function AIGenerator({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const [prompt, setPrompt] = useState("");
   const [quizCount, setQuizCount] = useState(5);
