@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as Lin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/hr/types";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
@@ -25,6 +26,27 @@ export function AccessTab({ employee }: { employee: Employee }) {
   const [linkLoginOpen, setLinkLoginOpen] = useState(false);
   const [linkEmail, setLinkEmail] = useState(employee.email ?? "");
   const [linkingLogin, setLinkingLogin] = useState(false);
+  const [accountQuery, setAccountQuery] = useState("");
+  const [accountResults, setAccountResults] = useState<{ user_id: string; email: string | null; display_name: string | null }[]>([]);
+  const [searchingAccounts, setSearchingAccounts] = useState(false);
+
+  useEffect(() => {
+    if (!linkLoginOpen) return;
+    const q = accountQuery.trim();
+    const handle = setTimeout(async () => {
+      setSearchingAccounts(true);
+      let query = supabase.from("profiles").select("user_id, email, display_name").limit(8);
+      if (q.length > 0) {
+        query = query.or(`email.ilike.%${q}%,display_name.ilike.%${q}%`);
+      } else {
+        query = query.order("email", { ascending: true });
+      }
+      const { data } = await query;
+      setAccountResults(data ?? []);
+      setSearchingAccounts(false);
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [accountQuery, linkLoginOpen]);
 
   useEffect(() => {
     if (!employee.user_id) {
@@ -267,18 +289,61 @@ export function AccessTab({ employee }: { employee: Employee }) {
           <DialogHeader>
             <DialogTitle>Link existing login</DialogTitle>
             <DialogDescription>
-              Enter the email of an existing Blossom OS account. We'll connect it to this employee record and email them a confirmation.
+              Search for an existing Blossom OS account by name or email, then select one to link.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Account email</label>
-            <Input
-              type="email"
-              value={linkEmail}
-              onChange={(e) => setLinkEmail(e.target.value)}
-              placeholder="user@example.com"
-              autoFocus
-            />
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Search accounts</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={accountQuery}
+                  onChange={(e) => setAccountQuery(e.target.value)}
+                  placeholder="Name or email…"
+                  autoFocus
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <div className="max-h-64 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/40">
+              {searchingAccounts && accountResults.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                </div>
+              ) : accountResults.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">No matching accounts</div>
+              ) : (
+                accountResults.map((p) => {
+                  const selected = linkEmail.trim().toLowerCase() === (p.email ?? "").toLowerCase();
+                  return (
+                    <button
+                      key={p.user_id}
+                      type="button"
+                      onClick={() => setLinkEmail(p.email ?? "")}
+                      className={cn(
+                        "w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors flex items-center gap-3",
+                        selected && "bg-primary/10",
+                      )}
+                    >
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
+                        {(p.display_name || p.email || "?").slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{p.display_name || p.email}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{p.email}</p>
+                      </div>
+                      {selected && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {linkEmail && (
+              <p className="text-[11px] text-muted-foreground">
+                Linking <span className="font-medium text-foreground">{linkEmail}</span>
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setLinkLoginOpen(false)} disabled={linkingLogin}>Cancel</Button>
