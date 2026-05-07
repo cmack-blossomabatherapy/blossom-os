@@ -205,27 +205,39 @@ export type Database = {
       }
       academy_module_resources: {
         Row: {
+          archived_at: string | null
           created_at: string
           id: string
+          is_archived: boolean
+          is_pinned: boolean
           kind: string
           label: string
           module_id: string
+          pinned_at: string | null
           url: string | null
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           kind?: string
           label: string
           module_id: string
+          pinned_at?: string | null
           url?: string | null
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           kind?: string
           label?: string
           module_id?: string
+          pinned_at?: string | null
           url?: string | null
         }
         Relationships: [
@@ -242,14 +254,18 @@ export type Database = {
         Row: {
           applies_to: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only: boolean
+          archived_at: string | null
           created_at: string
           department: string | null
           description: string | null
           duration_label: string | null
           id: string
+          is_archived: boolean
+          is_pinned: boolean
           is_required: boolean
           leader_name: string | null
           module_type: Database["public"]["Enums"]["academy_module_type"]
+          pinned_at: string | null
           position: number
           quiz: Json | null
           title: string
@@ -258,14 +274,18 @@ export type Database = {
         Insert: {
           applies_to?: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only?: boolean
+          archived_at?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
           duration_label?: string | null
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           is_required?: boolean
           leader_name?: string | null
           module_type: Database["public"]["Enums"]["academy_module_type"]
+          pinned_at?: string | null
           position?: number
           quiz?: Json | null
           title: string
@@ -274,14 +294,18 @@ export type Database = {
         Update: {
           applies_to?: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only?: boolean
+          archived_at?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
           duration_label?: string | null
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           is_required?: boolean
           leader_name?: string | null
           module_type?: Database["public"]["Enums"]["academy_module_type"]
+          pinned_at?: string | null
           position?: number
           quiz?: Json | null
           title?: string
@@ -299,28 +323,40 @@ export type Database = {
       }
       academy_phases: {
         Row: {
+          archived_at: string | null
           color_token: string
           created_at: string
           id: string
+          is_archived: boolean
+          is_pinned: boolean
           name: string
+          pinned_at: string | null
           position: number
           tagline: string | null
           track_id: string
         }
         Insert: {
+          archived_at?: string | null
           color_token?: string
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           name: string
+          pinned_at?: string | null
           position: number
           tagline?: string | null
           track_id: string
         }
         Update: {
+          archived_at?: string | null
           color_token?: string
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           name?: string
+          pinned_at?: string | null
           position?: number
           tagline?: string | null
           track_id?: string
@@ -521,53 +557,77 @@ export type Database = {
       }
       academy_tracks: {
         Row: {
+          archived_at: string | null
           created_at: string
           description: string | null
           id: string
           is_active: boolean
+          is_archived: boolean
+          is_pinned: boolean
           name: string
+          pinned_at: string | null
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_archived?: boolean
+          is_pinned?: boolean
           name: string
+          pinned_at?: string | null
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          is_archived?: boolean
+          is_pinned?: boolean
           name?: string
+          pinned_at?: string | null
         }
         Relationships: []
       }
       academy_weeks: {
         Row: {
+          archived_at: string | null
           created_at: string
           id: string
+          is_archived: boolean
+          is_pinned: boolean
           objective: string | null
           outcomes: string[]
           phase_id: string
+          pinned_at: string | null
           title: string
           week_number: number
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           objective?: string | null
           outcomes?: string[]
           phase_id: string
+          pinned_at?: string | null
           title: string
           week_number: number
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           id?: string
+          is_archived?: boolean
+          is_pinned?: boolean
           objective?: string | null
           outcomes?: string[]
           phase_id?: string
+          pinned_at?: string | null
           title?: string
           week_number?: number
         }
