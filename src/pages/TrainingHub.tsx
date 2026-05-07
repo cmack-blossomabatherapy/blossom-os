@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles, Layers, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +8,9 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainingCourses, iconMap, resourcePlaceholders, trainingDepartments, TRAINING_ASSIGNMENTS_UPDATED_EVENT, TRAINING_BADGES_UPDATED_EVENT, TRAINING_UPDATED_EVENT, type TrainingAssignmentRecord, type TrainingBadge, type TrainingCourse } from "@/data/training";
+import { GlassHero } from "@/components/shared/GlassHero";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 const executiveOnlyDepartmentIds = new Set(["exec", "ops", "systems", "hr", "finance"]);
@@ -109,35 +112,179 @@ export default function TrainingHub() {
   const requiredCourses = allRequiredCourses.filter((course) => courseStatus(course).status !== "Completed").slice(0, 8);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
-      <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card p-6 shadow-sm md:p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.18),transparent_34%),radial-gradient(circle_at_bottom_right,hsl(var(--accent)/0.14),transparent_30%)]" />
-        <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"><Sparkles className="h-3.5 w-3.5" /> Internal learning OS</div>
-            <div><h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">Blossom Training Hub</h1><p className="mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">Learn the systems, workflows, and standards that keep Blossom running smoothly.</p><p className="mt-3 text-sm font-medium text-foreground">Welcome back, {displayName}. Continue where you left off.</p></div>
-            <div className="relative max-w-2xl"><Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search topics, SOPs, systems, departments..." className="h-14 rounded-2xl border-border/70 bg-background/80 pl-12 text-base shadow-sm" /></div>
+    <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
+      <div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
+        <GlassHero
+          eyebrow="Internal learning OS"
+          eyebrowIcon={Sparkles}
+          title="Blossom Training Hub"
+          subtitle={<>Learn the systems, workflows, and standards that keep Blossom running smoothly. <span className="font-medium text-foreground">Welcome back, {displayName}.</span></>}
+          right={
+            <div className="grid grid-cols-3 gap-3">
+              <GlassStat icon={GraduationCap} tone="primary" label="Assigned" value={myAssignments.length || allRequiredCourses.length} />
+              <GlassStat icon={Flame} tone="warning" label="In progress" value={continueCourses.length} />
+              <GlassStat icon={Award} tone="success" label="Badges" value={badges.filter((b) => b.earned).length} />
+            </div>
+          }
+        >
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search topics, SOPs, systems, departments..."
+              className="h-14 rounded-2xl border-border/60 bg-background/70 pl-12 text-base shadow-sm backdrop-blur-md focus-visible:ring-primary/40"
+            />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {[{ label: "Assigned", value: myAssignments.length || allRequiredCourses.length }, { label: "In progress", value: continueCourses.length }, { label: "Badges", value: badges.filter((b) => b.earned).length }].map((item) => <div key={item.label} className="rounded-2xl border border-border/60 bg-background/75 p-4 text-center shadow-sm backdrop-blur"><p className="text-3xl font-semibold text-foreground">{item.value}</p><p className="mt-1 text-xs text-muted-foreground">{item.label}</p></div>)}
+        </GlassHero>
+
+        {query && (
+          <GlassPanel
+            title="Search results"
+            description={`${searched.length} trainings`}
+            icon={Search}
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {searched.slice(0, 6).map((course) => (
+                <CourseCard key={course.id} course={course} compact training={courseStatus(course)} quiz={quizResult(course)} />
+              ))}
+            </div>
+          </GlassPanel>
+        )}
+
+        <GlassPanel
+          title="Continue learning"
+          description="Started trainings and failed quizzes that need another attempt."
+          icon={Flame}
+          iconTone="warning"
+        >
+          {continueCourses.length ? (
+            <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {continueCourses.map((course) => (
+                <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState text="No trainings are in progress yet. Start a required course or browse the Training Library below." />
+          )}
+        </GlassPanel>
+
+        <GlassPanel
+          title="Required training"
+          description="Personalized by role, department, and assignments."
+          icon={Clock}
+          iconTone="primary"
+          bodyClassName="p-0"
+        >
+          {requiredCourses.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <tr>
+                    {["Training", "Required by", "Due date", "Status", "Quiz", "Progress", "Action"].map((h) => (
+                      <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-semibold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {requiredCourses.map((course) => {
+                    const training = courseStatus(course);
+                    const quiz = quizResult(course);
+                    return (
+                      <tr key={course.id} className="border-t border-border/40 transition-colors hover:bg-primary/5">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-foreground">{course.title}</p>
+                          <p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{training.dueDate ?? "—"}</td>
+                        <td className="px-4 py-3"><StatusBadge status={training.status} variant={statusVariant(training.status)} /></td>
+                        <td className="px-4 py-3">{quiz ? <StatusBadge status={quiz.label} variant={quiz.variant} /> : <span className="text-xs text-muted-foreground">—</span>}</td>
+                        <td className="px-4 py-3 min-w-[150px]">
+                          <Progress value={training.progress} className="h-2" />
+                          <span className="mt-1 block text-[11px] text-muted-foreground">{training.progress}%</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{training.progress ? "Continue" : "Start"}</Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-5"><EmptyState text="No open required trainings. Completed required courses appear below." /></div>
+          )}
+        </GlassPanel>
+
+        <GlassPanel title="Completed training" description="Required trainings completed with passing quiz results when a quiz is included." icon={CheckCircle2} iconTone="success">
+          {completedCourses.length ? (
+            <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {completedCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />)}
+            </div>
+          ) : <EmptyState text="Completed trainings will appear here after you finish the lessons and pass the quiz." />}
+        </GlassPanel>
+
+        <GlassPanel title="Department training library" description="Choose a department path and build confidence step by step." icon={Layers}>
+          <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {visibleTrainingDepartments.map((dept) => {
+              const Icon = iconMap[dept.icon];
+              const courses = visibleCourses.filter((c) => c.departmentId === dept.id);
+              const completion = courses.length ? Math.round(courses.reduce((sum, c) => sum + courseStatus(c).progress, 0) / courses.length) : 0;
+              return (
+                <Link key={dept.id} to={`/training/department/${dept.slug}`} className="glass-tile group flex min-h-[260px] flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset ring-white/40", dept.accent)}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                  </div>
+                  <h3 className="mt-4 truncate text-base font-semibold text-foreground" title={dept.name}>{dept.name}</h3>
+                  <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted-foreground">{dept.description}</p>
+                  <div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground">
+                    <span>{courses.length} trainings</span>
+                    <span className="font-medium text-foreground">{completion}%</span>
+                  </div>
+                  <Progress value={completion} className="mt-2 h-1.5" />
+                  <Button variant="outline" size="sm" className="mt-4 w-full bg-background/60 backdrop-blur-sm">View training</Button>
+                </Link>
+              );
+            })}
           </div>
-        </div>
-      </section>
+        </GlassPanel>
 
-      {query && <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-3 flex items-center justify-between"><h2 className="text-base font-semibold text-foreground">Search results</h2><span className="text-xs text-muted-foreground">{searched.length} trainings</span></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{searched.slice(0, 6).map((course) => <CourseCard key={course.id} course={course} compact training={courseStatus(course)} quiz={quizResult(course)} />)}</div></section>}
-
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Continue Learning</h2><p className="text-sm text-muted-foreground">Started trainings and failed quizzes that need another attempt.</p></div><Flame className="h-5 w-5 text-warning" /></div>{continueCourses.length ? <div className="grid items-stretch gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">{continueCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />)}</div> : <EmptyState text="No trainings are in progress yet. Start a required course or browse the Training Library below." />}</section>
-
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm">
-        <div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Required Training</h2><p className="text-sm text-muted-foreground">Personalized by role, department, and assignments.</p></div><Clock className="h-5 w-5 text-primary" /></div>
-        {requiredCourses.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Training", "Required by", "Due date", "Status", "Quiz", "Progress", "Action"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{requiredCourses.map((course) => { const training = courseStatus(course); const quiz = quizResult(course); return <tr key={course.id} className="border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><p className="font-medium text-foreground">{course.title}</p><p className="text-xs text-muted-foreground">{trainingDepartments.find((d) => d.id === course.departmentId)?.name} · {course.type}</p></td><td className="px-4 py-3 text-xs text-muted-foreground">{course.requiredBy ?? "General Blossom path"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{training.dueDate ?? "—"}</td><td className="px-4 py-3"><StatusBadge status={training.status} variant={statusVariant(training.status)} /></td><td className="px-4 py-3">{quiz ? <StatusBadge status={quiz.label} variant={quiz.variant} /> : <span className="text-xs text-muted-foreground">—</span>}</td><td className="px-4 py-3 min-w-[150px]"><Progress value={training.progress} className="h-2" /><span className="mt-1 block text-[11px] text-muted-foreground">{training.progress}%</span></td><td className="px-4 py-3"><Button size="sm" onClick={() => navigate(`/training/course/${course.id}`)}>{training.progress ? "Continue" : "Start"}</Button></td></tr>; })}</tbody></table></div> : <EmptyState text="No open required trainings. Completed required courses appear below." />}
-      </section>
-
-      <section className="rounded-2xl border border-border/60 bg-card shadow-sm"><div className="flex items-center justify-between border-b border-border/60 p-4"><div><h2 className="text-xl font-semibold text-foreground">Completed Training</h2><p className="text-sm text-muted-foreground">Required trainings completed with passing quiz results when a quiz is included.</p></div><CheckCircle2 className="h-5 w-5 text-success" /></div>{completedCourses.length ? <div className="grid items-stretch gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">{completedCourses.map((course) => <CourseCard key={course.id} course={course} training={courseStatus(course)} quiz={quizResult(course)} />)}</div> : <EmptyState text="Completed trainings will appear here after you finish the lessons and pass the quiz." />}</section>
-
-      <section className="space-y-3"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold text-foreground">Department Training Library</h2><p className="text-sm text-muted-foreground">Choose a department path and build confidence step by step.</p></div><BookOpen className="h-5 w-5 text-primary" /></div><div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">{visibleTrainingDepartments.map((dept) => { const Icon = iconMap[dept.icon]; const courses = visibleCourses.filter((c) => c.departmentId === dept.id); const completion = courses.length ? Math.round(courses.reduce((sum, c) => sum + courseStatus(c).progress, 0) / courses.length) : 0; return <Link key={dept.id} to={`/training/department/${dept.slug}`} className="group flex min-h-[260px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", dept.accent)}><Icon className="h-5 w-5" /></div><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" /></div><h3 className="mt-4 truncate text-base font-semibold text-foreground" title={dept.name}>{dept.name}</h3><p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted-foreground">{dept.description}</p><div className="mt-auto flex items-center justify-between pt-4 text-xs text-muted-foreground"><span>{courses.length} trainings</span><span>{completion}% complete</span></div><Progress value={completion} className="mt-2 h-2" /><Button variant="outline" size="sm" className="mt-4 w-full">View Training</Button></Link>; })}</div></section>
-
-      <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]"><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><h2 className="text-xl font-semibold text-foreground">Featured Resources</h2></div><div className="grid gap-3 md:grid-cols-2">{resourcePlaceholders.map((item) => <div key={item.id} className="rounded-xl border border-dashed border-border bg-background p-4 text-left"><div className="flex items-center justify-between gap-3"><p className="font-medium text-foreground">{item.title}</p><StatusBadge status={item.category} variant="muted" /></div><p className="mt-1 text-xs text-muted-foreground">{item.description}</p><p className="mt-3 text-[11px] uppercase tracking-wider text-muted-foreground">{item.roleGroup}</p></div>)}</div></div><div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><Award className="h-5 w-5 text-warning" /><h2 className="text-xl font-semibold text-foreground">My Badges</h2></div><div className="space-y-3">{badges.length ? badges.map((badge) => <div key={badge.id} className={cn("flex items-center gap-3 rounded-xl border p-3", badge.earned ? "border-warning/30 bg-warning/5" : "border-border/60 bg-background opacity-70")}><div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-lg">{badge.emoji}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-foreground">{badge.title}</p><p className="text-xs text-muted-foreground">{badge.reason}</p></div>{badge.earned && <CheckCircle2 className="h-4 w-4 text-success" />}</div>) : <EmptyState text="No badges yet. Badges will appear here after Training Dashboard creates them." />}</div></div></section>
+        <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+          <GlassPanel title="Featured resources" icon={Sparkles}>
+            <div className="grid gap-3 md:grid-cols-2">
+              {resourcePlaceholders.map((item) => (
+                <div key={item.id} className="glass-tile">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-foreground">{item.title}</p>
+                    <StatusBadge status={item.category} variant="muted" />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{item.roleGroup}</p>
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+          <GlassPanel title="My badges" icon={Award} iconTone="warning">
+            <div className="space-y-3">
+              {badges.length ? badges.map((badge) => (
+                <div key={badge.id} className={cn("flex items-center gap-3 rounded-2xl border p-3 backdrop-blur", badge.earned ? "border-warning/30 bg-warning/5" : "border-border/40 bg-card/40 opacity-70")}>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-warning/15 text-lg ring-1 ring-warning/20">{badge.emoji}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{badge.title}</p>
+                    <p className="text-xs text-muted-foreground">{badge.reason}</p>
+                  </div>
+                  {badge.earned && <CheckCircle2 className="h-4 w-4 text-success" />}
+                </div>
+              )) : <EmptyState text="No badges yet. Badges will appear here after Training Dashboard creates them." />}
+            </div>
+          </GlassPanel>
+        </section>
+      </div>
     </div>
   );
 }
@@ -145,6 +292,35 @@ export default function TrainingHub() {
 function CourseCard({ course, compact = false, training, quiz }: { course: TrainingCourse; compact?: boolean; training?: CourseDisplayStatus; quiz?: QuizDisplayResult | null }) {
   const dept = trainingDepartments.find((d) => d.id === course.departmentId);
   const display = training ?? { status: course.status, progress: course.progress, dueDate: course.dueDate, required: course.required };
-  return <div className="flex min-h-[230px] flex-col rounded-2xl border border-border/60 bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-foreground" title={course.title}>{course.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{dept?.name} · {course.minutes} min</p></div><div className="flex shrink-0 flex-col items-end gap-1"><StatusBadge status={display.status} variant={statusVariant(display.status)} />{quiz && <StatusBadge status={quiz.shortLabel} variant={quiz.variant} />}</div></div>{!compact && <p className="mt-3 line-clamp-2 min-h-10 text-sm text-muted-foreground">{course.description}</p>}<div className="mt-auto pt-4"><div className="mb-1 flex items-center justify-between gap-3 text-xs text-muted-foreground"><span>{display.progress}% complete</span><span className="shrink-0">{display.progress ? `${Math.max(3, Math.round((100 - display.progress) / 100 * course.minutes))} min left` : `${course.minutes} min`}</span></div><Progress value={display.progress} className="h-2" /></div><div className="mt-4 flex items-center justify-between gap-3"><span className="truncate text-xs text-muted-foreground">Last opened {course.lastOpened ?? "—"}</span><Button asChild size="sm" className="shrink-0"><Link to={`/training/course/${course.id}`}><Play className="mr-1 h-3.5 w-3.5" />{display.progress ? "Continue" : "Start"}</Link></Button></div></div>;
+  return (
+    <div className="glass-tile flex min-h-[230px] flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground" title={course.title}>{course.title}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{dept?.name} · {course.minutes} min</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge status={display.status} variant={statusVariant(display.status)} />
+          {quiz && <StatusBadge status={quiz.shortLabel} variant={quiz.variant} />}
+        </div>
+      </div>
+      {!compact && <p className="mt-3 line-clamp-2 min-h-10 text-sm text-muted-foreground">{course.description}</p>}
+      <div className="mt-auto pt-4">
+        <div className="mb-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{display.progress}%</span>
+          <span className="shrink-0">{display.progress ? `${Math.max(3, Math.round((100 - display.progress) / 100 * course.minutes))} min left` : `${course.minutes} min`}</span>
+        </div>
+        <Progress value={display.progress} className="h-1.5" />
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="truncate text-xs text-muted-foreground">Last opened {course.lastOpened ?? "—"}</span>
+        <Button asChild size="sm" className="shrink-0">
+          <Link to={`/training/course/${course.id}`}><Play className="mr-1 h-3.5 w-3.5" />{display.progress ? "Continue" : "Start"}</Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
-function EmptyState({ text }: { text: string }) { return <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">{text}</div>; }
+function EmptyState({ text }: { text: string }) {
+  return <div className="rounded-2xl border border-dashed border-border/60 bg-background/40 p-8 text-center text-sm text-muted-foreground backdrop-blur-sm">{text}</div>;
+}

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { GraduationCap, Search, Plus } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { GraduationCap, Search, Plus, AlertTriangle, CalendarClock, CheckCircle2, ListChecks } from "lucide-react";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -84,15 +86,21 @@ export default function Training() {
   }
 
   return (
-    <PageShell title="Training & Compliance" description="Training assignments, certifications, and course catalog." icon={GraduationCap}>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPI label="Total assignments" value={rows.length} />
-        <KPI label="Overdue" value={overdue} tone="warning" />
-        <KPI label="Expiring ≤ 30 days" value={expiringSoon} tone="warning" />
-        <KPI label="Completed" value={completed} tone="success" />
-      </div>
-
-      <Card className="p-4">
+    <GlassPageShell
+      eyebrow="Blossom Training"
+      eyebrowIcon={GraduationCap}
+      title="Training & Compliance"
+      description="Training assignments, certifications, and course catalog."
+      stats={
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <GlassStat icon={ListChecks} tone="primary" label="Assignments" value={rows.length} />
+          <GlassStat icon={AlertTriangle} tone="destructive" label="Overdue" value={overdue} />
+          <GlassStat icon={CalendarClock} tone="warning" label="Expiring ≤30d" value={expiringSoon} />
+          <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={completed} />
+        </div>
+      }
+    >
+      <GlassPanel bodyClassName="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
             <TabsList>
@@ -177,7 +185,7 @@ export default function Training() {
             ))}
           </div>
         )}
-      </Card>
+      </GlassPanel>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -200,16 +208,6 @@ export default function Training() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageShell>
-  );
-}
-
-function KPI({ label, value, tone }: { label: string; value: number; tone?: "warning" | "success" }) {
-  const cls = tone === "warning" ? "text-warning" : tone === "success" ? "text-success" : "text-foreground";
-  return (
-    <Card className="p-4">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
-      <p className={cn("text-2xl font-semibold mt-1.5 tabular-nums", cls)}>{value}</p>
-    </Card>
+    </GlassPageShell>
   );
 }

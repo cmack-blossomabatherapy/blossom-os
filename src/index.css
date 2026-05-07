@@ -113,6 +113,110 @@
   .glass-panel {
     @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-sm;
   }
+  /* Futuristic glass surfaces */
+  .glass-surface {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.78) 0%, hsl(var(--card) / 0.62) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.55);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.55) inset,
+      0 24px 48px -28px hsl(var(--primary) / 0.18),
+      0 2px 8px -2px hsl(var(--foreground) / 0.04);
+  }
+  .glass-surface-strong {
+    background: linear-gradient(180deg, hsl(var(--card) / 0.92) 0%, hsl(var(--card) / 0.78) 100%);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.7) inset,
+      0 30px 60px -30px hsl(var(--primary) / 0.25);
+  }
+  .glass-hero {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 28px;
+    border: 1px solid hsl(var(--border) / 0.55);
+    background:
+      radial-gradient(120% 100% at 0% 0%, hsl(var(--primary) / 0.18) 0%, transparent 55%),
+      radial-gradient(100% 80% at 100% 100%, hsl(var(--accent) / 0.14) 0%, transparent 60%),
+      linear-gradient(180deg, hsl(var(--card) / 0.85) 0%, hsl(var(--card) / 0.7) 100%);
+    backdrop-filter: blur(32px) saturate(190%);
+    -webkit-backdrop-filter: blur(32px) saturate(190%);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 40px 80px -40px hsl(var(--primary) / 0.35),
+      0 4px 16px -4px hsl(var(--foreground) / 0.06);
+  }
+  .glass-hero::before {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto auto;
+    width: 60%;
+    height: 80%;
+    background: radial-gradient(closest-side, hsl(var(--primary) / 0.22), transparent 70%);
+    filter: blur(40px);
+    z-index: -1;
+    pointer-events: none;
+  }
+  .glass-stat {
+    @apply rounded-2xl p-4 transition-all duration-300;
+    background: linear-gradient(180deg, hsl(var(--card) / 0.85) 0%, hsl(var(--card) / 0.65) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 12px 24px -16px hsl(var(--primary) / 0.18);
+  }
+  .glass-stat:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.8) inset,
+      0 20px 40px -20px hsl(var(--primary) / 0.28);
+  }
+  .glass-tile {
+    @apply rounded-2xl p-4 transition-all duration-300;
+    background: linear-gradient(180deg, hsl(var(--card) / 0.82) 0%, hsl(var(--card) / 0.62) 100%);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.45);
+    box-shadow: 0 1px 0 hsl(0 0% 100% / 0.55) inset, 0 10px 24px -16px hsl(var(--foreground) / 0.08);
+  }
+  .glass-tile:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.75) inset,
+      0 18px 36px -18px hsl(var(--primary) / 0.32);
+  }
+  .glass-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium tracking-wide;
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.14) 0%, hsl(var(--primary) / 0.08) 100%);
+    color: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary) / 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .aurora-bg {
+    background:
+      radial-gradient(60% 50% at 10% 0%, hsl(var(--primary) / 0.12) 0%, transparent 60%),
+      radial-gradient(50% 40% at 100% 20%, hsl(var(--accent) / 0.10) 0%, transparent 60%),
+      radial-gradient(80% 60% at 50% 100%, hsl(189 60% 60% / 0.08) 0%, transparent 60%),
+      hsl(var(--background));
+  }
+  .text-gradient-brand {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 50%, hsl(var(--accent)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ring-glow {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 0 24px -4px hsl(var(--primary) / 0.4);
+  }
+
   .kpi-card {
     @apply bg-card rounded-xl border border-border/60 p-4 shadow-sm hover:shadow-md transition-shadow;
   }
