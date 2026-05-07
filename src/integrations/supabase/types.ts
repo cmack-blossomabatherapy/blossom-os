@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_audit_log: {
+        Row: {
+          bypass: boolean | null
+          complete: boolean | null
+          created_at: string
+          details: Json
+          employee_id: string | null
+          enrollment_id: string | null
+          event_type: string
+          id: string
+          route: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bypass?: boolean | null
+          complete?: boolean | null
+          created_at?: string
+          details?: Json
+          employee_id?: string | null
+          enrollment_id?: string | null
+          event_type: string
+          id?: string
+          route?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bypass?: boolean | null
+          complete?: boolean | null
+          created_at?: string
+          details?: Json
+          employee_id?: string | null
+          enrollment_id?: string | null
+          event_type?: string
+          id?: string
+          route?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       academy_checkins: {
         Row: {
           action_items: string | null
