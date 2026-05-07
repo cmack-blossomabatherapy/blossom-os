@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet,
   LayoutGrid, BriefcaseBusiness, Network, ListChecks, Star, GraduationCap,
   Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle,
-  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -120,24 +119,26 @@ export default function EmployeeProfile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-3">
-        <ScrollableTabBar>
-          <TabsList className="inline-flex w-max flex-nowrap h-auto gap-1 rounded-xl bg-transparent p-1">
-            <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
-            <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
-            <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
-            <ProfileTab value="tasks" icon={ListChecks} label="Tasks" />
-            <ProfileTab value="reviews" icon={Star} label="Reviews" />
-            <ProfileTab value="training" icon={GraduationCap} label="Training" />
-            {showCompensation && <ProfileTab value="payroll" icon={Banknote} label="Payroll" />}
-            {showTimeClock && <ProfileTab value="timeclock" icon={Clock} label="Time / Hours" />}
-            <ProfileTab value="documents" icon={FileText} label="Documents" />
-            {showNotes && <ProfileTab value="notes" icon={StickyNote} label="Notes" />}
-            <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
-            <ProfileTab value="timeline" icon={History} label="Timeline" />
-            <ProfileTab value="access" icon={ShieldCheck} label="Access" />
-            {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
-          </TabsList>
-        </ScrollableTabBar>
+        <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+          <div className="rounded-xl border border-border/60 bg-card/60 p-1.5 shadow-sm">
+            <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-lg bg-transparent p-0">
+              <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
+              <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
+              <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
+              <ProfileTab value="tasks" icon={ListChecks} label="Tasks" />
+              <ProfileTab value="reviews" icon={Star} label="Reviews" />
+              <ProfileTab value="training" icon={GraduationCap} label="Training" />
+              {showCompensation && <ProfileTab value="payroll" icon={Banknote} label="Payroll" />}
+              {showTimeClock && <ProfileTab value="timeclock" icon={Clock} label="Time / Hours" />}
+              <ProfileTab value="documents" icon={FileText} label="Documents" />
+              {showNotes && <ProfileTab value="notes" icon={StickyNote} label="Notes" />}
+              <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
+              <ProfileTab value="timeline" icon={History} label="Timeline" />
+              <ProfileTab value="access" icon={ShieldCheck} label="Access" />
+              {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
+            </TabsList>
+          </div>
+        </div>
 
         <TabsContent value="overview"><OverviewTab employee={employee} department={department} /></TabsContent>
         <TabsContent value="employment"><EmploymentTab employee={employee} department={department} onChange={() => load(employee.id)} /></TabsContent>
@@ -173,90 +174,6 @@ function ProfileTab({ value, icon: Icon, label }: { value: string; icon: typeof 
       <Icon className="h-3.5 w-3.5 transition-colors group-data-[state=active]:text-primary" />
       <span className="whitespace-nowrap">{label}</span>
     </TabsTrigger>
-  );
-}
-
-function ScrollableTabBar({ children }: { children: React.ReactNode }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const update = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const raf = requestAnimationFrame(update);
-    const t = setTimeout(update, 100);
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    Array.from(el.children).forEach((c) => ro.observe(c as Element));
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t);
-      el.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-      ro.disconnect();
-    };
-  }, []);
-
-  const scrollBy = (dir: 1 | -1) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.6), behavior: "smooth" });
-  };
-
-  return (
-    <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="relative rounded-xl border border-border/60 bg-card/60 shadow-sm">
-        {canLeft && (
-          <>
-            <button
-              type="button"
-              aria-label="Scroll left"
-              onClick={() => scrollBy(-1)}
-              className="absolute left-1 top-1/2 z-20 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-sm hover:text-foreground hover:bg-background"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-10 rounded-l-xl bg-gradient-to-r from-card to-transparent" />
-          </>
-        )}
-        {canRight && (
-          <>
-            <button
-              type="button"
-              aria-label="Scroll right"
-              onClick={() => scrollBy(1)}
-              className="absolute right-1 top-1/2 z-20 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-sm hover:text-foreground hover:bg-background"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-10 rounded-r-xl bg-gradient-to-l from-card to-transparent" />
-          </>
-        )}
-        <div
-          ref={scrollRef}
-          className="overflow-x-auto scrollbar-none px-10"
-          style={{ scrollbarWidth: "none" }}
-          onWheel={(e) => {
-            // Convert vertical wheel to horizontal scroll for trackpads/mice on desktop
-            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-              e.currentTarget.scrollLeft += e.deltaY;
-            }
-          }}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
   );
 }
 
