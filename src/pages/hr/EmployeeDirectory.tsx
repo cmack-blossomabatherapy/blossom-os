@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { IdCard, Search, Plus, Filter } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { IdCard, Search, Plus, Filter, Users } from "lucide-react";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
+import { GlassPanel } from "@/components/shared/GlassPanel";
+import { GlassStat } from "@/components/shared/GlassStat";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,10 +57,11 @@ export default function EmployeeDirectory() {
   const deptName = (id: string | null) => departments.find((d) => d.id === id)?.name ?? "—";
 
   return (
-    <PageShell
+    <GlassPageShell
+      eyebrow="HR Suite"
+      eyebrowIcon={IdCard}
       title="Employee Directory"
       description={`${filtered.length} of ${employees.length} employees`}
-      icon={IdCard}
       actions={
         hasPerm("hr.employees.create") ? (
           <Button size="sm" onClick={() => setOpenAdd(true)}>
@@ -66,8 +69,15 @@ export default function EmployeeDirectory() {
           </Button>
         ) : null
       }
+      stats={
+        <div className="grid grid-cols-3 gap-3">
+          <GlassStat icon={Users} tone="primary" label="Total" value={employees.length} />
+          <GlassStat tone="success" label="Active" value={employees.filter((e) => e.status === "active").length} />
+          <GlassStat tone="warning" label="Pending" value={employees.filter((e) => e.status === "pending_start").length} />
+        </div>
+      }
     >
-      <Card className="p-3">
+      <GlassPanel bodyClassName="p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -100,9 +110,9 @@ export default function EmployeeDirectory() {
             </SelectContent>
           </Select>
         </div>
-      </Card>
+      </GlassPanel>
 
-      <Card className="overflow-hidden">
+      <GlassPanel bodyClassName="p-0">
         {loading ? (
           <div className="p-4 space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12" />)}</div>
         ) : filtered.length === 0 ? (
@@ -145,7 +155,7 @@ export default function EmployeeDirectory() {
             </table>
           </div>
         )}
-      </Card>
+      </GlassPanel>
 
       <AddEmployeeDialog
         open={openAdd}
@@ -153,6 +163,6 @@ export default function EmployeeDirectory() {
         departments={departments}
         onCreated={() => { setOpenAdd(false); void load(); }}
       />
-    </PageShell>
+    </GlassPageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Plus, ExternalLink, FileText, Link2, Video, Folder, Search, Pin } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
+import { GlassPanel } from "@/components/shared/GlassPanel";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,13 +106,14 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
   }
 
   return (
-    <PageShell
+    <GlassPageShell
+      eyebrow="Resource library"
+      eyebrowIcon={BookOpen}
       title="Resource Hub"
       description="Documents, forms, videos, and links shared with your team."
-      icon={BookOpen}
       actions={canManage ? <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> Add resource</Button> : null}
     >
-      <Card className="p-4">
+      <GlassPanel bodyClassName="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <Tabs value={cat} onValueChange={(v) => setCat(v as ResourceCategory | "all")}>
             <TabsList className="flex-wrap h-auto">
@@ -173,7 +175,7 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
             })}
           </div>
         )}
-      </Card>
+      </GlassPanel>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -237,6 +239,6 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageShell>
+    </GlassPageShell>
   );
 }
