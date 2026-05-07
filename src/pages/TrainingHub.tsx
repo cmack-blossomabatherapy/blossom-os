@@ -35,6 +35,22 @@ export default function TrainingHub() {
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
   const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
+  const [pinnedCourses, setPinnedCourses] = useState<Array<{ id: string; title: string; description: string | null; training_type: string; estimated_minutes: number; external_url: string | null }>>([]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("training_courses")
+        .select("id,title,description,training_type,estimated_minutes,external_url")
+        .eq("is_pinned", true)
+        .eq("is_active", true)
+        .order("title")
+        .limit(8);
+      if (active) setPinnedCourses((data ?? []) as never);
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
