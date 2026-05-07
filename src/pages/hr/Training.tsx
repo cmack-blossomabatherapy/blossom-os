@@ -57,6 +57,7 @@ export default function Training() {
   const [trackEditor, setTrackEditor] = useState<Partial<Track> | null>(null);
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [staffAssignTrack, setStaffAssignTrack] = useState<Track | null>(null);
+  const [trackRoleFilter, setTrackRoleFilter] = useState<"all" | "rbt" | "bcba">("all");
 
   useEffect(() => { void load(); }, []);
 
@@ -294,13 +295,34 @@ export default function Training() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tracks</p>
                 <Button size="sm" variant="ghost" onClick={() => setTrackEditor({ role_targets: [], auto_assign_on_hire: false, is_active: true })}><Plus className="h-3.5 w-3.5" /></Button>
               </div>
+              <div className="mb-2 grid grid-cols-3 gap-1 rounded-lg border border-border/50 bg-muted/30 p-1">
+                {(["all", "rbt", "bcba"] as const).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => setTrackRoleFilter(k)}
+                    className={cn(
+                      "rounded-md px-2 py-1 text-[11px] font-medium uppercase tracking-wider transition-colors",
+                      trackRoleFilter === k ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {k === "all" ? "All" : k.toUpperCase()}
+                  </button>
+                ))}
+              </div>
               <div className="space-y-1">
-                {tracks.map((t) => (
+                {tracks
+                  .filter((t) => trackRoleFilter === "all" || (t.role_targets ?? []).includes(trackRoleFilter))
+                  .map((t) => (
                   <button key={t.id} onClick={() => setActiveTrack(t)} className={cn("block w-full rounded-lg border px-3 py-2 text-left transition-colors", activeTrack?.id === t.id ? "border-primary/50 bg-primary/5" : "border-border/50 hover:bg-muted/30")}>
                     <p className="text-sm font-medium">{t.name}</p>
                     <p className="text-[11px] text-muted-foreground">{(t.role_targets ?? []).join(", ") || "All roles"} · {trackCourses.filter((x) => x.track_id === t.id).length} courses</p>
                   </button>
                 ))}
+                {tracks.filter((t) => trackRoleFilter === "all" || (t.role_targets ?? []).includes(trackRoleFilter)).length === 0 && (
+                  <p className="py-4 text-center text-[11px] text-muted-foreground">
+                    No tracks for {trackRoleFilter.toUpperCase()}.
+                  </p>
+                )}
               </div>
             </GlassPanel>
 
@@ -320,21 +342,27 @@ export default function Training() {
 
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Courses in track</p>
-                    <div className="space-y-1.5">
-                      {trackCourses.filter((x) => x.track_id === activeTrack.id).map((tc) => {
-                        const c = courses.find((x) => x.id === tc.course_id);
-                        if (!c) return null;
-                        return (
-                          <div key={tc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-card/40 px-3 py-2">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm">{c.title}</p>
-                              <p className="text-[11px] text-muted-foreground">{c.estimated_minutes} min · due {tc.due_after_days ?? "—"} days after hire</p>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => removeFromTrack(tc.id)} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <TrackCoursesSortable
+                      rows={trackCourses
+                        .filter((x) => x.track_id === activeTrack.id)
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((tc) => {
+                          const c = courses.find((x) => x.id === tc.course_id);
+                          return {
+                            id: tc.id,
+                            course_id: tc.course_id,
+                            sort_order: tc.sort_order,
+                            required: tc.required,
+                            due_after_days: tc.due_after_days,
+                            title: c?.title ?? "(missing course)",
+                            minutes: c?.estimated_minutes ?? 0,
+                          };
+                        })}
+                      onReorder={(ids) => reorderTrackCourses(activeTrack.id, ids)}
+                      onToggleRequired={(id, v) => updateTrackCourse(id, { required: v })}
+                      onDueChange={(id, v) => updateTrackCourse(id, { due_after_days: v })}
+                      onRemove={removeFromTrack}
+                    />
                   </div>
 
                   <div>
