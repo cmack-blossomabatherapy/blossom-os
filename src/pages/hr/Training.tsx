@@ -166,6 +166,26 @@ export default function Training() {
     if (error) { toast.error(error.message); return; }
     await load();
   }
+  async function reorderTrackCourses(trackId: string, orderedIds: string[]) {
+    // Optimistic update
+    setTrackCourses((prev) => prev.map((tc) => {
+      if (tc.track_id !== trackId) return tc;
+      const idx = orderedIds.indexOf(tc.id);
+      return idx >= 0 ? { ...tc, sort_order: idx + 1 } : tc;
+    }));
+    const updates = orderedIds.map((id, i) =>
+      supabase.from("training_track_courses").update({ sort_order: i + 1 }).eq("id", id)
+    );
+    const results = await Promise.all(updates);
+    const err = results.find((r) => r.error)?.error;
+    if (err) { toast.error(err.message); await load(); return; }
+    toast.success("Order saved");
+  }
+  async function updateTrackCourse(id: string, patch: Partial<TrackCourse>) {
+    setTrackCourses((prev) => prev.map((tc) => (tc.id === id ? { ...tc, ...patch } : tc)));
+    const { error } = await supabase.from("training_track_courses").update(patch).eq("id", id);
+    if (error) { toast.error(error.message); await load(); }
+  }
 
   // ── Assignment
   async function quickAssign(course: Course, target: { role?: string; user_id?: string }, dueDate: string | null, required: boolean) {
