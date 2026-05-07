@@ -1,191 +1,97 @@
-## Summary
+This is a large build, so here's the plan before I start. I'll do it in two passes — Training Admin first, AI Chat second — but in this single approval.
 
-Two changes:
-1. Add new **Work Setting** options for office/leadership staff in the employee record
-2. Build a brand-new **"Blossom Operations Academy"** experience inside the Training section — a guided, multi-week leadership/operations onboarding journey, completely separate from RBT/BCBA training
+## 1. Training Admin (HR Suite → `/hr/training`)
 
----
+Turn the existing `/hr/training` page into the central **Training Command Center** with full CRUD and a much richer toolset.
 
-## Part 1 — Work Setting expansion
+### Layout (Apple glass design, matches Operations Academy)
+- Hero header: stats (Active Courses, Assignments Due, Avg Completion, Overdue), big CTAs: **+ New Course**, **Generate with AI**, **Assign**.
+- Tabs: **Catalog · Tracks · Assignments · Lessons & Content · Quizzes · Reports**.
+- Pinned section at top of Catalog (admin can pin/unpin courses to surface them in Training Hub for staff).
 
-Today `work_setting` enum is: `clinic | home | hybrid | admin | field`.
+### Catalog tab
+- Filterable, searchable table/grid of `training_courses` with: title, type, difficulty, role visibility, est. minutes, required, pinned, status, # lessons, # assigned.
+- Row actions: **Edit · Duplicate · Pin/Unpin · Archive · Delete · Assign · Open lessons**.
+- Edit drawer: all course metadata, role visibility multi-select (RBT, BCBA, Admin, HR, etc.), department, renewal months, external URL, required default.
+- Bulk select → bulk assign / bulk archive.
 
-Add these office/leadership options (keep all existing for backward compatibility):
-- `office` — Office Staff
-- `leadership` — Leadership / Executive
-- `intake` — Intake Coordinator
-- `recruiting` — Recruiting
-- `scheduling` — Scheduling
-- `state_director` — State Director
-- `operations` — Operations
-- `systems` — Systems / IT
+### Tracks tab (NEW)
+- A **Track** = curated ordered list of courses targeted at a role group.
+- Pre-seed two tracks: **RBT Track** and **BCBA Track**. Admins can create more (e.g. "New Hire", "Leadership").
+- For each track: drag-to-reorder courses, set due-after-hire days per course, mark required.
+- "Auto-assign on hire" toggle → when an employee with matching role is created, assignments are seeded.
 
-Then surface them in `AddEmployeeDialog` (and the Employment editor) with friendlier labels grouped as "Field staff" vs "Office & Leadership".
+### Assignments tab
+- Table of all `training_assignments` with filters: status (Not started / In progress / Complete / Overdue), role, department, due window.
+- Quick assign panel: pick course(s) → assign by **User**, **Role** (RBT/BCBA/etc), **Department**, or **Track**. Set due date, required flag, notes.
+- Inline reassign / extend due / remove.
 
-These work-setting values are what gates a person into the **Operations Academy** (only office/leadership settings see it; RBT/BCBA continue using existing Training Hub).
+### Lessons & Content tab
+- Pick course → manage `training_lessons` (drag reorder, edit, delete, add). Lesson types: Written SOP, Video, Tango walkthrough, External link, Quiz.
+- Inline rich-text editor for SOP content; URL fields for video/Tango.
 
----
+### Quizzes tab
+- Pick course → manage `training_quizzes` + `training_quiz_questions` (multiple choice / true-false), set passing score.
 
-## Part 2 — Blossom Operations Academy
+### AI Generation (NEW edge function `generate-training`)
+- Modal: prompt (e.g. "Create a 4-lesson onboarding for handling parent escalations") + role targets + difficulty + minutes.
+- Calls Lovable AI (`google/gemini-3-flash-preview`) with structured tool-calling to return `{ course, lessons[], quiz_questions[] }`.
+- Preview screen → admin reviews and clicks **Save as draft** (creates course + lessons + quiz). Nothing auto-published.
+- Also available as **"AI: Improve this course"** on existing courses (regenerates lessons / suggests quiz).
 
-A new top-level experience inside Training. Cohort/journey style — not a flat course list.
+### Reports tab
+- Reuse existing TrainingStatistics charts inside this tab (completion by role, overdue list, top courses).
 
-### Routes & navigation
-- `/training/academy` — Academy homepage (auto-routes to your own journey if you're enrolled, otherwise overview)
-- `/training/academy/me` — My Academy (the trainee experience)
-- `/training/academy/week/:weekId` — Week detail / module view
-- `/training/academy/leadership` — Leadership / admin dashboard (cohort overview)
-- `/training/academy/employee/:id` — Drill into one trainee from leadership view
+### Schema additions (migration)
+- `training_courses`: add `is_pinned boolean default false`, `pinned_at timestamptz`.
+- New table `training_tracks` (id, name, description, role_targets text[], auto_assign_on_hire bool, is_active, created_by, timestamps).
+- New table `training_track_courses` (track_id, course_id, sort_order, due_after_days, required).
+- RLS: managers (`hr.training.assign` or admin/exec/ops_manager) can manage; signed-in users can `SELECT` tracks/track_courses.
 
-Sidebar entry under Training: **"Operations Academy"** (visible to office/leadership work_setting + admins).
-
-### Data model (new tables)
-
-```text
-academy_tracks            — defines program version (default "Office Operations 2026")
-academy_phases            — Foundation, Immersion, Application, Ownership
-academy_weeks             — Week 1..5 with phase_id, week_number, title, summary
-academy_modules           — module within a week (training, shadowing, meeting, video, sop, quiz, reflection)
-academy_module_resources  — attachments / links / Tango / video URL per module
-
-academy_enrollments       — employee_id + track_id + start_date + status + path (new_state | existing_state) + assigned_state
-academy_progress          — enrollment_id + module_id + status + score + completed_at + verified_by
-academy_shadow_sessions   — enrollment_id + shadowed_employee_id + department + date + hours + notes + mentor_signoff
-academy_checkins          — enrollment_id + with_employee_id + meeting_date + agenda + notes + action_items + leader_rating
-academy_quiz_attempts     — module_id + enrollment_id + answers jsonb + score
-academy_readiness_scores  — computed snapshot per enrollment (training %, shadowing %, immersion %, mentor %, overall)
-```
-
-All RLS gated via existing `hr.training.*` permissions; trainees can read/update their own rows; leadership uses `hr.training.assign` / `hr.employees.view`.
-
-### Seed content
-
-Seed the full curriculum from the brief into `academy_phases / weeks / modules`:
-- **Phase 1 — Foundation (Week 1)**: Team Intros, Leadership Training (Chad / Shira), Shadowing, Systems Training (CR + Monday), Backend Deep Dive (Eli), Video Training, New State Conditional Track (Gary, 3 days)
-- **Phase 2 — Department Immersion (Week 2)**: Intake, Recruiting, Case Management, Scheduling (Daylis), Marketing (Nick), Tracking & Reporting (Corey), Leadership Check-ins
-- **Phase 3 — Role Application (Week 3)**: branched modules — Path A (New State) vs Path B (Existing State)
-- **Phase 4 — Ownership (Weeks 4–5)**: Intake ownership, Recruiting ownership, KPI tracking, Escalations, Leadership eval
-
-### UI — Trainee experience
-
-**Academy Home (`/training/academy/me`)**
-- Hero: "Blossom Operations Academy" with mesh gradient, current phase badge, current week, days in program, mentor card, readiness ring (e.g. 87%)
-- Stat strip: Modules complete, Shadowing hours, Check-ins logged, Quiz avg
-- Upcoming this week (top 3 modules + next mentor meeting)
-- Recent activity feed
-
-**Roadmap view**
-- Horizontal timeline of connected week cards (Week 1 → 2 → 3 → 4-5)
-- Each card shows: phase color bar, title, objective one-liner, % complete, status pill (Locked / In Progress / Complete)
-- Click → expands into week detail
-- Path A / Path B fork visualized at Week 3
-
-**Week detail page**
-- Objective banner + outcome checklist
-- Modules grouped by type with icons: Meeting, Shadowing, Systems, Video, SOP, Quiz, Reflection
-- Each module is a rich card: description, leader/mentor chip, duration, resources (Tango/video/SOP), action button (Start / Mark Complete / Submit / Take Quiz)
-- "Conditional" modules surface only when path/state matches
-- Week completion gate: required trainings + shadowing + mentor signoff
-
-**Shadowing logger**
-- Dialog to log a session: who shadowed, department, date, hours, notes
-- Mentor sign-off button (visible to the shadowed employee or admins)
-- Aggregated total hours per department
-
-**Check-in logger**
-- Log meeting with leader (Chad weekly, Shira daily, etc.)
-- Notes, action items, leader rating field (only writable by leader)
-
-**Quizzes & reflections**
-- Simple inline quiz UI (multiple choice, short answer)
-- Reflection = textarea submission, marked "submitted" until mentor reviews
-
-### UI — Leadership / Admin experience
-
-**Cohort dashboard (`/training/academy/leadership`)**
-- KPI strip: Active trainees, Avg readiness, On-track count, At-risk count
-- Trainee table: name, role, week, phase, % complete, readiness score, mentor, last check-in, status pill
-- Filters: state, path (new/existing state), risk
-- Click row → trainee detail with full progress, all shadow sessions, all check-ins, ability to sign off / approve advance
-
-**Leadership actions**
-- Approve week completion
-- Leave feedback (writes to `academy_checkins` with `leader_rating`)
-- Flag concern (creates an `employee_cases` row with type "academy_concern")
-- Recommend additional training
-
-### Readiness score formula
-
-```text
-overall = round(
-  0.40 * training_completion_pct +
-  0.20 * shadowing_completion_pct +
-  0.15 * immersion_completion_pct +
-  0.15 * mentor_avg_rating_pct +
-  0.10 * quiz_avg_pct
-)
-```
-Computed live in a Postgres view `academy_readiness_v` and snapshotted into `academy_readiness_scores` weekly.
-
-### Design language
-- Reuse existing tokens (`--primary` blue, dark sidebar, semantic surfaces) — no new hardcoded colors
-- Apple-onboarding feel: large rounded-2xl cards, gradient hero, soft shadows, milestone confetti on week completion (lightweight CSS, no library)
-- Phase color bars: Foundation = blue, Immersion = teal, Application = amber, Ownership = violet (all via HSL tokens)
-- Empty / locked states are first-class
-
-### Files to create
-
-```text
-supabase/migrations/<ts>_academy.sql           — enum additions + 9 tables + RLS + seed
-src/lib/academy/types.ts                        — TS types + phase/module-type meta
-src/lib/academy/api.ts                          — typed Supabase queries
-src/lib/academy/readiness.ts                    — score calculation helper (client mirror)
-src/pages/hr/academy/AcademyHome.tsx
-src/pages/hr/academy/AcademyRoadmap.tsx         — (default tab on home)
-src/pages/hr/academy/WeekDetail.tsx
-src/pages/hr/academy/LeadershipDashboard.tsx
-src/pages/hr/academy/TraineeDetail.tsx
-src/components/academy/HeroBanner.tsx
-src/components/academy/RoadmapTimeline.tsx
-src/components/academy/WeekCard.tsx
-src/components/academy/ModuleCard.tsx
-src/components/academy/ReadinessRing.tsx
-src/components/academy/ShadowSessionDialog.tsx
-src/components/academy/CheckinDialog.tsx
-src/components/academy/QuizRunner.tsx
-src/components/academy/ReflectionForm.tsx
-src/components/academy/MentorChip.tsx
-src/components/academy/PhaseBadge.tsx
-```
-
-### Files to edit
-
-```text
-src/lib/hr/types.ts                  — extend WorkSetting union + label map
-src/components/hr/AddEmployeeDialog.tsx     — new grouped Work Setting options
-src/components/hr/profile/EmploymentTab.tsx — same options
-src/components/layout/AppSidebar.tsx        — add "Operations Academy" entry
-src/lib/navigationAccess.ts                 — route guards
-src/App.tsx                                  — register new routes
-src/pages/hr/Training.tsx                   — link/promo card to Academy for office staff
-```
-
-### Out of scope (this iteration)
-- Real video hosting — we use existing video URL fields
-- AI auto-grading of reflections — mentor reviews manually
-- Mobile-first redesign — desktop-first per project memory
-- Migrating RBT/BCBA training into this flow — they keep current Training Hub
+### Sidebar
+Keep `Training Admin` link (already there) — make it the canonical entry. The standalone `/admin/training-*` pages stay but become deep-links from inside the new center (we won't remove them this pass).
 
 ---
 
-## Build order
+## 2. AI Chat — site-wide Blossom Assistant
 
-1. Migration: enum additions + tables + RLS + seed curriculum
-2. Types + API helpers
-3. Trainee experience (Home → Roadmap → WeekDetail → ModuleCard with all module types)
-4. Shadowing & Check-in dialogs
-5. Quiz runner + Reflection form
-6. Leadership dashboard + Trainee detail
-7. Wire AddEmployeeDialog work-setting options + sidebar route + Training landing promo
-8. Readiness ring + score view
-9. QA pass: empty states, locked weeks, branching paths, role gating
+A floating chat button on every authenticated page (bottom-right) that opens a slide-over panel.
+
+### Capabilities
+- Answer employee questions about training, SOPs, the handbook, HR policies, and any uploaded resource.
+- Keeps **conversation history** per user (persisted).
+- Streaming responses (SSE) using Lovable AI Gateway, model `google/gemini-3-flash-preview`.
+- RAG over uploaded knowledge: every `hr_resources` document, training lesson SOP content, and academy module content is indexed into a `knowledge_chunks` table with embeddings; the chat function does vector search and feeds top chunks as context.
+- New uploads/edits trigger an `ingest-knowledge` edge function that chunks + embeds the text (extract text from PDFs/docs via simple text or `pdf-parse`-style approach for now: text already stored in `content`/`description` is indexed; binary PDFs in storage are queued — we'll start with text-based content and resource descriptions to keep this pass scoped, and add PDF extraction immediately after).
+
+### Schema (migration)
+- `chat_conversations` (id, user_id, title, last_message_at, timestamps). RLS: owner only.
+- `chat_messages` (id, conversation_id, role text check in user/assistant/system, content, created_at). RLS via conversation owner.
+- `knowledge_chunks` (id, source_type text, source_id uuid, source_title text, source_url text, chunk_index int, content text, embedding vector(1536), metadata jsonb, timestamps). Enable `pgvector`. RLS: any signed-in user can SELECT (knowledge is org-wide); only service role inserts.
+- Indexes: ivfflat on embedding.
+
+### Edge functions
+- `chat` — streaming. Loads conversation, runs vector search via embedding the user query (Lovable AI `text-embedding`-equivalent: we'll use `openai/gpt-5-nano` for embedding generation through gateway? *Note:* Lovable AI Gateway exposes chat models. For embeddings we'll use OpenAI-style endpoint via gateway if available; fallback: ask the model to do "search by keyword" via a tool call. **Decision:** use simple lexical full-text search (Postgres `tsvector`) on `knowledge_chunks.content` for v1 — fast, no embedding dependency — and design the schema so we can swap to vector later. (`embedding` column kept nullable for the upgrade path.)
+- `ingest-knowledge` — called from triggers/UI when a resource or lesson is created/updated. Splits content into ~800-char chunks, inserts into `knowledge_chunks` with `tsvector`-indexed content. Replaces existing chunks for that source.
+
+### UI
+- `<AssistantWidget />` mounted in `App.tsx` (auth-gated). Floating glass button → side sheet with markdown rendering, conversation list, "New chat", suggested prompts ("What's the dress code?", "How do I submit a session note?", "Show me onboarding modules for RBTs").
+- React-markdown for rendering.
+
+### Hooks / wiring
+- When admin creates/edits `hr_resources`, `training_lessons`, or `training_courses`, frontend calls `ingest-knowledge` with the new text content.
+
+---
+
+## Technical notes (for the dev)
+- Frontend stack: existing React + shadcn + glass tokens.
+- New deps: `react-markdown`.
+- All new tables get RLS; admin/manage paths gated by `hr.training.assign` (already exists).
+- AI generation + chat both use existing `LOVABLE_API_KEY` (already configured).
+
+## Out of scope this pass (will follow up if you want)
+- Real PDF text extraction from binary files in `journey-resources` storage (v1 indexes text content + descriptions + lesson bodies).
+- Vector embeddings (column reserved; v1 uses Postgres FTS for retrieval).
+- Auto-assign-on-hire trigger (UI + table ready; trigger added in follow-up once you confirm hire detection logic).
+
+Approve to proceed and I'll execute the migration, edge functions, and all UI.
