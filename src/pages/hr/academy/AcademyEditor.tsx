@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore } from "lucide-react";
+import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore, Sparkles, Wand2 } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,8 @@ import { MODULE_TYPE_META } from "@/lib/academy/types";
 
 type Flags = { is_pinned?: boolean; is_archived?: boolean; pinned_at?: string | null; archived_at?: string | null };
 type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string } & Flags;
-type WeekFull = AcademyWeek & Flags & { modules: (AcademyModule & Flags & { resources: ModuleResource[] })[] };
+type ModuleFull = AcademyModule & Flags & { resources: ModuleResource[]; content_markdown?: string | null; key_points?: string[] | null; activities?: string[] | null; objectives?: string[] | null };
+type WeekFull = AcademyWeek & Flags & { modules: ModuleFull[] };
 type PhaseFull = AcademyPhase & Flags & { weeks: WeekFull[] };
 type Tree = { track: AcademyTrack & Flags; phases: PhaseFull[] } | null;
 
@@ -50,6 +51,7 @@ export default function AcademyEditor() {
     | { kind: "resource"; data: Partial<ModuleResource> & { module_id: string } };
   const [edit, setEdit] = useState<EditTarget | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string; table: string } | null>(null);
+  const [aiTarget, setAiTarget] = useState<{ kind: "module"; data: any } | { kind: "week"; data: any } | null>(null);
 
   useEffect(() => { void load(); }, []);
 
@@ -142,6 +144,7 @@ export default function AcademyEditor() {
         applies_to: (d.applies_to ?? "either") as AcademyPath,
         applies_to_new_state_only: d.applies_to_new_state_only ?? false,
         position: nextPos,
+        quiz: (d as any).quiz ?? undefined,
       }).select("*").single();
     } else if (edit.kind === "resource") {
       const d = edit.data;
@@ -445,12 +448,60 @@ export default function AcademyEditor() {
             </DialogTitle>
           </DialogHeader>
           {edit && <EditForm edit={edit} setEdit={setEdit} />}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
-            <Button onClick={save}><Save className="h-4 w-4" /> Save</Button>
+          <DialogFooter className="flex items-center justify-between sm:justify-between gap-2">
+            <div>
+              {(edit?.kind === "module" || edit?.kind === "week") && (
+                <Button variant="ghost" size="sm" onClick={() => setAiTarget({ kind: edit.kind, data: edit.data } as any)}>
+                  <Sparkles className="h-4 w-4" /> Generate with AI
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setEdit(null)}>Cancel</Button>
+              <Button onClick={save}><Save className="h-4 w-4" /> Save</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AIGenerateDialog
+        target={aiTarget}
+        onClose={() => setAiTarget(null)}
+        onApply={(generated) => {
+          if (!aiTarget || !edit) return;
+          if (edit.kind === "module") {
+            const newDesc = generated.description || edit.data.description || "";
+            const composed = [
+              newDesc,
+              generated.key_points?.length ? "\n\n**Key points:**\n" + generated.key_points.map((k: string) => `- ${k}`).join("\n") : "",
+              generated.activities?.length ? "\n\n**Activities:**\n" + generated.activities.map((a: string) => `- ${a}`).join("\n") : "",
+              generated.content_markdown ? "\n\n" + generated.content_markdown : "",
+            ].join("").trim();
+            setEdit({
+              ...edit,
+              data: {
+                ...edit.data,
+                title: edit.data.title || generated.title,
+                description: composed,
+                duration_label: edit.data.duration_label || generated.duration_label,
+                quiz: generated.quiz?.length ? generated.quiz : (edit.data as any).quiz,
+              },
+            });
+          } else if (edit.kind === "week") {
+            setEdit({
+              ...edit,
+              data: {
+                ...edit.data,
+                title: edit.data.title || generated.title,
+                objective: edit.data.objective || generated.description,
+                outcomes: (edit.data.outcomes && edit.data.outcomes.length ? edit.data.outcomes : generated.objectives) ?? [],
+              },
+            });
+          }
+          setAiTarget(null);
+          toast.success("AI content applied — review and save");
+        }}
+      />
 
       {/* Delete confirm */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
@@ -602,4 +653,179 @@ function sortPinned<T extends { is_pinned?: boolean; pinned_at?: string | null }
     if (!!a.is_pinned !== !!b.is_pinned) return a.is_pinned ? -1 : 1;
     return 0;
   });
+}
+
+function AIGenerateDialog({
+  target,
+  onClose,
+  onApply,
+}: {
+  target: { kind: "module" | "week"; data: any } | null;
+  onClose: () => void;
+  onApply: (generated: any) => void;
+}) {
+  const [mode, setMode] = useState<"both" | "module" | "quiz">("both");
+  const [tone, setTone] = useState<"Simple" | "Detailed" | "Technical">("Detailed");
+  const [complexity, setComplexity] = useState<"easy" | "medium" | "hard">("medium");
+  const [count, setCount] = useState(5);
+  const [extra, setExtra] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!target) { setPreview(null); setExtra(""); }
+  }, [target]);
+
+  if (!target) return null;
+  const isWeek = target.kind === "week";
+
+  async function generate() {
+    setLoading(true);
+    setPreview(null);
+    try {
+      const payload: any = {
+        mode: isWeek ? "module" : mode,
+        tone,
+        quizComplexity: complexity,
+        quizQuestionCount: count,
+        extraInstructions: extra || undefined,
+      };
+      if (isWeek) {
+        payload.weekId = target.data.id;
+        payload.weekTitle = target.data.title;
+        payload.weekObjective = target.data.objective;
+        payload.weekOutcomes = target.data.outcomes;
+      } else {
+        payload.moduleId = target.data.id;
+        payload.weekId = target.data.week_id;
+        payload.moduleTitle = target.data.title;
+        payload.moduleType = target.data.module_type;
+        payload.moduleDescriptionSeed = target.data.description;
+        payload.leaderName = target.data.leader_name;
+        payload.department = target.data.department;
+      }
+      const { data, error } = await supabase.functions.invoke("generate-academy-module-content", { body: payload });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setPreview((data as any).draft);
+    } catch (e: any) {
+      toast.error(e?.message || "AI generation failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Generate {isWeek ? "week module content" : "module content & quiz"} with AI
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          {!isWeek && (
+            <Field label="What to generate">
+              <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Module content + quiz</SelectItem>
+                  <SelectItem value="module">Module content only</SelectItem>
+                  <SelectItem value="quiz">Quiz only</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Tone">
+              <Select value={tone} onValueChange={(v) => setTone(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Simple">Simple</SelectItem>
+                  <SelectItem value="Detailed">Detailed</SelectItem>
+                  <SelectItem value="Technical">Technical</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Quiz difficulty">
+              <Select value={complexity} onValueChange={(v) => setComplexity(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="# Questions">
+              <Input type="number" min={3} max={10} value={count} onChange={(e) => setCount(Math.max(3, Math.min(10, parseInt(e.target.value) || 5)))} />
+            </Field>
+          </div>
+          <Field label="Extra instructions (optional)">
+            <Textarea rows={2} placeholder="e.g. Focus on CentralReach intake workflow" value={extra} onChange={(e) => setExtra(e.target.value)} />
+          </Field>
+          <Button onClick={generate} disabled={loading} className="w-full">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            {loading ? "Generating…" : "Generate"}
+          </Button>
+
+          {preview && (
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Preview</p>
+              {preview.title && <p className="text-sm font-medium">{preview.title}</p>}
+              {preview.description && <p className="text-xs text-muted-foreground">{preview.description}</p>}
+              {preview.key_points?.length > 0 && (
+                <div className="text-xs">
+                  <span className="font-medium">Key points:</span>
+                  <ul className="list-disc pl-4 text-muted-foreground">
+                    {preview.key_points.map((k: string, i: number) => <li key={i}>{k}</li>)}
+                  </ul>
+                </div>
+              )}
+              {preview.activities?.length > 0 && (
+                <div className="text-xs">
+                  <span className="font-medium">Activities:</span>
+                  <ul className="list-disc pl-4 text-muted-foreground">
+                    {preview.activities.map((a: string, i: number) => <li key={i}>{a}</li>)}
+                  </ul>
+                </div>
+              )}
+              {preview.content_markdown && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer font-medium">Module content ({preview.content_markdown.length} chars)</summary>
+                  <pre className="whitespace-pre-wrap text-muted-foreground mt-1 max-h-48 overflow-y-auto">{preview.content_markdown}</pre>
+                </details>
+              )}
+              {preview.quiz?.length > 0 && (
+                <details className="text-xs" open>
+                  <summary className="cursor-pointer font-medium">Quiz ({preview.quiz.length} questions)</summary>
+                  <ol className="list-decimal pl-4 space-y-1 mt-1 text-muted-foreground">
+                    {preview.quiz.map((q: any, i: number) => (
+                      <li key={i}>
+                        <div className="text-foreground">{q.question}</div>
+                        {q.options?.length > 0 && (
+                          <ul className="list-disc pl-4">
+                            {q.options.map((o: string, j: number) => (
+                              <li key={j} className={o === q.answer ? "text-primary font-medium" : ""}>{o}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => preview && onApply(preview)} disabled={!preview}>
+            <Save className="h-4 w-4" /> Apply to form
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
