@@ -684,18 +684,18 @@ function EmployeePanelContent({ employee, onReady }: { employee: HrEmployee; onR
           </div>
         </div>
 
-        {/* Action bar */}
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Button asChild size="sm" className="h-9 justify-start gap-2 shadow-sm">
+        {/* Action bar — wraps cleanly, no overflow */}
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button asChild size="sm" className="h-9 gap-1.5 shadow-sm">
             <Link to={`/hr/employees/${employee.id}`}><ExternalLink className="h-4 w-4" />Open File</Link>
           </Button>
-          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => void onReady(employee)}>
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => void onReady(employee)}>
             <UserCheck className="h-4 w-4" />Mark Ready
           </Button>
-          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => { window.location.href = `mailto:${employee.email}`; }}>
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => { window.location.href = `mailto:${employee.email}`; }}>
             <Mail className="h-4 w-4" />Email
           </Button>
-          <Button size="sm" variant="outline" className="h-9 justify-start gap-2" onClick={() => { toast.success(`Reminder queued for ${employee.employee}`); addTimeline("Reminder sent", "HR sent a reminder"); }}>
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => { toast.success(`Reminder queued for ${employee.employee}`); addTimeline("Reminder sent", "HR sent a reminder"); }}>
             <Bell className="h-4 w-4" />Remind
           </Button>
         </div>
@@ -720,15 +720,21 @@ function EmployeePanelContent({ employee, onReady }: { employee: HrEmployee; onR
       {/* Tabs */}
       <div className="flex-1 overflow-y-auto p-6 pt-4">
         <Tabs defaultValue="overview">
-          <TabsList className="grid h-auto w-full grid-cols-4 gap-1 bg-muted/50 p-1 lg:grid-cols-7">
-            <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="training" className="text-xs">Training</TabsTrigger>
-            <TabsTrigger value="documents" className="text-xs">Docs</TabsTrigger>
-            <TabsTrigger value="comms" className="text-xs">Comms</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
-            <TabsTrigger value="time" className="text-xs">Time</TabsTrigger>
-            <TabsTrigger value="timeline" className="text-xs">Activity</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto px-1 pb-1" style={{ scrollbarWidth: "thin" }}>
+            <TabsList className="inline-flex h-auto w-max gap-1 bg-muted/50 p-1">
+              {[
+                ["overview", "Overview"],
+                ["training", "Training"],
+                ["documents", "Documents"],
+                ["comms", "Comms"],
+                ["tasks", "Tasks"],
+                ["time", "Time"],
+                ["timeline", "Activity"],
+              ].map(([v, l]) => (
+                <TabsTrigger key={v} value={v} className="shrink-0 whitespace-nowrap px-3 text-xs">{l}</TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="mt-4 space-y-3">
             <div className="rounded-xl border border-border/60 bg-card p-4">

@@ -189,14 +189,20 @@ function ScrollableTabBar({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    update();
     const el = scrollRef.current;
     if (!el) return;
+    const raf = requestAnimationFrame(update);
+    const t = setTimeout(update, 100);
     el.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
     const ro = new ResizeObserver(update);
     ro.observe(el);
+    Array.from(el.children).forEach((c) => ro.observe(c as Element));
     return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
       el.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
       ro.disconnect();
     };
   }, []);
@@ -238,8 +244,14 @@ function ScrollableTabBar({ children }: { children: React.ReactNode }) {
         )}
         <div
           ref={scrollRef}
-          className="overflow-x-auto scrollbar-none"
+          className="overflow-x-auto scrollbar-none px-10"
           style={{ scrollbarWidth: "none" }}
+          onWheel={(e) => {
+            // Convert vertical wheel to horizontal scroll for trackpads/mice on desktop
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
         >
           {children}
         </div>
