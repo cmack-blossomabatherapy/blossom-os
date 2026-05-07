@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass,
+  History as HistoryIcon, Search, Compass, Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -17,6 +17,8 @@ import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useAcademyComplete } from "@/hooks/useAcademyComplete";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NavItem {
   label: string;
