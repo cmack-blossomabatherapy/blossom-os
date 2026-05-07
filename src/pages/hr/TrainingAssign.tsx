@@ -190,7 +190,7 @@ export default function TrainingAssign() {
       title="Assign Trainings"
       description="Assign courses to RBTs and BCBAs and track per-user completion status."
       stats={selectedCourse && courseStats ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-4">
           <GlassStat icon={Users} tone="primary" label="Assigned" value={courseStats.total} />
           <GlassStat icon={CheckCircle2} tone="success" label="Completed" value={courseStats.completed} hint={`${courseStats.rate}% rate`} />
           <GlassStat icon={Clock} tone="primary" label="In progress" value={courseStats.inProgress} />
@@ -199,7 +199,7 @@ export default function TrainingAssign() {
       ) : undefined}
     >
       <GlassPanel title="Pick a course & due date" description="Choose what to assign — then select the people below." icon={Send} iconTone="primary">
-        <div className="grid md:grid-cols-[1fr_240px_auto] gap-3 items-end">
+        <div className="grid gap-3 md:grid-cols-[1fr_240px_auto] md:items-end">
           <div className="space-y-1.5">
             <Label className="text-xs">Training course</Label>
             <Select value={selectedCourse} onValueChange={(v) => { setSelectedCourse(v); setSelected(new Set()); }}>
@@ -218,7 +218,7 @@ export default function TrainingAssign() {
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="pl-9" />
             </div>
           </div>
-          <Button onClick={handleAssign} disabled={!canAssign || submitting || !selectedCourse || selected.size === 0} className="md:w-auto">
+          <Button onClick={handleAssign} disabled={!canAssign || submitting || !selectedCourse || selected.size === 0} className="w-full md:w-auto">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
             Assign to {selected.size || 0}
           </Button>
@@ -232,7 +232,7 @@ export default function TrainingAssign() {
               <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Eligible learners</CardTitle>
               <CardDescription>{filteredEmployees.length} of {eligibleEmployees.length} RBTs & BCBAs</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Tabs value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
@@ -240,9 +240,9 @@ export default function TrainingAssign() {
                   <TabsTrigger value="bcba">BCBA</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <div className="relative">
+              <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-[240px]" />
+                <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-full md:w-[240px]" />
               </div>
             </div>
           </div>
