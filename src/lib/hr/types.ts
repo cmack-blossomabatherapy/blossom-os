@@ -6,6 +6,38 @@ export type EmployeeStatus =
 export type EmploymentType = "full_time" | "part_time" | "contractor" | "prn";
 export type PayType = "hourly" | "salaried";
 export type WorkSetting = "clinic" | "home" | "hybrid" | "admin" | "field";
+export type WorkSettingExt =
+  | WorkSetting
+  | "office"
+  | "leadership"
+  | "intake"
+  | "recruiting"
+  | "scheduling"
+  | "state_director"
+  | "operations"
+  | "systems";
+
+export const WORK_SETTING_LABELS: Record<WorkSettingExt, string> = {
+  clinic: "Clinic",
+  home: "Home-based",
+  hybrid: "Hybrid",
+  admin: "Admin",
+  field: "Field",
+  office: "Office Staff",
+  leadership: "Leadership / Executive",
+  intake: "Intake Coordinator",
+  recruiting: "Recruiting",
+  scheduling: "Scheduling",
+  state_director: "State Director",
+  operations: "Operations",
+  systems: "Systems / IT",
+};
+
+export const OFFICE_WORK_SETTINGS: WorkSettingExt[] = [
+  "office", "leadership", "intake", "recruiting", "scheduling", "state_director", "operations", "systems", "admin",
+];
+
+export const FIELD_WORK_SETTINGS: WorkSettingExt[] = ["clinic", "home", "hybrid", "field"];
 
 export type OnboardingStatus =
   | "new_hire_pending" | "documents_needed" | "payroll_setup" | "training_assigned"

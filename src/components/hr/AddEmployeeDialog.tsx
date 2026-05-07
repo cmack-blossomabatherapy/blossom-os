@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { HR_STATES, type Department } from "@/lib/hr/types";
+import { HR_STATES, OFFICE_WORK_SETTINGS, FIELD_WORK_SETTINGS, WORK_SETTING_LABELS, type Department } from "@/lib/hr/types";
 
 interface Props {
   open: boolean;
@@ -130,11 +130,14 @@ export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }
             <Select value={workSetting} onValueChange={setWorkSetting}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="clinic">Clinic</SelectItem>
-                <SelectItem value="home">Home-based</SelectItem>
-                <SelectItem value="hybrid">Hybrid</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="field">Field</SelectItem>
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">Field staff</div>
+                {FIELD_WORK_SETTINGS.map((v) => (
+                  <SelectItem key={v} value={v}>{WORK_SETTING_LABELS[v]}</SelectItem>
+                ))}
+                <div className="px-2 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Office &amp; Leadership</div>
+                {OFFICE_WORK_SETTINGS.map((v) => (
+                  <SelectItem key={v} value={v}>{WORK_SETTING_LABELS[v]}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>

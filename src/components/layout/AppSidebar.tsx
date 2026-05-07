@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search,
+  History as HistoryIcon, Search, Compass,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -95,6 +95,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Training Hub", icon: Sparkles, path: "/hr/journey", perm: "" },
       { label: "Training", icon: GraduationCap, path: "/training", perm: "" },
+      { label: "Operations Academy", icon: Compass, path: "/training/academy", perm: "" },
       { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "", allowedRoles: ["rbt", "bcba"] },
     ],
   },
