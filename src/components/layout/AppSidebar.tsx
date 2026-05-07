@@ -435,6 +435,22 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             )}
             {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5">
               {section.items.map((item) => (
+                item.path === "/training" && !academyComplete ? (
+                  <Tooltip key={item.path}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => e.preventDefault()}
+                        aria-disabled="true"
+                        className={cn("nav-item nav-item-inactive w-full cursor-not-allowed opacity-50")}
+                      >
+                        <Lock className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Unlocks after you finish Operations Academy</TooltipContent>
+                  </Tooltip>
+                ) : (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -447,6 +463,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
+                )
               ))}
             </div>}
           </div>
