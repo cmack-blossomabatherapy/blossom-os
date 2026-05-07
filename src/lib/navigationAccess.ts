@@ -32,6 +32,17 @@ export interface NavigationPreviewSection {
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
+/**
+ * Default Intelligence-only navigation for any role that does not have a
+ * specific exception and does not get full navigation. Shows just the three
+ * staff-facing items: Blossom Training (locked until Academy done),
+ * Operations Academy, and Resource Hub.
+ */
+const DEFAULT_LIMITED_INTELLIGENCE_PATHS = ["/training", "/training/academy", "/resources"];
+const DEFAULT_LIMITED_EXCEPTION: RoleNavigationException = {
+  intelligenceItemPaths: DEFAULT_LIMITED_INTELLIGENCE_PATHS,
+};
+
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
@@ -151,7 +162,16 @@ const routeMatches = (pathname: string, prefix: string) => pathname === prefix |
 
 export const hasFullNavigationAccess = (roles: AppRole[]) => roles.some((role) => fullNavigationRoles.includes(role));
 
-export const getRoleNavigationExceptions = (roles: AppRole[]) => roles.map((role) => roleNavigationExceptions[role]).filter(Boolean);
+export const getRoleNavigationExceptions = (roles: AppRole[]): RoleNavigationException[] => {
+  if (hasFullNavigationAccess(roles)) {
+    return roles.map((role) => roleNavigationExceptions[role]).filter(Boolean) as RoleNavigationException[];
+  }
+  const explicit = roles.map((role) => roleNavigationExceptions[role]).filter(Boolean) as RoleNavigationException[];
+  if (explicit.length > 0) return explicit;
+  // Fallback for any other role (staff, intake, finance, qa, scheduling, etc.):
+  // restrict to the Intelligence section with just the three staff-facing items.
+  return [DEFAULT_LIMITED_EXCEPTION];
+};
 
 export const navPathToRoutePrefix = (path: string) => path.split("?")[0];
 
