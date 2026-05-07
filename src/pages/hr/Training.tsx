@@ -429,6 +429,12 @@ export default function Training() {
         onAssigned={load}
       />
 
+      <LessonsQuizzesEditor
+        course={lessonsCourse ? { id: lessonsCourse.id, title: lessonsCourse.title } : null}
+        open={!!lessonsCourse}
+        onOpenChange={(o) => !o && setLessonsCourse(null)}
+      />
+
       {/* COURSE EDITOR */}
       <Dialog open={!!editor} onOpenChange={(o) => !o && setEditor(null)}>
         <DialogContent className="max-w-2xl">
