@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2 } from "lucide-react";
+import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,11 @@ import type {
 } from "@/lib/academy/types";
 import { MODULE_TYPE_META } from "@/lib/academy/types";
 
-type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string };
-type WeekFull = AcademyWeek & { modules: (AcademyModule & { resources: ModuleResource[] })[] };
-type PhaseFull = AcademyPhase & { weeks: WeekFull[] };
-type Tree = { track: AcademyTrack; phases: PhaseFull[] } | null;
+type Flags = { is_pinned?: boolean; is_archived?: boolean; pinned_at?: string | null; archived_at?: string | null };
+type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string } & Flags;
+type WeekFull = AcademyWeek & Flags & { modules: (AcademyModule & Flags & { resources: ModuleResource[] })[] };
+type PhaseFull = AcademyPhase & Flags & { weeks: WeekFull[] };
+type Tree = { track: AcademyTrack & Flags; phases: PhaseFull[] } | null;
 
 const MODULE_TYPES: AcademyModuleType[] = ["training", "shadowing", "meeting", "video", "sop", "quiz", "reflection", "task"];
 const PATHS: AcademyPath[] = ["either", "new_state", "existing_state"];
@@ -38,6 +39,7 @@ export default function AcademyEditor() {
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  const [showArchived, setShowArchived] = useState(false);
 
   // edit dialog state
   type EditTarget =
@@ -166,6 +168,26 @@ export default function AcademyEditor() {
     await load();
   }
 
+  async function togglePin(table: string, id: string, current: boolean) {
+    const { error } = await supabase.from(table as any).update({
+      is_pinned: !current,
+      pinned_at: !current ? new Date().toISOString() : null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(!current ? "Pinned" : "Unpinned");
+    await load();
+  }
+
+  async function toggleArchive(table: string, id: string, current: boolean) {
+    const { error } = await supabase.from(table as any).update({
+      is_archived: !current,
+      archived_at: !current ? new Date().toISOString() : null,
+    }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(!current ? "Archived" : "Restored");
+    await load();
+  }
+
   async function reorder(table: string, id: string, field: "position" | "week_number", delta: number) {
     // simple: bump value by delta and resave neighbors will follow ordering by load
     if (!tree) return;
@@ -222,9 +244,15 @@ export default function AcademyEditor() {
       description="Curriculum tree — tracks, phases, weeks, modules, and resources."
       icon={Compass}
       actions={
-        <Button variant="outline" onClick={() => setEdit({ kind: "track", data: tree.track })}>
-          <Pencil className="h-4 w-4" /> Edit track
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived((s) => !s)}>
+            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+            {showArchived ? "Hide archived" : "Show archived"}
+          </Button>
+          <Button variant="outline" onClick={() => setEdit({ kind: "track", data: tree.track })}>
+            <Pencil className="h-4 w-4" /> Edit track
+          </Button>
+        </div>
       }
     >
       {/* Track header */}
