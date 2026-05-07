@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet,
   LayoutGrid, BriefcaseBusiness, Network, ListChecks, Star, GraduationCap,
   Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -119,8 +120,8 @@ export default function EmployeeProfile() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-3">
-        <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-          <TabsList className="flex w-full flex-nowrap overflow-x-auto h-auto gap-1 rounded-xl border border-border/60 bg-card/60 p-1 shadow-sm scrollbar-thin">
+        <ScrollableTabBar>
+          <TabsList className="inline-flex w-max flex-nowrap h-auto gap-1 rounded-xl bg-transparent p-1">
             <ProfileTab value="overview" icon={LayoutGrid} label="Overview" />
             <ProfileTab value="employment" icon={BriefcaseBusiness} label="Employment" />
             <ProfileTab value="hierarchy" icon={Network} label="Hierarchy" />
@@ -136,7 +137,7 @@ export default function EmployeeProfile() {
             <ProfileTab value="access" icon={ShieldCheck} label="Access" />
             {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
           </TabsList>
-        </div>
+        </ScrollableTabBar>
 
         <TabsContent value="overview"><OverviewTab employee={employee} department={department} /></TabsContent>
         <TabsContent value="employment"><EmploymentTab employee={employee} department={department} onChange={() => load(employee.id)} /></TabsContent>
@@ -172,6 +173,78 @@ function ProfileTab({ value, icon: Icon, label }: { value: string; icon: typeof 
       <Icon className="h-3.5 w-3.5 transition-colors group-data-[state=active]:text-primary" />
       <span className="whitespace-nowrap">{label}</span>
     </TabsTrigger>
+  );
+}
+
+function ScrollableTabBar({ children }: { children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const update = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    update();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, []);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.6), behavior: "smooth" });
+  };
+
+  return (
+    <div className="sticky top-0 z-10 -mx-1 px-1 pb-1 pt-1 bg-gradient-to-b from-background via-background/95 to-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="relative rounded-xl border border-border/60 bg-card/60 shadow-sm">
+        {canLeft && (
+          <>
+            <button
+              type="button"
+              aria-label="Scroll left"
+              onClick={() => scrollBy(-1)}
+              className="absolute left-1 top-1/2 z-20 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-sm hover:text-foreground hover:bg-background"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-10 rounded-l-xl bg-gradient-to-r from-card to-transparent" />
+          </>
+        )}
+        {canRight && (
+          <>
+            <button
+              type="button"
+              aria-label="Scroll right"
+              onClick={() => scrollBy(1)}
+              className="absolute right-1 top-1/2 z-20 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground shadow-sm hover:text-foreground hover:bg-background"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-10 rounded-r-xl bg-gradient-to-l from-card to-transparent" />
+          </>
+        )}
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto scrollbar-none"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
 
