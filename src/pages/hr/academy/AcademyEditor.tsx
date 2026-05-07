@@ -356,18 +356,18 @@ export default function AcademyEditor() {
                               const meta = MODULE_TYPE_META[m.module_type];
                               return (
                                 <div key={m.id} className={cn("rounded-md border border-border/50 bg-card", m.is_archived && "opacity-60", m.is_pinned && "ring-1 ring-primary/30")}>
-                                  <div className="flex items-center justify-between gap-3 px-3 py-2">
-                                    <button className="flex items-center gap-2 flex-1 text-left min-w-0" onClick={() => setOpenModules((s) => ({ ...s, [m.id]: !mOpen }))}>
+                                  <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                    <button className="flex items-center gap-2 flex-1 text-left min-w-0 flex-wrap" onClick={() => setOpenModules((s) => ({ ...s, [m.id]: !mOpen }))}>
                                       {mOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                                       <span className={cn("text-[10px] px-1.5 py-0.5 rounded border", meta.tone)}>{meta.label}</span>
-                                      <span className="text-sm text-foreground truncate">{m.title}</span>
+                                      <span className="text-sm text-foreground min-w-0 flex-1 break-words">{m.title}</span>
                                       {!m.is_required && <Badge variant="outline" className="text-[10px]">Optional</Badge>}
                                       {m.applies_to !== "either" && <Badge variant="outline" className="text-[10px]">{m.applies_to.replace("_", " ")}</Badge>}
                                       {m.duration_label && <span className="text-xs text-muted-foreground">· {m.duration_label}</span>}
                                       {m.is_pinned && <Pin className="h-3 w-3 text-primary" />}
                                       {m.is_archived && <Badge variant="outline" className="text-[10px]">Archived</Badge>}
                                     </button>
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1 flex-wrap">
                                       <IconBtn title="Edit" onClick={() => setEdit({ kind: "module", data: m })}><Pencil className="h-3.5 w-3.5" /></IconBtn>
                                       <IconBtn title={m.is_pinned ? "Unpin" : "Pin"} onClick={() => togglePin("academy_modules", m.id, !!m.is_pinned)}>
                                         {m.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
