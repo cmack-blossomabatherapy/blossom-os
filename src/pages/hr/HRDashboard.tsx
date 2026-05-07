@@ -329,47 +329,101 @@ export default function HRDashboard() {
     await loadDashboard();
   }
 
+  const activeFilterCount = [stateFilter, departmentFilter, roleFilter, managerFilter, statusFilter, trainingFilter, reviewFilter].filter((v) => v !== ALL).length + (query ? 1 : 0);
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <header className="space-y-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">HR Dashboard</h1>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">Employee lifecycle, onboarding, training, reviews, and workforce health.</p>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <header className="space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />HR Operations
+            </div>
+            <h1 className="text-[28px] font-semibold tracking-tight text-foreground">HR Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Lifecycle, onboarding, training, reviews and workforce health — at a glance.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => toast.success("HR dashboard export prepared")}><Download className="mr-2 h-4 w-4" />Export</Button>
-            <Button size="sm" className="shadow-sm" onClick={() => void loadDashboard()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees…" className="h-9 w-[260px] pl-9" />
+            </div>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setFiltersOpen((v) => !v)}>
+              <SlidersHorizontal className="mr-2 h-4 w-4" />Filters{activeFilterCount > 0 && <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">{activeFilterCount}</span>}
+              <ChevronDown className={cn("ml-1 h-3.5 w-3.5 transition-transform", filtersOpen && "rotate-180")} />
+            </Button>
+            <Button variant="outline" size="sm" className="h-9" onClick={() => toast.success("HR dashboard export prepared")}><Download className="mr-2 h-4 w-4" />Export</Button>
+            <Button size="sm" className="h-9 shadow-sm" onClick={() => void loadDashboard()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           </div>
         </div>
-        <div className="sticky top-0 z-20 rounded-xl border border-border/60 bg-card/95 p-4 shadow-sm backdrop-blur-xl">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Filter className="h-4 w-4 text-primary" />HR Filters</div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-9">
-            <Select value={dateRange} onValueChange={setDateRange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["Today", "This Week", "This Month", "Quarter to Date", "Year to Date", "Custom Range"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
-            <FilterSelect value={stateFilter} setValue={setStateFilter} items={states} allLabel="All States" />
-            <FilterSelect value={departmentFilter} setValue={setDepartmentFilter} items={departments} allLabel="All Departments" />
-            <FilterSelect value={roleFilter} setValue={setRoleFilter} items={roles} allLabel="All Roles" />
-            <FilterSelect value={managerFilter} setValue={setManagerFilter} items={managers} allLabel="All Managers" />
-            <FilterSelect value={statusFilter} setValue={setStatusFilter} items={statuses} allLabel="All Statuses" />
-            <FilterSelect value={trainingFilter} setValue={setTrainingFilter} items={trainingStatuses} allLabel="All Training" />
-            <FilterSelect value={reviewFilter} setValue={setReviewFilter} items={reviewStatuses} allLabel="All Reviews" />
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees…" className="pl-9" /></div>
+        {filtersOpen && (
+          <div className="rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm backdrop-blur-xl animate-fade-in">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
+              <Select value={dateRange} onValueChange={setDateRange}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent>{["Today", "This Week", "This Month", "Quarter to Date", "Year to Date", "Custom Range"].map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select>
+              <FilterSelect value={stateFilter} setValue={setStateFilter} items={states} allLabel="All States" />
+              <FilterSelect value={departmentFilter} setValue={setDepartmentFilter} items={departments} allLabel="All Departments" />
+              <FilterSelect value={roleFilter} setValue={setRoleFilter} items={roles} allLabel="All Roles" />
+              <FilterSelect value={managerFilter} setValue={setManagerFilter} items={managers} allLabel="All Managers" />
+              <FilterSelect value={statusFilter} setValue={setStatusFilter} items={statuses} allLabel="All Statuses" />
+              <FilterSelect value={trainingFilter} setValue={setTrainingFilter} items={trainingStatuses} allLabel="All Training" />
+              <FilterSelect value={reviewFilter} setValue={setReviewFilter} items={reviewStatuses} allLabel="All Reviews" />
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
-      {loading ? <Skeleton className="h-[520px] rounded-xl" /> : (
+      {loading ? <Skeleton className="h-[520px] rounded-2xl" /> : (
         <>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {kpis.map((kpi) => <button key={kpi.key} type="button" onClick={() => setActiveKpi(kpi.key)} className={cn("rounded-xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md", activeKpi === kpi.key ? "border-primary ring-2 ring-primary/15" : "border-border/60")}>
-              <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{kpi.title}</p><p className="mt-2 text-2xl font-semibold text-foreground">{kpi.value}</p></div><span className={cn("rounded-lg p-2", toneClass(kpi.tone))}><kpi.icon className="h-4 w-4" /></span></div>
-              <p className="mt-3 text-xs text-muted-foreground">{kpi.subtext}</p>
-            </button>)}
+          <section className="grid gap-3 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+            {kpis.map((kpi) => (
+              <button key={kpi.key} type="button" onClick={() => setActiveKpi(kpi.key)}
+                className={cn(
+                  "group relative overflow-hidden rounded-2xl border bg-card px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md",
+                  activeKpi === kpi.key ? "border-primary/40 shadow-[0_8px_28px_-12px_hsl(var(--primary)/0.35)] ring-1 ring-primary/20" : "border-border/60 shadow-sm"
+                )}
+              >
+                {activeKpi === kpi.key && <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />}
+                <div className="flex items-center justify-between">
+                  <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", toneClass(kpi.tone))}>
+                    <kpi.icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{kpi.tone === "critical" ? "Action" : kpi.tone === "warning" ? "Watch" : "Healthy"}</span>
+                </div>
+                <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground tabular-nums">{kpi.value}</p>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kpi.title}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground/80 line-clamp-1">{kpi.subtext}</p>
+              </button>
+            ))}
           </section>
-          <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"><Card title="HR Action Queue" icon={ListChecks}><div className="grid gap-3 lg:grid-cols-3"><QueueColumn title="Urgent Now" rows={queue.urgent} onSelect={setSelectedEmployee} onReady={markReady} /><QueueColumn title="Follow-Up Today" rows={queue.today} onSelect={setSelectedEmployee} onReady={markReady} /><QueueColumn title="Workforce Risks" rows={queue.risks} onSelect={setSelectedEmployee} onReady={markReady} /></div></Card><Card title="Workforce Health Snapshot" icon={HeartHandshake}><HealthSnapshot rows={filtered} /></Card></section>
-          <Card title="Employee Lifecycle Board" icon={Briefcase}><LifecycleBoard rows={filtered} /></Card>
-          <section className="grid gap-6 xl:grid-cols-3"><Card title="Onboarding Readiness" icon={UserCheck}><OnboardingPanel rows={filtered} /></Card><Card title="Training & Compliance" icon={GraduationCap}><TrainingPanel rows={filtered} /></Card><Card title="Reviews & Performance" icon={CalendarCheck}><ReviewsPanel rows={filtered} /></Card></section>
-          <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]"><Card title="Workforce Structure Snapshot" icon={UserCog}><StructureSnapshot rows={filtered} /></Card><Card title="HR Worklist" icon={Users}><Worklist rows={kpiRows} onSelect={setSelectedEmployee} /></Card></section>
+
+          <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+            <Card title="HR Action Queue" icon={ListChecks} subtitle="Prioritized work needing attention today">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <QueueColumn title="Urgent Now" tone="critical" rows={queue.urgent} onSelect={setSelectedEmployee} onReady={markReady} />
+                <QueueColumn title="Follow-Up Today" tone="warning" rows={queue.today} onSelect={setSelectedEmployee} onReady={markReady} />
+                <QueueColumn title="Workforce Risks" tone="info" rows={queue.risks} onSelect={setSelectedEmployee} onReady={markReady} />
+              </div>
+            </Card>
+            <Card title="Workforce Health" icon={HeartHandshake} subtitle="Live snapshot across your filtered cohort">
+              <HealthSnapshot rows={filtered} />
+            </Card>
+          </section>
+
+          <Card title="Employee Lifecycle" icon={Briefcase} subtitle="Stage distribution and aging across the workforce">
+            <LifecycleBoard rows={filtered} />
+          </Card>
+
+          <section className="grid gap-5 xl:grid-cols-3">
+            <Card title="Onboarding Readiness" icon={UserCheck}><OnboardingPanel rows={filtered} /></Card>
+            <Card title="Training & Compliance" icon={GraduationCap}><TrainingPanel rows={filtered} /></Card>
+            <Card title="Reviews & Performance" icon={CalendarCheck}><ReviewsPanel rows={filtered} /></Card>
+          </section>
+
+          <section className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+            <Card title="Workforce Structure" icon={UserCog}><StructureSnapshot rows={filtered} /></Card>
+            <Card title="HR Worklist" icon={Users} subtitle={`${kpiRows.length} employees · ${kpis.find((k) => k.key === activeKpi)?.title ?? ""}`}>
+              <Worklist rows={kpiRows} onSelect={setSelectedEmployee} />
+            </Card>
+          </section>
         </>
       )}
       <EmployeePanel employee={selectedEmployee} onOpenChange={(open) => !open && setSelectedEmployee(null)} onReady={markReady} />
