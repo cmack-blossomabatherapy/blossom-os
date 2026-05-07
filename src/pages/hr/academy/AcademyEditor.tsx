@@ -596,3 +596,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+function sortPinned<T extends { is_pinned?: boolean; pinned_at?: string | null }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    if (!!a.is_pinned !== !!b.is_pinned) return a.is_pinned ? -1 : 1;
+    return 0;
+  });
+}
