@@ -96,7 +96,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Tasks", path: "/tasks", perm: "tasks.view" },
   ] },
   { title: "Intelligence", items: [
-    { label: "Training Hub", path: "/hr/journey" },
+    { label: "Training Hub", path: "/hr/journey", allowedRoles: ["rbt", "bcba"] },
     { label: "Training", path: "/training" },
     { label: "Resource Hub", path: "/resources", allowedRoles: ["rbt", "bcba"] },
   ] },
