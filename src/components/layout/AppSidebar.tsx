@@ -96,7 +96,7 @@ const navSections: NavSection[] = [
       { label: "Training Hub", icon: Sparkles, path: "/hr/journey", perm: "", allowedRoles: ["rbt", "bcba"] },
       { label: "Blossom Training", icon: GraduationCap, path: "/training", perm: "" },
       { label: "Operations Academy", icon: Compass, path: "/training/academy", perm: "" },
-      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "", allowedRoles: ["rbt", "bcba", "hr", "hr_admin", "hr_manager"] },
+      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
     ],
   },
   {
