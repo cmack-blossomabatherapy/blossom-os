@@ -53,6 +53,7 @@ interface HrEmployee {
   workload: number;
   riskLevel: RiskLevel;
   staffingReady: boolean;
+  grandfathered: boolean;
   nextAction: string;
   onboarding: { viventium: boolean; backgroundCheck: boolean; i9: boolean; orientation: boolean; stateTraining: boolean; centralReach: boolean; complianceDocs: boolean; };
   trainings: HrTraining[];
