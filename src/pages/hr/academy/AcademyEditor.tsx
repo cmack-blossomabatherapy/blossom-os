@@ -20,6 +20,24 @@ import type {
   AcademyTrack, AcademyPhase, AcademyWeek, AcademyModule, AcademyModuleType, AcademyPath,
 } from "@/lib/academy/types";
 import { MODULE_TYPE_META } from "@/lib/academy/types";
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableRow({ id, disabled, children }: { id: string; disabled?: boolean; children: (handle: { attributes: any; listeners: any; setActivatorNodeRef: (el: HTMLElement | null) => void; isDragging: boolean }) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 30 : undefined, opacity: isDragging ? 0.85 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ attributes, listeners, setActivatorNodeRef, isDragging })}
+    </div>
+  );
+}
 
 type Flags = { is_pinned?: boolean; is_archived?: boolean; pinned_at?: string | null; archived_at?: string | null };
 type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string } & Flags;
