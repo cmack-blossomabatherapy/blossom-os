@@ -40,18 +40,21 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
     },
+    intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_admin: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
     },
+    intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_manager: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
     },
+    intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
   bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
@@ -203,7 +206,7 @@ export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
 
   // /resources (general Resource Hub) is restricted to RBT/BCBA only.
   if (routeMatches(pathname, "/resources")) {
-    return roles.includes("rbt") || roles.includes("bcba");
+    return roles.includes("rbt") || roles.includes("bcba") || roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager");
   }
 
   const exceptions = getRoleNavigationExceptions(roles);
