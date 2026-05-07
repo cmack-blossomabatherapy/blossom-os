@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_META, type AppRole } from "@/lib/roles";
+import { ingestKnowledge, extractAndIngestPdf } from "@/lib/knowledgeIngest";
 import {
   RESOURCE_CATEGORY_LABEL, RESOURCE_KIND_LABEL,
   type HRResource, type ResourceCategory, type ResourceKind,
@@ -61,13 +62,24 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
 
   async function create() {
     if (!title.trim()) { toast.error("Title required."); return; }
-    const { error } = await supabase.from("hr_resources").insert({
+    const { data: inserted, error } = await supabase.from("hr_resources").insert({
       title: title.trim(), description: desc.trim() || null,
       kind, category, url: url.trim() || null,
       visibility_roles: visibilityRoles,
       uploaded_by: user?.id ?? null, uploaded_by_name: user?.email ?? null,
-    });
+    }).select("id").single();
     if (error) { toast.error(error.message); return; }
+    // Auto-ingest description into AI knowledge base
+    if (inserted?.id && (desc.trim() || title.trim())) {
+      void ingestKnowledge({
+        source_type: "hr_resource",
+        source_id: inserted.id,
+        source_title: title.trim(),
+        source_url: url.trim() || null,
+        content: `${title.trim()}\n\n${desc.trim()}`,
+        metadata: { category, kind },
+      });
+    }
     toast.success("Resource added.");
     setOpen(false); setTitle(""); setDesc(""); setUrl(""); setKind("document"); setCategory("general"); setVisibilityRoles([]);
     void load();

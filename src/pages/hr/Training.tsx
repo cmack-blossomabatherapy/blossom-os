@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { AcademyEditor } from "@/components/training/AcademyEditor";
 import { StaffAssignDialog } from "@/components/training/StaffAssignDialog";
 import { TrackCoursesSortable } from "@/components/training/TrackCoursesSortable";
+import { LessonsQuizzesEditor } from "@/components/training/LessonsQuizzesEditor";
 
 type Course = {
   id: string; title: string; name: string; description: string | null;
@@ -58,6 +59,7 @@ export default function Training() {
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [staffAssignTrack, setStaffAssignTrack] = useState<Track | null>(null);
   const [trackRoleFilter, setTrackRoleFilter] = useState<"all" | "rbt" | "bcba">("all");
+  const [lessonsCourse, setLessonsCourse] = useState<Course | null>(null);
 
   useEffect(() => { void load(); }, []);
 
@@ -274,6 +276,7 @@ export default function Training() {
                     <div className="flex flex-wrap items-center gap-1">
                       <Button variant="ghost" size="sm" onClick={() => togglePin(c)} title={c.is_pinned ? "Unpin" : "Pin"}>{c.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}</Button>
                       <Button variant="ghost" size="sm" onClick={() => setAssignOpen(c)}><Send className="h-3.5 w-3.5 mr-1" /> Assign</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setLessonsCourse(c)}><ListChecks className="h-3.5 w-3.5 mr-1" /> Lessons</Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditor(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => duplicateCourse(c)} title="Duplicate">⧉</Button>
                       <Button variant="ghost" size="sm" onClick={() => toggleArchive(c)} title={c.is_active ? "Archive" : "Restore"}>{c.is_active ? <Archive className="h-3.5 w-3.5" /> : <ArchiveRestore className="h-3.5 w-3.5" />}</Button>
@@ -424,6 +427,12 @@ export default function Training() {
         trackName={staffAssignTrack?.name ?? ""}
         kind="training"
         onAssigned={load}
+      />
+
+      <LessonsQuizzesEditor
+        course={lessonsCourse ? { id: lessonsCourse.id, title: lessonsCourse.title } : null}
+        open={!!lessonsCourse}
+        onOpenChange={(o) => !o && setLessonsCourse(null)}
       />
 
       {/* COURSE EDITOR */}

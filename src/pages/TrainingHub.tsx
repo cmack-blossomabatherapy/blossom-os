@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, Flame, Play, Search, Sparkles, Layers, GraduationCap } from "lucide-react";
+import { Pin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -11,6 +12,8 @@ import { getStoredTrainingAssignments, getStoredTrainingBadges, getStoredTrainin
 import { GlassHero } from "@/components/shared/GlassHero";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const statusVariant = (status: string) => status === "Completed" ? "success" : status === "Overdue" ? "destructive" : status === "In Progress" ? "warning" : "muted";
 const executiveOnlyDepartmentIds = new Set(["exec", "ops", "systems", "hr", "finance"]);
@@ -32,6 +35,22 @@ export default function TrainingHub() {
   const [trainingCourses, setTrainingCourses] = useState<TrainingCourse[]>(() => getStoredTrainingCourses());
   const [assignments, setAssignments] = useState<TrainingAssignmentRecord[]>(() => getStoredTrainingAssignments());
   const [badges, setBadges] = useState<TrainingBadge[]>(() => getStoredTrainingBadges());
+  const [pinnedCourses, setPinnedCourses] = useState<Array<{ id: string; title: string; description: string | null; training_type: string; estimated_minutes: number; external_url: string | null }>>([]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("training_courses")
+        .select("id,title,description,training_type,estimated_minutes,external_url")
+        .eq("is_pinned", true)
+        .eq("is_active", true)
+        .order("title")
+        .limit(8);
+      if (active) setPinnedCourses((data ?? []) as never);
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const refresh = () => setTrainingCourses(getStoredTrainingCourses());
@@ -147,6 +166,38 @@ export default function TrainingHub() {
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {searched.slice(0, 6).map((course) => (
                 <CourseCard key={course.id} course={course} compact training={courseStatus(course)} quiz={quizResult(course)} />
+              ))}
+            </div>
+          </GlassPanel>
+        )}
+
+        {pinnedCourses.length > 0 && !query && (
+          <GlassPanel
+            title="Pinned by HR"
+            description="Highlighted trainings everyone should know about."
+            icon={Pin}
+            iconTone="warning"
+          >
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {pinnedCourses.map((p) => (
+                <a
+                  key={p.id}
+                  href={p.external_url ?? "#"}
+                  target={p.external_url ? "_blank" : undefined}
+                  rel={p.external_url ? "noreferrer noopener" : undefined}
+                  className="group rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 to-card p-4 transition-all hover:border-primary/60 hover:shadow-md"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <Pin className="h-4 w-4 text-primary fill-primary/30" />
+                    {p.external_url && <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground line-clamp-2">{p.title}</p>
+                  {p.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>}
+                  <div className="mt-3 flex items-center gap-2">
+                    <Badge variant="outline" className="h-5 text-[10px]">{p.training_type}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{p.estimated_minutes} min</span>
+                  </div>
+                </a>
               ))}
             </div>
           </GlassPanel>
