@@ -132,6 +132,7 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "Announcements",icon: Megaphone,      path: "/hr/announcements", perm: "hr.announcements.view" },
     { label: "Resource Hub", icon: BookOpen,       path: "/hr/resources", perm: "hr.resources.view" },
     { label: "HR Reports",   icon: BarChart3,      path: "/hr/reports",   perm: "hr.reports.view" },
+    { label: "Notifications",icon: Bell,           path: "/hr/notifications", perm: "hr.settings.manage" },
     { label: "HR Settings",  icon: Settings,       path: "/hr/settings",  perm: "hr.settings.manage" },
   ],
 };
