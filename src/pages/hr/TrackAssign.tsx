@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { GraduationCap, Search, Send, Users, CalendarIcon, Loader2, CheckCircle2, AlertTriangle, Compass, Trash2 } from "lucide-react";
+import { GraduationCap, Search, Send, Users, CalendarIcon, Loader2, CheckCircle2, AlertTriangle, Compass, Trash2, History, UserPlus, UserMinus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,17 @@ interface TrainingTrack { id: string; name: string; description: string | null; 
 interface AcademyTrack { id: string; name: string; description: string | null; is_active: boolean; }
 interface TrainingEnrollment { id: string; track_id: string; employee_id: string; status: string; due_date: string | null; completed_at: string | null; }
 interface AcademyEnrollment { id: string; track_id: string; employee_id: string; status: string; path: string; start_date: string; }
+interface AcademyAuditRow {
+  id: string;
+  action: "assigned" | "removed" | "updated";
+  employee_name: string | null;
+  track_name: string | null;
+  track_id: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
+  details: any;
+  created_at: string;
+}
 
 const trainingStatusMeta: Record<string, { label: string; tone: string }> = {
   assigned: { label: "Assigned", tone: "bg-muted text-muted-foreground" },
@@ -77,6 +88,23 @@ export default function TrackAssign() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmRemove, setConfirmRemove] = useState<{ id: string; name: string; table: "training_track_enrollments" | "academy_enrollments" } | null>(null);
+  const [auditRows, setAuditRows] = useState<AcademyAuditRow[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditScope, setAuditScope] = useState<"all" | "track">("all");
+
+  const loadAudit = async (trackId?: string) => {
+    setAuditLoading(true);
+    let q = supabase
+      .from("academy_enrollment_audit")
+      .select("id,action,employee_name,track_name,track_id,actor_name,actor_email,details,created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (trackId) q = q.eq("track_id", trackId);
+    const { data, error } = await q;
+    setAuditLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setAuditRows((data ?? []) as AcademyAuditRow[]);
+  };
 
   const loadAll = async () => {
     setLoading(true);
