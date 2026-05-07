@@ -20,6 +20,24 @@ import type {
   AcademyTrack, AcademyPhase, AcademyWeek, AcademyModule, AcademyModuleType, AcademyPath,
 } from "@/lib/academy/types";
 import { MODULE_TYPE_META } from "@/lib/academy/types";
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+function SortableRow({ id, disabled, children }: { id: string; disabled?: boolean; children: (handle: { attributes: any; listeners: any; setActivatorNodeRef: (el: HTMLElement | null) => void; isDragging: boolean }) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 30 : undefined, opacity: isDragging ? 0.85 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ attributes, listeners, setActivatorNodeRef, isDragging })}
+    </div>
+  );
+}
 
 type Flags = { is_pinned?: boolean; is_archived?: boolean; pinned_at?: string | null; archived_at?: string | null };
 type ModuleResource = { id: string; module_id: string; label: string; url: string | null; kind: string } & Flags;
@@ -41,6 +59,10 @@ export default function AcademyEditor() {
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // edit dialog state
   type EditTarget =
@@ -204,6 +226,49 @@ export default function AcademyEditor() {
     await load();
   }
 
+  async function persistOrder(table: "academy_phases" | "academy_weeks", field: "position" | "week_number", orderedIds: string[]) {
+    const updates = orderedIds.map((id, idx) =>
+      supabase.from(table as any).update({ [field]: idx + 1 }).eq("id", id),
+    );
+    const results = await Promise.all(updates);
+    const err = results.find((r) => r.error)?.error;
+    if (err) { toast.error(err.message); return; }
+    toast.success("Order updated");
+    await load();
+  }
+
+  function onPhaseDragEnd(e: DragEndEvent) {
+    if (!tree) return;
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = sortPinned(tree.phases).filter((p) => showArchived || !p.is_archived).map((p) => p.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    // optimistic
+    const map = new Map(tree.phases.map((p) => [p.id, p]));
+    setTree({ ...tree, phases: next.map((id, i) => ({ ...(map.get(id) as PhaseFull), position: i + 1 })) });
+    persistOrder("academy_phases", "position", next);
+  }
+
+  function onWeekDragEnd(phaseId: string, e: DragEndEvent) {
+    if (!tree) return;
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const phase = tree.phases.find((p) => p.id === phaseId);
+    if (!phase) return;
+    const ids = sortPinned(phase.weeks).filter((w) => showArchived || !w.is_archived).map((w) => w.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    const map = new Map(phase.weeks.map((w) => [w.id, w]));
+    const newWeeks = next.map((id, i) => ({ ...(map.get(id) as WeekFull), week_number: i + 1 }));
+    setTree({ ...tree, phases: tree.phases.map((p) => p.id === phaseId ? { ...p, weeks: newWeeks } : p) });
+    persistOrder("academy_weeks", "week_number", next);
+  }
+
   async function createTrack() {
     const { data, error } = await supabase.from("academy_tracks").insert({
       name: "Operations Academy", description: "Onboarding curriculum for office operations.", is_active: true,
@@ -279,10 +344,13 @@ export default function AcademyEditor() {
         {tree.phases.length === 0 && (
           <Card className="p-6 text-center text-sm text-muted-foreground">No phases yet. Add your first phase above.</Card>
         )}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onPhaseDragEnd}>
+        <SortableContext items={sortPinned(tree.phases).filter((p) => showArchived || !p.is_archived).map((p) => p.id)} strategy={verticalListSortingStrategy}>
         {sortPinned(tree.phases).filter((p) => showArchived || !p.is_archived).map((phase) => {
           const open = openPhases[phase.id] ?? true;
           return (
-            <Card key={phase.id} className={cn("overflow-hidden", phase.is_archived && "opacity-60", phase.is_pinned && "ring-1 ring-primary/40")}>
+            <SortableRow key={phase.id} id={phase.id}>{({ attributes, listeners, setActivatorNodeRef, isDragging }) => (
+            <Card className={cn("overflow-hidden mb-3", phase.is_archived && "opacity-60", phase.is_pinned && "ring-1 ring-primary/40", isDragging && "shadow-lg")}>
               <div className="flex flex-col gap-2 px-3 py-3 bg-muted/30 md:flex-row md:items-center md:justify-between md:gap-3 md:px-4">
                 <button className="flex items-center gap-2 flex-1 text-left flex-wrap min-w-0" onClick={() => setOpenPhases((s) => ({ ...s, [phase.id]: !open }))}>
                   {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
@@ -294,7 +362,16 @@ export default function AcademyEditor() {
                   {phase.is_archived && <Badge variant="outline" className="text-[10px]">Archived</Badge>}
                 </button>
                 <div className="flex items-center gap-1 flex-wrap">
-                  <IconBtn title="Move up" onClick={() => reorder("academy_phases", phase.id, "position", -1)}><GripVertical className="h-3.5 w-3.5 rotate-90" /></IconBtn>
+                  <button
+                    ref={setActivatorNodeRef}
+                    {...attributes}
+                    {...listeners}
+                    title="Drag to reorder"
+                    aria-label="Drag phase to reorder"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+                  >
+                    <GripVertical className="h-3.5 w-3.5" />
+                  </button>
                   <IconBtn title="Edit" onClick={() => setEdit({ kind: "phase", data: phase })}><Pencil className="h-3.5 w-3.5" /></IconBtn>
                   <IconBtn title={phase.is_pinned ? "Unpin" : "Pin"} onClick={() => togglePin("academy_phases", phase.id, !!phase.is_pinned)}>
                     {phase.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
@@ -314,10 +391,13 @@ export default function AcademyEditor() {
                   {phase.weeks.length === 0 && (
                     <p className="text-xs text-muted-foreground italic px-2">No weeks in this phase yet.</p>
                   )}
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => onWeekDragEnd(phase.id, e)}>
+                  <SortableContext items={sortPinned(phase.weeks).filter((w) => showArchived || !w.is_archived).map((w) => w.id)} strategy={verticalListSortingStrategy}>
                   {sortPinned(phase.weeks).filter((w) => showArchived || !w.is_archived).map((week) => {
                     const wOpen = openWeeks[week.id] ?? false;
                     return (
-                      <div key={week.id} className={cn("rounded-lg border border-border/60 bg-background", week.is_archived && "opacity-60", week.is_pinned && "ring-1 ring-primary/30")}>
+                      <SortableRow key={week.id} id={week.id}>{({ attributes: wAttrs, listeners: wListeners, setActivatorNodeRef: wActivator, isDragging: wDragging }) => (
+                      <div className={cn("rounded-lg border border-border/60 bg-background mb-2", week.is_archived && "opacity-60", week.is_pinned && "ring-1 ring-primary/30", wDragging && "shadow-md")}>
                         <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                           <button className="flex items-center gap-2 flex-1 text-left flex-wrap min-w-0" onClick={() => setOpenWeeks((s) => ({ ...s, [week.id]: !wOpen }))}>
                             {wOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -328,6 +408,16 @@ export default function AcademyEditor() {
                             {week.is_archived && <Badge variant="outline" className="text-[10px]">Archived</Badge>}
                           </button>
                           <div className="flex items-center gap-1 flex-wrap">
+                            <button
+                              ref={wActivator}
+                              {...wAttrs}
+                              {...wListeners}
+                              title="Drag to reorder"
+                              aria-label="Drag week to reorder"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+                            >
+                              <GripVertical className="h-3.5 w-3.5" />
+                            </button>
                             <IconBtn title="Edit" onClick={() => setEdit({ kind: "week", data: week })}><Pencil className="h-3.5 w-3.5" /></IconBtn>
                             <IconBtn title={week.is_pinned ? "Unpin" : "Pin"} onClick={() => togglePin("academy_weeks", week.id, !!week.is_pinned)}>
                               {week.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
@@ -426,13 +516,19 @@ export default function AcademyEditor() {
                           </div>
                         )}
                       </div>
+                      )}</SortableRow>
                     );
                   })}
+                  </SortableContext>
+                  </DndContext>
                 </div>
               )}
             </Card>
+            )}</SortableRow>
           );
         })}
+        </SortableContext>
+        </DndContext>
       </div>
 
       {/* Edit dialog */}
