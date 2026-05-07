@@ -559,7 +559,7 @@ function EditForm({ edit, setEdit }: { edit: any; setEdit: (e: any) => void }) {
       <div className="space-y-3">
         <Field label="Name"><Input value={d.name ?? ""} onChange={(e) => update({ name: e.target.value })} /></Field>
         <Field label="Tagline"><Input value={d.tagline ?? ""} onChange={(e) => update({ tagline: e.target.value })} /></Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Position"><Input type="number" value={d.position ?? ""} onChange={(e) => update({ position: parseInt(e.target.value) || 0 })} /></Field>
           <Field label="Color">
             <Select value={d.color_token ?? "primary"} onValueChange={(v) => update({ color_token: v })}>
@@ -591,7 +591,7 @@ function EditForm({ edit, setEdit }: { edit: any; setEdit: (e: any) => void }) {
       <div className="space-y-3">
         <Field label="Title"><Input value={d.title ?? ""} onChange={(e) => update({ title: e.target.value })} /></Field>
         <Field label="Description"><Textarea rows={3} value={d.description ?? ""} onChange={(e) => update({ description: e.target.value })} /></Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Type">
             <Select value={d.module_type ?? "training"} onValueChange={(v) => update({ module_type: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -737,7 +737,7 @@ function AIGenerateDialog({
               </Select>
             </Field>
           )}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Tone">
               <Select value={tone} onValueChange={(v) => setTone(v as any)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
