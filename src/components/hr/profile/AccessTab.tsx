@@ -381,6 +381,24 @@ export function AccessTab({ employee }: { employee: Employee }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unlink login</DialogTitle>
+            <DialogDescription>
+              This will disconnect the Blossom OS login from {employee.first_name} {employee.last_name}'s employee record. The user account itself stays active — you can re-link any login later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setUnlinkOpen(false)} disabled={unlinking}>Cancel</Button>
+            <Button variant="destructive" onClick={unlinkLogin} disabled={unlinking}>
+              {unlinking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unlink className="h-3.5 w-3.5" />}
+              Unlink
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">System access</h3>
         <div className="space-y-2">
