@@ -30,7 +30,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
 
   const submitSearch = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && q.trim()) {
-      navigate(`/hr/journey?q=${encodeURIComponent(q.trim())}`);
+      navigate(`/training?q=${encodeURIComponent(q.trim())}`);
     }
   };
 

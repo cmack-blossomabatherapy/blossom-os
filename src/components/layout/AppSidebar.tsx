@@ -267,7 +267,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
   const submitNavSearch = (q: string, isMobile: boolean) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || !q.trim()) return;
-    const target = `/hr/journey?q=${encodeURIComponent(q.trim())}`;
+    const target = `/training?q=${encodeURIComponent(q.trim())}`;
     navigate(target);
     if (isMobile) onMobileOpenChange?.(false);
   };
