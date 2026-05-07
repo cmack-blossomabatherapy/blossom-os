@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as LinkIcon, Mail, Send } from "lucide-react";
+import { CheckCircle2, XCircle, GraduationCap, Loader2, ShieldCheck, Link as LinkIcon, Mail, Send, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/lib/hr/types";
 import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
@@ -20,6 +22,9 @@ export function AccessTab({ employee }: { employee: Employee }) {
   const [saving, setSaving] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
   const [linkResult, setLinkResult] = useState<string | null>(null);
+  const [linkLoginOpen, setLinkLoginOpen] = useState(false);
+  const [linkEmail, setLinkEmail] = useState(employee.email ?? "");
+  const [linkingLogin, setLinkingLogin] = useState(false);
 
   useEffect(() => {
     if (!employee.user_id) {
@@ -101,6 +106,29 @@ export function AccessTab({ employee }: { employee: Employee }) {
     }
   }
 
+  async function linkExistingLogin() {
+    const email = linkEmail.trim().toLowerCase();
+    if (!email) { toast.error("Enter an email to link."); return; }
+    setLinkingLogin(true);
+    const { data, error } = await supabase.functions.invoke("admin-link-employee-login", {
+      body: { employeeId: employee.id, email, siteUrl: window.location.origin, notify: true },
+    });
+    setLinkingLogin(false);
+    if (error) { toast.error(error.message); return; }
+    if (data?.error) { toast.error(data.error); return; }
+    if (data?.emailSent) {
+      toast.success(`Linked ${data.email}. Notification emailed.`);
+    } else if (data?.emailError) {
+      toast.success(`Linked ${data.email}.`);
+      toast.warning(`Could not email notification: ${data.emailError}`);
+    } else {
+      toast.success(`Linked ${data?.email ?? email}.`);
+    }
+    setLinkLoginOpen(false);
+    // Force refresh of parent record
+    window.location.reload();
+  }
+
   const roleToggles: { key: AppRole; title: string; desc: string; icon: typeof GraduationCap }[] = [
     {
       key: "training_admin",
@@ -121,6 +149,28 @@ export function AccessTab({ employee }: { employee: Employee }) {
             </Badge>
           )}
         </div>
+        {!employee.user_id && (
+          <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-3">
+            <div className="h-9 w-9 rounded-lg bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+              <Link2 className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Link an existing Blossom OS login</p>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Already signed in once with Google or a magic link? One-click connect their account so Operations Academy and the Resource Hub light up.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setLinkEmail(employee.email ?? ""); setLinkLoginOpen(true); }}
+              disabled={!canSendLink}
+              className="shrink-0"
+            >
+              <Link2 className="h-3.5 w-3.5" /> Link login
+            </Button>
+          </div>
+        )}
         <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 p-3">
           <div className="flex items-start gap-3">
             <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
@@ -211,6 +261,34 @@ export function AccessTab({ employee }: { employee: Employee }) {
           )}
         </div>
       </Card>
+
+      <Dialog open={linkLoginOpen} onOpenChange={setLinkLoginOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link existing login</DialogTitle>
+            <DialogDescription>
+              Enter the email of an existing Blossom OS account. We'll connect it to this employee record and email them a confirmation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Account email</label>
+            <Input
+              type="email"
+              value={linkEmail}
+              onChange={(e) => setLinkEmail(e.target.value)}
+              placeholder="user@example.com"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLinkLoginOpen(false)} disabled={linkingLogin}>Cancel</Button>
+            <Button onClick={linkExistingLogin} disabled={linkingLogin || !linkEmail.trim()}>
+              {linkingLogin ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+              Link &amp; notify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">System access</h3>
