@@ -26,7 +26,7 @@ export function TrainingModulesGrid({ modules, completed, onToggle }: Props) {
   const active = modules.find((m) => m.id === openId) ?? null;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-6">
+    <div className="glass-surface rounded-3xl p-5 md:p-6">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-foreground">Training modules</h3>
         <p className="text-xs text-muted-foreground mt-0.5">Click a module to see links, materials, and your training contact.</p>

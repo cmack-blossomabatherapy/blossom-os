@@ -22,7 +22,7 @@ export function CurrentStagePanel({ step, status, onMarkComplete, canComplete = 
   const Icon = step.icon;
   const isComplete = status === "completed";
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-6">
+    <div className="glass-surface rounded-3xl p-5 md:p-6">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-start gap-3">
           <div className={cn(

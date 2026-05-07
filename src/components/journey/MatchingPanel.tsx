@@ -10,7 +10,7 @@ interface Props {
 export function MatchingPanel({ matching, variant }: Props) {
   const isAssigned = variant === "assigned";
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-6">
+    <div className="glass-surface rounded-3xl p-5 md:p-6">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-foreground">
           {isAssigned ? "Your case" : "Matching"}
