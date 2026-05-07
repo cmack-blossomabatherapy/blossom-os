@@ -30,9 +30,9 @@ export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr",
 export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationException>> = {
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
-  hr: { sectionTitles: ["HR Suite"] },
-  hr_admin: { sectionTitles: ["HR Suite"] },
-  hr_manager: { sectionTitles: ["HR Suite"] },
+  hr: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_admin: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
+  hr_manager: { sectionTitles: ["HR Suite"], itemPaths: ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
   rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
   bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
 };
