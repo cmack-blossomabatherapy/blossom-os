@@ -156,24 +156,77 @@ Deno.serve(async (req) => {
   }
 
   const firstName = employee.first_name?.split(" ")[0] ?? "";
-  const greeting = firstName ? `Welcome to Blossom, ${escapeHtml(firstName)}!` : "Welcome to Blossom!";
-  const html = `
-    <div style="margin:0;padding:0;background:#f6fbfc;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#18313a;">
-      <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
-        <div style="background:#ffffff;border:1px solid #dcebed;border-radius:18px;overflow:hidden;box-shadow:0 18px 44px rgba(57,153,170,0.14);">
-          <div style="background:linear-gradient(135deg,#3999AA,#5bb7c6);padding:28px 30px;color:#ffffff;">
-            <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.86;">Blossom ABA Therapy</div>
-            <h1 style="margin:12px 0 0;font-size:28px;line-height:1.2;font-weight:750;">${greeting}</h1>
-            <p style="margin:10px 0 0;font-size:15px;line-height:1.55;opacity:0.92;">Click the button below to sign in. After your first sign-in you'll be asked to create your password.</p>
-          </div>
-          <div style="padding:28px 30px;">
-            <a href="${escapeHtml(magicLink)}" style="display:inline-block;background:#3999AA;color:#ffffff;text-decoration:none;border-radius:10px;padding:13px 18px;font-size:14px;font-weight:750;box-shadow:0 12px 26px rgba(57,153,170,0.25);">Sign in to Blossom</a>
-            <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#667f87;">This sign-in link will expire shortly. If it expires, ask an admin to send another one.</p>
-            <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#31505a;">Welcome aboard,<br /><strong>The Blossom team</strong></p>
-          </div>
+  const greeting = firstName ? `Welcome, ${escapeHtml(firstName)}!` : "Welcome to Blossom!";
+  const safeLink = escapeHtml(magicLink);
+  const html = `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Activate your Blossom account</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f7fb;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Activate your Blossom account and set your password.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <tr><td align="center" style="padding:40px 16px;">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,0.08);border:1px solid #e6edf5;">
+      <tr><td style="padding:32px 36px 0;">
+        <div style="font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#2B7BD5;">Blossom ABA Therapy</div>
+      </td></tr>
+      <tr><td style="padding:18px 36px 8px;">
+        <h1 style="margin:0;font-size:26px;line-height:1.25;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">${greeting}</h1>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#475569;">Your Blossom OS account is ready. Use the secure link below to sign in for the first time and finish setting up your account.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:28px 36px 8px;">
+        <a href="${safeLink}" style="display:inline-block;background:#2B7BD5;color:#ffffff;text-decoration:none;border-radius:10px;padding:14px 26px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(43,123,213,0.28);">Activate my account</a>
+      </td></tr>
+      <tr><td style="padding:8px 36px 0;">
+        <p style="margin:16px 0 0;font-size:13px;line-height:1.55;color:#64748b;">Or paste this link into your browser:<br />
+          <a href="${safeLink}" style="color:#2B7BD5;word-break:break-all;">${safeLink}</a>
+        </p>
+      </td></tr>
+      <tr><td style="padding:28px 36px 0;">
+        <div style="background:#f8fafc;border:1px solid #e6edf5;border-radius:14px;padding:20px 22px;">
+          <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f172a;">What happens next</div>
+          <ol style="margin:12px 0 0;padding-left:20px;color:#334155;font-size:14px;line-height:1.7;">
+            <li><strong>Click “Activate my account”</strong> above to sign in securely.</li>
+            <li><strong>Create your password</strong> — you'll be prompted to set one on first sign-in.</li>
+            <li><strong>Complete your profile</strong> and review your dashboard in Blossom OS.</li>
+            <li><strong>Reach out to HR</strong> if anything looks off or you need help.</li>
+          </ol>
         </div>
-      </div>
-    </div>`;
+      </td></tr>
+      <tr><td style="padding:24px 36px 0;">
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
+          🔒 This link expires in 1 hour and can only be used once. If it expires, ask your admin to send a new one. If you weren't expecting this email, you can safely ignore it.
+        </p>
+      </td></tr>
+      <tr><td style="padding:28px 36px 32px;">
+        <hr style="border:none;border-top:1px solid #e6edf5;margin:0 0 20px;" />
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#0f172a;">Welcome aboard,<br /><strong>The Blossom Team</strong></p>
+        <p style="margin:14px 0 0;font-size:12px;color:#94a3b8;">Blossom ABA Therapy · This is an automated message from Blossom OS.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+  const textBody = [
+    greeting.replace(/!$/, ""),
+    "",
+    "Your Blossom OS account is ready. Use the link below to sign in and finish setting up your account.",
+    "",
+    `Activate your account: ${magicLink}`,
+    "",
+    "What happens next:",
+    "1. Click the link above to sign in securely.",
+    "2. Create your password — you'll be prompted to set one on first sign-in.",
+    "3. Complete your profile and review your Blossom OS dashboard.",
+    "4. Reach out to HR if anything looks off or you need help.",
+    "",
+    "This link expires in 1 hour and can only be used once.",
+    "",
+    "Welcome aboard,",
+    "The Blossom Team",
+  ].join("\n");
 
   const response = await fetch(`${RESEND_GATEWAY_URL}/emails`, {
     method: "POST",
@@ -184,8 +237,9 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       from: FROM_EMAIL, to: [email],
-      subject: "Your Blossom sign-in link",
+      subject: "Activate your Blossom OS account",
       html,
+      text: textBody,
     }),
   });
   const text = await response.text();
