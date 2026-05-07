@@ -565,6 +565,9 @@ export default function Training() {
       {/* ASSIGN DIALOG */}
       <AssignDialog course={assignOpen} onClose={() => setAssignOpen(null)} onAssign={quickAssign} />
 
+      {/* BULK ASSIGN DIALOG */}
+      <BulkAssignDialog open={bulkAssignOpen} count={selected.size} onClose={() => setBulkAssignOpen(false)} onAssign={bulkAssign} />
+
       {/* TRACK EDITOR */}
       <Dialog open={!!trackEditor} onOpenChange={(o) => !o && setTrackEditor(null)}>
         <DialogContent>
