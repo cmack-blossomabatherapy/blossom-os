@@ -140,6 +140,10 @@ export default function TrackAssign() {
 
   useEffect(() => { void loadAll(); }, []);
   useEffect(() => { setSelected(new Set()); setSelectedTrack(""); }, [mode]);
+  useEffect(() => {
+    if (mode !== "academy") return;
+    void loadAudit(auditScope === "track" ? selectedTrack || undefined : undefined);
+  }, [mode, auditScope, selectedTrack]);
 
   const tracks = mode === "training" ? trainingTracks : academyTracks;
   const currentTrack = tracks.find((t) => t.id === selectedTrack) ?? null;
