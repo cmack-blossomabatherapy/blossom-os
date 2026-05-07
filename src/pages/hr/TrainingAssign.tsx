@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CalendarIcon, CheckCircle2, ClipboardList, Clock, Loader2, Search, Send, Users } from "lucide-react";
+import { AlertTriangle, CalendarIcon, CheckCircle2, ClipboardList, Clock, Loader2, Search, Send, UserPlus, Users, Inbox } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
+import { StateView } from "@/components/shared/StateView";
 
 type RoleFilter = "all" | "rbt" | "bcba";
 type AssignmentStatus = "assigned" | "in_progress" | "completed" | "overdue" | "expired";
@@ -45,6 +46,7 @@ export default function TrainingAssign() {
   const canAssign = hasPerm("hr.training.assign") || hasPerm("hr.training.manage");
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -59,12 +61,19 @@ export default function TrainingAssign() {
 
   const loadAll = async () => {
     setLoading(true);
+    setError(null);
     const [c, e, ur, a] = await Promise.all([
       supabase.from("training_courses").select("id,title,name,category").eq("status", "active").order("title"),
       supabase.from("employees").select("id,user_id,first_name,last_name,job_title,clinic").eq("status", "active"),
       supabase.from("user_roles").select("user_id,role").in("role", ["rbt", "bcba"]),
       supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date,completed_at,assigned_at"),
     ]);
+    const firstError = c.error || e.error || ur.error || a.error;
+    if (firstError) {
+      setError(firstError.message);
+      setLoading(false);
+      return;
+    }
     const empList = (e.data as EmployeeRow[]) ?? [];
     const userIdToRoles = new Map<string, string[]>();
     ((ur.data as { user_id: string; role: string }[]) ?? []).forEach((r) => {
@@ -159,7 +168,19 @@ export default function TrainingAssign() {
   };
 
   if (loading) {
-    return <div className="p-8 flex items-center gap-3 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
+    return (
+      <GlassPageShell eyebrow="Training Admin" eyebrowIcon={ClipboardList} title="Assign Trainings" description="Loading training assignment data…">
+        <GlassPanel><StateView variant="loading" title="Loading assignments" description="Pulling courses, learners, and existing assignments." /></GlassPanel>
+      </GlassPageShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <GlassPageShell eyebrow="Training Admin" eyebrowIcon={ClipboardList} title="Assign Trainings" description="We hit a snag loading this view.">
+        <GlassPanel><StateView variant="error" title="Couldn't load assignment data" description={error} onRetry={loadAll} /></GlassPanel>
+      </GlassPageShell>
+    );
   }
 
   return (
@@ -228,9 +249,12 @@ export default function TrainingAssign() {
         </CardHeader>
         <CardContent className="p-0">
           {eligibleEmployees.length === 0 ? (
-            <div className="p-10 text-center text-sm text-muted-foreground">
-              No employees have the RBT or BCBA role yet. Assign roles in <span className="font-medium">Team</span> or an employee profile to enable training assignments here.
-            </div>
+            <StateView
+              variant="empty"
+              icon={UserPlus}
+              title="No eligible learners yet"
+              description="No employees have the RBT or BCBA role. Assign roles in Team or an employee profile to enable training assignments."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -297,7 +321,7 @@ export default function TrainingAssign() {
                   );
                 })}
                 {filteredEmployees.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No employees match your filters.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="p-0"><StateView variant="empty" compact icon={Search} title="No matches" description="No employees match your search and role filters." /></TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
