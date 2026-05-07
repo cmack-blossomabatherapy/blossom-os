@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Compass, Users, ArrowRight, Calendar, GraduationCap, Target, BookMarked, Flame, Trophy } from "lucide-react";
+import { Sparkles, Compass, Users, ArrowRight, Calendar, GraduationCap, Target, BookMarked, Flame, Trophy, LibraryBig } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { loadCurriculum, getMyEnrollment, listProgress, listShadowSessions, listCheckins, computeReadiness, enrollEmployee } from "@/lib/academy/api";
@@ -134,9 +134,13 @@ export default function AcademyHome() {
                   No employee record linked to your account. Ask HR to link your login.
                 </div>
               )}
-              {hasPerm("hr.training.view") && (
+              {hasPerm("hr.training.manage") ? (
                 <Link to="/training/academy/leadership" className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
                   Leadership cohort dashboard <ArrowRight className="h-3 w-3" />
+                </Link>
+              ) : (
+                <Link to="/hr/resources" className="mt-4 inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+                  <LibraryBig className="h-3 w-3" /> Browse the Resource Hub <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
             </div>
