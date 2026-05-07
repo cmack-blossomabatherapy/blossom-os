@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { AcademyEditor } from "@/components/training/AcademyEditor";
+import { StaffAssignDialog } from "@/components/training/StaffAssignDialog";
 
 type Course = {
   id: string; title: string; name: string; description: string | null;
@@ -53,6 +55,7 @@ export default function Training() {
   const [assignOpen, setAssignOpen] = useState<Course | null>(null);
   const [trackEditor, setTrackEditor] = useState<Partial<Track> | null>(null);
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
+  const [staffAssignTrack, setStaffAssignTrack] = useState<Track | null>(null);
 
   useEffect(() => { void load(); }, []);
 
@@ -216,6 +219,7 @@ export default function Training() {
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="catalog">Catalog ({courses.length})</TabsTrigger>
           <TabsTrigger value="tracks">Tracks ({tracks.length})</TabsTrigger>
+          <TabsTrigger value="academy">Operations Academy</TabsTrigger>
           <TabsTrigger value="assignments">Assignments ({assignments.length})</TabsTrigger>
         </TabsList>
 
@@ -287,7 +291,10 @@ export default function Training() {
                       <h3 className="text-lg font-bold">{activeTrack.name}</h3>
                       <p className="text-xs text-muted-foreground">{activeTrack.description}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => setTrackEditor(activeTrack)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => setStaffAssignTrack(activeTrack)}><Users className="h-3.5 w-3.5 mr-1" /> Assign staff</Button>
+                      <Button size="sm" variant="outline" onClick={() => setTrackEditor(activeTrack)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
+                    </div>
                   </div>
 
                   <div>
@@ -355,7 +362,20 @@ export default function Training() {
             </div>
           </GlassPanel>
         </TabsContent>
+
+        {/* ACADEMY EDITOR */}
+        <TabsContent value="academy">
+          <AcademyEditor />
+        </TabsContent>
       </Tabs>
+      <StaffAssignDialog
+        open={!!staffAssignTrack}
+        onClose={() => setStaffAssignTrack(null)}
+        trackId={staffAssignTrack?.id ?? null}
+        trackName={staffAssignTrack?.name ?? ""}
+        kind="training"
+        onAssigned={load}
+      />
 
       {/* COURSE EDITOR */}
       <Dialog open={!!editor} onOpenChange={(o) => !o && setEditor(null)}>
