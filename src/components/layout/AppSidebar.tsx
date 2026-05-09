@@ -28,6 +28,8 @@ interface NavItem {
   superAdminOnly?: boolean;
   /** If set, the item is only visible when the user has at least one of these roles. */
   allowedRoles?: string[];
+  /** If true, the item is shown but visually disabled and non-interactive. */
+  disabled?: boolean;
 }
 
 interface NavSection {
@@ -276,14 +278,24 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   }
 
   const baseSections = allSections
-    .map((s) => ({
-      ...s,
-        items: s.items.filter((item) =>
-          (!item.superAdminOnly || isAdmin) &&
-          (!item.perm || hasPerm(item.perm)) &&
-          (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never))),
-        ),
-    }))
+    .map((s) => {
+      const isEnterprise = s.title === "Enterprise";
+      return {
+        ...s,
+        items: s.items
+          .map((item) => {
+            const accessible =
+              (!item.superAdminOnly || isAdmin) &&
+              (!item.perm || hasPerm(item.perm)) &&
+              (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never)));
+            if (isEnterprise) {
+              return { ...item, disabled: !accessible };
+            }
+            return accessible ? item : null;
+          })
+          .filter(Boolean) as NavItem[],
+      };
+    })
     .filter((s) => s.items.length > 0);
 
   const filterSectionsByQuery = (q: string) => {
@@ -406,6 +418,22 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 {sectionOpen && <div className="mt-2 space-y-1 rounded-2xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-xl animate-fade-in">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
+                    if (item.disabled) {
+                      return (
+                        <button
+                          key={item.path}
+                          type="button"
+                          aria-disabled="true"
+                          className="mobile-menu-item w-full cursor-not-allowed opacity-50"
+                        >
+                          <span className="mobile-menu-icon"><Lock className="h-4 w-4" /></span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{item.label}</span>
+                            <span className="block truncate text-[11px] font-normal text-muted-foreground">Access restricted</span>
+                          </span>
+                        </button>
+                      );
+                    }
                     if (item.path === "/training" && !academyComplete) {
                       return (
                         <button
@@ -491,23 +519,44 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               </button>
             )}
             {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5 md:pl-1">
-              {section.items.map((item) => (
-                item.path === "/training" && !academyComplete ? (
-                  <Tooltip key={item.path}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={(e) => e.preventDefault()}
-                        aria-disabled="true"
-                        className={cn("nav-item nav-item-inactive w-full cursor-not-allowed opacity-50")}
-                      >
-                        <Lock className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Unlocks after you finish Operations Academy</TooltipContent>
-                  </Tooltip>
-                ) : (
+              {section.items.map((item) => {
+                if (item.disabled) {
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={(e) => e.preventDefault()}
+                          aria-disabled="true"
+                          className={cn("nav-item nav-item-disabled w-full")}
+                        >
+                          <Lock className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Access restricted</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+                if (item.path === "/training" && !academyComplete) {
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={(e) => e.preventDefault()}
+                          aria-disabled="true"
+                          className={cn("nav-item nav-item-inactive w-full cursor-not-allowed opacity-50")}
+                        >
+                          <Lock className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">Unlocks after you finish Operations Academy</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+                return (
                 <NavLink
                   key={item.path}
                   to={item.path}
@@ -520,8 +569,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                   <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
-                )
-              ))}
+                );
+              })}
             </div>}
           </div>
         );
