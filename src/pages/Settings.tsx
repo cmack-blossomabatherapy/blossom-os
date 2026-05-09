@@ -19,6 +19,7 @@ import { SopRankingPanel } from "@/components/settings/SopRankingPanel";
 import { PushNotificationsPanel } from "@/components/settings/PushNotificationsPanel";
 import { AlertAuditLogPanel } from "@/components/settings/AlertAuditLogPanel";
 import { AlertSlaPanel } from "@/components/settings/AlertSlaPanel";
+import { OnboardingAllowlistPanel } from "@/components/settings/OnboardingAllowlistPanel";
 import type { SettingsSectionId } from "@/data/settings";
 
 export default function SettingsPage() {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
           {active === "automation-rules" && <AutomationRulesPanel />}
           {active === "roles" && <RolesPanel />}
           {active === "assignment-rules" && <AssignmentRulesPanel />}
+          {active === "onboarding-allowlist" && <OnboardingAllowlistPanel />}
           {active === "email-templates" && <TemplatesPanel channel="Email" />}
           {active === "sms-templates" && <TemplatesPanel channel="SMS" />}
           {active === "document-types" && <DocumentTypesPanel />}
