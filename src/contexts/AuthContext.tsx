@@ -7,6 +7,7 @@ import {
   enforceRememberPolicyOnBoot,
   touchSessionMarker,
 } from "@/lib/rememberSession";
+import { startOnboardingSync, stopOnboardingSync } from "@/lib/onboarding/sync";
 
 interface AuthContextValue {
   session: Session | null;
@@ -140,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    stopOnboardingSync();
     await supabase.auth.signOut();
     clearRememberPreference();
     setRoles([]);
@@ -147,6 +149,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPartOfLeadership(false);
     setDashboardAccess(null);
   };
+
+  // Start (or restart) onboarding sync whenever the signed-in user changes.
+  useEffect(() => {
+    if (user?.id) {
+      void startOnboardingSync(user.id);
+    } else {
+      stopOnboardingSync();
+    }
+  }, [user?.id]);
 
   const updatePassword = async (newPassword: string) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
