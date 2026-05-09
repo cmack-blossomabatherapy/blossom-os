@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSlaRules, severityForSync, type SlaRule } from "@/lib/alerts/sla";
 
-export type AlertCategory = "task" | "approval" | "overdue";
+export type AlertCategory = "task" | "approval" | "overdue" | "compliance";
 export type AlertSeverity = "info" | "warning" | "critical";
 
 export interface MobileAlert {
