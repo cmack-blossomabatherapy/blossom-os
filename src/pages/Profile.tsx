@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { resetOnboarding, setPreviewLocked } from "@/lib/onboarding/storage";
+import { PathSwitcher } from "@/components/onboarding/PathSwitcher";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -71,12 +72,12 @@ export default function Profile() {
         <div className="mt-3 flex flex-wrap gap-2">
           {!ob.isComplete && (
             <Button asChild size="sm">
-              <Link to={ob.nextStep?.path || "/onboarding"}>Continue onboarding</Link>
+              <Link to={ob.nextPhase?.path || "/onboarding"}>Continue onboarding</Link>
             </Button>
           )}
           {ob.status === "completed" && (
             <Button asChild size="sm" variant="outline">
-              <Link to="/onboarding/complete">View certificate</Link>
+              <Link to="/onboarding/graduation">View certificate</Link>
             </Button>
           )}
           {ob.bypassReal && (
@@ -90,6 +91,26 @@ export default function Profile() {
             </>
           )}
         </div>
+        <div className="mt-4 space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Onboarding path</p>
+          <PathSwitcher path={ob.path} disabled={ob.isComplete && !ob.bypassReal} />
+        </div>
+        {ob.phaseProgress.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Phases</p>
+            <div className="space-y-1.5">
+              {ob.phaseProgress.filter((p) => p.phase.id !== "graduation").map((p) => (
+                <div key={p.phase.id}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-foreground">{p.phase.weekLabel} — {p.phase.title}</span>
+                    <span className="tabular-nums text-muted-foreground">{p.done}/{p.total}</span>
+                  </div>
+                  <Progress value={p.percent} className="h-1" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
