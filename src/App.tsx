@@ -190,6 +190,7 @@ const App = () => (
                   <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
