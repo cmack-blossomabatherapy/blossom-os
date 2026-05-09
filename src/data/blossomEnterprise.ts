@@ -1,147 +1,8 @@
-// Phase 6 — Enterprise mock data. Shapes mirror eventual Supabase tables.
-// All values are illustrative; no live integrations yet.
+// Phase 6 Enterprise mock data — typed, deterministic, no API calls.
 
 export type Severity = "low" | "medium" | "high" | "critical";
-export type TrendDir = "up" | "down" | "flat";
-
-/* ============== Workforce Readiness Index ============== */
-export interface ReadinessFactor {
-  key: string;
-  label: string;
-  score: number;
-  weight: number;
-  trend: TrendDir;
-  delta: number;
-}
-
-export interface ReadinessBreakdown {
-  id: string;
-  scope: "department" | "state" | "manager" | "clinic";
-  name: string;
-  score: number;
-  headcount: number;
-  trend: TrendDir;
-  delta: number;
-}
-
-export const readinessScore = {
-  composite: 87,
-  trend: "up" as TrendDir,
-  delta: 3,
-  history: [78, 79, 81, 80, 83, 84, 85, 86, 87],
-  asOf: "Today",
-  factors: [
-    { key: "onboarding", label: "Onboarding completion", score: 92, weight: 0.18, trend: "up" as TrendDir, delta: 4 },
-    { key: "compliance", label: "Compliance & certs", score: 88, weight: 0.20, trend: "up" as TrendDir, delta: 2 },
-    { key: "competencies", label: "Competencies verified", score: 84, weight: 0.18, trend: "flat" as TrendDir, delta: 0 },
-    { key: "training", label: "Operational training", score: 90, weight: 0.16, trend: "up" as TrendDir, delta: 5 },
-    { key: "engagement", label: "Engagement & culture", score: 81, weight: 0.14, trend: "up" as TrendDir, delta: 3 },
-    { key: "tasks", label: "Task completion", score: 85, weight: 0.14, trend: "down" as TrendDir, delta: -1 },
-  ] as ReadinessFactor[],
-};
-
-export const readinessBreakdowns: ReadinessBreakdown[] = [
-  { id: "intake", scope: "department", name: "Intake", score: 91, headcount: 14, trend: "up", delta: 4 },
-  { id: "auth", scope: "department", name: "Authorizations", score: 86, headcount: 9, trend: "up", delta: 2 },
-  { id: "scheduling", scope: "department", name: "Scheduling", score: 78, headcount: 12, trend: "down", delta: -3 },
-  { id: "qa", scope: "department", name: "QA & Compliance", score: 74, headcount: 8, trend: "down", delta: -5 },
-  { id: "clinical", scope: "department", name: "Clinical", score: 89, headcount: 142, trend: "up", delta: 2 },
-  { id: "fl", scope: "state", name: "Florida", score: 90, headcount: 78, trend: "up", delta: 3 },
-  { id: "ga", scope: "state", name: "Georgia", score: 79, headcount: 52, trend: "down", delta: -2 },
-  { id: "tx", scope: "state", name: "Texas", score: 86, headcount: 31, trend: "up", delta: 4 },
-  { id: "nc", scope: "state", name: "North Carolina", score: 84, headcount: 18, trend: "flat", delta: 0 },
-  { id: "tn", scope: "state", name: "Tennessee", score: 81, headcount: 12, trend: "up", delta: 2 },
-];
-
-/* ============== Compliance & Audit ============== */
-export interface ComplianceItem {
-  id: string;
-  title: string;
-  category: "Certification" | "Policy" | "Training" | "Signature" | "Audit";
-  status: "ok" | "expiring" | "overdue" | "missing";
-  owner: string;
-  expiresOn?: string;
-  daysOut?: number;
-}
-
-export const complianceItems: ComplianceItem[] = [
-  { id: "c1", title: "BCBA Certification — A. Park", category: "Certification", status: "expiring", owner: "Aaron Park", expiresOn: "2026-06-12", daysOut: 33 },
-  { id: "c2", title: "RBT 40-hr Renewal — M. Chen", category: "Training", status: "overdue", owner: "Mei Chen", expiresOn: "2026-04-22", daysOut: -16 },
-  { id: "c3", title: "HIPAA Annual Acknowledgement", category: "Policy", status: "expiring", owner: "All Staff", expiresOn: "2026-06-30", daysOut: 51 },
-  { id: "c4", title: "Background Check — J. Rivera", category: "Audit", status: "ok", owner: "Jordan Rivera", expiresOn: "2027-01-10" },
-  { id: "c5", title: "CPR Certification — D. Singh", category: "Certification", status: "missing", owner: "Devorah Singh" },
-  { id: "c6", title: "PHI Handling Signature — New Hires", category: "Signature", status: "expiring", owner: "Onboarding", expiresOn: "2026-05-25", daysOut: 16 },
-];
-
-export interface AuditPacket {
-  id: string;
-  name: string;
-  range: string;
-  itemCount: number;
-  status: "draft" | "ready" | "exported";
-}
-
-export const auditPackets: AuditPacket[] = [
-  { id: "ap1", name: "Q2 2026 Compliance Packet", range: "Apr–Jun 2026", itemCount: 142, status: "draft" },
-  { id: "ap2", name: "Florida State Audit", range: "Last 12 months", itemCount: 318, status: "ready" },
-  { id: "ap3", name: "Annual HIPAA Acknowledgements", range: "2025", itemCount: 89, status: "exported" },
-];
-
-/* ============== AI Course Studio ============== */
-export interface CourseSource {
-  id: string;
-  kind: "SOP" | "Tango" | "Loom" | "PDF" | "Video" | "Notes";
-  title: string;
-  meta: string;
-}
-
-export const courseSources: CourseSource[] = [
-  { id: "s1", kind: "SOP", title: "Initial VOB Process", meta: "12 steps · 1.4k words" },
-  { id: "s2", kind: "Tango", title: "Adding a Client to CentralReach", meta: "23 steps" },
-  { id: "s3", kind: "Loom", title: "Scheduling Conflict Walkthrough", meta: "8m 14s" },
-  { id: "s4", kind: "PDF", title: "Authorization Denial Playbook", meta: "9 pages" },
-  { id: "s5", kind: "Video", title: "Parent Intake Call Demo", meta: "12m 02s" },
-  { id: "s6", kind: "Notes", title: "QA Review Checklist Notes", meta: "Pasted text" },
-];
-
-export interface GeneratedModule {
-  id: string;
-  title: string;
-  objectives: string[];
-  summary: string;
-  quizQuestions: number;
-  durationMin: number;
-  scenarios: number;
-}
-
-export const generatedCourse = {
-  title: "VOB Mastery — From Lead to Verified",
-  competency: "Verification of Benefits",
-  level: "Intermediate" as "Beginner" | "Intermediate" | "Advanced",
-  tone: "Warm professional",
-  role: "Intake Coordinator",
-  totalMin: 42,
-  modules: [
-    { id: "m1", title: "Why VOB Matters", objectives: ["Explain VOB role in revenue", "Identify common payors", "Recognize red flags"], summary: "Sets the stage with the business and family impact of accurate VOBs.", quizQuestions: 4, durationMin: 8, scenarios: 1 },
-    { id: "m2", title: "Submitting a Solum Request", objectives: ["Complete a Solum form", "Attach the right documents", "Avoid 3 common errors"], summary: "Step-by-step Tango walkthrough with knowledge checks.", quizQuestions: 5, durationMin: 12, scenarios: 2 },
-    { id: "m3", title: "Reading & Communicating Results", objectives: ["Interpret coverage codes", "Explain results to families", "Escalate appropriately"], summary: "Includes a branching parent-call simulation.", quizQuestions: 6, durationMin: 14, scenarios: 2 },
-    { id: "m4", title: "Handoff & Financial Gate", objectives: ["Trigger financial review", "Document outcomes", "Move to client conversion"], summary: "Closes the loop and links to the Financial Gate SOP.", quizQuestions: 4, durationMin: 8, scenarios: 1 },
-  ] as GeneratedModule[],
-};
-
-/* ============== SOP Intelligence ============== */
-export interface SopAnswer {
-  id: string;
-  question: string;
-  answer: string;
-  citedSops: { id: string; title: string }[];
-  relatedTrainings: { id: string; title: string }[];
-}
-
-export const sopAnswers: SopAnswer[] = [
-  { id: "sa1", question: "How do auth denials work?", answer: "When an auth is denied, the assigned coordinator receives an immediate task to correct the documentation. Devorah is the default escalation owner. The team has 1 business day to resubmit; if the denial reason is medical-necessity related, the BCBA must add justification before resubmission.", citedSops: [{ id: "sop-12", title: "Authorization Denial Playbook" }, { id: "sop-08", title: "Documentation Correction Workflow" }], relatedTrainings: [{ id: "t-44", title: "Auth Submission Mastery" }, { id: "t-77", title: "Working with Devorah on Escalations" }] },
-  { id: "sa2", question: "What is the financial gate process?", answer: "After VOB is received, leads enter Financial Review. Medicaid is auto-approved. Commercial payors require Gabi's review and may trigger a payment plan or non-viable status. Approved gates create a client-pipeline conversion task automatically.", citedSops: [{ id: "sop-15", title: "Financial Gate SOP" }], relatedTrainings: [{ id: "t-12", title: "Financial Review Fundamentals" }] },
-];
+export type Trend = "up" | "down" | "flat";
+export type TrendDir = Trend;
 
 export interface SopChange {
   id: string;
@@ -149,248 +10,294 @@ export interface SopChange {
   changedAt: string;
   changedBy: string;
   summary: string;
-  diff: { added: string[]; removed: string[] };
 }
 
 export const sopChanges: SopChange[] = [
-  { id: "sc1", sopTitle: "Authorization Denial Playbook", changedAt: "2 days ago", changedBy: "Devorah Singh", summary: "Tightened resubmission SLA from 3 days to 1 business day.", diff: { added: ["Resubmit within 1 business day", "BCBA must add medical-necessity note"], removed: ["Resubmit within 3 business days"] } },
-  { id: "sc2", sopTitle: "Onboarding — Georgia New Hires", changedAt: "5 days ago", changedBy: "HR Admin", summary: "Added state-specific signature packet.", diff: { added: ["GA Sworn Statement", "GA Background Authorization"], removed: [] } },
+  { id: "sc1", sopTitle: "Authorization renewal", changedAt: "Mar 18, 2026", changedBy: "Devorah Klein", summary: "Updated UHC and Aetna pre-auth submission paths and added 97155 modifier guidance." },
+  { id: "sc2", sopTitle: "Session note thoroughness", changedAt: "Apr 02, 2026", changedBy: "Rochel Levy", summary: "Clarified required behavior tracking fields and example phrasing for new RBTs." },
+  { id: "sc3", sopTitle: "Onboarding consent forms", changedAt: "Apr 21, 2026", changedBy: "Nikki Goldenberg", summary: "Reordered consent collection to front-load HIPAA + telehealth before financial." },
+  { id: "sc4", sopTitle: "Family communication standard", changedAt: "Apr 28, 2026", changedBy: "Eli Berman", summary: "New script for de-escalating concerned parents and escalation paths to BCBA." },
 ];
 
-/* ============== Smart Recommendations ============== */
+export interface ReadinessBreakdown {
+  id: string;
+  label: string;
+  group: "Department" | "State" | "Manager";
+  score: number;       // 0-100
+  delta: number;       // vs last period
+  headcount: number;
+  topRisk: string;
+}
+
+export interface ReadinessFactor {
+  key: string;
+  label: string;
+  weight: number;      // 0-1
+  score: number;       // 0-100
+  detail: string;
+}
+
+export interface ComplianceItem {
+  id: string;
+  category: "Certification" | "Policy" | "Signature" | "Retraining";
+  title: string;
+  owner: string;
+  status: "On Track" | "Due Soon" | "Overdue" | "Complete";
+  dueDate: string;
+  severity: Severity;
+}
+
+export interface AuditPacket {
+  id: string;
+  name: string;
+  generated: string;
+  scope: string;
+  items: number;
+  size: string;
+}
+
 export interface Recommendation {
   id: string;
   title: string;
-  detail: string;
+  insight: string;
   severity: Severity;
   owner: string;
-  category: "Compliance" | "Training" | "Onboarding" | "SOP" | "Performance";
+  module: string;
   actions: string[];
+  delta: string;
 }
 
-export const recommendations: Recommendation[] = [
-  { id: "r1", title: "QA department compliance is declining", detail: "QA dept readiness dropped 5 pts in 14 days. Two RBTs missed retraining.", severity: "high", owner: "QA Lead", category: "Compliance", actions: ["Assign retraining", "Schedule check-in"] },
-  { id: "r2", title: "New schedulers struggling with CentralReach", detail: "3 of 4 May hires are below 60% on CR module quizzes.", severity: "medium", owner: "Scheduling Manager", category: "Training", actions: ["Add CR refresher", "Assign mentor"] },
-  { id: "r3", title: "Georgia onboarding completion is slowing", detail: "Avg time-to-active rose from 11 to 18 days in GA.", severity: "high", owner: "GA State Director", category: "Onboarding", actions: ["Audit GA bottleneck", "Add automation"] },
-  { id: "r4", title: "This SOP may need updating", detail: "Auth Denial SOP was edited but 4 linked trainings still cite the old SLA.", severity: "medium", owner: "Training Admin", category: "SOP", actions: ["Open SOP", "Sync trainings"] },
-  { id: "r5", title: "Leadership Academy lifted performance", detail: "Graduates show +14% task-completion and +9 readiness.", severity: "low", owner: "L&D", category: "Performance", actions: ["Expand cohort"] },
-];
-
-/* ============== Simulations ============== */
 export interface Simulation {
   id: string;
   title: string;
-  scenario: "Intake Call" | "Parent Comm" | "Insurance" | "Scheduling Conflict" | "QA Review" | "Leadership Decision";
-  difficulty: "Easy" | "Medium" | "Hard";
+  scenario: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
   durationMin: number;
-  bestScore?: number;
-  description: string;
   competency: string;
+  avgScore: number;
+  attempts: number;
+  category: "Intake" | "Family Comm" | "Insurance" | "Scheduling" | "QA" | "Leadership";
 }
 
-export const simulations: Simulation[] = [
-  { id: "sim-intake-1", title: "First-Touch Intake Call", scenario: "Intake Call", difficulty: "Easy", durationMin: 6, bestScore: 92, description: "Handle a parent inquiry, capture key details, and route appropriately.", competency: "Empathic intake" },
-  { id: "sim-parent-1", title: "Frustrated Parent — Schedule Change", scenario: "Parent Comm", difficulty: "Medium", durationMin: 8, description: "De-escalate, validate, and offer concrete next steps.", competency: "Family communication" },
-  { id: "sim-ins-1", title: "Tricky Out-of-Network Call", scenario: "Insurance", difficulty: "Hard", durationMin: 10, description: "Troubleshoot a denial with conflicting payor info.", competency: "Insurance navigation" },
-  { id: "sim-sched-1", title: "Double-Booked RBT", scenario: "Scheduling Conflict", difficulty: "Medium", durationMin: 7, description: "Resolve overlap without breaking continuity of care.", competency: "Scheduling judgment" },
-  { id: "sim-qa-1", title: "Note Review with Repeat Errors", scenario: "QA Review", difficulty: "Medium", durationMin: 8, description: "Identify root cause and choose the right intervention.", competency: "QA decision-making" },
-  { id: "sim-lead-1", title: "Manager Coaching Moment", scenario: "Leadership Decision", difficulty: "Hard", durationMin: 12, bestScore: 78, description: "Coach a struggling team member without micromanaging.", competency: "Leadership" },
-];
+export interface SimulationStep {
+  id: string;
+  prompt: string;
+  options: { label: string; outcome: string; score: number }[];
+  coachingTip: string;
+}
 
-export interface SimStepOption { id: string; label: string; outcome: "great" | "ok" | "poor"; feedback: string; points: number }
-export interface SimulationStep { id: string; prompt: string; options: SimStepOption[] }
-
-export const simulationSteps: Record<string, SimulationStep[]> = {
-  "sim-intake-1": [
-    { id: "s1", prompt: "A parent calls and immediately asks about pricing. How do you start?", options: [
-      { id: "a", label: "Quote the standard rate right away", outcome: "poor", feedback: "Skips relationship-building and may misquote.", points: 5 },
-      { id: "b", label: "Acknowledge their question and ask about their child first", outcome: "great", feedback: "Builds trust before diving into logistics.", points: 20 },
-      { id: "c", label: "Transfer to billing", outcome: "ok", feedback: "Misses chance to engage. Acceptable as fallback.", points: 10 },
-    ] },
-    { id: "s2", prompt: "They mention an autism diagnosis from a year ago. What do you note?", options: [
-      { id: "a", label: "Diagnosis date and provider, plus current concerns", outcome: "great", feedback: "Captures everything VOB and clinical need.", points: 20 },
-      { id: "b", label: "Just the diagnosis", outcome: "ok", feedback: "Misses important context.", points: 10 },
-      { id: "c", label: "Nothing — wait for the form", outcome: "poor", feedback: "Loses warm context for the team.", points: 0 },
-    ] },
-    { id: "s3", prompt: "How do you close the call?", options: [
-      { id: "a", label: "Send the intake form and confirm next-step timing", outcome: "great", feedback: "Sets expectations and reduces drop-off.", points: 20 },
-      { id: "b", label: "Promise a callback with no timeline", outcome: "poor", feedback: "Vague promises hurt conversion.", points: 5 },
-    ] },
-  ],
-  "sim-parent-1": [
-    { id: "s1", prompt: "Parent opens with: 'You moved the session AGAIN.' Best opener?", options: [
-      { id: "a", label: "Apologize sincerely and acknowledge the disruption", outcome: "great", feedback: "Validation lowers the temperature.", points: 20 },
-      { id: "b", label: "Explain the staffing constraint right away", outcome: "poor", feedback: "Defending too early escalates.", points: 5 },
-    ] },
-  ],
-  "sim-ins-1": [
-    { id: "s1", prompt: "Payor portal says 'in-network' but the EOB says otherwise. Next move?", options: [
-      { id: "a", label: "Call payor with both documents in hand", outcome: "great", feedback: "Brings evidence; fastest resolution.", points: 20 },
-      { id: "b", label: "Tell family they're out of network", outcome: "poor", feedback: "Premature and harmful.", points: 0 },
-    ] },
-  ],
-  "sim-sched-1": [
-    { id: "s1", prompt: "RBT booked at two clinics in same hour. First step?", options: [
-      { id: "a", label: "Check which client has higher continuity risk", outcome: "great", feedback: "Clinical-first decision-making.", points: 20 },
-      { id: "b", label: "Pick alphabetically", outcome: "poor", feedback: "Ignores care impact.", points: 0 },
-    ] },
-  ],
-  "sim-qa-1": [
-    { id: "s1", prompt: "Same RBT has 3 flagged notes this month. What do you do?", options: [
-      { id: "a", label: "Open a coaching plan with their BCBA", outcome: "great", feedback: "Targets root cause.", points: 20 },
-      { id: "b", label: "Send another email reminder", outcome: "poor", feedback: "Patterns won't change.", points: 5 },
-    ] },
-  ],
-  "sim-lead-1": [
-    { id: "s1", prompt: "A team member misses 2 deadlines. Open with…", options: [
-      { id: "a", label: "Curious questions about workload and blockers", outcome: "great", feedback: "Coaching > controlling.", points: 20 },
-      { id: "b", label: "A formal warning email", outcome: "poor", feedback: "Skips the relationship step.", points: 5 },
-    ] },
-  ],
-};
-
-/* ============== Automations & Approvals ============== */
 export interface AutomationTemplate {
   id: string;
   name: string;
-  description: string;
   trigger: string;
-  steps: number;
-  category: "Onboarding" | "Compliance" | "Training" | "Operations" | "HR";
-  popularity: number;
+  steps: string[];
+  department: string;
+  active: boolean;
+  runs30d: number;
 }
-
-export const automationTemplates: AutomationTemplate[] = [
-  { id: "at1", name: "Overdue Onboarding Escalation", description: "Notify manager → HR → Director on day 7/10/14.", trigger: "Onboarding > 7 days incomplete", steps: 4, category: "Onboarding", popularity: 92 },
-  { id: "at2", name: "Expiring Cert Auto-Reassign", description: "Re-enroll employee 30 days before expiration.", trigger: "Cert expires in 30 days", steps: 3, category: "Compliance", popularity: 88 },
-  { id: "at3", name: "Manager Approval Chain", description: "Route requests to manager → director → exec.", trigger: "Request submitted", steps: 3, category: "Operations", popularity: 81 },
-  { id: "at4", name: "QA Repeat Error Coaching", description: "Trigger coaching plan after 3 flagged notes.", trigger: "3+ flagged notes / 30d", steps: 5, category: "HR", popularity: 76 },
-  { id: "at5", name: "Competency Verification Loop", description: "Schedule supervisor check after training pass.", trigger: "Training completed", steps: 4, category: "Training", popularity: 84 },
-  { id: "at6", name: "Auth Denial Recovery", description: "Auto-create resubmit + escalation tasks.", trigger: "Auth status = Denied", steps: 6, category: "Operations", popularity: 95 },
-];
 
 export interface ApprovalRequest {
   id: string;
   title: string;
-  type: "PTO" | "Schedule Change" | "Cert Reimbursement" | "Title Change" | "Termination";
   requester: string;
-  submittedAt: string;
-  status: "pending" | "approved" | "rejected";
-  chain: { name: string; role: string; status: "approved" | "pending" | "skip" }[];
+  type: "PTO" | "Expense" | "Hire" | "Schedule Change" | "Auth Override" | "Course Publish";
+  amount?: string;
+  submitted: string;
+  chain: { name: string; role: string; status: "approved" | "pending" | "skipped" }[];
+  severity: Severity;
 }
 
-export const approvalRequests: ApprovalRequest[] = [
-  { id: "ap1", title: "PTO June 14–18", type: "PTO", requester: "Mei Chen", submittedAt: "2h ago", status: "pending", chain: [{ name: "K. Patel", role: "Manager", status: "approved" }, { name: "S. Vance", role: "Director", status: "pending" }] },
-  { id: "ap2", title: "Cert Reimbursement — RBT renewal", type: "Cert Reimbursement", requester: "Jordan Rivera", submittedAt: "1d ago", status: "pending", chain: [{ name: "M. Holt", role: "Manager", status: "pending" }, { name: "Finance", role: "Finance", status: "pending" }] },
-  { id: "ap3", title: "Title change — Lead Scheduler", type: "Title Change", requester: "Aaron Park", submittedAt: "3d ago", status: "approved", chain: [{ name: "S. Vance", role: "Director", status: "approved" }, { name: "HR", role: "HR", status: "approved" }] },
-];
-
-/* ============== Enterprise Reports ============== */
 export interface EnterpriseReport {
   id: string;
   name: string;
-  cadence: "On-demand" | "Weekly" | "Monthly" | "Quarterly";
-  recipients: number;
+  cadence: "Daily" | "Weekly" | "Monthly" | "Quarterly" | "Ad-hoc";
+  audience: string;
   lastRun: string;
-  type: "Executive" | "Operational" | "Compliance" | "Workforce";
+  nextRun: string;
+  format: "PDF" | "XLSX" | "Dashboard";
+  category: "Executive" | "Compliance" | "Workforce" | "Finance";
 }
-
-export const enterpriseReports: EnterpriseReport[] = [
-  { id: "er1", name: "Executive Weekly Summary", cadence: "Weekly", recipients: 6, lastRun: "Mon 8:00 AM", type: "Executive" },
-  { id: "er2", name: "Compliance Audit Packet", cadence: "Quarterly", recipients: 4, lastRun: "Apr 1", type: "Compliance" },
-  { id: "er3", name: "Workforce Readiness Snapshot", cadence: "Monthly", recipients: 9, lastRun: "May 1", type: "Workforce" },
-  { id: "er4", name: "Operational Bottlenecks", cadence: "Weekly", recipients: 5, lastRun: "Mon 8:30 AM", type: "Operational" },
-  { id: "er5", name: "State Performance Roll-up", cadence: "Monthly", recipients: 7, lastRun: "May 1", type: "Executive" },
-];
-
-/* ============== Permissions Matrix ============== */
-export type RoleKey = "super_admin" | "executive" | "dept_admin" | "manager" | "trainer" | "hr" | "employee" | "contractor";
 
 export interface PermissionRow {
   capability: string;
-  group: "Dashboards" | "Analytics" | "Reports" | "Automations" | "Resources" | "People" | "Compliance";
-  access: Record<RoleKey, "full" | "read" | "none">;
+  group: "Data" | "People" | "Workflow" | "Admin";
+  roles: Record<string, "read" | "write" | "—">;
 }
 
-export const roleColumns: { key: RoleKey; label: string }[] = [
-  { key: "super_admin", label: "Super Admin" },
-  { key: "executive", label: "Executive" },
-  { key: "dept_admin", label: "Dept Admin" },
-  { key: "manager", label: "Manager" },
-  { key: "trainer", label: "Trainer" },
-  { key: "hr", label: "HR" },
-  { key: "employee", label: "Employee" },
-  { key: "contractor", label: "Contractor" },
-];
-
-const A = (full: RoleKey[], read: RoleKey[] = []): Record<RoleKey, "full" | "read" | "none"> => {
-  const out: Record<RoleKey, "full" | "read" | "none"> = {
-    super_admin: "full", executive: "none", dept_admin: "none", manager: "none",
-    trainer: "none", hr: "none", employee: "none", contractor: "none",
-  };
-  full.forEach((k) => (out[k] = "full"));
-  read.forEach((k) => { if (out[k] === "none") out[k] = "read"; });
-  return out;
-};
-
-export const permissionsMatrix: PermissionRow[] = [
-  { capability: "Executive dashboards", group: "Dashboards", access: A(["super_admin", "executive"], ["dept_admin"]) },
-  { capability: "Department dashboards", group: "Dashboards", access: A(["super_admin", "executive", "dept_admin", "manager"]) },
-  { capability: "Workforce intelligence", group: "Analytics", access: A(["super_admin", "executive"], ["dept_admin", "hr", "manager"]) },
-  { capability: "Compliance intelligence", group: "Analytics", access: A(["super_admin", "executive", "hr"], ["dept_admin"]) },
-  { capability: "Enterprise reports", group: "Reports", access: A(["super_admin", "executive"], ["dept_admin", "hr"]) },
-  { capability: "Build automations", group: "Automations", access: A(["super_admin"], ["dept_admin"]) },
-  { capability: "Approve workflow steps", group: "Automations", access: A(["super_admin", "executive", "dept_admin", "manager"]) },
-  { capability: "Manage resources", group: "Resources", access: A(["super_admin", "hr", "trainer"], ["dept_admin"]) },
-  { capability: "View employee profiles", group: "People", access: A(["super_admin", "executive", "hr", "manager"], ["dept_admin", "trainer"]) },
-  { capability: "Edit employee status", group: "People", access: A(["super_admin", "hr"], ["executive"]) },
-  { capability: "Audit packets & exports", group: "Compliance", access: A(["super_admin", "hr"], ["executive"]) },
-  { capability: "Acknowledge policies", group: "Compliance", access: A(["super_admin", "executive", "dept_admin", "manager", "trainer", "hr", "employee", "contractor"]) },
-];
-
-/* ============== Scalability Map ============== */
 export interface ScalabilityState {
   code: string;
   name: string;
   clinics: number;
-  departments: number;
   employees: number;
+  departments: number;
   readiness: number;
-  status: "Active" | "Launching" | "Planned";
+  status: "Operational" | "Scaling" | "Pilot" | "Planned";
 }
 
-export const scalabilityStates: ScalabilityState[] = [
-  { code: "FL", name: "Florida", clinics: 4, departments: 8, employees: 78, readiness: 90, status: "Active" },
-  { code: "GA", name: "Georgia", clinics: 3, departments: 7, employees: 52, readiness: 79, status: "Active" },
-  { code: "TX", name: "Texas", clinics: 2, departments: 6, employees: 31, readiness: 86, status: "Active" },
-  { code: "NC", name: "North Carolina", clinics: 1, departments: 5, employees: 18, readiness: 84, status: "Active" },
-  { code: "TN", name: "Tennessee", clinics: 1, departments: 4, employees: 12, readiness: 81, status: "Launching" },
-  { code: "SC", name: "South Carolina", clinics: 0, departments: 0, employees: 0, readiness: 0, status: "Planned" },
-  { code: "VA", name: "Virginia", clinics: 0, departments: 0, employees: 0, readiness: 0, status: "Planned" },
+/* ---------- Workforce Readiness ---------- */
+
+export const readinessScore = 87;
+export const readinessDelta = +3.2;
+export const readinessTrend: number[] = [78, 79, 80, 82, 81, 84, 85, 84, 86, 86, 87];
+
+export const readinessFactors: ReadinessFactor[] = [
+  { key: "onboarding", label: "Onboarding completion", weight: 0.18, score: 92, detail: "94% of new hires hit Day-30 milestones" },
+  { key: "compliance", label: "Compliance & certs", weight: 0.22, score: 81, detail: "11 certs expiring within 60 days" },
+  { key: "competency", label: "Competency scores", weight: 0.18, score: 88, detail: "Avg post-training quiz: 88%" },
+  { key: "engagement", label: "Engagement signals", weight: 0.12, score: 84, detail: "Recognition & comments trending up" },
+  { key: "tasks", label: "Task on-time rate", weight: 0.15, score: 90, detail: "On-time task completion 90%" },
+  { key: "tenure", label: "Tenure stability", weight: 0.15, score: 79, detail: "GA region turnover slightly elevated" },
 ];
 
-/* ============== Global Search Index ============== */
-export interface SearchEntry {
-  id: string;
-  type: "SOP" | "Course" | "User" | "Department" | "Resource" | "Workflow" | "Report" | "Announcement" | "Competency";
-  title: string;
-  subtitle?: string;
-  path: string;
-}
+export const readinessBreakdowns: ReadinessBreakdown[] = [
+  { id: "d-clin", label: "Clinical", group: "Department", score: 89, delta: +2.1, headcount: 142, topRisk: "BCBA recerts due Q1" },
+  { id: "d-int", label: "Intake", group: "Department", score: 91, delta: +4.0, headcount: 24, topRisk: "—" },
+  { id: "d-ops", label: "Operations", group: "Department", score: 84, delta: +1.4, headcount: 38, topRisk: "Scheduling certs" },
+  { id: "d-fin", label: "Finance / RCM", group: "Department", score: 86, delta: +0.6, headcount: 19, topRisk: "Auth knowledge gaps" },
+  { id: "s-ny", label: "New York", group: "State", score: 90, delta: +2.7, headcount: 121, topRisk: "—" },
+  { id: "s-nj", label: "New Jersey", group: "State", score: 88, delta: +3.1, headcount: 64, topRisk: "—" },
+  { id: "s-ga", label: "Georgia", group: "State", score: 79, delta: -1.3, headcount: 38, topRisk: "Onboarding velocity" },
+  { id: "m-eli", label: "Eli Berman", group: "Manager", score: 92, delta: +3.4, headcount: 28, topRisk: "—" },
+  { id: "m-gabi", label: "Gabi Kaweblum", group: "Manager", score: 87, delta: +1.2, headcount: 22, topRisk: "Auth backlog" },
+  { id: "m-jaz", label: "Jaz Scarponi", group: "Manager", score: 83, delta: +0.4, headcount: 19, topRisk: "QA coaching" },
+];
 
-export const enterpriseSearchIndex: SearchEntry[] = [
-  { id: "g1", type: "SOP", title: "Authorization Denial Playbook", subtitle: "Updated 2d ago", path: "/enterprise/sop-intelligence" },
-  { id: "g2", type: "SOP", title: "Financial Gate SOP", subtitle: "Intake → Conversion", path: "/enterprise/sop-intelligence" },
-  { id: "g3", type: "Course", title: "VOB Mastery", subtitle: "Intermediate · 42 min", path: "/enterprise/course-studio" },
-  { id: "g4", type: "Course", title: "Leadership Academy", subtitle: "Multi-week", path: "/training" },
-  { id: "g5", type: "User", title: "Aaron Park", subtitle: "BCBA · Florida", path: "/blossom/users" },
-  { id: "g6", type: "User", title: "Mei Chen", subtitle: "RBT · Florida", path: "/blossom/users" },
-  { id: "g7", type: "Department", title: "Authorizations", subtitle: "9 employees · 86% readiness", path: "/blossom/departments" },
-  { id: "g8", type: "Department", title: "Scheduling", subtitle: "12 employees · 78% readiness", path: "/blossom/departments" },
-  { id: "g9", type: "Resource", title: "Parent Welcome Letter", subtitle: "Template", path: "/resources" },
-  { id: "g10", type: "Workflow", title: "Auth Denial Recovery", subtitle: "6 steps · live", path: "/enterprise/automations" },
-  { id: "g11", type: "Report", title: "Workforce Readiness Snapshot", subtitle: "Monthly · 9 recipients", path: "/enterprise/reports" },
-  { id: "g12", type: "Announcement", title: "Q2 Town Hall — Save the Date", subtitle: "Pinned", path: "/hr/announcements" },
-  { id: "g13", type: "Competency", title: "Family Communication", subtitle: "Used in 7 courses", path: "/enterprise/course-studio" },
-  { id: "g14", type: "Competency", title: "Insurance Navigation", subtitle: "Used in 4 courses", path: "/enterprise/course-studio" },
+/* ---------- Compliance & Audit ---------- */
+
+export const complianceItems: ComplianceItem[] = [
+  { id: "c1", category: "Certification", title: "BCBA recert — Sara Cohen", owner: "Sara Cohen", status: "Due Soon", dueDate: "2026-05-22", severity: "medium" },
+  { id: "c2", category: "Certification", title: "RBT 40-hr renewal — Maya Rodriguez", owner: "Maya Rodriguez", status: "Overdue", dueDate: "2026-05-02", severity: "high" },
+  { id: "c3", category: "Policy", title: "HIPAA acknowledgement — Q2", owner: "All staff", status: "On Track", dueDate: "2026-06-30", severity: "low" },
+  { id: "c4", category: "Signature", title: "Updated PTO policy v3.1", owner: "All staff", status: "Due Soon", dueDate: "2026-05-15", severity: "medium" },
+  { id: "c5", category: "Retraining", title: "NoteGuard refresher — flagged RBTs (6)", owner: "Clinical Ops", status: "Due Soon", dueDate: "2026-05-18", severity: "high" },
+  { id: "c6", category: "Certification", title: "CPR/First Aid — Clinic GA", owner: "GA Clinic", status: "On Track", dueDate: "2026-08-10", severity: "low" },
+  { id: "c7", category: "Policy", title: "Telehealth consent v2", owner: "All clinical", status: "Complete", dueDate: "2026-04-01", severity: "low" },
+  { id: "c8", category: "Retraining", title: "Insurance auth process", owner: "Auth team", status: "Due Soon", dueDate: "2026-05-20", severity: "medium" },
+];
+
+export const auditPackets: AuditPacket[] = [
+  { id: "a1", name: "Q1 2026 Compliance Snapshot", generated: "2026-04-05", scope: "All clinics, all states", items: 412, size: "8.2 MB" },
+  { id: "a2", name: "Georgia State Audit Pack", generated: "2026-03-18", scope: "Georgia clinics + RBT certs", items: 168, size: "3.1 MB" },
+  { id: "a3", name: "HIPAA Acknowledgements 2025", generated: "2026-01-10", scope: "All employees, calendar 2025", items: 247, size: "1.6 MB" },
+];
+
+/* ---------- Smart Recommendations ---------- */
+
+export const recommendations: Recommendation[] = [
+  { id: "r1", title: "QA pass rate declining in GA region", insight: "Pass rate dropped 6 pts over 3 weeks. Most failures cluster on session-note thoroughness.", severity: "high", owner: "QA Lead — Rochel", module: "QA & Compliance", actions: ["Schedule retraining cohort", "Create SOP recap card", "Pair with mentor BCBA"], delta: "-6pts" },
+  { id: "r2", title: "GA onboarding velocity is slipping", insight: "Average days-to-billable rose from 14 → 19. Bottleneck is consent forms.", severity: "high", owner: "Ops — Jaz", module: "HR Onboarding", actions: ["Automate consent reminder", "Add onboarding nudge", "Review intake handoff"], delta: "+5d" },
+  { id: "r3", title: "SOP 'Authorization renewal' may be outdated", insight: "Last edit 142 days ago; payor rules changed Mar 18. 3 recent denials cite stale process.", severity: "medium", owner: "Auth Lead — Devorah", module: "SOP Library", actions: ["Open SOP", "Assign editor", "Notify auth team"], delta: "142d" },
+  { id: "r4", title: "Leadership Academy lifted ops manager scores", insight: "Cohort 3 graduates show +12% on 'Decision Quality'. Consider expanding.", severity: "low", owner: "People Ops — Nikki", module: "Operations Academy", actions: ["Open cohort 4", "Publish recap", "Invite directors"], delta: "+12%" },
+  { id: "r5", title: "Insurance denial pattern — UHC Behavioral", insight: "12 denials in 30 days share missing CPT 97155 modifier. AI suggests SOP update.", severity: "high", owner: "Finance — Gabi", module: "Authorizations", actions: ["Open denial cluster", "Update SOP", "Train auth team"], delta: "12 denials" },
+  { id: "r6", title: "Recognition trending up across NY", insight: "Applause reactions +38% MoM after Welcome flow rollout.", severity: "low", owner: "HR — Nikki", module: "Recognition", actions: ["Publish recap"], delta: "+38%" },
+];
+
+/* ---------- Simulations ---------- */
+
+export const simulations: Simulation[] = [
+  { id: "sim-intake", title: "Intake call with anxious parent", scenario: "First call after referral; parent worried about wait time and insurance.", difficulty: "Intermediate", durationMin: 12, competency: "Empathetic intake", avgScore: 84, attempts: 132, category: "Intake" },
+  { id: "sim-comm", title: "Difficult parent communication", scenario: "Parent challenges the BCBA's treatment plan; requires de-escalation.", difficulty: "Advanced", durationMin: 18, competency: "Clinical communication", avgScore: 76, attempts: 88, category: "Family Comm" },
+  { id: "sim-ins", title: "Insurance pre-auth walkthrough", scenario: "Walk Medicaid family through pre-auth and consent.", difficulty: "Beginner", durationMin: 9, competency: "Benefits explanation", avgScore: 91, attempts: 211, category: "Insurance" },
+  { id: "sim-sched", title: "Schedule conflict resolution", scenario: "RBT calls out; reassign without breaking continuity.", difficulty: "Intermediate", durationMin: 10, competency: "Operational triage", avgScore: 82, attempts: 154, category: "Scheduling" },
+  { id: "sim-qa", title: "QA review of flagged note", scenario: "Coach RBT through correcting a flagged session note.", difficulty: "Intermediate", durationMin: 14, competency: "Coaching & QA", avgScore: 79, attempts: 96, category: "QA" },
+  { id: "sim-lead", title: "Leadership decision: scaling a clinic", scenario: "Decide whether to open a new clinic given staffing & demand.", difficulty: "Advanced", durationMin: 22, competency: "Strategic decisioning", avgScore: 73, attempts: 41, category: "Leadership" },
+];
+
+export const simulationStepsByScenario: Record<string, SimulationStep[]> = {
+  "sim-intake": [
+    { id: "s1", prompt: "Parent opens the call upset about a 6-week wait. What do you do first?", options: [
+      { label: "Acknowledge feelings, then explain the why", outcome: "Builds trust, parent calms.", score: 95 },
+      { label: "Jump straight into pricing & insurance", outcome: "Parent feels unheard.", score: 55 },
+      { label: "Offer to call back later", outcome: "Loses momentum.", score: 40 },
+    ], coachingTip: "Acknowledge before informing. Mirror back what you heard." },
+    { id: "s2", prompt: "Parent asks if they can switch to telehealth. How do you respond?", options: [
+      { label: "Explain telehealth fit, offer assessment", outcome: "Parent feels guided.", score: 92 },
+      { label: "Say 'we don't really do that'", outcome: "Closes the door.", score: 30 },
+      { label: "Defer to BCBA without context", outcome: "Adds friction.", score: 60 },
+    ], coachingTip: "Frame options around their child's needs, not the org's defaults." },
+    { id: "s3", prompt: "Wrap up — confirm next step.", options: [
+      { label: "Send form + book intro call", outcome: "Clear handoff.", score: 96 },
+      { label: "Promise to call them back", outcome: "Drops in queue.", score: 50 },
+      { label: "Tell them to wait for an email", outcome: "Vague.", score: 45 },
+    ], coachingTip: "Always close with a calendar action, not a promise." },
+  ],
+};
+
+/* ---------- Advanced Automations ---------- */
+
+export const automationTemplates: AutomationTemplate[] = [
+  { id: "auto1", name: "New Hire Welcome Drip", trigger: "Employee created", steps: ["Send welcome email", "Schedule Day-1 onboarding tasks", "Notify hiring manager", "Add to Welcome flow"], department: "HR", active: true, runs30d: 24 },
+  { id: "auto2", name: "Cert expiry reminder chain", trigger: "Certification within 60 days of expiry", steps: ["Email employee", "Notify manager", "Open retraining task", "Escalate to HR Admin if no action in 14d"], department: "Compliance", active: true, runs30d: 41 },
+  { id: "auto3", name: "Note flagged → coaching loop", trigger: "Session note flagged by NoteGuard", steps: ["Notify RBT", "Assign coaching micro-course", "Schedule QA review", "Re-check in 7 days"], department: "QA", active: true, runs30d: 18 },
+  { id: "auto4", name: "Auth denial → SOP review", trigger: "Authorization denied", steps: ["Log denial reason", "Cluster pattern", "Open SOP review", "Notify auth lead"], department: "Authorizations", active: true, runs30d: 12 },
+  { id: "auto5", name: "Onboarding stalled → escalate", trigger: "Onboarding step open >5 days", steps: ["Nudge employee", "Notify manager", "Open HR ticket"], department: "HR", active: false, runs30d: 9 },
+  { id: "auto6", name: "PTO request → coverage check", trigger: "PTO submitted", steps: ["Check coverage", "Notify scheduling", "Approve / route to manager", "Update calendar"], department: "Scheduling", active: true, runs30d: 33 },
+];
+
+/* ---------- Approvals & Workflows ---------- */
+
+export const approvalRequests: ApprovalRequest[] = [
+  { id: "ap1", title: "PTO — Maya Rodriguez (May 18-22)", requester: "Maya Rodriguez", type: "PTO", submitted: "2026-05-08", severity: "low", chain: [
+    { name: "Sara Uhr", role: "Direct manager", status: "approved" },
+    { name: "Daylis", role: "Scheduling", status: "pending" },
+    { name: "Nikki", role: "HR", status: "pending" },
+  ] },
+  { id: "ap2", title: "Expense — Conference travel ($1,840)", requester: "Devorah", type: "Expense", amount: "$1,840", submitted: "2026-05-07", severity: "medium", chain: [
+    { name: "Eli Berman", role: "Ops Manager", status: "approved" },
+    { name: "Baila", role: "Finance", status: "pending" },
+  ] },
+  { id: "ap3", title: "New Hire — Senior BCBA (NY)", requester: "Rochell", type: "Hire", submitted: "2026-05-06", severity: "high", chain: [
+    { name: "Hiring Manager", role: "BCBA Lead", status: "approved" },
+    { name: "Eli Berman", role: "Ops Manager", status: "approved" },
+    { name: "Chad", role: "Exec", status: "pending" },
+  ] },
+  { id: "ap4", title: "Auth Override — UHC denial appeal", requester: "Kayla", type: "Auth Override", submitted: "2026-05-09", severity: "high", chain: [
+    { name: "Devorah", role: "Auth Lead", status: "approved" },
+    { name: "Gabi", role: "Finance", status: "pending" },
+  ] },
+  { id: "ap5", title: "Course Publish — Insurance Basics v2", requester: "Training Admin", type: "Course Publish", submitted: "2026-05-08", severity: "low", chain: [
+    { name: "Nikki", role: "HR", status: "approved" },
+    { name: "Eli Berman", role: "Ops Manager", status: "pending" },
+  ] },
+];
+
+/* ---------- Enterprise Reports ---------- */
+
+export const enterpriseReports: EnterpriseReport[] = [
+  { id: "rep1", name: "Executive Weekly Brief", cadence: "Weekly", audience: "C-Suite", lastRun: "2026-05-05", nextRun: "2026-05-12", format: "PDF", category: "Executive" },
+  { id: "rep2", name: "Workforce Readiness Snapshot", cadence: "Monthly", audience: "Leadership + State Directors", lastRun: "2026-05-01", nextRun: "2026-06-01", format: "Dashboard", category: "Workforce" },
+  { id: "rep3", name: "Compliance Audit Pack", cadence: "Quarterly", audience: "HR + Legal", lastRun: "2026-04-05", nextRun: "2026-07-05", format: "PDF", category: "Compliance" },
+  { id: "rep4", name: "Cert Expiry Roll-up", cadence: "Weekly", audience: "HR Admin", lastRun: "2026-05-06", nextRun: "2026-05-13", format: "XLSX", category: "Compliance" },
+  { id: "rep5", name: "Revenue & Auth Health", cadence: "Weekly", audience: "Finance + Ops", lastRun: "2026-05-06", nextRun: "2026-05-13", format: "Dashboard", category: "Finance" },
+  { id: "rep6", name: "Onboarding Velocity Report", cadence: "Monthly", audience: "HR + State Directors", lastRun: "2026-05-01", nextRun: "2026-06-01", format: "PDF", category: "Workforce" },
+  { id: "rep7", name: "QA Trend Report", cadence: "Monthly", audience: "Clinical Leadership", lastRun: "2026-05-02", nextRun: "2026-06-02", format: "PDF", category: "Compliance" },
+];
+
+/* ---------- Permissions Matrix ---------- */
+
+export const matrixRoles = ["Super Admin", "Exec", "Ops Manager", "HR Admin", "Manager", "Trainer", "Employee", "Contractor"] as const;
+
+export const permissionsMatrix: PermissionRow[] = [
+  { capability: "View company-wide dashboards", group: "Data", roles: { "Super Admin": "write", Exec: "read", "Ops Manager": "read", "HR Admin": "read", Manager: "read", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "View own team analytics", group: "Data", roles: { "Super Admin": "write", Exec: "read", "Ops Manager": "write", "HR Admin": "read", Manager: "write", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "Edit employee records", group: "People", roles: { "Super Admin": "write", Exec: "—", "Ops Manager": "—", "HR Admin": "write", Manager: "read", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "Approve PTO / expenses", group: "Workflow", roles: { "Super Admin": "write", Exec: "write", "Ops Manager": "write", "HR Admin": "write", Manager: "write", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "Generate AI courses", group: "Workflow", roles: { "Super Admin": "write", Exec: "—", "Ops Manager": "write", "HR Admin": "write", Manager: "—", Trainer: "write", Employee: "—", Contractor: "—" } },
+  { capability: "Edit SOPs", group: "Workflow", roles: { "Super Admin": "write", Exec: "—", "Ops Manager": "write", "HR Admin": "write", Manager: "—", Trainer: "write", Employee: "—", Contractor: "—" } },
+  { capability: "Manage automations", group: "Admin", roles: { "Super Admin": "write", Exec: "—", "Ops Manager": "write", "HR Admin": "—", Manager: "—", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "Manage permissions", group: "Admin", roles: { "Super Admin": "write", Exec: "—", "Ops Manager": "—", "HR Admin": "—", Manager: "—", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "View enterprise reports", group: "Data", roles: { "Super Admin": "write", Exec: "read", "Ops Manager": "read", "HR Admin": "read", Manager: "—", Trainer: "—", Employee: "—", Contractor: "—" } },
+  { capability: "Submit time / requests", group: "People", roles: { "Super Admin": "write", Exec: "write", "Ops Manager": "write", "HR Admin": "write", Manager: "write", Trainer: "write", Employee: "write", Contractor: "read" } },
+];
+
+/* ---------- Scalability Map ---------- */
+
+export const scalabilityStates: ScalabilityState[] = [
+  { code: "NY", name: "New York", clinics: 6, employees: 121, departments: 8, readiness: 90, status: "Operational" },
+  { code: "NJ", name: "New Jersey", clinics: 3, employees: 64, departments: 6, readiness: 88, status: "Operational" },
+  { code: "GA", name: "Georgia", clinics: 4, employees: 38, departments: 5, readiness: 79, status: "Scaling" },
+  { code: "FL", name: "Florida", clinics: 1, employees: 12, departments: 3, readiness: 74, status: "Pilot" },
+  { code: "TX", name: "Texas", clinics: 0, employees: 4, departments: 2, readiness: 60, status: "Pilot" },
+  { code: "PA", name: "Pennsylvania", clinics: 0, employees: 0, departments: 0, readiness: 0, status: "Planned" },
+  { code: "NC", name: "North Carolina", clinics: 0, employees: 0, departments: 0, readiness: 0, status: "Planned" },
 ];
