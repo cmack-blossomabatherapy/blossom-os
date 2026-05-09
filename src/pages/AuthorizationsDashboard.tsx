@@ -139,6 +139,9 @@ export default function AuthorizationsDashboard() {
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [query, setQuery] = useState("");
   const [selectedAuth, setSelectedAuth] = useState<AuthRecord | null>(null);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
 
   const payors = useMemo(() => [ALL, ...Array.from(new Set(auths.map((a) => a.payor))).sort()], [auths]);
   const owners = useMemo(() => [ALL, "Unassigned", ...Array.from(new Set(auths.map((a) => a.coordinator).filter(Boolean))).sort()], [auths]);
