@@ -307,7 +307,7 @@ export function useMobileAlerts() {
   );
   const [alerts, setAlerts] = useState<MobileAlert[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isEnabled } = useAlertCategoryPrefs();
+  const { isEnabled, prefs } = useAlertCategoryPrefs();
 
   // Track signed-in user; reload server dismissals on login/logout.
   useEffect(() => {
@@ -405,9 +405,16 @@ export function useMobileAlerts() {
     task: active.filter(a => a.category === "task").length,
     approval: active.filter(a => a.category === "approval").length,
     overdue: active.filter(a => a.category === "overdue").length,
+    compliance: active.filter(a => a.category === "compliance").length,
     total: active.length,
     critical: active.filter(a => a.severity === "critical").length,
   }), [active]);
+
+  const mutedCategories = useMemo<AlertCategory[]>(
+    () => (["task", "approval", "overdue", "compliance"] as AlertCategory[])
+      .filter((c) => prefs[c] === false),
+    [prefs],
+  );
 
   const dismiss = (id: string) => {
     setDismissed(prev => {
@@ -435,5 +442,5 @@ export function useMobileAlerts() {
     }
   };
 
-  return { active, counts, dismiss, reset, refresh, loading };
+  return { active, counts, mutedCategories, dismiss, reset, refresh, loading };
 }
