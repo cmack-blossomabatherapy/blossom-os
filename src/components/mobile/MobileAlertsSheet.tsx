@@ -52,8 +52,8 @@ export function MobileAlertsButton() {
         <button
           aria-label={`Open alerts, ${counts.total} active`}
           className={cn(
-            "fixed z-40 right-3 bottom-[calc(56px+env(safe-area-inset-bottom)+12px)]",
-            "md:bottom-6 md:right-6",
+            "fixed z-40 left-3 bottom-[calc(56px+env(safe-area-inset-bottom)+12px)]",
+            "md:left-auto md:right-24 md:bottom-6",
             "h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25",
             "flex items-center justify-center active:scale-95 transition-transform",
           )}
