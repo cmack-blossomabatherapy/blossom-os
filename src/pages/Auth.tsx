@@ -9,6 +9,7 @@ import { Eye, EyeOff, Loader2, Mail, Sparkles } from "lucide-react";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
+import { RequestAccessDialog } from "@/components/auth/RequestAccessDialog";
 
 const CANONICAL_LOGIN_HOST = "blossom.abacommandcenter.com";
 const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
@@ -185,17 +186,20 @@ export default function Auth() {
               Need an account? Team accounts are created by your administrator.
               Contact your Blossom admin to get access.
             </p>
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="mt-3 h-9 rounded-full bg-background text-xs font-medium"
-            >
-              <a href="mailto:hr@blossomabatherapy.com?subject=Blossom%20Academy%20account%20access">
-                <Mail className="mr-1.5 h-3.5 w-3.5" />
-                hr@blossomabatherapy.com
-              </a>
-            </Button>
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <RequestAccessDialog />
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <a href="mailto:hr@blossomabatherapy.com?subject=Blossom%20Academy%20account%20access">
+                  <Mail className="mr-1.5 h-3.5 w-3.5" />
+                  Or email hr@blossomabatherapy.com
+                </a>
+              </Button>
+            </div>
           </div>
 
           <p className="mt-6 text-center text-[11px] text-muted-foreground lg:hidden">
