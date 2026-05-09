@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, ClipboardList, ShieldCheck, AlarmClock, X, ArrowRight, Settings as SettingsIcon } from "lucide-react";
+import { Bell, CheckCircle2, ClipboardList, ShieldCheck, AlarmClock, X, ChevronRight, Settings as SettingsIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,12 +13,13 @@ import { cn } from "@/lib/utils";
 import { useMobileAlerts, type AlertCategory, type MobileAlert } from "@/hooks/useMobileAlerts";
 import { useAuth } from "@/contexts/AuthContext";
 
-const TAB_META: Record<AlertCategory, { label: string; icon: typeof Bell }> = {
-  task: { label: "Tasks", icon: ClipboardList },
-  approval: { label: "Approvals", icon: ShieldCheck },
-  overdue: { label: "Overdue", icon: AlarmClock },
-  compliance: { label: "Compliance", icon: ShieldCheck },
+const SECTION_META: Record<AlertCategory, { label: string; icon: typeof Bell; tone: string }> = {
+  task:       { label: "Tasks",       icon: ClipboardList, tone: "text-primary" },
+  approval:   { label: "Approvals",   icon: ShieldCheck,   tone: "text-primary" },
+  overdue:    { label: "Overdue",     icon: AlarmClock,    tone: "text-destructive" },
+  compliance: { label: "Compliance",  icon: ShieldCheck,   tone: "text-amber-600" },
 };
+const SECTION_ORDER: AlertCategory[] = ["overdue", "task", "approval", "compliance"];
 
 function severityStyles(sev: MobileAlert["severity"]) {
   switch (sev) {
@@ -46,7 +46,6 @@ export function AlertsPanel() {
   const { user } = useAuth();
   const { active, counts, dismiss, reset } = useMobileAlerts();
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<AlertCategory>("task");
   const navigate = useNavigate();
 
   if (!user) return null;
@@ -86,27 +85,32 @@ export function AlertsPanel() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[min(92vw,420px)] p-0 overflow-hidden"
+        className="w-[min(94vw,420px)] p-0 overflow-hidden"
       >
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border/50">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Bell className="h-4 w-4 text-primary" /> Notifications
+            {counts.total > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium">
+                {counts.total}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className="h-9 w-9 md:h-7 md:w-7 px-0 text-muted-foreground hover:text-foreground"
               onClick={() => { setOpen(false); navigate("/notification-preferences"); }}
               aria-label="Notification preferences"
             >
-              <SettingsIcon className="h-3.5 w-3.5" />
+              <SettingsIcon className="h-4 w-4 md:h-3.5 md:w-3.5" />
             </Button>
             {counts.total > 0 && (
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                className="h-9 md:h-7 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => reset()}
               >
                 Clear all
@@ -115,100 +119,80 @@ export function AlertsPanel() {
           </div>
         </div>
 
-        <Tabs
-          value={tab}
-          onValueChange={(v) => setTab(v as AlertCategory)}
-          className="flex flex-col"
-        >
-          <div className="px-3">
-            <TabsList className="grid grid-cols-3 w-full h-10">
-              {(Object.keys(TAB_META) as AlertCategory[]).map((k) => {
-                const Icon = TAB_META[k].icon;
-                const count = counts[k];
+        <ScrollArea className="h-[70vh] max-h-[520px]">
+          {counts.total === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-muted-foreground">
+              <CheckCircle2 className="h-10 w-10 text-primary mb-3" />
+              <div className="text-sm font-medium text-foreground">You're all caught up</div>
+              <div className="text-xs mt-1">No notifications right now.</div>
+            </div>
+          ) : (
+            <div className="py-1">
+              {SECTION_ORDER.map((k) => {
+                const items = active.filter((a) => a.category === k);
+                if (items.length === 0) return null;
+                const meta = SECTION_META[k];
+                const Icon = meta.icon;
                 return (
-                  <TabsTrigger key={k} value={k} className="gap-1.5 text-xs">
-                    <Icon className="h-3.5 w-3.5" />
-                    {TAB_META[k].label}
-                    {count > 0 && (
-                      <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                        {count}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
-
-          {(Object.keys(TAB_META) as AlertCategory[]).map((k) => {
-            const items = active.filter((a) => a.category === k);
-            return (
-              <TabsContent key={k} value={k} className="mt-2">
-                <ScrollArea className="h-[420px] px-3 pb-3">
-                  {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-center py-12 text-muted-foreground">
-                      <CheckCircle2 className="h-8 w-8 text-primary mb-2" />
-                      <div className="text-sm font-medium text-foreground">You're all caught up</div>
-                      <div className="text-xs">No {TAB_META[k].label.toLowerCase()} right now.</div>
-                    </div>
-                  ) : (
-                    <ul className="space-y-2 pb-2">
+                  <section key={k} className="pb-1">
+                    <header className="sticky top-0 z-10 flex items-center justify-between px-4 py-1.5 bg-popover/95 backdrop-blur-sm border-b border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <Icon className={cn("h-3.5 w-3.5", meta.tone)} />
+                        {meta.label}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{items.length}</span>
+                    </header>
+                    <ul className="divide-y divide-border/40">
                       {items.map((a) => (
-                        <li
-                          key={a.id}
-                          className={cn("rounded-xl border p-3", severityStyles(a.severity))}
-                        >
-                          <div className="flex items-start gap-3">
+                        <li key={a.id} className={cn("relative", severityStyles(a.severity))}>
+                          <button
+                            type="button"
+                            onClick={() => openAlert(a)}
+                            disabled={!a.href}
+                            className={cn(
+                              "w-full text-left px-4 py-3 pr-12 min-h-[64px]",
+                              "flex items-start gap-3",
+                              "active:bg-muted/60 md:hover:bg-muted/40 transition-colors",
+                              "disabled:cursor-default",
+                            )}
+                          >
                             <span
                               className={cn(
                                 "mt-1.5 h-2 w-2 rounded-full shrink-0",
                                 severityDot(a.severity),
                               )}
+                              aria-hidden
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="font-medium text-sm leading-snug">{a.title}</div>
-                                <button
-                                  aria-label="Dismiss"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    dismiss(a.id);
-                                  }}
-                                  className="-mt-1 -mr-1 h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>
-                              <div className="flex items-center justify-between gap-2 mt-2.5">
-                                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                  <Badge variant="outline" className="h-5 text-[10px]">
-                                    {a.source}
-                                  </Badge>
-                                  {a.dueLabel && <span>· {a.dueLabel}</span>}
-                                </div>
-                                {a.href && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 gap-1 text-primary -mr-2"
-                                    onClick={() => openAlert(a)}
-                                  >
-                                    Open <ArrowRight className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
+                              <div className="font-medium text-sm leading-snug text-foreground">{a.title}</div>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.body}</p>
+                              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
+                                <Badge variant="outline" className="h-5 text-[10px] font-normal">
+                                  {a.source}
+                                </Badge>
+                                {a.dueLabel && <span>· {a.dueLabel}</span>}
                               </div>
                             </div>
-                          </div>
+                            {a.href && (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 self-center" aria-hidden />
+                            )}
+                          </button>
+                          <button
+                            aria-label="Dismiss notification"
+                            onClick={(e) => { e.stopPropagation(); dismiss(a.id); }}
+                            className="absolute top-1.5 right-1.5 h-9 w-9 md:h-7 md:w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted/80"
+                          >
+                            <X className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                          </button>
                         </li>
                       ))}
                     </ul>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
