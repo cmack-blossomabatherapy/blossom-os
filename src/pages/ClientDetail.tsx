@@ -367,7 +367,7 @@ export default function ClientDetail() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="timeline">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
             <TabsList className="bg-muted/50 flex-wrap h-auto">
               <TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger>
               <TabsTrigger value="tasks" className="text-xs">Tasks ({client.tasks.length})</TabsTrigger>
@@ -425,6 +425,7 @@ export default function ClientDetail() {
                 {client.tasks.map((task) => (
                   <button
                     key={task.id}
+                    data-deeplink-id={`task-${task.id}`}
                     onClick={() => {
                       toggleTask(client.id, task.id);
                       toast.success(task.completed ? "Task reopened" : "Task completed");
