@@ -2,6 +2,7 @@ import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { AlertsPanel } from "@/components/alerts/AlertsPanel";
+import { PushedAlertsCenter } from "@/components/notifications/PushedAlertsCenter";
 import { useNavigate } from "react-router-dom";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -56,6 +57,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
           </kbd>
         </button>
 
+        <PushedAlertsCenter />
         <NotificationBell />
         <AlertsPanel />
 
