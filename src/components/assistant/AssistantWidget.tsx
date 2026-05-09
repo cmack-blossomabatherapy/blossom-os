@@ -173,7 +173,7 @@ export function AssistantWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-       className="fixed bottom-20 right-5 z-40 group flex items-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 px-4 py-3 text-primary-foreground shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.6)] ring-1 ring-primary-foreground/10 transition-all hover:scale-[1.03] hover:shadow-[0_22px_50px_-12px_hsl(var(--primary)/0.7)] md:bottom-5"
+       className="fixed bottom-20 right-5 z-40 group flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-primary to-primary/80 p-0 text-primary-foreground shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.6)] ring-1 ring-primary-foreground/10 transition-all hover:scale-[1.03] hover:shadow-[0_22px_50px_-12px_hsl(var(--primary)/0.7)] md:bottom-5 md:h-auto md:w-auto md:px-4 md:py-3"
         aria-label="Open Blossom Assistant"
       >
         <Sparkles className="h-5 w-5" />
