@@ -686,6 +686,35 @@ export type Database = {
           },
         ]
       }
+      alert_reads: {
+        Row: {
+          alert_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_id: string
+          id?: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_reads_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "critical_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_sla_rules: {
         Row: {
           active: boolean
