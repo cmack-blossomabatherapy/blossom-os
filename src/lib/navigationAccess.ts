@@ -32,6 +32,29 @@ export interface NavigationPreviewSection {
 export const fullNavigationRoles: AppRole[] = ["admin", "exec", "ops_manager"];
 export const TRAINING_ADMIN_ROLES: AppRole[] = ["admin", "training_admin", "hr", "hr_admin", "hr_manager"];
 
+/** Roles allowed into Intelligence/analytics dashboards and cross-module scorecards. */
+export const ANALYTICS_ROLES: AppRole[] = [
+  "admin",
+  "exec",
+  "ops_manager",
+  "state_director",
+  "clinic_director",
+  "dept_manager",
+];
+
+/** Roles allowed to author/regenerate AI-generated courses and SOP intelligence. */
+export const COURSE_AUTHOR_ROLES: AppRole[] = [
+  "admin",
+  "ops_manager",
+  "training_admin",
+  "hr",
+  "hr_admin",
+  "hr_manager",
+];
+
+/** Roles allowed to view/run automations. */
+export const AUTOMATIONS_ROLES: AppRole[] = ["admin", "ops_manager"];
+
 /**
  * Default Intelligence-only navigation for any role that does not have a
  * specific exception and does not get full navigation. Shows just the three
