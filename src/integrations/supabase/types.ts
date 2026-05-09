@@ -3267,6 +3267,39 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_milestone_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string
+          created_at: string
+          id: string
+          item: string
+          phase: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string
+          created_at?: string
+          id?: string
+          item: string
+          phase: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string
+          created_at?: string
+          id?: string
+          item?: string
+          phase?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
