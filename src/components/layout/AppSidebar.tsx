@@ -363,46 +363,54 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   return (
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
-        <SheetContent side="right" className="mobile-menu-sheet flex h-dvh w-[92vw] max-w-[380px] flex-col overflow-hidden border-0 bg-background p-0 shadow-2xl md:hidden">
-          <header className="relative overflow-hidden bg-[linear-gradient(135deg,hsl(var(--sidebar-background)),hsl(var(--sidebar-accent))_50%,hsl(var(--primary)))] px-5 pb-6 pt-[calc(env(safe-area-inset-top)+1rem)] text-primary-foreground">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,hsl(var(--primary-foreground)/0.22),transparent_32%),radial-gradient(circle_at_90%_25%,hsl(var(--primary-glow)/0.28),transparent_34%)]" />
-            <div className="relative flex items-start justify-between gap-4">
-              <div className="flex flex-1 flex-col items-center pt-2">
-                <img src={logoWhite} alt="Blossom ABA Therapy" className="h-12 w-auto object-contain drop-shadow-sm" />
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-primary-foreground/75">Operating System</p>
+        <SheetContent side="right" className="mobile-menu-sheet flex h-dvh w-[92vw] max-w-[380px] flex-col overflow-hidden border-0 bg-background p-0 md:hidden">
+          <header className="relative shrink-0 border-b border-border/60 bg-card/95 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+0.875rem)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/15">
+                  <img src={logo} alt="" className="h-7 w-7 object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold tracking-tight text-foreground">Blossom</p>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Operating System</p>
+                </div>
               </div>
-              <Button size="icon" variant="ghost" className="absolute right-0 top-0 h-10 w-10 rounded-full bg-primary-foreground/12 text-primary-foreground ring-1 ring-primary-foreground/20 backdrop-blur-md transition-all hover:scale-105 hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
                 <X className="h-4 w-4" />
               </Button>
             </div>
-          </header>
-          <nav className="flex-1 space-y-3 overflow-y-auto bg-[linear-gradient(180deg,hsl(var(--secondary)/0.75),hsl(var(--background)))] px-4 py-4" aria-label="Mobile navigation">
-            <div className="relative">
+            <div className="relative mt-4">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={mobileNavQuery}
                 onChange={(e) => setMobileNavQuery(e.target.value)}
                 onKeyDown={submitNavSearch(mobileNavQuery, true)}
-                placeholder="Search menu or trainings…"
-                className="h-11 rounded-xl border-border/60 bg-card/80 pl-9 text-sm shadow-sm backdrop-blur-xl"
+                placeholder="Search menu…"
+                className="h-10 rounded-xl border-border/60 bg-secondary/40 pl-9 text-[14px] shadow-none placeholder:text-muted-foreground/80 focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
+          </header>
+          <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
             {mobileSections.map((section, i) => {
               const title = section.title ?? `Section ${i + 1}`;
               const activeInSection = section.items.some((item) => isItemActive(item.path));
               const sectionOpen = mobileOpenSections.has(title);
-              const SectionIcon = section.items[0]?.icon ?? LayoutDashboard;
+              const isFirst = i === 0;
               return (
-              <div key={title} className="animate-fade-in">
-                <button type="button" onClick={() => toggleMobileSection(title)} className={cn("group flex min-h-[76px] w-full items-center gap-3 rounded-2xl border bg-card/88 p-3 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.985]", activeInSection ? "border-primary/45 shadow-[0_16px_34px_-22px_hsl(var(--primary))] ring-1 ring-primary/20" : "border-border/65 hover:border-primary/25")} aria-expanded={sectionOpen}>
-                  <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors", activeInSection ? "bg-primary text-primary-foreground" : "bg-secondary text-primary group-hover:bg-primary/10")}><SectionIcon className="h-5 w-5" /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold uppercase text-foreground">{title}</span>
-                    <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{mobileSectionDescriptions[title] ?? "Workspace tools and records"}</span>
+              <div key={title} className={cn("animate-fade-in", !isFirst && "mt-1 pt-1")}>
+                <button
+                  type="button"
+                  onClick={() => toggleMobileSection(title)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors hover:bg-secondary/40"
+                  aria-expanded={sectionOpen}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</span>
+                    {activeInSection && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />}
                   </span>
-                  <ChevronRight className={cn("h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200", sectionOpen && "rotate-90 text-primary")} />
+                  <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", !sectionOpen && "-rotate-90")} />
                 </button>
-                {sectionOpen && <div className="mt-2 space-y-1 rounded-2xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-xl animate-fade-in">
+                {sectionOpen && <div className="mt-0.5 space-y-0.5 px-1 pb-1 animate-fade-in">
                   {section.items.map((item) => {
                     const active = isItemActive(item.path);
                     if (item.disabled) {
@@ -442,8 +450,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                         <span className="mobile-menu-icon"><item.icon className="h-4 w-4" /></span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate">{item.label}</span>
-                          {mobileItemDescriptions[item.label] && <span className="block truncate text-[11px] font-normal text-muted-foreground">{mobileItemDescriptions[item.label]}</span>}
                         </span>
+                        {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
                       </NavLink>
                     );
                   })}
@@ -451,22 +459,29 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               </div>
             );})}
             {mobileNavQuery.trim() && mobileSections.length === 0 && (
-              <p className="rounded-2xl border border-border/60 bg-card/80 p-4 text-center text-xs text-muted-foreground shadow-sm">
+              <p className="mt-4 rounded-xl border border-dashed border-border/60 bg-card/60 p-4 text-center text-xs text-muted-foreground">
                 No menu matches. Press Enter to search trainings for “{mobileNavQuery.trim()}”.
               </p>
             )}
           </nav>
-          <div className="sticky bottom-0 border-t border-border/60 bg-card/92 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 shadow-[0_-18px_34px_-28px_hsl(var(--foreground))] backdrop-blur-xl">
-            <div className="flex items-center gap-3 rounded-2xl border border-border/65 bg-background/70 p-3 shadow-sm">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-[0_10px_24px_-16px_hsl(var(--primary))]">{initials}</div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold capitalize text-foreground">{displayName}</p>
-                <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
-              </div>
+          <div className="shrink-0 border-t border-border/60 bg-card/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl">
+            <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+              <button
+                type="button"
+                onClick={() => { onMobileOpenChange?.(false); navigate("/profile"); }}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors hover:bg-secondary/50 active:scale-[0.99]"
+                aria-label="Open profile"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">{initials}</div>
+                <div className="min-w-0 flex-1 py-1">
+                  <p className="truncate text-sm font-semibold capitalize leading-tight text-foreground">{displayName}</p>
+                  <p className="truncate text-[11px] leading-tight text-muted-foreground">{roleLabel}</p>
+                </div>
+              </button>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-10 w-10 rounded-full bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 aria-label="Sign out"
                 onClick={async () => {
                   onMobileOpenChange?.(false);
@@ -476,16 +491,6 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
-            <Button
-              variant="outline"
-              className="mt-2 h-11 w-full rounded-xl border-border/65 text-sm font-semibold text-foreground"
-              onClick={async () => {
-                onMobileOpenChange?.(false);
-                await signOut();
-              }}
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Sign out
-            </Button>
           </div>
         </SheetContent>
       </Sheet>
