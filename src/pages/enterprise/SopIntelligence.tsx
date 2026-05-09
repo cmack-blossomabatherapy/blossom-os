@@ -194,11 +194,6 @@ export default function SopIntelligence() {
     return m;
   }, [docs, rawSections]);
 
-  const results = useMemo(
-    () => scoreSections(submitted, SOP_SECTIONS, feedback),
-    [submitted, SOP_SECTIONS, feedback],
-  );
-
   const submittedNorm = useMemo(() => normalizeQuery(submitted), [submitted]);
   // Currently SOP search has no faceted filter UI, so the filter scope is empty
   // for now. When filter chips are added (state, owner, tag, etc.), pass that
@@ -207,6 +202,11 @@ export default function SopIntelligence() {
   const submittedFiltersNorm = useMemo(
     () => normalizeFilters(submittedFilters),
     [submittedFilters],
+  );
+
+  const results = useMemo(
+    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm),
+    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm],
   );
 
   const voteFor = (sectionId: string): SopFeedbackVote | null => {
