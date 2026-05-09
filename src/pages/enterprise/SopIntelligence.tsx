@@ -378,6 +378,14 @@ export default function SopIntelligence() {
               </Button>
               <Button
                 type="button"
+                variant="outline"
+                className="h-12 md:h-11 gap-2 active:scale-[0.98]"
+                onClick={() => setAnalyticsOpen(true)}
+              >
+                <BarChart3 className="h-4 w-4" /> Feedback
+              </Button>
+              <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 className="h-12 w-12 md:h-11 md:w-11 shrink-0"
@@ -673,6 +681,17 @@ export default function SopIntelligence() {
         onOpenChange={(v) => { setAddOpen(v); if (!v) setEditing(null); }}
         editing={editing}
         onSaved={reload}
+      />
+      <SopFeedbackAnalytics
+        open={analyticsOpen}
+        onOpenChange={setAnalyticsOpen}
+        feedback={feedback}
+        sections={SOP_SECTIONS.map((s) => ({
+          id: s.id,
+          sopId: s.sopId,
+          sopTitle: s.sopTitle,
+          section: s.section,
+        }))}
       />
     </GlassPageShell>
   );
