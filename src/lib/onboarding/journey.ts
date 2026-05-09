@@ -82,13 +82,13 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     icon: Sparkles,
     path: "/onboarding/phase/welcome",
     modules: [
-      { key: "p0.welcome", title: "Welcome message", blurb: "A warm hello from the Blossom team.", icon: Sparkles, estMinutes: 3, kind: "content" },
       { key: "p0.intro-video", title: "Welcome video from Elvis", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
         video: { presenter: "Elvis Cooper", duration: "~3 min" },
         actions: [
           { id: "watch", label: "Watch the welcome video", icon: PlayCircle },
           { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
         ] },
+      { key: "p0.welcome", title: "Welcome message", blurb: "A warm hello from the Blossom team.", icon: Sparkles, estMinutes: 3, kind: "content" },
       { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
         actions: [
           { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
