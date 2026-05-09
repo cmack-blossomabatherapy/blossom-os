@@ -1,7 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import {
   ArrowRight, BarChart3, BookOpen, Briefcase, ClipboardCheck, Compass, FileText,
-  GraduationCap, HeartHandshake, History as HistoryIcon, Megaphone, Settings,
+  GraduationCap, HeartHandshake, History as HistoryIcon, Megaphone, Settings, UserCheck,
   ShieldCheck, Sparkles, UsersRound, Wallet, Workflow, Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +31,7 @@ const groups: AdminGroup[] = [
     icon: UsersRound,
     links: [
       { to: "/team", label: "User Management", desc: "Invite, edit, and assign roles", icon: UsersRound },
+      { to: "/admin/access-requests", label: "Access Requests", desc: "Review pending sign-up requests", icon: UserCheck, badge: "New" },
       { to: "/hr/directory", label: "Employee Directory", desc: "Full company directory", icon: UsersRound },
       { to: "/hr/org-chart", label: "Org Chart", desc: "Reporting structure", icon: Workflow },
       { to: "/admin/role-audit", label: "Role Audit Log", desc: "Track permission changes", icon: HistoryIcon },
