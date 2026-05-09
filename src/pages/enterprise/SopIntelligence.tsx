@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, BookOpen, Sparkles, GraduationCap, FileText, ArrowUpRight,
+  Search, BookOpen, Sparkles, FileText, ArrowUpRight,
   History, Zap, Plus, Pencil, Trash2, Loader2, RefreshCw,
 } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
