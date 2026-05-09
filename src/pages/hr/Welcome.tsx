@@ -9,32 +9,39 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { LeadershipVideoDialog, type LeadershipVideo } from "@/components/hr/LeadershipVideoDialog";
 import {
   Sparkles, PlayCircle, Heart, Compass, Users, GraduationCap,
   ClipboardCheck, ShieldCheck, Calendar, ArrowRight, CheckCircle2, Quote,
 } from "lucide-react";
 
-const leadershipVideos = [
+const leadershipVideos: Array<LeadershipVideo & { duration: string; accent: string }> = [
   {
+    key: "ceo-welcome",
     name: "Dr. Sarah Mitchell",
     role: "Chief Executive Officer",
     title: "Welcome to the Blossom family",
     duration: "2:14",
     accent: "from-primary/30 via-primary/10 to-transparent",
+    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
   },
   {
+    key: "clinical-philosophy",
     name: "Marcus Reyes, BCBA-D",
     role: "Chief Clinical Officer",
     title: "Our clinical philosophy",
     duration: "3:42",
     accent: "from-accent/30 via-accent/10 to-transparent",
+    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
   },
   {
+    key: "first-30-days",
     name: "Priya Anand",
     role: "Head of People & Culture",
     title: "Your first 30 days",
     duration: "1:58",
     accent: "from-success/30 via-success/10 to-transparent",
+    src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
   },
 ];
 
@@ -83,6 +90,8 @@ export default function Welcome() {
   const { user } = useAuth();
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const [activeVideo, setActiveVideo] = useState<LeadershipVideo | null>(null);
+  const [videoProgress, setVideoProgress] = useState<Record<string, { position: number; duration: number; completed: boolean }>>({});
 
   const itemKey = (phase: string, item: string) => `${phase}::${item}`;
 
@@ -139,6 +148,78 @@ export default function Welcome() {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  // Load + subscribe to leadership video progress
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("leadership_video_progress")
+        .select("video_key, position_seconds, duration_seconds, completed")
+        .eq("user_id", user.id);
+      if (cancelled || error) return;
+      const next: Record<string, { position: number; duration: number; completed: boolean }> = {};
+      (data ?? []).forEach((row) => {
+        next[row.video_key] = {
+          position: Number(row.position_seconds) || 0,
+          duration: Number(row.duration_seconds) || 0,
+          completed: !!row.completed,
+        };
+      });
+      setVideoProgress(next);
+    };
+    load();
+
+    const channel = supabase
+      .channel(`video-progress-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "leadership_video_progress",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const old = payload.old as { video_key: string };
+            setVideoProgress((prev) => {
+              const { [old.video_key]: _drop, ...rest } = prev;
+              return rest;
+            });
+          } else {
+            const row = payload.new as { video_key: string; position_seconds: number; duration_seconds: number | null; completed: boolean };
+            setVideoProgress((prev) => ({
+              ...prev,
+              [row.video_key]: {
+                position: Number(row.position_seconds) || 0,
+                duration: Number(row.duration_seconds) || 0,
+                completed: !!row.completed,
+              },
+            }));
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  const handleVideoProgress = (key: string, position: number, duration: number, completed: boolean) => {
+    setVideoProgress((prev) => ({ ...prev, [key]: { position, duration, completed } }));
+  };
+
+  const openVideo = (v: LeadershipVideo) => {
+    if (!user?.id) {
+      toast.error("Sign in to track your video progress.");
+    }
+    setActiveVideo(v);
+  };
 
   const toggleItem = async (phase: string, item: string) => {
     if (!user?.id) {
@@ -256,27 +337,51 @@ export default function Welcome() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {leadershipVideos.map((v) => (
-            <Card key={v.name} className="group overflow-hidden border-border/60 transition hover:border-primary/40 hover:shadow-lg">
-              <div className={`relative aspect-video bg-gradient-to-br ${v.accent} flex items-center justify-center`}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary)/0.15),transparent_60%)]" />
-                <button
-                  type="button"
-                  className="relative flex h-16 w-16 items-center justify-center rounded-full bg-card/95 text-primary shadow-xl ring-1 ring-border transition group-hover:scale-105"
-                  aria-label={`Play ${v.title}`}
-                >
-                  <PlayCircle className="h-9 w-9" />
-                </button>
-                <span className="absolute bottom-2 right-2 rounded-md bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
-                  {v.duration}
-                </span>
-              </div>
-              <div className="space-y-1 p-4">
-                <p className="text-sm font-semibold text-foreground">{v.title}</p>
-                <p className="text-xs text-muted-foreground">{v.name} · {v.role}</p>
-              </div>
-            </Card>
-          ))}
+          {leadershipVideos.map((v) => {
+            const prog = videoProgress[v.key];
+            const pct = prog && prog.duration > 0 ? Math.min(100, Math.round((prog.position / prog.duration) * 100)) : 0;
+            const isCompleted = !!prog?.completed;
+            const hasStarted = !!prog && prog.position > 0;
+            return (
+              <Card
+                key={v.key}
+                className="group cursor-pointer overflow-hidden border-border/60 transition hover:border-primary/40 hover:shadow-lg"
+                onClick={() => openVideo(v)}
+              >
+                <div className={`relative aspect-video bg-gradient-to-br ${v.accent} flex items-center justify-center`}>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--primary)/0.15),transparent_60%)]" />
+                  <button
+                    type="button"
+                    className="relative flex h-16 w-16 items-center justify-center rounded-full bg-card/95 text-primary shadow-xl ring-1 ring-border transition group-hover:scale-105"
+                    aria-label={`Play ${v.title}`}
+                    onClick={(e) => { e.stopPropagation(); openVideo(v); }}
+                  >
+                    <PlayCircle className="h-9 w-9" />
+                  </button>
+                  <span className="absolute bottom-2 right-2 rounded-md bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
+                    {v.duration}
+                  </span>
+                  {isCompleted && (
+                    <Badge variant="secondary" className="absolute left-2 top-2 bg-success/90 text-success-foreground">
+                      <CheckCircle2 className="mr-1 h-3 w-3" /> Watched
+                    </Badge>
+                  )}
+                </div>
+                <div className="space-y-2 p-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{v.title}</p>
+                    <p className="text-xs text-muted-foreground">{v.name} · {v.role}</p>
+                  </div>
+                  {hasStarted && !isCompleted && (
+                    <div className="space-y-1">
+                      <Progress value={pct} className="h-1" />
+                      <p className="text-[11px] text-muted-foreground">Resume at {pct}%</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
@@ -376,6 +481,13 @@ export default function Welcome() {
           })}
         </div>
       </section>
+      <LeadershipVideoDialog
+        video={activeVideo}
+        userId={user?.id}
+        initialPosition={activeVideo ? (videoProgress[activeVideo.key]?.position ?? 0) : 0}
+        onOpenChange={(open) => { if (!open) setActiveVideo(null); }}
+        onProgress={handleVideoProgress}
+      />
     </GlassPageShell>
   );
 }
