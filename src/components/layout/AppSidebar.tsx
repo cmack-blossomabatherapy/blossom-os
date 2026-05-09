@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass, Lock, Bot, LogOut,
+  History as HistoryIcon, Search, Compass, Lock, Bot, LogOut, Home, Library, User as UserIcon, Trophy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -50,7 +50,8 @@ const dashboardIcons: Record<DashboardKey, typeof LayoutDashboard> = {
   recruiting: Briefcase,
 };
 
-const superAdminDashboardSection: { title: string; items: NavItem[] } = {
+// LEGACY operations dashboards — surfaced only inside the Admin → Operations subtree.
+const legacyOperationsDashboards: { title: string; items: NavItem[] } = {
   title: "Dashboards",
   items: [
     { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
@@ -66,24 +67,45 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-const navSections: NavSection[] = [
+// PRIMARY — academy-first navigation shown to every signed-in user.
+const academySections: NavSection[] = [
   {
-    title: "Blossom OS",
+    title: "Academy",
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", perm: "" },
-      { label: "Operations Academy", icon: Compass, path: "/blossom/academy", perm: "" },
-      { label: "Blossom Training", icon: GraduationCap, path: "/training", perm: "" },
-      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
-      { label: "Departments", icon: Building2, path: "/blossom/departments", perm: "" },
-      { label: "Locations", icon: Network, path: "/blossom/locations", perm: "" },
-      { label: "Users", icon: UsersRound, path: "/blossom/users", perm: "" },
-      { label: "Reports", icon: BarChart3, path: "/blossom/reports", perm: "" },
-      { label: "Admin Settings", icon: Settings, path: "/settings", perm: "settings.view" },
+      { label: "Home", icon: Home, path: "/", perm: "" },
+      { label: "Blossom Academy", icon: Compass, path: "/academy", perm: "" },
+      { label: "My Learning", icon: GraduationCap, path: "/my-learning", perm: "" },
+      { label: "Training Catalog", icon: BookOpen, path: "/catalog", perm: "" },
+      { label: "Resource Hub", icon: Library, path: "/resources", perm: "" },
+      { label: "Announcements", icon: Megaphone, path: "/announcements", perm: "" },
+      { label: "Profile", icon: UserIcon, path: "/profile", perm: "" },
     ],
   },
+];
+
+// ADMIN — visible only to admin/exec/ops_manager/training_admin/hr roles.
+const adminSections: NavSection[] = [
   {
-    title: "Operate",
+    title: "Admin",
     items: [
+      { label: "User Management", icon: UsersRound, path: "/team", perm: "team.view" },
+      { label: "Course Management", icon: GraduationCap, path: "/admin/training-dashboard", perm: "" },
+      { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "" },
+      { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "" },
+      { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "" },
+      { label: "Reporting", icon: BarChart3, path: "/reports", perm: "" },
+      { label: "Academy Settings", icon: Settings, path: "/settings", perm: "" },
+      { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "" },
+    ],
+  },
+];
+
+// LEGACY OPERATIONS — kept intact so admins keep access; surfaced as "Operations" group.
+const operationsSections: NavSection[] = [
+  {
+    title: "Operations",
+    items: [
+      { label: "Leadership Dashboard", icon: BarChart3, path: "/leadership-dashboard", perm: "" },
       { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
       { label: "Intake", icon: Users, path: "/leads?view=queue", perm: "leads.view" },
       { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "auth.view" },
@@ -92,50 +114,18 @@ const navSections: NavSection[] = [
       { label: "QA & Compliance", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
       { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
       { label: "Clinics", icon: Building2, path: "/clinics", perm: "clinics.view" },
-    ],
-  },
-  {
-    title: "Pipeline",
-    items: [
       { label: "Pipeline", icon: Workflow, path: "/pipeline", perm: "clients.view" },
-    ],
-  },
-  {
-    title: "Records",
-    items: [
       { label: "Phone Calls", icon: Phone, path: "/phone-calls", perm: "phone.view" },
       { label: "Documents", icon: FileText, path: "/documents", perm: "documents.view" },
       { label: "Tasks", icon: CheckSquare, path: "/tasks", perm: "tasks.view" },
-    ],
-  },
-  {
-    title: "Intelligence",
-    items: [
-      { label: "Training Hub", icon: Sparkles, path: "/hr/journey", perm: "", allowedRoles: ["rbt", "bcba"] },
-      { label: "Blossom Training", icon: GraduationCap, path: "/training", perm: "" },
-      { label: "Operations Academy", icon: Compass, path: "/training/academy", perm: "" },
-      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
-    ],
-  },
-  {
-    title: "Admin",
-    items: [
-      { label: "Team", icon: UsersRound, path: "/team", perm: "team.view" },
-      { label: "Training Dashboard", icon: GraduationCap, path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
-      { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
-      { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
-      { label: "Assign Tracks", icon: GraduationCap, path: "/admin/track-assign", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
-      { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
-      { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
-      { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
-      { label: "Assistant Analytics", icon: Bot, path: "/intelligence/assistant", perm: "", allowedRoles: ANALYTICS_ROLES },
-      { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
-      { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
+      { label: "Automations", icon: Zap, path: "/automations", perm: "" },
+      { label: "Intelligence", icon: Bot, path: "/intelligence", perm: "" },
     ],
   },
 ];
 
-const hrSection: { title: string; items: NavItem[] } = {
+// HR / Enterprise legacy groups — kept reachable for admins under Operations area.
+const legacyHrSection: { title: string; items: NavItem[] } = {
   title: "HR Suite",
   items: [
     { label: "HR Dashboard", icon: HeartHandshake, path: "/hr", perm: "hr.view" },
@@ -161,7 +151,7 @@ const hrSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-const enterpriseSection: { title: string; items: NavItem[] } = {
+const legacyEnterpriseSection: { title: string; items: NavItem[] } = {
   title: "Enterprise",
   items: [
     { label: "Workforce Readiness", icon: BarChart3, path: "/enterprise/readiness", perm: "", allowedRoles: ANALYTICS_ROLES },
@@ -174,56 +164,13 @@ const enterpriseSection: { title: string; items: NavItem[] } = {
   ],
 };
 
-const limitedNavigationSections = (roles: string[]): NavSection[] => {
-  const exceptions = getRoleNavigationExceptions(roles as never);
-  const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
-  const allowedPaths = new Set(exceptions.flatMap((exception) => exception.itemPaths ?? []));
-  const intelligenceOverrides = exceptions
-    .map((e) => e.intelligenceItemPaths)
-    .filter((p): p is string[] => Array.isArray(p));
-  const allowedIntelligencePaths = intelligenceOverrides.length > 0
-    ? new Set(intelligenceOverrides.flat().map(navPathToRoutePrefix))
-    : null;
-  const sectionItemRestrictions: Record<string, Set<string>> = {};
-  for (const exception of exceptions) {
-    if (!exception.sectionItemPaths) continue;
-    for (const [title, paths] of Object.entries(exception.sectionItemPaths)) {
-      if (!sectionItemRestrictions[title]) sectionItemRestrictions[title] = new Set();
-      paths.forEach((p) => sectionItemRestrictions[title].add(navPathToRoutePrefix(p)));
-    }
-  }
-
-  return [...navSections, hrSection]
-    .map((section) => ({
-      ...section,
-      items: (() => {
-        const inAllowedSection = allowedSections.has(section.title ?? "");
-        const baseItems = inAllowedSection
-          ? section.items
-          : section.items.filter((item) => allowedPaths.has(navPathToRoutePrefix(item.path)));
-        let result = baseItems;
-        if (section.title === "Intelligence" && allowedIntelligencePaths) {
-          result = result.filter((item) => allowedIntelligencePaths.has(navPathToRoutePrefix(item.path)));
-        }
-        const restriction = sectionItemRestrictions[section.title ?? ""];
-        if (restriction) {
-          result = result.filter((item) => restriction.has(navPathToRoutePrefix(item.path)));
-        }
-        return result;
-      })(),
-    }))
-    .filter((section) => section.items.length > 0);
-};
-
 const mobileSectionDescriptions: Record<string, string> = {
-  "Blossom OS": "Your central command center",
+  Academy: "Onboarding, training, and growth",
+  Admin: "Manage users, courses, and reporting",
+  Operations: "Legacy operations workspace",
   Dashboards: "Real-time insights and performance",
-  Operate: "Run and manage daily operations",
-  Pipeline: "Track client journey end-to-end",
-  Records: "Calls, documents, and tasks",
-  Intelligence: "Learning and operational knowledge",
   "HR Suite": "People, payroll, and compliance",
-  Admin: "System settings and access control",
+  Enterprise: "Workforce intelligence",
 };
 
 const mobileItemDescriptions: Record<string, string> = {
@@ -262,7 +209,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
-  const DEFAULT_OPEN_SECTIONS = ["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Enterprise", "Admin"];
+  const DEFAULT_OPEN_SECTIONS = ["Academy", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(DEFAULT_OPEN_SECTIONS);
     try {
@@ -287,17 +234,21 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
-  const hasFullNavigation = hasFullNavigationAccess(roles);
-  const limitedSections = limitedNavigationSections(roles);
+  // Admin roles see the Admin + Operations groups; everyone sees the Academy group.
+  const adminRoles = new Set(["admin", "exec", "ops_manager", "training_admin", "hr", "hr_admin", "hr_manager"]);
+  const showAdmin = roles.some((r) => adminRoles.has(r));
+  const showOperations = roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
+  void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
+  void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
+  void academyComplete;
 
-  const allSections = hasFullNavigation ? [superAdminDashboardSection, ...navSections] : limitedSections;
-  // Insert HR Suite before Admin so it sits with the operations modules
-  if (hasFullNavigation) {
-    const adminIndex = allSections.findIndex((s) => s.title === "Admin");
-    if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection, enterpriseSection);
-    else allSections.push(hrSection, enterpriseSection);
-  }
+  const allSections: NavSection[] = [
+    ...academySections,
+    ...(showAdmin ? adminSections : []),
+    ...(showOperations ? operationsSections : []),
+    ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
+  ];
 
   const baseSections = allSections
     .map((s) => {
