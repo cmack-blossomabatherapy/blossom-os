@@ -115,6 +115,7 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
 
