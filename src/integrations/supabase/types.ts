@@ -3267,6 +3267,42 @@ export type Database = {
         }
         Relationships: []
       }
+      leadership_video_progress: {
+        Row: {
+          completed: boolean
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          last_watched_at: string
+          position_seconds: number
+          updated_at: string
+          user_id: string
+          video_key: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          last_watched_at?: string
+          position_seconds?: number
+          updated_at?: string
+          user_id: string
+          video_key: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          last_watched_at?: string
+          position_seconds?: number
+          updated_at?: string
+          user_id?: string
+          video_key?: string
+        }
+        Relationships: []
+      }
       onboarding_milestone_progress: {
         Row: {
           completed: boolean
