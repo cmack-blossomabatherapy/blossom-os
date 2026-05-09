@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PushNavigationListener } from "@/components/push/PushNavigationListener";
+import MobilePermissions from "./pages/MobilePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
@@ -173,6 +174,7 @@ const App = () => (
               <PushNavigationListener />
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<RoleDashboardRedirect />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
