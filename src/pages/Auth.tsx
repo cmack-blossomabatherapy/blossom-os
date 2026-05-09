@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import logoBrand from "@/assets/blossom-logo.png";
+import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import logoWordmark from "@/assets/blossom-logo-wordmark.png";
 
 const CANONICAL_LOGIN_HOST = "blossom.abacommandcenter.com";
 const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
@@ -17,6 +17,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (window.location.hostname !== LOVABLE_PUBLISHED_HOST) return;
@@ -49,48 +50,71 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Brand panel */}
-      <div className="relative hidden lg:flex flex-col justify-between p-10 overflow-hidden"
-        style={{ backgroundColor: "hsl(188 45% 45%)" }}>
-        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-background lg:grid lg:grid-cols-[1.05fr_1fr]">
+      {/* Ambient brand background (mobile + behind brand panel) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] opacity-[0.06] lg:hidden" />
 
-        <div className="relative">
-          <img src={logoBrand} alt="Blossom ABA Therapy" className="h-40 w-auto object-contain" />
+      {/* Brand panel — desktop */}
+      <div className="relative hidden flex-col justify-between overflow-hidden p-12 text-primary-foreground lg:flex bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
+
+        <div className="relative flex items-center">
+          <div className="rounded-2xl bg-primary-foreground px-5 py-3 shadow-lg ring-1 ring-primary-foreground/30">
+            <img src={logoWordmark} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+          </div>
         </div>
 
-        <div className="relative flex flex-col items-center text-center text-white max-w-md mx-auto">
-          <img src={logoBrand} alt="Blossom ABA Therapy" className="w-60 h-60 object-contain drop-shadow-xl rounded-3xl" />
-          <h2 className="mt-6 text-2xl font-semibold tracking-tight">Helping families bloom.</h2>
-          <p className="mt-2 text-white/80 text-sm leading-relaxed">
-            The operations hub for intake, authorizations, scheduling, and care delivery —
-            built for the Blossom ABA Therapy team.
+        <div className="relative max-w-md space-y-5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5" /> Blossom Academy
+          </div>
+          <h2 className="text-4xl font-semibold leading-tight tracking-tight">
+            Where the Blossom team grows together.
+          </h2>
+          <p className="text-base leading-relaxed text-primary-foreground/85">
+            Sign in to access onboarding, training, and the tools that power exceptional care for the families we serve.
           </p>
+          <ul className="space-y-2 pt-2 text-sm text-primary-foreground/85">
+            {[
+              "Personalized learning journeys",
+              "Live operations & scheduling",
+              "Premium HR & training experience",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <div className="relative text-xs text-white/60">
+        <div className="relative text-xs text-primary-foreground/70">
           © {new Date().getFullYear()} Blossom ABA Therapy
         </div>
       </div>
 
       {/* Sign-in panel */}
-      <div className="flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-[380px]">
-          <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={logoBrand} alt="Blossom ABA Therapy" className="h-20 w-20 rounded-2xl object-contain" />
+      <div className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:min-h-0 lg:py-16">
+        <div className="w-full max-w-[420px]">
+          {/* Mobile logo */}
+          <div className="mb-8 flex items-center justify-center lg:hidden">
+            <div className="rounded-2xl bg-card px-5 py-3 shadow-sm ring-1 ring-border">
+              <img src={logoWordmark} alt="Blossom ABA Therapy" className="h-9 w-auto object-contain" />
+            </div>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Sign in</h1>
-            <p className="text-sm text-muted-foreground mt-1.5">
-              Welcome back. Use your Blossom team account to continue.
+          <div className="mb-8 space-y-2 text-center lg:text-left">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Welcome back</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Sign in with your Blossom team account to continue.
             </p>
           </div>
 
-          <form onSubmit={handleSignIn} className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="signin-email">Email</Label>
+              <Label htmlFor="signin-email" className="text-xs font-medium text-foreground/80">
+                Email
+              </Label>
               <Input
                 id="signin-email"
                 type="email"
@@ -99,39 +123,54 @@ export default function Auth() {
                 placeholder="you@blossomabatherapy.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-10"
+                className="h-12 rounded-xl bg-background"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="signin-password">Password</Label>
-              <Input
-                id="signin-password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-10"
-              />
+              <Label htmlFor="signin-password" className="text-xs font-medium text-foreground/80">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="signin-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-12 rounded-xl bg-background pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button
               type="submit"
-              className="w-full h-10 text-white"
-              style={{ backgroundColor: "hsl(188 45% 45%)" }}
+              className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-all hover:shadow-lg"
               disabled={submitting}
             >
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-border/60">
-            <p className="text-xs text-muted-foreground leading-relaxed">
+          <div className="mt-8 rounded-2xl border border-border/60 bg-muted/30 p-4">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Need an account? Team accounts are created by your administrator.
               Contact your Blossom admin to get access.
             </p>
           </div>
+
+          <p className="mt-6 text-center text-[11px] text-muted-foreground lg:hidden">
+            © {new Date().getFullYear()} Blossom ABA Therapy
+          </p>
         </div>
       </div>
     </div>
