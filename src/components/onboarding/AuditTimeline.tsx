@@ -72,6 +72,17 @@ function describe(row: Row): { label: string; detail?: string; icon: LucideIcon;
       return { label: `Certificate issued`, detail: t, icon: BadgeCheck, tone: "ok" };
     case "journey_reset":
       return { label: `Journey reset by admin`, icon: RotateCcw, tone: "danger" };
+    case "phase_rollback": {
+      const meta = row.metadata as { phase?: string; note?: string; removed_modules?: string[] } | null;
+      const removed = meta?.removed_modules?.length ?? 0;
+      const noteSuffix = meta?.note ? ` — “${meta.note}”` : "";
+      return {
+        label: `Rolled back to ${meta?.phase ?? t}`,
+        detail: `${removed} module${removed === 1 ? "" : "s"} cleared${noteSuffix}`,
+        icon: RotateCcw,
+        tone: "danger",
+      };
+    }
     case "state_initialized":
       return { label: `Onboarding journey started`, icon: Sparkles, tone: "info" };
     default:

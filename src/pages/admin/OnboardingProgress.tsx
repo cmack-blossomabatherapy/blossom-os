@@ -20,6 +20,7 @@ import {
 import { ONBOARDING_STEPS } from "@/lib/onboarding/steps";
 import { REQUIRED_POLICY_KEYS } from "@/lib/onboarding/gates";
 import { AuditTimeline } from "@/components/onboarding/AuditTimeline";
+import { AdminControls } from "@/components/onboarding/AdminControls";
 
 interface ProfileRow {
   user_id: string;
@@ -232,7 +233,7 @@ export default function OnboardingProgress() {
 
       {/* Detail panel */}
       {selected && (
-        <DetailPanel user={selected} onClose={() => setSelectedId(null)} />
+        <DetailPanel user={selected} onClose={() => setSelectedId(null)} onChanged={() => void load()} />
       )}
     </PageShell>
   );
@@ -264,7 +265,7 @@ function StatusPill({ status }: { status: UserRow["status"] }) {
   return <Badge variant="outline" className="text-[10px] text-muted-foreground">Not started</Badge>;
 }
 
-function DetailPanel({ user, onClose }: { user: UserRow; onClose: () => void }) {
+function DetailPanel({ user, onClose, onChanged }: { user: UserRow; onClose: () => void; onChanged?: () => void }) {
   const path: OnboardingPath = (user.onb?.path === "new_state" || user.new_state_employee) ? "new_state" : "existing_state";
   const completedModules = new Set(user.onb?.modules_complete ?? []);
   const acks = new Set(user.onb?.acknowledgements ?? []);
@@ -381,6 +382,16 @@ function DetailPanel({ user, onClose }: { user: UserRow; onClose: () => void }) 
             )}
           </div>
         </div>
+      </div>
+
+      {/* Admin controls */}
+      <div className="border-t border-border/50 px-5 py-5">
+        <AdminControls
+          userId={user.user_id}
+          userName={user.display_name || user.email || "this user"}
+          path={path}
+          onChanged={onChanged}
+        />
       </div>
 
       {/* Audit / automation timeline */}
