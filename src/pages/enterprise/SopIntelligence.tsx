@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { sopChanges } from "@/data/blossomEnterprise";
+import { SopDetailDrawer, type SopCitation } from "@/components/enterprise/SopDetailDrawer";
 
 /* ---------- Mock SOP corpus (sectioned for semantic-style retrieval) ---------- */
 
@@ -161,6 +162,9 @@ export default function SopIntelligence() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [openSop, setOpenSop] = useState<{ sopId: string; initialCiteIdx: number } | null>(null);
+  // For library taps with no active query, we explicitly mark a section as the "focus".
+  const [focusSectionId, setFocusSectionId] = useState<string | null>(null);
 
   const results = useMemo(() => scoreSections(submitted), [submitted]);
 
@@ -189,6 +193,48 @@ export default function SopIntelligence() {
   const runSuggested = (q: string) => {
     setQuery(q);
     setSubmitted(q);
+  };
+
+  const drawerSections = useMemo(() => {
+    if (!openSop) return [];
+    return SOP_SECTIONS.filter((s) => s.sopId === openSop.sopId);
+  }, [openSop]);
+
+  const drawerCitations = useMemo<SopCitation[]>(() => {
+    if (!openSop) return [];
+    const sectionOrder = new Map(drawerSections.map((s, i) => [s.id, i]));
+    const fromResults = results
+      .filter((r) => r.sopId === openSop.sopId)
+      .map((r) => ({ sectionId: r.id, snippet: r.snippet, matched: r.matched }))
+      .sort((a, b) => (sectionOrder.get(a.sectionId) ?? 0) - (sectionOrder.get(b.sectionId) ?? 0));
+    if (fromResults.length > 0) return fromResults;
+    if (focusSectionId && drawerSections.some((s) => s.id === focusSectionId)) {
+      return [{ sectionId: focusSectionId, snippet: "", matched: [] }];
+    }
+    return [];
+  }, [openSop, drawerSections, results]);
+
+  const openResultDrawer = (sopId: string, sectionId: string) => {
+    // Build the same citation order as the drawer to compute the right initial index.
+    const sections = SOP_SECTIONS.filter((s) => s.sopId === sopId);
+    const order = new Map(sections.map((s, i) => [s.id, i]));
+    const ordered = results
+      .filter((r) => r.sopId === sopId)
+      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+    const idx = Math.max(0, ordered.findIndex((r) => r.id === sectionId));
+    setOpenSop({ sopId, initialCiteIdx: idx });
+  };
+
+  const openLibraryDrawer = (sopId: string, sectionId: string) => {
+    setFocusSectionId(sectionId);
+    setOpenSop({ sopId, initialCiteIdx: 0 });
+  };
+
+  const handleDrawerOpenChange = (open: boolean) => {
+    if (!open) {
+      setOpenSop(null);
+      setFocusSectionId(null);
+    }
   };
 
   return (
@@ -266,7 +312,7 @@ export default function SopIntelligence() {
                   {SOP_SECTIONS.map(s => (
                     <button
                       key={s.id}
-                      onClick={() => runSuggested(s.section)}
+                      onClick={() => openLibraryDrawer(s.sopId, s.id)}
                       className="w-full text-left rounded-lg border border-border/50 bg-background/40 p-3 hover:border-primary/40 transition"
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -327,14 +373,23 @@ export default function SopIntelligence() {
                         Updated {r.updated} · Owner {r.owner} · Relevance {Math.round(r.score * 100)}%
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="gap-1 -mr-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1 -mr-2"
+                      onClick={() => openResultDrawer(r.sopId, r.id)}
+                    >
                       Open SOP <ArrowUpRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>
 
-                  <p className="text-sm leading-relaxed">
+                  <button
+                    type="button"
+                    onClick={() => openResultDrawer(r.sopId, r.id)}
+                    className="block w-full rounded-md text-left text-sm leading-relaxed hover:bg-muted/40 -mx-1 px-1 py-0.5 transition"
+                  >
                     {highlight(r.snippet, r.matched)}
-                  </p>
+                  </button>
 
                   {r.trainings.length > 0 && (
                     <div className="rounded-lg bg-background/40 border border-border/40 p-3">
@@ -405,7 +460,12 @@ export default function SopIntelligence() {
                       <div className="text-sm font-medium truncate">{r.sopTitle}</div>
                       <div className="text-[11px] text-muted-foreground truncate">Updated {r.updated}</div>
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 px-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => openResultDrawer(r.sopId, r.id)}
+                    >
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -416,6 +476,15 @@ export default function SopIntelligence() {
           </div>
         </div>
       )}
+
+      <SopDetailDrawer
+        open={!!openSop}
+        onOpenChange={handleDrawerOpenChange}
+        sections={drawerSections}
+        citations={drawerCitations}
+        initialCitationIndex={openSop?.initialCiteIdx ?? 0}
+        onOpenTraining={() => navigate("/training")}
+      />
     </GlassPageShell>
   );
 }
