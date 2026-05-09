@@ -4,7 +4,7 @@ import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
 import {
   Search, BookOpen, Sparkles, FileText, ArrowUpRight,
   History, Zap, Plus, Pencil, Trash2, Loader2, RefreshCw,
-  ThumbsUp, ThumbsDown, EyeOff,
+  ThumbsUp, ThumbsDown, EyeOff, BarChart3,
 } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SopDetailDrawer, type SopCitation } from "@/components/enterprise/SopDetailDrawer";
 import { AddSopDialog } from "@/components/enterprise/AddSopDialog";
+import { SopFeedbackAnalytics } from "@/components/enterprise/SopFeedbackAnalytics";
 import {
   fetchAllSops, deleteSop, seedStarterSopsIfEmpty,
   type SopDocumentRow, type SopSectionRow,
@@ -112,6 +113,7 @@ export default function SopIntelligence() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<{ doc: SopDocumentRow; body: string } | null>(null);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const deepLink = useDeepLink();
   useConsumeDeepLink();
 
