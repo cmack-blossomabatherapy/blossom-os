@@ -3615,6 +3615,51 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_state: {
+        Row: {
+          acknowledgements: string[]
+          certificate_id: string | null
+          checkins: Json
+          completed_at: string | null
+          completed_steps: string[]
+          created_at: string
+          modules_complete: string[]
+          notes: Json
+          path: string
+          quiz_passed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledgements?: string[]
+          certificate_id?: string | null
+          checkins?: Json
+          completed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          modules_complete?: string[]
+          notes?: Json
+          path?: string
+          quiz_passed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledgements?: string[]
+          certificate_id?: string | null
+          checkins?: Json
+          completed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          modules_complete?: string[]
+          notes?: Json
+          path?: string
+          quiz_passed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_template_tasks: {
         Row: {
           category: string
