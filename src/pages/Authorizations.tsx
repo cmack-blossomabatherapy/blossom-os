@@ -299,6 +299,8 @@ export default function Authorizations() {
   const [panelTab, setPanelTab] = useState<PanelTab>("Overview");
   const [sortKey, setSortKey] = useState<SortKey>("days");
   const [filters, setFilters] = useState({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" });
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(filters);
   const typeFilter = searchParams.get("type") === "treatment" ? "Treatment" : searchParams.get("type") === "initial" ? "Initial" : null;
 
   useEffect(() => {
