@@ -226,6 +226,33 @@ export default function AuthorizationsDashboard() {
     toast.success("Authorizations export downloaded");
   };
 
+  // Apply deep-link params on mount: queue / kpi / focus / tab / action.
+  useEffect(() => {
+    if (deepLink.queue && ["urgent", "today", "blockers"].includes(deepLink.queue)) {
+      setQueue(deepLink.queue as QueueKey);
+    }
+    if (deepLink.kpi) setActiveKpi(deepLink.kpi as KpiFilter);
+    if (deepLink.focus) {
+      const needle = deepLink.focus.toLowerCase();
+      const match = auths.find((a) =>
+        a.id.toLowerCase().includes(needle) ||
+        a.client.toLowerCase().includes(needle),
+      );
+      if (match) {
+        setSelectedAuth(match);
+        setInitialTab(deepLink.tab);
+        if (deepLink.action) {
+          setTimeout(() => quickAction(match, deepLink.action!), 0);
+        }
+      } else {
+        toast.message?.(`No authorization matches "${deepLink.focus}"`);
+      }
+    } else if (deepLink.action) {
+      toast.message?.(`Opened from alert: ${deepLink.action}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <header className="space-y-4">
