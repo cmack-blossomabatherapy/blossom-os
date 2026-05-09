@@ -16,6 +16,30 @@ const MAX_ATTEMPTS = 5;
 const INNER_RETRIES = 2; // per-send retries within a single invocation
 const INNER_BACKOFF_MS = [250, 750]; // delay before each inner retry
 
+const CATEGORY_FALLBACKS: Record<string, string> = {
+  authorizations: "/authorizations",
+  qa: "/qa",
+  staffing: "/staffing",
+  intake: "/leads",
+  billing: "/finance-dashboard",
+  compliance: "/qa-dashboard",
+  tasks: "/tasks",
+};
+
+function safeDeepLink(raw: string | null | undefined, category?: string | null): string {
+  const fallback =
+    (category && CATEGORY_FALLBACKS[category.toLowerCase()]) || "/dashboard";
+  if (typeof raw !== "string") return fallback;
+  let v = raw.trim();
+  if (!v) return fallback;
+  if (v.length > 512) v = v.slice(0, 512);
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return fallback;
+  if (v.startsWith("//") || v.startsWith("/\\")) return fallback;
+  if (!v.startsWith("/")) return fallback;
+  if (/[\u0000-\u001F\u007F]/.test(v)) return fallback;
+  return v;
+}
+
 function isTransient(statusCode: number | undefined): boolean {
   if (!statusCode) return true; // network/no response → assume transient
   if (statusCode === 429) return true;
@@ -126,7 +150,7 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({
       title: alert.title,
       body: alert.message ?? "",
-      url: alert.deep_link,
+      url: safeDeepLink(alert.deep_link, alert.category),
       alertId: alert.id,
       category: alert.category,
     });

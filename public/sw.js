@@ -1,4 +1,27 @@
 /* Blossom OS push service worker */
+const CATEGORY_FALLBACKS = {
+  authorizations: "/authorizations",
+  qa: "/qa",
+  staffing: "/staffing",
+  intake: "/leads",
+  billing: "/finance-dashboard",
+  compliance: "/qa-dashboard",
+  tasks: "/tasks",
+};
+
+function safeDeepLink(raw, category) {
+  const fallback = (category && CATEGORY_FALLBACKS[String(category).toLowerCase()]) || "/dashboard";
+  if (typeof raw !== "string") return fallback;
+  let v = raw.trim();
+  if (!v) return fallback;
+  if (v.length > 512) v = v.slice(0, 512);
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return fallback;
+  if (v.startsWith("//") || v.startsWith("/\\")) return fallback;
+  if (!v.startsWith("/")) return fallback;
+  if (/[\u0000-\u001F\u007F]/.test(v)) return fallback;
+  return v;
+}
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
@@ -15,9 +38,10 @@ self.addEventListener("push", (event) => {
     data = { title: "Critical alert", body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "Critical alert";
+  const safeUrl = safeDeepLink(data.url, data.category);
   const options = {
     body: data.body || "",
-    data: { url: data.url || "/", alertId: data.alertId, category: data.category },
+    data: { url: safeUrl, alertId: data.alertId, category: data.category },
     icon: "/blossom-logo-full.png",
     badge: "/blossom-logo-full.png",
     tag: data.alertId || undefined,
@@ -29,7 +53,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+  const d = event.notification.data || {};
+  const targetUrl = safeDeepLink(d.url, d.category);
+  const alertId = d.alertId;
   event.waitUntil((async () => {
     const allClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of allClients) {
@@ -37,7 +63,7 @@ self.addEventListener("notificationclick", (event) => {
         const url = new URL(client.url);
         if (url.origin === self.location.origin) {
           await client.focus();
-          client.postMessage({ type: "PUSH_NAVIGATE", url: targetUrl });
+          client.postMessage({ type: "PUSH_NAVIGATE", url: targetUrl, alertId });
           return;
         }
       } catch (_e) {}

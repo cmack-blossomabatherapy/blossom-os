@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { sanitizeDeepLink } from "@/lib/push/sanitizeDeepLink";
 
 interface Alert {
   id: string;
@@ -93,7 +94,7 @@ export function PushedAlertsCenter() {
   function handleOpen(a: Alert) {
     markRead([a.id]);
     setOpen(false);
-    navigate(a.deep_link || "/");
+    navigate(sanitizeDeepLink(a.deep_link, a.category));
   }
 
   return (
