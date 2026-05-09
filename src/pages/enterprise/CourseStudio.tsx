@@ -168,7 +168,7 @@ export default function CourseStudio() {
       title="AI Course Studio"
       description="Drop in SOPs, Tango walkthroughs, Loom transcripts, PDFs, videos or notes. Lovable AI drafts modules, quizzes, voiceover scripts, and scenarios — and you can regenerate any piece on demand."
     >
-      <div className="grid lg:grid-cols-[420px_1fr] gap-4">
+      <div className="grid lg:grid-cols-[420px_1fr] gap-4 pb-20 lg:pb-0">
         {/* ---------------- LEFT: Brief + Sources ---------------- */}
         <div className="space-y-4">
           <Card className="border-border/50 bg-card/60 backdrop-blur">
@@ -227,7 +227,7 @@ export default function CourseStudio() {
                 <div className="text-sm flex items-center gap-2"><ListChecks className="h-4 w-4 text-primary" /> Practice scenarios</div>
                 <Switch checked={includeScenarios} onCheckedChange={setIncludeScenarios} />
               </div>
-              <Button className="w-full gap-2" onClick={generate} disabled={loading}>
+              <Button className="w-full gap-2 h-11 hidden lg:inline-flex" onClick={generate} disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {loading ? "Generating course…" : "Generate course"}
               </Button>
