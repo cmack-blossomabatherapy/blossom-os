@@ -9,7 +9,12 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { MobileAlertsButton } from "@/components/mobile/MobileAlertsSheet";
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
+  "/": "Home",
+  "/academy": "Blossom Academy",
+  "/my-learning": "My Learning",
+  "/catalog": "Training Catalog",
+  "/announcements": "Announcements",
+  "/profile": "Profile",
   "/leads": "Leads",
   "/intake-dashboard": "Intake Dashboard",
   "/authorizations-dashboard": "Authorizations Dashboard",
