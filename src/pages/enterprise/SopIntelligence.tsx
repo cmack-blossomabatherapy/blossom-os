@@ -1,16 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, BookOpen, Sparkles, GraduationCap, FileText, ArrowUpRight, History, Zap } from "lucide-react";
+import {
+  Search, BookOpen, Sparkles, GraduationCap, FileText, ArrowUpRight,
+  History, Zap, Plus, Pencil, Trash2, Loader2, RefreshCw,
+} from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { sopChanges } from "@/data/blossomEnterprise";
 import { SopDetailDrawer, type SopCitation } from "@/components/enterprise/SopDetailDrawer";
+import { AddSopDialog } from "@/components/enterprise/AddSopDialog";
+import {
+  fetchAllSops, deleteSop, seedStarterSopsIfEmpty,
+  type SopDocumentRow, type SopSectionRow,
+} from "@/lib/sop/repository";
+import { relativeTime } from "@/lib/sop/indexer";
+import { useToast } from "@/hooks/use-toast";
 
-/* ---------- Mock SOP corpus (sectioned for semantic-style retrieval) ---------- */
+/* ---------- Live SOP corpus (loaded from the database) ---------- */
 
 interface SopSection {
   id: string;
@@ -21,93 +30,7 @@ interface SopSection {
   owner: string;
   updated: string;
   tags: string[];
-  trainings: { id: string; title: string; minutes: number }[];
 }
-
-const SOP_SECTIONS: SopSection[] = [
-  {
-    id: "sec-1", sopId: "sop-12", sopTitle: "Authorization Denial Playbook",
-    section: "Resubmission SLA",
-    body: "When an authorization is denied the assigned coordinator receives an immediate task. The team has 1 business day to resubmit. Medical-necessity denials require a BCBA justification note before resubmission. Devorah is the default escalation owner.",
-    owner: "Devorah Singh", updated: "2 days ago",
-    tags: ["authorization", "denial", "resubmit", "sla", "escalation"],
-    trainings: [
-      { id: "t-44", title: "Auth Submission Mastery", minutes: 35 },
-      { id: "t-77", title: "Working with Devorah on Escalations", minutes: 18 },
-    ],
-  },
-  {
-    id: "sec-2", sopId: "sop-12", sopTitle: "Authorization Denial Playbook",
-    section: "Documentation Correction",
-    body: "Use the documentation correction workflow to attach corrected session notes, treatment plan excerpts, and the BCBA medical necessity rationale. Submit through CentralReach with the denial reason code attached.",
-    owner: "Devorah Singh", updated: "2 days ago",
-    tags: ["documentation", "correction", "centralreach", "notes"],
-    trainings: [
-      { id: "t-21", title: "Clean Documentation Habits", minutes: 22 },
-    ],
-  },
-  {
-    id: "sec-3", sopId: "sop-15", sopTitle: "Financial Gate SOP",
-    section: "Payor Routing",
-    body: "After VOB is received leads enter Financial Review. Medicaid auto-approves. Commercial payors require Gabi's review and may trigger a payment plan or non-viable status. Approved gates create a client pipeline conversion task automatically.",
-    owner: "Gabi Romero", updated: "1 week ago",
-    tags: ["financial", "gate", "vob", "medicaid", "commercial", "payor", "review"],
-    trainings: [
-      { id: "t-12", title: "Financial Review Fundamentals", minutes: 28 },
-      { id: "t-13", title: "Communicating Payment Plans to Families", minutes: 19 },
-    ],
-  },
-  {
-    id: "sec-4", sopId: "sop-08", sopTitle: "VOB Process",
-    section: "Solum Submission",
-    body: "Initiate verification of benefits by submitting a Solum request with the correct payor packet. Attach insurance card front/back, demographics form, and prescriber referral. Common errors: missing subscriber DOB, wrong group ID, mismatched address.",
-    owner: "Intake Team", updated: "3 weeks ago",
-    tags: ["vob", "solum", "intake", "insurance", "verification"],
-    trainings: [
-      { id: "t-08", title: "VOB Mastery — From Lead to Verified", minutes: 42 },
-    ],
-  },
-  {
-    id: "sec-5", sopId: "sop-21", sopTitle: "Onboarding — Georgia New Hires",
-    section: "State Signature Packet",
-    body: "Georgia new hires must complete the GA Sworn Statement and GA Background Authorization on day one. HR uploads the signed packet to the employee record before clinical orientation begins.",
-    owner: "HR Admin", updated: "5 days ago",
-    tags: ["onboarding", "georgia", "compliance", "background", "new hire"],
-    trainings: [
-      { id: "t-31", title: "Onboarding Compliance Essentials", minutes: 25 },
-    ],
-  },
-  {
-    id: "sec-6", sopId: "sop-30", sopTitle: "Parent Intake Call SOP",
-    section: "Discovery & Empathy",
-    body: "Open every intake call by acknowledging the family's journey. Capture diagnosis, current services, geographic constraints, and parent goals. Avoid clinical jargon. Confirm next step in writing within 1 hour.",
-    owner: "Intake Team", updated: "1 month ago",
-    tags: ["intake", "parent", "call", "discovery", "empathy"],
-    trainings: [
-      { id: "t-50", title: "Empathy-First Intake Calls", minutes: 30 },
-    ],
-  },
-  {
-    id: "sec-7", sopId: "sop-44", sopTitle: "Scheduling Conflict Resolution",
-    section: "RBT Reassignment",
-    body: "When an RBT calls out, scheduling first checks the float pool, then in-clinic coverage, then offers virtual parent training as a bridge. Notify the family within 30 minutes. Log the conflict in the scheduling tracker.",
-    owner: "Scheduling Lead", updated: "2 weeks ago",
-    tags: ["scheduling", "rbt", "callout", "conflict", "coverage"],
-    trainings: [
-      { id: "t-66", title: "Scheduling Conflict Walkthrough", minutes: 14 },
-    ],
-  },
-  {
-    id: "sec-8", sopId: "sop-55", sopTitle: "QA Session Review Checklist",
-    section: "Note Quality Standards",
-    body: "Every session note must include: behavior data, intervention used, parent involvement, response to programming, and next session focus. QA flags any note missing two or more elements for BCBA review.",
-    owner: "QA Director", updated: "10 days ago",
-    tags: ["qa", "notes", "session", "quality", "bcba", "review"],
-    trainings: [
-      { id: "t-72", title: "Writing Defensible Session Notes", minutes: 24 },
-    ],
-  },
-];
 
 const STOP = new Set(["the","a","an","and","or","of","to","in","on","for","is","are","what","how","do","does","with","by","at","from","my","our","their","this","that","i","we","you","be","can","should","when","why","who"]);
 
@@ -121,10 +44,10 @@ interface ScoredSection extends SopSection {
   snippet: string;
 }
 
-function scoreSections(query: string): ScoredSection[] {
+function scoreSections(query: string, sections: SopSection[]): ScoredSection[] {
   const q = tokenize(query);
   if (q.length === 0) return [];
-  return SOP_SECTIONS.map(sec => {
+  return sections.map(sec => {
     const haystack = [sec.section, sec.body, sec.tags.join(" "), sec.sopTitle].join(" ").toLowerCase();
     const docTokens = new Set(tokenize(haystack));
     const matched = q.filter(t => docTokens.has(t) || haystack.includes(t));
@@ -160,30 +83,84 @@ const SUGGESTED = [
 
 export default function SopIntelligence() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [openSop, setOpenSop] = useState<{ sopId: string; initialCiteIdx: number } | null>(null);
   // For library taps with no active query, we explicitly mark a section as the "focus".
   const [focusSectionId, setFocusSectionId] = useState<string | null>(null);
 
-  const results = useMemo(() => scoreSections(submitted), [submitted]);
+  const [docs, setDocs] = useState<SopDocumentRow[]>([]);
+  const [rawSections, setRawSections] = useState<SopSectionRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<{ doc: SopDocumentRow; body: string } | null>(null);
 
-  const recommendedTrainings = useMemo(() => {
-    const map = new Map<string, { id: string; title: string; minutes: number; from: string[]; weight: number }>();
-    results.slice(0, 5).forEach((r, idx) => {
-      r.trainings.forEach(t => {
-        const prev = map.get(t.id);
-        const weight = (results.length - idx) + r.score * 5;
-        if (prev) {
-          prev.weight += weight;
-          if (!prev.from.includes(r.sopTitle)) prev.from.push(r.sopTitle);
-        } else {
-          map.set(t.id, { ...t, from: [r.sopTitle], weight });
-        }
+  const reload = async () => {
+    setLoading(true);
+    try {
+      await seedStarterSopsIfEmpty();
+      const { documents, sections } = await fetchAllSops();
+      setDocs(documents);
+      setRawSections(sections);
+    } catch (e) {
+      toast({
+        title: "Couldn't load SOPs",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  // Project DB rows into the shape the search engine expects.
+  const SOP_SECTIONS = useMemo<SopSection[]>(() => {
+    const docMap = new Map(docs.map(d => [d.id, d]));
+    return rawSections
+      .map(s => {
+        const d = docMap.get(s.sop_id);
+        if (!d) return null;
+        return {
+          id: s.id,
+          sopId: s.sop_id,
+          sopTitle: d.title,
+          section: s.section,
+          body: s.body,
+          owner: d.owner ?? "—",
+          updated: relativeTime(s.updated_at),
+          tags: s.tags,
+        } satisfies SopSection;
+      })
+      .filter((x): x is SopSection => !!x);
+  }, [docs, rawSections]);
+
+  const sectionBodyByDoc = useMemo(() => {
+    const m = new Map<string, string>();
+    docs.forEach(d => {
+      const ordered = rawSections
+        .filter(s => s.sop_id === d.id)
+        .sort((a, b) => a.position - b.position);
+      const text = ordered.map(s => `# ${s.section}\n${s.body}`).join("\n\n");
+      m.set(d.id, text);
     });
-    return Array.from(map.values()).sort((a, b) => b.weight - a.weight).slice(0, 4);
-  }, [results]);
+    return m;
+  }, [docs, rawSections]);
+
+  const results = useMemo(() => scoreSections(submitted, SOP_SECTIONS), [submitted, SOP_SECTIONS]);
+
+  const recentChanges = useMemo(
+    () => docs.slice(0, 5).map(d => ({
+      id: d.id,
+      sopTitle: d.title,
+      changedAt: relativeTime(d.updated_at),
+      changedBy: d.owner ?? "—",
+      summary: `${rawSections.filter(s => s.sop_id === d.id).length} sections indexed`,
+    })),
+    [docs, rawSections]
+  );
 
   const onSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -198,7 +175,7 @@ export default function SopIntelligence() {
   const drawerSections = useMemo(() => {
     if (!openSop) return [];
     return SOP_SECTIONS.filter((s) => s.sopId === openSop.sopId);
-  }, [openSop]);
+  }, [openSop, SOP_SECTIONS]);
 
   const drawerCitations = useMemo<SopCitation[]>(() => {
     if (!openSop) return [];
@@ -212,7 +189,7 @@ export default function SopIntelligence() {
       return [{ sectionId: focusSectionId, snippet: "", matched: [] }];
     }
     return [];
-  }, [openSop, drawerSections, results]);
+  }, [openSop, drawerSections, results, focusSectionId]);
 
   const openResultDrawer = (sopId: string, sectionId: string) => {
     // Build the same citation order as the drawer to compute the right initial index.
@@ -223,6 +200,26 @@ export default function SopIntelligence() {
       .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
     const idx = Math.max(0, ordered.findIndex((r) => r.id === sectionId));
     setOpenSop({ sopId, initialCiteIdx: idx });
+  };
+
+  const onEditDoc = (doc: SopDocumentRow) => {
+    setEditing({ doc, body: sectionBodyByDoc.get(doc.id) ?? "" });
+    setAddOpen(true);
+  };
+
+  const onDeleteDoc = async (doc: SopDocumentRow) => {
+    if (!confirm(`Delete "${doc.title}" and all its sections?`)) return;
+    try {
+      await deleteSop(doc.id);
+      toast({ title: "SOP deleted" });
+      await reload();
+    } catch (e) {
+      toast({
+        title: "Couldn't delete",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
   };
 
   const openLibraryDrawer = (sopId: string, sectionId: string) => {
@@ -250,12 +247,14 @@ export default function SopIntelligence() {
             <div className="text-[11px] text-muted-foreground">Indexed sections</div>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur px-3 py-2">
-            <div className="text-xl font-semibold">{new Set(SOP_SECTIONS.map(s => s.sopId)).size}</div>
+            <div className="text-xl font-semibold">{docs.length}</div>
             <div className="text-[11px] text-muted-foreground">SOPs</div>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur px-3 py-2">
-            <div className="text-xl font-semibold">{new Set(SOP_SECTIONS.flatMap(s => s.trainings.map(t => t.id))).size}</div>
-            <div className="text-[11px] text-muted-foreground">Linked trainings</div>
+            <div className="text-xl font-semibold">
+              {SOP_SECTIONS.reduce((n, s) => n + s.tags.length, 0)}
+            </div>
+            <div className="text-[11px] text-muted-foreground">Auto tags</div>
           </div>
         </div>
       }
