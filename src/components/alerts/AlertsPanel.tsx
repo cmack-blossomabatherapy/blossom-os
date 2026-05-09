@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useMobileAlerts, type AlertCategory, type MobileAlert } from "@/hooks/useMobileAlerts";
+import { ALERT_CATEGORY_META } from "@/lib/alerts/categoryPrefs";
 import { useAuth } from "@/contexts/AuthContext";
 
 const SECTION_META: Record<AlertCategory, { label: string; icon: typeof Bell; tone: string }> = {
@@ -44,7 +45,7 @@ function severityDot(sev: MobileAlert["severity"]) {
  */
 export function AlertsPanel() {
   const { user } = useAuth();
-  const { active, counts, dismiss, reset } = useMobileAlerts();
+  const { active, counts, mutedCategories, dismiss, reset } = useMobileAlerts();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -95,6 +96,16 @@ export function AlertsPanel() {
                 {counts.total}
               </Badge>
             )}
+            {mutedCategories.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { setOpen(false); navigate("/notification-preferences"); }}
+                title={`Muted: ${mutedCategories.map((c) => ALERT_CATEGORY_META[c].label).join(", ")}`}
+                className="h-5 px-1.5 inline-flex items-center rounded-full text-[10px] font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+              >
+                {mutedCategories.length} muted
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -121,11 +132,30 @@ export function AlertsPanel() {
 
         <ScrollArea className="h-[70vh] max-h-[520px]">
           {counts.total === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-muted-foreground">
-              <CheckCircle2 className="h-10 w-10 text-primary mb-3" />
-              <div className="text-sm font-medium text-foreground">You're all caught up</div>
-              <div className="text-xs mt-1">No notifications right now.</div>
-            </div>
+            mutedCategories.length > 0 ? (
+              <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-muted-foreground">
+                <Bell className="h-10 w-10 text-muted-foreground/60 mb-3" />
+                <div className="text-sm font-medium text-foreground">Nothing to show</div>
+                <div className="text-xs mt-1">
+                  {mutedCategories.length === 4
+                    ? "All categories are muted."
+                    : `${mutedCategories.length} ${mutedCategories.length === 1 ? "category is" : "categories are"} muted.`}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); navigate("/notification-preferences"); }}
+                  className="mt-3 text-xs font-medium text-primary hover:underline"
+                >
+                  Manage preferences
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-16 px-6 text-muted-foreground">
+                <CheckCircle2 className="h-10 w-10 text-primary mb-3" />
+                <div className="text-sm font-medium text-foreground">You're all caught up</div>
+                <div className="text-xs mt-1">No notifications right now.</div>
+              </div>
+            )
           ) : (
             <div className="py-1">
               {SECTION_ORDER.map((k) => {
