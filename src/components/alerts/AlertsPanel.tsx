@@ -18,6 +18,7 @@ const TAB_META: Record<AlertCategory, { label: string; icon: typeof Bell }> = {
   task: { label: "Tasks", icon: ClipboardList },
   approval: { label: "Approvals", icon: ShieldCheck },
   overdue: { label: "Overdue", icon: AlarmClock },
+  compliance: { label: "Compliance", icon: ShieldCheck },
 };
 
 function severityStyles(sev: MobileAlert["severity"]) {
