@@ -7,6 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ROLE_META } from "@/lib/roles";
+import {
+  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People", "Support"] as const;
+const SELECTABLE_ROLES = ROLE_META.filter((r) => ROLE_GROUPS.includes(r.group as (typeof ROLE_GROUPS)[number]));
 
 export function RequestAccessDialog() {
   const [open, setOpen] = useState(false);
@@ -69,7 +76,27 @@ export function RequestAccessDialog() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ra-role" className="text-xs font-medium text-foreground/80">Role</Label>
-              <Input id="ra-role" required placeholder="BCBA, RBT, HR…" value={form.role} onChange={update("role")} className="h-11 rounded-xl" />
+              <Select value={form.role} onValueChange={(value) => setForm((f) => ({ ...f, role: value }))}>
+                <SelectTrigger id="ra-role" className="h-11 rounded-xl">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {ROLE_GROUPS.map((group) => {
+                    const items = SELECTABLE_ROLES.filter((r) => r.group === group);
+                    if (items.length === 0) return null;
+                    return (
+                      <SelectGroup key={group}>
+                        <SelectLabel className="text-[11px] uppercase tracking-wider text-muted-foreground">{group}</SelectLabel>
+                        {items.map((r) => (
+                          <SelectItem key={r.key} value={r.label}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ra-clinic" className="text-xs font-medium text-foreground/80">Clinic / location</Label>
