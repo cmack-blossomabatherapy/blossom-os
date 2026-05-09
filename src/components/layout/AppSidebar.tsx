@@ -14,7 +14,7 @@ import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
-import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
+import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAcademyComplete } from "@/hooks/useAcademyComplete";
@@ -158,6 +158,19 @@ const hrSection: { title: string; items: NavItem[] } = {
   ],
 };
 
+const enterpriseSection: { title: string; items: NavItem[] } = {
+  title: "Enterprise",
+  items: [
+    { label: "Workforce Readiness", icon: BarChart3, path: "/enterprise/readiness", perm: "", allowedRoles: ANALYTICS_ROLES },
+    { label: "Compliance & Audit", icon: ShieldCheck, path: "/enterprise/compliance", perm: "", allowedRoles: ANALYTICS_ROLES },
+    { label: "AI Recommendations", icon: Sparkles, path: "/enterprise/recommendations", perm: "", allowedRoles: ANALYTICS_ROLES },
+    { label: "SOP Intelligence", icon: BookOpen, path: "/enterprise/sop-intelligence", perm: "", allowedRoles: COURSE_AUTHOR_ROLES },
+    { label: "AI Course Studio", icon: Sparkles, path: "/enterprise/course-studio", perm: "", allowedRoles: COURSE_AUTHOR_ROLES },
+    { label: "Simulations", icon: Compass, path: "/enterprise/simulations", perm: "", allowedRoles: COURSE_AUTHOR_ROLES },
+    { label: "Automations", icon: Zap, path: "/enterprise/automations", perm: "automations.view", allowedRoles: AUTOMATIONS_ROLES },
+  ],
+};
+
 const limitedNavigationSections = (roles: string[]): NavSection[] => {
   const exceptions = getRoleNavigationExceptions(roles as never);
   const allowedSections = new Set(["Intelligence", ...exceptions.flatMap((exception) => exception.sectionTitles ?? [])]);
@@ -257,8 +270,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   // Insert HR Suite before Admin so it sits with the operations modules
   if (hasFullNavigation) {
     const adminIndex = allSections.findIndex((s) => s.title === "Admin");
-    if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection);
-    else allSections.push(hrSection);
+    if (adminIndex >= 0) allSections.splice(adminIndex, 0, hrSection, enterpriseSection);
+    else allSections.push(hrSection, enterpriseSection);
   }
 
   const baseSections = allSections
