@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,9 @@ interface Props { phaseId: JourneyPhase["id"]; }
 
 export function PhasePage({ phaseId }: Props) {
   const status = useOnboardingStatus();
+  // Bump to force re-read of acknowledgement-backed shadowing state.
+  const [, setTick] = useState(0);
+  const refresh = () => setTick((t) => t + 1);
   const phase = useMemo(() => ONBOARDING_PHASES.find((p) => p.id === phaseId)!, [phaseId]);
   const mods = modulesForPath(phase, status.path);
   const doneCount = mods.filter((m) => status.modulesComplete.includes(m.key)).length;
@@ -101,12 +104,15 @@ export function PhasePage({ phaseId }: Props) {
                 )}
                 {m.kind === "shadowing" && m.shadowing && (
                   <ShadowingCard
+                    moduleKey={m.key}
                     assignee={m.shadowing.assignee}
+                    stages={m.shadowing.stages}
                     goals={m.shadowing.goals}
-                    notes={status.notes[m.key] || ""}
+                    notes={status.notes}
                     done={done}
-                    onNotesChange={(t) => setNote(m.key, t)}
+                    onNotesChange={(key, t) => { setNote(key, t); }}
                     onComplete={onComplete}
+                    onChange={refresh}
                   />
                 )}
                 {m.kind === "checkin" && (
