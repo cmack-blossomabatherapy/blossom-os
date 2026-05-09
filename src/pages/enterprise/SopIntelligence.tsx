@@ -524,6 +524,59 @@ export default function SopIntelligence() {
                       ))}
                     </div>
                   )}
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
+                    <div className="text-[11px] text-muted-foreground">Was this helpful?</div>
+                    {(() => {
+                      const v = voteFor(r.id);
+                      return (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "up" && "bg-primary/15 text-primary hover:bg-primary/20",
+                            )}
+                            onClick={() => handleVote(r.id, "up")}
+                            aria-pressed={v === "up"}
+                            aria-label="Helpful result"
+                          >
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Helpful</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "down" && "bg-destructive/15 text-destructive hover:bg-destructive/20",
+                            )}
+                            onClick={() => handleVote(r.id, "down")}
+                            aria-pressed={v === "down"}
+                            aria-label="Not helpful"
+                          >
+                            <ThumbsDown className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Not helpful</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "not_relevant" && "bg-muted text-foreground",
+                            )}
+                            onClick={() => handleVote(r.id, "not_relevant")}
+                            aria-pressed={v === "not_relevant"}
+                            aria-label="Not relevant to this query"
+                          >
+                            <EyeOff className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Not relevant</span>
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </CardContent>
               </Card>
             ))}
