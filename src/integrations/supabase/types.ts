@@ -3806,6 +3806,47 @@ export type Database = {
         }
         Relationships: []
       }
+      sop_search_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          query_norm: string
+          section_id: string
+          updated_at: string
+          user_id: string
+          vote: Database["public"]["Enums"]["sop_feedback_vote"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query?: string
+          query_norm?: string
+          section_id: string
+          updated_at?: string
+          user_id: string
+          vote: Database["public"]["Enums"]["sop_feedback_vote"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          query_norm?: string
+          section_id?: string
+          updated_at?: string
+          user_id?: string
+          vote?: Database["public"]["Enums"]["sop_feedback_vote"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sop_search_feedback_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sop_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sop_sections: {
         Row: {
           body: string
@@ -5215,6 +5256,7 @@ export type Database = {
         | "Delivered"
         | "Missed"
         | "Cancelled"
+      sop_feedback_vote: "up" | "down" | "not_relevant"
       staffing_match_status: "Suggested" | "Pending" | "Assigned" | "Rejected"
       staffing_status: "Not Needed" | "Needed" | "In Progress" | "Assigned"
       timeline_event_type:
@@ -5820,6 +5862,7 @@ export const Constants = {
         "Missed",
         "Cancelled",
       ],
+      sop_feedback_vote: ["up", "down", "not_relevant"],
       staffing_match_status: ["Suggested", "Pending", "Assigned", "Rejected"],
       staffing_status: ["Not Needed", "Needed", "In Progress", "Assigned"],
       timeline_event_type: [
