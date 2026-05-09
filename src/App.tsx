@@ -62,6 +62,7 @@ import NotificationSettings from "./pages/hr/NotificationSettings";
 import HRAssistant from "./pages/hr/HRAssistant";
 import Welcome from "./pages/hr/Welcome";
 import Recognition from "./pages/hr/Recognition";
+import AnnouncementsFeed from "./pages/hr/AnnouncementsFeed";
 import TrainingDashboard from "./pages/hr/TrainingDashboard";
 import TrainingStatistics from "./pages/hr/TrainingStatistics";
 import TrainingAssign from "./pages/hr/TrainingAssign";
@@ -250,6 +251,7 @@ const App = () => (
                   <Route path="/hr/assistant" element={<HRAssistant />} />
                   <Route path="/hr/welcome" element={<Welcome />} />
                   <Route path="/hr/recognition" element={<Recognition />} />
+                  <Route path="/hr/feed" element={<AnnouncementsFeed />} />
                   <Route path="/hr/journey" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyHub /></PermissionRoute>} />
                   <Route path="/hr/journey/drive" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyDrive /></PermissionRoute>} />
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
