@@ -347,7 +347,7 @@ export function useMobileAlerts() {
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`alert-dismissals-${userId}`)
+      .channel(`alert-dismissals-${userId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "mobile_alert_dismissals", filter: `user_id=eq.${userId}` },
         (payload) => {
