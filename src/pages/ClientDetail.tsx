@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
   getClientAlert, getLifecycleProgress, lifecycleSteps, ClientStage, ScheduleSlot,
