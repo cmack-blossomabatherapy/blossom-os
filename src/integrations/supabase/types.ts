@@ -686,6 +686,51 @@ export type Database = {
           },
         ]
       }
+      alert_sla_rules: {
+        Row: {
+          active: boolean
+          alert_type: string
+          category: string
+          created_at: string
+          critical_offset_hours: number
+          id: string
+          label: string | null
+          notes: string | null
+          payor: string | null
+          state: string | null
+          updated_at: string
+          warning_offset_hours: number
+        }
+        Insert: {
+          active?: boolean
+          alert_type: string
+          category: string
+          created_at?: string
+          critical_offset_hours?: number
+          id?: string
+          label?: string | null
+          notes?: string | null
+          payor?: string | null
+          state?: string | null
+          updated_at?: string
+          warning_offset_hours?: number
+        }
+        Update: {
+          active?: boolean
+          alert_type?: string
+          category?: string
+          created_at?: string
+          critical_offset_hours?: number
+          id?: string
+          label?: string | null
+          notes?: string | null
+          payor?: string | null
+          state?: string | null
+          updated_at?: string
+          warning_offset_hours?: number
+        }
+        Relationships: []
+      }
       assessment_documents: {
         Row: {
           assessment_id: string
@@ -5067,6 +5112,18 @@ export type Database = {
         Returns: undefined
       }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
+      resolve_alert_sla: {
+        Args: { _alert_type: string; _payor: string; _state: string }
+        Returns: {
+          alert_type: string
+          category: string
+          critical_offset_hours: number
+          payor: string
+          rule_id: string
+          state: string
+          warning_offset_hours: number
+        }[]
+      }
       upsert_knowledge_chunk: {
         Args: {
           _content: string
