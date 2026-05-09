@@ -7,14 +7,14 @@ type Item = { to: string; label: string; icon: typeof Home; match?: (p: string) 
 
 export function MobileBottomNav() {
   const { pathname } = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const items: Item[] = [
     { to: "/", label: "Home", icon: Home, match: (p) => p === "/" || p === "/dashboard" || p.endsWith("-dashboard") },
     { to: "/blossom/academy", label: "Academy", icon: GraduationCap, match: (p) => p.startsWith("/blossom/academy") },
     { to: "/training", label: "Training", icon: BookOpen, match: (p) => p.startsWith("/training") || p === "/hr/journey" },
     { to: "/resources", label: "Resources", icon: Library, match: (p) => p.startsWith("/resources") || p.startsWith("/hr/resources") },
-    { to: isAdmin ? "/intelligence" : "/hr", label: isAdmin ? "Insights" : "Profile", icon: isAdmin ? Bell : User, match: (p) => isAdmin ? p.startsWith("/intelligence") : p.startsWith("/hr") },
+    { to: "/intelligence", label: "Insights", icon: Bell, match: (p) => p.startsWith("/intelligence") },
   ];
 
   if (!user) return null;
