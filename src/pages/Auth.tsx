@@ -157,6 +157,19 @@ export default function Auth() {
                 </button>
               </div>
             </div>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <label htmlFor="signin-remember" className="flex cursor-pointer items-center gap-2 text-sm text-foreground/80 select-none">
+                <Checkbox
+                  id="signin-remember"
+                  checked={remember}
+                  onCheckedChange={(value) => setRemember(value === true)}
+                />
+                Remember me
+              </label>
+              <span className="text-[11px] text-muted-foreground">
+                Trusted device only
+              </span>
+            </div>
             <Button
               type="submit"
               className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-all hover:shadow-lg"
