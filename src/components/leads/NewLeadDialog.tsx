@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ResponsiveSheet, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/responsive-sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ const states = ["GA", "TX", "AZ", "FL", "CA", "NY", "NC", "VA", "TN", "OH"];
 const owners = ["Sarah M.", "James R.", "Maya P."];
 
 export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {
+  const isMobile = useIsMobile();
   const { addLead } = useLeads();
   const [form, setForm] = useState({
     childName: "", parentName: "", phone: "", email: "",
@@ -107,13 +110,47 @@ export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogPr
   };
 
   return (
+    isMobile ? (
+      <ResponsiveSheet open={open} onOpenChange={onOpenChange}>
+        <div className="flex h-full flex-col overflow-hidden">
+          <SheetHeader className="px-5 pb-2 pt-3 text-left">
+            <SheetTitle>New lead</SheetTitle>
+            <SheetDescription className="text-xs">
+              Manually create a lead. Form starts in <strong>New Lead</strong> stage.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto border-t border-border/60 px-5 py-4">
+            <FormBody form={form} update={update} errors={errors} />
+          </div>
+          <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button className="flex-1" onClick={submit}>Create lead</Button>
+          </SheetFooter>
+        </div>
+      </ResponsiveSheet>
+    ) : (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>New lead</DialogTitle>
           <DialogDescription>Manually create a lead. Form starts in <strong>New Lead</strong> stage.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3 py-2">
+        <div className="py-2">
+          <FormBody form={form} update={update} errors={errors} />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={submit}>Create lead</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    )
+  );
+}
+
+function FormBody({ form, update, errors }: { form: any; update: (k: any, v: any) => void; errors: Record<string, string> }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label className="text-xs">Child name *</Label>
             <Input value={form.childName} onChange={(e) => update("childName", e.target.value)} className="h-9" />
@@ -176,11 +213,5 @@ export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogPr
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>Create lead</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
