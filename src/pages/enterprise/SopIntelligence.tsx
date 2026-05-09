@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Search, BookOpen, Sparkles, FileText, ArrowUpRight,
   History, Zap, Plus, Pencil, Trash2, Loader2, RefreshCw,
+  ThumbsUp, ThumbsDown, EyeOff,
 } from "lucide-react";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,11 @@ import {
 } from "@/lib/sop/repository";
 import { relativeTime } from "@/lib/sop/indexer";
 import { useToast } from "@/hooks/use-toast";
+import {
+  fetchAllFeedback, setFeedback, normalizeQuery, boostFor,
+  type SopFeedbackRow, type SopFeedbackVote,
+} from "@/lib/sop/feedback";
+import { cn } from "@/lib/utils";
 
 /* ---------- Live SOP corpus (loaded from the database) ---------- */
 
@@ -44,9 +50,14 @@ interface ScoredSection extends SopSection {
   snippet: string;
 }
 
-function scoreSections(query: string, sections: SopSection[]): ScoredSection[] {
+function scoreSections(
+  query: string,
+  sections: SopSection[],
+  feedback: SopFeedbackRow[],
+): ScoredSection[] {
   const q = tokenize(query);
   if (q.length === 0) return [];
+  const queryNorm = normalizeQuery(query);
   return sections.map(sec => {
     const haystack = [sec.section, sec.body, sec.tags.join(" "), sec.sopTitle].join(" ").toLowerCase();
     const docTokens = new Set(tokenize(haystack));
@@ -56,11 +67,15 @@ function scoreSections(query: string, sections: SopSection[]): ScoredSection[] {
     const titleHits = q.filter(t => sec.sopTitle.toLowerCase().includes(t) || sec.section.toLowerCase().includes(t)).length;
     const tagHits = q.filter(t => sec.tags.some(tag => tag.includes(t))).length;
     score = score * 0.6 + (titleHits / q.length) * 0.25 + (tagHits / q.length) * 0.15;
+    const boost = boostFor(feedback, sec.id, queryNorm);
+    if (boost.hide) return null;
+    score *= boost.multiplier;
     // snippet: sentence containing first matched term
     const sentences = sec.body.split(/(?<=\.)\s+/);
     const snippet = sentences.find(s => matched.some(m => s.toLowerCase().includes(m))) ?? sentences[0];
     return { ...sec, score, matched, snippet };
   })
+    .filter((s): s is ScoredSection => !!s)
     .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score);
 }
@@ -92,6 +107,7 @@ export default function SopIntelligence() {
 
   const [docs, setDocs] = useState<SopDocumentRow[]>([]);
   const [rawSections, setRawSections] = useState<SopSectionRow[]>([]);
+  const [feedback, setFeedbackState] = useState<SopFeedbackRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<{ doc: SopDocumentRow; body: string } | null>(null);
@@ -100,9 +116,13 @@ export default function SopIntelligence() {
     setLoading(true);
     try {
       await seedStarterSopsIfEmpty();
-      const { documents, sections } = await fetchAllSops();
+      const [{ documents, sections }, fb] = await Promise.all([
+        fetchAllSops(),
+        fetchAllFeedback().catch(() => [] as SopFeedbackRow[]),
+      ]);
       setDocs(documents);
       setRawSections(sections);
+      setFeedbackState(fb);
     } catch (e) {
       toast({
         title: "Couldn't load SOPs",
@@ -149,7 +169,53 @@ export default function SopIntelligence() {
     return m;
   }, [docs, rawSections]);
 
-  const results = useMemo(() => scoreSections(submitted, SOP_SECTIONS), [submitted, SOP_SECTIONS]);
+  const results = useMemo(
+    () => scoreSections(submitted, SOP_SECTIONS, feedback),
+    [submitted, SOP_SECTIONS, feedback],
+  );
+
+  const submittedNorm = useMemo(() => normalizeQuery(submitted), [submitted]);
+
+  const voteFor = (sectionId: string): SopFeedbackVote | null => {
+    const f = feedback.find(x => x.section_id === sectionId && x.query_norm === submittedNorm);
+    return f?.vote ?? null;
+  };
+
+  const handleVote = async (sectionId: string, vote: SopFeedbackVote) => {
+    const existing = feedback.find(x => x.section_id === sectionId && x.query_norm === submittedNorm) ?? null;
+    // optimistic
+    const next = feedback.filter(x => !(x.section_id === sectionId && x.query_norm === submittedNorm));
+    const isToggleOff = existing && existing.vote === vote;
+    if (!isToggleOff) {
+      next.push({
+        id: existing?.id ?? `tmp-${sectionId}-${submittedNorm}`,
+        section_id: sectionId,
+        query: submitted,
+        query_norm: submittedNorm,
+        vote,
+        updated_at: new Date().toISOString(),
+      });
+    }
+    setFeedbackState(next);
+    try {
+      const saved = await setFeedback({ sectionId, query: submitted, vote, existing });
+      setFeedbackState(prev => {
+        const cleaned = prev.filter(x => !(x.section_id === sectionId && x.query_norm === submittedNorm));
+        return saved ? [...cleaned, saved] : cleaned;
+      });
+      if (vote === "not_relevant" && saved) {
+        toast({ title: "Hidden from this search", description: "We'll demote it next time too." });
+      }
+    } catch (e) {
+      // revert
+      setFeedbackState(feedback);
+      toast({
+        title: "Couldn't save feedback",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
 
   const recentChanges = useMemo(
     () => docs.slice(0, 5).map(d => ({
@@ -458,6 +524,59 @@ export default function SopIntelligence() {
                       ))}
                     </div>
                   )}
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/40">
+                    <div className="text-[11px] text-muted-foreground">Was this helpful?</div>
+                    {(() => {
+                      const v = voteFor(r.id);
+                      return (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "up" && "bg-primary/15 text-primary hover:bg-primary/20",
+                            )}
+                            onClick={() => handleVote(r.id, "up")}
+                            aria-pressed={v === "up"}
+                            aria-label="Helpful result"
+                          >
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Helpful</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "down" && "bg-destructive/15 text-destructive hover:bg-destructive/20",
+                            )}
+                            onClick={() => handleVote(r.id, "down")}
+                            aria-pressed={v === "down"}
+                            aria-label="Not helpful"
+                          >
+                            <ThumbsDown className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Not helpful</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={cn(
+                              "h-7 px-2 gap-1.5 text-xs",
+                              v === "not_relevant" && "bg-muted text-foreground",
+                            )}
+                            onClick={() => handleVote(r.id, "not_relevant")}
+                            aria-pressed={v === "not_relevant"}
+                            aria-label="Not relevant to this query"
+                          >
+                            <EyeOff className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Not relevant</span>
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </CardContent>
               </Card>
             ))}
