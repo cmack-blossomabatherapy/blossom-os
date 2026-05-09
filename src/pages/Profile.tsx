@@ -1,10 +1,15 @@
-import { Award, GraduationCap, Sparkles, Trophy } from "lucide-react";
+import { Award, GraduationCap, Sparkles, Trophy, Compass, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { resetOnboarding, setPreviewLocked } from "@/lib/onboarding/storage";
 
 export default function Profile() {
   const { user } = useAuth();
+  const ob = useOnboardingStatus();
   const name = (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "Blossom User";
   const initials = name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "BU";
 
@@ -31,9 +36,59 @@ export default function Profile() {
             <p className="text-sm text-muted-foreground">{user?.email}</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
               <Badge variant="secondary" className="text-[11px]">Intake Staff</Badge>
-              <Badge variant="outline" className="text-[11px]"><Sparkles className="mr-1 h-3 w-3" /> Onboarding 40%</Badge>
+              <Badge variant="outline" className="text-[11px]"><Sparkles className="mr-1 h-3 w-3" /> Onboarding {ob.percent}%</Badge>
+              {ob.status === "completed" && <Badge className="text-[11px]">Onboarding complete</Badge>}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Compass className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Onboarding</h2>
+          </div>
+          <Badge variant={ob.status === "completed" ? "default" : "outline"} className="text-[10px]">
+            {ob.status === "completed" ? "Completed" : ob.status === "in_progress" ? "In progress" : "Not started"}
+          </Badge>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Journey</span>
+            <span className="tabular-nums text-foreground">{ob.completedCount}/{ob.totalRequired} · {ob.percent}%</span>
+          </div>
+          <Progress value={ob.percent} className="h-1.5" />
+          {ob.completedAt && (
+            <p className="text-[11px] text-muted-foreground">
+              Completed {new Date(ob.completedAt).toLocaleDateString()} · Certificate {ob.certificateId}
+            </p>
+          )}
+          {!ob.isComplete && ob.nextStep && (
+            <p className="text-[11px] text-muted-foreground">Next: <span className="text-foreground">{ob.nextStep.title}</span></p>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {!ob.isComplete && (
+            <Button asChild size="sm">
+              <Link to={ob.nextStep?.path || "/onboarding"}>Continue onboarding</Link>
+            </Button>
+          )}
+          {ob.status === "completed" && (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/onboarding/complete">View certificate</Link>
+            </Button>
+          )}
+          {ob.bypassReal && (
+            <>
+              <Button size="sm" variant="ghost" onClick={() => setPreviewLocked(!ob.previewLocked)} className="gap-1.5">
+                {ob.previewLocked ? <><EyeOff className="h-3.5 w-3.5" /> Exit locked preview</> : <><Eye className="h-3.5 w-3.5" /> Preview as locked user</>}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { resetOnboarding(); }} className="gap-1.5 text-muted-foreground">
+                <RotateCcw className="h-3.5 w-3.5" /> Reset
+              </Button>
+            </>
+          )}
         </div>
       </section>
 

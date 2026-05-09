@@ -3,6 +3,8 @@ import { ArrowRight, BookOpen, Compass, GraduationCap, Library, Megaphone, Spark
 import { useAuth } from "@/contexts/AuthContext";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import OnboardingHome from "@/pages/onboarding/OnboardingHome";
 
 const quickLinks = [
   { to: "/academy", label: "Blossom Academy", desc: "Role-based learning tracks", icon: Compass },
@@ -21,6 +23,9 @@ const onboardingSteps = [
 
 export default function WelcomeHome() {
   const { user, isAdmin } = useAuth();
+  const { isComplete, loading } = useOnboardingStatus();
+  if (loading) return null;
+  if (!isComplete) return <OnboardingHome />;
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
     user?.email?.split("@")[0]?.split(/[._-]/)[0] ||

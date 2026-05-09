@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { OnboardingGate } from "@/components/auth/OnboardingGate";
 
 const pageTitles: Record<string, string> = {
   "/": "Home",
@@ -67,7 +68,9 @@ export function AppLayout() {
           className="mobile-page flex-1 overflow-auto px-3 pb-24 pt-3 md:min-h-0 md:p-6 md:pb-6"
           onScroll={(event) => setMobileMenuFloating(event.currentTarget.scrollTop > 48)}
         >
-          <Outlet />
+          <OnboardingGate>
+            <Outlet />
+          </OnboardingGate>
         </main>
       </div>
       <ForcePasswordChange />
