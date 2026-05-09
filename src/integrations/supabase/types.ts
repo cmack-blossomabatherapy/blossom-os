@@ -821,6 +821,44 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_message_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          reason: string | null
+          updated_at: string
+          user_id: string
+          vote: Database["public"]["Enums"]["chat_feedback_vote"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          reason?: string | null
+          updated_at?: string
+          user_id: string
+          vote: Database["public"]["Enums"]["chat_feedback_vote"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          reason?: string | null
+          updated_at?: string
+          user_id?: string
+          vote?: Database["public"]["Enums"]["chat_feedback_vote"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
@@ -4957,6 +4995,7 @@ export type Database = {
         | "spot"
         | "holiday"
         | "other"
+      chat_feedback_vote: "up" | "down"
       client_stage:
         | "BCBA Assignment"
         | "Pending Initial Auth"
@@ -5533,6 +5572,7 @@ export const Constants = {
         "holiday",
         "other",
       ],
+      chat_feedback_vote: ["up", "down"],
       client_stage: [
         "BCBA Assignment",
         "Pending Initial Auth",
