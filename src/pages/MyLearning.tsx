@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
-import { Award, BookOpen, CheckCircle2, Clock, GraduationCap, Star } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Clock, GraduationCap, Sparkles, Star } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const sections: Array<{ title: string; icon: typeof BookOpen; items: Array<{ title: string; meta: string; progress?: number; status?: string }> }> = [
   {
@@ -55,23 +57,67 @@ const sections: Array<{ title: string; icon: typeof BookOpen; items: Array<{ tit
 ];
 
 export default function MyLearning() {
+  const { user } = useAuth();
+  const firstName =
+    (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
+    user?.email?.split("@")[0]?.split(/[._-]/)[0] ||
+    "there";
+
+  const inProgress = sections[0].items.length;
+  const assigned = sections[1].items.length;
+  const completed = sections[3].items.length;
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 pb-12">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">My Learning</h1>
-        <p className="text-sm text-muted-foreground">Everything assigned to you, in progress, or recommended.</p>
-      </header>
+      {/* Premium hero */}
+      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-6 text-primary-foreground shadow-lg sm:p-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
+        <div className="relative space-y-5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md">
+            <Sparkles className="h-3.5 w-3.5" /> My Learning
+          </div>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Keep growing, <span className="capitalize">{firstName}</span>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-primary-foreground/85 sm:text-base">
+              Everything assigned to you, in progress, or recommended — all in one place.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+            {[
+              { l: "In progress", v: inProgress },
+              { l: "Assigned", v: assigned },
+              { l: "Completed", v: completed },
+            ].map((s) => (
+              <div key={s.l} className="rounded-2xl bg-primary-foreground/10 p-3 backdrop-blur-md">
+                <p className="text-2xl font-semibold">{s.v}</p>
+                <p className="text-[11px] text-primary-foreground/85">{s.l}</p>
+              </div>
+            ))}
+          </div>
+          <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+            <Link to="/catalog">Browse catalog <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+          </Button>
+        </div>
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-2">
         {sections.map((s) => (
-          <section key={s.title} className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2">
-              <s.icon className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">{s.title}</h2>
+          <section key={s.title} className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <s.icon className="h-4.5 w-4.5" />
+                </span>
+                <h2 className="text-base font-semibold text-foreground">{s.title}</h2>
+              </div>
+              <span className="text-[11px] text-muted-foreground">{s.items.length}</span>
             </div>
             <ul className="space-y-2">
               {s.items.map((it) => (
                 <li key={it.title}>
-                  <Link to="/catalog" className="block rounded-xl border border-border/50 p-3 transition-colors hover:border-primary/40 hover:bg-primary/5">
+                  <Link to="/catalog" className="block rounded-xl border border-border/50 bg-background/40 p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-foreground">{it.title}</p>
