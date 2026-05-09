@@ -14,9 +14,10 @@ export type SettingsSectionId =
   | "sms-templates"
   | "document-types"
   | "integrations"
+  | "search-ranking"
   | "audit-logs";
 
-export type SettingsGroup = "System" | "Workflow" | "People" | "Communication" | "Documents" | "Integrations" | "Data";
+export type SettingsGroup = "System" | "Workflow" | "People" | "Communication" | "Documents" | "Integrations" | "Intelligence" | "Data";
 
 export interface SettingsNavItem {
   id: SettingsSectionId;
@@ -45,12 +46,14 @@ export const settingsNav: SettingsNavItem[] = [
   { id: "document-types", label: "Document Types", group: "Documents", description: "Required docs per stage" },
   // Integrations
   { id: "integrations", label: "Integrations", group: "Integrations", description: "Pandadoc, Eligipro, CentralReach…" },
+  // Intelligence
+  { id: "search-ranking", label: "Search Ranking", group: "Intelligence", description: "Tune how feedback shapes SOP search" },
   // Data
   { id: "audit-logs", label: "Audit Logs", group: "Data", description: "Who changed what, when" },
 ];
 
 export const settingsGroups: SettingsGroup[] = [
-  "System", "Workflow", "People", "Communication", "Documents", "Integrations", "Data",
+  "System", "Workflow", "People", "Communication", "Documents", "Integrations", "Intelligence", "Data",
 ];
 
 // =================== State coverage ===================
