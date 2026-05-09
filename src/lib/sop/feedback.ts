@@ -125,6 +125,74 @@ export interface FeedbackBoost {
   hide: boolean;
 }
 
+export interface SopFeedbackWeights {
+  up_same_query_same_filters: number;
+  up_same_query: number;
+  up_same_filters: number;
+  up_other: number;
+  down_same_query_same_filters: number;
+  down_same_query: number;
+  down_same_filters: number;
+  down_other: number;
+  hide_on_not_relevant: boolean;
+}
+
+export const DEFAULT_FEEDBACK_WEIGHTS: SopFeedbackWeights = {
+  up_same_query_same_filters: 1.4,
+  up_same_query: 1.25,
+  up_same_filters: 1.15,
+  up_other: 1.08,
+  down_same_query_same_filters: 0.55,
+  down_same_query: 0.7,
+  down_same_filters: 0.8,
+  down_other: 0.9,
+  hide_on_not_relevant: true,
+};
+
+export async function fetchFeedbackWeights(): Promise<SopFeedbackWeights> {
+  const { data, error } = await supabase
+    .from("sop_feedback_weights")
+    .select("*")
+    .eq("id", true)
+    .maybeSingle();
+  if (error || !data) return DEFAULT_FEEDBACK_WEIGHTS;
+  const d = data as any;
+  return {
+    up_same_query_same_filters: Number(d.up_same_query_same_filters),
+    up_same_query: Number(d.up_same_query),
+    up_same_filters: Number(d.up_same_filters),
+    up_other: Number(d.up_other),
+    down_same_query_same_filters: Number(d.down_same_query_same_filters),
+    down_same_query: Number(d.down_same_query),
+    down_same_filters: Number(d.down_same_filters),
+    down_other: Number(d.down_other),
+    hide_on_not_relevant: !!d.hide_on_not_relevant,
+  };
+}
+
+export async function saveFeedbackWeights(w: SopFeedbackWeights): Promise<SopFeedbackWeights> {
+  const { data: userData } = await supabase.auth.getUser();
+  const updated_by = userData.user?.id ?? null;
+  const { data, error } = await supabase
+    .from("sop_feedback_weights")
+    .upsert([{ id: true, ...w, updated_by }] as any, { onConflict: "id" })
+    .select("*")
+    .single();
+  if (error) throw error;
+  const d = data as any;
+  return {
+    up_same_query_same_filters: Number(d.up_same_query_same_filters),
+    up_same_query: Number(d.up_same_query),
+    up_same_filters: Number(d.up_same_filters),
+    up_other: Number(d.up_other),
+    down_same_query_same_filters: Number(d.down_same_query_same_filters),
+    down_same_query: Number(d.down_same_query),
+    down_same_filters: Number(d.down_same_filters),
+    down_other: Number(d.down_other),
+    hide_on_not_relevant: !!d.hide_on_not_relevant,
+  };
+}
+
 /**
  * Boost a section's score based on prior feedback for the same query (exact)
  * and across all queries (general signal). When `filtersNorm` is provided,
@@ -136,6 +204,7 @@ export function boostFor(
   sectionId: string,
   queryNorm: string,
   filtersNorm: string = "",
+  weights: SopFeedbackWeights = DEFAULT_FEEDBACK_WEIGHTS,
 ): FeedbackBoost {
   let multiplier = 1;
   let hide = false;
@@ -143,22 +212,26 @@ export function boostFor(
     if (f.section_id !== sectionId) continue;
     const sameQuery = f.query_norm === queryNorm;
     const sameFilters = (f.filters_norm ?? "") === filtersNorm;
-    // Hide only when the user explicitly marked this section not relevant for
-    // the same query AND the same filter scope.
-    if (f.vote === "not_relevant" && sameQuery && sameFilters) {
+    if (
+      f.vote === "not_relevant" &&
+      sameQuery &&
+      sameFilters &&
+      weights.hide_on_not_relevant
+    ) {
       hide = true;
     } else if (f.vote === "up") {
-      // Strongest: same query + same filters. Weakest: different query+filters.
-      const m = sameQuery && sameFilters ? 1.4
-        : sameQuery ? 1.25
-        : sameFilters ? 1.15
-        : 1.08;
+      const m =
+        sameQuery && sameFilters ? weights.up_same_query_same_filters
+        : sameQuery ? weights.up_same_query
+        : sameFilters ? weights.up_same_filters
+        : weights.up_other;
       multiplier *= m;
     } else if (f.vote === "down") {
-      const m = sameQuery && sameFilters ? 0.55
-        : sameQuery ? 0.7
-        : sameFilters ? 0.8
-        : 0.9;
+      const m =
+        sameQuery && sameFilters ? weights.down_same_query_same_filters
+        : sameQuery ? weights.down_same_query
+        : sameFilters ? weights.down_same_filters
+        : weights.down_other;
       multiplier *= m;
     }
   }
