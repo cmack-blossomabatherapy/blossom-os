@@ -259,7 +259,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles } = useAuth();
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Enterprise", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
@@ -332,6 +332,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     }
     if (path === "/assessments") {
       return location.pathname.startsWith("/assessments");
+    }
+    if (path === "/enterprise/simulations") {
+      return location.pathname === "/enterprise/simulations" || location.pathname.startsWith("/enterprise/simulations/");
     }
     return location.pathname === path || `${location.pathname}${location.search}` === path;
   };
