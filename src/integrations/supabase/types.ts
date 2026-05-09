@@ -3844,6 +3844,39 @@ export type Database = {
         }
         Relationships: []
       }
+      push_deliveries: {
+        Row: {
+          alert_id: string
+          attempt: number
+          created_at: string
+          endpoint: string
+          error: string | null
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          alert_id: string
+          attempt?: number
+          created_at?: string
+          endpoint: string
+          error?: string | null
+          id?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          alert_id?: string
+          attempt?: number
+          created_at?: string
+          endpoint?: string
+          error?: string | null
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
