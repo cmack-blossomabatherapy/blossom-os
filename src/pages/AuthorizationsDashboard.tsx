@@ -295,7 +295,9 @@ function PerformanceTable({ title, headers, rows }: { title: string; headers: st
   return <div className="rounded-xl border border-border/60 bg-card shadow-sm"><div className="border-b border-border/60 p-4"><h2 className="text-base font-semibold text-foreground">{title}</h2></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{headers.map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("-")} className="border-t border-border/50">{row.map((cell, index) => <td key={`${cell}-${index}`} className={cn("whitespace-nowrap px-4 py-3 text-xs", index === 0 ? "font-medium text-foreground" : "text-muted-foreground")}>{cell}</td>)}</tr>)}</tbody></table></div></div>;
 }
 
-function AuthDetailSheet({ auth, open, onClose, onAction }: { auth: AuthRecord | null; open: boolean; onClose: () => void; onAction: (auth: AuthRecord, action: string) => void }) {
+function AuthDetailSheet({ auth, open, onClose, onAction, initialTab }: { auth: AuthRecord | null; open: boolean; onClose: () => void; onAction: (auth: AuthRecord, action: string) => void; initialTab?: string }) {
+  const [tab, setTab] = useState<string>(initialTab ?? "overview");
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab, auth?.id]);
   if (!auth) return null;
   const alerts = alertsFor(auth);
   const openTasks = auth.tasks.filter((task) => !task.completed);
