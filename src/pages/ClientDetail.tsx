@@ -79,6 +79,31 @@ export default function ClientDetail() {
   const [removeDocIdx, setRemoveDocIdx] = useState<number | null>(null);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
 
+  // Deep-link: open a specific tab and highlight a task/flag if requested.
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
+  const validTabs = ["timeline","tasks","auth","staffing","schedule","documents","automation"] as const;
+  type TabKey = typeof validTabs[number];
+  const focusToTab: Record<string, TabKey> = {
+    tasks: "tasks", task: "tasks", compliance: "tasks",
+    auth: "auth", authorizations: "auth",
+    staffing: "staffing", schedule: "schedule",
+    documents: "documents", automation: "automation",
+  };
+  const initialTab: TabKey =
+    (deepLink.tab && (validTabs as readonly string[]).includes(deepLink.tab) ? deepLink.tab as TabKey : undefined) ??
+    (deepLink.focus && focusToTab[deepLink.focus.toLowerCase()]) ??
+    (deepLink.task ? "tasks" : undefined) ??
+    "timeline";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const highlightId = deepLink.task ? `task-${deepLink.task}` : deepLink.flag ? `flag-${deepLink.flag}` : null;
+  useDeepLinkHighlight(highlightId, !!client);
+  useEffect(() => {
+    if (!client) return;
+    if (deepLink.alert) toast.message?.(`Opened from alert${deepLink.task ? " · task" : deepLink.flag ? " · flag" : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (!client) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
