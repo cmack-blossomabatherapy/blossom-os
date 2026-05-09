@@ -62,19 +62,20 @@ export function AlertsPanel() {
         <Button
           size="icon"
           variant="ghost"
-          aria-label={`Open alerts, ${counts.total} active`}
-          className="relative h-8 w-8 inline-flex"
+          aria-label={counts.total > 0 ? `Open alerts, ${counts.total} unread` : "Open alerts"}
+          className="relative h-9 w-9 inline-flex md:h-8 md:w-8"
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-[18px] w-[18px] md:h-4 md:w-4" />
           {counts.total > 0 && (
             <span
               className={cn(
-                "absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-semibold",
-                "flex items-center justify-center border border-card",
+                "absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold tabular-nums leading-none",
+                "flex items-center justify-center ring-2 ring-card shadow-sm md:-top-0.5 md:-right-0.5 md:h-4 md:min-w-[16px] md:text-[9px] md:font-semibold md:ring-0 md:border md:border-card",
                 counts.critical > 0
                   ? "bg-destructive text-destructive-foreground"
-                  : "bg-amber-500 text-white",
+                  : "bg-primary text-primary-foreground",
               )}
+              aria-hidden
             >
               {counts.total > 99 ? "99+" : counts.total}
             </span>
