@@ -3913,6 +3913,7 @@ export type Database = {
           id: string
           job_title: string | null
           must_change_password: boolean
+          new_state_employee: boolean
           part_of_leadership: boolean
           responsibilities: string | null
           state: string | null
@@ -3933,6 +3934,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          new_state_employee?: boolean
           part_of_leadership?: boolean
           responsibilities?: string | null
           state?: string | null
@@ -3953,6 +3955,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           must_change_password?: boolean
+          new_state_employee?: boolean
           part_of_leadership?: boolean
           responsibilities?: string | null
           state?: string | null
