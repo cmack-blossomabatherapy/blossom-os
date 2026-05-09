@@ -275,6 +275,15 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     if (typeof window === "undefined") return;
     try { localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(Array.from(openSections))); } catch { /* ignore */ }
   }, [openSections]);
+  useEffect(() => {
+    const handler = () => {
+      try { localStorage.removeItem(SIDEBAR_SECTIONS_KEY); } catch { /* ignore */ }
+      setOpenSections(new Set(DEFAULT_OPEN_SECTIONS));
+      setMobileOpenSections(new Set());
+    };
+    window.addEventListener("sidebar:reset-layout", handler);
+    return () => window.removeEventListener("sidebar:reset-layout", handler);
+  }, []);
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
