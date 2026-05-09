@@ -150,6 +150,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setDashboardAccess(null);
   };
 
+  // Start (or restart) onboarding sync whenever the signed-in user changes.
+  useEffect(() => {
+    if (user?.id) {
+      void startOnboardingSync(user.id);
+    } else {
+      stopOnboardingSync();
+    }
+  }, [user?.id]);
+
   const updatePassword = async (newPassword: string) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return { error: error.message };
