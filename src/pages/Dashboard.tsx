@@ -7,6 +7,10 @@ import { GrowthInsights } from "@/components/dashboard/GrowthInsights";
 import { ForecastPanel } from "@/components/dashboard/ForecastPanel";
 import { AlertsRisks } from "@/components/dashboard/AlertsRisks";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { BlossomHero } from "@/components/blossom/BlossomHero";
+import { ExecutiveCard } from "@/components/blossom/ExecutiveCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { GraduationCap, PlayCircle, CheckCircle2, Award, AlertTriangle, BookOpen, Bell, Link2, Users as UsersIcon, Activity, BarChart3, Building2, MapPin, FileText } from "lucide-react";
 
 const growthKpis = [
   { label: "New Leads Today", value: 8, change: "+3", trend: "up" as const, detail: "34 this week · 112 this month" },
@@ -53,6 +57,10 @@ const clientsFunnel = [
 export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
+      <BlossomHero />
+
+      <DashboardExecutiveCards />
+
       {/* Section 1: KPI Strip */}
       <div className="space-y-4">
         <KpiStrip title="Growth" items={growthKpis} />
@@ -83,6 +91,42 @@ export default function Dashboard() {
           <QuickActions />
         </div>
       </div>
+    </div>
+  );
+}
+
+function DashboardExecutiveCards() {
+  const { isAdmin } = useAuth();
+  return (
+    <div className="space-y-3">
+      <div>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your Workspace</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ExecutiveCard label="My Assigned Trainings" value={14} icon={GraduationCap} hint="Across 2 tracks" />
+          <ExecutiveCard label="In Progress" value={4} icon={PlayCircle} hint="Continue where you left off" />
+          <ExecutiveCard label="Completed" value={11} icon={CheckCircle2} tone="success" hint="This quarter" />
+          <ExecutiveCard label="Certifications" value={3} icon={Award} hint="2 expire soon" />
+          <ExecutiveCard label="Overdue Items" value={2} icon={AlertTriangle} tone="warning" hint="Past due" />
+          <ExecutiveCard label="Department Resources" value={28} icon={BookOpen} hint="In your departments" />
+          <ExecutiveCard label="Latest Updates" value={6} icon={Bell} hint="Last 7 days" />
+          <ExecutiveCard label="Quick Links" value={9} icon={Link2} hint="Saved & pinned" />
+        </div>
+      </div>
+      {isAdmin && (
+        <div>
+          <h2 className="mb-3 mt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin Overview</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <ExecutiveCard label="Total Users" value={184} icon={UsersIcon} />
+            <ExecutiveCard label="Active Trainings" value={42} icon={GraduationCap} />
+            <ExecutiveCard label="Completion Rate" value="73%" icon={BarChart3} tone="success" />
+            <ExecutiveCard label="Overdue Trainings" value={11} icon={AlertTriangle} tone="warning" />
+            <ExecutiveCard label="Certificates Issued" value={312} icon={Award} />
+            <ExecutiveCard label="Departments" value={16} icon={Building2} />
+            <ExecutiveCard label="Locations" value={7} icon={MapPin} />
+            <ExecutiveCard label="Recent Activity" value={84} icon={Activity} hint="Last 24h" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
