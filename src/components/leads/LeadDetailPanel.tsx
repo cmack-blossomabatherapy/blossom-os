@@ -1,6 +1,7 @@
 import { Lead, statusVariant, priorityVariant } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -39,8 +40,12 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
   const progressPercent = Math.round((completedSteps / progressSteps.length) * 100);
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] overflow-y-auto p-0">
+    <ResponsiveSheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      desktopClassName="w-[480px] sm:max-w-[480px] overflow-y-auto"
+    >
+      <div className="flex h-full max-h-full flex-col overflow-y-auto">
         {/* Header */}
         <div className="p-6 pb-4">
           <SheetHeader className="mb-0">
