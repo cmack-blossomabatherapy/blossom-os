@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Sparkles } from "lucide-react";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
@@ -180,11 +180,22 @@ export default function Auth() {
             </Button>
           </form>
 
-          <div className="mt-8 rounded-2xl border border-border/60 bg-muted/30 p-4">
+          <div className="mt-8 rounded-2xl border border-border/60 bg-muted/30 p-5 text-center">
             <p className="text-xs leading-relaxed text-muted-foreground">
               Need an account? Team accounts are created by your administrator.
               Contact your Blossom admin to get access.
             </p>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="mt-3 h-9 rounded-full bg-background text-xs font-medium"
+            >
+              <a href="mailto:hr@blossomabatherapy.com?subject=Blossom%20Academy%20account%20access">
+                <Mail className="mr-1.5 h-3.5 w-3.5" />
+                hr@blossomabatherapy.com
+              </a>
+            </Button>
           </div>
 
           <p className="mt-6 text-center text-[11px] text-muted-foreground lg:hidden">
