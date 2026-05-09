@@ -2,6 +2,11 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
+import {
+  clearRememberPreference,
+  enforceRememberPolicyOnBoot,
+  touchSessionMarker,
+} from "@/lib/rememberSession";
 
 interface AuthContextValue {
   session: Session | null;
@@ -45,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       // Defer Supabase calls outside the callback to avoid deadlocks
       if (s?.user) {
+        touchSessionMarker();
         setLoading(true);
         setTimeout(() => {
           Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
@@ -63,15 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Then check existing session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
-          setLoading(false),
-        );
-      } else setLoading(false);
+    // Enforce "Remember me" policy before reading the persisted session.
+    enforceRememberPolicyOnBoot().finally(() => {
+      supabase.auth.getSession().then(({ data: { session: s } }) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          touchSessionMarker();
+          Promise.all([loadRolesAndAccess(s.user.id), loadProfileFlag(s.user.id)]).finally(() =>
+            setLoading(false),
+          );
+        } else setLoading(false);
+      });
     });
 
     return () => sub.subscription.unsubscribe();
@@ -132,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearRememberPreference();
     setRoles([]);
     setMustChangePassword(false);
     setPartOfLeadership(false);
