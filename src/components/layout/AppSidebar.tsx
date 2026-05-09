@@ -139,6 +139,7 @@ const hrSection: { title: string; items: NavItem[] } = {
     { label: "Welcome",      icon: Sparkles,       path: "/hr/welcome", perm: "" },
     { label: "Recognition",  icon: Star,           path: "/hr/recognition", perm: "" },
     { label: "Announcements Feed", icon: Megaphone, path: "/hr/feed", perm: "" },
+    { label: "SOP Intelligence", icon: BookOpen, path: "/enterprise/sop-intelligence", perm: "" },
     { label: "AI Assistant",  icon: Sparkles,       path: "/hr/assistant", perm: "hr.view" },
     { label: "Employees",    icon: IdCard,         path: "/hr/directory", perm: "hr.employees.view" },
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
