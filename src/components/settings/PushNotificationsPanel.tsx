@@ -211,6 +211,35 @@ export function PushNotificationsPanel() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><ListChecks className="h-4 w-4" /> Alert categories</CardTitle>
+          <CardDescription>
+            Choose which kinds of critical alerts push to your devices. Disabled categories will still appear in-app.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y divide-border">
+            {ALERT_CATEGORIES.map((c) => {
+              const enabled = prefs[c.key] ?? true;
+              return (
+                <li key={c.key} className="flex items-center justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <Label htmlFor={`pref-${c.key}`} className="text-sm font-medium">{c.label}</Label>
+                    <p className="text-xs text-muted-foreground">{c.description}</p>
+                  </div>
+                  <Switch
+                    id={`pref-${c.key}`}
+                    checked={enabled}
+                    onCheckedChange={(v) => togglePref(c.key, v)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Subscribed devices</CardTitle>
           <CardDescription>One row per browser/device that will receive your alerts.</CardDescription>
         </CardHeader>
