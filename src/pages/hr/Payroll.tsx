@@ -32,7 +32,7 @@ export default function Payroll() {
     if (deepLink.tab === "runs" || deepLink.tab === "bonuses") setTab(deepLink.tab);
     if (deepLink.action) {
       const detail = deepLink.run ? `Pay run #${deepLink.run}` : "";
-      toast({ title: `Opened from alert`, description: `${deepLink.action}${detail ? " · " + detail : ""}` });
+      toast(`Opened from alert: ${deepLink.action}${detail ? " · " + detail : ""}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
