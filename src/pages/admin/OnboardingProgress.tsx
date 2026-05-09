@@ -127,8 +127,8 @@ export default function OnboardingProgress() {
   return (
     <PageShell
       title="Onboarding Progress"
-      subtitle="Search users and review onboarding completion before unlocking routes."
-      icon={<GraduationCap className="h-5 w-5" />}
+      description="Search users and review onboarding completion before unlocking routes."
+      icon={GraduationCap}
     >
       {/* Stat strip */}
       <div className="grid gap-3 sm:grid-cols-4">
