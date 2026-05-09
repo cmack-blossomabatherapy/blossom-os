@@ -30,6 +30,7 @@ import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { useClients } from "@/contexts/ClientsContext";
 import { AuthorizationRecord, Client, ClientStage, QAStatus, authVariant } from "@/data/clients";
 import { cn } from "@/lib/utils";
