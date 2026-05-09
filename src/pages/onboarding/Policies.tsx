@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { StepCompleteButton } from "@/components/onboarding/StepCompleteButton";
 import { acknowledge, hasAcknowledged } from "@/lib/onboarding/storage";
+import { REQUIRED_POLICY_KEYS } from "@/lib/onboarding/gates";
 
-const POLICIES = [
+const POLICIES: { key: (typeof REQUIRED_POLICY_KEYS)[number]; title: string; body: string }[] = [
   { key: "policy-hipaa", title: "HIPAA & Privacy", body: "Protect every family's health information. Never share PHI outside approved systems." },
   { key: "policy-conduct", title: "Code of Conduct", body: "Show up with integrity, respect, and professionalism — toward families, teammates, and yourself." },
   { key: "policy-handbook", title: "Employee Handbook", body: "Time, attendance, leave, and benefits expectations are documented in the handbook." },
