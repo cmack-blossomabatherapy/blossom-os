@@ -511,7 +511,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
             onKeyDown={submitNavSearch(navQuery, false)}
-            placeholder="Search…"
+            placeholder="Search menu — Enter to jump"
             className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-9 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
           />
         </div>
