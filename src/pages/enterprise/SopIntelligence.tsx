@@ -213,8 +213,8 @@ export default function SopIntelligence() {
   );
 
   const results = useMemo(
-    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm),
-    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm],
+    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm, weights),
+    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm, weights],
   );
 
   const voteFor = (sectionId: string): SopFeedbackVote | null => {
