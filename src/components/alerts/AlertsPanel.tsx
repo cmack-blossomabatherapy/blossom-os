@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, ClipboardList, ShieldCheck, AlarmClock, X, ArrowRight } from "lucide-react";
+import { Bell, CheckCircle2, ClipboardList, ShieldCheck, AlarmClock, X, ArrowRight, Settings as SettingsIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -92,16 +92,27 @@ export function AlertsPanel() {
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Bell className="h-4 w-4 text-primary" /> Notifications
           </div>
-          {counts.total > 0 && (
+          <div className="flex items-center gap-1">
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => reset()}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => { setOpen(false); navigate("/notification-preferences"); }}
+              aria-label="Notification preferences"
             >
-              Clear all
+              <SettingsIcon className="h-3.5 w-3.5" />
             </Button>
-          )}
+            {counts.total > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => reset()}
+              >
+                Clear all
+              </Button>
+            )}
+          </div>
         </div>
 
         <Tabs

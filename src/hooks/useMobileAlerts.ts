@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSlaRules, severityForSync, type SlaRule } from "@/lib/alerts/sla";
+import { useAlertCategoryPrefs } from "@/lib/alerts/categoryPrefs";
 
 export type AlertCategory = "task" | "approval" | "overdue" | "compliance";
 export type AlertSeverity = "info" | "warning" | "critical";
@@ -306,6 +307,7 @@ export function useMobileAlerts() {
   );
   const [alerts, setAlerts] = useState<MobileAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isEnabled } = useAlertCategoryPrefs();
 
   // Track signed-in user; reload server dismissals on login/logout.
   useEffect(() => {
@@ -394,7 +396,10 @@ export function useMobileAlerts() {
     };
   }, [refresh]);
 
-  const active = useMemo(() => alerts.filter(a => !dismissed.has(a.id)), [alerts, dismissed]);
+  const active = useMemo(
+    () => alerts.filter((a) => !dismissed.has(a.id) && isEnabled(a.category)),
+    [alerts, dismissed, isEnabled],
+  );
 
   const counts = useMemo(() => ({
     task: active.filter(a => a.category === "task").length,

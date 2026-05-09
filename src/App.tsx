@@ -115,6 +115,7 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
 
@@ -189,6 +190,7 @@ const App = () => (
                   <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
