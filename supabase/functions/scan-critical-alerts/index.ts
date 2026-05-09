@@ -12,6 +12,36 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:alerts@example.co
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
 
+const MAX_ATTEMPTS = 5;
+const INNER_RETRIES = 2; // per-send retries within a single invocation
+const INNER_BACKOFF_MS = [250, 750]; // delay before each inner retry
+
+function isTransient(statusCode: number | undefined): boolean {
+  if (!statusCode) return true; // network/no response → assume transient
+  if (statusCode === 429) return true;
+  if (statusCode >= 500 && statusCode <= 599) return true;
+  return false;
+}
+
+async function sendWithRetry(sub: { endpoint: string; p256dh: string; auth: string }, payload: string) {
+  let lastErr: any;
+  for (let i = 0; i <= INNER_RETRIES; i++) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        payload,
+      );
+      return { ok: true as const, attempts: i + 1 };
+    } catch (err: any) {
+      lastErr = err;
+      const status = err?.statusCode;
+      if (!isTransient(status)) break;
+      if (i < INNER_RETRIES) await new Promise((r) => setTimeout(r, INNER_BACKOFF_MS[i] ?? 1000));
+    }
+  }
+  return { ok: false as const, error: lastErr, attempts: INNER_RETRIES + 1 };
+}
+
 type AlertRow = {
   id: string;
   category: string;
@@ -46,6 +76,7 @@ Deno.serve(async (req) => {
 
   let pushed = 0;
   let failed = 0;
+  let gaveUp = 0;
   const expiredEndpoints: string[] = [];
 
   for (const alert of (alerts ?? []) as AlertRow[]) {
@@ -106,11 +137,8 @@ Deno.serve(async (req) => {
     const deliveryRows: Array<Record<string, unknown>> = [];
 
     for (const sub of targetSubs) {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
-        );
+      const result = await sendWithRetry(sub, payload);
+      if (result.ok) {
         anySuccess = true;
         deliveryRows.push({
           alert_id: alert.id,
@@ -118,10 +146,12 @@ Deno.serve(async (req) => {
           endpoint: sub.endpoint,
           status: "sent",
           attempt: attemptNumber,
+          error: result.attempts > 1 ? `Recovered after ${result.attempts} tries` : null,
         });
-      } catch (err: any) {
+      } else {
+        const err: any = result.error;
         const status = err?.statusCode;
-        const errMsg = `${status ?? ""} ${err?.body ?? err?.message ?? ""}`.trim();
+        const errMsg = `${status ?? "network"} ${err?.body ?? err?.message ?? ""}`.trim();
         if (status === 404 || status === 410) {
           expiredEndpoints.push(sub.endpoint);
           deliveryRows.push({
@@ -140,14 +170,13 @@ Deno.serve(async (req) => {
             endpoint: sub.endpoint,
             status: "failed",
             attempt: attemptNumber,
-            error: errMsg,
+            error: `${errMsg} (after ${result.attempts} inner tries)`,
           });
         }
       }
     }
 
     if (deliveryRows.length) {
-      // onConflict on the partial unique index: ignore duplicate 'sent' rows
       await admin.from("push_deliveries").insert(deliveryRows);
     }
 
@@ -158,6 +187,23 @@ Deno.serve(async (req) => {
         push_last_error: (subs?.length ?? 0) === 0 ? "No subscribed devices" : null,
       }).eq("id", alert.id);
       pushed++;
+    } else if (attemptNumber >= MAX_ATTEMPTS) {
+      // Stop the silent loop: mark as "gave up" so the dashboard surfaces it
+      const giveUpMsg = `Gave up after ${MAX_ATTEMPTS} attempts. Last error: ${lastError ?? "unknown"}`;
+      await admin.from("critical_alerts").update({
+        pushed_at: new Date().toISOString(),
+        push_attempts: alert.push_attempts + 1,
+        push_last_error: giveUpMsg,
+      }).eq("id", alert.id);
+      await admin.from("push_deliveries").insert({
+        alert_id: alert.id,
+        user_id: alert.assignee_user_id ?? recipientIds[0],
+        endpoint: "(none)",
+        status: "failed",
+        attempt: attemptNumber,
+        error: giveUpMsg,
+      });
+      gaveUp++;
     } else {
       await admin.from("critical_alerts").update({
         push_attempts: alert.push_attempts + 1,
@@ -171,7 +217,7 @@ Deno.serve(async (req) => {
     await admin.from("push_subscriptions").delete().in("endpoint", expiredEndpoints);
   }
 
-  return new Response(JSON.stringify({ scanned: alerts?.length ?? 0, pushed, failed, expired: expiredEndpoints.length }), {
+  return new Response(JSON.stringify({ scanned: alerts?.length ?? 0, pushed, failed, gaveUp, expired: expiredEndpoints.length }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
