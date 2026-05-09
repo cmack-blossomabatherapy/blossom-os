@@ -1,9 +1,8 @@
 import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NotificationBell } from "./NotificationBell";
 import { useNavigate } from "react-router-dom";
-import { useState, KeyboardEvent } from "react";
+import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -17,8 +16,8 @@ interface TopBarProps {
 
 export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: TopBarProps) {
   const navigate = useNavigate();
-  const [q, setQ] = useState("");
   const { user, roles, isAdmin, signOut } = useAuth();
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const primaryRole = roles[0] ?? "viewer";
   const initials = (user?.user_metadata?.display_name ?? user?.email ?? "U")
     .toString()
@@ -28,14 +27,9 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
     .map((p: string) => p[0]?.toUpperCase())
     .join("");
 
-  const submitSearch = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && q.trim()) {
-      navigate(`/training?q=${encodeURIComponent(q.trim())}`);
-    }
-  };
-
   return (
     <>
+    <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     <header
       className={cn(
         "sticky top-0 z-30 flex shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-border bg-card/95 px-4 backdrop-blur-xl transition-all duration-300 md:static md:h-14 md:translate-y-0 md:overflow-visible md:px-6",
@@ -48,16 +42,18 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
-        <div className="relative hidden min-w-0 flex-1 sm:block md:flex-none">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={submitSearch}
-            placeholder="Search trainings…"
-            className="h-8 w-full bg-secondary/50 pl-8 text-sm focus:bg-card md:w-64"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open command palette"
+          className="hidden h-8 items-center gap-2 rounded-md border border-border/60 bg-secondary/50 px-2.5 text-left text-sm text-muted-foreground transition hover:bg-secondary focus:bg-card focus:outline-none focus:ring-2 focus:ring-ring sm:inline-flex md:w-64"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 truncate">Search…</span>
+          <kbd className="pointer-events-none hidden rounded border border-border/60 bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground md:inline-block">
+            ⌘K
+          </kbd>
+        </button>
 
         <NotificationBell />
 
