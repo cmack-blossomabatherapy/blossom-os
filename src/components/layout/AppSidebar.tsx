@@ -291,7 +291,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const limitedSections = limitedNavigationSections(roles);
   const { complete: academyComplete } = useAcademyComplete();
 
-  const allSections = hasFullNavigation ? (isAdmin ? [superAdminDashboardSection, ...navSections] : [...navSections]) : limitedSections;
+  const allSections = hasFullNavigation ? [superAdminDashboardSection, ...navSections] : limitedSections;
   // Insert HR Suite before Admin so it sits with the operations modules
   if (hasFullNavigation) {
     const adminIndex = allSections.findIndex((s) => s.title === "Admin");
@@ -307,9 +307,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         items: s.items
           .map((item) => {
             const accessible =
-              (!item.superAdminOnly || isAdmin) &&
-              (!item.perm || hasPerm(item.perm)) &&
-              (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never)));
+              true; // TEMP unlocked for system audit
+            void item.superAdminOnly; void item.perm; void item.allowedRoles;
+            void hasPerm; void roles;
             if (isEnterprise) {
               return { ...item, disabled: !accessible };
             }
