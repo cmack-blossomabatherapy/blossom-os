@@ -32,6 +32,7 @@ import type { Client, ClientSchedulingStatus, ClientStage, ScheduleSlot } from "
 import { calculateWeeklyHours, getApprovedWeeklyHours } from "@/data/scheduling";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SingleSelectFilterDrawer } from "@/components/shared/SingleSelectFilterDrawer";
 
 type ViewMode = "queue" | "table" | "calendar" | "grid" | "pending" | "centralreach";
 type ScheduleStatus = "Pending Schedule" | "Schedule In Progress" | "Schedule Created" | "Pending Start Date" | "Starting This Week" | "Delayed Start" | "Ready to Activate" | "Active";
@@ -473,17 +474,23 @@ export default function Scheduling() {
           </div>
         </div>
 
-        <div className="grid gap-2 md:grid-cols-5 xl:grid-cols-10">
-          <FilterSelect label="State" value={filters.state} options={options.states} onChange={(value) => setFilters({ ...filters, state: value })} />
-          <FilterSelect label="Clinic" value={filters.clinic} options={options.clinics} onChange={(value) => setFilters({ ...filters, clinic: value })} />
-          <FilterSelect label="Scheduler" value={filters.scheduler} options={options.schedulers} onChange={(value) => setFilters({ ...filters, scheduler: value })} />
-          <FilterSelect label="BCBA" value={filters.bcba} options={options.bcbas} onChange={(value) => setFilters({ ...filters, bcba: value })} />
-          <FilterSelect label="RBT" value={filters.rbt} options={options.rbts} onChange={(value) => setFilters({ ...filters, rbt: value })} />
-          <FilterSelect label="Client" value="All" options={["All", ...records.slice(0, 12).map((record) => record.clientName)]} onChange={(value) => setQuery(value === "All" ? "" : value)} />
-          <FilterSelect label="Status" value={filters.status} options={["All", ...statuses]} onChange={(value) => setFilters({ ...filters, status: value })} />
-          <FilterSelect label="Start Range" value={filters.start} options={["All", "This Week", "Passed", "Next 30"]} onChange={(value) => setFilters({ ...filters, start: value })} />
-          <FilterSelect label="CR Status" value={filters.cr} options={["All", ...crStatuses]} onChange={(value) => setFilters({ ...filters, cr: value })} />
-          <FilterSelect label="Missing Start" value={filters.missingStart} options={["All", "Yes", "No"]} onChange={(value) => setFilters({ ...filters, missingStart: value })} />
+        <div className="flex flex-wrap items-center gap-2">
+          <SingleSelectFilterDrawer
+            entityLabel="sessions"
+            values={filters}
+            onChange={(next) => setFilters(next as typeof filters)}
+            groups={[
+              { key: "state", label: "State", options: options.states },
+              { key: "clinic", label: "Clinic", options: options.clinics },
+              { key: "scheduler", label: "Scheduler", options: options.schedulers },
+              { key: "bcba", label: "BCBA", options: options.bcbas },
+              { key: "rbt", label: "RBT", options: options.rbts },
+              { key: "status", label: "Status", options: ["All", ...statuses] },
+              { key: "start", label: "Start Range", options: ["All", "This Week", "Passed", "Next 30"] },
+              { key: "cr", label: "CR Status", options: ["All", ...crStatuses] },
+              { key: "missingStart", label: "Missing Start", options: ["All", "Yes", "No"] },
+            ]}
+          />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">

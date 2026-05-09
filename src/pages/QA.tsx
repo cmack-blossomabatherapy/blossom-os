@@ -34,6 +34,7 @@ import { useClients } from "@/contexts/ClientsContext";
 import type { Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SingleSelectFilterDrawer } from "@/components/shared/SingleSelectFilterDrawer";
 
 type WorkMode = "queue" | "sla" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
 type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
@@ -550,17 +551,22 @@ export default function QA() {
       <section className="rounded-lg border border-border/60 bg-card p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="relative min-w-[280px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search client, QA owner, BCBA, RBT, payor, next action…" className="pl-9" /></div>
-          <div className="flex flex-wrap gap-2">
-            <FilterSelect value={filters.state} onChange={(v) => setFilters((f) => ({ ...f, state: v }))} label="State" items={STATES} />
-            <FilterSelect value={filters.owner} onChange={(v) => setFilters((f) => ({ ...f, owner: v }))} label="QA Owner" items={["Unassigned", ...QA_OWNERS]} />
-            <FilterSelect value={filters.bcba} onChange={(v) => setFilters((f) => ({ ...f, bcba: v }))} label="BCBA" items={bcbas} />
-            <FilterSelect value={filters.rbt} onChange={(v) => setFilters((f) => ({ ...f, rbt: v }))} label="RBT" items={rbts} />
-            <FilterSelect value={filters.payor} onChange={(v) => setFilters((f) => ({ ...f, payor: v }))} label="Payor" items={payors} />
-            <FilterSelect value={filters.status} onChange={(v) => setFilters((f) => ({ ...f, status: v }))} label="QA Status" items={["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"]} />
-            <FilterSelect value={filters.issue} onChange={(v) => setFilters((f) => ({ ...f, issue: v }))} label="Issue Type" items={ISSUE_TYPES} />
-            <FilterSelect value={filters.plan} onChange={(v) => setFilters((f) => ({ ...f, plan: v }))} label="Plan Status" items={["Missing", "Submitted", "In Review", "Correction Requested", "Approved"]} />
-            <FilterSelect value={filters.note} onChange={(v) => setFilters((f) => ({ ...f, note: v }))} label="Note Status" items={["Clean", "Flagged", "Correction Due", "Resolved"]} />
-          </div>
+          <SingleSelectFilterDrawer
+            entityLabel="QA cases"
+            values={filters}
+            onChange={(next) => setFilters(next as typeof filters)}
+            groups={[
+              { key: "state", label: "State", options: STATES, allValue: "all" },
+              { key: "owner", label: "QA Owner", options: ["Unassigned", ...QA_OWNERS], allValue: "all" },
+              { key: "bcba", label: "BCBA", options: bcbas, allValue: "all" },
+              { key: "rbt", label: "RBT", options: rbts, allValue: "all" },
+              { key: "payor", label: "Payor", options: payors, allValue: "all" },
+              { key: "status", label: "QA Status", options: ["Awaiting Review", "In Review", "Issues Found", "Corrections Needed", "Ready for Submission", "Submitted to Auth", "Overdue"], allValue: "all" },
+              { key: "issue", label: "Issue Type", options: ISSUE_TYPES, allValue: "all" },
+              { key: "plan", label: "Plan Status", options: ["Missing", "Submitted", "In Review", "Correction Requested", "Approved"], allValue: "all" },
+              { key: "note", label: "Note Status", options: ["Clean", "Flagged", "Correction Due", "Resolved"], allValue: "all" },
+            ]}
+          />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {[
