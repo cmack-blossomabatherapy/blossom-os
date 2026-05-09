@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
-import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES } from "@/lib/navigationAccess";
+import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -175,19 +175,19 @@ const App = () => (
                   <Route path="/blossom/locations" element={<BlossomLocations />} />
                   <Route path="/blossom/locations/:id" element={<LocationDetail />} />
                   <Route path="/blossom/users" element={<BlossomUsers />} />
-                  <Route path="/blossom/reports" element={<BlossomReports />} />
-                  <Route path="/intelligence" element={<ExecutiveCommandCenter />} />
-                  <Route path="/intelligence/workforce" element={<WorkforceIntelligence />} />
-                  <Route path="/intelligence/training" element={<TrainingIntelligence />} />
-                  <Route path="/intelligence/compliance" element={<ComplianceIntelligence />} />
-                  <Route path="/intelligence/onboarding" element={<OnboardingIntelligence />} />
-                  <Route path="/intelligence/departments" element={<DepartmentAnalytics />} />
-                  <Route path="/intelligence/departments/:id" element={<DepartmentAnalyticsDetail />} />
-                  <Route path="/intelligence/states" element={<StateDashboards />} />
-                  <Route path="/intelligence/states/:id" element={<StateDashboardDetail />} />
-                  <Route path="/intelligence/scorecards" element={<Scorecards />} />
-                  <Route path="/intelligence/risk" element={<RiskInsights />} />
-                  <Route path="/intelligence/reports" element={<ReportBuilder />} />
+                  <Route path="/blossom/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><BlossomReports /></PermissionRoute>} />
+                  <Route path="/intelligence" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><ExecutiveCommandCenter /></PermissionRoute>} />
+                  <Route path="/intelligence/workforce" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><WorkforceIntelligence /></PermissionRoute>} />
+                  <Route path="/intelligence/training" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><TrainingIntelligence /></PermissionRoute>} />
+                  <Route path="/intelligence/compliance" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><ComplianceIntelligence /></PermissionRoute>} />
+                  <Route path="/intelligence/onboarding" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><OnboardingIntelligence /></PermissionRoute>} />
+                  <Route path="/intelligence/departments" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><DepartmentAnalytics /></PermissionRoute>} />
+                  <Route path="/intelligence/departments/:id" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><DepartmentAnalyticsDetail /></PermissionRoute>} />
+                  <Route path="/intelligence/states" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><StateDashboards /></PermissionRoute>} />
+                  <Route path="/intelligence/states/:id" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><StateDashboardDetail /></PermissionRoute>} />
+                  <Route path="/intelligence/scorecards" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><Scorecards /></PermissionRoute>} />
+                  <Route path="/intelligence/risk" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><RiskInsights /></PermissionRoute>} />
+                  <Route path="/intelligence/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><ReportBuilder /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
@@ -218,8 +218,8 @@ const App = () => (
                   <Route path="/phone-calls" element={<PhoneCalls />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/automations" element={<Automations />} />
+                  <Route path="/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><Reports /></PermissionRoute>} />
+                  <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
                   <Route path="/training" element={<AcademyGate><TrainingHub /></AcademyGate>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
@@ -234,7 +234,7 @@ const App = () => (
                   <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingStatistics /></PermissionRoute>} />
                   <Route path="/admin/training-assign" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingAssign /></PermissionRoute>} />
                   <Route path="/admin/track-assign" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAssign /></PermissionRoute>} />
-                  <Route path="/admin/role-audit" element={<RoleAuditLog />} />
+                  <Route path="/admin/role-audit" element={<PermissionRoute allowedRoles={["admin"]}><RoleAuditLog /></PermissionRoute>} />
                   <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
                   <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
@@ -254,8 +254,8 @@ const App = () => (
                   <Route path="/hr/welcome" element={<Welcome />} />
                   <Route path="/hr/recognition" element={<Recognition />} />
                   <Route path="/hr/feed" element={<AnnouncementsFeed />} />
-                  <Route path="/enterprise/sop-intelligence" element={<SopIntelligence />} />
-                  <Route path="/enterprise/course-studio" element={<CourseStudio />} />
+                  <Route path="/enterprise/sop-intelligence" element={<PermissionRoute allowedRoles={COURSE_AUTHOR_ROLES}><SopIntelligence /></PermissionRoute>} />
+                  <Route path="/enterprise/course-studio" element={<PermissionRoute allowedRoles={COURSE_AUTHOR_ROLES}><CourseStudio /></PermissionRoute>} />
                   <Route path="/hr/journey" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyHub /></PermissionRoute>} />
                   <Route path="/hr/journey/drive" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyDrive /></PermissionRoute>} />
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
