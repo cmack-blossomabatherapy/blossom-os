@@ -12,7 +12,8 @@ interface Props {
 }
 
 export function LockedStateCard({ description, sectionLabel }: Props) {
-  const { percent, nextStep, completedCount, totalRequired } = useOnboardingStatus();
+  const status = useOnboardingStatus();
+  const { percent, nextPhase, completedCount, totalRequired } = status;
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-2xl items-center justify-center p-4 sm:p-6">
       <div className="relative w-full overflow-hidden rounded-3xl border border-border/60 bg-card shadow-[0_30px_80px_-40px_hsl(var(--primary)/0.4)]">
@@ -45,16 +46,16 @@ export function LockedStateCard({ description, sectionLabel }: Props) {
               <span className="tabular-nums text-muted-foreground">{percent}% · {completedCount}/{totalRequired} steps</span>
             </div>
             <Progress value={percent} className="h-2" />
-            {nextStep && (
+            {nextPhase && (
               <p className="pt-1 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Next:</span> {nextStep.title} · {nextStep.estMinutes} min
+                <span className="font-medium text-foreground">Next:</span> {nextPhase.weekLabel} — {nextPhase.title}
               </p>
             )}
           </div>
 
           <div className="flex flex-col items-center gap-2">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link to={nextStep?.path || "/onboarding"}>
+              <Link to={nextPhase?.path || "/onboarding"}>
                 Continue Onboarding <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
