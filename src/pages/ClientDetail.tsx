@@ -90,11 +90,14 @@ export default function ClientDetail() {
     staffing: "staffing", schedule: "schedule",
     documents: "documents", automation: "automation",
   };
-  const initialTab: TabKey =
-    (deepLink.tab && (validTabs as readonly string[]).includes(deepLink.tab) ? deepLink.tab as TabKey : undefined) ??
-    (deepLink.focus && focusToTab[deepLink.focus.toLowerCase()]) ??
-    (deepLink.task ? "tasks" : undefined) ??
-    "timeline";
+  let initialTab: TabKey = "timeline";
+  if (deepLink.tab && (validTabs as readonly string[]).includes(deepLink.tab)) {
+    initialTab = deepLink.tab as TabKey;
+  } else if (deepLink.focus && focusToTab[deepLink.focus.toLowerCase()]) {
+    initialTab = focusToTab[deepLink.focus.toLowerCase()];
+  } else if (deepLink.task) {
+    initialTab = "tasks";
+  }
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const highlightId = deepLink.task ? `task-${deepLink.task}` : deepLink.flag ? `flag-${deepLink.flag}` : null;
   useDeepLinkHighlight(highlightId, !!client);
