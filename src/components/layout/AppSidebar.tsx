@@ -136,6 +136,7 @@ const hrSection: { title: string; items: NavItem[] } = {
   title: "HR Suite",
   items: [
     { label: "HR Dashboard", icon: HeartHandshake, path: "/hr", perm: "hr.view" },
+    { label: "Welcome",      icon: Sparkles,       path: "/hr/welcome", perm: "" },
     { label: "AI Assistant",  icon: Sparkles,       path: "/hr/assistant", perm: "hr.view" },
     { label: "Employees",    icon: IdCard,         path: "/hr/directory", perm: "hr.employees.view" },
     { label: "Org Chart",    icon: Network,        path: "/hr/org-chart", perm: "hr.employees.view" },
