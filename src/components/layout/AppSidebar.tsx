@@ -317,8 +317,21 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
   const submitNavSearch = (q: string, isMobile: boolean) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || !q.trim()) return;
-    const target = `/training?q=${encodeURIComponent(q.trim())}`;
-    navigate(target);
+    // Jump to the first matching nav item (skipping locked/disabled entries).
+    const pool = isMobile ? mobileSections : sections;
+    const firstHit = pool.flatMap((s) => s.items).find((i) => !i.disabled);
+    if (firstHit) {
+      navigate(firstHit.path);
+      if (isMobile) {
+        onMobileOpenChange?.(false);
+        setMobileNavQuery("");
+      } else {
+        setNavQuery("");
+      }
+      return;
+    }
+    // No menu match → fall back to the trainings search page.
+    navigate(`/training?q=${encodeURIComponent(q.trim())}`);
     if (isMobile) onMobileOpenChange?.(false);
   };
 
