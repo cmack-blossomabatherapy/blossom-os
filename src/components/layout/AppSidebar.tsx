@@ -195,6 +195,7 @@ const limitedNavigationSections = (roles: string[]): NavSection[] => {
 };
 
 const mobileSectionDescriptions: Record<string, string> = {
+  "Blossom OS": "Your central command center",
   Dashboards: "Real-time insights and performance",
   Operate: "Run and manage daily operations",
   Pipeline: "Track client journey end-to-end",
@@ -239,7 +240,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles } = useAuth();
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
