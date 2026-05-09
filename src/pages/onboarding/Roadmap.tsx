@@ -1,17 +1,8 @@
-import { Link } from "react-router-dom";
-import { Check, Lock, ArrowRight, Clock, Compass, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
-import { ONBOARDING_STEPS, ONBOARDING_TOTAL_MINUTES } from "@/lib/onboarding/steps";
+import { Navigate } from "react-router-dom";
 
 export default function OnboardingRoadmap() {
-  const { completedSteps, percent, completedCount, totalRequired, nextStep, isComplete } = useOnboardingStatus();
-
-  return (
-    <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
+  return <Navigate to="/onboarding" replace />;
+}
       <header className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary)/0.14),hsl(var(--accent)/0.08))] p-6 sm:p-10">
         <div className="space-y-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
