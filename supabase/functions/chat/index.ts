@@ -262,6 +262,8 @@ Deno.serve(async (req) => {
 
     const ctx = { admin, userId };
     const usedTools: string[] = [];
+    const sources: Array<{ title: string; url?: string; tool: string }> = [];
+    const startedAt = Date.now();
     let finalText = "";
 
     // Tool loop (max 4 rounds)
@@ -306,16 +308,59 @@ Deno.serve(async (req) => {
         try { fargs = JSON.parse(tc.function?.arguments || "{}"); } catch { /* */ }
         usedTools.push(fname);
         const result = await runTool(fname, fargs, ctx);
+        // Capture cited sources from knowledge-style tools.
+        try {
+          const items = (result as any)?.items;
+          if (Array.isArray(items)) {
+            if (fname === "search_knowledge_base") {
+              for (const it of items.slice(0, 6)) {
+                if (it?.source_title) sources.push({ title: it.source_title, url: it.source_url ?? undefined, tool: fname });
+              }
+            } else if (fname === "search_hr_resources" || fname === "search_training_courses") {
+              for (const it of items.slice(0, 6)) {
+                if (it?.title) sources.push({ title: it.title, url: it.url ?? it.external_url ?? undefined, tool: fname });
+              }
+            }
+          }
+        } catch { /* ignore */ }
         messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result).slice(0, 12000) });
       }
     }
 
     if (!finalText) finalText = "I wasn't able to put together an answer this time. Try rephrasing your question.";
 
-    await admin.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: finalText });
+    // Dedupe sources by title+url.
+    const seen = new Set<string>();
+    const dedupedSources = sources.filter((s) => {
+      const k = `${s.title}|${s.url ?? ""}`;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+
+    const latencyMs = Date.now() - startedAt;
+    const success = !/wasn't able to put together/i.test(finalText);
+    const metadata = {
+      tools_used: usedTools,
+      sources: dedupedSources,
+      latency_ms: latencyMs,
+      success,
+      model: "google/gemini-2.5-flash",
+    };
+
+    const { data: inserted } = await admin
+      .from("chat_messages")
+      .insert({ conversation_id: conversationId, role: "assistant", content: finalText, metadata })
+      .select("id")
+      .single();
     await admin.from("chat_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
 
-    return new Response(JSON.stringify({ conversationId, content: finalText, tools_used: usedTools }), {
+    return new Response(JSON.stringify({
+      conversationId,
+      messageId: inserted?.id,
+      content: finalText,
+      tools_used: usedTools,
+      sources: dedupedSources,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

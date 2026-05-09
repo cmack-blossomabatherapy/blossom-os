@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass, Lock,
+  History as HistoryIcon, Search, Compass, Lock, Bot,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -126,6 +126,7 @@ const navSections: NavSection[] = [
       { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
+      { label: "Assistant Analytics", icon: Bot, path: "/intelligence/assistant", perm: "", allowedRoles: ANALYTICS_ROLES },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
     ],

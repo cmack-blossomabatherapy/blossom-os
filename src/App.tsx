@@ -108,6 +108,7 @@ import StateDashboardDetail from "./pages/intelligence/StateDashboardDetail";
 import Scorecards from "./pages/intelligence/Scorecards";
 import RiskInsights from "./pages/intelligence/RiskInsights";
 import ReportBuilder from "./pages/intelligence/ReportBuilder";
+import AssistantAnalytics from "./pages/intelligence/AssistantAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -194,6 +195,7 @@ const App = () => (
                   <Route path="/intelligence/scorecards" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><Scorecards /></PermissionRoute>} />
                   <Route path="/intelligence/risk" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><RiskInsights /></PermissionRoute>} />
                   <Route path="/intelligence/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><ReportBuilder /></PermissionRoute>} />
+                  <Route path="/intelligence/assistant" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><AssistantAnalytics /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />

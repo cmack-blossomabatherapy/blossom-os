@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Send, Plus, MessageSquare, X, Loader2, Bot } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Sparkles, Send, Plus, MessageSquare, X, Loader2, Bot, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -11,7 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string };
+type Source = { title: string; url?: string; tool?: string };
+type Msg = {
+  id?: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Source[];
+  vote?: "up" | "down" | null;
+};
 type Conv = { id: string; title: string; last_message_at: string };
 
 const SUGGESTIONS = [
@@ -55,10 +62,28 @@ export function AssistantWidget() {
     setShowHistory(false);
     const { data } = await supabase
       .from("chat_messages")
-      .select("id,role,content")
+      .select("id,role,content,metadata")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
-    setMessages((data ?? []).filter((m) => m.role !== "system") as Msg[]);
+    const rows = (data ?? []).filter((m) => m.role !== "system");
+    const ids = rows.filter((m) => m.role === "assistant").map((m) => m.id);
+    let voteMap: Record<string, "up" | "down"> = {};
+    if (ids.length > 0) {
+      const { data: fb } = await supabase
+        .from("chat_message_feedback")
+        .select("message_id,vote")
+        .in("message_id", ids);
+      voteMap = Object.fromEntries((fb ?? []).map((r) => [r.message_id as string, r.vote as "up" | "down"]));
+    }
+    setMessages(
+      rows.map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        sources: (m.metadata?.sources as Source[]) ?? undefined,
+        vote: m.role === "assistant" ? voteMap[m.id] ?? null : undefined,
+      })),
+    );
   }
 
   function newChat() {
@@ -94,7 +119,13 @@ export function AssistantWidget() {
       const assistantText = json.content || "_(no response)_";
       setMessages((m) => {
         const next = [...m];
-        next[next.length - 1] = { role: "assistant", content: assistantText };
+        next[next.length - 1] = {
+          id: json.messageId,
+          role: "assistant",
+          content: assistantText,
+          sources: (json.sources as Source[]) ?? undefined,
+          vote: null,
+        };
         return next;
       });
       void loadConvs();
@@ -110,6 +141,28 @@ export function AssistantWidget() {
       });
     } finally {
       setStreaming(false);
+    }
+  }
+
+  async function vote(messageId: string | undefined, v: "up" | "down") {
+    if (!messageId || !user) return;
+    const current = messages.find((m) => m.id === messageId)?.vote ?? null;
+    const nextVote = current === v ? null : v;
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, vote: nextVote } : m)));
+    try {
+      if (nextVote === null) {
+        await supabase.from("chat_message_feedback").delete().eq("message_id", messageId).eq("user_id", user.id);
+      } else {
+        await supabase
+          .from("chat_message_feedback")
+          .upsert(
+            { message_id: messageId, user_id: user.id, vote: nextVote },
+            { onConflict: "message_id" },
+          );
+      }
+    } catch (e) {
+      toast.error("Couldn't save feedback");
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, vote: current } : m)));
     }
   }
 
@@ -192,8 +245,54 @@ export function AssistantWidget() {
                     m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/70 text-foreground",
                   )}>
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm max-w-none prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-pre:my-2 dark:prose-invert">
-                        {m.content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown> : <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <div>
+                        <div className="prose prose-sm max-w-none prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-pre:my-2 dark:prose-invert">
+                          {m.content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown> : <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        </div>
+                        {m.sources && m.sources.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/40 pt-2">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Sources</span>
+                            {m.sources.slice(0, 6).map((s, si) => (
+                              s.url ? (
+                                <a key={si} href={s.url} target="_blank" rel="noreferrer"
+                                  className="inline-flex max-w-[180px] items-center gap-1 truncate rounded-full border border-border/60 bg-card px-2 py-0.5 text-[10px] text-foreground hover:border-primary/50 hover:text-primary">
+                                  <span className="truncate">{s.title}</span>
+                                  <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                                </a>
+                              ) : (
+                                <span key={si} className="inline-flex max-w-[180px] truncate rounded-full border border-border/60 bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+                                  {s.title}
+                                </span>
+                              )
+                            ))}
+                          </div>
+                        )}
+                        {m.id && m.content && !streaming && (
+                          <div className="mt-1.5 flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => void vote(m.id, "up")}
+                              aria-label="Helpful"
+                              className={cn(
+                                "flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                                m.vote === "up" && "bg-primary/15 text-primary",
+                              )}
+                            >
+                              <ThumbsUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void vote(m.id, "down")}
+                              aria-label="Not helpful"
+                              className={cn(
+                                "flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                                m.vote === "down" && "bg-destructive/15 text-destructive",
+                              )}
+                            >
+                              <ThumbsDown className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{m.content}</p>
