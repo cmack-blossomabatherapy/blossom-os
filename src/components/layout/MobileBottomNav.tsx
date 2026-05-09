@@ -22,7 +22,7 @@ export function MobileBottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-card/95 backdrop-blur-xl md:hidden"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)", paddingTop: "6px" }}
       aria-label="Primary"
     >
       <ul className="grid grid-cols-5">
@@ -34,7 +34,7 @@ export function MobileBottomNav() {
               <NavLink
                 to={item.to}
                 className={cn(
-                  "flex h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                  "flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-current={active ? "page" : undefined}
