@@ -525,6 +525,12 @@ export default function SopIntelligence() {
         initialCitationIndex={openSop?.initialCiteIdx ?? 0}
         onOpenTraining={() => navigate("/training")}
       />
+      <AddSopDialog
+        open={addOpen}
+        onOpenChange={(v) => { setAddOpen(v); if (!v) setEditing(null); }}
+        editing={editing}
+        onSaved={reload}
+      />
     </GlassPageShell>
   );
 }
