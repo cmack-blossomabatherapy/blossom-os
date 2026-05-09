@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_META } from "@/lib/roles";
 import {
@@ -15,7 +15,11 @@ import {
 const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People", "Support"] as const;
 const SELECTABLE_ROLES = ROLE_META.filter((r) => ROLE_GROUPS.includes(r.group as (typeof ROLE_GROUPS)[number]));
 
-export function RequestAccessDialog() {
+interface RequestAccessDialogProps {
+  trigger?: React.ReactNode;
+}
+
+export function RequestAccessDialog({ trigger }: RequestAccessDialogProps = {}) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", role: "", clinic: "", note: "" });
@@ -52,10 +56,14 @@ export function RequestAccessDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="mt-3 h-9 rounded-full text-xs font-semibold shadow-sm">
-          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-          Request access
-        </Button>
+        {trigger ?? (
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            request access
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[460px] rounded-2xl">
         <DialogHeader>
