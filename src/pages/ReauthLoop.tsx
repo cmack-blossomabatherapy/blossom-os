@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
 import { AlertTriangle, CheckCircle2, Clock, FileCheck2, RefreshCw, Send, ShieldAlert, TrendingUp } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -42,8 +43,29 @@ export default function ReauthLoop() {
   const { clients, addTask } = useClients();
   const [view, setView] = useState<ViewKey>("all");
   const [query, setQuery] = useState("");
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
 
   const rows = useMemo<ReauthRow[]>(() => clients.flatMap((client) => (client.reauthCycles ?? []).map((cycle) => ({ ...cycle, client }))), [clients]);
+
+  // Deep-link: scroll to the requested cycle/client row and highlight it.
+  const targetCycleId = deepLink.cycle
+    ? `cycle-${deepLink.cycle}`
+    : deepLink.focus
+      ? `cycle-client-${deepLink.focus}`
+      : null;
+  useDeepLinkHighlight(targetCycleId, rows.length > 0);
+  useEffect(() => {
+    if (!rows.length) return;
+    if (deepLink.cycle && !rows.some((r) => r.id === deepLink.cycle)) {
+      toast.message?.(`No reauth cycle matches "${deepLink.cycle}"`);
+    } else if (deepLink.focus && !rows.some((r) => r.client.id === deepLink.focus)) {
+      toast.message?.(`No reauth cycle for client "${deepLink.focus}"`);
+    } else if (deepLink.alert) {
+      toast.message?.("Opened from alert");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows.length === 0]);
 
   const filtered = useMemo(() => {
     let next = rows;
