@@ -23,7 +23,8 @@ import { relativeTime } from "@/lib/sop/indexer";
 import { useToast } from "@/hooks/use-toast";
 import {
   fetchAllFeedback, setFeedback, normalizeQuery, normalizeFilters, boostFor,
-  type SopFeedbackRow, type SopFeedbackVote,
+  fetchFeedbackWeights, DEFAULT_FEEDBACK_WEIGHTS,
+  type SopFeedbackRow, type SopFeedbackVote, type SopFeedbackWeights,
 } from "@/lib/sop/feedback";
 import { cn } from "@/lib/utils";
 
