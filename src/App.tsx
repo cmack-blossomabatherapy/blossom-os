@@ -85,6 +85,18 @@ import LocationDetail from "./pages/blossom/LocationDetail";
 import BlossomUsers from "./pages/blossom/Users";
 import BlossomReports from "./pages/blossom/BlossomReports";
 import Dashboard from "./pages/Dashboard";
+import ExecutiveCommandCenter from "./pages/intelligence/ExecutiveCommandCenter";
+import WorkforceIntelligence from "./pages/intelligence/WorkforceIntelligence";
+import TrainingIntelligence from "./pages/intelligence/TrainingIntelligence";
+import ComplianceIntelligence from "./pages/intelligence/ComplianceIntelligence";
+import OnboardingIntelligence from "./pages/intelligence/OnboardingIntelligence";
+import DepartmentAnalytics from "./pages/intelligence/DepartmentAnalytics";
+import DepartmentAnalyticsDetail from "./pages/intelligence/DepartmentAnalyticsDetail";
+import StateDashboards from "./pages/intelligence/StateDashboards";
+import StateDashboardDetail from "./pages/intelligence/StateDashboardDetail";
+import Scorecards from "./pages/intelligence/Scorecards";
+import RiskInsights from "./pages/intelligence/RiskInsights";
+import ReportBuilder from "./pages/intelligence/ReportBuilder";
 
 const queryClient = new QueryClient();
 
@@ -159,6 +171,18 @@ const App = () => (
                   <Route path="/blossom/locations/:id" element={<LocationDetail />} />
                   <Route path="/blossom/users" element={<BlossomUsers />} />
                   <Route path="/blossom/reports" element={<BlossomReports />} />
+                  <Route path="/intelligence" element={<ExecutiveCommandCenter />} />
+                  <Route path="/intelligence/workforce" element={<WorkforceIntelligence />} />
+                  <Route path="/intelligence/training" element={<TrainingIntelligence />} />
+                  <Route path="/intelligence/compliance" element={<ComplianceIntelligence />} />
+                  <Route path="/intelligence/onboarding" element={<OnboardingIntelligence />} />
+                  <Route path="/intelligence/departments" element={<DepartmentAnalytics />} />
+                  <Route path="/intelligence/departments/:id" element={<DepartmentAnalyticsDetail />} />
+                  <Route path="/intelligence/states" element={<StateDashboards />} />
+                  <Route path="/intelligence/states/:id" element={<StateDashboardDetail />} />
+                  <Route path="/intelligence/scorecards" element={<Scorecards />} />
+                  <Route path="/intelligence/risk" element={<RiskInsights />} />
+                  <Route path="/intelligence/reports" element={<ReportBuilder />} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
