@@ -3648,6 +3648,39 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_route_locks: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string | null
+          id: string
+          locked_by: string | null
+          reason: string
+          route_pattern: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          locked_by?: string | null
+          reason: string
+          route_pattern: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          locked_by?: string | null
+          reason?: string
+          route_pattern?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       onboarding_state: {
         Row: {
           acknowledgements: string[]
@@ -5319,6 +5352,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_rollback_onboarding: {
+        Args: {
+          clear_certificate?: boolean
+          keep_acks: string[]
+          keep_modules: string[]
+          keep_steps: string[]
+          note?: string
+          reset_quiz?: boolean
+          target_phase: string
+          target_user: string
+        }
+        Returns: undefined
+      }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
