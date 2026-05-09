@@ -3,6 +3,7 @@ import { ArrowRight, Compass, Sparkles, Award, Clock, CheckCircle2, Map } from "
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { useAuth } from "@/contexts/AuthContext";
 import { PremiumJourneyTimeline } from "@/components/onboarding/PremiumJourneyTimeline";
 import { PhaseChipRail } from "@/components/onboarding/PhaseChipRail";
 import { PathSwitcher } from "@/components/onboarding/PathSwitcher";
@@ -10,6 +11,7 @@ import { totalMinutes } from "@/lib/onboarding/journey";
 
 export default function Journey() {
   const status = useOnboardingStatus();
+  const { newStateEmployee } = useAuth();
   const minutes = totalMinutes(status.path);
   const totalHours = Math.max(1, Math.round(minutes / 60));
   const completedPhases = status.phaseProgress.filter((p) => p.complete && p.phase.id !== "graduation").length;
@@ -99,8 +101,15 @@ export default function Journey() {
         <aside className="space-y-3 lg:sticky lg:top-20 lg:self-start">
           <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your path</p>
-            <p className="mt-1 mb-3 text-xs text-muted-foreground">Choose the path that matches your role. Some Week 1 and Week 3 modules adjust accordingly.</p>
-            <PathSwitcher path={status.path} />
+            <p className="mt-1 mb-3 text-xs text-muted-foreground">
+              {newStateEmployee
+                ? "You're set up as a New State employee — extra Week 1 and Week 3 modules are unlocked for you."
+                : "Choose the path that matches your role. Some Week 1 and Week 3 modules adjust accordingly."}
+            </p>
+            <PathSwitcher
+              path={status.path}
+              lockedReason={newStateEmployee ? "Set by your admin via your employee profile (New State employee)." : undefined}
+            />
           </section>
           {status.nextPhase && !status.isComplete && (
             <section className="rounded-2xl border border-primary/30 bg-[linear-gradient(135deg,hsl(var(--primary)/0.08),transparent)] p-4 shadow-sm">

@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS new_state_employee boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_profiles_new_state_employee ON public.profiles(new_state_employee) WHERE new_state_employee = true;
