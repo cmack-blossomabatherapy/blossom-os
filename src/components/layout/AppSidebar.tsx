@@ -66,6 +66,20 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
 
 const navSections: NavSection[] = [
   {
+    title: "Blossom OS",
+    items: [
+      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", perm: "" },
+      { label: "Operations Academy", icon: Compass, path: "/blossom/academy", perm: "" },
+      { label: "Blossom Training", icon: GraduationCap, path: "/training", perm: "" },
+      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
+      { label: "Departments", icon: Building2, path: "/blossom/departments", perm: "" },
+      { label: "Locations", icon: Network, path: "/blossom/locations", perm: "" },
+      { label: "Users", icon: UsersRound, path: "/blossom/users", perm: "" },
+      { label: "Reports", icon: BarChart3, path: "/blossom/reports", perm: "" },
+      { label: "Admin Settings", icon: Settings, path: "/settings", perm: "settings.view" },
+    ],
+  },
+  {
     title: "Operate",
     items: [
       { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
