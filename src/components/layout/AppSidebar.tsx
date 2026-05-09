@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
+import { canAccessAdminHub } from "@/lib/adminAccess";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAcademyComplete } from "@/hooks/useAcademyComplete";
@@ -88,6 +89,7 @@ const adminSections: NavSection[] = [
   {
     title: "Admin",
     items: [
+      { label: "Admin Hub", icon: ShieldCheck, path: "/admin", perm: "" },
       { label: "User Management", icon: UsersRound, path: "/team", perm: "team.view" },
       { label: "Course Management", icon: GraduationCap, path: "/admin/training-dashboard", perm: "" },
       { label: "Assign Trainings", icon: ClipboardCheck, path: "/admin/training-assign", perm: "" },
@@ -235,8 +237,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
   // Admin roles see the Admin + Operations groups; everyone sees the Academy group.
-  const adminRoles = new Set(["admin", "exec", "ops_manager", "training_admin", "hr", "hr_admin", "hr_manager"]);
-  const showAdmin = roles.some((r) => adminRoles.has(r));
+  const showAdmin = canAccessAdminHub(user, roles);
   const showOperations = roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;

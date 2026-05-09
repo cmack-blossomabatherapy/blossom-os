@@ -115,6 +115,7 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import AdminHub from "./pages/AdminHub";
 
 const queryClient = new QueryClient();
 
@@ -187,6 +188,7 @@ const App = () => (
                   <Route path="/catalog" element={<TrainingCatalog />} />
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/admin" element={<AdminHub />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/blossom/academy" element={<OperationsAcademy />} />
