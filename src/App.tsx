@@ -275,6 +275,7 @@ const App = () => (
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                   <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
+                  <Route path="/enterprise/*" element={<NotFound />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
