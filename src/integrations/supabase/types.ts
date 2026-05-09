@@ -3773,6 +3773,86 @@ export type Database = {
           },
         ]
       }
+      sop_documents: {
+        Row: {
+          created_at: string
+          id: string
+          owner: string | null
+          source: string
+          source_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner?: string | null
+          source?: string
+          source_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner?: string | null
+          source?: string
+          source_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sop_sections: {
+        Row: {
+          body: string
+          char_length: number
+          created_at: string
+          id: string
+          position: number
+          section: string
+          sop_id: string
+          tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          char_length?: number
+          created_at?: string
+          id?: string
+          position?: number
+          section: string
+          sop_id: string
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          char_length?: number
+          created_at?: string
+          id?: string
+          position?: number
+          section?: string
+          sop_id?: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sop_sections_sop_id_fkey"
+            columns: ["sop_id"]
+            isOneToOne: false
+            referencedRelation: "sop_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staffing_matches: {
         Row: {
           availability_overlap: string[]
