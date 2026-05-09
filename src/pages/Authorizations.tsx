@@ -419,27 +419,23 @@ export default function Authorizations() {
           </div>
         </div>
 
-        <FilterChipsBar
-          filters={filters}
-          onClear={() => setFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
-          onClearKey={(key) => setFilters({ ...filters, [key]: "All" })}
-          onOpen={() => { setDraftFilters(filters); setFilterDrawerOpen(true); }}
-        />
-
-        <AuthFilterDrawer
-          open={filterDrawerOpen}
-          onOpenChange={setFilterDrawerOpen}
-          draft={draftFilters}
-          setDraft={setDraftFilters}
-          options={{
-            states: options.states,
-            payors: options.payors,
-            coordinators: options.coordinators,
-            statuses: ["All", ...statuses],
-          }}
-          onApply={() => { setFilters(draftFilters); setFilterDrawerOpen(false); }}
-          onClear={() => setDraftFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <SingleSelectFilterDrawer
+            entityLabel="authorizations"
+            values={filters}
+            onChange={setFilters}
+            groups={[
+              { key: "state", label: "State", options: options.states },
+              { key: "payor", label: "Payor", options: options.payors },
+              { key: "type", label: "Auth Type", options: ["All", "Initial", "Treatment", "Reauth"] },
+              { key: "status", label: "Auth Status", options: ["All", ...statuses] },
+              { key: "coordinator", label: "Coordinator", options: options.coordinators },
+              { key: "qa", label: "QA Status", options: ["All", "Not Started", "In Review", "Complete", "Blocked", "Ready"] },
+              { key: "expiration", label: "Expiration", options: ["All", "<30", "31-60", "61-90"] },
+              { key: "missingDocs", label: "Missing Docs", options: ["All", "Yes", "No"] },
+            ]}
+          />
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/20 p-1">
