@@ -1,4 +1,4 @@
-import { Home, GraduationCap, BookOpen, Bell, User, Library } from "lucide-react";
+import { Home, Compass, GraduationCap, Library, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,11 +10,11 @@ export function MobileBottomNav() {
   const { user } = useAuth();
 
   const items: Item[] = [
-    { to: "/", label: "Home", icon: Home, match: (p) => p === "/" || p === "/dashboard" || p.endsWith("-dashboard") },
-    { to: "/blossom/academy", label: "Academy", icon: GraduationCap, match: (p) => p.startsWith("/blossom/academy") },
-    { to: "/training", label: "Training", icon: BookOpen, match: (p) => p.startsWith("/training") || p === "/hr/journey" },
+    { to: "/", label: "Home", icon: Home, match: (p) => p === "/" },
+    { to: "/academy", label: "Academy", icon: Compass, match: (p) => p.startsWith("/academy") || p.startsWith("/blossom/academy") },
+    { to: "/my-learning", label: "Learning", icon: GraduationCap, match: (p) => p.startsWith("/my-learning") || p.startsWith("/training") || p.startsWith("/catalog") || p === "/hr/journey" },
     { to: "/resources", label: "Resources", icon: Library, match: (p) => p.startsWith("/resources") || p.startsWith("/hr/resources") },
-    { to: "/intelligence", label: "Insights", icon: Bell, match: (p) => p.startsWith("/intelligence") },
+    { to: "/profile", label: "Profile", icon: User, match: (p) => p.startsWith("/profile") },
   ];
 
   if (!user) return null;
