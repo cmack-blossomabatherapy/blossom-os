@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Sparkles, PlayCircle, Heart, Compass, Users, GraduationCap,
   ClipboardCheck, ShieldCheck, Calendar, ArrowRight, CheckCircle2, Quote,
@@ -40,35 +43,30 @@ const roadmap = [
     phase: "Day 1",
     label: "Land softly",
     icon: Heart,
-    status: "complete" as const,
     items: ["Sign offer paperwork", "Watch CEO welcome", "Set up your profile"],
   },
   {
     phase: "Week 1",
     label: "Get oriented",
     icon: Compass,
-    status: "active" as const,
     items: ["Operations Academy intro", "Meet your manager", "Tour your clinic"],
   },
   {
     phase: "Week 2",
     label: "Learn the craft",
     icon: GraduationCap,
-    status: "upcoming" as const,
     items: ["Core compliance trainings", "Shadow a session", "First check-in"],
   },
   {
     phase: "Week 3",
     label: "Step in",
     icon: ClipboardCheck,
-    status: "upcoming" as const,
     items: ["Complete role certifications", "Run first task independently"],
   },
   {
     phase: "Week 4",
     label: "Belong",
     icon: Users,
-    status: "upcoming" as const,
     items: ["30-day review", "Set 90-day goals", "Join a working group"],
   },
 ];
@@ -83,6 +81,105 @@ const quickActions = [
 export default function Welcome() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
+  const [pending, setPending] = useState<Set<string>>(new Set());
+
+  const itemKey = (phase: string, item: string) => `${phase}::${item}`;
+
+  // Load saved progress + subscribe to realtime updates for cross-session sync
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("onboarding_milestone_progress")
+        .select("phase, item, completed")
+        .eq("user_id", user.id);
+      if (cancelled) return;
+      if (error) return;
+      const next = new Set<string>();
+      (data ?? []).forEach((row) => {
+        if (row.completed) next.add(itemKey(row.phase, row.item));
+      });
+      setCompletedItems(next);
+    };
+    load();
+
+    const channel = supabase
+      .channel(`onboarding-progress-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "onboarding_milestone_progress",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setCompletedItems((prev) => {
+            const next = new Set(prev);
+            if (payload.eventType === "DELETE") {
+              const old = payload.old as { phase: string; item: string };
+              if (old?.phase) next.delete(itemKey(old.phase, old.item));
+            } else {
+              const row = payload.new as { phase: string; item: string; completed: boolean };
+              const k = itemKey(row.phase, row.item);
+              if (row.completed) next.add(k);
+              else next.delete(k);
+            }
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  const toggleItem = async (phase: string, item: string) => {
+    if (!user?.id) {
+      toast.error("Sign in to save your progress.");
+      return;
+    }
+    const k = itemKey(phase, item);
+    const wasComplete = completedItems.has(k);
+    // Optimistic update
+    setCompletedItems((prev) => {
+      const next = new Set(prev);
+      if (wasComplete) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+    setPending((prev) => new Set(prev).add(k));
+
+    const { error } = await supabase
+      .from("onboarding_milestone_progress")
+      .upsert(
+        { user_id: user.id, phase, item, completed: !wasComplete, completed_at: new Date().toISOString() },
+        { onConflict: "user_id,phase,item" },
+      );
+
+    setPending((prev) => {
+      const next = new Set(prev);
+      next.delete(k);
+      return next;
+    });
+
+    if (error) {
+      // Revert on failure
+      setCompletedItems((prev) => {
+        const next = new Set(prev);
+        if (wasComplete) next.add(k);
+        else next.delete(k);
+        return next;
+      });
+      toast.error("Couldn't save your progress. Try again.");
+    }
+  };
 
   const firstName = useMemo(() => {
     const meta = user?.user_metadata as { full_name?: string; display_name?: string } | undefined;
@@ -90,8 +187,30 @@ export default function Welcome() {
     return raw.split(/[\s._-]+/)[0].replace(/^./, (c) => c.toUpperCase());
   }, [user]);
 
-  const completed = roadmap.filter((r) => r.status === "complete").length;
-  const progress = Math.round((completed / roadmap.length) * 100);
+  const phaseStatuses = useMemo(() => {
+    const statuses: Array<"complete" | "active" | "upcoming"> = [];
+    let activeAssigned = false;
+    roadmap.forEach((step) => {
+      const allDone = step.items.every((i) => completedItems.has(itemKey(step.phase, i)));
+      if (allDone) {
+        statuses.push("complete");
+      } else if (!activeAssigned) {
+        statuses.push("active");
+        activeAssigned = true;
+      } else {
+        statuses.push("upcoming");
+      }
+    });
+    return statuses;
+  }, [completedItems]);
+
+  const totalItems = roadmap.reduce((sum, r) => sum + r.items.length, 0);
+  const completedCount = roadmap.reduce(
+    (sum, r) => sum + r.items.filter((i) => completedItems.has(itemKey(r.phase, i))).length,
+    0,
+  );
+  const progress = totalItems === 0 ? 0 : Math.round((completedCount / totalItems) * 100);
+  const completedPhases = phaseStatuses.filter((s) => s === "complete").length;
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -113,7 +232,9 @@ export default function Welcome() {
             <span className="text-foreground">{progress}%</span>
           </div>
           <Progress value={progress} className="mt-2 h-2" />
-          <p className="mt-2 text-xs text-muted-foreground">{completed} of {roadmap.length} milestones complete</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {completedCount} of {totalItems} tasks · {completedPhases} of {roadmap.length} milestones complete
+          </p>
         </div>
       }
     >
@@ -169,8 +290,9 @@ export default function Welcome() {
           <ol className="relative space-y-5 md:space-y-6">
             {roadmap.map((step, idx) => {
               const Icon = step.icon;
-              const isComplete = step.status === "complete";
-              const isActive = step.status === "active";
+              const status = phaseStatuses[idx];
+              const isComplete = status === "complete";
+              const isActive = status === "active";
               return (
                 <li key={step.phase} className="relative flex gap-4">
                   {idx < roadmap.length - 1 && (
@@ -198,12 +320,28 @@ export default function Welcome() {
                       {isComplete && <Badge variant="secondary" className="bg-success/15 text-success">Complete</Badge>}
                     </div>
                     <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      {step.items.map((item) => (
-                        <li key={item} className="flex items-start gap-2">
-                          <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${isComplete ? "bg-primary" : "bg-border"}`} />
-                          <span>{item}</span>
-                        </li>
-                      ))}
+                      {step.items.map((item) => {
+                        const k = itemKey(step.phase, item);
+                        const done = completedItems.has(k);
+                        const isPending = pending.has(k);
+                        return (
+                          <li key={item} className="flex items-start gap-2">
+                            <Checkbox
+                              id={k}
+                              checked={done}
+                              disabled={isPending}
+                              onCheckedChange={() => toggleItem(step.phase, item)}
+                              className="mt-0.5"
+                            />
+                            <label
+                              htmlFor={k}
+                              className={`cursor-pointer select-none ${done ? "text-foreground line-through decoration-muted-foreground/50" : ""}`}
+                            >
+                              {item}
+                            </label>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </li>
