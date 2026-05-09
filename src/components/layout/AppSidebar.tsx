@@ -66,6 +66,20 @@ const superAdminDashboardSection: { title: string; items: NavItem[] } = {
 
 const navSections: NavSection[] = [
   {
+    title: "Blossom OS",
+    items: [
+      { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard", perm: "" },
+      { label: "Operations Academy", icon: Compass, path: "/blossom/academy", perm: "" },
+      { label: "Blossom Training", icon: GraduationCap, path: "/training", perm: "" },
+      { label: "Resource Hub", icon: BookOpen, path: "/resources", perm: "" },
+      { label: "Departments", icon: Building2, path: "/blossom/departments", perm: "" },
+      { label: "Locations", icon: Network, path: "/blossom/locations", perm: "" },
+      { label: "Users", icon: UsersRound, path: "/blossom/users", perm: "" },
+      { label: "Reports", icon: BarChart3, path: "/blossom/reports", perm: "" },
+      { label: "Admin Settings", icon: Settings, path: "/settings", perm: "settings.view" },
+    ],
+  },
+  {
     title: "Operate",
     items: [
       { label: "Clients", icon: UserCheck, path: "/clients", perm: "clients.view" },
@@ -181,6 +195,7 @@ const limitedNavigationSections = (roles: string[]): NavSection[] => {
 };
 
 const mobileSectionDescriptions: Record<string, string> = {
+  "Blossom OS": "Your central command center",
   Dashboards: "Real-time insights and performance",
   Operate: "Run and manage daily operations",
   Pipeline: "Track client journey end-to-end",
@@ -225,7 +240,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles } = useAuth();
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Admin"]));
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
