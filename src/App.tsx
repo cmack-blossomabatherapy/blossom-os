@@ -76,6 +76,15 @@ import ClinicDashboard from "./pages/ClinicDashboard";
 import QADashboard from "./pages/QADashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import RecruitingDashboard from "./pages/RecruitingDashboard";
+import OperationsAcademy from "./pages/blossom/OperationsAcademy";
+import TrackDetail from "./pages/blossom/TrackDetail";
+import Departments from "./pages/blossom/Departments";
+import DepartmentDetail from "./pages/blossom/DepartmentDetail";
+import BlossomLocations from "./pages/blossom/Locations";
+import LocationDetail from "./pages/blossom/LocationDetail";
+import BlossomUsers from "./pages/blossom/Users";
+import BlossomReports from "./pages/blossom/BlossomReports";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +150,15 @@ const App = () => (
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<RoleDashboardRedirect />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/blossom/academy" element={<OperationsAcademy />} />
+                  <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
+                  <Route path="/blossom/departments" element={<Departments />} />
+                  <Route path="/blossom/departments/:id" element={<DepartmentDetail />} />
+                  <Route path="/blossom/locations" element={<BlossomLocations />} />
+                  <Route path="/blossom/locations/:id" element={<LocationDetail />} />
+                  <Route path="/blossom/users" element={<BlossomUsers />} />
+                  <Route path="/blossom/reports" element={<BlossomReports />} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
