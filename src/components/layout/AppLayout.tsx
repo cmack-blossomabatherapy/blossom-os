@@ -5,6 +5,7 @@ import { TopBar } from "./TopBar";
 import { useLocation } from "react-router-dom";
 import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
+import { MobileBottomNav } from "./MobileBottomNav";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -57,7 +58,7 @@ export function AppLayout() {
         <TopBar title={title} onOpenMobileMenu={() => setMobileMenuOpen(true)} mobileMenuFloating={mobileMenuFloating} />
         <main
           ref={mainRef}
-          className="mobile-page flex-1 overflow-auto px-3 pb-6 pt-3 md:min-h-0 md:p-6"
+          className="mobile-page flex-1 overflow-auto px-3 pb-24 pt-3 md:min-h-0 md:p-6 md:pb-6"
           onScroll={(event) => setMobileMenuFloating(event.currentTarget.scrollTop > 48)}
         >
           <Outlet />
@@ -65,6 +66,7 @@ export function AppLayout() {
       </div>
       <ForcePasswordChange />
       <AssistantWidget />
+      <MobileBottomNav />
     </div>
   );
 }
