@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
 import {
   AlertTriangle,
   Bell,
