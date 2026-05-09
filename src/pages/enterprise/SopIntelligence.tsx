@@ -214,37 +214,43 @@ export default function SopIntelligence() {
         </div>
       }
     >
-      {/* Search bar */}
-      <Card className="border-border/50 bg-card/60 backdrop-blur">
-        <CardContent className="p-4 md:p-5">
-          <form onSubmit={onSubmit} className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask a question or search the SOP library…"
-                className="pl-9 h-11"
-              />
-            </div>
-            <Button type="submit" className="h-11 gap-2">
-              <Sparkles className="h-4 w-4" /> Search
-            </Button>
-          </form>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="text-xs text-muted-foreground self-center">Try:</span>
-            {SUGGESTED.map(s => (
-              <button
-                key={s}
-                onClick={() => runSuggested(s)}
-                className="text-xs rounded-full border border-border/60 bg-background/60 px-3 py-1 hover:border-primary/60 hover:text-foreground text-muted-foreground transition"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search bar — sticky on mobile for one-handed reach */}
+      <div className="sticky top-0 z-20 -mx-3 md:mx-0 md:static px-3 md:px-0 py-2 md:py-0 bg-background/80 md:bg-transparent backdrop-blur md:backdrop-blur-0">
+        <Card className="border-border/50 bg-card/80 md:bg-card/60 backdrop-blur">
+          <CardContent className="p-3 md:p-5">
+            <form onSubmit={onSubmit} className="flex flex-col md:flex-row gap-2 md:gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Ask a question or search the SOP library…"
+                  inputMode="search"
+                  enterKeyHint="search"
+                  className="pl-9 h-12 md:h-11 text-base md:text-sm"
+                />
+              </div>
+              <Button type="submit" className="h-12 md:h-11 gap-2 active:scale-[0.98]">
+                <Sparkles className="h-4 w-4" /> Search
+              </Button>
+            </form>
+            <ScrollArea className="mt-3 max-w-full">
+              <div className="flex gap-2 pb-1 md:flex-wrap">
+                <span className="text-xs text-muted-foreground self-center shrink-0">Try:</span>
+                {SUGGESTED.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => runSuggested(s)}
+                    className="text-xs rounded-full border border-border/60 bg-background/60 px-3 py-1.5 min-h-[32px] hover:border-primary/60 hover:text-foreground text-muted-foreground transition shrink-0 active:scale-95"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
 
       {!submitted && (
         <div className="grid lg:grid-cols-3 gap-4">
