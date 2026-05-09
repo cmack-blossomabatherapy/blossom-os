@@ -474,6 +474,17 @@ export default function CourseStudio() {
           )}
         </div>
       </div>
+
+      {/* Mobile sticky generate bar — sits above the bottom tab bar + safe area */}
+      <div
+        className="fixed left-0 right-0 z-30 lg:hidden border-t border-border/60 bg-card/95 backdrop-blur-xl px-3 py-2"
+        style={{ bottom: "calc(56px + env(safe-area-inset-bottom))" }}
+      >
+        <Button className="w-full h-12 gap-2 active:scale-[0.99]" onClick={generate} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {loading ? "Generating course…" : course ? "Regenerate course" : "Generate course"}
+        </Button>
+      </div>
     </GlassPageShell>
   );
 }
