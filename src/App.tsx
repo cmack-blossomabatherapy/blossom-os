@@ -118,6 +118,7 @@ import Profile from "./pages/Profile";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
+import AdminOnboardingProgress from "./pages/admin/OnboardingProgress";
 import OnboardingRoadmap from "./pages/onboarding/Roadmap";
 import OnboardingWelcome from "./pages/onboarding/Welcome";
 import OnboardingMission from "./pages/onboarding/Mission";
@@ -212,6 +213,7 @@ const App = () => (
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
+                  <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
