@@ -3487,6 +3487,27 @@ export type Database = {
         }
         Relationships: []
       }
+      mobile_alert_dismissals: {
+        Row: {
+          alert_key: string
+          dismissed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          alert_key: string
+          dismissed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          alert_key?: string
+          dismissed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_milestone_progress: {
         Row: {
           completed: boolean

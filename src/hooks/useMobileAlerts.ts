@@ -274,11 +274,23 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
   return out;
 }
 
-function loadDismissed(): Set<string> {
+function loadLocalDismissed(): Set<string> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return new Set<string>(raw ? JSON.parse(raw) : []);
   } catch { return new Set<string>(); }
+}
+
+async function loadServerDismissed(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("mobile_alert_dismissals")
+    .select("alert_key")
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[useMobileAlerts] failed to load dismissals", error);
+    return new Set<string>();
+  }
+  return new Set<string>((data ?? []).map((r: { alert_key: string }) => r.alert_key));
 }
 
 /**
@@ -288,16 +300,68 @@ function loadDismissed(): Set<string> {
  * and exposes them as a unified list. Dismissals persist locally per-user.
  */
 export function useMobileAlerts() {
+  const [userId, setUserId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(() =>
-    typeof window === "undefined" ? new Set<string>() : loadDismissed(),
+    typeof window === "undefined" ? new Set<string>() : loadLocalDismissed(),
   );
   const [alerts, setAlerts] = useState<MobileAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Track signed-in user; reload server dismissals on login/logout.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(dismissed))); } catch {}
-  }, [dismissed]);
+    let active = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (active) setUserId(data.user?.id ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => { active = false; sub.subscription.unsubscribe(); };
+  }, []);
+
+  // When the user changes, hydrate dismissed set from the server (merge with
+  // any pending local-only dismissals so nothing is lost on first sign-in).
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const server = await loadServerDismissed(userId);
+      const local = loadLocalDismissed();
+      const toUpload: string[] = [];
+      for (const id of local) if (!server.has(id)) { server.add(id); toUpload.push(id); }
+      if (toUpload.length) {
+        await supabase.from("mobile_alert_dismissals").upsert(
+          toUpload.map((alert_key) => ({ user_id: userId, alert_key })),
+          { onConflict: "user_id,alert_key" },
+        );
+      }
+      if (!cancelled) {
+        setDismissed(server);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(server))); } catch {}
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  // Realtime: another device dismisses → reflect here.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`alert-dismissals-${userId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "mobile_alert_dismissals", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setDismissed((prev) => {
+            const next = new Set(prev);
+            if (payload.eventType === "INSERT") next.add((payload.new as { alert_key: string }).alert_key);
+            if (payload.eventType === "DELETE") next.delete((payload.old as { alert_key: string }).alert_key);
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next))); } catch {}
+            return next;
+          });
+        },
+      ).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [userId]);
 
   const refresh = useCallback(async () => {
     try {
@@ -340,10 +404,31 @@ export function useMobileAlerts() {
     critical: active.filter(a => a.severity === "critical").length,
   }), [active]);
 
-  const dismiss = (id: string) => setDismissed(prev => {
-    const next = new Set(prev); next.add(id); return next;
-  });
-  const reset = () => setDismissed(new Set());
+  const dismiss = (id: string) => {
+    setDismissed(prev => {
+      const next = new Set(prev); next.add(id);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+    if (userId) {
+      void supabase
+        .from("mobile_alert_dismissals")
+        .upsert({ user_id: userId, alert_key: id }, { onConflict: "user_id,alert_key" })
+        .then(({ error }) => { if (error) console.warn("[useMobileAlerts] dismiss persist failed", error); });
+    }
+  };
+
+  const reset = () => {
+    setDismissed(new Set());
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    if (userId) {
+      void supabase
+        .from("mobile_alert_dismissals")
+        .delete()
+        .eq("user_id", userId)
+        .then(({ error }) => { if (error) console.warn("[useMobileAlerts] reset failed", error); });
+    }
+  };
 
   return { active, counts, dismiss, reset, refresh, loading };
 }
