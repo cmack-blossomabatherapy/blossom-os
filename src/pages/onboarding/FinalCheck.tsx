@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { StepCompleteButton } from "@/components/onboarding/StepCompleteButton";
 import { cn } from "@/lib/utils";
+import { markQuizPassed, resetQuiz } from "@/lib/onboarding/storage";
 
 interface Q {
   q: string;
@@ -53,6 +54,16 @@ export default function OnboardingFinalCheck() {
     [answers],
   );
   const passed = submitted && score === QUESTIONS.length;
+
+  useEffect(() => {
+    if (passed) markQuizPassed();
+  }, [passed]);
+
+  const handleRetake = () => {
+    resetQuiz();
+    setAnswers(QUESTIONS.map(() => null));
+    setSubmitted(false);
+  };
 
   return (
     <OnboardingShell
@@ -105,13 +116,18 @@ export default function OnboardingFinalCheck() {
           )}
         </div>
         <div className="flex gap-2">
-          {!passed && (
+          {!passed && !submitted && (
             <Button
               onClick={() => setSubmitted(true)}
               disabled={answers.some((a) => a === null)}
               className="gap-2"
             >
-              <ClipboardCheck className="h-4 w-4" /> {submitted ? "Re-check" : "Submit answers"}
+              <ClipboardCheck className="h-4 w-4" /> Submit answers
+            </Button>
+          )}
+          {!passed && submitted && (
+            <Button onClick={handleRetake} variant="secondary" className="gap-2">
+              <ClipboardCheck className="h-4 w-4" /> Retake quiz
             </Button>
           )}
           {passed && <StepCompleteButton stepId="final-check" label="Continue to completion" />}
