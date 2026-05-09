@@ -111,6 +111,10 @@ import Scorecards from "./pages/intelligence/Scorecards";
 import RiskInsights from "./pages/intelligence/RiskInsights";
 import ReportBuilder from "./pages/intelligence/ReportBuilder";
 import AssistantAnalytics from "./pages/intelligence/AssistantAnalytics";
+import WelcomeHome from "./pages/WelcomeHome";
+import MyLearning from "./pages/MyLearning";
+import TrainingCatalog from "./pages/TrainingCatalog";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -176,7 +180,13 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                  <Route path="/" element={<RoleDashboardRedirect />} />
+                  <Route path="/" element={<WelcomeHome />} />
+                  <Route path="/home-redirect" element={<RoleDashboardRedirect />} />
+                  <Route path="/academy" element={<OperationsAcademy />} />
+                  <Route path="/my-learning" element={<MyLearning />} />
+                  <Route path="/catalog" element={<TrainingCatalog />} />
+                  <Route path="/announcements" element={<AnnouncementsFeed />} />
+                  <Route path="/profile" element={<Profile />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/blossom/academy" element={<OperationsAcademy />} />
