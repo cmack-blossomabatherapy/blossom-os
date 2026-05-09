@@ -261,7 +261,20 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles } = useAuth();
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Enterprise", "Admin"]));
+  const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
+  const DEFAULT_OPEN_SECTIONS = ["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Enterprise", "Admin"];
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set(DEFAULT_OPEN_SECTIONS);
+    try {
+      const raw = localStorage.getItem(SIDEBAR_SECTIONS_KEY);
+      if (raw) return new Set<string>(JSON.parse(raw));
+    } catch { /* ignore */ }
+    return new Set(DEFAULT_OPEN_SECTIONS);
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(Array.from(openSections))); } catch { /* ignore */ }
+  }, [openSections]);
   const [mobileOpenSections, setMobileOpenSections] = useState<Set<string>>(new Set());
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
