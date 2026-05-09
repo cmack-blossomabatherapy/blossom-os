@@ -1,11 +1,10 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { canAccessRouteForRoles } from "@/lib/navigationAccess";
 import { Loader2 } from "lucide-react";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading, roles } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -18,11 +17,6 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  if (!canAccessRouteForRoles(location.pathname, roles)) {
-    const fallback = roles.includes("rbt") || roles.includes("bcba") ? "/hr/journey" : "/training";
-    return <Navigate to={fallback} replace />;
   }
 
   return <>{children}</>;

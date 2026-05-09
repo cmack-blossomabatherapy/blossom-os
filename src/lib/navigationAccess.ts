@@ -183,7 +183,7 @@ const sectionRoutePrefixes: Record<string, string[]> = {
 
 const routeMatches = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
-export const hasFullNavigationAccess = (roles: AppRole[]) => roles.some((role) => fullNavigationRoles.includes(role));
+export const hasFullNavigationAccess = (_roles: AppRole[]) => true;
 
 export const getRoleNavigationExceptions = (roles: AppRole[]): RoleNavigationException[] => {
   if (hasFullNavigationAccess(roles)) {
@@ -243,7 +243,8 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
 };
 
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
-  if (pathname === "/" || hasFullNavigationAccess(roles)) return true;
+  // TEMP: unlocked for all signed-in users for system audit/preview.
+  return true;
   const isTrainingAdminRoute = ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"].some((prefix) => routeMatches(pathname, prefix));
   if (isTrainingAdminRoute && !roles.some((role) => TRAINING_ADMIN_ROLES.includes(role))) return false;
 

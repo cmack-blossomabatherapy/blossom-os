@@ -1,94 +1,39 @@
-## Goal
-Detect newly critical overdue items every 5 minutes and deliver Web Push notifications to subscribed users with a deep-link payload that opens the right record.
+## Goals
 
-## Scope decisions (confirmed)
-- Trigger: any alert with `severity = 'critical'` that is overdue, regardless of category.
-- Detection: production path — alerts persisted in the database, scheduled edge function runs every 5 min.
-- iOS: add minimal manifest + service worker so iOS PWAs can receive push. No in-app "Add to Home Screen" UI.
+1. Temporarily unlock the entire system so any signed-in user (including elviscooperdigital@gmail.com) can see and visit every page.
+2. Fix the floating mobile notifications/alerts bubble that's currently hidden behind the bottom navigation bar.
+3. Make sure the updated sidebar/menu design actually shows up on mobile for this account (right now they're stuck on the limited "intake" view, which is why nothing looks changed).
 
-## Architecture
+## What to change
 
-```text
-[ pg_cron every 5 min ]
-        │
-        ▼
-[ edge fn: scan-critical-alerts ]
-   1. SELECT critical+overdue alerts not yet pushed
-   2. For each alert × subscribed user → web push
-   3. Mark alert as pushed (push_state)
-        │
-        ▼
-[ web-push (VAPID) → browser ]
-        │
-        ▼
-[ /public/sw.js → showNotification → click → deep_link route ]
-```
+### 1. Unlock everything (frontend gating only)
+File: `src/lib/navigationAccess.ts`
+- `hasFullNavigationAccess(roles)` → return `true` whenever the user has any role at all (so every authenticated user gets the full sidebar + every section).
+- `canAccessRouteForRoles(pathname, roles)` → return `true` for any signed-in user.
+- Leave the role tables untouched so we can re-enable per-role gating later by reverting these two functions.
 
-## Database (new tables)
+File: `src/components/auth/ProtectedRoute.tsx`
+- Keep the auth check; remove the `canAccessRouteForRoles` redirect (since it now always returns true, this is a no-op but we'll simplify the fallback).
 
-`critical_alerts` — canonical list the scanner reads
-- `id uuid pk`
-- `category text` (`authorization`, `qa`, `scheduling`, `lead`, `client`, …)
-- `severity text` check in (`info`,`warning`,`critical`)
-- `title text`, `message text`
-- `record_id uuid` (the underlying client/auth/qa row)
-- `record_type text`
-- `deep_link text` (e.g. `/authorizations/<id>`)
-- `due_at timestamptz`
-- `is_overdue bool generated` (or computed in scanner)
-- `status text` (`open`, `acknowledged`, `resolved`)
-- `assignee_user_id uuid null`
-- `created_at`, `updated_at`
-- `pushed_at timestamptz null` ← scanner writes this once a push fires (dedupe key)
-- RLS: any signed-in user can `SELECT`; only admins can write. Scanner uses service role.
+File: `src/components/layout/AppSidebar.tsx`
+- Because `hasFullNavigationAccess` now returns true for everyone, the existing `allSections` branch will already render Blossom OS, Dashboards (admin-only stays admin-only via `superAdminOnly`), Operate, Pipeline, Records, Intelligence, HR Suite, Enterprise, Admin. Verify nothing else still gates on `isAdmin` for visibility (the dashboards section will still be admin-only — we'll relax that too so the user can preview them).
+- Change `superAdminDashboardSection` insertion so it's included for all signed-in users (drop the `isAdmin` check on that single insertion). Individual dashboards keep their `superAdminOnly` flag in the data, but we'll also relax the per-item filter to ignore `superAdminOnly` for now.
 
-`push_subscriptions` — one row per browser/device per user
-- `id uuid pk`
-- `user_id uuid` (auth.users)
-- `endpoint text unique`
-- `p256dh text`, `auth text`
-- `user_agent text`
-- `created_at`
-- RLS: users can manage only their own rows.
+File: `src/components/layout/MobileBottomNav.tsx`
+- The `Insights` slot currently keys off `isAdmin`. Since everyone is unlocked, show `Insights → /intelligence` for all users so the new design surfaces.
 
-## Edge functions
+No backend/RLS changes — this is purely a UI-visibility unlock so the user can audit the system. Data RLS still protects writes/reads server-side.
 
-1. `push-subscribe` (POST) — auth-required, upserts a `push_subscriptions` row for `auth.uid()`.
-2. `push-unsubscribe` (POST) — auth-required, deletes by endpoint.
-3. `scan-critical-alerts` (cron) — service role:
-   - `SELECT * FROM critical_alerts WHERE severity='critical' AND due_at <= now() AND pushed_at IS NULL`
-   - For each alert: pick subscription set (assignee if set, else all admins).
-   - Send web push with payload `{ title, body, url: deep_link, alertId, category }` using VAPID.
-   - Update `pushed_at = now()` on success; drop expired/410 subscriptions.
-4. Scheduled via `pg_cron` + `pg_net` to call the edge function every 5 minutes (uses `supabase--insert` so the cron SQL doesn't ship in migrations).
+### 2. Fix the notifications bubble behind the bottom nav
+File: `src/components/mobile/MobileAlertsSheet.tsx`
+- The trigger uses `bottom-[calc(56px+env(safe-area-inset-bottom)+12px)]`, but the bottom nav was bumped to `h-16` plus extra padding (~78–84px tall). Update the offset to match the assistant FAB:
+  `bottom-[calc(72px+env(safe-area-inset-bottom)+16px)]` and bump z-index to `z-50` so it sits above the nav.
 
-## Secrets needed
-- `VAPID_PUBLIC_KEY` (also exposed to client via a tiny edge fn `push-public-key` so we don't bake it in)
-- `VAPID_PRIVATE_KEY`
-- `VAPID_SUBJECT` (mailto:)
-
-I'll generate the VAPID pair locally (`npx web-push generate-vapid-keys`) and use `add_secret` to request the user enters them.
-
-## Frontend
-
-- `public/sw.js` — handles `push` event (showNotification with deep-link in `data.url`) and `notificationclick` (focuses an existing tab and posts a navigate message, or opens a new window at `data.url`).
-- `public/manifest.webmanifest` — minimal: `name`, `short_name`, `start_url:'/'`, `display:'standalone'`, `theme_color`, `background_color`, two icons (use existing favicon as 192/512 placeholder).
-- `index.html` — link manifest, set `apple-mobile-web-app-capable`, theme color, single 180×180 apple-touch-icon.
-- `src/lib/push/registerPush.ts` — registers `sw.js` in production-only contexts (skip iframes / `id-preview--*` / `lovableproject.com` per PWA guidance), fetches the public VAPID key, calls `pushManager.subscribe`, posts to `push-subscribe`.
-- `src/components/settings/PushNotificationsCard.tsx` — Settings panel showing permission status, an "Enable push notifications" button, and per-device list with "Disable on this device".
-- Deep-link handling lives in `App.tsx` via a small effect that listens for `navigator.serviceWorker` `message` events and calls `navigate(url)`.
-
-## Service-worker safety
-- Worker only registered when not in iframe and not on Lovable preview hosts (matches existing PWA guidance — prevents preview-cache pollution).
-- No Workbox / vite-plugin-pwa. Hand-rolled `sw.js` only handles `push` and `notificationclick` — no fetch caching at all, so it cannot serve stale HTML.
-
-## Demo seeding (since data is currently mock)
-- Add a tiny "Generate test critical alert" admin-only button on Settings that inserts a row into `critical_alerts` with `due_at = now() - 1 minute`. Within 5 min the scanner picks it up and pushes.
-
-## What I will NOT change
-- No edits to existing mock pages beyond hooking into deep links.
-- No refactor of the alert/“active alerts” UI surfaces — that's a separate request.
+### 3. Confirm the new menu design renders
+- After step 1, opening the mobile menu (hamburger) will show every section with the updated grouping/labels, the sign-out button at the bottom, and the new bottom nav with Home / Academy / Training / Resources / Insights.
+- Quick smoke check on mobile viewport (430×777) after the change: open sidebar sheet → verify Blossom OS, Dashboards, Operate, Pipeline, Records, Intelligence, HR Suite, Enterprise, Admin all appear; tap Insights in bottom nav → `/intelligence` loads; scroll page → notifications bubble stays above the bottom nav.
 
 ## Out of scope
-- Translating every existing mock alert source into rows in `critical_alerts` (would require business-rule decisions per module). The schema is ready for it; population is incremental.
-- Native iOS/Android apps; APNs/FCM. Web Push only.
+- No database/RLS/role changes.
+- No redesign of individual pages — this is purely visibility + the one z-index/positioning fix.
+- Re-locking by role is a one-line revert in `navigationAccess.ts` when you're ready.
