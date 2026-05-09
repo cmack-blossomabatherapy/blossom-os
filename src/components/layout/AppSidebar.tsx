@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAcademyComplete } from "@/hooks/useAcademyComplete";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ResumeOnboardingButton } from "@/components/onboarding/ResumeOnboardingButton";
 
 interface NavItem {
   label: string;
@@ -503,6 +504,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
       {/* Navigation */}
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
+        <div className="px-1">
+          <ResumeOnboardingButton variant="sidebar" />
+        </div>
         <div className="relative px-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-muted" />
           <Input
