@@ -63,7 +63,7 @@ export function AlertsPanel() {
           size="icon"
           variant="ghost"
           aria-label={`Open alerts, ${counts.total} active`}
-          className="relative hidden h-8 w-8 md:inline-flex"
+          className="relative h-8 w-8 inline-flex"
         >
           <Bell className="h-4 w-4" />
           {counts.total > 0 && (
