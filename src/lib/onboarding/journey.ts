@@ -15,6 +15,11 @@ export interface ActionItem {
   external?: boolean;
   icon?: LucideIcon;
   optional?: boolean;
+  /** When true, surfaces a textarea for the user to type a reflection.
+   *  The action is only completable once they've typed something. */
+  prompt?: boolean;
+  /** Placeholder for the reflection textarea. */
+  promptPlaceholder?: string;
 }
 
 export interface JourneyModule {
@@ -24,7 +29,9 @@ export interface JourneyModule {
   icon: LucideIcon;
   estMinutes: number;
   /** Module kind drives the rendered card variant. */
-  kind: "content" | "leader" | "shadowing" | "system" | "checkin" | "outcome" | "department";
+  kind: "content" | "leader" | "shadowing" | "system" | "checkin" | "outcome" | "department" | "video";
+  /** For video kind — optional URL; leave empty to render the branded "coming soon" placeholder. */
+  video?: { url?: string; poster?: string; duration?: string; presenter?: string };
   /** Optional details by kind */
   leader?: { name: string; role: string; message: string; initials: string };
   system?: { name: string; videoLabel?: string; sopLabel?: string; tangoLabel?: string };
@@ -76,15 +83,21 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     path: "/onboarding/phase/welcome",
     modules: [
       { key: "p0.welcome", title: "Welcome message", blurb: "A warm hello from the Blossom team.", icon: Sparkles, estMinutes: 3, kind: "content" },
+      { key: "p0.intro-video", title: "Welcome video from Elvis", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
+        video: { presenter: "Elvis Cooper", duration: "~3 min" },
+        actions: [
+          { id: "watch", label: "Watch the welcome video", icon: PlayCircle },
+          { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
+        ] },
       { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
         actions: [
           { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
-          { id: "reflect", label: "Reflect: which part resonates with you most?", hint: "Be honest — there's no wrong answer." },
+          { id: "reflect", label: "Which part resonates with you most?", prompt: true, promptPlaceholder: "A sentence or two is plenty.", icon: MessageSquare },
         ] },
       { key: "p0.values", title: "Core Values", blurb: "The four values that guide every decision.", icon: Compass, estMinutes: 6, kind: "content",
         actions: [
           { id: "open", label: "Open the Core Values page", icon: Compass, href: "/onboarding/values" },
-          { id: "pick", label: "Pick a value you'd like to live this week", icon: Target },
+          { id: "pick", label: "Pick a value you'd like to live this week", icon: Target, prompt: true, promptPlaceholder: "Which value, and how will you live it?" },
         ] },
       { key: "p0.team", title: "Meet the Team", blurb: "Who you'll work with at Blossom.", icon: Users, estMinutes: 5, kind: "content",
         actions: [

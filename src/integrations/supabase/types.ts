@@ -3627,6 +3627,7 @@ export type Database = {
           notes: Json
           path: string
           quiz_passed: boolean
+          reset_count: number
           updated_at: string
           user_id: string
         }
@@ -3641,6 +3642,7 @@ export type Database = {
           notes?: Json
           path?: string
           quiz_passed?: boolean
+          reset_count?: number
           updated_at?: string
           user_id: string
         }
@@ -3655,6 +3657,7 @@ export type Database = {
           notes?: Json
           path?: string
           quiz_passed?: boolean
+          reset_count?: number
           updated_at?: string
           user_id?: string
         }

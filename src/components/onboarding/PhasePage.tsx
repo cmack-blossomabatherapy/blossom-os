@@ -1,19 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Clock, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Clock, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { ONBOARDING_PHASES, modulesForPath, type JourneyPhase } from "@/lib/onboarding/journey";
-import { markModuleComplete, setNote } from "@/lib/onboarding/storage";
+import { markModuleComplete, unmarkModule, setNote } from "@/lib/onboarding/storage";
 import { LeaderCard } from "./LeaderCard";
 import { SystemTrainingCard } from "./SystemTrainingCard";
 import { ShadowingCard } from "./ShadowingCard";
 import { CheckInTracker } from "./CheckInTracker";
 import { OutcomeCard } from "./OutcomeCard";
 import { ActionChecklist } from "./ActionChecklist";
+import { VideoIntroCard } from "./VideoIntroCard";
 
 interface Props { phaseId: JourneyPhase["id"]; }
 
@@ -69,6 +70,7 @@ export function PhasePage({ phaseId }: Props) {
           const ModIcon = m.icon;
           const done = status.modulesComplete.includes(m.key);
           const onComplete = () => markModuleComplete(m.key);
+          const onUncheck = () => { unmarkModule(m.key); refresh(); };
 
           return (
             <li key={m.key} className={cn(
@@ -97,6 +99,19 @@ export function PhasePage({ phaseId }: Props) {
               </div>
 
               <div className="mt-4 space-y-3">
+                {m.kind === "video" && (
+                  <VideoIntroCard
+                    moduleKey={m.key}
+                    title={m.title}
+                    description={m.blurb}
+                    videoSrc={m.video?.url}
+                    posterSrc={m.video?.poster}
+                    duration={m.video?.duration}
+                    presenter={m.video?.presenter}
+                    done={done}
+                    onComplete={onComplete}
+                  />
+                )}
                 {m.kind === "leader" && m.leader && (
                   <LeaderCard {...m.leader} done={done} onComplete={onComplete} />
                 )}
@@ -138,6 +153,13 @@ export function PhasePage({ phaseId }: Props) {
                 )}
                 {m.kind === "checkin" && !done && (
                   <Button size="sm" variant="outline" onClick={onComplete} className="gap-1.5">Mark cadence complete</Button>
+                )}
+                {done && (
+                  <div className="flex items-center justify-end pt-1">
+                    <Button size="sm" variant="ghost" onClick={onUncheck} className="h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                      <RotateCcw className="h-3 w-3" /> Uncheck this step
+                    </Button>
+                  </div>
                 )}
               </div>
             </li>

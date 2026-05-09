@@ -1,9 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getOnboardingState, type OnboardingState } from "./storage";
+import { getOnboardingState, clearLocalOnboarding, type OnboardingState } from "./storage";
 
 const STORAGE_KEY = "blossom.onboarding.v1";
 const EVENT = "blossom:onboarding-change";
 const SYNCED_FLAG_KEY = "blossom.onboarding.lastSyncedUser";
+const RESET_FLAG_KEY = "blossom.onboarding.lastResetCount";
+
+function readResetMap(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(window.localStorage.getItem(RESET_FLAG_KEY) || "{}"); } catch { return {}; }
+}
+function writeResetMap(m: Record<string, number>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(RESET_FLAG_KEY, JSON.stringify(m));
+}
 
 type Row = {
   user_id: string;
@@ -16,6 +26,7 @@ type Row = {
   checkins: { chad?: string[]; shira?: string[] } | null;
   completed_at: string | null;
   certificate_id: string | null;
+  reset_count?: number | null;
 };
 
 function dispatch() {
@@ -112,6 +123,16 @@ export async function startOnboardingSync(userId: string) {
       .eq("user_id", userId)
       .maybeSingle<Row>();
     if (error) throw error;
+    // Honor server-side reset: if reset_count advanced beyond what we last applied,
+    // wipe local state so the user truly starts fresh on this device.
+    const serverReset = (data?.reset_count ?? 0) as number;
+    const resetMap = readResetMap();
+    const lastApplied = resetMap[userId] ?? 0;
+    if (serverReset > lastApplied) {
+      clearLocalOnboarding();
+      resetMap[userId] = serverReset;
+      writeResetMap(resetMap);
+    }
     const local = getOnboardingState();
     const server = data ? rowToState(data) : null;
     const merged = server ? mergeStates(local, server) : local;
