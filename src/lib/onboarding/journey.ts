@@ -76,14 +76,39 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     path: "/onboarding/phase/welcome",
     modules: [
       { key: "p0.welcome", title: "Welcome message", blurb: "A warm hello from the Blossom team.", icon: Sparkles, estMinutes: 3, kind: "content" },
-      { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content" },
-      { key: "p0.values", title: "Core Values", blurb: "The four values that guide every decision.", icon: Compass, estMinutes: 6, kind: "content" },
-      { key: "p0.team", title: "Meet the Team", blurb: "Who you'll work with at Blossom.", icon: Users, estMinutes: 5, kind: "content" },
-      { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content" },
+      { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
+        actions: [
+          { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
+          { id: "reflect", label: "Reflect: which part resonates with you most?", hint: "Be honest — there's no wrong answer." },
+        ] },
+      { key: "p0.values", title: "Core Values", blurb: "The four values that guide every decision.", icon: Compass, estMinutes: 6, kind: "content",
+        actions: [
+          { id: "open", label: "Open the Core Values page", icon: Compass, href: "/onboarding/values" },
+          { id: "pick", label: "Pick a value you'd like to live this week", icon: Target },
+        ] },
+      { key: "p0.team", title: "Meet the Team", blurb: "Who you'll work with at Blossom.", icon: Users, estMinutes: 5, kind: "content",
+        actions: [
+          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/team" },
+          { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/hr/org-chart" },
+          { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/team" },
+        ] },
+      { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content",
+        actions: [
+          { id: "how", label: "Read How Blossom Works", icon: BookOpen, href: "/onboarding/how-it-works" },
+          { id: "academy", label: "Peek at the Operations Academy", icon: GraduationCap, href: "/blossom/academy" },
+        ] },
       { key: "p0.chad", title: "Welcome from Chad Kaufman", blurb: "Leadership expectations, oversight, and company vision.", icon: UserCheck, estMinutes: 4, kind: "leader",
-        leader: { ...LEADERS.chad, message: "Welcome to Blossom. I'm thrilled you're joining us — our work matters, and you matter to it." } },
+        leader: { ...LEADERS.chad, message: "Welcome to Blossom. I'm thrilled you're joining us — our work matters, and you matter to it." },
+        actions: [
+          { id: "watch", label: "Watch Chad's welcome message", icon: PlayCircle },
+          { id: "note", label: "Jot down one expectation Chad mentioned", icon: FileText },
+        ] },
       { key: "p0.shira", title: "A note from Shira Lasry", blurb: "This onboarding journey was designed for you.", icon: UserCheck, estMinutes: 4, kind: "leader",
-        leader: { ...LEADERS.shira, message: "This onboarding journey was designed to help you feel confident, supported, and fully prepared to succeed at Blossom." } },
+        leader: { ...LEADERS.shira, message: "This onboarding journey was designed to help you feel confident, supported, and fully prepared to succeed at Blossom." },
+        actions: [
+          { id: "watch", label: "Read Shira's welcome note", icon: BookOpen },
+          { id: "save-num", label: "Save Shira's contact for daily check-ins", icon: Phone },
+        ] },
     ],
   },
   {
