@@ -151,6 +151,29 @@ export function hasAcknowledged(key: string): boolean {
   return read().acknowledgements.includes(key);
 }
 
+export function unacknowledge(key: string) {
+  const s = read();
+  if (s.acknowledgements.includes(key)) {
+    s.acknowledgements = s.acknowledgements.filter((k) => k !== key);
+    // Unchecking an item may invalidate completion gating
+    s.completedAt = undefined;
+    s.certificateId = undefined;
+    write(s);
+  }
+}
+
+export function toggleAcknowledge(key: string) {
+  if (hasAcknowledged(key)) unacknowledge(key);
+  else acknowledge(key);
+}
+
+/** Wipe local onboarding state entirely (used when admin resets a user). */
+export function clearLocalOnboarding() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(STORAGE_KEY);
+  window.dispatchEvent(new CustomEvent("blossom:onboarding-change"));
+}
+
 export function markQuizPassed() {
   const s = read();
   if (!s.quizPassed) {
