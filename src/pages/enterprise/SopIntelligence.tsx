@@ -22,7 +22,7 @@ import {
 import { relativeTime } from "@/lib/sop/indexer";
 import { useToast } from "@/hooks/use-toast";
 import {
-  fetchAllFeedback, setFeedback, normalizeQuery, boostFor,
+  fetchAllFeedback, setFeedback, normalizeQuery, normalizeFilters, boostFor,
   type SopFeedbackRow, type SopFeedbackVote,
 } from "@/lib/sop/feedback";
 import { cn } from "@/lib/utils";
@@ -56,6 +56,7 @@ function scoreSections(
   query: string,
   sections: SopSection[],
   feedback: SopFeedbackRow[],
+  filtersNorm: string = "",
 ): ScoredSection[] {
   const q = tokenize(query);
   if (q.length === 0) return [];
@@ -69,7 +70,7 @@ function scoreSections(
     const titleHits = q.filter(t => sec.sopTitle.toLowerCase().includes(t) || sec.section.toLowerCase().includes(t)).length;
     const tagHits = q.filter(t => sec.tags.some(tag => tag.includes(t))).length;
     score = score * 0.6 + (titleHits / q.length) * 0.25 + (tagHits / q.length) * 0.15;
-    const boost = boostFor(feedback, sec.id, queryNorm);
+    const boost = boostFor(feedback, sec.id, queryNorm, filtersNorm);
     if (boost.hide) return null;
     score *= boost.multiplier;
     // snippet: sentence containing first matched term
@@ -193,12 +194,20 @@ export default function SopIntelligence() {
     return m;
   }, [docs, rawSections]);
 
-  const results = useMemo(
-    () => scoreSections(submitted, SOP_SECTIONS, feedback),
-    [submitted, SOP_SECTIONS, feedback],
+  const submittedNorm = useMemo(() => normalizeQuery(submitted), [submitted]);
+  // Currently SOP search has no faceted filter UI, so the filter scope is empty
+  // for now. When filter chips are added (state, owner, tag, etc.), pass that
+  // object here so feedback is recorded against the same scope it was given in.
+  const submittedFilters = useMemo<Record<string, unknown>>(() => ({}), []);
+  const submittedFiltersNorm = useMemo(
+    () => normalizeFilters(submittedFilters),
+    [submittedFilters],
   );
 
-  const submittedNorm = useMemo(() => normalizeQuery(submitted), [submitted]);
+  const results = useMemo(
+    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm),
+    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm],
+  );
 
   const voteFor = (sectionId: string): SopFeedbackVote | null => {
     const f = feedback.find(x => x.section_id === sectionId && x.query_norm === submittedNorm);
@@ -218,11 +227,19 @@ export default function SopIntelligence() {
         query_norm: submittedNorm,
         vote,
         updated_at: new Date().toISOString(),
+        filters: submittedFilters,
+        filters_norm: submittedFiltersNorm,
       });
     }
     setFeedbackState(next);
     try {
-      const saved = await setFeedback({ sectionId, query: submitted, vote, existing });
+      const saved = await setFeedback({
+        sectionId,
+        query: submitted,
+        vote,
+        filters: submittedFilters,
+        existing,
+      });
       setFeedbackState(prev => {
         const cleaned = prev.filter(x => !(x.section_id === sectionId && x.query_norm === submittedNorm));
         return saved ? [...cleaned, saved] : cleaned;
