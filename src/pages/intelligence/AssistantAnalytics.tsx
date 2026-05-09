@@ -156,7 +156,7 @@ export default function AssistantAnalytics() {
     <PageShell
       title="Assistant Analytics"
       description="Monitor Blossom Assistant adoption, answer quality, and most-cited knowledge."
-      icon={<Bot className="h-5 w-5" />}
+      icon={Bot}
       actions={
         <Tabs value={range} onValueChange={(v) => setRange(v as Range)}>
           <TabsList>
