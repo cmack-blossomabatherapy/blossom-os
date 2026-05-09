@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
 import {
   stageVariant, authVariant, staffingVariant, qaVariant,
   getClientAlert, getLifecycleProgress, lifecycleSteps, ClientStage, ScheduleSlot,
@@ -77,6 +78,34 @@ export default function ClientDetail() {
   const [removeScheduleDay, setRemoveScheduleDay] = useState<ScheduleDay | null>(null);
   const [removeDocIdx, setRemoveDocIdx] = useState<number | null>(null);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+
+  // Deep-link: open a specific tab and highlight a task/flag if requested.
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
+  const validTabs = ["timeline","tasks","auth","staffing","schedule","documents","automation"] as const;
+  type TabKey = typeof validTabs[number];
+  const focusToTab: Record<string, TabKey> = {
+    tasks: "tasks", task: "tasks", compliance: "tasks",
+    auth: "auth", authorizations: "auth",
+    staffing: "staffing", schedule: "schedule",
+    documents: "documents", automation: "automation",
+  };
+  let initialTab: TabKey = "timeline";
+  if (deepLink.tab && (validTabs as readonly string[]).includes(deepLink.tab)) {
+    initialTab = deepLink.tab as TabKey;
+  } else if (deepLink.focus && focusToTab[deepLink.focus.toLowerCase()]) {
+    initialTab = focusToTab[deepLink.focus.toLowerCase()];
+  } else if (deepLink.task) {
+    initialTab = "tasks";
+  }
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const highlightId = deepLink.task ? `task-${deepLink.task}` : deepLink.flag ? `flag-${deepLink.flag}` : null;
+  useDeepLinkHighlight(highlightId, !!client);
+  useEffect(() => {
+    if (!client) return;
+    if (deepLink.alert) toast.message?.(`Opened from alert${deepLink.task ? " · task" : deepLink.flag ? " · flag" : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!client) {
     return (
@@ -338,7 +367,7 @@ export default function ClientDetail() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="timeline">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
             <TabsList className="bg-muted/50 flex-wrap h-auto">
               <TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger>
               <TabsTrigger value="tasks" className="text-xs">Tasks ({client.tasks.length})</TabsTrigger>
@@ -396,6 +425,7 @@ export default function ClientDetail() {
                 {client.tasks.map((task) => (
                   <button
                     key={task.id}
+                    data-deeplink-id={`task-${task.id}`}
                     onClick={() => {
                       toggleTask(client.id, task.id);
                       toast.success(task.completed ? "Task reopened" : "Task completed");
