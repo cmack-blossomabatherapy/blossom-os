@@ -3847,6 +3847,8 @@ export type Database = {
       sop_search_feedback: {
         Row: {
           created_at: string
+          filters: Json
+          filters_norm: string
           id: string
           query: string
           query_norm: string
@@ -3857,6 +3859,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          filters?: Json
+          filters_norm?: string
           id?: string
           query?: string
           query_norm?: string
@@ -3867,6 +3871,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          filters?: Json
+          filters_norm?: string
           id?: string
           query?: string
           query_norm?: string
