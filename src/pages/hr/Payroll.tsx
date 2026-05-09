@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
 import { Link } from "react-router-dom";
 import { Wallet, Plus, Send, Lock, CheckCircle2, Award } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
@@ -25,6 +26,16 @@ export default function Payroll() {
   const canManage = hasPerm("hr.payroll.runs.manage");
   const canSubmit = hasPerm("hr.payroll.runs.submit");
   const [tab, setTab] = useState<"runs" | "bonuses">("runs");
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
+  useEffect(() => {
+    if (deepLink.tab === "runs" || deepLink.tab === "bonuses") setTab(deepLink.tab);
+    if (deepLink.action) {
+      const detail = deepLink.run ? `Pay run #${deepLink.run}` : "";
+      toast(`Opened from alert: ${deepLink.action}${detail ? " · " + detail : ""}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [bonuses, setBonuses] = useState<BonusRow[]>([]);
   const [loading, setLoading] = useState(true);

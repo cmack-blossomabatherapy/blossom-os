@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
 import {
   Search, BookOpen, Sparkles, FileText, ArrowUpRight,
   History, Zap, Plus, Pencil, Trash2, Loader2, RefreshCw,
@@ -111,6 +112,8 @@ export default function SopIntelligence() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<{ doc: SopDocumentRow; body: string } | null>(null);
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
 
   const reload = async () => {
     setLoading(true);
@@ -135,6 +138,25 @@ export default function SopIntelligence() {
   };
 
   useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  // Honor deep-link: open a specific SOP and pre-run a query if provided.
+  useEffect(() => {
+    if (loading || docs.length === 0) return;
+    if (deepLink.q) { setQuery(deepLink.q); setSubmitted(deepLink.q); }
+    if (deepLink.sop) {
+      const needle = deepLink.sop.toLowerCase();
+      const doc = docs.find(d => d.title.toLowerCase().includes(needle));
+      const firstSec = doc && rawSections.find(s => s.sop_id === doc.id);
+      if (doc && firstSec) {
+        setFocusSectionId(firstSec.id);
+        setOpenSop({ sopId: doc.id, initialCiteIdx: 0 });
+        if (deepLink.action === "acknowledge") {
+          toast({ title: "SOP opened for acknowledgement", description: doc.title });
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, docs.length]);
 
   // Project DB rows into the shape the search engine expects.
   const SOP_SECTIONS = useMemo<SopSection[]>(() => {

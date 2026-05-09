@@ -19,19 +19,46 @@ const minsAgo = (n: number) => new Date(Date.now() - n * 60_000).toISOString();
 
 const SEED: MobileAlert[] = [
   // Tasks
-  { id: "a1", category: "task", severity: "info", title: "Review new VOB submissions", body: "3 new VOBs awaiting your eyes from Solum.", source: "Intake", href: "/auth-dashboard", dueLabel: "Due today", createdAt: minsAgo(8) },
-  { id: "a2", category: "task", severity: "info", title: "Sign off on Q2 training plan", body: "Operations Academy plan ready for your acceptance.", source: "Academy", href: "/training", dueLabel: "Due tomorrow", createdAt: minsAgo(45) },
-  { id: "a3", category: "task", severity: "warning", title: "Acknowledge updated SOP", body: "Authorization Denial Playbook changed — confirm read.", source: "SOP Intel", href: "/enterprise/sop-intelligence", dueLabel: "Due in 1d", createdAt: minsAgo(120) },
+  { id: "a1", category: "task", severity: "info", title: "Review new VOB submissions",
+    body: "3 new VOBs awaiting your eyes from Solum.", source: "Intake",
+    href: "/authorizations-dashboard?queue=urgent&kpi=submitted&action=review-vob&alert=a1",
+    dueLabel: "Due today", createdAt: minsAgo(8) },
+  { id: "a2", category: "task", severity: "info", title: "Sign off on Q2 training plan",
+    body: "Operations Academy plan ready for your acceptance.", source: "Academy",
+    href: "/training?focus=q2-plan&action=sign-off&alert=a2",
+    dueLabel: "Due tomorrow", createdAt: minsAgo(45) },
+  { id: "a3", category: "task", severity: "warning", title: "Acknowledge updated SOP",
+    body: "Authorization Denial Playbook changed — confirm read.", source: "SOP Intel",
+    href: "/enterprise/sop-intelligence?sop=Authorization+Denial+Playbook&action=acknowledge&alert=a3",
+    dueLabel: "Due in 1d", createdAt: minsAgo(120) },
 
   // Approvals
-  { id: "a4", category: "approval", severity: "warning", title: "Time-off request — Maria S.", body: "May 18–22 · BCBA · awaiting your decision.", source: "HR", href: "/hr", dueLabel: "Pending 6h", createdAt: minsAgo(360) },
-  { id: "a5", category: "approval", severity: "info", title: "Payroll run — Pay period #18", body: "$74,820 across 42 staff. Ready for release.", source: "Payroll", href: "/hr/payroll", dueLabel: "Pending 2h", createdAt: minsAgo(118) },
-  { id: "a6", category: "approval", severity: "warning", title: "New course publish request", body: "VOB Mastery v2 ready to send to 8 staff.", source: "Course Studio", href: "/enterprise/course-studio", dueLabel: "Pending 30m", createdAt: minsAgo(30) },
+  { id: "a4", category: "approval", severity: "warning", title: "Time-off request — Maria S.",
+    body: "May 18–22 · BCBA · awaiting your decision.", source: "HR",
+    href: "/hr?focus=maria-s&tab=time&action=approve-pto&alert=a4",
+    dueLabel: "Pending 6h", createdAt: minsAgo(360) },
+  { id: "a5", category: "approval", severity: "info", title: "Payroll run — Pay period #18",
+    body: "$74,820 across 42 staff. Ready for release.", source: "Payroll",
+    href: "/hr/payroll?tab=runs&run=18&action=release&alert=a5",
+    dueLabel: "Pending 2h", createdAt: minsAgo(118) },
+  { id: "a6", category: "approval", severity: "warning", title: "New course publish request",
+    body: "VOB Mastery v2 ready to send to 8 staff.", source: "Course Studio",
+    href: "/enterprise/course-studio?focus=vob-mastery-v2&action=publish&alert=a6",
+    dueLabel: "Pending 30m", createdAt: minsAgo(30) },
 
-  // Overdue
-  { id: "a7", category: "overdue", severity: "critical", title: "Auth resubmission overdue", body: "Client #C-2241 — 3h past 1-business-day SLA.", source: "Authorizations", href: "/auth-dashboard", dueLabel: "3h overdue", createdAt: minsAgo(190) },
-  { id: "a8", category: "overdue", severity: "critical", title: "RBT callout uncovered", body: "South Tampa · 9:00am block · still unfilled.", source: "Scheduling", href: "/scheduling-dashboard", dueLabel: "1h overdue", createdAt: minsAgo(60) },
-  { id: "a9", category: "overdue", severity: "warning", title: "Compliance acknowledgement missed", body: "5 staff have not signed updated HIPAA policy.", source: "HR", href: "/hr", dueLabel: "1d overdue", createdAt: minsAgo(60 * 26) },
+  // Overdue — these include record-level focus so the destination opens the exact item.
+  { id: "a7", category: "overdue", severity: "critical", title: "Auth resubmission overdue",
+    body: "Client #C-2241 — 3h past 1-business-day SLA.", source: "Authorizations",
+    href: "/authorizations-dashboard?focus=C-2241&tab=submission&action=Mark%20Submitted&alert=a7",
+    dueLabel: "3h overdue", createdAt: minsAgo(190) },
+  { id: "a8", category: "overdue", severity: "critical", title: "RBT callout uncovered",
+    body: "South Tampa · 9:00am block · still unfilled.", source: "Scheduling",
+    href: "/scheduling-dashboard?focus=south-tampa&tab=builder&action=Build%20Schedule&alert=a8",
+    dueLabel: "1h overdue", createdAt: minsAgo(60) },
+  { id: "a9", category: "overdue", severity: "warning", title: "Compliance acknowledgement missed",
+    body: "5 staff have not signed updated HIPAA policy.", source: "HR",
+    href: "/hr?tab=compliance&action=hipaa-ack&alert=a9",
+    dueLabel: "1d overdue", createdAt: minsAgo(60 * 26) },
 ];
 
 const STORAGE_KEY = "mobile-alerts-dismissed";

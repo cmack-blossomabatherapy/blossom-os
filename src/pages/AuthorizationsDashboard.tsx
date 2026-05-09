@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
 import {
   AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Download, Eye, FileText, RefreshCw,
   Search, Send, ShieldCheck, UserPlus, Zap,
@@ -138,6 +139,9 @@ export default function AuthorizationsDashboard() {
   const [queue, setQueue] = useState<QueueKey>("urgent");
   const [query, setQuery] = useState("");
   const [selectedAuth, setSelectedAuth] = useState<AuthRecord | null>(null);
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
 
   const payors = useMemo(() => [ALL, ...Array.from(new Set(auths.map((a) => a.payor))).sort()], [auths]);
   const owners = useMemo(() => [ALL, "Unassigned", ...Array.from(new Set(auths.map((a) => a.coordinator).filter(Boolean))).sort()], [auths]);
@@ -222,6 +226,33 @@ export default function AuthorizationsDashboard() {
     toast.success("Authorizations export downloaded");
   };
 
+  // Apply deep-link params on mount: queue / kpi / focus / tab / action.
+  useEffect(() => {
+    if (deepLink.queue && ["urgent", "today", "blockers"].includes(deepLink.queue)) {
+      setQueue(deepLink.queue as QueueKey);
+    }
+    if (deepLink.kpi) setActiveKpi(deepLink.kpi as KpiFilter);
+    if (deepLink.focus) {
+      const needle = deepLink.focus.toLowerCase();
+      const match = auths.find((a) =>
+        a.id.toLowerCase().includes(needle) ||
+        a.client.toLowerCase().includes(needle),
+      );
+      if (match) {
+        setSelectedAuth(match);
+        setInitialTab(deepLink.tab);
+        if (deepLink.action) {
+          setTimeout(() => quickAction(match, deepLink.action!), 0);
+        }
+      } else {
+        toast.message?.(`No authorization matches "${deepLink.focus}"`);
+      }
+    } else if (deepLink.action) {
+      toast.message?.(`Opened from alert: ${deepLink.action}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <header className="space-y-4">
@@ -255,7 +286,7 @@ export default function AuthorizationsDashboard() {
 
       <section className="rounded-xl border border-border/60 bg-card shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4"><div><h2 className="text-base font-semibold text-foreground">Authorization Worklist</h2><p className="text-xs text-muted-foreground">{filtered.length} authorizations match the current dashboard filters.</p></div>{activeKpi !== "all" && <Button variant="outline" size="sm" onClick={() => setActiveKpi("all")}>Clear KPI filter</Button>}</div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="sticky top-0 bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{["Client", "State", "Payor", "Auth Type", "Status", "Coordinator", "Submission", "Approval", "Expiration", "Days", "Missing Docs", "Next Action", "Alerts"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{filtered.map((auth) => { const alerts = alertsFor(auth); return <tr key={auth.id} onClick={() => setSelectedAuth(auth)} className="cursor-pointer border-t border-border/50 hover:bg-muted/25"><td className="px-4 py-3"><span className="block font-medium text-foreground">{auth.client}</span><span className="text-xs text-muted-foreground">{auth.id}</span></td><td className="px-4 py-3"><StatusBadge status={auth.state} variant="muted" /></td><td className="px-4 py-3 text-xs text-muted-foreground">{auth.payor}</td><td className="px-4 py-3 text-xs text-muted-foreground">{auth.authType}</td><td className="px-4 py-3"><StatusBadge status={auth.status} variant={statusVariant(auth.status)} /></td><td className="px-4 py-3 text-xs text-muted-foreground">{auth.coordinator || "Unassigned"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{shortDate(auth.submittedDate)}</td><td className="px-4 py-3 text-xs text-muted-foreground">{shortDate(auth.approvedDate)}</td><td className="px-4 py-3 text-xs text-muted-foreground">{shortDate(auth.expirationDate)}</td><td className="px-4 py-3 text-xs font-medium text-foreground">{auth.daysInStage}d</td><td className="px-4 py-3 text-xs text-muted-foreground">{auth.missingDocs.length ? auth.missingDocs.length : "—"}</td><td className="max-w-[260px] truncate px-4 py-3 text-xs text-muted-foreground">{auth.nextAction}</td><td className="px-4 py-3">{alerts.length ? <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><AlertCircle className="h-3.5 w-3.5" />{alerts.length}</span> : <CheckCircle2 className="h-3.5 w-3.5 text-success" />}</td></tr>; })}</tbody></table></div></section>
 
-      <AuthDetailSheet auth={selectedAuth ? auths.find((a) => a.id === selectedAuth.id) ?? selectedAuth : null} open={!!selectedAuth} onClose={() => setSelectedAuth(null)} onAction={quickAction} />
+      <AuthDetailSheet auth={selectedAuth ? auths.find((a) => a.id === selectedAuth.id) ?? selectedAuth : null} open={!!selectedAuth} onClose={() => { setSelectedAuth(null); setInitialTab(undefined); }} onAction={quickAction} initialTab={initialTab} />
     </div>
   );
 }
@@ -264,12 +295,14 @@ function PerformanceTable({ title, headers, rows }: { title: string; headers: st
   return <div className="rounded-xl border border-border/60 bg-card shadow-sm"><div className="border-b border-border/60 p-4"><h2 className="text-base font-semibold text-foreground">{title}</h2></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{headers.map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 text-left font-medium">{h}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("-")} className="border-t border-border/50">{row.map((cell, index) => <td key={`${cell}-${index}`} className={cn("whitespace-nowrap px-4 py-3 text-xs", index === 0 ? "font-medium text-foreground" : "text-muted-foreground")}>{cell}</td>)}</tr>)}</tbody></table></div></div>;
 }
 
-function AuthDetailSheet({ auth, open, onClose, onAction }: { auth: AuthRecord | null; open: boolean; onClose: () => void; onAction: (auth: AuthRecord, action: string) => void }) {
+function AuthDetailSheet({ auth, open, onClose, onAction, initialTab }: { auth: AuthRecord | null; open: boolean; onClose: () => void; onAction: (auth: AuthRecord, action: string) => void; initialTab?: string }) {
+  const [tab, setTab] = useState<string>(initialTab ?? "overview");
+  useEffect(() => { if (initialTab) setTab(initialTab); }, [initialTab, auth?.id]);
   if (!auth) return null;
   const alerts = alertsFor(auth);
   const openTasks = auth.tasks.filter((task) => !task.completed);
   const completeTasks = auth.tasks.filter((task) => task.completed);
-  return <Sheet open={open} onOpenChange={(next) => !next && onClose()}><SheetContent side="right" className="w-[640px] overflow-y-auto p-0 sm:max-w-[640px]"><div className="p-6 pb-4"><SheetHeader><SheetTitle className="text-xl">{auth.client}</SheetTitle><SheetDescription>{auth.id} · {auth.state} · {auth.payor} · {auth.authType}</SheetDescription></SheetHeader><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={auth.status} variant={statusVariant(auth.status)} /><StatusBadge status={auth.coordinator || "Unassigned"} variant={auth.coordinator ? "info" : "destructive"} />{alerts.map((alert) => <StatusBadge key={alert.label} status={alert.label} variant={alert.severity === "red" ? "destructive" : "warning"} />)}</div><div className="mt-4 grid grid-cols-3 gap-2">{["Mark Submitted", "Mark Approved", "Mark Denied", "Request Missing Docs", "Follow Up", "Assign Owner"].map((action) => <Button key={action} variant="outline" size="sm" className="h-auto flex-col gap-1 py-2 text-[10px]" onClick={() => onAction(auth, action)}>{action === "Assign Owner" ? <UserPlus className="h-3.5 w-3.5" /> : action.includes("Submitted") ? <Send className="h-3.5 w-3.5" /> : action.includes("Approved") ? <CheckCircle2 className="h-3.5 w-3.5" /> : action.includes("Denied") || action.includes("Missing") ? <AlertTriangle className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}{action}</Button>)}</div></div><Separator /><Tabs defaultValue="overview" className="p-4"><TabsList className="grid h-auto w-full grid-cols-4 gap-1 xl:grid-cols-7"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="submission">Submission</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger><TabsTrigger value="reauth">Reauth</TabsTrigger><TabsTrigger value="client">Client</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger></TabsList><TabsContent value="overview" className="space-y-3 pt-3"><DetailGrid rows={[["Client", auth.client], ["Payor", auth.payor], ["Auth type", auth.authType], ["Status", auth.status], ["Owner", auth.coordinator || "Unassigned"], ["Days in stage", `${auth.daysInStage} days`], ["Next action", auth.nextAction], ["Blockers", alerts.map((a) => a.label).join(", ") || "None"]]} /></TabsContent><TabsContent value="submission" className="space-y-3 pt-3"><DetailGrid rows={[["Submission method", auth.submissionMethod], ["Portal notes", auth.portalNotes], ["Submitted date", shortDate(auth.submittedDate)], ["Reference number", auth.referenceNumber || "—"], ["Follow-up date", shortDate(auth.followUpDate)]]} /></TabsContent><TabsContent value="documents" className="space-y-2 pt-3">{auth.documents.map((doc) => <div key={doc.name} className="flex items-center justify-between rounded-lg border border-border/60 bg-background p-3 text-sm"><span className="flex items-center gap-2 text-foreground"><FileText className="h-4 w-4 text-primary" />{doc.name}</span><StatusBadge status={doc.status} variant={doc.status === "Received" ? "success" : doc.status === "Missing" ? "destructive" : "warning"} /></div>)}</TabsContent><TabsContent value="reauth" className="space-y-3 pt-3"><DetailGrid rows={[["Expiration date", shortDate(auth.expirationDate)], ["Days remaining", String(daysRemaining(auth.expirationDate) ?? "—")], ["Progress report", auth.progressReportStatus], ["BCBA notified", auth.progressReportStatus === "Not Started" ? "No" : "Yes"], ["QA review", auth.qaStatus], ["Owner", auth.coordinator || "Unassigned"]]} /></TabsContent><TabsContent value="client" className="space-y-3 pt-3"><DetailGrid rows={[["Linked client stage", auth.clientStage], ["What auth is blocking", auth.blocking], ["Next movement", auth.nextMovement], ["BCBA", auth.bcba], ["Parent", auth.parent]]} /></TabsContent><TabsContent value="tasks" className="space-y-4 pt-3"><TaskList title="Open tasks" tasks={openTasks} /><TaskList title="Completed tasks" tasks={completeTasks} /></TabsContent><TabsContent value="timeline" className="pt-3"><Timeline items={auth.timeline} /></TabsContent></Tabs></SheetContent></Sheet>;
+  return <Sheet open={open} onOpenChange={(next) => !next && onClose()}><SheetContent side="right" className="w-[640px] overflow-y-auto p-0 sm:max-w-[640px]"><div className="p-6 pb-4"><SheetHeader><SheetTitle className="text-xl">{auth.client}</SheetTitle><SheetDescription>{auth.id} · {auth.state} · {auth.payor} · {auth.authType}</SheetDescription></SheetHeader><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={auth.status} variant={statusVariant(auth.status)} /><StatusBadge status={auth.coordinator || "Unassigned"} variant={auth.coordinator ? "info" : "destructive"} />{alerts.map((alert) => <StatusBadge key={alert.label} status={alert.label} variant={alert.severity === "red" ? "destructive" : "warning"} />)}</div><div className="mt-4 grid grid-cols-3 gap-2">{["Mark Submitted", "Mark Approved", "Mark Denied", "Request Missing Docs", "Follow Up", "Assign Owner"].map((action) => <Button key={action} variant="outline" size="sm" className="h-auto flex-col gap-1 py-2 text-[10px]" onClick={() => onAction(auth, action)}>{action === "Assign Owner" ? <UserPlus className="h-3.5 w-3.5" /> : action.includes("Submitted") ? <Send className="h-3.5 w-3.5" /> : action.includes("Approved") ? <CheckCircle2 className="h-3.5 w-3.5" /> : action.includes("Denied") || action.includes("Missing") ? <AlertTriangle className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}{action}</Button>)}</div></div><Separator /><Tabs value={tab} onValueChange={setTab} className="p-4"><TabsList className="grid h-auto w-full grid-cols-4 gap-1 xl:grid-cols-7"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="submission">Submission</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger><TabsTrigger value="reauth">Reauth</TabsTrigger><TabsTrigger value="client">Client</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger></TabsList><TabsContent value="overview" className="space-y-3 pt-3"><DetailGrid rows={[["Client", auth.client], ["Payor", auth.payor], ["Auth type", auth.authType], ["Status", auth.status], ["Owner", auth.coordinator || "Unassigned"], ["Days in stage", `${auth.daysInStage} days`], ["Next action", auth.nextAction], ["Blockers", alerts.map((a) => a.label).join(", ") || "None"]]} /></TabsContent><TabsContent value="submission" className="space-y-3 pt-3"><DetailGrid rows={[["Submission method", auth.submissionMethod], ["Portal notes", auth.portalNotes], ["Submitted date", shortDate(auth.submittedDate)], ["Reference number", auth.referenceNumber || "—"], ["Follow-up date", shortDate(auth.followUpDate)]]} /></TabsContent><TabsContent value="documents" className="space-y-2 pt-3">{auth.documents.map((doc) => <div key={doc.name} className="flex items-center justify-between rounded-lg border border-border/60 bg-background p-3 text-sm"><span className="flex items-center gap-2 text-foreground"><FileText className="h-4 w-4 text-primary" />{doc.name}</span><StatusBadge status={doc.status} variant={doc.status === "Received" ? "success" : doc.status === "Missing" ? "destructive" : "warning"} /></div>)}</TabsContent><TabsContent value="reauth" className="space-y-3 pt-3"><DetailGrid rows={[["Expiration date", shortDate(auth.expirationDate)], ["Days remaining", String(daysRemaining(auth.expirationDate) ?? "—")], ["Progress report", auth.progressReportStatus], ["BCBA notified", auth.progressReportStatus === "Not Started" ? "No" : "Yes"], ["QA review", auth.qaStatus], ["Owner", auth.coordinator || "Unassigned"]]} /></TabsContent><TabsContent value="client" className="space-y-3 pt-3"><DetailGrid rows={[["Linked client stage", auth.clientStage], ["What auth is blocking", auth.blocking], ["Next movement", auth.nextMovement], ["BCBA", auth.bcba], ["Parent", auth.parent]]} /></TabsContent><TabsContent value="tasks" className="space-y-4 pt-3"><TaskList title="Open tasks" tasks={openTasks} /><TaskList title="Completed tasks" tasks={completeTasks} /></TabsContent><TabsContent value="timeline" className="pt-3"><Timeline items={auth.timeline} /></TabsContent></Tabs></SheetContent></Sheet>;
 }
 
 function DetailGrid({ rows }: { rows: [string, string][] }) {
