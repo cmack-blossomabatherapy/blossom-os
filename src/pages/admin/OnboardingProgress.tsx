@@ -19,6 +19,7 @@ import {
 } from "@/lib/onboarding/journey";
 import { ONBOARDING_STEPS } from "@/lib/onboarding/steps";
 import { REQUIRED_POLICY_KEYS } from "@/lib/onboarding/gates";
+import { AuditTimeline } from "@/components/onboarding/AuditTimeline";
 
 interface ProfileRow {
   user_id: string;
@@ -380,6 +381,11 @@ function DetailPanel({ user, onClose }: { user: UserRow; onClose: () => void }) 
             )}
           </div>
         </div>
+      </div>
+
+      {/* Audit / automation timeline */}
+      <div className="border-t border-border/50 bg-muted/20 px-5 py-5">
+        <AuditTimeline userId={user.user_id} />
       </div>
     </Card>
   );
