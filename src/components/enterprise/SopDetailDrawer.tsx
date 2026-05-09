@@ -238,6 +238,7 @@ export function SopDetailDrawer({
             return (
               <section
                 key={section.id}
+                id={isCited ? `cite-${section.id}` : undefined}
                 className={isCited ? "rounded-xl border border-primary/30 bg-primary/[0.03] p-4" : "rounded-xl border border-border/60 p-4"}
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
