@@ -34,6 +34,7 @@ import { useClients } from "@/contexts/ClientsContext";
 import type { Client } from "@/data/clients";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SingleSelectFilterDrawer } from "@/components/shared/SingleSelectFilterDrawer";
 
 type WorkMode = "queue" | "sla" | "table" | "flow" | "plan" | "notes" | "rbt" | "progress";
 type QAStatus = "Awaiting Review" | "In Review" | "Issues Found" | "Corrections Needed" | "Ready for Submission" | "Submitted to Auth" | "Overdue";
