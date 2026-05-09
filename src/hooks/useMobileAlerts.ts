@@ -261,7 +261,7 @@ export function useMobileAlerts() {
     void refresh();
     // Re-fetch on changes to any of the underlying tables.
     const channel = supabase
-      .channel("mobile-alerts-feed")
+      .channel(`mobile-alerts-feed-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "client_tasks" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "intake_tasks" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "payroll_runs" }, () => void refresh())

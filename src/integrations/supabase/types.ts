@@ -1690,6 +1690,63 @@ export type Database = {
         }
         Relationships: []
       }
+      critical_alerts: {
+        Row: {
+          assignee_user_id: string | null
+          category: string
+          created_at: string
+          deep_link: string
+          due_at: string
+          id: string
+          message: string | null
+          push_attempts: number
+          push_last_error: string | null
+          pushed_at: string | null
+          record_id: string | null
+          record_type: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_user_id?: string | null
+          category: string
+          created_at?: string
+          deep_link: string
+          due_at?: string
+          id?: string
+          message?: string | null
+          push_attempts?: number
+          push_last_error?: string | null
+          pushed_at?: string | null
+          record_id?: string | null
+          record_type?: string | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_user_id?: string | null
+          category?: string
+          created_at?: string
+          deep_link?: string
+          due_at?: string
+          id?: string
+          message?: string | null
+          push_attempts?: number
+          push_last_error?: string | null
+          pushed_at?: string | null
+          record_id?: string | null
+          record_type?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_bonuses: {
         Row: {
           amount: number
@@ -3674,6 +3731,39 @@ export type Database = {
           user_id?: string
           welcome_sent_at?: string | null
           welcome_sent_by?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

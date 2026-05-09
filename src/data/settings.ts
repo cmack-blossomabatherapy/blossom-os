@@ -15,6 +15,7 @@ export type SettingsSectionId =
   | "document-types"
   | "integrations"
   | "search-ranking"
+  | "push-notifications"
   | "audit-logs";
 
 export type SettingsGroup = "System" | "Workflow" | "People" | "Communication" | "Documents" | "Integrations" | "Intelligence" | "Data";
@@ -48,6 +49,7 @@ export const settingsNav: SettingsNavItem[] = [
   { id: "integrations", label: "Integrations", group: "Integrations", description: "Pandadoc, Eligipro, CentralReach…" },
   // Intelligence
   { id: "search-ranking", label: "Search Ranking", group: "Intelligence", description: "Tune how feedback shapes SOP search" },
+  { id: "push-notifications", label: "Push Notifications", group: "Intelligence", description: "Subscribe this device to critical alerts" },
   // Data
   { id: "audit-logs", label: "Audit Logs", group: "Data", description: "Who changed what, when" },
 ];

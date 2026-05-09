@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PushNavigationListener } from "@/components/push/PushNavigationListener";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
@@ -169,6 +170,7 @@ const App = () => (
         <AuthProvider>
           <LeadsProvider>
             <ClientsProvider>
+              <PushNavigationListener />
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
