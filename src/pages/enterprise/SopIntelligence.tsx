@@ -278,6 +278,25 @@ export default function SopIntelligence() {
               <Button type="submit" className="h-12 md:h-11 gap-2 active:scale-[0.98]">
                 <Sparkles className="h-4 w-4" /> Search
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 md:h-11 gap-2 active:scale-[0.98]"
+                onClick={() => { setEditing(null); setAddOpen(true); }}
+              >
+                <Plus className="h-4 w-4" /> Add SOP
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 md:h-11 md:w-11 shrink-0"
+                onClick={reload}
+                aria-label="Refresh index"
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
             </form>
             <ScrollArea className="mt-3 max-w-full">
               <div className="flex gap-2 pb-1 md:flex-wrap">
