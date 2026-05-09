@@ -28,6 +28,8 @@ interface NavItem {
   superAdminOnly?: boolean;
   /** If set, the item is only visible when the user has at least one of these roles. */
   allowedRoles?: string[];
+  /** If true, the item is shown but visually disabled and non-interactive. */
+  disabled?: boolean;
 }
 
 interface NavSection {
