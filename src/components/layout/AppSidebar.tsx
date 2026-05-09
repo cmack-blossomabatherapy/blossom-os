@@ -392,6 +392,9 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             </div>
           </header>
           <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label="Mobile navigation">
+            <div className="mb-3 px-1">
+              <ResumeOnboardingButton variant="mobile" onNavigate={() => onMobileOpenChange?.(false)} />
+            </div>
             {mobileSections.map((section, i) => {
               const title = section.title ?? `Section ${i + 1}`;
               const activeInSection = section.items.some((item) => isItemActive(item.path));
