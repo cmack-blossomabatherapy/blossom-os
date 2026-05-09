@@ -277,17 +277,59 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     path: "/onboarding/week/3",
     modules: [
       // Path A — new state
-      { key: "w3.ns.laws", title: "State laws & regulations", blurb: "Compliance landscape for your new market.", icon: ShieldCheck, estMinutes: 60, kind: "content", pathOnly: "new_state" },
-      { key: "w3.ns.cred", title: "Credentialing requirements", blurb: "What's needed to operate.", icon: ClipboardCheck, estMinutes: 60, kind: "content", pathOnly: "new_state" },
-      { key: "w3.ns.bcba", title: "BCBA recruiting in market", blurb: "Build the clinical bench.", icon: Users, estMinutes: 90, kind: "content", pathOnly: "new_state" },
-      { key: "w3.ns.cred-init", title: "Credentialing initiation", blurb: "Kick off the credentialing engine.", icon: Briefcase, estMinutes: 60, kind: "content", pathOnly: "new_state" },
-      { key: "w3.ns.infra", title: "Infrastructure building", blurb: "Stand up the operational foundation.", icon: Building2, estMinutes: 90, kind: "content", pathOnly: "new_state" },
-      { key: "w3.ns.launch", title: "State launch preparation", blurb: "Final readiness for go-live.", icon: Rocket, estMinutes: 60, kind: "content", pathOnly: "new_state" },
+      { key: "w3.ns.laws", title: "State laws & regulations", blurb: "Compliance landscape for your new market.", icon: ShieldCheck, estMinutes: 60, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "research", label: "Research the state's ABA licensing rules", icon: BookOpen },
+          { id: "summary", label: "Write a one-page compliance summary", icon: FileText },
+          { id: "states", label: "Open the State dashboards", icon: MapPin, href: "/intelligence/states", optional: true },
+        ] },
+      { key: "w3.ns.cred", title: "Credentialing requirements", blurb: "What's needed to operate.", icon: ClipboardCheck, estMinutes: 60, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "list", label: "List required credentials per role", icon: ListChecks },
+          { id: "owner", label: "Identify the credentialing owner", icon: UserCheck },
+        ] },
+      { key: "w3.ns.bcba", title: "BCBA recruiting in market", blurb: "Build the clinical bench.", icon: Users, estMinutes: 90, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "pipeline", label: "Open the Recruiting pipeline", icon: Users, href: "/recruiting" },
+          { id: "outreach", label: "Draft a BCBA outreach plan", icon: FileText },
+        ] },
+      { key: "w3.ns.cred-init", title: "Credentialing initiation", blurb: "Kick off the credentialing engine.", icon: Briefcase, estMinutes: 60, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "first", label: "Submit the first credentialing packet", icon: FileText },
+          { id: "tracker", label: "Set up the credentialing tracker", icon: ClipboardCheck },
+        ] },
+      { key: "w3.ns.infra", title: "Infrastructure building", blurb: "Stand up the operational foundation.", icon: Building2, estMinutes: 90, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "locations", label: "Open the Locations page", icon: Building, href: "/blossom/locations" },
+          { id: "vendors", label: "List vendors needed (phones, internet, EHR)", icon: ListChecks },
+        ] },
+      { key: "w3.ns.launch", title: "State launch preparation", blurb: "Final readiness for go-live.", icon: Rocket, estMinutes: 60, kind: "content", pathOnly: "new_state",
+        actions: [
+          { id: "checklist", label: "Complete the pre-launch checklist", icon: ListChecks },
+          { id: "review", label: "Get sign-off from Chad and Shira", icon: UserCheck },
+        ] },
       // Path B — existing state
-      { key: "w3.es.intake", title: "Work in Intake", blurb: "Hands-on with leads and onboarding.", icon: Briefcase, estMinutes: 240, kind: "content", pathOnly: "existing_state" },
-      { key: "w3.es.recruit", title: "Work in Recruiting", blurb: "Run candidate pipelines.", icon: Users, estMinutes: 180, kind: "content", pathOnly: "existing_state" },
-      { key: "w3.es.workflow", title: "Workflow management", blurb: "Own a workflow end-to-end.", icon: Workflow, estMinutes: 120, kind: "content", pathOnly: "existing_state" },
-      { key: "w3.es.coord", title: "Team coordination", blurb: "Coordinate across departments.", icon: MessageSquare, estMinutes: 120, kind: "content", pathOnly: "existing_state" },
+      { key: "w3.es.intake", title: "Work in Intake", blurb: "Hands-on with leads and onboarding.", icon: Briefcase, estMinutes: 240, kind: "content", pathOnly: "existing_state",
+        actions: [
+          { id: "leads", label: "Open the Leads page", icon: Briefcase, href: "/leads" },
+          { id: "first", label: "Process your first lead end-to-end", icon: ClipboardCheck },
+          { id: "dashboard", label: "Check the Intake dashboard", icon: BarChart3, href: "/intake-dashboard" },
+        ] },
+      { key: "w3.es.recruit", title: "Work in Recruiting", blurb: "Run candidate pipelines.", icon: Users, estMinutes: 180, kind: "content", pathOnly: "existing_state",
+        actions: [
+          { id: "open", label: "Open the Recruiting page", icon: Users, href: "/recruiting" },
+          { id: "screen", label: "Screen at least 3 candidates", icon: ClipboardCheck },
+        ] },
+      { key: "w3.es.workflow", title: "Workflow management", blurb: "Own a workflow end-to-end.", icon: Workflow, estMinutes: 120, kind: "content", pathOnly: "existing_state",
+        actions: [
+          { id: "tasks", label: "Open the Tasks page", icon: ClipboardCheck, href: "/tasks" },
+          { id: "own", label: "Own one workflow start-to-finish", icon: Workflow },
+        ] },
+      { key: "w3.es.coord", title: "Team coordination", blurb: "Coordinate across departments.", icon: MessageSquare, estMinutes: 120, kind: "content", pathOnly: "existing_state",
+        actions: [
+          { id: "team", label: "Open the Team page", icon: Users, href: "/team" },
+          { id: "huddle", label: "Run a 15-minute cross-team huddle", icon: MessageSquare },
+        ] },
     ],
     outcome: {
       title: "Week Three Outcome",
