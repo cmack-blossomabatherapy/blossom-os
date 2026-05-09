@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ChevronUp, ChevronDown, FileText, X, GraduationCap, Zap } from "lucide-react";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 export interface SopDrawerSection {
   id: string;
@@ -158,6 +160,30 @@ export function SopDetailDrawer({
   const goPrev = () => setActiveIdx((i) => (citations.length === 0 ? 0 : (i - 1 + citations.length) % citations.length));
   const goNext = () => setActiveIdx((i) => (citations.length === 0 ? 0 : (i + 1) % citations.length));
 
+  const copyCitation = async (citationIndex: number) => {
+    const cite = citations[citationIndex];
+    if (!cite) return;
+    const section = sections.find((s) => s.id === cite.sectionId);
+    if (!section) return;
+    const sopLabel = `${sopMeta?.sopId.toUpperCase() ?? ""} — ${sopMeta?.sopTitle ?? ""}`.trim();
+    const text = [
+      `Citation ${citationIndex + 1} of ${citations.length}`,
+      `${sopLabel} · § ${section.section}`,
+      "",
+      `Section text:`,
+      section.body,
+      "",
+      `Cited passage:`,
+      `"${cite.snippet}"`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`Citation ${citationIndex + 1} copied to clipboard`);
+    } catch {
+      toast.error("Unable to copy citation");
+    }
+  };
+
   return (
     <ResponsiveSheet
       open={open}
@@ -204,6 +230,16 @@ export function SopDetailDrawer({
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() => copyCitation(activeIdx)}
+                aria-label="Copy citation"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </Button>
               <Button
                 size="icon"
                 variant="ghost"
