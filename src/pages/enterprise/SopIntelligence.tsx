@@ -163,6 +163,8 @@ export default function SopIntelligence() {
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [openSop, setOpenSop] = useState<{ sopId: string; initialCiteIdx: number } | null>(null);
+  // For library taps with no active query, we explicitly mark a section as the "focus".
+  const [focusSectionId, setFocusSectionId] = useState<string | null>(null);
 
   const results = useMemo(() => scoreSections(submitted), [submitted]);
 
@@ -201,10 +203,15 @@ export default function SopIntelligence() {
   const drawerCitations = useMemo<SopCitation[]>(() => {
     if (!openSop) return [];
     const sectionOrder = new Map(drawerSections.map((s, i) => [s.id, i]));
-    return results
+    const fromResults = results
       .filter((r) => r.sopId === openSop.sopId)
       .map((r) => ({ sectionId: r.id, snippet: r.snippet, matched: r.matched }))
       .sort((a, b) => (sectionOrder.get(a.sectionId) ?? 0) - (sectionOrder.get(b.sectionId) ?? 0));
+    if (fromResults.length > 0) return fromResults;
+    if (focusSectionId && drawerSections.some((s) => s.id === focusSectionId)) {
+      return [{ sectionId: focusSectionId, snippet: "", matched: [] }];
+    }
+    return [];
   }, [openSop, drawerSections, results]);
 
   const openResultDrawer = (sopId: string, sectionId: string) => {
@@ -219,11 +226,15 @@ export default function SopIntelligence() {
   };
 
   const openLibraryDrawer = (sopId: string, sectionId: string) => {
-    // No active query — open the SOP and "cite" the chosen section so it scrolls into view.
+    setFocusSectionId(sectionId);
     setOpenSop({ sopId, initialCiteIdx: 0 });
-    // Defer: the drawer will compute citations from results; for the library tap with no
-    // query, we simulate a single citation by faking a section in submitted state below.
-    void sectionId;
+  };
+
+  const handleDrawerOpenChange = (open: boolean) => {
+    if (!open) {
+      setOpenSop(null);
+      setFocusSectionId(null);
+    }
   };
 
   return (
