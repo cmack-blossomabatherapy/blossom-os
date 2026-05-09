@@ -10,6 +10,7 @@ export type SettingsSectionId =
   | "automation-rules"
   | "roles"
   | "assignment-rules"
+  | "onboarding-allowlist"
   | "email-templates"
   | "sms-templates"
   | "document-types"
