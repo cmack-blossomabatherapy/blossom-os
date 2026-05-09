@@ -13,6 +13,20 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@/lib/push/registerPush";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ListChecks } from "lucide-react";
+
+const ALERT_CATEGORIES: { key: string; label: string; description: string }[] = [
+  { key: "authorizations", label: "Authorizations", description: "Auth approvals, expirations and reauth blockers" },
+  { key: "qa", label: "QA / Clinical", description: "QA review escalations and missing documentation" },
+  { key: "staffing", label: "Staffing", description: "Coverage gaps, callouts, RBT shortages" },
+  { key: "intake", label: "Intake", description: "Lead SLAs and stuck intake stages" },
+  { key: "billing", label: "Billing", description: "Claim denials and unbilled sessions" },
+  { key: "compliance", label: "Compliance", description: "Credentialing, training and document expirations" },
+  { key: "tasks", label: "Tasks", description: "Overdue tasks assigned to me" },
+  { key: "test", label: "Test alerts", description: "Used by the 'Send me a test alert' button" },
+];
 
 interface DeviceRow {
   id: string;
@@ -37,6 +51,7 @@ export function PushNotificationsPanel() {
   const [seedBusy, setSeedBusy] = useState(false);
   const [thisDeviceEndpoint, setThisDeviceEndpoint] = useState<string | null>(null);
   const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== "undefined" ? Notification.permission : "default",
   );
@@ -54,6 +69,32 @@ export function PushNotificationsPanel() {
     setDevices((data ?? []) as DeviceRow[]);
   }
 
+  async function loadPrefs() {
+    if (!user) return;
+    const { data } = await supabase
+      .from("push_notification_preferences")
+      .select("category, enabled")
+      .eq("user_id", user.id);
+    const map: Record<string, boolean> = {};
+    for (const row of data ?? []) map[(row as any).category] = (row as any).enabled;
+    setPrefs(map);
+  }
+
+  async function togglePref(category: string, enabled: boolean) {
+    if (!user) return;
+    setPrefs((p) => ({ ...p, [category]: enabled }));
+    const { error } = await supabase
+      .from("push_notification_preferences")
+      .upsert(
+        { user_id: user.id, category, enabled },
+        { onConflict: "user_id,category" },
+      );
+    if (error) {
+      toast({ title: "Couldn't save preference", description: error.message, variant: "destructive" });
+      await loadPrefs();
+    }
+  }
+
   async function refreshLocal() {
     if (!supported) return;
     const sub = await getCurrentSubscription();
@@ -64,6 +105,7 @@ export function PushNotificationsPanel() {
   useEffect(() => {
     refreshLocal();
     loadDevices();
+    loadPrefs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
