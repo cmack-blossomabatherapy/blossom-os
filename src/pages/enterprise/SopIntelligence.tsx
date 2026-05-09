@@ -199,6 +199,14 @@ export default function SopIntelligence() {
   );
 
   const submittedNorm = useMemo(() => normalizeQuery(submitted), [submitted]);
+  // Currently SOP search has no faceted filter UI, so the filter scope is empty
+  // for now. When filter chips are added (state, owner, tag, etc.), pass that
+  // object here so feedback is recorded against the same scope it was given in.
+  const submittedFilters = useMemo<Record<string, unknown>>(() => ({}), []);
+  const submittedFiltersNorm = useMemo(
+    () => normalizeFilters(submittedFilters),
+    [submittedFilters],
+  );
 
   const voteFor = (sectionId: string): SopFeedbackVote | null => {
     const f = feedback.find(x => x.section_id === sectionId && x.query_norm === submittedNorm);
@@ -218,11 +226,19 @@ export default function SopIntelligence() {
         query_norm: submittedNorm,
         vote,
         updated_at: new Date().toISOString(),
+        filters: submittedFilters,
+        filters_norm: submittedFiltersNorm,
       });
     }
     setFeedbackState(next);
     try {
-      const saved = await setFeedback({ sectionId, query: submitted, vote, existing });
+      const saved = await setFeedback({
+        sectionId,
+        query: submitted,
+        vote,
+        filters: submittedFilters,
+        existing,
+      });
       setFeedbackState(prev => {
         const cleaned = prev.filter(x => !(x.section_id === sectionId && x.query_norm === submittedNorm));
         return saved ? [...cleaned, saved] : cleaned;
