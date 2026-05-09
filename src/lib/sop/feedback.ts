@@ -97,7 +97,7 @@ export async function setFeedback(input: {
   const { data, error } = await supabase
     .from("sop_search_feedback")
     .upsert(
-      {
+      [{
         user_id,
         section_id: input.sectionId,
         query: input.query,
@@ -105,7 +105,7 @@ export async function setFeedback(input: {
         vote: input.vote,
         filters,
         filters_norm,
-      },
+      }] as any,
       { onConflict: "user_id,section_id,query_norm,filters_norm" },
     )
     .select("id, section_id, query, query_norm, vote, updated_at, filters, filters_norm")
