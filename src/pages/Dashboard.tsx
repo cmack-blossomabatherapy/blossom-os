@@ -7,6 +7,7 @@ import { GrowthInsights } from "@/components/dashboard/GrowthInsights";
 import { ForecastPanel } from "@/components/dashboard/ForecastPanel";
 import { AlertsRisks } from "@/components/dashboard/AlertsRisks";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { ReadinessCard } from "@/components/dashboard/ReadinessCard";
 import { BlossomHero } from "@/components/blossom/BlossomHero";
 import { ExecutiveCard } from "@/components/blossom/ExecutiveCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +61,8 @@ export default function Dashboard() {
       <BlossomHero />
 
       <DashboardExecutiveCards />
+
+      <ReadinessCard />
 
       {/* Section 1: KPI Strip */}
       <div className="space-y-4">
