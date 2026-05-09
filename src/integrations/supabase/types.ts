@@ -1690,6 +1690,50 @@ export type Database = {
         }
         Relationships: []
       }
+      critical_alert_audit: {
+        Row: {
+          actor_email: string | null
+          actor_name: string | null
+          actor_user_id: string | null
+          alert_id: string
+          created_at: string
+          event: string
+          id: string
+          metadata: Json
+          notes: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          alert_id: string
+          created_at?: string
+          event: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          actor_name?: string | null
+          actor_user_id?: string | null
+          alert_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "critical_alert_audit_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "critical_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       critical_alerts: {
         Row: {
           assignee_user_id: string | null
