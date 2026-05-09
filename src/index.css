@@ -245,22 +245,22 @@
     box-shadow: inset -1px 0 0 hsl(0 0% 100% / 0.03);
   }
   .mobile-menu-item {
-    @apply flex min-h-11 items-center gap-3 rounded-lg px-2 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary;
+    @apply relative flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-foreground/85 transition-all duration-150 active:scale-[0.985];
   }
   .mobile-menu-icon {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary/60 text-muted-foreground transition-colors;
   }
   .mobile-menu-item-active {
-    @apply bg-secondary text-primary;
+    @apply bg-primary/10 text-primary font-semibold;
   }
   .mobile-menu-item-active .mobile-menu-icon {
-    @apply bg-primary text-primary-foreground;
+    @apply bg-primary text-primary-foreground shadow-[0_6px_14px_-6px_hsl(var(--primary)/0.55)];
   }
   .mobile-menu-sheet > button {
     @apply hidden;
   }
   .mobile-menu-sheet {
-    box-shadow: -18px 0 44px -24px hsl(var(--foreground) / 0.42);
+    box-shadow: -24px 0 60px -28px hsl(var(--foreground) / 0.35);
   }
 
   @media (min-width: 1024px) {
