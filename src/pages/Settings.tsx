@@ -17,6 +17,7 @@ import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
 import { AuditLogsPanel } from "@/components/settings/AuditLogsPanel";
 import { SopRankingPanel } from "@/components/settings/SopRankingPanel";
 import { PushNotificationsPanel } from "@/components/settings/PushNotificationsPanel";
+import { AlertAuditLogPanel } from "@/components/settings/AlertAuditLogPanel";
 import type { SettingsSectionId } from "@/data/settings";
 
 export default function SettingsPage() {
@@ -46,6 +47,7 @@ export default function SettingsPage() {
           {active === "integrations" && <IntegrationsPanel />}
           {active === "search-ranking" && <SopRankingPanel />}
           {active === "push-notifications" && <PushNotificationsPanel />}
+          {active === "alert-audit" && <AlertAuditLogPanel />}
           {active === "audit-logs" && <AuditLogsPanel />}
         </div>
       </div>

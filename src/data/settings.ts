@@ -16,6 +16,7 @@ export type SettingsSectionId =
   | "integrations"
   | "search-ranking"
   | "push-notifications"
+  | "alert-audit"
   | "audit-logs";
 
 export type SettingsGroup = "System" | "Workflow" | "People" | "Communication" | "Documents" | "Integrations" | "Intelligence" | "Data";
@@ -50,6 +51,7 @@ export const settingsNav: SettingsNavItem[] = [
   // Intelligence
   { id: "search-ranking", label: "Search Ranking", group: "Intelligence", description: "Tune how feedback shapes SOP search" },
   { id: "push-notifications", label: "Push Notifications", group: "Intelligence", description: "Subscribe this device to critical alerts" },
+  { id: "alert-audit", label: "Alert Audit Log", group: "Intelligence", description: "Compliance trail for critical alert events" },
   // Data
   { id: "audit-logs", label: "Audit Logs", group: "Data", description: "Who changed what, when" },
 ];
