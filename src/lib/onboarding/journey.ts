@@ -17,7 +17,14 @@ export interface JourneyModule {
   /** Optional details by kind */
   leader?: { name: string; role: string; message: string; initials: string };
   system?: { name: string; videoLabel?: string; sopLabel?: string; tangoLabel?: string };
-  shadowing?: { assignee: string; goals: string[] };
+  shadowing?: {
+    /** Optional ordered stages — used for transition scenarios (e.g. shadow A, then Gary Frank). */
+    stages?: { id: string; assignee: string; role: string; initials: string; days?: string; description?: string }[];
+    /** Fallback single assignee when stages aren't used. */
+    assignee?: string;
+    /** Checkable observation goals — all must be checked to complete shadowing. */
+    goals: string[];
+  };
   outcomeBullets?: string[];
   /** If set, only render when path matches. */
   pathOnly?: OnboardingPath;
@@ -81,7 +88,19 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
       { key: "w1.lead.shira", title: "Meet with Shira Lasry", blurb: "ABA background, company protocols, expectations, philosophy.", icon: UserCheck, estMinutes: 60, kind: "leader",
         leader: { ...LEADERS.shira, message: "We'll cover ABA fundamentals, our protocols, and how we think about quality care." } },
       { key: "w1.shadow", title: "Shadowing", blurb: "Observe day-to-day operations, workflow, and communication.", icon: Eye, estMinutes: 240, kind: "shadowing",
-        shadowing: { assignee: "Transitioning employee, then Gary Frank", goals: ["Observe a full operational day", "Learn how communication flows", "See how priorities are set & escalated", "Take observation notes"] } },
+        shadowing: {
+          stages: [
+            { id: "transition", assignee: "Transitioning employee", role: "Outgoing role-holder", initials: "TE", days: "Days 1–2", description: "Shadow the person currently in the seat to learn live workflows, hand-offs, and tribal knowledge before they roll off." },
+            { id: "gary", assignee: "Gary Frank", role: "Operations", initials: "GF", days: "Days 3–5", description: "Then shadow Gary Frank to see operational decision-making, escalation patterns, and how priorities are set across the day." },
+          ],
+          goals: [
+            "Observe a full operational day end-to-end",
+            "Map how communication flows between teams",
+            "See how priorities are set and escalated",
+            "Capture observation notes for each stage",
+          ],
+        },
+      },
       { key: "w1.sys.cr", title: "CentralReach", blurb: "Our core clinical & operational platform.", icon: MonitorPlay, estMinutes: 60, kind: "system",
         system: { name: "CentralReach", videoLabel: "Watch CR walkthrough", sopLabel: "View CR SOP", tangoLabel: "Tango walkthrough" } },
       { key: "w1.sys.monday", title: "Monday.com", blurb: "Workflow and project management.", icon: MonitorPlay, estMinutes: 30, kind: "system",
