@@ -3844,6 +3844,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sop_feedback_weights: {
+        Row: {
+          down_other: number
+          down_same_filters: number
+          down_same_query: number
+          down_same_query_same_filters: number
+          hide_on_not_relevant: boolean
+          id: boolean
+          up_other: number
+          up_same_filters: number
+          up_same_query: number
+          up_same_query_same_filters: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          down_other?: number
+          down_same_filters?: number
+          down_same_query?: number
+          down_same_query_same_filters?: number
+          hide_on_not_relevant?: boolean
+          id?: boolean
+          up_other?: number
+          up_same_filters?: number
+          up_same_query?: number
+          up_same_query_same_filters?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          down_other?: number
+          down_same_filters?: number
+          down_same_query?: number
+          down_same_query_same_filters?: number
+          hide_on_not_relevant?: boolean
+          id?: boolean
+          up_other?: number
+          up_same_filters?: number
+          up_same_query?: number
+          up_same_query_same_filters?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       sop_search_feedback: {
         Row: {
           created_at: string

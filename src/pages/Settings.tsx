@@ -15,6 +15,7 @@ import { TemplatesPanel } from "@/components/settings/TemplatesPanel";
 import { DocumentTypesPanel } from "@/components/settings/DocumentTypesPanel";
 import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
 import { AuditLogsPanel } from "@/components/settings/AuditLogsPanel";
+import { SopRankingPanel } from "@/components/settings/SopRankingPanel";
 import type { SettingsSectionId } from "@/data/settings";
 
 export default function SettingsPage() {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
           {active === "sms-templates" && <TemplatesPanel channel="SMS" />}
           {active === "document-types" && <DocumentTypesPanel />}
           {active === "integrations" && <IntegrationsPanel />}
+          {active === "search-ranking" && <SopRankingPanel />}
           {active === "audit-logs" && <AuditLogsPanel />}
         </div>
       </div>

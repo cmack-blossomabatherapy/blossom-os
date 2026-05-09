@@ -23,7 +23,8 @@ import { relativeTime } from "@/lib/sop/indexer";
 import { useToast } from "@/hooks/use-toast";
 import {
   fetchAllFeedback, setFeedback, normalizeQuery, normalizeFilters, boostFor,
-  type SopFeedbackRow, type SopFeedbackVote,
+  fetchFeedbackWeights, DEFAULT_FEEDBACK_WEIGHTS,
+  type SopFeedbackRow, type SopFeedbackVote, type SopFeedbackWeights,
 } from "@/lib/sop/feedback";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,7 @@ function scoreSections(
   sections: SopSection[],
   feedback: SopFeedbackRow[],
   filtersNorm: string = "",
+  weights?: SopFeedbackWeights,
 ): ScoredSection[] {
   const q = tokenize(query);
   if (q.length === 0) return [];
@@ -70,7 +72,7 @@ function scoreSections(
     const titleHits = q.filter(t => sec.sopTitle.toLowerCase().includes(t) || sec.section.toLowerCase().includes(t)).length;
     const tagHits = q.filter(t => sec.tags.some(tag => tag.includes(t))).length;
     score = score * 0.6 + (titleHits / q.length) * 0.25 + (tagHits / q.length) * 0.15;
-    const boost = boostFor(feedback, sec.id, queryNorm, filtersNorm);
+    const boost = boostFor(feedback, sec.id, queryNorm, filtersNorm, weights);
     if (boost.hide) return null;
     score *= boost.multiplier;
     // snippet: sentence containing first matched term
@@ -111,6 +113,7 @@ export default function SopIntelligence() {
   const [docs, setDocs] = useState<SopDocumentRow[]>([]);
   const [rawSections, setRawSections] = useState<SopSectionRow[]>([]);
   const [feedback, setFeedbackState] = useState<SopFeedbackRow[]>([]);
+  const [weights, setWeights] = useState<SopFeedbackWeights>(DEFAULT_FEEDBACK_WEIGHTS);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<{ doc: SopDocumentRow; body: string } | null>(null);
@@ -129,6 +132,11 @@ export default function SopIntelligence() {
       setDocs(documents);
       setRawSections(sections);
       setFeedbackState(fb);
+      try {
+        setWeights(await fetchFeedbackWeights());
+      } catch {
+        setWeights(DEFAULT_FEEDBACK_WEIGHTS);
+      }
     } catch (e) {
       toast({
         title: "Couldn't load SOPs",
@@ -205,8 +213,8 @@ export default function SopIntelligence() {
   );
 
   const results = useMemo(
-    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm),
-    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm],
+    () => scoreSections(submitted, SOP_SECTIONS, feedback, submittedFiltersNorm, weights),
+    [submitted, SOP_SECTIONS, feedback, submittedFiltersNorm, weights],
   );
 
   const voteFor = (sectionId: string): SopFeedbackVote | null => {
