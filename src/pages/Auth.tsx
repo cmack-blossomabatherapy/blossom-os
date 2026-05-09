@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
+import { Checkbox } from "@/components/ui/checkbox";
+import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
 
 const CANONICAL_LOGIN_HOST = "blossom.abacommandcenter.com";
 const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
@@ -18,6 +20,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState<boolean>(() => getRememberPreference());
 
   useEffect(() => {
     if (window.location.hostname !== LOVABLE_PUBLISHED_HOST) return;
@@ -43,6 +46,9 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    // Apply the persistence preference BEFORE the auth call so the
+    // sessionStorage marker is in place when onAuthStateChange fires.
+    setRememberPreference(remember);
     const { error } = await signIn(email.trim(), password);
     setSubmitting(false);
     if (error) toast.error(error);
@@ -150,6 +156,19 @@ export default function Auth() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <label htmlFor="signin-remember" className="flex cursor-pointer items-center gap-2 text-sm text-foreground/80 select-none">
+                <Checkbox
+                  id="signin-remember"
+                  checked={remember}
+                  onCheckedChange={(value) => setRemember(value === true)}
+                />
+                Remember me
+              </label>
+              <span className="text-[11px] text-muted-foreground">
+                Trusted device only
+              </span>
             </div>
             <Button
               type="submit"
