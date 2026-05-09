@@ -460,7 +460,12 @@ export default function SopIntelligence() {
                       <div className="text-sm font-medium truncate">{r.sopTitle}</div>
                       <div className="text-[11px] text-muted-foreground truncate">Updated {r.updated}</div>
                     </div>
-                    <Button size="sm" variant="ghost" className="h-7 px-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      onClick={() => openResultDrawer(r.sopId, r.id)}
+                    >
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -471,6 +476,15 @@ export default function SopIntelligence() {
           </div>
         </div>
       )}
+
+      <SopDetailDrawer
+        open={!!openSop}
+        onOpenChange={handleDrawerOpenChange}
+        sections={drawerSections}
+        citations={drawerCitations}
+        initialCitationIndex={openSop?.initialCiteIdx ?? 0}
+        onOpenTraining={() => navigate("/training")}
+      />
     </GlassPageShell>
   );
 }
