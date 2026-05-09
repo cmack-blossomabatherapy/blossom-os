@@ -216,7 +216,7 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
             ))}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </ResponsiveSheet>
   );
 }
