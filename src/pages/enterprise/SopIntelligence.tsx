@@ -501,7 +501,7 @@ export default function SopIntelligence() {
       <SopDetailDrawer
         open={!!openSop}
         onOpenChange={handleDrawerOpenChange}
-        sections={drawerSections}
+        sections={drawerSections.map(s => ({ ...s, trainings: [] }))}
         citations={drawerCitations}
         initialCitationIndex={openSop?.initialCiteIdx ?? 0}
         onOpenTraining={() => navigate("/training")}
