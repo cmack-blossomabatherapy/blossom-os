@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass, Lock,
+  History as HistoryIcon, Search, Compass, Lock, Bot,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
