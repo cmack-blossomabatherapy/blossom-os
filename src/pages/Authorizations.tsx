@@ -30,6 +30,7 @@ import { PageShell } from "@/components/shared/PageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { useClients } from "@/contexts/ClientsContext";
 import { AuthorizationRecord, Client, ClientStage, QAStatus, authVariant } from "@/data/clients";
 import { cn } from "@/lib/utils";
@@ -298,6 +299,8 @@ export default function Authorizations() {
   const [panelTab, setPanelTab] = useState<PanelTab>("Overview");
   const [sortKey, setSortKey] = useState<SortKey>("days");
   const [filters, setFilters] = useState({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" });
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState(filters);
   const typeFilter = searchParams.get("type") === "treatment" ? "Treatment" : searchParams.get("type") === "initial" ? "Initial" : null;
 
   useEffect(() => {
@@ -417,16 +420,27 @@ export default function Authorizations() {
           </div>
         </div>
 
-        <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-          <FilterSelect label="State" value={filters.state} options={options.states} onChange={(value) => setFilters({ ...filters, state: value })} />
-          <FilterSelect label="Client" value="All" options={["All", ...records.slice(0, 8).map((record) => record.clientName)]} onChange={(value) => setQuery(value === "All" ? "" : value)} />
-          <FilterSelect label="Payor" value={filters.payor} options={options.payors} onChange={(value) => setFilters({ ...filters, payor: value })} />
-          <FilterSelect label="Auth Type" value={filters.type} options={["All", "Initial", "Treatment", "Reauth"]} onChange={(value) => setFilters({ ...filters, type: value })} />
-          <FilterSelect label="Auth Status" value={filters.status} options={["All", ...statuses]} onChange={(value) => setFilters({ ...filters, status: value })} />
-          <FilterSelect label="Coordinator" value={filters.coordinator} options={options.coordinators} onChange={(value) => setFilters({ ...filters, coordinator: value })} />
-          <FilterSelect label="QA Status" value={filters.qa} options={["All", "Not Started", "In Review", "Complete", "Blocked", "Ready"]} onChange={(value) => setFilters({ ...filters, qa: value })} />
-          <FilterSelect label="Expiration" value={filters.expiration} options={["All", "<30", "31-60", "61-90"]} onChange={(value) => setFilters({ ...filters, expiration: value })} />
-        </div>
+        <FilterChipsBar
+          filters={filters}
+          onClear={() => setFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
+          onClearKey={(key) => setFilters({ ...filters, [key]: "All" })}
+          onOpen={() => { setDraftFilters(filters); setFilterDrawerOpen(true); }}
+        />
+
+        <AuthFilterDrawer
+          open={filterDrawerOpen}
+          onOpenChange={setFilterDrawerOpen}
+          draft={draftFilters}
+          setDraft={setDraftFilters}
+          options={{
+            states: options.states,
+            payors: options.payors,
+            coordinators: options.coordinators,
+            statuses: ["All", ...statuses],
+          }}
+          onApply={() => { setFilters(draftFilters); setFilterDrawerOpen(false); }}
+          onClear={() => setDraftFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/20 p-1">
@@ -467,6 +481,106 @@ export default function Authorizations() {
 
 function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return <label className="space-y-1"><span className="text-[11px] font-medium text-muted-foreground">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground outline-none transition-colors focus:border-primary">{options.map((option) => <option key={option}>{option}</option>)}</select></label>;
+}
+
+type AuthFilters = { state: string; payor: string; type: string; status: string; coordinator: string; qa: string; expiration: string; missingDocs: string };
+const FILTER_LABELS: Record<keyof AuthFilters, string> = { state: "State", payor: "Payor", type: "Auth Type", status: "Auth Status", coordinator: "Coordinator", qa: "QA Status", expiration: "Expiration", missingDocs: "Missing Docs" };
+
+function FilterChipsBar({ filters, onClear, onClearKey, onOpen }: { filters: AuthFilters; onClear: () => void; onClearKey: (key: keyof AuthFilters) => void; onOpen: () => void }) {
+  const active = (Object.keys(filters) as (keyof AuthFilters)[]).filter((key) => filters[key] !== "All");
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button variant="outline" size="sm" className="h-9 gap-2" onClick={onOpen}>
+        <SlidersHorizontal className="h-3.5 w-3.5" />
+        Filters
+        {active.length > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">{active.length}</span>}
+      </Button>
+      {active.map((key) => (
+        <button key={key} onClick={() => onClearKey(key)} className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15">
+          <span className="text-muted-foreground">{FILTER_LABELS[key]}:</span>
+          <span>{filters[key]}</span>
+          <X className="h-3 w-3" />
+        </button>
+      ))}
+      {active.length > 0 && (
+        <button onClick={onClear} className="text-xs font-medium text-muted-foreground hover:text-foreground">Clear all</button>
+      )}
+    </div>
+  );
+}
+
+function AuthFilterDrawer({
+  open, onOpenChange, draft, setDraft, options, onApply, onClear,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  draft: AuthFilters;
+  setDraft: (f: AuthFilters) => void;
+  options: { states: string[]; payors: string[]; coordinators: string[]; statuses: string[] };
+  onApply: () => void;
+  onClear: () => void;
+}) {
+  const groups: { key: keyof AuthFilters; label: string; values: string[] }[] = [
+    { key: "state", label: "State", values: options.states },
+    { key: "payor", label: "Payor", values: options.payors },
+    { key: "type", label: "Auth Type", values: ["All", "Initial", "Treatment", "Reauth"] },
+    { key: "status", label: "Auth Status", values: options.statuses },
+    { key: "coordinator", label: "Coordinator", values: options.coordinators },
+    { key: "qa", label: "QA Status", values: ["All", "Not Started", "In Review", "Complete", "Blocked", "Ready"] },
+    { key: "expiration", label: "Expiration", values: ["All", "<30", "31-60", "61-90"] },
+    { key: "missingDocs", label: "Missing Docs", values: ["All", "Yes", "No"] },
+  ];
+  const activeCount = (Object.keys(draft) as (keyof AuthFilters)[]).filter((k) => draft[k] !== "All").length;
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="max-h-[85vh] overflow-hidden rounded-t-2xl p-0">
+        <div className="flex h-full max-h-[85vh] flex-col">
+          <SheetHeader className="border-b border-border/60 px-6 py-4 text-left">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <Filter className="h-4 w-4 text-primary" />
+              Filter Authorizations
+            </SheetTitle>
+            <SheetDescription>
+              {activeCount === 0 ? "Pick chips to narrow the queue, then apply." : `${activeCount} filter${activeCount === 1 ? "" : "s"} selected`}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+            {groups.map((group) => (
+              <div key={group.key} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {group.values.map((value) => {
+                    const selected = draft[group.key] === value;
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => setDraft({ ...draft, [group.key]: value })}
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                          selected
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                        )}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <SheetFooter className="border-t border-border/60 bg-muted/20 px-6 py-3 sm:flex-row sm:justify-between sm:gap-3">
+            <Button variant="ghost" onClick={onClear} className="text-muted-foreground">Clear all</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={onApply}>Apply filters</Button>
+            </div>
+          </SheetFooter>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 function MetricCard({ label, value, icon: Icon, active, onClick }: { label: string; value: number; icon: LucideIcon; active: boolean; onClick: () => void }) {
