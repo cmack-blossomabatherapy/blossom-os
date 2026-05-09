@@ -6,7 +6,7 @@ import {
   CheckSquare, BarChart3, Zap, UsersRound, Settings, Workflow, Briefcase,
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
-  History as HistoryIcon, Search, Compass, Lock, Bot,
+  History as HistoryIcon, Search, Compass, Lock, Bot, LogOut,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -260,7 +260,7 @@ const roleLabels: Record<string, string> = {
 export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileOpen?: boolean; onMobileOpenChange?: (open: boolean) => void }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { hasPerm, isAdmin, user, roles } = useAuth();
+  const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
   const DEFAULT_OPEN_SECTIONS = ["Blossom OS", "Dashboards", "Operate", "Pipeline", "Records", "Intelligence", "HR Suite", "Enterprise", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
@@ -511,10 +511,29 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 <p className="truncate text-sm font-semibold capitalize text-foreground">{displayName}</p>
                 <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
               </div>
-              <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary" aria-label="Open notifications">
-                <Bell className="h-4 w-4" />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Sign out"
+                onClick={async () => {
+                  onMobileOpenChange?.(false);
+                  await signOut();
+                }}
+              >
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
+            <Button
+              variant="outline"
+              className="mt-2 h-11 w-full rounded-xl border-border/65 text-sm font-semibold text-foreground"
+              onClick={async () => {
+                onMobileOpenChange?.(false);
+                await signOut();
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" /> Sign out
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
