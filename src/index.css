@@ -233,6 +233,9 @@
   .nav-item-inactive {
     @apply text-sidebar-foreground/90 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground;
   }
+  .nav-item-disabled {
+    @apply cursor-not-allowed opacity-45 text-sidebar-muted/80;
+  }
   .sidebar-shell {
     background:
       radial-gradient(120% 60% at 0% 0%, hsl(var(--sidebar-primary) / 0.16) 0%, transparent 55%),
