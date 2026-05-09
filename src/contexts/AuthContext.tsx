@@ -8,6 +8,7 @@ import {
   touchSessionMarker,
 } from "@/lib/rememberSession";
 import { startOnboardingSync, stopOnboardingSync } from "@/lib/onboarding/sync";
+import { setOnboardingPath, getOnboardingState } from "@/lib/onboarding/storage";
 
 interface AuthContextValue {
   session: Session | null;
@@ -25,6 +26,7 @@ interface AuthContextValue {
   mustChangePassword: boolean;
   partOfLeadership: boolean;
   dashboardAccess: string | null;
+  newStateEmployee: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [partOfLeadership, setPartOfLeadership] = useState(false);
   const [dashboardAccess, setDashboardAccess] = useState<string | null>(null);
+  const [newStateEmployee, setNewStateEmployee] = useState(false);
 
   useEffect(() => {
     // Subscribe FIRST to avoid missing the initial event
@@ -66,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMustChangePassword(false);
         setPartOfLeadership(false);
         setDashboardAccess(null);
+        setNewStateEmployee(false);
         setLoading(false);
       }
     });
@@ -125,13 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfileFlag = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("must_change_password, part_of_leadership, dashboard_access")
+      .select("must_change_password, part_of_leadership, dashboard_access, new_state_employee")
       .eq("user_id", userId)
       .maybeSingle();
     if (!error && data) {
       setMustChangePassword(!!data.must_change_password);
       setPartOfLeadership(!!data.part_of_leadership);
       setDashboardAccess(data.dashboard_access ?? null);
+      const nse = !!(data as { new_state_employee?: boolean }).new_state_employee;
+      setNewStateEmployee(nse);
+      // Authoritative: align onboarding path with the profile flag.
+      try {
+        const desired = nse ? "new_state" : "existing_state";
+        if (getOnboardingState().path !== desired) setOnboardingPath(desired);
+      } catch { /* no-op */ }
     }
   };
 
@@ -148,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMustChangePassword(false);
     setPartOfLeadership(false);
     setDashboardAccess(null);
+    setNewStateEmployee(false);
   };
 
   // Start (or restart) onboarding sync whenever the signed-in user changes.
@@ -175,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => ({
     session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword, partOfLeadership, dashboardAccess,
+    newStateEmployee,
     isAdmin: roles.includes("admin"),
     canEdit:
       roles.includes("admin") ||
@@ -192,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles.includes("ops_manager") ||
       ownedLeadStages.has(stage),
     signIn, signOut, updatePassword,
-  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword, partOfLeadership, dashboardAccess]);
+  }), [session, user, loading, roles, permissions, ownedClientStages, ownedLeadStages, mustChangePassword, partOfLeadership, dashboardAccess, newStateEmployee]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
