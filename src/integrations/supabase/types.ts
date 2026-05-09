@@ -686,6 +686,51 @@ export type Database = {
           },
         ]
       }
+      access_requests: {
+        Row: {
+          clinic: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          note: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clinic: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          note?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clinic?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          note?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alert_reads: {
         Row: {
           alert_id: string
@@ -5204,6 +5249,10 @@ export type Database = {
         Returns: boolean
       }
       is_academy_trainee: { Args: { _enrollment_id: string }; Returns: boolean }
+      is_access_request_reviewer: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       log_employee_timeline_event: {
         Args: {
           _description: string
