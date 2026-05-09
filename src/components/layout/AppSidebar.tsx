@@ -503,7 +503,6 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           />
         </div>
         {sections.map((section, i) => {
-          const activeInSection = section.items.some((item) => isItemActive(item.path));
           // Section open state is driven by the user's toggle. Sections without
           // a title (search results, etc.) always render open.
           const sectionOpen = !section.title || openSections.has(section.title);
