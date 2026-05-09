@@ -1,120 +1,167 @@
-## Goal
+# Plan — "Your First 5 Weeks at Blossom"
 
-Transform Blossom Academy into an onboarding-gated, mission-driven experience. New employees must complete a structured onboarding journey (Welcome → Mission/Vision → Core Values → required training → final check) before the rest of the platform unlocks. Nothing existing is removed — we wrap and gate.
+Embed Shira Lasry's onboarding & training structure as the **core onboarding framework** inside Blossom Academy. We extend the existing `OnboardingGate` + `useOnboardingStatus` + `ONBOARDING_STEPS` plumbing — nothing existing is removed, no schema is broken, all gating, certificates, profiles, and admin controls remain intact.
 
 ## Approach (non-destructive)
 
-Reuse the existing `AcademyGate` + `useAcademyComplete` plumbing (already tracks required-module completion via `academy_enrollments` + `academy_progress`). We extend that signal into an app-wide **OnboardingGate** instead of building a parallel system.
+The current onboarding is a 10-step linear journey (Welcome → Mission → Values → Team → How It Works → Required Role → Required Systems → Policies → Final Check → Complete). We **upgrade the model from "steps" to "phases → weeks → modules"** while keeping the existing storage keys backward compatible.
 
-No destructive migrations. We add (additive only):
-- `profiles.onboarding_status` (`not_started | in_progress | completed`, default `not_started`)
-- `profiles.onboarding_completed_at` (timestamp, nullable)
-- `profiles.onboarding_certificate_id` (text, nullable)
-- `onboarding_acknowledgements` table (user_id, key, acknowledged_at) with RLS
-- A trigger that flips `onboarding_status` → `completed` when `useAcademyComplete` criteria are satisfied (mirrored server-side via existing `academy_enrollments.status`)
+- `ONBOARDING_STEPS` stays exported (legacy) so nothing breaks.
+- New `ONBOARDING_PHASES` becomes the canonical structure consumed by the new UI.
+- `useOnboardingStatus` is extended to compute phase/week/module progress from the same `localStorage` state. Completion criteria for cert remains: all required modules done.
+- Conditional logic (new state vs existing state) reads a new `onboardingPath` flag from storage (`new_state | existing_state`, default `existing_state`), settable from Profile + admin.
 
-Admins, HR, exec, ops_manager, training_admin keep their existing bypass.
-
-## New routes & pages
+## Phase / Week structure
 
 ```text
-/welcome                  → WelcomeToBlossom (hero + Start Journey)
-/onboarding               → OnboardingRoadmap (10-step guided journey)
-/onboarding/mission       → MissionVision page
-/onboarding/values        → CoreValues page (4 value cards)
-/onboarding/team          → Meet the Team (reuses existing team data)
-/onboarding/how-it-works  → How Blossom Academy Works
-/onboarding/final-check   → Final Knowledge Check (uses existing quiz infra)
-/onboarding/complete      → Congrats + certificate
-/help                     → Help & Support (already have contact pieces; add a hub)
+Phase 0  Welcome to Blossom            (existing welcome/mission/values/team/how-it-works rolled in)
+Phase 1  Week One — Foundation & Systems
+           - Team Introductions
+           - Leadership: Meet Chad Kaufman
+           - Leadership: Meet Shira Lasry
+           - Shadowing (transition employee + Gary Frank)
+           - Systems: CentralReach
+           - Systems: Monday.com
+           - Systems: Internal Workflows
+           - Systems: CR Backend with Eli Berman
+           - [conditional] New State Track (Shadow Gary 3 days, state setup, market ops)
+           - Week One Outcome
+Phase 2  Week Two — Department Immersion
+           - Intake, Recruiting, Case Management
+           - Scheduling (Daylis), Marketing (Nick), Tracking & Reporting (Corey)
+           - Weekly check-in with Chad, daily check-ins with Shira
+           - Week Two Outcome
+Phase 3  Week Three — Role Application
+           - Path A: New State Operations (laws, credentialing, BCBA recruiting, infra, launch)
+           - Path B: Existing State Operations (intake work, recruiting work, workflow, coordination)
+Phase 4  Weeks Four & Five — Transition to Ownership
+           - Intake / Recruiting ownership, KPIs, performance, accountability, leadership comms
+Phase 5  Graduation
+           - Certificate, completed milestones, unlocked academy
 ```
 
-Existing routes (Training Catalog, Resource Hub, Departments, Growth Pathways, Announcements, etc.) stay as-is but get wrapped.
+## Files
 
-## Gating layer
+### New
+```text
+src/lib/onboarding/journey.ts            canonical PHASES / WEEKS / MODULES + path logic
+src/lib/onboarding/leadership.ts         Chad / Shira / Gary / Daylis / Nick / Corey / Eli profiles
+src/components/onboarding/JourneyTimeline.tsx     vertical timeline of 5 weeks + graduation
+src/components/onboarding/PhaseHeader.tsx         hero header per phase
+src/components/onboarding/WeekCard.tsx            week summary card (progress, outcome)
+src/components/onboarding/ModuleRow.tsx           interactive module/checklist row
+src/components/onboarding/LeaderCard.tsx          leadership intro card (avatar, role, message)
+src/components/onboarding/ShadowingCard.tsx       shadowing tracker (assignee, checklist, notes)
+src/components/onboarding/SystemTrainingCard.tsx  CR/Monday/etc card (video, SOP, Tango links)
+src/components/onboarding/CheckInTracker.tsx      Chad weekly + Shira daily check-ins
+src/components/onboarding/OutcomeCard.tsx         end-of-week milestone card
+src/components/onboarding/PathSwitcher.tsx        new state vs existing state toggle (admin/profile)
+src/pages/onboarding/Journey.tsx                  /onboarding (replaces Roadmap as default)
+src/pages/onboarding/PhaseWelcome.tsx             /onboarding/phase/welcome
+src/pages/onboarding/WeekOne.tsx                  /onboarding/week/1
+src/pages/onboarding/WeekTwo.tsx                  /onboarding/week/2
+src/pages/onboarding/WeekThree.tsx                /onboarding/week/3 (branches by path)
+src/pages/onboarding/WeeksFourFive.tsx            /onboarding/week/4-5
+src/pages/onboarding/Graduation.tsx               /onboarding/graduation (rich version of Complete)
+```
 
-New `src/components/auth/OnboardingGate.tsx`:
-- Reads `useOnboardingStatus()` (extends `useAcademyComplete`)
-- If complete or bypass → render children
-- If not → render `LockedStateCard` (glass card, lock icon, % progress, next step, "Continue Onboarding" button)
+### Edited
+```text
+src/lib/onboarding/steps.ts        keep legacy export, add re-export from journey.ts
+src/lib/onboarding/storage.ts      add onboardingPath + module-level completion (string keys)
+src/hooks/useOnboardingStatus.ts   compute per-phase/week/module progress; unchanged isComplete contract
+src/App.tsx                        add new routes; existing /onboarding/* allow-list still wraps everything
+src/pages/onboarding/Roadmap.tsx   redirect to /onboarding (Journey)
+src/pages/onboarding/Complete.tsx  redirect to /onboarding/graduation
+src/pages/onboarding/OnboardingHome.tsx  use journey progress + next module CTA
+src/pages/Profile.tsx              show current phase, week, path; admin can set path / reset
+src/components/onboarding/LockedStateCard.tsx  show "next module" with phase chip
+```
 
-New `src/hooks/useOnboardingStatus.ts`:
-- Returns `{ status, percent, nextStep, requiredItems, completedItems, bypass, loading }`
-- Source of truth: existing academy enrollment + new acknowledgements table
+## UI design
 
-Wrap in `src/App.tsx`:
-- Allow-list routes (welcome, onboarding/*, required training course pages, profile, help) render normally
-- All other routes get wrapped with `<OnboardingGate>`
+- **Vertical timeline** down the left with phase chips, week dots, and a moving progress indicator.
+- **Phase header**: large gradient hero (`--gradient-brand`), phase number, title, objective, est. time.
+- **Week pages**: stack of `WeekCard` → `ModuleRow`s. Each module shows icon, title, blurb, est minutes, optional leader card / system card / shadowing card / check-in tracker.
+- **Leader cards**: avatar circle (initials), name, role, 1-line message, "Mark meeting complete" button.
+- **System cards**: icon, name, "Watch training", "View SOP", "Tango walkthrough" buttons (placeholder links), completion toggle.
+- **Shadowing card**: assignee name, checklist of observation goals, notes textarea (localStorage), "Mark shadowing complete".
+- **Check-in tracker**: weekly grid for Chad, daily grid for Shira (7 cells), tap to mark done + note.
+- **Outcome card**: green-tinted milestone card with checkmark icon, listed outcomes, "Continue to Week N+1".
+- **Graduation page**: full-screen celebration, existing certificate, list of completed phases/weeks, "Enter Academy".
 
-## Navigation
+All semantic tokens — no hardcoded colors. Mobile-first single column; desktop two-column with sticky timeline.
 
-`src/components/layout/AppSidebar.tsx` + `MobileBottomNav.tsx`:
-- New helper `useNavMode()` returns `"onboarding" | "full"` based on status + bypass
-- Onboarding mode shows: Home, Onboarding, Required Training, Help, Profile
-- Full mode shows existing nav unchanged
-- Locked items in onboarding mode aren't hidden in full sidebar — they show with a small lock chip and route to `/onboarding` (so leadership preview still works)
+## Conditional logic
 
-## Home page behavior
+- `onboardingPath`: `"existing_state" | "new_state"` stored in `localStorage.blossom.onboarding.v1.path`.
+- Week 1 shows the **New State Track** module only when `path === "new_state"`.
+- Week 3 renders **Path A** or **Path B** based on `path`.
+- Profile page shows path with a switcher (admin/HR roles can change anytime; regular employees can change once before starting).
 
-`src/pages/Index.tsx` (or current home): branch on onboarding status.
-- Incomplete → `OnboardingHome` component: Welcome hero, progress card, next required step, required courses list, required acknowledgements, limited resources, help card
-- Complete → existing home unchanged
+## Storage extension (backward compatible)
 
-## New components
+`OnboardingState` adds:
+```ts
+{
+  completed: OnboardingStepId[];           // legacy step ids — kept
+  modules: string[];                       // new: granular module keys e.g. "w1.systems.cr"
+  acknowledgements: string[];
+  notes: Record<string, string>;           // shadowing notes, check-in notes
+  checkins: { chad: string[]; shira: string[] }; // ISO dates
+  path: "existing_state" | "new_state";
+  completedAt?: string;
+  certificateId?: string;
+}
+```
+Reading old state without these fields fills defaults. `markStepComplete` continues to work; new helpers `markModuleComplete(key)`, `setPath(p)`, `addCheckIn(who, date)`, `setNote(key, text)`.
+
+`isComplete` criteria: all required modules across phases 0–4 done → flips `completedAt` + cert id (same trigger as before).
+
+## Routes
 
 ```text
-src/components/onboarding/
-  WelcomeHero.tsx
-  OnboardingProgressCard.tsx
-  OnboardingRoadmap.tsx
-  RoadmapStep.tsx
-  LockedStateCard.tsx
-  MissionCard.tsx
-  VisionCard.tsx
-  ValueCard.tsx
-  CompletionCertificate.tsx
-  CongratsModal.tsx
-src/components/auth/OnboardingGate.tsx
-src/hooks/useOnboardingStatus.ts
-src/lib/onboarding/
-  steps.ts          (canonical 10-step definition)
-  acknowledgements.ts (api: list, ack, has)
-  certificate.ts    (PDF generation reuses existing onboardingChecklistPdf util)
+/onboarding                     Journey (timeline overview, default)
+/onboarding/phase/welcome       Phase 0
+/onboarding/week/1              Week One
+/onboarding/week/2              Week Two
+/onboarding/week/3              Week Three (branches)
+/onboarding/week/4-5            Weeks Four & Five
+/onboarding/graduation          Phase 5
 ```
 
-## Admin controls
+Existing routes (`/onboarding/welcome`, `/onboarding/mission`, etc.) remain working — they're folded into Phase 0 cards and still navigable.
 
-Extend existing `OnboardingCenter.tsx` and `AcademyEditor.tsx`:
-- New "Required for onboarding" toggle on courses + resources (additive column, renders as switch)
-- Per-user onboarding panel: status, %, manually mark complete, reset, "Preview as locked user" toggle (sets a session flag the gate respects)
-- Onboarding paths by role (reuse existing `academy_enrollments.path`)
+## Admin
 
-## Profile
+Profile page (admin/HR): per-user onboarding panel already exists; we add:
+- Path selector (existing/new state)
+- Phase progress bars
+- "Reset onboarding" (already exists)
+- "Preview as locked" (already exists)
 
-`src/pages/Profile.tsx`: add Onboarding section — status badge, progress bar, completion date, certificate download button, completed required courses, missing items.
+Out of scope for this round: per-user assignment from a separate admin page (existing `OnboardingCenter` keeps its current responsibilities; we surface the new structure in a follow-up).
 
-## Technical details
+## Mobile
 
-- All locked-state UI uses semantic tokens (`bg-card`, `text-foreground`, gradient `--gradient-brand`) — no hardcoded colors
-- Certificate uses existing PDF util pattern from `src/lib/hr/onboardingChecklistPdf.ts`
-- Acknowledgements table: `user_id uuid`, `key text`, `acknowledged_at timestamptz default now()`, unique(user_id, key); RLS: users can read/insert their own, admins can read all
-- Bypass roles unchanged: `admin, training_admin, hr, hr_admin, hr_manager, exec, ops_manager`
-- `useOnboardingStatus` is memoized + cached via React Query if available, else simple state
-- No changes to auth flow, Supabase client, or existing course/track data
+- Timeline collapses to horizontal pill scroller at top.
+- Week pages stack to single column.
+- Module rows expand inline (no modals).
+- Sticky "Continue" button at bottom.
 
 ## Out of scope
 
-- Rebuilding any existing page
-- Changing existing course/track schema
-- Removing any nav items in full mode
-- Email/notification triggers on completion (future)
+- Schema migrations (none needed; all client-side).
+- Real video uploads (placeholder players).
+- Per-user admin assignment UI beyond Profile.
+- Email notifications on phase completion.
 
 ## Rollout order
 
-1. Migration: add profile fields + acknowledgements table + RLS
-2. `useOnboardingStatus` hook + `OnboardingGate` component + `LockedStateCard`
-3. Onboarding pages (Welcome, Mission, Vision, Values, Roadmap, Complete)
-4. Wrap routes in `App.tsx` + nav mode switch
-5. Home branch + Profile section
-6. Admin toggles + per-user controls
-7. Certificate generation
+1. `journey.ts` + `leadership.ts` (data model).
+2. Extend `storage.ts` + `useOnboardingStatus.ts`.
+3. Shared components (`PhaseHeader`, `WeekCard`, `ModuleRow`, `LeaderCard`, `ShadowingCard`, `SystemTrainingCard`, `CheckInTracker`, `OutcomeCard`, `JourneyTimeline`, `PathSwitcher`).
+4. Pages (`Journey`, `PhaseWelcome`, `WeekOne`, `WeekTwo`, `WeekThree`, `WeeksFourFive`, `Graduation`).
+5. Wire routes in `App.tsx`; redirect old `Roadmap`/`Complete`.
+6. Update `OnboardingHome`, `LockedStateCard`, `Profile` to surface phase/week + path switcher.
+7. QA on mobile viewport (430×777) and desktop.

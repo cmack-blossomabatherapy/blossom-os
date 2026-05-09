@@ -129,6 +129,13 @@ import OnboardingRequiredSystems from "./pages/onboarding/RequiredSystems";
 import OnboardingPolicies from "./pages/onboarding/Policies";
 import OnboardingFinalCheck from "./pages/onboarding/FinalCheck";
 import OnboardingComplete from "./pages/onboarding/Complete";
+import Journey from "./pages/onboarding/Journey";
+import PhaseWelcome from "./pages/onboarding/PhaseWelcome";
+import WeekOne from "./pages/onboarding/WeekOne";
+import WeekTwo from "./pages/onboarding/WeekTwo";
+import WeekThree from "./pages/onboarding/WeekThree";
+import WeeksFourFive from "./pages/onboarding/WeeksFourFive";
+import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 
 const queryClient = new QueryClient();
@@ -207,7 +214,14 @@ const App = () => (
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
-                  <Route path="/onboarding" element={<OnboardingRoadmap />} />
+                  <Route path="/onboarding" element={<Journey />} />
+                  <Route path="/onboarding/roadmap" element={<OnboardingRoadmap />} />
+                  <Route path="/onboarding/phase/welcome" element={<PhaseWelcome />} />
+                  <Route path="/onboarding/week/1" element={<WeekOne />} />
+                  <Route path="/onboarding/week/2" element={<WeekTwo />} />
+                  <Route path="/onboarding/week/3" element={<WeekThree />} />
+                  <Route path="/onboarding/week/4-5" element={<WeeksFourFive />} />
+                  <Route path="/onboarding/graduation" element={<Graduation />} />
                   <Route path="/onboarding/welcome" element={<OnboardingWelcome />} />
                   <Route path="/onboarding/mission" element={<OnboardingMission />} />
                   <Route path="/onboarding/values" element={<OnboardingValues />} />

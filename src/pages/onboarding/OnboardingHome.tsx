@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Compass, BookOpen, Library, LifeBuoy, Lock, Check } from "lucide-react";
+import { ArrowRight, Sparkles, Compass, BookOpen, Library, LifeBuoy, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
-import { ONBOARDING_STEPS } from "@/lib/onboarding/steps";
-import { cn } from "@/lib/utils";
+import { JourneyTimeline } from "@/components/onboarding/JourneyTimeline";
 
 export default function OnboardingHome() {
   const { user } = useAuth();
-  const { percent, completedCount, totalRequired, nextStep, completedSteps } = useOnboardingStatus();
+  const status = useOnboardingStatus();
+  const { journeyPercent, moduleDoneCount, totalModules, nextPhase, phaseProgress } = status;
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
     user?.email?.split("@")[0]?.split(/[._-]/)[0] ||
@@ -37,15 +37,15 @@ export default function OnboardingHome() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-medium text-primary-foreground/85">
                 <span>Onboarding progress</span>
-                <span>{percent}%</span>
+                <span>{journeyPercent}%</span>
               </div>
-              <Progress value={percent} className="h-2 bg-primary-foreground/20" />
-              <p className="text-[11px] text-primary-foreground/80">{completedCount} of {totalRequired} steps complete</p>
+              <Progress value={journeyPercent} className="h-2 bg-primary-foreground/20" />
+              <p className="text-[11px] text-primary-foreground/80">{moduleDoneCount} of {totalModules} modules complete</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                <Link to={nextStep?.path || "/onboarding"}>
-                  {completedCount === 0 ? "Start Your Blossom Journey" : `Continue: ${nextStep?.title || "Roadmap"}`}
+                <Link to={nextPhase?.path || "/onboarding"}>
+                  {moduleDoneCount === 0 ? "Start Your Blossom Journey" : `Continue: ${nextPhase?.weekLabel || "Journey"}`}
                   <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Link>
               </Button>
@@ -59,34 +59,11 @@ export default function OnboardingHome() {
         <section className="space-y-3 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <Compass className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Your onboarding roadmap</h2>
+            <h2 className="text-sm font-semibold text-foreground">Your first 5 weeks</h2>
           </div>
-          <ul className="space-y-2">
-            {ONBOARDING_STEPS.slice(0, 6).map((s) => {
-              const done = completedSteps.includes(s.id);
-              const isNext = nextStep?.id === s.id;
-              return (
-                <li key={s.id}>
-                  <Link to={s.path} className={cn(
-                    "flex items-center gap-3 rounded-xl border border-border/60 bg-background/60 px-3 py-2.5 text-sm transition-all hover:border-primary/40",
-                    isNext && "border-primary/50 bg-primary/5",
-                  )}>
-                    <span className={cn(
-                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold",
-                      done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                    )}>
-                      {done ? <Check className="h-3.5 w-3.5" /> : ONBOARDING_STEPS.findIndex((x) => x.id === s.id) + 1}
-                    </span>
-                    <span className="flex-1 text-foreground">{s.title}</span>
-                    {isNext && <Badge className="text-[10px]">Next</Badge>}
-                    {done && <Badge variant="secondary" className="text-[10px]">Done</Badge>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <JourneyTimeline phaseProgress={phaseProgress} activeId={nextPhase?.id} />
           <Button asChild variant="outline" size="sm" className="w-full">
-            <Link to="/onboarding">View full roadmap <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+            <Link to="/onboarding">Open full journey <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
           </Button>
         </section>
 
