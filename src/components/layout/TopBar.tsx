@@ -8,7 +8,7 @@ import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/blossom-logo.png";
+import logoWordmark from "@/assets/blossom-logo-wordmark.png";
 
 interface TopBarProps {
   title: string;
@@ -38,9 +38,16 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
         mobileMenuFloating ? "h-0 -translate-y-full border-transparent py-0 opacity-0" : "h-16 translate-y-0 py-0 opacity-100"
       )}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2 md:block md:pr-0">
-        <img src={logo} alt="Blossom ABA Therapy" className="h-8 w-8 shrink-0 rounded-full object-contain md:hidden" />
-        <h1 className="truncate text-[17px] font-semibold leading-tight text-foreground md:text-lg">{title}</h1>
+      <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4 md:pr-0">
+        <img
+          src={logoWordmark}
+          alt="Blossom ABA Therapy"
+          className="h-7 shrink-0 object-contain sm:h-8 md:h-9"
+        />
+        <div className="hidden h-6 w-px bg-border/70 sm:block" />
+        <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
+          {title}
+        </h1>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
