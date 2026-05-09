@@ -64,6 +64,7 @@ import Welcome from "./pages/hr/Welcome";
 import Recognition from "./pages/hr/Recognition";
 import AnnouncementsFeed from "./pages/hr/AnnouncementsFeed";
 import SopIntelligence from "./pages/enterprise/SopIntelligence";
+import CourseStudio from "./pages/enterprise/CourseStudio";
 import TrainingDashboard from "./pages/hr/TrainingDashboard";
 import TrainingStatistics from "./pages/hr/TrainingStatistics";
 import TrainingAssign from "./pages/hr/TrainingAssign";
@@ -254,6 +255,7 @@ const App = () => (
                   <Route path="/hr/recognition" element={<Recognition />} />
                   <Route path="/hr/feed" element={<AnnouncementsFeed />} />
                   <Route path="/enterprise/sop-intelligence" element={<SopIntelligence />} />
+                  <Route path="/enterprise/course-studio" element={<CourseStudio />} />
                   <Route path="/hr/journey" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyHub /></PermissionRoute>} />
                   <Route path="/hr/journey/drive" element={<PermissionRoute allowedRoles={["rbt", "bcba"]}><JourneyDrive /></PermissionRoute>} />
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
