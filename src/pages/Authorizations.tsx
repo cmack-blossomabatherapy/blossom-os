@@ -420,16 +420,27 @@ export default function Authorizations() {
           </div>
         </div>
 
-        <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-          <FilterSelect label="State" value={filters.state} options={options.states} onChange={(value) => setFilters({ ...filters, state: value })} />
-          <FilterSelect label="Client" value="All" options={["All", ...records.slice(0, 8).map((record) => record.clientName)]} onChange={(value) => setQuery(value === "All" ? "" : value)} />
-          <FilterSelect label="Payor" value={filters.payor} options={options.payors} onChange={(value) => setFilters({ ...filters, payor: value })} />
-          <FilterSelect label="Auth Type" value={filters.type} options={["All", "Initial", "Treatment", "Reauth"]} onChange={(value) => setFilters({ ...filters, type: value })} />
-          <FilterSelect label="Auth Status" value={filters.status} options={["All", ...statuses]} onChange={(value) => setFilters({ ...filters, status: value })} />
-          <FilterSelect label="Coordinator" value={filters.coordinator} options={options.coordinators} onChange={(value) => setFilters({ ...filters, coordinator: value })} />
-          <FilterSelect label="QA Status" value={filters.qa} options={["All", "Not Started", "In Review", "Complete", "Blocked", "Ready"]} onChange={(value) => setFilters({ ...filters, qa: value })} />
-          <FilterSelect label="Expiration" value={filters.expiration} options={["All", "<30", "31-60", "61-90"]} onChange={(value) => setFilters({ ...filters, expiration: value })} />
-        </div>
+        <FilterChipsBar
+          filters={filters}
+          onClear={() => setFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
+          onClearKey={(key) => setFilters({ ...filters, [key]: "All" })}
+          onOpen={() => { setDraftFilters(filters); setFilterDrawerOpen(true); }}
+        />
+
+        <AuthFilterDrawer
+          open={filterDrawerOpen}
+          onOpenChange={setFilterDrawerOpen}
+          draft={draftFilters}
+          setDraft={setDraftFilters}
+          options={{
+            states: options.states,
+            payors: options.payors,
+            coordinators: options.coordinators,
+            statuses: ["All", ...statuses],
+          }}
+          onApply={() => { setFilters(draftFilters); setFilterDrawerOpen(false); }}
+          onClear={() => setDraftFilters({ state: "All", payor: "All", type: "All", status: "All", coordinator: "All", qa: "All", expiration: "All", missingDocs: "All" })}
+        />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/20 p-1">
