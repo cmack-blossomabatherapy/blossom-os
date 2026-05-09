@@ -17,16 +17,16 @@ interface KpiStripProps {
 export function KpiStrip({ title, items }: KpiStripProps) {
   return (
     <div className="space-y-2">
-      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <h4 className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:block">{title}</h4>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-4 md:gap-3">
         {items.map((item) => (
           <div
             key={item.label}
-            className="kpi-card flex flex-col gap-1 cursor-pointer group"
+            className="kpi-card group flex cursor-pointer flex-col gap-1 active:scale-[0.99]"
           >
-            <span className="text-[11px] font-medium text-muted-foreground leading-tight">{item.label}</span>
+            <span className="text-xs font-medium leading-tight text-muted-foreground md:text-[11px]">{item.label}</span>
             <div className="flex items-end gap-2">
-              <span className="text-2xl font-bold text-foreground tracking-tight leading-none">{item.value}</span>
+              <span className="text-3xl font-bold leading-none tracking-tight text-foreground md:text-2xl">{item.value}</span>
               {item.trend && (
                 <span className={cn(
                   "flex items-center gap-0.5 text-[11px] font-semibold pb-0.5",
@@ -42,7 +42,7 @@ export function KpiStrip({ title, items }: KpiStripProps) {
               )}
             </div>
             {item.detail && (
-              <span className="text-[10px] text-muted-foreground">{item.detail}</span>
+              <span className="text-[11px] text-muted-foreground md:text-[10px]">{item.detail}</span>
             )}
           </div>
         ))}

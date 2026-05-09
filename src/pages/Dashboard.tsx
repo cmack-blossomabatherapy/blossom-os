@@ -8,6 +8,7 @@ import { ForecastPanel } from "@/components/dashboard/ForecastPanel";
 import { AlertsRisks } from "@/components/dashboard/AlertsRisks";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ReadinessCard } from "@/components/dashboard/ReadinessCard";
+import { CollapsibleSection } from "@/components/dashboard/CollapsibleSection";
 import { BlossomHero } from "@/components/blossom/BlossomHero";
 import { ExecutiveCard } from "@/components/blossom/ExecutiveCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,36 +65,43 @@ export default function Dashboard() {
 
       <ReadinessCard />
 
-      {/* Section 1: KPI Strip */}
-      <div className="space-y-4">
-        <KpiStrip title="Growth" items={growthKpis} />
-        <KpiStrip title="Revenue Drivers" items={revenueKpis} />
-        <KpiStrip title="Speed Metrics" items={speedKpis} />
-      </div>
-
-      {/* Section 2: Today's Action Center */}
-      <ActionCenter />
-
-      {/* Section 3 & 4: Pipeline + Bottlenecks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PipelineFunnel title="Leads Funnel" stages={leadsFunnel} maxCount={34} />
-        <PipelineFunnel title="Client Pipeline" stages={clientsFunnel} maxCount={142} />
-      </div>
-
-      <BottleneckPanel />
-
-      {/* Section 5: Team Performance */}
-      <TeamPerformance />
-
-      {/* Section 6, 7, 8, 9: Insights + Forecast + Alerts + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GrowthInsights />
-        <ForecastPanel />
-        <div className="space-y-6">
-          <AlertsRisks />
-          <QuickActions />
+      <CollapsibleSection title="Growth & KPIs" subtitle="Leads, revenue and speed">
+        <div className="space-y-4">
+          <KpiStrip title="Growth" items={growthKpis} />
+          <KpiStrip title="Revenue Drivers" items={revenueKpis} />
+          <KpiStrip title="Speed Metrics" items={speedKpis} />
         </div>
-      </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Today's action center" subtitle="What needs attention now" defaultOpen>
+        <ActionCenter />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Pipeline funnels" subtitle="Leads & client journeys" defaultOpen={false}>
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+          <PipelineFunnel title="Leads Funnel" stages={leadsFunnel} maxCount={34} />
+          <PipelineFunnel title="Client Pipeline" stages={clientsFunnel} maxCount={142} />
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Bottlenecks" subtitle="Stages that need unblocking" defaultOpen={false}>
+        <BottleneckPanel />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Team performance" subtitle="Coordinator scorecards" defaultOpen={false}>
+        <TeamPerformance />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Insights, forecast & alerts" subtitle="Outlook and risks" defaultOpen={false}>
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
+          <GrowthInsights />
+          <ForecastPanel />
+          <div className="space-y-4 md:space-y-6">
+            <AlertsRisks />
+            <QuickActions />
+          </div>
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }
