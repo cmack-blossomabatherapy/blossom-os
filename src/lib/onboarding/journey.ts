@@ -1,10 +1,21 @@
 import {
   Sparkles, Heart, Compass, Users, GraduationCap, BookOpen, ShieldCheck, ClipboardCheck, Award,
   Building2, UserCheck, Eye, MonitorPlay, Workflow, Database, MapPin, Briefcase, Megaphone,
-  CalendarDays, BarChart3, MessageSquare, Target, Rocket, Trophy, type LucideIcon,
+  CalendarDays, BarChart3, MessageSquare, Target, Rocket, Trophy, FileText, PlayCircle, Wand2,
+  Network, Phone, Building, ListChecks, type LucideIcon,
 } from "lucide-react";
 
 export type OnboardingPath = "existing_state" | "new_state";
+
+export interface ActionItem {
+  id: string;
+  label: string;
+  hint?: string;
+  href?: string;        // internal route or external URL
+  external?: boolean;
+  icon?: LucideIcon;
+  optional?: boolean;
+}
 
 export interface JourneyModule {
   key: string;                  // unique storage key, e.g. "w1.systems.cr"
@@ -26,6 +37,8 @@ export interface JourneyModule {
     goals: string[];
   };
   outcomeBullets?: string[];
+  /** Clickable, enriching to-dos. Completing all required actions can auto-complete the module. */
+  actions?: ActionItem[];
   /** If set, only render when path matches. */
   pathOnly?: OnboardingPath;
 }
