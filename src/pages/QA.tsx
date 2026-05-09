@@ -321,6 +321,7 @@ const qaRecordFromClient = (client: Client, index: number, starterSettings: Star
 
 export default function QA() {
   const navigate = useNavigate();
+  const deepLink = useDeepLink();
   const { clients, updateClient, addTask, appendTimeline, appendAutomation } = useClients();
   const [records, setRecords] = useState<QARecord[]>(() => buildRecords(clients));
   const [mode, setMode] = useState<WorkMode>("queue");
@@ -333,6 +334,20 @@ export default function QA() {
   const [newReviewOpen, setNewReviewOpen] = useState(false);
   const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
   const [starterSettings, setStarterSettings] = useState<StarterQaSettings>({ taskTitle: "Start treatment plan QA review", dueOffsetDays: 1, qaOwner: "QA Team" });
+
+  useEffect(() => {
+    const want = deepLink.focus;
+    if (want) {
+      const match = records.find((r) => r.id === want || r.clientName.toLowerCase().includes(want.toLowerCase()));
+      if (match) { setSelectedId(match.id); setSelectedIds([match.id]); }
+      else toast.message?.(`No QA record matches "${want}"`);
+    }
+    if (deepLink.q) setQuery(deepLink.q);
+    if (deepLink.tab) setPanelTab(deepLink.tab);
+    if (deepLink.alert) toast.message?.("Opened from alert");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useConsumeDeepLink();
 
   const selected = records.find((record) => record.id === selectedId) ?? records[0];
   const bcbas = useMemo(() => Array.from(new Set(records.map((r) => r.bcba))).sort(), [records]);
