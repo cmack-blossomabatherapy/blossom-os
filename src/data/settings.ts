@@ -43,6 +43,7 @@ export const settingsNav: SettingsNavItem[] = [
   // People
   { id: "roles", label: "Roles & Permissions", group: "People", description: "Who can do what" },
   { id: "assignment-rules", label: "Assignment Rules", group: "People", description: "Auto-assign by state, payor, queue" },
+  { id: "onboarding-allowlist", label: "Onboarding Allow-list", group: "People", description: "Routes each role can reach before onboarding completes" },
   // Communication
   { id: "email-templates", label: "Email Templates", group: "Communication", description: "Welcome, form, consent, follow-up" },
   { id: "sms-templates", label: "SMS Templates", group: "Communication", description: "Reminders + confirmations" },
