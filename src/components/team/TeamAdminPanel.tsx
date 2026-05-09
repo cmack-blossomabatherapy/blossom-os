@@ -37,6 +37,7 @@ interface ProfileRow {
   clinic: string | null;
   part_of_leadership: boolean | null;
   dashboard_access: string | null;
+  new_state_employee?: boolean | null;
   active: boolean | null;
 }
 interface RoleRow {
@@ -61,6 +62,7 @@ interface Member {
   clinic: string;
   part_of_leadership: boolean;
   dashboard_access: string;
+  new_state_employee: boolean;
   active: boolean;
 }
 
@@ -154,7 +156,7 @@ export function TeamAdminPanel() {
     const [profilesRes, rolesRes, employeeLinksRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, active"),
+        .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, new_state_employee, active"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("employees").select("id, user_id").not("user_id", "is", null),
     ]);
@@ -182,6 +184,7 @@ export function TeamAdminPanel() {
       clinic: p.clinic ?? "",
       part_of_leadership: !!p.part_of_leadership,
       dashboard_access: p.dashboard_access ?? "department",
+      new_state_employee: !!p.new_state_employee,
       active: p.active ?? true,
     }));
     combined.sort((a, b) => a.display_name.localeCompare(b.display_name));
@@ -276,7 +279,7 @@ export function TeamAdminPanel() {
 
   const saveInfo = async (
     member: Member,
-    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean },
+    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean },
   ) => {
     setSavingId(member.user_id);
     const { error } = await supabase
@@ -291,6 +294,7 @@ export function TeamAdminPanel() {
         clinic: next.clinic.trim() || null,
         part_of_leadership: next.part_of_leadership,
         dashboard_access: next.dashboard_access,
+        new_state_employee: next.new_state_employee,
         active: next.active,
       })
       .eq("user_id", member.user_id);
@@ -311,6 +315,7 @@ export function TeamAdminPanel() {
       clinic: next.clinic.trim(),
       part_of_leadership: next.part_of_leadership,
       dashboard_access: next.dashboard_access,
+      new_state_employee: next.new_state_employee,
       active: next.active,
     });
     toast.success(syncedEmployeeId ? "Saved and HR record linked" : "Saved");
@@ -413,7 +418,7 @@ function MemberRow({
 }: {
   member: Member;
   onToggleRole: (role: AppRole) => void;
-  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; active: boolean }) => Promise<boolean>;
+  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
   onVisited: () => void;
   lastVisitedAt: string | null;
@@ -432,6 +437,7 @@ function MemberRow({
   const [draftClinic, setDraftClinic] = useState(member.clinic);
   const [draftLeadership, setDraftLeadership] = useState(member.part_of_leadership);
   const [draftDashboard, setDraftDashboard] = useState(member.dashboard_access);
+  const [draftNewState, setDraftNewState] = useState(member.new_state_employee);
   const [draftActive, setDraftActive] = useState(member.active);
 
   // Re-sync draft when member changes (e.g. after refresh)
@@ -445,8 +451,9 @@ function MemberRow({
     setDraftClinic(member.clinic);
     setDraftLeadership(member.part_of_leadership);
     setDraftDashboard(member.dashboard_access);
+    setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
-  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.active]);
+  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.new_state_employee, member.active]);
 
   const handleSave = async () => {
     const ok = await onSaveInfo({
@@ -459,6 +466,7 @@ function MemberRow({
       clinic: draftClinic,
       part_of_leadership: draftLeadership,
       dashboard_access: draftDashboard,
+      new_state_employee: draftNewState,
       active: draftActive,
     });
     if (ok) setEditing(false);
@@ -474,6 +482,7 @@ function MemberRow({
     setDraftClinic(member.clinic);
     setDraftLeadership(member.part_of_leadership);
     setDraftDashboard(member.dashboard_access);
+    setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
     setEditing(false);
   };
@@ -664,6 +673,10 @@ function MemberRow({
                   <span><strong>Part of Leadership</strong><br /><span className="text-muted-foreground">Leadership users can access the CEO & Leadership Dashboard.</span></span>
                 </label>
                 <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
+                  <Checkbox checked={draftNewState} onCheckedChange={(checked) => setDraftNewState(checked === true)} />
+                  <span><strong>New State employee</strong><br /><span className="text-muted-foreground">Unlocks the New State track in onboarding (extra Week 1 & Week 3 modules).</span></span>
+                </label>
+                <label className="flex items-center gap-2 rounded-md border border-border/40 bg-card px-3 py-2 text-xs text-foreground">
                   <Checkbox checked={draftActive} onCheckedChange={(checked) => setDraftActive(checked === true)} />
                   <span><strong>Active</strong><br /><span className="text-muted-foreground">Inactive users remain visible for admin review.</span></span>
                 </label>
@@ -689,6 +702,7 @@ function MemberRow({
                 <InfoLine label="Clinic" value={member.clinic || "—"} />
                 <InfoLine label="Part of Leadership" value={member.part_of_leadership ? "Yes" : "No"} />
                 <InfoLine label="Dashboard Access" value={member.dashboard_access || "Department-specific"} />
+                <InfoLine label="New State employee" value={member.new_state_employee ? "Yes" : "No"} />
                 <InfoLine label="Status" value={member.active ? "Active" : "Inactive"} />
                 <div className="sm:col-span-2">
                   <InfoLine
