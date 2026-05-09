@@ -118,6 +118,18 @@ import Profile from "./pages/Profile";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
+import OnboardingRoadmap from "./pages/onboarding/Roadmap";
+import OnboardingWelcome from "./pages/onboarding/Welcome";
+import OnboardingMission from "./pages/onboarding/Mission";
+import OnboardingValues from "./pages/onboarding/Values";
+import OnboardingTeam from "./pages/onboarding/Team";
+import OnboardingHowItWorks from "./pages/onboarding/HowItWorks";
+import OnboardingRequiredRole from "./pages/onboarding/RequiredRole";
+import OnboardingRequiredSystems from "./pages/onboarding/RequiredSystems";
+import OnboardingPolicies from "./pages/onboarding/Policies";
+import OnboardingFinalCheck from "./pages/onboarding/FinalCheck";
+import OnboardingComplete from "./pages/onboarding/Complete";
+import HelpPage from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -194,6 +206,19 @@ const App = () => (
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
+                  {/* Onboarding journey */}
+                  <Route path="/onboarding" element={<OnboardingRoadmap />} />
+                  <Route path="/onboarding/welcome" element={<OnboardingWelcome />} />
+                  <Route path="/onboarding/mission" element={<OnboardingMission />} />
+                  <Route path="/onboarding/values" element={<OnboardingValues />} />
+                  <Route path="/onboarding/team" element={<OnboardingTeam />} />
+                  <Route path="/onboarding/how-it-works" element={<OnboardingHowItWorks />} />
+                  <Route path="/onboarding/required-role" element={<OnboardingRequiredRole />} />
+                  <Route path="/onboarding/required-systems" element={<OnboardingRequiredSystems />} />
+                  <Route path="/onboarding/policies" element={<OnboardingPolicies />} />
+                  <Route path="/onboarding/final-check" element={<OnboardingFinalCheck />} />
+                  <Route path="/onboarding/complete" element={<OnboardingComplete />} />
+                  <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/blossom/academy" element={<OperationsAcademy />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
