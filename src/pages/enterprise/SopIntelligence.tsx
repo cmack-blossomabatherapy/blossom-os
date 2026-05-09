@@ -308,19 +308,58 @@ export default function SopIntelligence() {
             <CardContent>
               <ScrollArea className="h-[420px] pr-3">
                 <div className="space-y-2">
-                  {SOP_SECTIONS.map(s => (
-                    <button
-                      key={s.id}
-                      onClick={() => openLibraryDrawer(s.sopId, s.id)}
-                      className="w-full text-left rounded-lg border border-border/50 bg-background/40 p-3 hover:border-primary/40 transition"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-medium text-sm">{s.sopTitle}</div>
-                        <Badge variant="outline" className="text-[10px]">{s.updated}</Badge>
+                  {loading && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-6 justify-center">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading SOPs…
+                    </div>
+                  )}
+                  {!loading && docs.length === 0 && (
+                    <div className="text-center text-xs text-muted-foreground py-8">
+                      No SOPs yet. Click <span className="text-foreground">Add SOP</span> to index your first document.
+                    </div>
+                  )}
+                  {docs.map(d => {
+                    const ownSecs = SOP_SECTIONS.filter(s => s.sopId === d.id);
+                    return (
+                      <div key={d.id} className="rounded-lg border border-border/50 bg-background/40 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => ownSecs[0] && openLibraryDrawer(d.id, ownSecs[0].id)}
+                            className="flex-1 text-left min-w-0"
+                          >
+                            <div className="font-medium text-sm truncate">{d.title}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {ownSecs.length} section{ownSecs.length === 1 ? "" : "s"} · {d.owner ?? "—"} · Updated {relativeTime(d.updated_at)}
+                            </div>
+                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditDoc(d)} aria-label="Edit SOP">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDeleteDoc(d)} aria-label="Delete SOP">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        {ownSecs.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {ownSecs.slice(0, 6).map(s => (
+                              <button
+                                key={s.id}
+                                onClick={() => openLibraryDrawer(d.id, s.id)}
+                                className="text-[10px] rounded-full border border-border/60 bg-background/60 px-2 py-0.5 hover:border-primary/60"
+                              >
+                                § {s.section}
+                              </button>
+                            ))}
+                            {ownSecs.length > 6 && (
+                              <span className="text-[10px] text-muted-foreground self-center">+{ownSecs.length - 6} more</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">§ {s.section} · {s.owner}</div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </CardContent>
@@ -333,7 +372,10 @@ export default function SopIntelligence() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {sopChanges.map(c => (
+              {recentChanges.length === 0 && (
+                <div className="text-xs text-muted-foreground">No changes yet.</div>
+              )}
+              {recentChanges.map(c => (
                 <div key={c.id} className="rounded-lg border border-border/50 bg-background/40 p-3">
                   <div className="text-sm font-medium">{c.sopTitle}</div>
                   <div className="text-[11px] text-muted-foreground">{c.changedAt} · {c.changedBy}</div>
@@ -390,26 +432,11 @@ export default function SopIntelligence() {
                     {highlight(r.snippet, r.matched)}
                   </button>
 
-                  {r.trainings.length > 0 && (
-                    <div className="rounded-lg bg-background/40 border border-border/40 p-3">
-                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
-                        <GraduationCap className="h-3 w-3" /> Recommended training
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {r.trainings.map(t => (
-                          <Button
-                            key={t.id}
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1.5"
-                            onClick={() => navigate("/training")}
-                          >
-                            <Zap className="h-3 w-3 text-primary" />
-                            {t.title}
-                            <span className="text-[10px] text-muted-foreground ml-1">{t.minutes}m</span>
-                          </Button>
-                        ))}
-                      </div>
+                  {r.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {r.tags.slice(0, 8).map(t => (
+                        <Badge key={t} variant="outline" className="text-[10px]">#{t}</Badge>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -421,28 +448,23 @@ export default function SopIntelligence() {
             <Card className="border-border/50 bg-card/60 backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <GraduationCap className="h-4 w-4 text-primary" /> Recommended trainings
+                  <Zap className="h-4 w-4 text-primary" /> Top matched tags
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {recommendedTrainings.length === 0 && (
-                  <div className="text-xs text-muted-foreground">No training recommendations yet.</div>
-                )}
-                {recommendedTrainings.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => navigate("/training")}
-                    className="w-full text-left rounded-lg border border-border/50 bg-background/40 p-3 hover:border-primary/40 transition"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-medium">{t.title}</div>
-                      <Badge variant="outline" className="text-[10px]">{t.minutes}m</Badge>
+                {(() => {
+                  const counts = new Map<string, number>();
+                  results.slice(0, 8).forEach(r => r.tags.forEach(t => counts.set(t, (counts.get(t) ?? 0) + 1)));
+                  const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                  if (top.length === 0) return <div className="text-xs text-muted-foreground">No tags matched.</div>;
+                  return (
+                    <div className="flex flex-wrap gap-1.5">
+                      {top.map(([t, n]) => (
+                        <Badge key={t} variant="outline" className="text-[10px]">#{t} <span className="ml-1 text-muted-foreground">{n}</span></Badge>
+                      ))}
                     </div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      Cited by {t.from.join(", ")}
-                    </div>
-                  </button>
-                ))}
+                  );
+                })()}
               </CardContent>
             </Card>
 
