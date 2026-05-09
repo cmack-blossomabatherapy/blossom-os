@@ -349,13 +349,42 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     icon: Trophy,
     path: "/onboarding/week/4-5",
     modules: [
-      { key: "w45.intake", title: "Intake ownership", blurb: "Take ownership of intake outcomes.", icon: Briefcase, estMinutes: 240, kind: "content" },
-      { key: "w45.recruit", title: "Recruiting ownership", blurb: "Drive the recruiting engine.", icon: Users, estMinutes: 240, kind: "content" },
-      { key: "w45.coord", title: "Team coordination", blurb: "Lead cross-functional execution.", icon: MessageSquare, estMinutes: 120, kind: "content" },
-      { key: "w45.kpi", title: "KPI tracking", blurb: "Own your scorecard.", icon: BarChart3, estMinutes: 60, kind: "content" },
-      { key: "w45.perf", title: "Performance management", blurb: "Coach toward outcomes.", icon: Target, estMinutes: 60, kind: "content" },
-      { key: "w45.acc", title: "Operational accountability", blurb: "How we hold the line on quality.", icon: ShieldCheck, estMinutes: 45, kind: "content" },
-      { key: "w45.comm", title: "Leadership communication", blurb: "Brief up, align across, develop down.", icon: MessageSquare, estMinutes: 45, kind: "content" },
+      { key: "w45.intake", title: "Intake ownership", blurb: "Take ownership of intake outcomes.", icon: Briefcase, estMinutes: 240, kind: "content",
+        actions: [
+          { id: "leads", label: "Open the Leads page", icon: Briefcase, href: "/leads" },
+          { id: "dashboard", label: "Open the Intake dashboard", icon: BarChart3, href: "/intake-dashboard" },
+          { id: "own", label: "Own intake conversion for 1 week", icon: Target },
+        ] },
+      { key: "w45.recruit", title: "Recruiting ownership", blurb: "Drive the recruiting engine.", icon: Users, estMinutes: 240, kind: "content",
+        actions: [
+          { id: "open", label: "Open the Recruiting page", icon: Users, href: "/recruiting" },
+          { id: "dashboard", label: "Open the Recruiting dashboard", icon: BarChart3, href: "/recruiting-dashboard" },
+        ] },
+      { key: "w45.coord", title: "Team coordination", blurb: "Lead cross-functional execution.", icon: MessageSquare, estMinutes: 120, kind: "content",
+        actions: [
+          { id: "team", label: "Open the Team page", icon: Users, href: "/team" },
+          { id: "lead", label: "Lead a cross-team standup this week", icon: MessageSquare },
+        ] },
+      { key: "w45.kpi", title: "KPI tracking", blurb: "Own your scorecard.", icon: BarChart3, estMinutes: 60, kind: "content",
+        actions: [
+          { id: "scorecards", label: "Open the Scorecards page", icon: BarChart3, href: "/intelligence/scorecards", optional: true },
+          { id: "own", label: "Pick the 3 KPIs you'll own", icon: Target },
+        ] },
+      { key: "w45.perf", title: "Performance management", blurb: "Coach toward outcomes.", icon: Target, estMinutes: 60, kind: "content",
+        actions: [
+          { id: "reviews", label: "Open the Reviews page", icon: ClipboardCheck, href: "/hr/reviews", optional: true },
+          { id: "1on1", label: "Schedule 1:1s with each direct report", icon: CalendarDays },
+        ] },
+      { key: "w45.acc", title: "Operational accountability", blurb: "How we hold the line on quality.", icon: ShieldCheck, estMinutes: 45, kind: "content",
+        actions: [
+          { id: "qa", label: "Open the QA page", icon: ShieldCheck, href: "/qa" },
+          { id: "rule", label: "Adopt one quality rule for your team", icon: Target },
+        ] },
+      { key: "w45.comm", title: "Leadership communication", blurb: "Brief up, align across, develop down.", icon: MessageSquare, estMinutes: 45, kind: "content",
+        actions: [
+          { id: "announce", label: "Open the Announcements feed", icon: Megaphone, href: "/announcements" },
+          { id: "weekly", label: "Send a weekly written update to leadership", icon: FileText },
+        ] },
     ],
     outcome: {
       title: "Ownership Milestone",
