@@ -5,6 +5,7 @@ import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 import { PushedAlertsCenter } from "@/components/notifications/PushedAlertsCenter";
 import { useNavigate } from "react-router-dom";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
+import { ResumeOnboardingButton } from "@/components/onboarding/ResumeOnboardingButton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
         <PushedAlertsCenter />
         <NotificationBell />
         <AlertsPanel />
+        <ResumeOnboardingButton variant="topbar" className="ml-1" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
