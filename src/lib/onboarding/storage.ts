@@ -1,25 +1,43 @@
 import { ONBOARDING_STEPS, type OnboardingStepId } from "./steps";
+import { requiredModuleKeys, type OnboardingPath } from "./journey";
 
 const STORAGE_KEY = "blossom.onboarding.v1";
 const PREVIEW_KEY = "blossom.onboarding.previewLocked";
 
 export interface OnboardingState {
   completed: OnboardingStepId[];
+  modules: string[];
+  notes: Record<string, string>;
+  checkins: { chad: string[]; shira: string[] };
+  path: OnboardingPath;
   acknowledgements: string[];
   completedAt?: string;
   certificateId?: string;
 }
 
 function read(): OnboardingState {
-  if (typeof window === "undefined") return { completed: [], acknowledgements: [] };
+  if (typeof window === "undefined") return defaults();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { completed: [], acknowledgements: [] };
+    if (!raw) return defaults();
     const parsed = JSON.parse(raw) as OnboardingState;
-    return { completed: parsed.completed || [], acknowledgements: parsed.acknowledgements || [], completedAt: parsed.completedAt, certificateId: parsed.certificateId };
+    return {
+      completed: parsed.completed || [],
+      modules: parsed.modules || [],
+      notes: parsed.notes || {},
+      checkins: { chad: parsed.checkins?.chad || [], shira: parsed.checkins?.shira || [] },
+      path: parsed.path === "new_state" ? "new_state" : "existing_state",
+      acknowledgements: parsed.acknowledgements || [],
+      completedAt: parsed.completedAt,
+      certificateId: parsed.certificateId,
+    };
   } catch {
-    return { completed: [], acknowledgements: [] };
+    return defaults();
   }
+}
+
+function defaults(): OnboardingState {
+  return { completed: [], modules: [], notes: {}, checkins: { chad: [], shira: [] }, path: "existing_state", acknowledgements: [] };
 }
 
 function write(state: OnboardingState) {
@@ -30,6 +48,15 @@ function write(state: OnboardingState) {
 
 export function getOnboardingState(): OnboardingState {
   return read();
+}
+
+function maybeMarkAllComplete(s: OnboardingState) {
+  const required = requiredModuleKeys(s.path);
+  const allDone = required.length > 0 && required.every((k) => s.modules.includes(k));
+  if (allDone && !s.completedAt) {
+    s.completedAt = new Date().toISOString();
+    s.certificateId = `BL-${Date.now().toString(36).toUpperCase()}`;
+  }
 }
 
 export function markStepComplete(id: OnboardingStepId) {
@@ -51,6 +78,47 @@ export function unmarkStep(id: OnboardingStepId) {
   s.completed = s.completed.filter((x) => x !== id);
   s.completedAt = undefined;
   s.certificateId = undefined;
+  write(s);
+}
+
+export function markModuleComplete(key: string) {
+  const s = read();
+  if (!s.modules.includes(key)) s.modules = [...s.modules, key];
+  maybeMarkAllComplete(s);
+  write(s);
+}
+
+export function unmarkModule(key: string) {
+  const s = read();
+  s.modules = s.modules.filter((k) => k !== key);
+  s.completedAt = undefined;
+  s.certificateId = undefined;
+  write(s);
+}
+
+export function setOnboardingPath(p: OnboardingPath) {
+  const s = read();
+  s.path = p;
+  // Recompute completion in case path change unlocks more required items
+  s.completedAt = undefined;
+  s.certificateId = undefined;
+  maybeMarkAllComplete(s);
+  write(s);
+}
+
+export function setNote(key: string, text: string) {
+  const s = read();
+  s.notes = { ...s.notes, [key]: text };
+  write(s);
+}
+
+export function toggleCheckIn(who: "chad" | "shira", date: string) {
+  const s = read();
+  const arr = s.checkins[who];
+  s.checkins = {
+    ...s.checkins,
+    [who]: arr.includes(date) ? arr.filter((d) => d !== date) : [...arr, date],
+  };
   write(s);
 }
 
