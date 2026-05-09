@@ -56,6 +56,7 @@ function scoreSections(
   query: string,
   sections: SopSection[],
   feedback: SopFeedbackRow[],
+  filtersNorm: string = "",
 ): ScoredSection[] {
   const q = tokenize(query);
   if (q.length === 0) return [];
@@ -69,7 +70,7 @@ function scoreSections(
     const titleHits = q.filter(t => sec.sopTitle.toLowerCase().includes(t) || sec.section.toLowerCase().includes(t)).length;
     const tagHits = q.filter(t => sec.tags.some(tag => tag.includes(t))).length;
     score = score * 0.6 + (titleHits / q.length) * 0.25 + (tagHits / q.length) * 0.15;
-    const boost = boostFor(feedback, sec.id, queryNorm);
+    const boost = boostFor(feedback, sec.id, queryNorm, filtersNorm);
     if (boost.hide) return null;
     score *= boost.multiplier;
     // snippet: sentence containing first matched term
