@@ -126,6 +126,7 @@ const navSections: NavSection[] = [
       { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "hr.training.assign", allowedRoles: TRAINING_ADMIN_ROLES },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "", superAdminOnly: true },
       { label: "Reports", icon: BarChart3, path: "/reports", perm: "reports.view" },
+      { label: "Assistant Analytics", icon: Bot, path: "/intelligence/assistant", perm: "", allowedRoles: ANALYTICS_ROLES },
       { label: "Automations", icon: Zap, path: "/automations", perm: "automations.view" },
       { label: "Settings", icon: Settings, path: "/settings", perm: "settings.view" },
     ],
