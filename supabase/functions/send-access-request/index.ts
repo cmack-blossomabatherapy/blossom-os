@@ -1,3 +1,5 @@
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -66,6 +68,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Persist the request so admins can review it from the approval workflow.
+    let requestId: string | null = null;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (SUPABASE_URL && SERVICE_ROLE) {
+      try {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+          auth: { persistSession: false },
+        });
+        const { data: inserted, error: insertErr } = await admin
+          .from("access_requests")
+          .insert({ name, email, role, clinic, note: note || null })
+          .select("id")
+          .single();
+        if (insertErr) {
+          console.error("access_requests insert error", insertErr);
+        } else {
+          requestId = inserted?.id ?? null;
+        }
+      } catch (e) {
+        console.error("access_requests insert threw", e);
+      }
+    }
+
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background:#ffffff; padding:24px; color:#0f172a;">
         <div style="max-width:560px; margin:0 auto; border:1px solid #e5e7eb; border-radius:16px; overflow:hidden;">
@@ -115,7 +141,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, id: data?.id ?? null }), {
+    return new Response(JSON.stringify({ ok: true, id: data?.id ?? null, requestId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
