@@ -116,6 +116,7 @@ import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
 import AdminHub from "./pages/AdminHub";
+import AccessRequests from "./pages/admin/AccessRequests";
 
 const queryClient = new QueryClient();
 
@@ -189,6 +190,7 @@ const App = () => (
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/admin" element={<AdminHub />} />
+                  <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/blossom/academy" element={<OperationsAcademy />} />
