@@ -72,7 +72,6 @@ export function AppLayout() {
       </div>
       <ForcePasswordChange />
       <AssistantWidget />
-      <MobileAlertsButton />
       <MobileBottomNav />
     </div>
   );
