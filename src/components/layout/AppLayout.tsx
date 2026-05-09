@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 import { AssistantWidget } from "@/components/assistant/AssistantWidget";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { MobileAlertsButton } from "@/components/mobile/MobileAlertsSheet";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -66,6 +67,7 @@ export function AppLayout() {
       </div>
       <ForcePasswordChange />
       <AssistantWidget />
+      <MobileAlertsButton />
       <MobileBottomNav />
     </div>
   );
