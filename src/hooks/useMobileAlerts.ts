@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSlaRules, severityForSync, type SlaRule } from "@/lib/alerts/sla";
 
 export type AlertCategory = "task" | "approval" | "overdue";
 export type AlertSeverity = "info" | "warning" | "critical";
@@ -60,6 +61,7 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
     flagsRes,
     authsRes,
     reauthRes,
+    slaRules,
   ] = await Promise.all([
     supabase
       .from("client_tasks")
@@ -87,31 +89,40 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
       .limit(20),
     supabase
       .from("client_authorizations")
-      .select("id, kind, status, expiration_date, payor, client_id, next_action, updated_at, clients:client_id(child_name)")
+      .select("id, kind, status, expiration_date, payor, state, client_id, next_action, updated_at, clients:client_id(child_name)")
       .in("status", ["Expiring Soon", "Denied"])
       .order("expiration_date", { ascending: true, nullsFirst: false })
       .limit(20),
     supabase
       .from("client_reauth_cycles")
-      .select("id, status, current_auth_expiration_date, alerts, blockers, payor, client_id, updated_at, clients:client_id(child_name)")
+      .select("id, status, current_auth_expiration_date, alerts, blockers, payor, client_id, updated_at, clients:client_id(child_name, state)")
       .in("status", ["Failed / Delayed", "BCBA Notified"])
       .lte("current_auth_expiration_date", next7)
       .order("current_auth_expiration_date", { ascending: true })
       .limit(20),
+    getSlaRules(),
   ]);
 
   const out: MobileAlert[] = [];
+  const rules = slaRules as SlaRule[];
+  const dueIsoToTimestamp = (d: string | null | undefined) =>
+    d ? new Date(d + "T23:59:59").toISOString() : null;
 
   // ---- Client tasks: split into task vs overdue ----
   for (const t of clientTasksRes.data ?? []) {
     const childName = (t as any).clients?.child_name as string | undefined;
-    const overdue = isOverdue(t.due_date);
-    const sev: AlertSeverity = overdue
-      ? (daysOverdue(t.due_date!) >= 2 ? "critical" : "warning")
-      : "info";
+    const resolved = severityForSync(
+      rules,
+      "task_overdue",
+      dueIsoToTimestamp(t.due_date),
+      null, null,
+      { severity: "info", category: "task" },
+    );
+    const sev = resolved.severity;
+    const cat = sev === "info" ? "task" : (resolved.category as AlertCategory);
     out.push({
       id: `ct-${t.id}`,
-      category: overdue ? "overdue" : "task",
+      category: cat,
       severity: sev,
       title: t.title,
       body: childName ? `Client: ${childName}` : "Client task",
@@ -124,13 +135,18 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
 
   // ---- Intake tasks ----
   for (const t of intakeTasksRes.data ?? []) {
-    const overdue = isOverdue(t.due_date);
-    const sev: AlertSeverity = overdue
-      ? (daysOverdue(t.due_date!) >= 2 ? "critical" : "warning")
-      : (t.status === "Blocked" ? "warning" : "info");
+    const resolved = severityForSync(
+      rules,
+      "intake_task_overdue",
+      dueIsoToTimestamp(t.due_date),
+      null, null,
+      { severity: t.status === "Blocked" ? "warning" : "info", category: "task" },
+    );
+    const sev = resolved.severity === "info" && t.status === "Blocked" ? "warning" : resolved.severity;
+    const cat = sev === "info" ? "task" : (resolved.category as AlertCategory);
     out.push({
       id: `it-${t.id}`,
-      category: overdue ? "overdue" : "task",
+      category: cat,
       severity: sev,
       title: t.title,
       body: t.owner ? `Owner: ${t.owner}` : "Intake task",
@@ -143,10 +159,17 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
 
   // ---- Payroll runs awaiting release/approval ----
   for (const r of payrollRes.data ?? []) {
+    const resolved = severityForSync(
+      rules,
+      "payroll_pending",
+      r.submitted_at ?? r.created_at,
+      null, null,
+      { severity: r.status === "submitted" ? "warning" : "info", category: "approval" },
+    );
     out.push({
       id: `pr-${r.id}`,
-      category: "approval",
-      severity: r.status === "submitted" ? "warning" : "info",
+      category: (resolved.category as AlertCategory) ?? "approval",
+      severity: resolved.severity,
       title: `Payroll — ${r.name}`,
       body: `${r.employee_count} staff · $${Number(r.total_gross || 0).toLocaleString()} · ${r.status === "submitted" ? "submitted, awaiting post" : "ready for release"}`,
       source: "Payroll",
@@ -159,9 +182,18 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
   // ---- Compliance flags = approvals/overdue depending on severity ----
   for (const f of flagsRes.data ?? []) {
     const child = (f as any).clients?.child_name as string | undefined;
-    const sev: AlertSeverity =
+    const fallbackSev: AlertSeverity =
       f.severity === "Red" ? "critical" : f.severity === "Yellow" ? "warning" : "info";
-    const cat: AlertCategory = isOverdue(f.due_date) ? "overdue" : "approval";
+    const resolved = severityForSync(
+      rules,
+      "compliance_flag",
+      dueIsoToTimestamp(f.due_date) ?? (f.created_at as string),
+      null, null,
+      { severity: fallbackSev, category: "compliance" },
+    );
+    // Red flags always critical regardless of clock.
+    const sev: AlertSeverity = f.severity === "Red" ? "critical" : resolved.severity;
+    const cat = (resolved.category as AlertCategory) ?? "compliance";
     out.push({
       id: `cf-${f.id}`,
       category: cat,
@@ -179,14 +211,24 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
   for (const a of authsRes.data ?? []) {
     const child = (a as any).clients?.child_name as string | undefined;
     const denied = a.status === "Denied";
-    const overdue = denied || isOverdue(a.expiration_date);
-    const sev: AlertSeverity = denied || overdue ? "critical" : "warning";
+    const payor = (a as any).payor as string | null;
+    const stateCode = (a as any).state as string | null;
+    const alertType = denied ? "authorization_denied" : "authorization_expiring";
+    const resolved = severityForSync(
+      rules,
+      alertType,
+      dueIsoToTimestamp(a.expiration_date),
+      payor, stateCode,
+      { severity: "warning", category: "overdue" },
+    );
+    const sev = denied ? "critical" : resolved.severity;
+    const cat = (resolved.category as AlertCategory) ?? "overdue";
     out.push({
       id: `au-${a.id}`,
-      category: "overdue",
+      category: cat,
       severity: sev,
       title: denied ? "Authorization denied" : `${a.kind} auth expiring`,
-      body: [child && `Client: ${child}`, a.payor, a.next_action].filter(Boolean).join(" · "),
+      body: [child && `Client: ${child}`, payor, a.next_action].filter(Boolean).join(" · "),
       source: "Authorizations",
       href: a.client_id ? `/authorizations-dashboard?focus=${a.client_id}&tab=submission&alert=au-${a.id}` : undefined,
       dueLabel: a.expiration_date ? dueLabelFor(a.expiration_date) : undefined,
@@ -196,16 +238,27 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
 
   // ---- Reauth cycles failed/at-risk ----
   for (const r of reauthRes.data ?? []) {
-    const child = (r as any).clients?.child_name as string | undefined;
+    const clientRef = (r as any).clients as { child_name?: string; state?: string } | undefined;
+    const child = clientRef?.child_name;
+    const stateCode = clientRef?.state ?? null;
+    const payor = (r as any).payor as string | null;
     const failed = r.status === "Failed / Delayed";
-    const sev: AlertSeverity = failed ? "critical" : "warning";
+    const resolved = severityForSync(
+      rules,
+      "reauth_at_risk",
+      dueIsoToTimestamp(r.current_auth_expiration_date as string),
+      payor, stateCode,
+      { severity: "warning", category: "overdue" },
+    );
+    const sev: AlertSeverity = failed ? "critical" : resolved.severity;
+    const cat = (resolved.category as AlertCategory) ?? "overdue";
     const detail = (r.alerts && r.alerts[0]) || (r.blockers && r.blockers[0]) || "Reauth window open";
     out.push({
       id: `rc-${r.id}`,
-      category: "overdue",
+      category: cat,
       severity: sev,
       title: failed ? "Reauth at risk" : "Reauth window open",
-      body: [child && `Client: ${child}`, r.payor, detail].filter(Boolean).join(" · "),
+      body: [child && `Client: ${child}`, payor, detail].filter(Boolean).join(" · "),
       source: "Reauth",
       href: r.client_id ? `/reauth-loop?focus=${r.client_id}&cycle=${r.id}&alert=rc-${r.id}` : "/reauth-loop",
       dueLabel: dueLabelFor(r.current_auth_expiration_date as string),
