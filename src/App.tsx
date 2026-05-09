@@ -172,6 +172,7 @@ const App = () => (
           <LeadsProvider>
             <ClientsProvider>
               <PushNavigationListener />
+              <IOSInstallHint />
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
