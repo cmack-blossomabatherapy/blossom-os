@@ -278,14 +278,24 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   }
 
   const baseSections = allSections
-    .map((s) => ({
-      ...s,
-        items: s.items.filter((item) =>
-          (!item.superAdminOnly || isAdmin) &&
-          (!item.perm || hasPerm(item.perm)) &&
-          (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never))),
-        ),
-    }))
+    .map((s) => {
+      const isEnterprise = s.title === "Enterprise";
+      return {
+        ...s,
+        items: s.items
+          .map((item) => {
+            const accessible =
+              (!item.superAdminOnly || isAdmin) &&
+              (!item.perm || hasPerm(item.perm)) &&
+              (!item.allowedRoles || item.allowedRoles.some((r) => roles.includes(r as never)));
+            if (isEnterprise) {
+              return { ...item, disabled: !accessible };
+            }
+            return accessible ? item : null;
+          })
+          .filter(Boolean) as NavItem[],
+      };
+    })
     .filter((s) => s.items.length > 0);
 
   const filterSectionsByQuery = (q: string) => {
