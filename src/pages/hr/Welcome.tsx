@@ -11,9 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LeadershipVideoDialog, type LeadershipVideo } from "@/components/hr/LeadershipVideoDialog";
 import { buildRoadmap, pickVariant, variantLabel } from "@/lib/hr/onboardingRoadmap";
+import { downloadOnboardingChecklistPdf } from "@/lib/hr/onboardingChecklistPdf";
 import {
   Sparkles, PlayCircle, ShieldCheck, Calendar, ArrowRight,
-  CheckCircle2, Quote, Compass, GraduationCap, MapPin, Briefcase,
+  CheckCircle2, Quote, Compass, GraduationCap, MapPin, Briefcase, Download,
 } from "lucide-react";
 
 const leadershipVideos: Array<LeadershipVideo & { duration: string; accent: string }> = [
@@ -399,6 +400,25 @@ export default function Welcome() {
                 {[profileCtx.clinic, profileCtx.state].filter(Boolean).join(" · ")}
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => {
+                downloadOnboardingChecklistPdf({
+                  hireName: firstName,
+                  variantLabel: variantLabel(variant),
+                  clinic: profileCtx.clinic,
+                  state: profileCtx.state,
+                  roadmap,
+                  completedItems,
+                });
+                toast.success("Checklist downloaded");
+              }}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download PDF
+            </Button>
           </div>
         </div>
         <Card className="overflow-hidden border-border/60 p-4 md:p-6">
