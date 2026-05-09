@@ -3582,6 +3582,39 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_audit_log: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          source: string
+          target_key: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          source?: string
+          target_key?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          source?: string
+          target_key?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_milestone_progress: {
         Row: {
           completed: boolean
