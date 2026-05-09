@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { acknowledge, hasAcknowledged } from "@/lib/onboarding/storage";
+import { acknowledge, hasAcknowledged, unacknowledge } from "@/lib/onboarding/storage";
 
 interface Stage {
   id: string;
@@ -57,16 +57,15 @@ export function ShadowingCard({ moduleKey, assignee, stages, goals, notes, done,
   const percent = totalSteps === 0 ? 0 : Math.round((completedSteps / totalSteps) * 100);
 
   const toggleGoal = (i: number) => {
-    // Toggle: if already checked, do nothing (acks are append-only). Provide an "uncheck" via ack key inversion.
     const key = goalKey(moduleKey, i);
-    if (hasAcknowledged(key)) return; // forward-only by design — guides honest completion
-    acknowledge(key);
+    if (hasAcknowledged(key)) unacknowledge(key);
+    else acknowledge(key);
     onChange?.();
   };
   const toggleStage = (sid: string) => {
     const key = stageKey(moduleKey, sid);
-    if (hasAcknowledged(key)) return;
-    acknowledge(key);
+    if (hasAcknowledged(key)) unacknowledge(key);
+    else acknowledge(key);
     onChange?.();
   };
 
@@ -135,11 +134,11 @@ export function ShadowingCard({ moduleKey, assignee, stages, goals, notes, done,
                       <Button
                         size="sm"
                         variant={isDone ? "secondary" : "default"}
-                        disabled={isDone || locked || !(notes[noteId] || "").trim()}
+                        disabled={locked || (!isDone && !(notes[noteId] || "").trim())}
                         onClick={() => toggleStage(s.id)}
                         className="gap-1.5"
                       >
-                        {isDone ? <><Check className="h-3.5 w-3.5" /> Stage complete</> : locked ? <><Lock className="h-3.5 w-3.5" /> Locked</> : <>Mark stage complete <ArrowRight className="h-3.5 w-3.5" /></>}
+                        {isDone ? <><Check className="h-3.5 w-3.5" /> Stage complete · uncheck</> : locked ? <><Lock className="h-3.5 w-3.5" /> Locked</> : <>Mark stage complete <ArrowRight className="h-3.5 w-3.5" /></>}
                       </Button>
                     </div>
                   </div>
@@ -161,7 +160,6 @@ export function ShadowingCard({ moduleKey, assignee, stages, goals, notes, done,
                 <button
                   type="button"
                   onClick={() => toggleGoal(i)}
-                  disabled={checked}
                   className={cn(
                     "group flex w-full items-start gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-xs transition-all",
                     checked ? "text-foreground" : "text-muted-foreground hover:border-border/60 hover:bg-muted/40",
