@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDeepLink, useConsumeDeepLink, useDeepLinkHighlight } from "@/lib/deepLink";
 import { statusVariant, priorityVariant, getInlineAlert, pipelineStages, LeadStatus } from "@/data/leads";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,32 @@ export default function LeadDetail() {
   const navigate = useNavigate();
   const { getLead, updateLead, moveStage, assignOwner, deleteLeads } = useLeads();
   const lead = id ? getLead(id) : undefined;
+
+  // Deep-link: open a tab and highlight a task if requested via the URL.
+  const deepLink = useDeepLink();
+  useConsumeDeepLink();
+  const validTabs = ["timeline","communications","tasks","forms","insurance","documents","automation"] as const;
+  type LeadTabKey = typeof validTabs[number];
+  const focusToTab: Record<string, LeadTabKey> = {
+    tasks: "tasks", task: "tasks",
+    communications: "communications", forms: "forms",
+    insurance: "insurance", documents: "documents", automation: "automation",
+    timeline: "timeline",
+  };
+  let initialTab: LeadTabKey = "timeline";
+  if (deepLink.tab && (validTabs as readonly string[]).includes(deepLink.tab)) {
+    initialTab = deepLink.tab as LeadTabKey;
+  } else if (deepLink.focus && focusToTab[deepLink.focus.toLowerCase()]) {
+    initialTab = focusToTab[deepLink.focus.toLowerCase()];
+  } else if (deepLink.task) {
+    initialTab = "tasks";
+  }
+  const [activeTab, setActiveTab] = useState<LeadTabKey>(initialTab);
+  useDeepLinkHighlight(deepLink.task ? `task-${deepLink.task}` : null, !!lead);
+  useEffect(() => {
+    if (lead && deepLink.alert) toast.message?.("Opened from alert");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -238,7 +266,7 @@ export default function LeadDetail() {
             </div>
           </div>
 
-          <Tabs defaultValue="timeline">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LeadTabKey)}>
             <TabsList className="bg-muted/50 flex-wrap h-auto">
               <TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger>
               <TabsTrigger value="communications" className="text-xs">Communications ({lead.communications.length})</TabsTrigger>
@@ -336,6 +364,7 @@ export default function LeadDetail() {
                     {lead.tasks.map((task) => (
                       <div
                         key={task.id}
+                        data-deeplink-id={`task-${task.id}`}
                         onClick={() => updateLead(lead.id, { tasks: lead.tasks.map((t) => t.id === task.id ? { ...t, completed: !t.completed } : t) })}
                         className="px-5 py-3 flex items-start gap-3 hover:bg-muted/20 cursor-pointer"
                       >
