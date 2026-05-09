@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 
 /* ---------- Types ---------- */
 
@@ -73,6 +75,8 @@ const SAMPLE_SOURCES: Source[] = [
 /* ---------- Page ---------- */
 
 export default function CourseStudio() {
+  const { roles } = useAuth();
+  const canAuthor = roles.some((r) => COURSE_AUTHOR_ROLES.includes(r));
   // Brief
   const [courseTitle, setCourseTitle] = useState("");
   const [competency, setCompetency] = useState("");
@@ -111,6 +115,7 @@ export default function CourseStudio() {
   const removeSource = (id: string) => setSources(prev => prev.filter(s => s.id !== id));
 
   const generate = async () => {
+    if (!canAuthor) { toast.error("You don't have permission to generate courses"); return; }
     if (sources.length === 0) { toast.error("Add at least one source"); return; }
     setLoading(true);
     try {
@@ -134,6 +139,7 @@ export default function CourseStudio() {
   };
 
   const regenerate = async (moduleId: string, field: "module" | "quiz" | "voiceover" | "objectives", instructions = "") => {
+    if (!canAuthor) { toast.error("You don't have permission to regenerate course content"); return; }
     if (!course) return;
     setRegenId(`${moduleId}:${field}`);
     try {
