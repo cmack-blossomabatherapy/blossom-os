@@ -10,9 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LeadershipVideoDialog, type LeadershipVideo } from "@/components/hr/LeadershipVideoDialog";
+import { buildRoadmap, pickVariant, variantLabel } from "@/lib/hr/onboardingRoadmap";
 import {
-  Sparkles, PlayCircle, Heart, Compass, Users, GraduationCap,
-  ClipboardCheck, ShieldCheck, Calendar, ArrowRight, CheckCircle2, Quote,
+  Sparkles, PlayCircle, ShieldCheck, Calendar, ArrowRight,
+  CheckCircle2, Quote, Compass, GraduationCap, MapPin, Briefcase,
 } from "lucide-react";
 
 const leadershipVideos: Array<LeadershipVideo & { duration: string; accent: string }> = [
@@ -45,39 +46,6 @@ const leadershipVideos: Array<LeadershipVideo & { duration: string; accent: stri
   },
 ];
 
-const roadmap = [
-  {
-    phase: "Day 1",
-    label: "Land softly",
-    icon: Heart,
-    items: ["Sign offer paperwork", "Watch CEO welcome", "Set up your profile"],
-  },
-  {
-    phase: "Week 1",
-    label: "Get oriented",
-    icon: Compass,
-    items: ["Operations Academy intro", "Meet your manager", "Tour your clinic"],
-  },
-  {
-    phase: "Week 2",
-    label: "Learn the craft",
-    icon: GraduationCap,
-    items: ["Core compliance trainings", "Shadow a session", "First check-in"],
-  },
-  {
-    phase: "Week 3",
-    label: "Step in",
-    icon: ClipboardCheck,
-    items: ["Complete role certifications", "Run first task independently"],
-  },
-  {
-    phase: "Week 4",
-    label: "Belong",
-    icon: Users,
-    items: ["30-day review", "Set 90-day goals", "Join a working group"],
-  },
-];
-
 const quickActions = [
   { label: "Open Operations Academy", to: "/blossom/academy", icon: Compass },
   { label: "Start your trainings", to: "/training", icon: GraduationCap },
@@ -87,13 +55,40 @@ const quickActions = [
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [activeVideo, setActiveVideo] = useState<LeadershipVideo | null>(null);
   const [videoProgress, setVideoProgress] = useState<Record<string, { position: number; duration: number; completed: boolean }>>({});
+  const [profileCtx, setProfileCtx] = useState<{ clinic: string | null; state: string | null; job_title: string | null }>({ clinic: null, state: null, job_title: null });
 
   const itemKey = (phase: string, item: string) => `${phase}::${item}`;
+
+  // Load profile context (clinic, state) for personalising the roadmap
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("clinic, state, job_title")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setProfileCtx({
+        clinic: data?.clinic ?? null,
+        state: data?.state ?? null,
+        job_title: data?.job_title ?? null,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const variant = useMemo(() => pickVariant(roles), [roles]);
+  const roadmap = useMemo(
+    () => buildRoadmap(variant, { clinic: profileCtx.clinic, state: profileCtx.state }),
+    [variant, profileCtx.clinic, profileCtx.state],
+  );
 
   // Load saved progress + subscribe to realtime updates for cross-session sync
   useEffect(() => {
@@ -283,7 +278,7 @@ export default function Welcome() {
       }
     });
     return statuses;
-  }, [completedItems]);
+  }, [completedItems, roadmap]);
 
   const totalItems = roadmap.reduce((sum, r) => sum + r.items.length, 0);
   const completedCount = roadmap.reduce(
@@ -387,9 +382,24 @@ export default function Welcome() {
 
       {/* Onboarding roadmap */}
       <section className="space-y-3">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Your first 30 days</h2>
-          <p className="text-sm text-muted-foreground">A clear path from your first day to feeling at home.</p>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Your first 30 days</h2>
+            <p className="text-sm text-muted-foreground">
+              Tailored for your role{profileCtx.clinic || profileCtx.state ? " and location" : ""}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              <Briefcase className="mr-1 h-3 w-3" /> {variantLabel(variant)}
+            </Badge>
+            {(profileCtx.clinic || profileCtx.state) && (
+              <Badge variant="secondary" className="bg-muted text-foreground">
+                <MapPin className="mr-1 h-3 w-3" />
+                {[profileCtx.clinic, profileCtx.state].filter(Boolean).join(" · ")}
+              </Badge>
+            )}
+          </div>
         </div>
         <Card className="overflow-hidden border-border/60 p-4 md:p-6">
           <ol className="relative space-y-5 md:space-y-6">
