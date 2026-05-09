@@ -63,6 +63,19 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // Filter recipients by per-category preferences (missing row = enabled)
+    const { data: prefs } = await admin
+      .from("push_notification_preferences")
+      .select("user_id, enabled")
+      .eq("category", alert.category)
+      .in("user_id", recipientIds);
+    const optedOut = new Set((prefs ?? []).filter((p: any) => p.enabled === false).map((p: any) => p.user_id));
+    recipientIds = recipientIds.filter((id) => !optedOut.has(id));
+    if (recipientIds.length === 0) {
+      await admin.from("critical_alerts").update({ pushed_at: new Date().toISOString(), push_last_error: "All recipients opted out of category" }).eq("id", alert.id);
+      continue;
+    }
+
     const { data: subs } = await admin
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth, user_id")
