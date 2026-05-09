@@ -7,6 +7,7 @@ import {
   enforceRememberPolicyOnBoot,
   touchSessionMarker,
 } from "@/lib/rememberSession";
+import { startOnboardingSync, stopOnboardingSync } from "@/lib/onboarding/sync";
 
 interface AuthContextValue {
   session: Session | null;
@@ -140,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    stopOnboardingSync();
     await supabase.auth.signOut();
     clearRememberPreference();
     setRoles([]);
