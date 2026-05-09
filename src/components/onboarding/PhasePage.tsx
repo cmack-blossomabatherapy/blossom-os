@@ -13,13 +13,14 @@ import { SystemTrainingCard } from "./SystemTrainingCard";
 import { ShadowingCard } from "./ShadowingCard";
 import { CheckInTracker } from "./CheckInTracker";
 import { OutcomeCard } from "./OutcomeCard";
+import { ActionChecklist } from "./ActionChecklist";
 
 interface Props { phaseId: JourneyPhase["id"]; }
 
 export function PhasePage({ phaseId }: Props) {
   const status = useOnboardingStatus();
-  // Bump to force re-read of acknowledgement-backed shadowing state.
-  const [, setTick] = useState(0);
+  // Bump to force re-read of acknowledgement-backed shadowing & checklist state.
+  const [tick, setTick] = useState(0);
   const refresh = () => setTick((t) => t + 1);
   const phase = useMemo(() => ONBOARDING_PHASES.find((p) => p.id === phaseId)!, [phaseId]);
   const mods = modulesForPath(phase, status.path);
@@ -122,6 +123,14 @@ export function PhasePage({ phaseId }: Props) {
                     cadence={m.key.includes("chad") ? "weekly" : "daily"}
                     cells={m.key.includes("chad") ? 4 : 7}
                     done={(m.key.includes("chad") ? status.checkins.chad : status.checkins.shira)}
+                  />
+                )}
+                {m.actions && m.actions.length > 0 && (
+                  <ActionChecklist
+                    moduleKey={m.key}
+                    actions={m.actions}
+                    refreshTick={tick}
+                    onAllComplete={() => { if (!done) onComplete(); refresh(); }}
                   />
                 )}
                 {(m.kind === "content" || m.kind === "department" || m.kind === "outcome") && !done && (
