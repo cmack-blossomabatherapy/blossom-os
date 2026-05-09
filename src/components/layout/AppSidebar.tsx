@@ -317,8 +317,21 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
   const submitNavSearch = (q: string, isMobile: boolean) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || !q.trim()) return;
-    const target = `/training?q=${encodeURIComponent(q.trim())}`;
-    navigate(target);
+    // Jump to the first matching nav item (skipping locked/disabled entries).
+    const pool = isMobile ? mobileSections : sections;
+    const firstHit = pool.flatMap((s) => s.items).find((i) => !i.disabled);
+    if (firstHit) {
+      navigate(firstHit.path);
+      if (isMobile) {
+        onMobileOpenChange?.(false);
+        setMobileNavQuery("");
+      } else {
+        setNavQuery("");
+      }
+      return;
+    }
+    // No menu match → fall back to the trainings search page.
+    navigate(`/training?q=${encodeURIComponent(q.trim())}`);
     if (isMobile) onMobileOpenChange?.(false);
   };
 
@@ -498,7 +511,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
             onKeyDown={submitNavSearch(navQuery, false)}
-            placeholder="Search…"
+            placeholder="Search menu — Enter to jump"
             className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-9 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
           />
         </div>
