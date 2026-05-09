@@ -45,7 +45,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
           className="h-7 shrink-0 object-contain sm:h-8 md:h-9"
         />
         <div className="hidden h-6 w-px bg-border/70 sm:block" />
-        <h1 className="truncate font-serif text-[17px] font-medium tracking-tight text-foreground sm:text-lg md:text-[19px]">
+        <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
           {title}
         </h1>
       </div>
