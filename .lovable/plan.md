@@ -1,117 +1,159 @@
-# Phase 1 — Blossom OS Foundation
+# Phase 4 — Blossom OS Intelligence Layer
 
-This plan reorganizes the existing Command Center into a polished, executive-ready internal operating system. **No existing routes, auth, HR training admin, or Supabase logic is removed** — we add a new top-level "Blossom OS" navigation layer over the current app and upgrade specific pages.
+Transform the Command Center into an executive intelligence and analytics platform. **All Phase 1/2/3 work, routes, auth, HR Training Admin, Resource Hub, Operations Academy, integrations, automations, and Supabase wiring stay intact.** No destructive migrations.
 
-## Scope (Phase 1 only)
+## Scope (Phase 4)
 
-In: visual redesign of dashboard hero, new/upgraded top-level pages, navigation reorganization, mock data scaffolding, role-aware UI placeholders.
-Out: AI course creator, deep integrations, new Supabase tables, destructive migrations, backend enforcement of new permissions.
+In: New `/intelligence/*` section with executive dashboards, workforce/training/compliance/onboarding analytics, state & department deep-dives, KPI scorecards, predictive risk widgets, custom report builder. Mock data with shapes ready for Phase 5 live wiring.
 
-## Navigation Structure
+Out: Real BI engine, ML risk models, live Supabase metric materialization, PDF generation backends.
 
-Reorganize `AppSidebar` into a clean "Blossom OS" group at the top, with existing CRM/HR groups preserved underneath:
+## New Top-Level Section: "Intelligence" Sidebar Group
+
+Add a new sidebar group between **Operations** and **Operate**:
 
 ```
-BLOSSOM OS
-  Dashboard              /            (rebranded)
-  Operations Academy     /academy     (new)
-  Blossom Training       /training    (upgrade existing TrainingHub)
-  Resource Hub           /resources   (upgrade existing)
-  Departments            /departments (new)
-  Locations              /locations   (new, links existing /clinics)
-  Users                  /users       (new, wraps existing /team)
-  Reports                /reports     (upgrade existing)
-  Admin Settings         /settings    (existing, add new panels)
-
-PIPELINE / OPERATIONS / RECORDS / HR  (all existing routes preserved)
+INTELLIGENCE
+  Executive Command Center  /intelligence
+  Workforce Intelligence    /intelligence/workforce
+  Training Intelligence     /intelligence/training
+  Compliance Intelligence   /intelligence/compliance
+  Onboarding Intelligence   /intelligence/onboarding
+  Department Analytics      /intelligence/departments
+  State Dashboards          /intelligence/states
+  KPI Scorecards            /intelligence/scorecards
+  Risk & Insights           /intelligence/risk
+  Report Builder            /intelligence/reports
 ```
 
-## Pages to Create or Upgrade
+## Pages to Create
 
-### 1. Dashboard (`/`) — branded hero
-- New `BlossomHero` component: brand image area, title "Blossom ABA Command Center", subtitle, 4 quick-action buttons (Continue Training, Resource Hub, Operations Academy, Admin Settings).
-- Replaces top of `Dashboard.tsx`. Existing KPI strips and panels stay below.
-- Adds executive cards row: My Assigned Trainings, In Progress, Completed, Certifications, Overdue, Department Resources, Latest Updates, Quick Links.
-- Admin-only second row: Total Users, Active Trainings, Completion Rate, Overdue Trainings, Certificates Issued, Departments, Locations, Recent Activity (gated via `hasPerm('admin.*')`).
+### 1. Executive Command Center (`/intelligence`)
+- Hero: org name + Operational Health Score (0–100 ring) + Workforce Readiness Score + last-updated timestamp.
+- 12 polished KPI cards with trend arrows, sparklines, comparison vs previous period: Active Employees, In Training, Compliance %, Overdue Trainings, New Hires, Completion Rate, Dept Readiness, Avg Onboarding Time, Open Tasks, Competencies Earned, Certs Expiring, Automation Success.
+- "Active Alerts" feed (e.g., "Georgia compliance dropped 6%", "12 overdue onboardings").
+- Operational bottlenecks panel.
+- State comparison strip (5 states with mini-bars).
+- Integration health + Automation health mini-cards.
 
-### 2. Operations Academy (`/academy`) — new
-- Hero, description, grid of 9 track cards (Intake, Authorizations, Staffing, QA, Scheduling, State Director, Clinic Operations, Leadership, Systems).
-- Each card: name, description, course count, est. time, role tags, completion %, "View Track".
-- Track detail route `/academy/:trackId`: Overview, Curriculum modules, Required courses, Optional resources, Competencies, Certificate area, admin Edit button.
+### 2. Workforce Intelligence (`/intelligence/workforce`)
+- Department readiness heatmap (departments × competency areas).
+- Employee readiness score distribution chart.
+- Skill gap & competency gap bars per department.
+- Engagement score table (low/medium/high).
+- Workforce distribution by state and location (donut + bars).
+- Filter bar: department, state, role, manager.
 
-### 3. Blossom Training (`/training`) — upgrade
-- Keep existing TrainingHub; add search, filters (department, role, location, required/optional, status), course-card grid with required/optional/completion badges, enroll button.
-- Sample categories listed in spec. Existing Training Admin links preserved.
+### 3. Training Intelligence (`/intelligence/training`)
+- Training funnel (Assigned → Started → 50% → Completed → Quiz Passed).
+- Completion rate trend line.
+- Top engaged courses + top dropoff courses.
+- Difficulty matrix (avg time vs quiz pass rate).
+- High vs low performers split.
 
-### 4. Resource Hub (`/resources`) — upgrade
-- Search bar, category filters, Featured / Recently Added sections, department resource sections.
-- Resource cards: title, type, department, last updated, owner, view + open/download.
+### 4. Compliance Intelligence (`/intelligence/compliance`)
+- Org compliance gauge + state compliance bars.
+- Expiring certifications timeline (next 30/60/90 days).
+- Missing requirements grouped by employee.
+- At-risk employees panel.
+- Compliance trend (last 6 months).
+- Audit-readiness checklist + Export CSV/PDF buttons.
 
-### 5. Departments (`/departments`) — new
-- Grid of 16 department cards. Detail page `/departments/:id`: overview, owner, team members, related trainings/SOPs/resources, KPIs placeholder, meetings, systems used, helpful links.
+### 5. Onboarding Intelligence (`/intelligence/onboarding`)
+- Onboarding flow visualization: Hired → Enrolled → In Progress → Completed → Verified → Operational (horizontal stages with counts).
+- Avg time to completion KPI.
+- Stuck onboarding callouts.
+- Department onboarding leaderboard.
+- New-hire grid with progress rings.
 
-### 6. Locations (`/locations`) — new
-- Cards for states (GA, NC, TN, VA, MD) and clinics (Peachtree Corners, Riverdale). Detail page: address, location-specific trainings/resources/contacts, login links, compliance requirements.
+### 6. Department Analytics (`/intelligence/departments`) + detail
+- Card grid for all 16 departments with mini-readiness ring, completion %, open tasks, alerts count.
+- Detail `/intelligence/departments/:id`: completion %, competency breakdown, compliance score, readiness ring, open tasks, alerts, training engagement, activity feed.
 
-### 7. Users (`/users`) — new wrapper
-- Reuses existing Team data; adds LMS fields in profile drawer (assigned tracks, courses, certifications, competencies, credits, training status). Admin actions: assign track/course, view certs/competencies, export placeholder.
+### 7. State & Location Dashboards (`/intelligence/states`) + detail
+- 5 state cards (GA, NC, TN, VA, MD) + 2 clinic cards (Peachtree, Riverdale) with employee count, onboarding %, compliance %, training %, alerts.
+- Detail `/intelligence/states/:id`: full state breakdown, departments active in state, expiring certs in state.
 
-### 8. Reports (`/reports`) — upgrade
-- Cards for: Training completion by dept/location, Overdue trainings, Certifications issued, Competency completion, Course activity, Enrollment, User progress. Each with Export CSV / Email / Print buttons (placeholders).
+### 8. KPI Scorecards (`/intelligence/scorecards`) — EOS / Bloom Growth style
+- Tabs: Weekly / Monthly / Department / Leadership.
+- Scorecard rows: KPI name, owner, target, current, trend, status (red/yellow/green).
+- Examples per spec (weekly hires onboarded, compliance %, onboarding speed, training %, task %, QA training, leadership accountability).
 
-### 9. Admin Settings (`/settings`) — extend
-- Add new nav sections: Branding, Course Categories, Track Categories, Certificate Templates, Competency Library, Notification Settings, Report Settings. Existing panels (states, clinics, roles, etc.) preserved.
+### 9. Risk & Insights (`/intelligence/risk`)
+- Smart-insight cards: Users likely to fall behind, Departments with declining completion, Compliance risk alerts, Low-engagement users, Overdue onboarding risk, High-workload managers, Training bottlenecks.
+- Each card: title, severity pill, description, affected count, action button.
 
-### 10. HR Training Admin
-- Untouched functionally. Add a header note/breadcrumb visually connecting it under "Blossom Training → Admin".
+### 10. Report Builder (`/intelligence/reports`)
+- Left rail: pick metrics (multi-select chips).
+- Top filters: date range, state, department, role.
+- Right preview: live mock chart/table preview.
+- Save Template / Export CSV / Export PDF / Email Report buttons.
+- Report templates list: Onboarding, Compliance, Department Training, Competency, Certification, Operational Readiness.
 
-## Design System
+## Shared Intelligence Components
 
-- Reuse existing `GlassPageShell`, `GlassHero`, semantic tokens. No hardcoded colors.
-- New `BlossomHero` for the dashboard with brand image (generated, calm clinical illustration) + gradient wash.
-- Consistent card pattern: `rounded-2xl`, soft shadow, hover lift.
-- Mobile-first responsive (recent audit conventions preserved).
+New under `src/components/intelligence/`:
+- `KpiCard` — value, trend arrow, sparkline (SVG), comparison delta, click handler
+- `ScoreRing` — animated SVG progress ring (used for readiness/health scores)
+- `Heatmap` — CSS-grid heatmap with intensity tones
+- `TrendLine` — lightweight SVG line chart (no external deps)
+- `Sparkline` — inline mini line/bar
+- `FunnelChart` — vertical funnel with conversion %
+- `AlertFeedItem` — alert row with severity pill
+- `ScorecardRow` — KPI scorecard table row with traffic-light status
+- `InsightCard` — predictive insight card
+- `FilterBar` — shared filter chips (dept/state/role/date)
 
-## Data Model (mock, frontend-only)
+All components use semantic tokens, are pure CSS/SVG (no chart library install), and follow the existing GlassPageShell + Card patterns.
 
-New file `src/data/blossomOS.ts` with typed mock arrays:
-- `tracks`, `courses`, `curriculums`, `resources`, `departments`, `locations`, `certificates`, `competencies`, `enrollments`, `activityLog`.
+## Data Layer
 
-No Supabase migrations in Phase 1. Existing tables (`academy_*`, `hr_*`) remain the source of truth where already wired; new pages use mock until Phase 2.
+New file `src/data/blossomIntelligence.ts` exports typed mocks:
+- `executiveKpis`, `operationalHealthScore`, `workforceReadinessScore`
+- `departmentReadiness[]`, `competencyGaps[]`, `engagementScores[]`
+- `trainingFunnel`, `completionTrend`, `coursePerformance[]`
+- `complianceByState[]`, `expiringCertifications[]`, `complianceTrend`, `atRiskEmployees[]`
+- `onboardingStages`, `onboardingByDept[]`, `newHireProgress[]`
+- `stateMetrics[]`, `clinicMetrics[]`
+- `weeklyScorecard[]`, `monthlyScorecard[]`, `departmentScorecard[]`, `leadershipScorecard[]`
+- `riskInsights[]`, `executiveAlerts[]`
+- `reportTemplates[]`
+
+Shapes mirror eventual Supabase tables (analytics, kpi_snapshots, readiness_scores, risk_alerts, reporting_templates, department_metrics, state_metrics) so Phase 5 wiring is mechanical.
+
+## Filtering Architecture
+
+Shared `IntelligenceFilters` context (department, state, role, manager, date range) at the section level. Each page subscribes and reflects filter state in URL params.
+
+## Sidebar Update
+
+Insert "Intelligence" group in `AppSidebar.tsx`. Icons from lucide already in scope: `BarChart3`, `Activity`, `GraduationCap`, `ShieldCheck`, `Compass`, `Building2`, `MapPin`, `Trophy`, `AlertTriangle`, `FileBarChart`.
+
+## What This Doesn't Touch
+
+- Existing `/dashboard`, `/leadership-dashboard`, `/reports`, role-specific dashboards — preserved as-is.
+- HR Training Admin, Academy Editor — preserved.
+- Phase 3 Operations pages — preserved.
+- Supabase schema — no migrations in Phase 4.
+- CRM modules — preserved.
 
 ## Role-Based Access
 
-- Use existing `useAuth().hasPerm`. Admin-only sections wrapped in conditional render with a small "Admin" chip.
-- Non-admin users see a filtered view (assigned trainings, general catalog, resources). UI placeholders only — backend enforcement deferred.
+- Intelligence section visible to all authenticated users.
+- Admin-only controls: Report Builder save/email/template management, scorecard editing.
+- Non-admins see read-only view.
+- Backend enforcement deferred (UI-level gating via `useAuth().isAdmin`).
 
-## Files Touched
+## Acceptance
 
-**New**
-- `src/components/dashboard/BlossomHero.tsx`
-- `src/components/blossom/ExecutiveCard.tsx`
-- `src/components/blossom/TrackCard.tsx`, `CourseCard.tsx`, `ResourceCard.tsx`, `DepartmentCard.tsx`, `LocationCard.tsx`
-- `src/data/blossomOS.ts`
-- `src/pages/academy/OperationsAcademy.tsx` + `TrackDetail.tsx`
-- `src/pages/Departments.tsx` + `DepartmentDetail.tsx`
-- `src/pages/Locations.tsx` + `LocationDetail.tsx`
-- `src/pages/Users.tsx`
-- `src/assets/blossom-hero.jpg` (generated)
+- New "Intelligence" sidebar group renders.
+- All 10 pages render with rich mock data, polished components, smooth filtering.
+- No external chart libs installed (SVG/CSS only) to keep bundle lean.
+- TypeScript builds cleanly.
+- No existing route or page regresses.
 
-**Edited**
-- `src/App.tsx` — register new routes
-- `src/components/layout/AppSidebar.tsx` — add Blossom OS group at top
-- `src/pages/Dashboard.tsx` — prepend hero + executive cards
-- `src/pages/TrainingHub.tsx` — search + filters + cards
-- `src/pages/hr/ResourceHub.tsx` — knowledge-base layout
-- `src/pages/Reports.tsx` — new report cards + actions
-- `src/data/settings.ts` + `src/pages/Settings.tsx` — new admin sections (stub panels)
+## Files (Estimate)
 
-## Out of Scope (deferred to later phases)
-- AI course creator
-- New Supabase tables / RLS for Blossom OS data model
-- Real CSV export, email, print
-- Backend role enforcement for new sections
-- Removing or merging existing CRM modules
+**New** (~20): `src/data/blossomIntelligence.ts`, ~10 pages under `src/pages/intelligence/`, ~9 components under `src/components/intelligence/`.
 
-## Estimated Result
-A cohesive, branded internal OS where leadership immediately sees the command center, training organization, centralized resources, department hubs, user tracking, and a reports foundation — all without touching working CRM/HR code.
+**Edited** (~2): `src/App.tsx` (routes), `src/components/layout/AppSidebar.tsx` (group).
