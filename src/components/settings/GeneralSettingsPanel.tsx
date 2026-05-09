@@ -1,5 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { SettingsPanel } from "./SettingsPanel";
 
 export function GeneralSettingsPanel() {
@@ -39,6 +42,32 @@ export function GeneralSettingsPanel() {
         <Toggle label="Require 2FA for admin accounts" defaultChecked />
         <Toggle label="Auto-archive completed tasks after 30 days" defaultChecked />
         <Toggle label="Show system tips in detail panels" defaultChecked={false} />
+      </div>
+
+      <div className="mt-6 pt-5 border-t border-border/40 space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Layout</h3>
+        <div className="flex items-center justify-between bg-secondary/30 border border-border/40 rounded-lg px-3 py-2.5 gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground">Reset sidebar layout</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Restore navigation sections to their default open/collapsed state.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs shrink-0"
+            onClick={() => {
+              try {
+                localStorage.removeItem("sidebar-open-sections");
+              } catch { /* ignore */ }
+              window.dispatchEvent(new Event("sidebar:reset-layout"));
+              toast.success("Sidebar layout reset to defaults");
+            }}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
+          </Button>
+        </div>
       </div>
     </SettingsPanel>
   );
