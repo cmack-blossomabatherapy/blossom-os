@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckSquare } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { TaskControlBar, type TaskViewMode } from "@/components/tasks/TaskControlBar";
@@ -9,12 +9,28 @@ import { TaskWorkflowView } from "@/components/tasks/TaskWorkflowView";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { mockTasks, filterTasksByView, findTask, type TaskSavedView } from "@/data/tasks";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useDeepLink, useConsumeDeepLink } from "@/lib/deepLink";
+import { toast } from "sonner";
 
 export default function Tasks() {
+  const deepLink = useDeepLink();
   const [viewMode, setViewMode] = useState<TaskViewMode>("queue");
   const [activeView, setActiveView] = useState<string>("my-tasks");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(mockTasks[0]?.id ?? null);
+  const initialId = (() => {
+    const want = deepLink.task ?? deepLink.focus;
+    if (want && findTask(want)) return want;
+    return mockTasks[0]?.id ?? null;
+  })();
+  const [selectedId, setSelectedId] = useState<string | null>(initialId);
+
+  useEffect(() => {
+    if (deepLink.q) setSearchQuery(deepLink.q);
+    if (deepLink.tab) setActiveView(deepLink.tab);
+    if (deepLink.alert) toast.message?.("Opened from alert");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useConsumeDeepLink();
 
   const filteredTasks = useMemo(() => {
     let list = filterTasksByView(mockTasks, activeView as TaskSavedView);
