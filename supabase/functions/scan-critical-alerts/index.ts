@@ -68,6 +68,17 @@ Deno.serve(async (req) => {
       .select("id, endpoint, p256dh, auth, user_id")
       .in("user_id", recipientIds);
 
+    // Idempotency: skip (alert_id, user_id, endpoint) tuples already delivered successfully
+    const { data: prior } = await admin
+      .from("push_deliveries")
+      .select("user_id, endpoint")
+      .eq("alert_id", alert.id)
+      .eq("status", "sent");
+    const alreadySent = new Set((prior ?? []).map((d: any) => `${d.user_id}::${d.endpoint}`));
+    const targetSubs = ((subs ?? []) as SubRow[]).filter(
+      (s) => !alreadySent.has(`${s.user_id}::${s.endpoint}`),
+    );
+
     const payload = JSON.stringify({
       title: alert.title,
       body: alert.message ?? "",
@@ -78,22 +89,53 @@ Deno.serve(async (req) => {
 
     let lastError: string | null = null;
     let anySuccess = false;
+    const attemptNumber = (alert.push_attempts ?? 0) + 1;
+    const deliveryRows: Array<Record<string, unknown>> = [];
 
-    for (const sub of (subs ?? []) as SubRow[]) {
+    for (const sub of targetSubs) {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload,
         );
         anySuccess = true;
+        deliveryRows.push({
+          alert_id: alert.id,
+          user_id: sub.user_id,
+          endpoint: sub.endpoint,
+          status: "sent",
+          attempt: attemptNumber,
+        });
       } catch (err: any) {
         const status = err?.statusCode;
+        const errMsg = `${status ?? ""} ${err?.body ?? err?.message ?? ""}`.trim();
         if (status === 404 || status === 410) {
           expiredEndpoints.push(sub.endpoint);
+          deliveryRows.push({
+            alert_id: alert.id,
+            user_id: sub.user_id,
+            endpoint: sub.endpoint,
+            status: "expired",
+            attempt: attemptNumber,
+            error: errMsg,
+          });
         } else {
-          lastError = `${status ?? ""} ${err?.body ?? err?.message ?? ""}`.trim();
+          lastError = errMsg;
+          deliveryRows.push({
+            alert_id: alert.id,
+            user_id: sub.user_id,
+            endpoint: sub.endpoint,
+            status: "failed",
+            attempt: attemptNumber,
+            error: errMsg,
+          });
         }
       }
+    }
+
+    if (deliveryRows.length) {
+      // onConflict on the partial unique index: ignore duplicate 'sent' rows
+      await admin.from("push_deliveries").insert(deliveryRows);
     }
 
     if (anySuccess || (subs?.length ?? 0) === 0) {
