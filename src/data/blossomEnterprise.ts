@@ -2,6 +2,22 @@
 
 export type Severity = "low" | "medium" | "high" | "critical";
 export type Trend = "up" | "down" | "flat";
+export type TrendDir = Trend;
+
+export interface SopChange {
+  id: string;
+  sopTitle: string;
+  changedAt: string;
+  changedBy: string;
+  summary: string;
+}
+
+export const sopChanges: SopChange[] = [
+  { id: "sc1", sopTitle: "Authorization renewal", changedAt: "Mar 18, 2026", changedBy: "Devorah Klein", summary: "Updated UHC and Aetna pre-auth submission paths and added 97155 modifier guidance." },
+  { id: "sc2", sopTitle: "Session note thoroughness", changedAt: "Apr 02, 2026", changedBy: "Rochel Levy", summary: "Clarified required behavior tracking fields and example phrasing for new RBTs." },
+  { id: "sc3", sopTitle: "Onboarding consent forms", changedAt: "Apr 21, 2026", changedBy: "Nikki Goldenberg", summary: "Reordered consent collection to front-load HIPAA + telehealth before financial." },
+  { id: "sc4", sopTitle: "Family communication standard", changedAt: "Apr 28, 2026", changedBy: "Eli Berman", summary: "New script for de-escalating concerned parents and escalation paths to BCBA." },
+];
 
 export interface ReadinessBreakdown {
   id: string;
