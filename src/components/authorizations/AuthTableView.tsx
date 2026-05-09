@@ -1,7 +1,8 @@
 import { Authorization, stageVariant, qaVariant, daysUntil, expirationTone, getAuthAlert } from "@/data/authorizations";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { AlertCircle, Check, X } from "lucide-react";
+import { AlertCircle, Check, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface Props {
   auths: Authorization[];
@@ -9,6 +10,14 @@ interface Props {
 }
 
 export function AuthTableView({ auths, onSelect }: Props) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden">
       {/* Mobile card list */}
@@ -18,55 +27,92 @@ export function AuthTableView({ auths, onSelect }: Props) {
           const days = daysUntil(a.expirationDate);
           const tone = expirationTone(days);
           const docsComplete = a.documents.every((d) => !d.required || d.received);
+          const isOpen = expanded.has(a.id);
           return (
-            <li
-              key={a.id}
-              onClick={() => onSelect(a)}
-              className="px-3 py-3 cursor-pointer transition-colors active:bg-muted/30"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">{a.clientName}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground truncate">
-                    {a.id} · {a.payor} · {a.state}
-                  </p>
+            <li key={a.id} className="transition-colors">
+              <button
+                type="button"
+                onClick={() => toggleExpanded(a.id)}
+                aria-expanded={isOpen}
+                className="w-full px-3 py-3 text-left active:bg-muted/30"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">{a.clientName}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground truncate">
+                      {a.id} · {a.payor} · {a.state}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <StatusBadge status={a.stage} variant={stageVariant(a.stage)} />
+                    <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
+                  </div>
                 </div>
-                <StatusBadge status={a.stage} variant={stageVariant(a.stage)} />
-              </div>
-              {alert && (
-                <div className={cn(
-                  "mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
-                  alert.type === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
-                )}>
-                  <AlertCircle className="h-2.5 w-2.5" />
-                  {alert.message}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                  <StatusBadge status={a.qaStatus} variant={qaVariant(a.qaStatus)} />
+                  {days !== null && (
+                    <span className={cn(
+                      "ml-auto font-semibold",
+                      tone === "destructive" && "text-destructive",
+                      tone === "warning" && "text-warning",
+                      tone === "success" && "text-success",
+                    )}>
+                      {days}d left
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                <StatusBadge status={a.qaStatus} variant={qaVariant(a.qaStatus)} />
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  Docs {docsComplete ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-destructive" />}
-                </span>
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  TP {a.treatmentPlanReceived ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-muted-foreground/40" />}
-                </span>
-                {days !== null && (
-                  <span className={cn(
-                    "ml-auto font-semibold",
-                    tone === "destructive" && "text-destructive",
-                    tone === "warning" && "text-warning",
-                    tone === "success" && "text-success",
-                  )}>
-                    {days}d left
-                  </span>
-                )}
-              </div>
-              <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                <span className="truncate">{a.coordinator}</span>
-                <span className="shrink-0">{a.expirationDate ? `exp ${a.expirationDate}` : "—"}</span>
-              </div>
-              {a.nextAction && (
-                <p className="mt-1 text-[11px] text-muted-foreground truncate">→ {a.nextAction}</p>
+              </button>
+              {isOpen && (
+                <div className="space-y-2.5 border-t border-border/40 bg-muted/20 px-3 py-3 text-xs">
+                  {alert && (
+                    <div className={cn(
+                      "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium",
+                      alert.type === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                    )}>
+                      <AlertCircle className="h-3 w-3" />
+                      {alert.message}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Type</div>
+                      <div className="text-foreground">{a.authType}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Coordinator</div>
+                      <div className="text-foreground truncate">{a.coordinator}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Submitted</div>
+                      <div className="text-foreground">{a.submittedDate || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Expires</div>
+                      <div className="text-foreground">{a.expirationDate || "—"}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      Docs {docsComplete ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-destructive" />}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      TP {a.treatmentPlanReceived ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-muted-foreground/40" />}
+                    </span>
+                  </div>
+                  {a.nextAction && (
+                    <div className="rounded-md bg-background/60 p-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Next action</div>
+                      <div className="text-foreground">{a.nextAction}</div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onSelect(a)}
+                    className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Open authorization
+                  </button>
+                </div>
               )}
             </li>
           );

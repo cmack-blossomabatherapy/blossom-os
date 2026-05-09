@@ -1,8 +1,9 @@
 import { Client, stageVariant, authVariant, staffingVariant, qaVariant, getClientAlert } from "@/data/clients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export type ClientSortField = "id" | "childName" | "state" | "clinic" | "stage" | "daysInStage" | "startDate" | null;
 export type SortDir = "asc" | "desc";
@@ -20,6 +21,14 @@ interface Props {
 export function ClientTableView({
   clients, onSelect, selectedIds, onSelectionChange, sortField, sortDir, onSort,
 }: Props) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const allSelected = clients.length > 0 && selectedIds.length === clients.length;
   const someSelected = selectedIds.length > 0 && !allSelected;
 
@@ -54,7 +63,108 @@ export function ClientTableView({
 
   return (
     <div className="bg-card rounded-xl border border-border/60 overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
+      {/* Mobile accordion list */}
+      <ul className="md:hidden divide-y divide-border/40">
+        {clients.length === 0 && (
+          <li className="px-4 py-12 text-center">
+            <p className="text-sm text-muted-foreground">No clients match your filters</p>
+          </li>
+        )}
+        {clients.map((c) => {
+          const alert = getClientAlert(c);
+          const isOpen = expanded.has(c.id);
+          const isSelected = selectedIds.includes(c.id);
+          return (
+            <li key={c.id} className={cn("transition-colors", isSelected && "bg-primary/5")}>
+              <div className="flex items-start gap-2 px-3 py-3">
+                <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
+                  <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(c.id)} aria-label={`Select ${c.id}`} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(c.id)}
+                  className="min-w-0 flex-1 text-left"
+                  aria-expanded={isOpen}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.childName}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{c.parentName} · {c.state} · {c.clinic}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {alert && (alert.type === "red"
+                        ? <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                        : <AlertTriangle className="h-3.5 w-3.5 text-warning" />)}
+                      <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
+                    </div>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={c.stage} variant={stageVariant(c.stage)} />
+                    <StatusBadge status={c.authStatus} variant={authVariant(c.authStatus)} />
+                    <span className={cn(
+                      "text-[11px] font-medium",
+                      c.daysInStage >= 7 ? "text-destructive" : c.daysInStage >= 4 ? "text-warning" : "text-muted-foreground",
+                    )}>{c.daysInStage}d</span>
+                  </div>
+                </button>
+              </div>
+              {isOpen && (
+                <div className="space-y-2.5 border-t border-border/40 bg-muted/20 px-3 py-3 text-xs">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">BCBA</div>
+                      <div className="text-foreground">{c.bcba || <span className="text-destructive font-medium">Unassigned</span>}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">RBT</div>
+                      <div className="text-foreground">{c.rbt || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Start Date</div>
+                      <div className="text-foreground">{c.startDate || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Records</div>
+                      <div className="text-foreground">{c.authorizations.length} auth · {c.schedule.length} blocks</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={c.staffingStatus} variant={staffingVariant(c.staffingStatus)} />
+                    <StatusBadge status={c.qaStatus} variant={qaVariant(c.qaStatus)} />
+                    <StatusBadge
+                      status={c.schedulingStatus ?? (c.schedule.length ? "Schedule Created" : "Pending Schedule")}
+                      variant={c.schedule.length ? "success" : "warning"}
+                    />
+                  </div>
+                  {c.nextAction && (
+                    <div className="rounded-md bg-background/60 p-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Next action</div>
+                      <div className="text-foreground">{c.nextAction}</div>
+                    </div>
+                  )}
+                  {alert && (
+                    <div className={cn(
+                      "rounded-md px-2 py-1.5 text-[11px] font-medium",
+                      alert.type === "red" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                    )}>
+                      {alert.message}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onSelect(c)}
+                    className="w-full rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  >
+                    Open client
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 bg-muted/40 backdrop-blur-md">
             <tr className="border-b border-border">
