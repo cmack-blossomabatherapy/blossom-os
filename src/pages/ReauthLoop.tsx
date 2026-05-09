@@ -48,13 +48,15 @@ export default function ReauthLoop() {
 
   const rows = useMemo<ReauthRow[]>(() => clients.flatMap((client) => (client.reauthCycles ?? []).map((cycle) => ({ ...cycle, client }))), [clients]);
 
-  // Deep-link: scroll to the requested cycle/client row and highlight it.
-  const targetCycleId = deepLink.cycle
-    ? `cycle-${deepLink.cycle}`
-    : deepLink.focus
-      ? `cycle-client-${deepLink.focus}`
-      : null;
-  useDeepLinkHighlight(targetCycleId, rows.length > 0);
+  // Deep-link: resolve to a concrete row id (`cycle-<id>`) and highlight it.
+  let resolvedCycleId: string | null = null;
+  if (deepLink.cycle && rows.some((r) => r.id === deepLink.cycle)) {
+    resolvedCycleId = `cycle-${deepLink.cycle}`;
+  } else if (deepLink.focus) {
+    const match = rows.find((r) => r.client.id === deepLink.focus);
+    if (match) resolvedCycleId = `cycle-${match.id}`;
+  }
+  useDeepLinkHighlight(resolvedCycleId, rows.length > 0);
   useEffect(() => {
     if (!rows.length) return;
     if (deepLink.cycle && !rows.some((r) => r.id === deepLink.cycle)) {
