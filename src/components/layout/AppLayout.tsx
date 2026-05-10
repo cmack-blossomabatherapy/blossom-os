@@ -65,7 +65,7 @@ export function AppLayout() {
         <TopBar title={title} onOpenMobileMenu={() => setMobileMenuOpen(true)} mobileMenuFloating={mobileMenuFloating} />
         <main
           ref={mainRef}
-          className="mobile-page flex-1 overflow-auto px-3 pb-24 pt-3 md:min-h-0 md:p-6 md:pb-6"
+          className="mobile-page flex-1 overflow-auto px-3 pt-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:min-h-0 md:p-6 md:pb-6"
           onScroll={(event) => setMobileMenuFloating(event.currentTarget.scrollTop > 48)}
         >
           <OnboardingGate>
