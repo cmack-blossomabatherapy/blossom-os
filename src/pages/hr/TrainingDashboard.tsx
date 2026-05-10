@@ -22,6 +22,7 @@ import { JourneyResourcesPanel } from "@/components/training/JourneyResourcesPan
 import { JourneyModulesPanel } from "@/components/training/JourneyModulesPanel";
 import { JourneyChecklistsPanel } from "@/components/training/JourneyChecklistsPanel";
 import { StateView } from "@/components/shared/StateView";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
 
 const ALL = "All";
 const trainingTypes: TrainingType[] = ["SOP", "Video", "Tango", "Checklist", "Quiz", "Policy", "Workflow"];
@@ -185,19 +186,22 @@ export default function TrainingDashboard() {
   const handleCreateBadge = () => { if (!canManageTrainings) return blockTrainingAction(); if (!badgeTitle.trim()) { toast.error("Add a badge title"); return; } const next = [{ id: `badge-${Date.now()}`, emoji: badgeEmoji.trim() || "🌸", title: badgeTitle.trim(), reason: badgeReason, description: badgeReason, earned: false }, ...badges]; setBadges(next); saveStoredTrainingBadges(next); setBadgeTitle(""); setBadgeEmoji("🌸"); setBadgeReason(badgeReasonOptions[0]); toast.success("Badge created"); };
   const handleRollback = (course: TrainingCourse, version: TrainingVersion): void => { if (!canManageTrainings) { blockTrainingAction(); return; } const current = courses.find((item) => item.id === course.id) ?? course; const restoredDraft = { ...version.snapshot, versions: current.versions ?? [] }; const rollbackMarker = makeTrainingVersion(current, restoredDraft, `Rolled back to v${version.version}`); const nextCourse = { ...version.snapshot, versions: [rollbackMarker, ...(current.versions ?? []).filter((item) => item.id !== version.id)] }; persistCourses(courses.map((item) => item.id === course.id ? nextCourse : item)); recordAudit(makeAuditEntry(nextCourse, "rolled_back", actorName, roleSummary, [`Restored snapshot from version ${version.version}`, `Snapshot saved ${formatDateTime(version.savedAt)} by ${version.savedBy}`])); setSelectedCourse(nextCourse); toast.success(`Rolled back to version ${version.version} and audit logged`); };
 
-  return <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full"><div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
-    <header className="glass-hero rounded-3xl px-6 py-7 md:px-8 md:py-8 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary"><BookOpen className="h-3.5 w-3.5" /> Training Admin</div>
-        <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gradient-brand">Training Dashboard</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">Create, edit, archive, delete, resource, and assign trainings as Blossom's library grows.</p>
-        <p className="text-xs text-muted-foreground">Management access controlled by Admin → Team roles. Current role: {roleSummary}.</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => canAssignTraining ? setAssignOpen(true) : blockTrainingAction()} disabled={activeCourses.length === 0 || !canAssignTraining} className="bg-background/70 backdrop-blur"><Plus className="mr-2 h-4 w-4" />Assign Training</Button>
-        <Button onClick={() => canManageTrainings ? setCreateOpen(true) : blockTrainingAction()} disabled={!canManageTrainings}><Plus className="mr-2 h-4 w-4" />Create Training</Button>
-      </div>
-    </header>
+  return <GlassPageShell
+    eyebrow="Training Admin"
+    eyebrowIcon={BookOpen}
+    title="Course Management"
+    description={`Create, edit, archive, resource, and assign trainings. Current role: ${roleSummary}.`}
+    actions={
+      <>
+        <Button size="sm" className="border border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => canAssignTraining ? setAssignOpen(true) : blockTrainingAction()} disabled={activeCourses.length === 0 || !canAssignTraining}>
+          <Plus className="mr-1.5 h-4 w-4" />Assign Training
+        </Button>
+        <Button size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => canManageTrainings ? setCreateOpen(true) : blockTrainingAction()} disabled={!canManageTrainings}>
+          <Plus className="mr-1.5 h-4 w-4" />Create Training
+        </Button>
+      </>
+    }
+  >
 
     <section className="grid gap-3 md:grid-cols-4 xl:grid-cols-5">{[{ label: "Trainings live", value: activeCourses.length, icon: BookOpen, tone: "primary" as const }, { label: "Completion rate", value: `${completionRate}%`, icon: BarChart3, tone: "primary" as const }, { label: "Overdue", value: overdue, icon: Clock, tone: overdue > 0 ? "destructive" as const : "default" as const }, { label: "Active learners", value: members.length, icon: Users, tone: "primary" as const }, { label: "Completed", value: totalCompleted, icon: CheckCircle2, tone: "success" as const }].map(({ label, value, icon: Icon, tone }) => <div key={label} className="glass-stat group"><div className="flex items-start justify-between gap-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><div className={cn("flex h-7 w-7 items-center justify-center rounded-lg", tone === "destructive" ? "bg-destructive/15 text-destructive" : tone === "success" ? "bg-success/15 text-success" : "bg-primary/12 text-primary")}><Icon className="h-3.5 w-3.5" /></div></div><p className={cn("mt-2 text-2xl font-semibold tabular-nums tracking-tight md:text-3xl", tone === "destructive" ? "text-destructive" : tone === "success" ? "text-success" : "text-foreground")}>{value}</p></div>)}</section>
 
@@ -219,7 +223,7 @@ export default function TrainingDashboard() {
     <TrainingBuilderDialog open={createOpen} onOpenChange={setCreateOpen} onSubmit={handleCreate} courses={courses} />
     <TrainingBuilderDialog open={!!editingCourse} onOpenChange={(open) => !open && setEditingCourse(null)} onSubmit={handleSave} course={editingCourse ?? undefined} courses={courses} />
     <AssignDialog open={assignOpen} onOpenChange={setAssignOpen} courses={activeCourses} members={members} onAssign={handleAssign} />
-  </div></div>;
+  </GlassPageShell>;
 }
 
 function DetailSheets({ selectedEmployee, setSelectedEmployee, selectedCourse, setSelectedCourse, assignments, auditLog, badges, canManageTrainings, onUpdateAssignment, onEdit, onArchive, onDelete, onAddResource, onRollback }: { selectedEmployee: ReturnType<typeof useLiveTeam>["members"][number] | null; setSelectedEmployee: (v: ReturnType<typeof useLiveTeam>["members"][number] | null) => void; selectedCourse: TrainingCourse | null; setSelectedCourse: (v: TrainingCourse | null) => void; courses: TrainingCourse[]; assignments: AssignmentRecord[]; auditLog: TrainingAuditEntry[]; badges: TrainingBadge[]; canManageTrainings: boolean; onUpdateAssignment: (id: string, status: AssignmentStatus) => void; onEdit: (course: TrainingCourse) => void; onArchive: (course: TrainingCourse) => void; onDelete: (course: TrainingCourse) => void; onAddResource: (course: TrainingCourse, resource: string) => void; onRollback: (course: TrainingCourse, version: TrainingVersion) => void }) {
