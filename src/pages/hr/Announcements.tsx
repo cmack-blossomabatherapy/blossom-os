@@ -78,7 +78,7 @@ export default function Announcements() {
       title="Announcements"
       description="Company, state, and clinic-wide messages from HR & leadership."
       icon={Megaphone}
-      actions={canManage ? <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> New announcement</Button> : null}
+      actions={canManage ? <Button variant="hero" size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> New announcement</Button> : null}
     >
       <Card className="p-4">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mb-4">
