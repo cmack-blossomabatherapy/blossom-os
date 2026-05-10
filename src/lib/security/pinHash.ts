@@ -12,11 +12,11 @@ function bufToB64(buf: ArrayBuffer): string {
   return btoa(s);
 }
 
-function b64ToBuf(b64: string): Uint8Array {
+function b64ToBuf(b64: string): ArrayBuffer {
   const s = atob(b64);
   const out = new Uint8Array(s.length);
   for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
-  return out;
+  return out.buffer;
 }
 
 export function generateSalt(): string {
