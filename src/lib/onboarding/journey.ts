@@ -89,7 +89,6 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
           { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
         ] },
       { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
-      { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
         actions: [
           { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
           { id: "reflect", label: "Which part resonates with you most?", prompt: true, promptPlaceholder: "A sentence or two is plenty.", icon: MessageSquare },
