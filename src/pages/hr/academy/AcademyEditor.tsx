@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Compass, Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight, GripVertical, ExternalLink, Loader2, Pin, PinOff, Archive, ArchiveRestore, Sparkles, Wand2 } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -281,44 +281,45 @@ export default function AcademyEditor() {
 
   if (!canEdit) {
     return (
-      <PageShell title="Operations Academy Editor" description="Edit the curriculum tree." icon={Compass}>
+      <GlassPageShell eyebrow="Academy" eyebrowIcon={Compass} title="Operations Academy Editor" description="Edit the curriculum tree.">
         <Card className="p-6 text-sm text-muted-foreground">You need <code>hr.training.assign</code> permission to edit the academy.</Card>
-      </PageShell>
+      </GlassPageShell>
     );
   }
 
   if (loading) {
     return (
-      <PageShell title="Operations Academy Editor" description="Edit tracks, phases, weeks, and modules." icon={Compass}>
+      <GlassPageShell eyebrow="Academy" eyebrowIcon={Compass} title="Operations Academy Editor" description="Edit tracks, phases, weeks, and modules.">
         <Skeleton className="h-96" />
-      </PageShell>
+      </GlassPageShell>
     );
   }
 
   if (!tree) {
     return (
-      <PageShell title="Operations Academy Editor" description="No track exists yet." icon={Compass}>
+      <GlassPageShell eyebrow="Academy" eyebrowIcon={Compass} title="Operations Academy Editor" description="No track exists yet.">
         <Card className="p-8 text-center">
           <p className="text-sm text-muted-foreground mb-4">Create the first academy track to get started.</p>
           <Button onClick={createTrack}><Plus className="h-4 w-4" /> Create track</Button>
         </Card>
-      </PageShell>
+      </GlassPageShell>
     );
   }
 
   return (
-    <PageShell
+    <GlassPageShell
+      eyebrow="Academy"
+      eyebrowIcon={Compass}
       title="Operations Academy Editor"
       description="Curriculum tree — tracks, phases, weeks, modules, and resources."
-      icon={Compass}
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setShowArchived((s) => !s)}>
-            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+          <Button size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => setShowArchived((s) => !s)}>
+            {showArchived ? <ArchiveRestore className="h-4 w-4 mr-1.5" /> : <Archive className="h-4 w-4 mr-1.5" />}
             {showArchived ? "Hide archived" : "Show archived"}
           </Button>
-          <Button variant="outline" onClick={() => setEdit({ kind: "track", data: tree.track })}>
-            <Pencil className="h-4 w-4" /> Edit track
+          <Button size="sm" variant="outline" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => setEdit({ kind: "track", data: tree.track })}>
+            <Pencil className="h-4 w-4 mr-1.5" /> Edit track
           </Button>
         </div>
       }
@@ -614,7 +615,7 @@ export default function AcademyEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </PageShell>
+    </GlassPageShell>
   );
 }
 
