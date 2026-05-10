@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CalendarIcon, CheckCircle2, ClipboardList, Clock, Loader2, Search, Send, UserPlus, Users, Inbox } from "lucide-react";
+import { AlertTriangle, CalendarIcon, CheckCircle2, ClipboardList, Clock, Loader2, Search, Send, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,8 +16,9 @@ import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
 import { StateView } from "@/components/shared/StateView";
+import { ROLE_META, roleLabel, type AppRole } from "@/lib/roles";
 
-type RoleFilter = "all" | "rbt" | "bcba";
+type RoleFilter = "all" | AppRole;
 type AssignmentStatus = "assigned" | "in_progress" | "completed" | "overdue" | "expired";
 
 interface CourseRow { id: string; title: string | null; name: string | null; category: string | null; }
@@ -65,7 +65,7 @@ export default function TrainingAssign() {
     const [c, e, ur, a] = await Promise.all([
       supabase.from("training_courses").select("id,title,name,category").eq("status", "active").order("title"),
       supabase.from("employees").select("id,user_id,first_name,last_name,job_title,clinic").eq("status", "active"),
-      supabase.from("user_roles").select("user_id,role").in("role", ["rbt", "bcba"]),
+      supabase.from("user_roles").select("user_id,role"),
       supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date,completed_at,assigned_at"),
     ]);
     const firstError = c.error || e.error || ur.error || a.error;
@@ -92,19 +92,13 @@ export default function TrainingAssign() {
 
   useEffect(() => { loadAll(); }, []);
 
-  // Only show employees who are RBT or BCBA
-  const eligibleEmployees = useMemo(() => {
-    return employees.filter((emp) => {
-      const roles = employeeRoles[emp.id] ?? [];
-      return roles.includes("rbt") || roles.includes("bcba");
-    });
-  }, [employees, employeeRoles]);
+  // Show every active employee — assignable across all roles.
+  const eligibleEmployees = employees;
 
   const filteredEmployees = useMemo(() => {
     return eligibleEmployees.filter((emp) => {
       const roles = employeeRoles[emp.id] ?? [];
-      if (roleFilter === "rbt" && !roles.includes("rbt")) return false;
-      if (roleFilter === "bcba" && !roles.includes("bcba")) return false;
+      if (roleFilter !== "all" && !roles.includes(roleFilter)) return false;
       if (search) {
         const q = search.toLowerCase();
         const hay = `${emp.first_name} ${emp.last_name} ${emp.job_title ?? ""} ${emp.clinic ?? ""}`.toLowerCase();
@@ -230,16 +224,18 @@ export default function TrainingAssign() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" /> Eligible learners</CardTitle>
-              <CardDescription>{filteredEmployees.length} of {eligibleEmployees.length} RBTs & BCBAs</CardDescription>
+              <CardDescription>{filteredEmployees.length} of {eligibleEmployees.length} employees{roleFilter !== "all" ? ` · filtered by ${roleLabel(roleFilter as AppRole)}` : ""}</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Tabs value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="rbt">RBT</TabsTrigger>
-                  <TabsTrigger value="bcba">BCBA</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
+                <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filter by role" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  {ROLE_META.filter((r) => r.group !== "Legacy").map((r) => (
+                    <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-full md:w-[240px]" />
@@ -252,8 +248,8 @@ export default function TrainingAssign() {
             <StateView
               variant="empty"
               icon={UserPlus}
-              title="No eligible learners yet"
-              description="No employees have the RBT or BCBA role. Assign roles in Team or an employee profile to enable training assignments."
+              title="No active employees yet"
+              description="Add or activate employees in Team to enable training assignments."
             />
           ) : (
             <div className="overflow-x-auto">
@@ -297,9 +293,13 @@ export default function TrainingAssign() {
                         <div className="text-xs text-muted-foreground">{emp.job_title || "—"}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                          {roles.includes("rbt") && <Badge variant="outline" className="border-transparent bg-primary/10 text-primary">RBT</Badge>}
-                          {roles.includes("bcba") && <Badge variant="outline" className="border-transparent bg-info/15 text-info">BCBA</Badge>}
+                        <div className="flex flex-wrap gap-1">
+                          {roles.length === 0 && <span className="text-xs text-muted-foreground italic">no role</span>}
+                          {roles.map((r) => (
+                            <Badge key={r} variant="outline" className="border-transparent bg-primary/10 text-primary">
+                              {roleLabel(r as AppRole)}
+                            </Badge>
+                          ))}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{emp.clinic || "—"}</TableCell>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BarChart3 } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { ReportsControlBar } from "@/components/reports/ReportsControlBar";
 import { MetricCard } from "@/components/reports/MetricCard";
 import { ReportFunnel } from "@/components/reports/ReportFunnel";
@@ -33,10 +33,11 @@ export default function Reports() {
   const [activeView, setActiveView] = useState<string>("executive");
 
   return (
-    <PageShell
-      title="Reports"
-      description="Growth, conversion, and operational performance · every number is clickable"
-      icon={BarChart3}
+    <GlassPageShell
+      eyebrow="Reporting"
+      eyebrowIcon={BarChart3}
+      title="Reports & insights"
+      description="Growth, conversion, and operational performance — every number is clickable."
     >
       <ReportsControlBar
         dateRange={dateRange}
@@ -54,7 +55,7 @@ export default function Reports() {
       {activeView === "revenue" && <RevenueView />}
       {activeView === "team" && <TeamView />}
       {activeView === "growth" && <GrowthView />}
-    </PageShell>
+    </GlassPageShell>
   );
 }
 
