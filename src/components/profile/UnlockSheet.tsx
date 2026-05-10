@@ -84,9 +84,10 @@ export function UnlockSheet({ open, onOpenChange, userId, loginId, onUnlocked }:
     await logUnlockEvent({ userId, method: "passkey", success: r.ok });
     if (loginId) await logVaultEvent({ userId, loginId, action: r.ok ? "unlock_success" : "unlock_failed" });
     setBusy(false);
-    if (r.ok) { onUnlocked(); onOpenChange(false); return; }
-    if (r.reason === "notSupported") toast({ title: "Not available on this device", variant: "destructive" });
-    else if (r.reason === "cancelled") toast({ title: "Cancelled" });
+    if (r.ok === true) { onUnlocked(); onOpenChange(false); return; }
+    const reason = r.reason;
+    if (reason === "notSupported") toast({ title: "Not available on this device", variant: "destructive" });
+    else if (reason === "cancelled") toast({ title: "Cancelled" });
     else toast({ title: "Couldn't verify", description: r.message, variant: "destructive" });
   }
 
