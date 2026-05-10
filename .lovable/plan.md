@@ -1,167 +1,95 @@
-# Plan — "Your First 5 Weeks at Blossom"
+## Employee Hub — Profile Upgrade Plan
 
-Embed Shira Lasry's onboarding & training structure as the **core onboarding framework** inside Blossom Academy. We extend the existing `OnboardingGate` + `useOnboardingStatus` + `ONBOARDING_STEPS` plumbing — nothing existing is removed, no schema is broken, all gating, certificates, profiles, and admin controls remain intact.
+Goal: Replace the current `/profile` page contents with a premium Apple-style Employee Hub. **Nothing existing is removed** — onboarding/training/cert/competency/HR/admin/auth/Supabase code stays intact. The new profile reuses existing data sources (`useOnboardingStatus`, badges, employee record) and adds new tables only for HR self-service, PTO, and a secure login vault.
 
-## Approach (non-destructive)
+---
 
-The current onboarding is a 10-step linear journey (Welcome → Mission → Values → Team → How It Works → Required Role → Required Systems → Policies → Final Check → Complete). We **upgrade the model from "steps" to "phases → weeks → modules"** while keeping the existing storage keys backward compatible.
+### 1. Profile Shell (rewrite of `src/pages/Profile.tsx`)
 
-- `ONBOARDING_STEPS` stays exported (legacy) so nothing breaks.
-- New `ONBOARDING_PHASES` becomes the canonical structure consumed by the new UI.
-- `useOnboardingStatus` is extended to compute phase/week/module progress from the same `localStorage` state. Completion criteria for cert remains: all required modules done.
-- Conditional logic (new state vs existing state) reads a new `onboardingPath` flag from storage (`new_state | existing_state`, default `existing_state`), settable from Profile + admin.
+- New `ProfileHero` card: avatar, name, role, department, state, manager, onboarding %, Academy progress, badges, and 4 quick-action buttons (Continue Training, Request PTO, View Logins, View Certificates).
+- Segmented tab nav (`Overview · My Learning · Certifications · HR · My Logins · Settings`).
+- On mobile: tabs collapse into a horizontally swipeable segmented control; sub-pages use sheet/card layout.
 
-## Phase / Week structure
+### 2. Section components (`src/components/profile/`)
 
-```text
-Phase 0  Welcome to Blossom            (existing welcome/mission/values/team/how-it-works rolled in)
-Phase 1  Week One — Foundation & Systems
-           - Team Introductions
-           - Leadership: Meet Chad Kaufman
-           - Leadership: Meet Shira Lasry
-           - Shadowing (transition employee + Gary Frank)
-           - Systems: CentralReach
-           - Systems: Monday.com
-           - Systems: Internal Workflows
-           - Systems: CR Backend with Eli Berman
-           - [conditional] New State Track (Shadow Gary 3 days, state setup, market ops)
-           - Week One Outcome
-Phase 2  Week Two — Department Immersion
-           - Intake, Recruiting, Case Management
-           - Scheduling (Daylis), Marketing (Nick), Tracking & Reporting (Corey)
-           - Weekly check-in with Chad, daily check-ins with Shira
-           - Week Two Outcome
-Phase 3  Week Three — Role Application
-           - Path A: New State Operations (laws, credentialing, BCBA recruiting, infra, launch)
-           - Path B: Existing State Operations (intake work, recruiting work, workflow, coordination)
-Phase 4  Weeks Four & Five — Transition to Ownership
-           - Intake / Recruiting ownership, KPIs, performance, accountability, leadership comms
-Phase 5  Graduation
-           - Certificate, completed milestones, unlocked academy
-```
+- `OverviewSection.tsx` — hero stats, Academy snapshot, recent activity, badges grid (reuses existing badge data).
+- `LearningSection.tsx` — pulls existing training assignments + Academy progress (read-only summary, links into existing pages).
+- `CertificationsSection.tsx` — surfaces existing certs/competencies (read-only summary, links to existing detail pages).
+- `HRSection.tsx` — 6 cards: PTO, Hours, Payroll, HR Documents, Benefits, Contact HR. Each opens its own panel/sheet.
+  - `PTORequestPanel.tsx` (new flow + history list with status chips: Draft / Submitted / Pending / Approved / Denied / Cancelled).
+  - `HoursPanel.tsx` (placeholder weekly ring + recent entries + "Open Time System" link to existing `/hr/time-clock`).
+  - `PayrollPanel.tsx` (placeholder pay frequency / next pay / login shortcut + disclaimer).
+  - `HRDocumentsPanel.tsx` (cards from new `hr_documents` table + acknowledgement chip).
+  - `BenefitsPanel.tsx` (links/list from `hr_resources`, no new schema).
+  - `ContactHRPanel.tsx` (deep links to `/hr/announcements`, support email).
+- `LoginsSection.tsx` — Apple Passwords-style vault. Cards show system, icon, category, username, masked password, login URL, copy-username, "Unlock Password" CTA, last updated, owner, notes.
+  - `UnlockSheet.tsx` — bottom sheet asking for PIN; secondary "Use Face ID / Touch ID" button wired to WebAuthn (`navigator.credentials.get`) when available, PIN fallback otherwise. After success: reveal password for 45s, then auto-mask. Logs every reveal/copy/open event.
+  - `PinSetupDialog.tsx` — first-run PIN setup (PBKDF2/Argon2-style salted hash stored in `employee_pin_settings`).
+- `SettingsSection.tsx` — wraps existing settings (notification prefs, path switcher, theme, sign out). Keeps `PathSwitcher` and `resetOnboarding` from current Profile page.
 
-## Files
+### 3. Admin additions (`src/pages/admin/LoginVaultAdmin.tsx`)
 
-### New
-```text
-src/lib/onboarding/journey.ts            canonical PHASES / WEEKS / MODULES + path logic
-src/lib/onboarding/leadership.ts         Chad / Shira / Gary / Daylis / Nick / Corey / Eli profiles
-src/components/onboarding/JourneyTimeline.tsx     vertical timeline of 5 weeks + graduation
-src/components/onboarding/PhaseHeader.tsx         hero header per phase
-src/components/onboarding/WeekCard.tsx            week summary card (progress, outcome)
-src/components/onboarding/ModuleRow.tsx           interactive module/checklist row
-src/components/onboarding/LeaderCard.tsx          leadership intro card (avatar, role, message)
-src/components/onboarding/ShadowingCard.tsx       shadowing tracker (assignee, checklist, notes)
-src/components/onboarding/SystemTrainingCard.tsx  CR/Monday/etc card (video, SOP, Tango links)
-src/components/onboarding/CheckInTracker.tsx      Chad weekly + Shira daily check-ins
-src/components/onboarding/OutcomeCard.tsx         end-of-week milestone card
-src/components/onboarding/PathSwitcher.tsx        new state vs existing state toggle (admin/profile)
-src/pages/onboarding/Journey.tsx                  /onboarding (replaces Roadmap as default)
-src/pages/onboarding/PhaseWelcome.tsx             /onboarding/phase/welcome
-src/pages/onboarding/WeekOne.tsx                  /onboarding/week/1
-src/pages/onboarding/WeekTwo.tsx                  /onboarding/week/2
-src/pages/onboarding/WeekThree.tsx                /onboarding/week/3 (branches by path)
-src/pages/onboarding/WeeksFourFive.tsx            /onboarding/week/4-5
-src/pages/onboarding/Graduation.tsx               /onboarding/graduation (rich version of Complete)
-```
+- Admin-only page (route `/admin/login-vault`, gated by existing `isAdmin`).
+- CRUD for `employee_logins`: add, assign to user / role / department, edit username, mark password-reset-required, set rotation date, archive.
+- Read-only `login_access_logs` table (filterable by user/system/action).
+- Banner: *"Password vault requires encrypted storage before real passwords are added"* until a server-side decrypt edge function is wired.
 
-### Edited
-```text
-src/lib/onboarding/steps.ts        keep legacy export, add re-export from journey.ts
-src/lib/onboarding/storage.ts      add onboardingPath + module-level completion (string keys)
-src/hooks/useOnboardingStatus.ts   compute per-phase/week/module progress; unchanged isComplete contract
-src/App.tsx                        add new routes; existing /onboarding/* allow-list still wraps everything
-src/pages/onboarding/Roadmap.tsx   redirect to /onboarding (Journey)
-src/pages/onboarding/Complete.tsx  redirect to /onboarding/graduation
-src/pages/onboarding/OnboardingHome.tsx  use journey progress + next module CTA
-src/pages/Profile.tsx              show current phase, week, path; admin can set path / reset
-src/components/onboarding/LockedStateCard.tsx  show "next module" with phase chip
-```
+### 4. Database (additive migrations only)
 
-## UI design
+New tables, all RLS-protected:
 
-- **Vertical timeline** down the left with phase chips, week dots, and a moving progress indicator.
-- **Phase header**: large gradient hero (`--gradient-brand`), phase number, title, objective, est. time.
-- **Week pages**: stack of `WeekCard` → `ModuleRow`s. Each module shows icon, title, blurb, est minutes, optional leader card / system card / shadowing card / check-in tracker.
-- **Leader cards**: avatar circle (initials), name, role, 1-line message, "Mark meeting complete" button.
-- **System cards**: icon, name, "Watch training", "View SOP", "Tango walkthrough" buttons (placeholder links), completion toggle.
-- **Shadowing card**: assignee name, checklist of observation goals, notes textarea (localStorage), "Mark shadowing complete".
-- **Check-in tracker**: weekly grid for Chad, daily grid for Shira (7 cells), tap to mark done + note.
-- **Outcome card**: green-tinted milestone card with checkmark icon, listed outcomes, "Continue to Week N+1".
-- **Graduation page**: full-screen celebration, existing certificate, list of completed phases/weeks, "Enter Academy".
+- `employee_hr_profiles` — extra fields (manager_id, department, location_state, pto_balance_hours).
+- `pto_requests` — id, user_id, pto_type, start_date, end_date, hours, partial_day, reason, status, manager_id, submitted_at, reviewed_at, review_notes.
+- `employee_hours_snapshots` — user_id, week_start, total_hours, source.
+- `hr_documents` — title, doc_type, file_url, last_updated_at, requires_acknowledgement, audience.
+- `hr_document_acknowledgements` — user_id, document_id, acknowledged_at.
+- `employee_logins` — user_id, system_name, system_category, login_url, username, encrypted_password (placeholder text), notes, assigned_by, last_updated_at, password_rotates_at, is_active.
+- `login_access_logs` — user_id, login_id, action (viewed/copied_username/copied_password/opened/unlock_failed/unlock_success), occurred_at, device, ip.
+- `employee_pin_settings` — user_id, pin_hash, pin_salt, last_set_at, failed_attempts, locked_until.
+- `secure_unlock_events` — user_id, method (pin/passkey), success, occurred_at.
 
-All semantic tokens — no hardcoded colors. Mobile-first single column; desktop two-column with sticky timeline.
+RLS policy themes:
+- Users: full access to their own rows in all 9 tables.
+- Managers (existing `has_role` helper, `manager` role): SELECT on `pto_requests` where `manager_id = auth.uid()`; UPDATE status/review_notes only.
+- Admins: full CRUD on `hr_documents`, `employee_logins`; SELECT-only on `login_access_logs`, `secure_unlock_events`. Admins do NOT get default access to other users' passwords (separate `vault_admin` flag, optional later).
 
-## Conditional logic
+### 5. Security guardrails (frontend)
 
-- `onboardingPath`: `"existing_state" | "new_state"` stored in `localStorage.blossom.onboarding.v1.path`.
-- Week 1 shows the **New State Track** module only when `path === "new_state"`.
-- Week 3 renders **Path A** or **Path B** based on `path`.
-- Profile page shows path with a switcher (admin/HR roles can change anytime; regular employees can change once before starting).
+- Passwords never rendered in DOM until unlock; stored in component state with a `setTimeout` auto-clear after 45s.
+- Copy-to-clipboard guarded behind unlock; logs `copied_password` event.
+- `UnlockSheet` enforces local rate limit (3 failed PIN attempts → 60s lockout, mirrored to `employee_pin_settings.locked_until`).
+- WebAuthn passkey path ready but disabled when `navigator.credentials` / `PublicKeyCredential` unavailable; UI clearly says "Set up Face ID later".
+- Admin warning banner blocks the "real password" entry field until an encrypted vault edge function exists.
 
-## Storage extension (backward compatible)
+### 6. Routing & nav
 
-`OnboardingState` adds:
-```ts
-{
-  completed: OnboardingStepId[];           // legacy step ids — kept
-  modules: string[];                       // new: granular module keys e.g. "w1.systems.cr"
-  acknowledgements: string[];
-  notes: Record<string, string>;           // shadowing notes, check-in notes
-  checkins: { chad: string[]; shira: string[] }; // ISO dates
-  path: "existing_state" | "new_state";
-  completedAt?: string;
-  certificateId?: string;
-}
-```
-Reading old state without these fields fills defaults. `markStepComplete` continues to work; new helpers `markModuleComplete(key)`, `setPath(p)`, `addCheckIn(who, date)`, `setNote(key, text)`.
+- `/profile` keeps its current route; tab state via URL hash (`/profile#hr`, `/profile#logins`).
+- Add `/admin/login-vault` to existing admin nav (Admin Hub card).
+- No removal of existing `/hr/*` routes — HR section panels deep-link into them where the full UI already exists (e.g., Hours → `/hr/time-clock`, Payroll → existing `Payroll.tsx`).
 
-`isComplete` criteria: all required modules across phases 0–4 done → flips `completedAt` + cert id (same trigger as before).
+---
 
-## Routes
+### Technical details
 
-```text
-/onboarding                     Journey (timeline overview, default)
-/onboarding/phase/welcome       Phase 0
-/onboarding/week/1              Week One
-/onboarding/week/2              Week Two
-/onboarding/week/3              Week Three (branches)
-/onboarding/week/4-5            Weeks Four & Five
-/onboarding/graduation          Phase 5
-```
+- **State**: section-local `useState`; cross-tab via `useSearchParams` hash. No new global store.
+- **Data fetching**: `@tanstack/react-query` (already in repo). One query per section.
+- **Styling**: existing `GlassPanel`, `GlassPageShell` patterns + new `hero`/`heroOutline` Button variants. All semantic tokens from `index.css`.
+- **Sheets/modals**: `@/components/ui/sheet` for mobile, `@/components/ui/dialog` for desktop unlock.
+- **WebAuthn placeholder**: small wrapper `src/lib/security/passkey.ts` with `isAvailable()`, `register()`, `verify()` stubs returning typed results — wired to real APIs when present, `notSupported` otherwise.
+- **PIN hashing**: client computes PBKDF2(SHA-256, 100k iters) with random salt; salt+hash stored. Verify by recomputing. (Acceptable v1; can move to edge function later.)
+- **Audit logging**: thin `logVaultEvent(action, login_id)` helper inserts to `login_access_logs`; called from every reveal/copy/open code path.
 
-Existing routes (`/onboarding/welcome`, `/onboarding/mission`, etc.) remain working — they're folded into Phase 0 cards and still navigable.
+### Out of scope for this pass
 
-## Admin
+- Real encrypted password storage (UI ready, banner explains).
+- Manager approval workflows beyond PTO status updates.
+- Push/email notifications on PTO submit (placeholders only).
+- Migrating existing `/hr/payroll`, `/hr/time-clock` UIs into the profile (we link into them).
 
-Profile page (admin/HR): per-user onboarding panel already exists; we add:
-- Path selector (existing/new state)
-- Phase progress bars
-- "Reset onboarding" (already exists)
-- "Preview as locked" (already exists)
+### Confirm before I build
 
-Out of scope for this round: per-user assignment from a separate admin page (existing `OnboardingCenter` keeps its current responsibilities; we surface the new structure in a follow-up).
+1. Migration creates **9 new tables** as listed — OK to run?
+2. `/profile` page contents are **rewritten** (route + URL stay the same, no other page touched). Any existing demo data on the current Profile (badges array, PathSwitcher, reset onboarding) is preserved inside the new Overview/Settings sections. Confirm OK.
+3. Admin login-vault page added at `/admin/login-vault` — OK to add to Admin Hub navigation card?
 
-## Mobile
-
-- Timeline collapses to horizontal pill scroller at top.
-- Week pages stack to single column.
-- Module rows expand inline (no modals).
-- Sticky "Continue" button at bottom.
-
-## Out of scope
-
-- Schema migrations (none needed; all client-side).
-- Real video uploads (placeholder players).
-- Per-user admin assignment UI beyond Profile.
-- Email notifications on phase completion.
-
-## Rollout order
-
-1. `journey.ts` + `leadership.ts` (data model).
-2. Extend `storage.ts` + `useOnboardingStatus.ts`.
-3. Shared components (`PhaseHeader`, `WeekCard`, `ModuleRow`, `LeaderCard`, `ShadowingCard`, `SystemTrainingCard`, `CheckInTracker`, `OutcomeCard`, `JourneyTimeline`, `PathSwitcher`).
-4. Pages (`Journey`, `PhaseWelcome`, `WeekOne`, `WeekTwo`, `WeekThree`, `WeeksFourFive`, `Graduation`).
-5. Wire routes in `App.tsx`; redirect old `Roadmap`/`Complete`.
-6. Update `OnboardingHome`, `LockedStateCard`, `Profile` to surface phase/week + path switcher.
-7. QA on mobile viewport (430×777) and desktop.
+Reply "go" (or with adjustments) and I'll implement in one pass.

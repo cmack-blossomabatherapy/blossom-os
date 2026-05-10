@@ -2099,6 +2099,147 @@ export type Database = {
           },
         ]
       }
+      employee_hours_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          scheduled_hours: number
+          source: string | null
+          total_hours: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          scheduled_hours?: number
+          source?: string | null
+          total_hours?: number
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          scheduled_hours?: number
+          source?: string | null
+          total_hours?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      employee_hr_profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          id: string
+          last_pay_date: string | null
+          location_state: string | null
+          manager_id: string | null
+          next_pay_date: string | null
+          pay_frequency: string | null
+          payroll_login_url: string | null
+          payroll_provider: string | null
+          pto_balance_hours: number | null
+          sick_balance_hours: number | null
+          time_system_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          last_pay_date?: string | null
+          location_state?: string | null
+          manager_id?: string | null
+          next_pay_date?: string | null
+          pay_frequency?: string | null
+          payroll_login_url?: string | null
+          payroll_provider?: string | null
+          pto_balance_hours?: number | null
+          sick_balance_hours?: number | null
+          time_system_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          id?: string
+          last_pay_date?: string | null
+          location_state?: string | null
+          manager_id?: string | null
+          next_pay_date?: string | null
+          pay_frequency?: string | null
+          payroll_login_url?: string | null
+          payroll_provider?: string | null
+          pto_balance_hours?: number | null
+          sick_balance_hours?: number | null
+          time_system_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_logins: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          encrypted_password: string | null
+          id: string
+          is_active: boolean
+          last_updated_at: string
+          login_url: string | null
+          notes: string | null
+          password_reset_required: boolean
+          password_rotates_at: string | null
+          system_category: string | null
+          system_name: string
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          encrypted_password?: string | null
+          id?: string
+          is_active?: boolean
+          last_updated_at?: string
+          login_url?: string | null
+          notes?: string | null
+          password_reset_required?: boolean
+          password_rotates_at?: string | null
+          system_category?: string | null
+          system_name: string
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          encrypted_password?: string | null
+          id?: string
+          is_active?: boolean
+          last_updated_at?: string
+          login_url?: string | null
+          notes?: string | null
+          password_reset_required?: boolean
+          password_rotates_at?: string | null
+          system_category?: string | null
+          system_name?: string
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
       employee_notes: {
         Row: {
           author_id: string | null
@@ -2329,6 +2470,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      employee_pin_settings: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          id: string
+          iterations: number
+          last_set_at: string
+          locked_until: string | null
+          passkey_credential_id: string | null
+          passkey_public_key: string | null
+          pin_hash: string
+          pin_salt: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          iterations?: number
+          last_set_at?: string
+          locked_until?: string | null
+          passkey_credential_id?: string | null
+          passkey_public_key?: string | null
+          pin_hash: string
+          pin_salt: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          iterations?: number
+          last_set_at?: string
+          locked_until?: string | null
+          passkey_credential_id?: string | null
+          passkey_public_key?: string | null
+          pin_hash?: string
+          pin_salt?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       employee_relationships: {
         Row: {
@@ -2934,6 +3120,80 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      hr_document_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          document_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          document_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          document_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_document_acknowledgements_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "hr_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_documents: {
+        Row: {
+          audience: string[] | null
+          created_at: string
+          description: string | null
+          doc_type: string
+          external_url: string | null
+          file_url: string | null
+          id: string
+          is_active: boolean
+          last_updated_at: string
+          requires_acknowledgement: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string[] | null
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          last_updated_at?: string
+          requires_acknowledgement?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string[] | null
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          last_updated_at?: string
+          requires_acknowledgement?: boolean
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3561,6 +3821,44 @@ export type Database = {
         }
         Relationships: []
       }
+      login_access_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["login_access_action"]
+          device: string | null
+          id: string
+          ip: string | null
+          login_id: string | null
+          occurred_at: string
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["login_access_action"]
+          device?: string | null
+          id?: string
+          ip?: string | null
+          login_id?: string | null
+          occurred_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["login_access_action"]
+          device?: string | null
+          id?: string
+          ip?: string | null
+          login_id?: string | null
+          occurred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_access_logs_login_id_fkey"
+            columns: ["login_id"]
+            isOneToOne: false
+            referencedRelation: "employee_logins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mobile_alert_dismissals: {
         Row: {
           alert_key: string
@@ -4035,6 +4333,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pto_requests: {
+        Row: {
+          created_at: string
+          end_date: string
+          hours: number
+          id: string
+          manager_id: string | null
+          partial_day: boolean
+          pto_type: Database["public"]["Enums"]["pto_request_type"]
+          reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["pto_request_status"]
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          hours?: number
+          id?: string
+          manager_id?: string | null
+          partial_day?: boolean
+          pto_type?: Database["public"]["Enums"]["pto_request_type"]
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["pto_request_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          hours?: number
+          id?: string
+          manager_id?: string | null
+          partial_day?: boolean
+          pto_type?: Database["public"]["Enums"]["pto_request_type"]
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["pto_request_status"]
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_deliveries: {
         Row: {
           alert_id: string
@@ -4261,6 +4616,36 @@ export type Database = {
             referencedColumns: ["key"]
           },
         ]
+      }
+      secure_unlock_events: {
+        Row: {
+          device: string | null
+          id: string
+          ip: string | null
+          method: Database["public"]["Enums"]["unlock_method"]
+          occurred_at: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          device?: string | null
+          id?: string
+          ip?: string | null
+          method: Database["public"]["Enums"]["unlock_method"]
+          occurred_at?: string
+          success: boolean
+          user_id: string
+        }
+        Update: {
+          device?: string | null
+          id?: string
+          ip?: string | null
+          method?: Database["public"]["Enums"]["unlock_method"]
+          occurred_at?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
       }
       sop_documents: {
         Row: {
@@ -5383,6 +5768,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       log_employee_timeline_event: {
         Args: {
           _description: string
@@ -5728,6 +6114,13 @@ export type Database = {
         | "Received"
         | "Approved"
         | "Payment Plan Required"
+      login_access_action:
+        | "viewed"
+        | "copied_username"
+        | "copied_password"
+        | "opened"
+        | "unlock_failed"
+        | "unlock_success"
       notes_compliance_status:
         | "Compliant"
         | "Needs Review"
@@ -5758,6 +6151,14 @@ export type Database = {
         | "closed"
         | "rejected"
       progress_report_status: "Not Started" | "In Progress" | "Received"
+      pto_request_status:
+        | "draft"
+        | "submitted"
+        | "pending_review"
+        | "approved"
+        | "denied"
+        | "cancelled"
+      pto_request_type: "vacation" | "sick" | "personal" | "unpaid" | "other"
       punch_kind: "clock_in" | "clock_out" | "break_start" | "break_end"
       punch_source: "kiosk" | "manual" | "manager_edit" | "import"
       punch_status: "pending" | "approved" | "rejected" | "locked"
@@ -5851,6 +6252,7 @@ export type Database = {
         | "completed"
         | "expired"
         | "waived"
+      unlock_method: "pin" | "passkey"
       work_setting:
         | "clinic"
         | "home"
@@ -6322,6 +6724,14 @@ export const Constants = {
         "Approved",
         "Payment Plan Required",
       ],
+      login_access_action: [
+        "viewed",
+        "copied_username",
+        "copied_password",
+        "opened",
+        "unlock_failed",
+        "unlock_success",
+      ],
       notes_compliance_status: [
         "Compliant",
         "Needs Review",
@@ -6356,6 +6766,15 @@ export const Constants = {
         "rejected",
       ],
       progress_report_status: ["Not Started", "In Progress", "Received"],
+      pto_request_status: [
+        "draft",
+        "submitted",
+        "pending_review",
+        "approved",
+        "denied",
+        "cancelled",
+      ],
+      pto_request_type: ["vacation", "sick", "personal", "unpaid", "other"],
       punch_kind: ["clock_in", "clock_out", "break_start", "break_end"],
       punch_source: ["kiosk", "manual", "manager_edit", "import"],
       punch_status: ["pending", "approved", "rejected", "locked"],
@@ -6461,6 +6880,7 @@ export const Constants = {
         "expired",
         "waived",
       ],
+      unlock_method: ["pin", "passkey"],
       work_setting: [
         "clinic",
         "home",
