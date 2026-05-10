@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
+import blossomMark from "@/assets/blossom-logo.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -365,18 +366,24 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     <>
       <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
         <SheetContent side="right" className="mobile-menu-sheet flex h-dvh w-[92vw] max-w-[380px] flex-col overflow-hidden border-0 bg-background p-0 md:hidden">
-          <header className="relative shrink-0 border-b border-border/60 bg-card/95 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+0.875rem)] backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/15">
-                  <img src={logo} alt="" className="h-7 w-7 object-contain" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[15px] font-semibold tracking-tight text-foreground">Blossom</p>
-                  <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Operating System</p>
-                </div>
-              </div>
-              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
+          <header className="relative shrink-0 overflow-hidden border-b border-border/60 px-5 pb-4 pt-[calc(env(safe-area-inset-top)+1rem)]">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)/0.08)_0%,hsl(var(--accent)/0.06)_60%,transparent_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_-10%,hsl(var(--primary)/0.18),transparent_55%),radial-gradient(circle_at_-10%_110%,hsl(var(--accent)/0.14),transparent_50%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+            <div className="relative flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => { navigate("/"); onMobileOpenChange?.(false); }}
+                className="group flex min-w-0 items-center gap-1 rounded-2xl px-1 py-1 -ml-1 transition active:scale-[0.98]"
+                aria-label="Go to home"
+              >
+                <img
+                  src={blossomMark}
+                  alt="Blossom ABA Therapy"
+                  className="h-12 w-auto object-contain drop-shadow-[0_2px_10px_hsl(var(--primary)/0.18)] transition-transform group-hover:scale-[1.02]"
+                />
+              </button>
+              <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full bg-card/70 text-muted-foreground shadow-sm backdrop-blur-md ring-1 ring-border/60 hover:bg-card hover:text-foreground" onClick={() => onMobileOpenChange?.(false)} aria-label="Close navigation menu">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -387,7 +394,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
                 onChange={(e) => setMobileNavQuery(e.target.value)}
                 onKeyDown={submitNavSearch(mobileNavQuery, true)}
                 placeholder="Search menu…"
-                className="h-10 rounded-xl border-border/60 bg-secondary/40 pl-9 text-[14px] shadow-none placeholder:text-muted-foreground/80 focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="h-10 rounded-xl border-border/50 bg-card/70 pl-9 text-[14px] shadow-sm backdrop-blur-md placeholder:text-muted-foreground/80 focus-visible:bg-card focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
           </header>
