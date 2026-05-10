@@ -91,7 +91,7 @@ export default function OnboardingCenter() {
       title="Onboarding Center"
       description="Drag through stages to move new hires from offer to active."
       icon={GraduationCap}
-      actions={canManage ? <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Start onboarding</Button> : null}
+      actions={canManage ? <Button variant="hero" size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Start onboarding</Button> : null}
     >
       {loading ? <Skeleton className="h-64" /> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">

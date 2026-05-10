@@ -193,11 +193,11 @@ export default function TrainingDashboard() {
     description={`Create, edit, archive, resource, and assign trainings. Current role: ${roleSummary}.`}
     actions={
       <>
-        <Button size="sm" className="border border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => canAssignTraining ? setAssignOpen(true) : blockTrainingAction()} disabled={activeCourses.length === 0 || !canAssignTraining}>
-          <Plus className="mr-1.5 h-4 w-4" />Assign Training
+        <Button variant="heroOutline" size="sm" onClick={() => canAssignTraining ? setAssignOpen(true) : blockTrainingAction()} disabled={activeCourses.length === 0 || !canAssignTraining}>
+          <Plus className="h-4 w-4" /> Assign Training
         </Button>
-        <Button size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => canManageTrainings ? setCreateOpen(true) : blockTrainingAction()} disabled={!canManageTrainings}>
-          <Plus className="mr-1.5 h-4 w-4" />Create Training
+        <Button variant="hero" size="sm" onClick={() => canManageTrainings ? setCreateOpen(true) : blockTrainingAction()} disabled={!canManageTrainings}>
+          <Plus className="h-4 w-4" /> Create Training
         </Button>
       </>
     }

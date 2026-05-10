@@ -64,7 +64,7 @@ export default function EmployeeDirectory() {
       description={`${filtered.length} of ${employees.length} employees`}
       actions={
         hasPerm("hr.employees.create") ? (
-          <Button size="sm" onClick={() => setOpenAdd(true)}>
+          <Button variant="hero" size="sm" onClick={() => setOpenAdd(true)}>
             <Plus className="h-4 w-4" /> Add employee
           </Button>
         ) : null

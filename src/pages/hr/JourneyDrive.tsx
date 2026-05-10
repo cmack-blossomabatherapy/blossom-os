@@ -21,9 +21,9 @@ export default function JourneyDrive() {
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Training Hub
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="bg-background/60 backdrop-blur">
+          <Button asChild variant="hero" size="sm">
             <a href={DRIVE_OPEN_URL} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-3.5 w-3.5" /> Open in Google Drive
+              <ExternalLink className="h-4 w-4" /> Open in Google Drive
             </a>
           </Button>
         </div>

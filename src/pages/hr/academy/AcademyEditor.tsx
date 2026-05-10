@@ -314,12 +314,12 @@ export default function AcademyEditor() {
       description="Curriculum tree — tracks, phases, weeks, modules, and resources."
       actions={
         <div className="flex items-center gap-2">
-          <Button size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => setShowArchived((s) => !s)}>
-            {showArchived ? <ArchiveRestore className="h-4 w-4 mr-1.5" /> : <Archive className="h-4 w-4 mr-1.5" />}
+          <Button variant="hero" size="sm" onClick={() => setShowArchived((s) => !s)}>
+            {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             {showArchived ? "Hide archived" : "Show archived"}
           </Button>
-          <Button size="sm" variant="outline" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground" onClick={() => setEdit({ kind: "track", data: tree.track })}>
-            <Pencil className="h-4 w-4 mr-1.5" /> Edit track
+          <Button variant="heroOutline" size="sm" onClick={() => setEdit({ kind: "track", data: tree.track })}>
+            <Pencil className="h-4 w-4" /> Edit track
           </Button>
         </div>
       }

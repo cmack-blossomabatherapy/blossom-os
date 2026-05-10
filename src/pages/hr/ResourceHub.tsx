@@ -133,7 +133,7 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
       eyebrowIcon={BookOpen}
       title="Resource Hub"
       description="Documents, forms, videos, and links shared with your team."
-      actions={canManage ? <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> Add resource</Button> : null}
+      actions={canManage ? <Button variant="hero" size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add resource</Button> : null}
     >
       <GlassPanel bodyClassName="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

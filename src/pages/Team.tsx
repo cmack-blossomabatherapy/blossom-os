@@ -104,12 +104,12 @@ export default function Team() {
           </div>
           <div className="flex flex-wrap gap-2">
             {isAdmin && (
-              <Button size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" onClick={() => setProvisionOpen(true)}>
-                <UserPlus className="mr-1.5 h-4 w-4" /> Provision employees
+              <Button variant="hero" size="sm" onClick={() => setProvisionOpen(true)}>
+                <UserPlus className="h-4 w-4" /> Provision employees
               </Button>
             )}
-            <Button asChild size="lg" variant="outline" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground">
-              <Link to="/admin">Back to Admin Hub <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+            <Button asChild variant="heroOutline" size="sm">
+              <Link to="/admin">Back to Admin Hub <ArrowRight className="h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
