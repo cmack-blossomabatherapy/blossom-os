@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,6 +39,7 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState<ResourceCategory | "all">("all");
+  const [kindFilter, setKindFilter] = useState<ResourceKind | "all">("all");
 
   // dialog
   const [open, setOpen] = useState(false);
@@ -106,12 +107,21 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
       );
     }
     if (cat !== "all") r = r.filter((x) => x.category === cat);
+    if (kindFilter !== "all") r = r.filter((x) => x.kind === kindFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter((x) => `${x.title} ${x.description ?? ""}`.toLowerCase().includes(q));
     }
     return r;
-  }, [items, cat, search, roles, isAdmin, canManage]);
+  }, [items, cat, kindFilter, search, roles, isAdmin, canManage]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: items.length };
+    for (const i of items) counts[i.category] = (counts[i.category] ?? 0) + 1;
+    return counts;
+  }, [items]);
+
+  const activeFilters = (cat !== "all" ? 1 : 0) + (kindFilter !== "all" ? 1 : 0) + (search.trim() ? 1 : 0);
 
   function toggleRole(r: AppRole) {
     setVisibilityRoles((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
@@ -126,21 +136,72 @@ export default function ResourceHub({ readOnly = false }: { readOnly?: boolean }
       actions={canManage ? <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5" /> Add resource</Button> : null}
     >
       <GlassPanel bodyClassName="p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <Tabs value={cat} onValueChange={(v) => setCat(v as ResourceCategory | "all")}>
-            <TabsList className="flex-wrap h-auto">
-              {CATEGORIES.map((c) => (
-                <TabsTrigger key={c} value={c} className="text-xs">
-                  {c === "all" ? "All" : RESOURCE_CATEGORY_LABEL[c]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-          <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="pl-7 h-8 w-56 text-xs" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="relative flex-1 min-w-0 sm:max-w-md">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search resources…"
+              className="pl-9 h-9 bg-background/60"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={cat} onValueChange={(v) => setCat(v as ResourceCategory | "all")}>
+              <SelectTrigger className="h-9 w-[180px] bg-background/60">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    <span className="flex items-center justify-between gap-3 w-full">
+                      <span>{c === "all" ? "All categories" : RESOURCE_CATEGORY_LABEL[c]}</span>
+                      <span className="text-[10px] text-muted-foreground">{categoryCounts[c] ?? 0}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as ResourceKind | "all")}>
+              <SelectTrigger className="h-9 w-[150px] bg-background/60">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                {Object.entries(RESOURCE_KIND_LABEL).map(([k, l]) => (
+                  <SelectItem key={k} value={k}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {activeFilters > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 text-xs text-muted-foreground"
+                onClick={() => { setCat("all"); setKindFilter("all"); setSearch(""); }}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
+        {(cat !== "all" || kindFilter !== "all") && (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {cat !== "all" && (
+              <Badge variant="secondary" className="gap-1.5 font-normal">
+                {RESOURCE_CATEGORY_LABEL[cat]}
+                <button onClick={() => setCat("all")} className="text-muted-foreground hover:text-foreground">×</button>
+              </Badge>
+            )}
+            {kindFilter !== "all" && (
+              <Badge variant="secondary" className="gap-1.5 font-normal">
+                {RESOURCE_KIND_LABEL[kindFilter]}
+                <button onClick={() => setKindFilter("all")} className="text-muted-foreground hover:text-foreground">×</button>
+              </Badge>
+            )}
+            <span className="text-[11px] text-muted-foreground ml-1">{filtered.length} result{filtered.length === 1 ? "" : "s"}</span>
+          </div>
+        )}
 
         {loading ? <Skeleton className="h-32" /> : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground py-10 text-center">No resources match.</p>
