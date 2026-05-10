@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Settings as SettingsIcon } from "lucide-react";
-import { PageShell } from "@/components/shared/PageShell";
+import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { SettingsNav } from "@/components/settings/SettingsNav";
 import { GeneralSettingsPanel } from "@/components/settings/GeneralSettingsPanel";
 import { StatesPanel } from "@/components/settings/StatesPanel";
@@ -26,10 +26,11 @@ export default function SettingsPage() {
   const [active, setActive] = useState<SettingsSectionId>("general");
 
   return (
-    <PageShell
-      title="Settings"
-      description="Admin controls — configure states, pipelines, roles, automations, and integrations"
-      icon={SettingsIcon}
+    <GlassPageShell
+      eyebrow="Academy Settings"
+      eyebrowIcon={SettingsIcon}
+      title="Configure Blossom"
+      description="States, pipelines, roles, automations, integrations — everything that powers the platform."
     >
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 items-start">
         <SettingsNav active={active} onSelect={setActive} />
@@ -55,6 +56,6 @@ export default function SettingsPage() {
           {active === "audit-logs" && <AuditLogsPanel />}
         </div>
       </div>
-    </PageShell>
+    </GlassPageShell>
   );
 }
