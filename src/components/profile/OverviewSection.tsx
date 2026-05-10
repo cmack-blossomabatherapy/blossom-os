@@ -1,9 +1,8 @@
-import { Award, Compass, GraduationCap, Sparkles, Trophy } from "lucide-react";
+import { Compass, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { resetOnboarding, setPreviewLocked } from "@/lib/onboarding/storage";
 
 interface Props {
   ob: any;
