@@ -28,7 +28,7 @@ type HomeDraft = { eyebrow: string; title: string; title_highlight: string; obje
 export default function JourneyEditor() {
   const { user, roles } = useAuth();
   const { phaseOverrides, moduleOverrides, refresh, loading } = useJourneyOverrides();
-  const [activePhase, setActivePhase] = useState(ONBOARDING_PHASES[0].id);
+  const [activePhase, setActivePhase] = useState<string>(ONBOARDING_PHASES[0].id);
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseDraft>>({});
   const [modDrafts, setModDrafts] = useState<Record<string, ModuleDraft>>({});
   const [homeDraft, setHomeDraft] = useState<HomeDraft>({ eyebrow: "Your Blossom Journey", title: "Your First 5 Weeks at", title_highlight: "Blossom", objective: "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line." });
