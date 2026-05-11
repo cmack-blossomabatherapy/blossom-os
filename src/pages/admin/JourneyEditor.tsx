@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Sparkles, Save, Video, EyeOff, Eye, Check, Compass, RotateCcw } from "lucide-react";
+import { Sparkles, Save, Video, EyeOff, Eye, Check, Compass, RotateCcw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,7 @@ type ModuleDraft = {
   hidden: boolean;
 };
 type PhaseDraft = { title: string; objective: string };
+type HomeDraft = { eyebrow: string; title: string; title_highlight: string; objective: string };
 
 export default function JourneyEditor() {
   const { user, roles } = useAuth();
@@ -30,11 +31,19 @@ export default function JourneyEditor() {
   const [activePhase, setActivePhase] = useState(ONBOARDING_PHASES[0].id);
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseDraft>>({});
   const [modDrafts, setModDrafts] = useState<Record<string, ModuleDraft>>({});
+  const [homeDraft, setHomeDraft] = useState<HomeDraft>({ eyebrow: "Your Blossom Journey", title: "Your First 5 Weeks at", title_highlight: "Blossom", objective: "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line." });
   const [saving, setSaving] = useState<string | null>(null);
 
   // Hydrate drafts from base + overrides
   useEffect(() => {
     if (loading) return;
+    const ho = phaseOverrides["__home"];
+    setHomeDraft({
+      eyebrow: ho?.eyebrow ?? "Your Blossom Journey",
+      title: ho?.title ?? "Your First 5 Weeks at",
+      title_highlight: ho?.title_highlight ?? "Blossom",
+      objective: ho?.objective ?? "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line.",
+    });
     const pd: Record<string, PhaseDraft> = {};
     const md: Record<string, ModuleDraft> = {};
     ONBOARDING_PHASES.forEach((p) => {
@@ -60,6 +69,24 @@ export default function JourneyEditor() {
   if (!canAccessAdminHub(user, roles)) return <Navigate to="/" replace />;
 
   const phase = useMemo(() => ONBOARDING_PHASES.find((p) => p.id === activePhase)!, [activePhase]);
+
+  const saveHome = async () => {
+    setSaving("home");
+    const { error } = await supabase
+      .from("journey_phase_overrides")
+      .upsert({
+        phase_id: "__home",
+        eyebrow: homeDraft.eyebrow,
+        title: homeDraft.title,
+        title_highlight: homeDraft.title_highlight,
+        objective: homeDraft.objective,
+        updated_by: user?.id,
+      }, { onConflict: "phase_id" });
+    setSaving(null);
+    if (error) { toast({ title: "Couldn't save", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Journey home saved", description: "The /onboarding hero updated for everyone." });
+    void refresh();
+  };
 
   const savePhase = async () => {
     setSaving(`phase:${phase.id}`);
@@ -129,12 +156,51 @@ export default function JourneyEditor() {
 
       <Tabs value={activePhase} onValueChange={(v) => setActivePhase(v as typeof activePhase)}>
         <TabsList className="flex w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="__home" className="gap-1.5 text-xs">
+            <Home className="h-3.5 w-3.5" /> Journey home
+          </TabsTrigger>
           {ONBOARDING_PHASES.map((p) => (
             <TabsTrigger key={p.id} value={p.id} className="gap-1.5 text-xs">
               <p.icon className="h-3.5 w-3.5" /> {p.weekLabel}
             </TabsTrigger>
           ))}
         </TabsList>
+
+        <TabsContent value="__home" className="mt-5 space-y-5">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <Home className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Onboarding landing page hero</h2>
+              {phaseOverrides["__home"] && <Badge variant="secondary" className="text-[10px]">Edited</Badge>}
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              This is the hero shown on <span className="font-mono text-foreground">/onboarding</span> — the first thing staff see when they open their journey.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Eyebrow chip</label>
+                <Input value={homeDraft.eyebrow} onChange={(e) => setHomeDraft((s) => ({ ...s, eyebrow: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Highlighted word</label>
+                <Input value={homeDraft.title_highlight} onChange={(e) => setHomeDraft((s) => ({ ...s, title_highlight: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Title (the highlighted word follows this)</label>
+                <Input value={homeDraft.title} onChange={(e) => setHomeDraft((s) => ({ ...s, title: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Subheading</label>
+                <Textarea rows={3} value={homeDraft.objective} onChange={(e) => setHomeDraft((s) => ({ ...s, objective: e.target.value }))} />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button size="sm" onClick={saveHome} disabled={saving === "home"} className="gap-1.5">
+                <Save className="h-3.5 w-3.5" /> Save journey home
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
 
         {ONBOARDING_PHASES.map((p) => {
           const pd = phaseDrafts[p.id];
