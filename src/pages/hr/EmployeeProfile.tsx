@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Briefcase, Wallet,
   LayoutGrid, BriefcaseBusiness, Network, ListChecks, Star, GraduationCap,
-  Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle,
+  Banknote, Clock, FileText, StickyNote, MessageSquare, History, ShieldCheck, AlertCircle, KeyRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -22,6 +22,7 @@ import { DocumentsTab } from "@/components/hr/profile/DocumentsTab";
 import { NotesTab } from "@/components/hr/profile/NotesTab";
 import { TimelineTab } from "@/components/hr/profile/TimelineTab";
 import { AccessTab } from "@/components/hr/profile/AccessTab";
+import { LoginsTab } from "@/components/hr/profile/LoginsTab";
 import { CasesTab } from "@/components/hr/profile/CasesTab";
 import { PlaceholderTab } from "@/components/hr/profile/PlaceholderTab";
 import { TimeClockTab } from "@/components/hr/profile/TimeClockTab";
@@ -135,6 +136,7 @@ export default function EmployeeProfile() {
               <ProfileTab value="communication" icon={MessageSquare} label="Communication" />
               <ProfileTab value="timeline" icon={History} label="Timeline" />
               <ProfileTab value="access" icon={ShieldCheck} label="Access" />
+              <ProfileTab value="logins" icon={KeyRound} label="Logins" />
               {showCases && <ProfileTab value="cases" icon={AlertCircle} label="Cases" />}
             </TabsList>
           </div>
@@ -155,6 +157,7 @@ export default function EmployeeProfile() {
         <TabsContent value="communication"><PlaceholderTab title="Communication Timeline" message="Linked emails, calls, meetings, follow-ups arrive in Phase 4." /></TabsContent>
         <TabsContent value="timeline"><TimelineTab employee={employee} /></TabsContent>
         <TabsContent value="access"><AccessTab employee={employee} /></TabsContent>
+        <TabsContent value="logins"><LoginsTab employee={employee} /></TabsContent>
         {showCases && <TabsContent value="cases"><CasesTab employee={employee} /></TabsContent>}
       </Tabs>
     </div>
