@@ -34,7 +34,23 @@ export default function Profile() {
 
   useEffect(() => { nav({ hash: tab }, { replace: true }); }, [tab, nav]);
 
-  const name = (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "Blossom User";
+  const { data: profileRow } = useQuery({
+    queryKey: ["profile_row", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("display_name").eq("user_id", user!.id).maybeSingle();
+      return data as any;
+    },
+  });
+
+  const name = (
+    profileRow?.display_name ||
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    (user?.user_metadata?.display_name as string | undefined) ||
+    user?.email?.split("@")[0] ||
+    "Blossom User"
+  );
   const initials = name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "BU";
 
   const { data: hrProfile } = useQuery({
