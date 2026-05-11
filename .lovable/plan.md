@@ -1,95 +1,54 @@
-## Employee Hub — Profile Upgrade Plan
+## Goal
 
-Goal: Replace the current `/profile` page contents with a premium Apple-style Employee Hub. **Nothing existing is removed** — onboarding/training/cert/competency/HR/admin/auth/Supabase code stays intact. The new profile reuses existing data sources (`useOnboardingStatus`, badges, employee record) and adds new tables only for HR self-service, PTO, and a secure login vault.
+Right now the HR Journey Editor (`/admin/journey-editor`) lets HR edit each phase (Phase 0 Welcome, Week 1, etc.) and the modules inside them — but the **`/onboarding` landing page itself** (the "Your First 5 Weeks at Blossom" hero on `Journey.tsx`) is hardcoded and can't be changed. This plan makes that hero editable too.
 
----
+## What gets editable
 
-### 1. Profile Shell (rewrite of `src/pages/Profile.tsx`)
+On the `/onboarding` page hero, HR will be able to change:
 
-- New `ProfileHero` card: avatar, name, role, department, state, manager, onboarding %, Academy progress, badges, and 4 quick-action buttons (Continue Training, Request PTO, View Logins, View Certificates).
-- Segmented tab nav (`Overview · My Learning · Certifications · HR · My Logins · Settings`).
-- On mobile: tabs collapse into a horizontally swipeable segmented control; sub-pages use sheet/card layout.
+- The eyebrow chip ("Your Blossom Journey")
+- The main heading ("Your First 5 Weeks at Blossom") — including the gradient-highlighted word
+- The subheading paragraph ("A guided journey through who we are…")
 
-### 2. Section components (`src/components/profile/`)
+Stat strip, progress bar, phase rail, and timeline stay automatic (driven by user data).
 
-- `OverviewSection.tsx` — hero stats, Academy snapshot, recent activity, badges grid (reuses existing badge data).
-- `LearningSection.tsx` — pulls existing training assignments + Academy progress (read-only summary, links into existing pages).
-- `CertificationsSection.tsx` — surfaces existing certs/competencies (read-only summary, links to existing detail pages).
-- `HRSection.tsx` — 6 cards: PTO, Hours, Payroll, HR Documents, Benefits, Contact HR. Each opens its own panel/sheet.
-  - `PTORequestPanel.tsx` (new flow + history list with status chips: Draft / Submitted / Pending / Approved / Denied / Cancelled).
-  - `HoursPanel.tsx` (placeholder weekly ring + recent entries + "Open Time System" link to existing `/hr/time-clock`).
-  - `PayrollPanel.tsx` (placeholder pay frequency / next pay / login shortcut + disclaimer).
-  - `HRDocumentsPanel.tsx` (cards from new `hr_documents` table + acknowledgement chip).
-  - `BenefitsPanel.tsx` (links/list from `hr_resources`, no new schema).
-  - `ContactHRPanel.tsx` (deep links to `/hr/announcements`, support email).
-- `LoginsSection.tsx` — Apple Passwords-style vault. Cards show system, icon, category, username, masked password, login URL, copy-username, "Unlock Password" CTA, last updated, owner, notes.
-  - `UnlockSheet.tsx` — bottom sheet asking for PIN; secondary "Use Face ID / Touch ID" button wired to WebAuthn (`navigator.credentials.get`) when available, PIN fallback otherwise. After success: reveal password for 45s, then auto-mask. Logs every reveal/copy/open event.
-  - `PinSetupDialog.tsx` — first-run PIN setup (PBKDF2/Argon2-style salted hash stored in `employee_pin_settings`).
-- `SettingsSection.tsx` — wraps existing settings (notification prefs, path switcher, theme, sign out). Keeps `PathSwitcher` and `resetOnboarding` from current Profile page.
+## How it works
 
-### 3. Admin additions (`src/pages/admin/LoginVaultAdmin.tsx`)
+1. **Storage** — reuse the existing `journey_phase_overrides` table by adding one synthetic row with `phase_id = '__home'`. Columns we already have (`title`, `objective`) cover heading + subheading; we add a new `eyebrow text` column for the chip and a `title_highlight text` column for the gradient word. Existing RLS (HR/Admin/Training Admin write, all authenticated read) already covers the new fields.
 
-- Admin-only page (route `/admin/login-vault`, gated by existing `isAdmin`).
-- CRUD for `employee_logins`: add, assign to user / role / department, edit username, mark password-reset-required, set rotation date, archive.
-- Read-only `login_access_logs` table (filterable by user/system/action).
-- Banner: *"Password vault requires encrypted storage before real passwords are added"* until a server-side decrypt edge function is wired.
+2. **Editor UI** — add a new "Journey home" tab at the front of the JourneyEditor tab list (before Phase 0). It contains a single card with inputs for Eyebrow, Title, Highlighted word, and Subheading, plus a Save button using the same upsert pattern as phase saves.
 
-### 4. Database (additive migrations only)
+3. **Hook** — extend `useJourneyOverrides` so the home overrides row is exposed via a new `homeOverride` value.
 
-New tables, all RLS-protected:
+4. **Live page** — `Journey.tsx` reads `homeOverride` and renders the hero using `eyebrow ?? "Your Blossom Journey"`, `title ?? "Your First 5 Weeks at"` + `title_highlight ?? "Blossom"` (the highlighted span), and `objective ?? <existing default>`. Realtime subscription already in the hook means edits propagate without refresh.
 
-- `employee_hr_profiles` — extra fields (manager_id, department, location_state, pto_balance_hours).
-- `pto_requests` — id, user_id, pto_type, start_date, end_date, hours, partial_day, reason, status, manager_id, submitted_at, reviewed_at, review_notes.
-- `employee_hours_snapshots` — user_id, week_start, total_hours, source.
-- `hr_documents` — title, doc_type, file_url, last_updated_at, requires_acknowledgement, audience.
-- `hr_document_acknowledgements` — user_id, document_id, acknowledged_at.
-- `employee_logins` — user_id, system_name, system_category, login_url, username, encrypted_password (placeholder text), notes, assigned_by, last_updated_at, password_rotates_at, is_active.
-- `login_access_logs` — user_id, login_id, action (viewed/copied_username/copied_password/opened/unlock_failed/unlock_success), occurred_at, device, ip.
-- `employee_pin_settings` — user_id, pin_hash, pin_salt, last_set_at, failed_attempts, locked_until.
-- `secure_unlock_events` — user_id, method (pin/passkey), success, occurred_at.
+## Technical details
 
-RLS policy themes:
-- Users: full access to their own rows in all 9 tables.
-- Managers (existing `has_role` helper, `manager` role): SELECT on `pto_requests` where `manager_id = auth.uid()`; UPDATE status/review_notes only.
-- Admins: full CRUD on `hr_documents`, `employee_logins`; SELECT-only on `login_access_logs`, `secure_unlock_events`. Admins do NOT get default access to other users' passwords (separate `vault_admin` flag, optional later).
+```text
+DB migration
+  ALTER TABLE journey_phase_overrides
+    ADD COLUMN eyebrow text,
+    ADD COLUMN title_highlight text;
 
-### 5. Security guardrails (frontend)
+useJourneyOverrides
+  homeOverride = phaseOverrides["__home"] | null
 
-- Passwords never rendered in DOM until unlock; stored in component state with a `setTimeout` auto-clear after 45s.
-- Copy-to-clipboard guarded behind unlock; logs `copied_password` event.
-- `UnlockSheet` enforces local rate limit (3 failed PIN attempts → 60s lockout, mirrored to `employee_pin_settings.locked_until`).
-- WebAuthn passkey path ready but disabled when `navigator.credentials` / `PublicKeyCredential` unavailable; UI clearly says "Set up Face ID later".
-- Admin warning banner blocks the "real password" entry field until an encrypted vault edge function exists.
+Journey.tsx hero
+  eyebrow chip   → homeOverride?.eyebrow ?? "Your Blossom Journey"
+  h1             → homeOverride?.title ?? "Your First 5 Weeks at "
+                   <span gradient> homeOverride?.title_highlight ?? "Blossom" </span>
+  paragraph      → homeOverride?.objective ?? "A guided journey through…"
 
-### 6. Routing & nav
+JourneyEditor.tsx
+  New first <TabsTrigger value="__home">Journey home</TabsTrigger>
+  Card with 4 inputs + Save (upsert into journey_phase_overrides on phase_id='__home')
+```
 
-- `/profile` keeps its current route; tab state via URL hash (`/profile#hr`, `/profile#logins`).
-- Add `/admin/login-vault` to existing admin nav (Admin Hub card).
-- No removal of existing `/hr/*` routes — HR section panels deep-link into them where the full UI already exists (e.g., Hours → `/hr/time-clock`, Payroll → existing `Payroll.tsx`).
+## Files touched
 
----
+- `supabase/migrations/<new>.sql` — add 2 columns to `journey_phase_overrides`
+- `src/hooks/useJourneyOverrides.tsx` — expose `homeOverride`
+- `src/pages/admin/JourneyEditor.tsx` — add "Journey home" tab + form
+- `src/pages/onboarding/Journey.tsx` — consume overrides in hero
 
-### Technical details
-
-- **State**: section-local `useState`; cross-tab via `useSearchParams` hash. No new global store.
-- **Data fetching**: `@tanstack/react-query` (already in repo). One query per section.
-- **Styling**: existing `GlassPanel`, `GlassPageShell` patterns + new `hero`/`heroOutline` Button variants. All semantic tokens from `index.css`.
-- **Sheets/modals**: `@/components/ui/sheet` for mobile, `@/components/ui/dialog` for desktop unlock.
-- **WebAuthn placeholder**: small wrapper `src/lib/security/passkey.ts` with `isAvailable()`, `register()`, `verify()` stubs returning typed results — wired to real APIs when present, `notSupported` otherwise.
-- **PIN hashing**: client computes PBKDF2(SHA-256, 100k iters) with random salt; salt+hash stored. Verify by recomputing. (Acceptable v1; can move to edge function later.)
-- **Audit logging**: thin `logVaultEvent(action, login_id)` helper inserts to `login_access_logs`; called from every reveal/copy/open code path.
-
-### Out of scope for this pass
-
-- Real encrypted password storage (UI ready, banner explains).
-- Manager approval workflows beyond PTO status updates.
-- Push/email notifications on PTO submit (placeholders only).
-- Migrating existing `/hr/payroll`, `/hr/time-clock` UIs into the profile (we link into them).
-
-### Confirm before I build
-
-1. Migration creates **9 new tables** as listed — OK to run?
-2. `/profile` page contents are **rewritten** (route + URL stay the same, no other page touched). Any existing demo data on the current Profile (badges array, PathSwitcher, reset onboarding) is preserved inside the new Overview/Settings sections. Confirm OK.
-3. Admin login-vault page added at `/admin/login-vault` — OK to add to Admin Hub navigation card?
-
-Reply "go" (or with adjustments) and I'll implement in one pass.
+No other phase/module behavior changes.

@@ -3758,31 +3758,37 @@ export type Database = {
       journey_phase_overrides: {
         Row: {
           created_at: string
+          eyebrow: string | null
           intro_video_poster: string | null
           intro_video_url: string | null
           objective: string | null
           phase_id: string
           title: string | null
+          title_highlight: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           created_at?: string
+          eyebrow?: string | null
           intro_video_poster?: string | null
           intro_video_url?: string | null
           objective?: string | null
           phase_id: string
           title?: string | null
+          title_highlight?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           created_at?: string
+          eyebrow?: string | null
           intro_video_poster?: string | null
           intro_video_url?: string | null
           objective?: string | null
           phase_id?: string
           title?: string | null
+          title_highlight?: string | null
           updated_at?: string
           updated_by?: string | null
         }
