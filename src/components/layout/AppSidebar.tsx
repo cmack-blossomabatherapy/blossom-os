@@ -518,7 +518,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           <ResumeOnboardingButton variant="sidebar" />
         </div>
         <div className="relative px-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/80" />
+          <Search
+            className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 h-4 w-4 text-sidebar-primary"
+            strokeWidth={2.25}
+          />
           <Input
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
