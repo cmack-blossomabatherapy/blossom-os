@@ -167,7 +167,10 @@ export default function AcademyEditor() {
         applies_to_new_state_only: d.applies_to_new_state_only ?? false,
         position: nextPos,
         quiz: (d as any).quiz ?? undefined,
-      }).select("*").single();
+        link_url: (d as any).link_url ?? null,
+        cover_image_url: (d as any).cover_image_url ?? null,
+        video_url: (d as any).video_url ?? null,
+      } as any).select("*").single();
     } else if (edit.kind === "resource") {
       const d = edit.data;
       res = await supabase.from("academy_module_resources").upsert({
@@ -709,6 +712,19 @@ function EditForm({ edit, setEdit }: { edit: any; setEdit: (e: any) => void }) {
           <Field label="Position"><Input type="number" value={d.position ?? 0} onChange={(e) => update({ position: parseInt(e.target.value) || 0 })} /></Field>
           <Field label="Leader name"><Input value={d.leader_name ?? ""} onChange={(e) => update({ leader_name: e.target.value })} /></Field>
           <Field label="Department"><Input value={d.department ?? ""} onChange={(e) => update({ department: e.target.value })} /></Field>
+        </div>
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-3">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Module media & links</Label>
+          <Field label="Primary link (where staff go when they open this module)">
+            <Input placeholder="https://…" value={(d as any).link_url ?? ""} onChange={(e) => update({ link_url: e.target.value } as any)} />
+          </Field>
+          <Field label="Cover image URL">
+            <Input placeholder="https://…/image.jpg" value={(d as any).cover_image_url ?? ""} onChange={(e) => update({ cover_image_url: e.target.value } as any)} />
+          </Field>
+          <Field label="Video URL (YouTube, Loom, Vimeo, mp4)">
+            <Input placeholder="https://…" value={(d as any).video_url ?? ""} onChange={(e) => update({ video_url: e.target.value } as any)} />
+          </Field>
+          <p className="text-[11px] text-muted-foreground">Need more than one? Use the Resources list on the module row to attach additional links, SOPs, forms, or videos.</p>
         </div>
         <div className="flex items-center gap-2">
           <Switch checked={d.is_required ?? true} onCheckedChange={(v) => update({ is_required: v })} />

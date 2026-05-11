@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Compass, BookOpen, Library, LifeBuoy, Lock } from "lucide-react";
+import { ArrowRight, Sparkles, Compass, BookOpen, Library, LifeBuoy, Lock, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,29 @@ export default function OnboardingHome() {
           </div>
         </div>
       </section>
+
+      {/* Show Your Journey CTA */}
+      <Link
+        to="/onboarding"
+        className="group relative block overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+      >
+        <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <Map className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Your Path</p>
+              <p className="mt-0.5 text-lg font-semibold text-foreground">Show Your Journey</p>
+              <p className="mt-1 text-sm text-muted-foreground">See every phase, week, and module across your first five weeks at Blossom.</p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform group-hover:translate-x-0.5 sm:self-auto">
+            Open journey <ArrowRight className="h-4 w-4" />
+          </span>
+        </div>
+      </Link>
 
       {/* What's next + locked previews */}
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">

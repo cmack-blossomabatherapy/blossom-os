@@ -9,6 +9,24 @@ import { toast } from "sonner";
 
 const ICON: Record<string, any> = { BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare };
 
+function toEmbedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    if (u.hostname.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (u.hostname.includes("loom.com") && u.pathname.includes("/share/")) {
+      return url.replace("/share/", "/embed/");
+    }
+    if (u.hostname.includes("vimeo.com")) {
+      return `https://player.vimeo.com/video/${u.pathname.split("/").filter(Boolean).pop()}`;
+    }
+  } catch { /* ignore */ }
+  return url;
+}
+
 export interface ModuleResource { id: string; label: string; url: string | null; kind: string }
 
 export function ModuleCard({
@@ -72,6 +90,42 @@ export function ModuleCard({
               {module.leader_name && <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {module.leader_name}</span>}
               {module.department && <span>· {module.department}</span>}
             </div>
+          )}
+
+          {module.cover_image_url && (
+            <img
+              src={module.cover_image_url}
+              alt=""
+              loading="lazy"
+              className="mt-3 w-full rounded-xl border border-border/60 object-cover"
+            />
+          )}
+
+          {module.video_url && (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border/60 bg-black/5">
+              {/youtube\.com|youtu\.be|loom\.com|vimeo\.com/.test(module.video_url) ? (
+                <iframe
+                  src={toEmbedUrl(module.video_url)}
+                  title={module.title}
+                  className="aspect-video w-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video src={module.video_url} controls className="aspect-video w-full" />
+              )}
+            </div>
+          )}
+
+          {module.link_url && (
+            <a
+              href={module.link_url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Open module
+            </a>
           )}
 
           {resources && resources.length > 0 && (

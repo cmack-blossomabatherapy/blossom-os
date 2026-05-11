@@ -11,6 +11,7 @@ export interface AcademyModule {
   module_type: AcademyModuleType; duration_label: string | null; leader_name: string | null;
   department: string | null; is_required: boolean; applies_to: AcademyPath;
   applies_to_new_state_only: boolean; quiz: any;
+  link_url?: string | null; cover_image_url?: string | null; video_url?: string | null;
 }
 export interface AcademyEnrollment {
   id: string; employee_id: string; track_id: string; start_date: string;
