@@ -300,6 +300,7 @@ export type Database = {
           applies_to: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only: boolean
           archived_at: string | null
+          cover_image_url: string | null
           created_at: string
           department: string | null
           description: string | null
@@ -309,17 +310,20 @@ export type Database = {
           is_pinned: boolean
           is_required: boolean
           leader_name: string | null
+          link_url: string | null
           module_type: Database["public"]["Enums"]["academy_module_type"]
           pinned_at: string | null
           position: number
           quiz: Json | null
           title: string
+          video_url: string | null
           week_id: string
         }
         Insert: {
           applies_to?: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only?: boolean
           archived_at?: string | null
+          cover_image_url?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
@@ -329,17 +333,20 @@ export type Database = {
           is_pinned?: boolean
           is_required?: boolean
           leader_name?: string | null
+          link_url?: string | null
           module_type: Database["public"]["Enums"]["academy_module_type"]
           pinned_at?: string | null
           position?: number
           quiz?: Json | null
           title: string
+          video_url?: string | null
           week_id: string
         }
         Update: {
           applies_to?: Database["public"]["Enums"]["academy_path"]
           applies_to_new_state_only?: boolean
           archived_at?: string | null
+          cover_image_url?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
@@ -349,11 +356,13 @@ export type Database = {
           is_pinned?: boolean
           is_required?: boolean
           leader_name?: string | null
+          link_url?: string | null
           module_type?: Database["public"]["Enums"]["academy_module_type"]
           pinned_at?: string | null
           position?: number
           quiz?: Json | null
           title?: string
+          video_url?: string | null
           week_id?: string
         }
         Relationships: [
