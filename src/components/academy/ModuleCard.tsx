@@ -9,6 +9,24 @@ import { toast } from "sonner";
 
 const ICON: Record<string, any> = { BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare };
 
+function toEmbedUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtu.be")) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    if (u.hostname.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+    }
+    if (u.hostname.includes("loom.com") && u.pathname.includes("/share/")) {
+      return url.replace("/share/", "/embed/");
+    }
+    if (u.hostname.includes("vimeo.com")) {
+      return `https://player.vimeo.com/video/${u.pathname.split("/").filter(Boolean).pop()}`;
+    }
+  } catch { /* ignore */ }
+  return url;
+}
+
 export interface ModuleResource { id: string; label: string; url: string | null; kind: string }
 
 export function ModuleCard({
