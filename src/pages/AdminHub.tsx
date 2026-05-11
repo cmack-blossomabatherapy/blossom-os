@@ -48,6 +48,7 @@ const groups: AdminGroup[] = [
       { to: "/admin/training-assign", label: "Assign Trainings", desc: "Push courses to teams", icon: ClipboardCheck },
       { to: "/admin/training-statistics", label: "Training Statistics", desc: "Engagement & completion", icon: BarChart3 },
       { to: "/training/academy/editor", label: "Academy Editor", desc: "Edit onboarding journey", icon: Compass },
+      { to: "/admin/journey-editor", label: "Welcome to Blossom Editor", desc: "Edit phases, add videos, hide modules", icon: Sparkles, badge: "New" },
       { to: "/enterprise/course-studio", label: "AI Course Studio", desc: "Generate courses with AI", icon: Sparkles, badge: "AI" },
       { to: "/enterprise/sop-intelligence", label: "SOP Intelligence", desc: "Searchable knowledge base", icon: BookOpen },
     ],
