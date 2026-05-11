@@ -57,7 +57,7 @@ export function VideoIntroCard({ moduleKey, title, description, videoSrc, poster
               </div>
               <p className="text-sm font-semibold text-foreground">{title}</p>
               <p className="max-w-md text-xs text-muted-foreground">
-                Your personal welcome video from Elvis is being prepared. It will appear right here, ready to play.
+                Your personal welcome video from Blossom! is being prepared. It will appear right here, ready to play.
               </p>
               <Badge variant="outline" className="mt-1 gap-1 text-[10px] backdrop-blur"><Sparkles className="h-3 w-3 text-primary" /> Coming soon</Badge>
             </div>
