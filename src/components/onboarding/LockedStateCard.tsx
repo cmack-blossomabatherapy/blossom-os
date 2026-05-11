@@ -24,7 +24,7 @@ export function LockedStateCard({ description, sectionLabel }: Props) {
   ];
 
   const completedIds = new Set(
-    (phaseProgress || []).filter((pp: any) => pp.percent === 100).map((pp: any) => pp.id),
+    (phaseProgress || []).filter((pp: any) => pp.complete).map((pp: any) => pp.phase.id),
   );
   const activeId = nextPhase?.id;
 
