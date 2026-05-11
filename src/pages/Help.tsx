@@ -31,7 +31,7 @@ const primaryContacts = [
     email: "cmack@blossomabatherapy.com",
     icon: Laptop,
     accent: "from-sky-500/15 to-sky-500/0 text-sky-600 dark:text-sky-300",
-    contact: "Christian Mack",
+    contact: "Corey Mack",
   },
 ];
 
