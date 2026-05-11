@@ -3,14 +3,12 @@ import { ArrowRight, Compass, Sparkles, Award, Clock, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
-import { useAuth } from "@/contexts/AuthContext";
 import { PremiumJourneyTimeline } from "@/components/onboarding/PremiumJourneyTimeline";
 import { PhaseChipRail } from "@/components/onboarding/PhaseChipRail";
 import { totalMinutes } from "@/lib/onboarding/journey";
 
 export default function Journey() {
   const status = useOnboardingStatus();
-  const { newStateEmployee } = useAuth();
   const minutes = totalMinutes(status.path);
   const totalHours = Math.max(1, Math.round(minutes / 60));
   const completedPhases = status.phaseProgress.filter((p) => p.complete && p.phase.id !== "graduation").length;
