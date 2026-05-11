@@ -38,16 +38,13 @@ export default function Profile() {
     queryKey: ["profile_row", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("display_name, full_name, name, first_name, last_name").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase.from("profiles").select("display_name").eq("user_id", user!.id).maybeSingle();
       return data as any;
     },
   });
 
   const name = (
     profileRow?.display_name ||
-    profileRow?.full_name ||
-    profileRow?.name ||
-    [profileRow?.first_name, profileRow?.last_name].filter(Boolean).join(" ").trim() ||
     (user?.user_metadata?.full_name as string | undefined) ||
     (user?.user_metadata?.name as string | undefined) ||
     (user?.user_metadata?.display_name as string | undefined) ||
