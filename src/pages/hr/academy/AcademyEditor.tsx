@@ -167,7 +167,10 @@ export default function AcademyEditor() {
         applies_to_new_state_only: d.applies_to_new_state_only ?? false,
         position: nextPos,
         quiz: (d as any).quiz ?? undefined,
-      }).select("*").single();
+        link_url: (d as any).link_url ?? null,
+        cover_image_url: (d as any).cover_image_url ?? null,
+        video_url: (d as any).video_url ?? null,
+      } as any).select("*").single();
     } else if (edit.kind === "resource") {
       const d = edit.data;
       res = await supabase.from("academy_module_resources").upsert({
