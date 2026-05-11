@@ -123,6 +123,34 @@ export default function TrainingHub() {
 
   const visibleTrainingDepartments = trainingDepartments;
 
+  // No live trainings yet — show an empty state instead of mock departments
+  if (!loading && courses.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-3xl space-y-6 pb-12">
+        <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-8 text-primary-foreground shadow-lg sm:p-12">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%)]" />
+          <div className="relative space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5" /> Training Hub
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">No live trainings yet</h1>
+            <p className="max-w-xl text-sm text-primary-foreground/85 sm:text-base">
+              The Blossom Academy library is being built. Once HR publishes courses they'll appear here automatically.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                <Link to="/onboarding">Open onboarding journey <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="border-primary-foreground/40 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground">
+                <Link to="/help">Help & Support</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="aurora-bg -mx-3 -my-3 px-3 py-3 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
       <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 animate-fade-in">

@@ -3698,6 +3698,87 @@ export type Database = {
         }
         Relationships: []
       }
+      journey_module_overrides: {
+        Row: {
+          blurb: string | null
+          created_at: string
+          hidden: boolean
+          id: string
+          module_key: string
+          phase_id: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          video_duration: string | null
+          video_poster: string | null
+          video_presenter: string | null
+          video_url: string | null
+        }
+        Insert: {
+          blurb?: string | null
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          module_key: string
+          phase_id: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          video_duration?: string | null
+          video_poster?: string | null
+          video_presenter?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          blurb?: string | null
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          module_key?: string
+          phase_id?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          video_duration?: string | null
+          video_poster?: string | null
+          video_presenter?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      journey_phase_overrides: {
+        Row: {
+          created_at: string
+          intro_video_poster: string | null
+          intro_video_url: string | null
+          objective: string | null
+          phase_id: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          intro_video_poster?: string | null
+          intro_video_url?: string | null
+          objective?: string | null
+          phase_id: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          intro_video_poster?: string | null
+          intro_video_url?: string | null
+          objective?: string | null
+          phase_id?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       journey_step_attachments: {
         Row: {
           created_at: string

@@ -139,6 +139,8 @@ import WeekThree from "./pages/onboarding/WeekThree";
 import WeeksFourFive from "./pages/onboarding/WeeksFourFive";
 import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
+import JourneyEditor from "./pages/admin/JourneyEditor";
+import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 
 const queryClient = new QueryClient();
 
@@ -199,8 +201,9 @@ const App = () => (
         <AuthProvider>
           <LeadsProvider>
             <ClientsProvider>
-              <PushNavigationListener />
-              <Routes>
+              <JourneyOverridesProvider>
+                <PushNavigationListener />
+                <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -216,6 +219,7 @@ const App = () => (
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
                   <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
+                  <Route path="/admin/journey-editor" element={<JourneyEditor />} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
@@ -341,7 +345,8 @@ const App = () => (
                   <Route path="/enterprise/*" element={<NotFound />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
-              </Routes>
+                </Routes>
+              </JourneyOverridesProvider>
             </ClientsProvider>
           </LeadsProvider>
         </AuthProvider>
