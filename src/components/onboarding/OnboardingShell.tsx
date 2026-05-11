@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -16,11 +16,16 @@ interface Props {
 
 export function OnboardingShell({ eyebrow = "Onboarding", title, description, children, showProgress = true }: Props) {
   const { percent, completedCount, totalRequired } = useOnboardingStatus();
+  const navigate = useNavigate();
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/onboarding");
+  };
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
       <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground">
-          <Link to="/onboarding"><ArrowLeft className="h-3.5 w-3.5" /> Roadmap</Link>
+        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={goBack}>
+          <ArrowLeft className="h-3.5 w-3.5" /> Back
         </Button>
       </div>
       <header className="space-y-3 rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary)/0.10),hsl(var(--accent)/0.06))] p-6 sm:p-8">
