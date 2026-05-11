@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Clock, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { ONBOARDING_PHASES, modulesForPath, type JourneyPhase } from "@/lib/onboarding/journey";
+import { usePhaseWithOverrides } from "@/hooks/useJourneyOverrides";
 import { markModuleComplete, unmarkModule, setNote } from "@/lib/onboarding/storage";
 import { LeaderCard } from "./LeaderCard";
 import { SystemTrainingCard } from "./SystemTrainingCard";
@@ -23,7 +24,7 @@ export function PhasePage({ phaseId }: Props) {
   // Bump to force re-read of acknowledgement-backed shadowing & checklist state.
   const [tick, setTick] = useState(0);
   const refresh = () => setTick((t) => t + 1);
-  const phase = useMemo(() => ONBOARDING_PHASES.find((p) => p.id === phaseId)!, [phaseId]);
+  const { phase } = usePhaseWithOverrides(phaseId);
   const mods = modulesForPath(phase, status.path);
   const doneCount = mods.filter((m) => status.modulesComplete.includes(m.key)).length;
   const percent = mods.length === 0 ? 0 : Math.round((doneCount / mods.length) * 100);
