@@ -74,6 +74,42 @@ export function ModuleCard({
             </div>
           )}
 
+          {module.cover_image_url && (
+            <img
+              src={module.cover_image_url}
+              alt=""
+              loading="lazy"
+              className="mt-3 w-full rounded-xl border border-border/60 object-cover"
+            />
+          )}
+
+          {module.video_url && (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border/60 bg-black/5">
+              {/youtube\.com|youtu\.be|loom\.com|vimeo\.com/.test(module.video_url) ? (
+                <iframe
+                  src={toEmbedUrl(module.video_url)}
+                  title={module.title}
+                  className="aspect-video w-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video src={module.video_url} controls className="aspect-video w-full" />
+              )}
+            </div>
+          )}
+
+          {module.link_url && (
+            <a
+              href={module.link_url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Open module
+            </a>
+          )}
+
           {resources && resources.length > 0 && (
             <div className="mt-3 rounded-xl border border-border/60 bg-muted/20 p-2.5">
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
