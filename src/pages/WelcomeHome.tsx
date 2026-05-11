@@ -28,6 +28,8 @@ export default function WelcomeHome() {
   if (!isComplete) return <OnboardingHome />;
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
+    (user?.user_metadata?.display_name as string | undefined)?.split(" ")[0] ||
+    (user?.user_metadata?.name as string | undefined)?.split(" ")[0] ||
     user?.email?.split("@")[0]?.split(/[._-]/)[0] ||
     "there";
   const completed = onboardingSteps.filter((s) => s.done).length;
