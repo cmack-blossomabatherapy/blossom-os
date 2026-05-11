@@ -8,6 +8,8 @@ export interface PhaseOverride {
   objective?: string | null;
   intro_video_url?: string | null;
   intro_video_poster?: string | null;
+  eyebrow?: string | null;
+  title_highlight?: string | null;
 }
 
 export interface ModuleOverride {
