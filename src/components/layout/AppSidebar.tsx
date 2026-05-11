@@ -518,13 +518,13 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           <ResumeOnboardingButton variant="sidebar" />
         </div>
         <div className="relative px-1">
-          <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-sidebar-muted" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/80" />
           <Input
             value={navQuery}
             onChange={(e) => setNavQuery(e.target.value)}
             onKeyDown={submitNavSearch(navQuery, false)}
             placeholder="Search menu — Enter to jump"
-            className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-9 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
+            className="h-9 rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 pl-10 text-xs text-sidebar-foreground placeholder:text-sidebar-muted shadow-inner backdrop-blur-md focus-visible:ring-1 focus-visible:ring-sidebar-primary"
           />
         </div>
         {sections.map((section, i) => {
