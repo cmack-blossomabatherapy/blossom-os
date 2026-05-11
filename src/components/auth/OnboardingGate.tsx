@@ -17,6 +17,7 @@ export const ALWAYS_OPEN_ROUTES: (string | RegExp)[] = [
   "/welcome",
   "/profile",
   "/help",
+  "/hr/assistant",
   "/notification-preferences",
   "/mobile/permissions",
   /^\/onboarding(\/.*)?$/,
