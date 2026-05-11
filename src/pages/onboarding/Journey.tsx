@@ -6,9 +6,16 @@ import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { PremiumJourneyTimeline } from "@/components/onboarding/PremiumJourneyTimeline";
 import { PhaseChipRail } from "@/components/onboarding/PhaseChipRail";
 import { totalMinutes } from "@/lib/onboarding/journey";
+import { useJourneyOverrides } from "@/hooks/useJourneyOverrides";
 
 export default function Journey() {
   const status = useOnboardingStatus();
+  const { phaseOverrides } = useJourneyOverrides();
+  const home = phaseOverrides["__home"];
+  const eyebrow = home?.eyebrow || "Your Blossom Journey";
+  const titleLead = home?.title || "Your First 5 Weeks at";
+  const titleHighlight = home?.title_highlight || "Blossom";
+  const subheading = home?.objective || "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line.";
   const minutes = totalMinutes(status.path);
   const totalHours = Math.max(1, Math.round(minutes / 60));
   const completedPhases = status.phaseProgress.filter((p) => p.complete && p.phase.id !== "graduation").length;
@@ -21,14 +28,14 @@ export default function Journey() {
         <div className="absolute inset-0 -z-0 bg-[radial-gradient(circle_at_85%_-10%,hsl(var(--primary)/0.25),transparent_55%),radial-gradient(circle_at_-10%_110%,hsl(var(--accent)/0.18),transparent_50%)]" />
         <div className="relative space-y-4">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
-            <Compass className="h-3 w-3 text-primary" /> Your Blossom Journey
+            <Compass className="h-3 w-3 text-primary" /> {eyebrow}
           </span>
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Your First 5 Weeks at <span className="text-gradient-brand">Blossom</span>
+              {titleLead} <span className="text-gradient-brand">{titleHighlight}</span>
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line.
+              {subheading}
             </p>
           </div>
 
