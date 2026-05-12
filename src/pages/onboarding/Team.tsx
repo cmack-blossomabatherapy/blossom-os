@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Sparkles, Crown, HeartHandshake, MapPin, X, Mail, MessageSquare, Loader2 } from "lucide-react";
+import { Search, Sparkles, Crown, HeartHandshake, MapPin, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,16 @@ function gradientFor(id: string) {
 
 function Avatar({ m, size = "md" }: { m: DirectoryEmployee; size?: "md" | "lg" }) {
   const cls = size === "lg" ? "h-28 w-28 text-2xl" : "h-16 w-16 text-base";
-  if (m.photo) {
-    return <img src={m.photo} alt={m.name} className={cn(cls, "rounded-2xl object-cover ring-2 ring-background shadow-md")} />;
+  const [broken, setBroken] = useState(false);
+  if (m.photo && !broken) {
+    return (
+      <img
+        src={m.photo}
+        alt={m.name}
+        onError={() => setBroken(true)}
+        className={cn(cls, "rounded-2xl object-cover ring-2 ring-background shadow-md")}
+      />
+    );
   }
   return (
     <div className={cn(cls, "rounded-2xl bg-gradient-to-br text-white font-semibold flex items-center justify-center ring-2 ring-background shadow-md", gradientFor(m.id))}>
@@ -217,9 +225,6 @@ export default function OnboardingTeam() {
           {open && (
             <>
               <div className="relative bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_60%,hsl(var(--accent))_120%)] p-6 text-primary-foreground">
-                <button onClick={() => setOpen(null)} className="absolute right-4 top-4 rounded-full bg-primary-foreground/20 p-1.5 backdrop-blur-md hover:bg-primary-foreground/30">
-                  <X className="h-4 w-4" />
-                </button>
                 <div className="flex items-start gap-4">
                   <Avatar m={open} size="lg" />
                   <div className="min-w-0 pt-2">

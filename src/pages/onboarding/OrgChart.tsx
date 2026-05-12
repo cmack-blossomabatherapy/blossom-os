@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2, Crown, Network, ArrowLeft, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,16 @@ function gradientFor(id: string) {
 
 function Avatar({ m, size = "md" }: { m: DirectoryEmployee; size?: "sm" | "md" }) {
   const cls = size === "sm" ? "h-10 w-10 text-xs" : "h-14 w-14 text-sm";
-  if (m.photo) {
-    return <img src={m.photo} alt={m.name} className={cn(cls, "rounded-xl object-cover ring-2 ring-background shadow-sm")} />;
+  const [broken, setBroken] = useState(false);
+  if (m.photo && !broken) {
+    return (
+      <img
+        src={m.photo}
+        alt={m.name}
+        onError={() => setBroken(true)}
+        className={cn(cls, "rounded-xl object-cover ring-2 ring-background shadow-sm")}
+      />
+    );
   }
   return (
     <div className={cn(cls, "rounded-xl bg-gradient-to-br text-white font-semibold flex items-center justify-center ring-2 ring-background shadow-sm", gradientFor(m.id))}>
