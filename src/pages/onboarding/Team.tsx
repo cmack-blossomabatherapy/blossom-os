@@ -113,9 +113,9 @@ export default function OnboardingTeam() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-16 animate-fade-in">
       <JourneyHero
-        eyebrow="Meet the Team"
+        eyebrow="Team Directory"
         title="The humans behind Blossom"
-        description="The people supporting families, building systems, leading operations, and helping Blossom grow every day."
+        description="Search, filter, and meet every teammate. Looking for the department write-up? Read the Meet the Team page."
       />
       {loading && (
         <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

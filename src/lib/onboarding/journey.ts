@@ -102,7 +102,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
         actions: [
           { id: "team-page", label: "Open the Team directory", icon: Users, href: "/onboarding/team" },
           { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/onboarding/org-chart" },
-          { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/team" },
+          { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/meet-the-team" },
         ] },
       { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content",
         actions: [
