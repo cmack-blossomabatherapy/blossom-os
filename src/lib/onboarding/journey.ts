@@ -107,7 +107,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
       { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content",
         actions: [
           { id: "how", label: "Read How Blossom Works", icon: BookOpen, href: "/onboarding/how-it-works" },
-          { id: "academy", label: "Peek at the Operations Academy", icon: GraduationCap, href: "/blossom/academy" },
+          { id: "academy", label: "Peek at the Operations Academy", icon: GraduationCap, href: "/onboarding/academy-preview" },
         ] },
       { key: "p0.chad", title: "Welcome from Chad Kaufman", blurb: "Leadership expectations, oversight, and company vision.", icon: UserCheck, estMinutes: 4, kind: "leader",
         leader: { ...LEADERS.chad, message: "Welcome to Blossom. I'm thrilled you're joining us — our work matters, and you matter to it." },
