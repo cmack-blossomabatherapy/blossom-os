@@ -15,7 +15,7 @@ interface Props {
   acknowledged?: string[];
 }
 
-export function StepCompleteButton({ stepId, label = "Mark complete & continue", requiredAcks, acknowledged }: Props) {
+export function StepCompleteButton({ stepId, label = "Mark complete & return to journey", requiredAcks, acknowledged }: Props) {
   const navigate = useNavigate();
   const [done, setDone] = useState(false);
   const [tick, setTick] = useState(0);
@@ -48,9 +48,9 @@ export function StepCompleteButton({ stepId, label = "Mark complete & continue",
     const ok = markStepComplete(stepId);
     if (!ok) return;
     setDone(true);
-    const idx = ONBOARDING_STEPS.findIndex((s) => s.id === stepId);
-    const next = ONBOARDING_STEPS[idx + 1];
-    setTimeout(() => navigate(next ? next.path : "/onboarding/complete"), 350);
+    // Always return to the Journey hub after completing a step so the
+    // employee can see overall progress and pick the next step intentionally.
+    setTimeout(() => navigate("/hr/journey"), 350);
   };
 
   const button = (
