@@ -251,6 +251,9 @@ export default function OrgChart() {
   const [exportFormat, setExportFormat] = useState<"png" | "pdf">("pdf");
   const [exportScope, setExportScope] = useState<"full" | "subtree">("full");
   const [exportLegend, setExportLegend] = useState(true);
+  const [flowMode, setFlowMode] = useState(true);
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [leadershipOnly, setLeadershipOnly] = useState(false);
 
   // Persist view + collapsed
   useEffect(() => { savePersisted({ view }); }, [view]);
