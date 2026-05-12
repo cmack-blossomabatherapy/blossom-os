@@ -104,6 +104,7 @@ function DepartmentBlock({
 }
 
 export default function OnboardingOrgChart() {
+  const navigate = useNavigate();
   const { members, departments, loading } = useEmployeeDirectory();
 
   const byDept = useMemo(() => {
