@@ -3,10 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription,
+} from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
+import {
+  ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
+  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +37,25 @@ interface ImportInfo {
 
 const UNASSIGNED = "Unassigned BCBA";
 
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+const PETALS = [
+  "petal-orange", "petal-yellow", "petal-green", "petal-sage",
+  "petal-purple", "petal-pink", "petal-red",
+];
+function petalFor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return PETALS[h % PETALS.length];
+}
+
 export default function CeoDashboardV2() {
   const [importInfo, setImportInfo] = useState<ImportInfo | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -41,7 +65,7 @@ export default function CeoDashboardV2() {
   const [codeFilter, setCodeFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
@@ -58,7 +82,6 @@ export default function CeoDashboardV2() {
       .maybeSingle();
     if (!imp) { setSessions([]); setImportInfo(null); setLoading(false); return; }
     setImportInfo(imp as ImportInfo);
-    // Page through all sessions
     const all: Session[] = [];
     const pageSize = 1000;
     let from = 0;
@@ -82,7 +105,6 @@ export default function CeoDashboardV2() {
   async function handleFile(file: File) {
     setUploading(true);
     try {
-      // Get user id to namespace the upload (storage RLS allows admins anywhere in the bucket)
       const { data: u } = await supabase.auth.getUser();
       const uid = u?.user?.id ?? "anon";
       const path = `${uid}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
@@ -107,7 +129,6 @@ export default function CeoDashboardV2() {
     }
   }
 
-  // Apply filters
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
       if (codeFilter !== "all" && s.procedure_code !== codeFilter) return false;
@@ -128,22 +149,22 @@ export default function CeoDashboardV2() {
     return Array.from(set).sort();
   }, [sessions]);
 
-  // Group by BCBA
   type Group = {
     bcba: string;
     totalHours: number;
     sessionCount: number;
     clientCount: number;
+    rbtCount: number;
     byCode: Map<string, number>;
     byClient: Map<string, { client: string; hours: number; sessions: number; byCode: Map<string, number> }>;
   };
 
   const groups = useMemo<Group[]>(() => {
-    const m = new Map<string, Group>();
+    const m = new Map<string, Group & { rbts: Set<string> }>();
     for (const s of filtered) {
       const bcba = s.bcba_name ?? UNASSIGNED;
       let g = m.get(bcba);
-      if (!g) { g = { bcba, totalHours: 0, sessionCount: 0, clientCount: 0, byCode: new Map(), byClient: new Map() }; m.set(bcba, g); }
+      if (!g) { g = { bcba, totalHours: 0, sessionCount: 0, clientCount: 0, rbtCount: 0, byCode: new Map(), byClient: new Map(), rbts: new Set() }; m.set(bcba, g); }
       g.totalHours += Number(s.hours) || 0;
       g.sessionCount += 1;
       const code = s.procedure_code || "—";
@@ -154,22 +175,16 @@ export default function CeoDashboardV2() {
       c.hours += Number(s.hours) || 0;
       c.sessions += 1;
       c.byCode.set(code, (c.byCode.get(code) || 0) + (Number(s.hours) || 0));
+      if (s.provider_full) g.rbts.add(s.provider_full);
     }
-    for (const g of m.values()) g.clientCount = g.byClient.size;
+    for (const g of m.values()) { g.clientCount = g.byClient.size; g.rbtCount = g.rbts.size; }
     return Array.from(m.values()).sort((a, b) => b.totalHours - a.totalHours);
   }, [filtered]);
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
+  const maxHours = groups[0]?.totalHours ?? 0;
 
-  // Unassigned & mismatch analysis (always computed from filtered set)
-  type UnassignedClient = {
-    client: string;
-    hours: number;
-    sessions: number;
-    sampleLabels: string;
-    candidateNames: string[]; // label fragments that look like names but were skipped
-  };
-
+  type UnassignedClient = { client: string; hours: number; sessions: number; sampleLabels: string; candidateNames: string[] };
   const unassignedClients = useMemo<UnassignedClient[]>(() => {
     const byClient = new Map<string, { hours: number; sessions: number; labels: Set<string> }>();
     for (const s of filtered) {
@@ -182,16 +197,13 @@ export default function CeoDashboardV2() {
       if (s.raw_labels) entry.labels.add(s.raw_labels);
     }
     return Array.from(byClient.entries()).map(([client, v]) => {
-      // Pull plausible name candidates from the raw labels for review
       const allLabelParts = new Set<string>();
       v.labels.forEach((l) => l.split(",").forEach((p) => {
         const t = p.trim();
         if (t && /^[A-Za-z][A-Za-z'.\- ]+$/.test(t) && t.split(/\s+/).length >= 2) allLabelParts.add(t);
       }));
       return {
-        client,
-        hours: v.hours,
-        sessions: v.sessions,
+        client, hours: v.hours, sessions: v.sessions,
         sampleLabels: Array.from(v.labels)[0] ?? "",
         candidateNames: Array.from(allLabelParts).slice(0, 6),
       };
@@ -201,7 +213,6 @@ export default function CeoDashboardV2() {
   const unassignedHours = unassignedClients.reduce((s, c) => s + c.hours, 0);
   const unassignedSessions = unassignedClients.reduce((s, c) => s + c.sessions, 0);
 
-  // Mismatch detection: same client with multiple BCBA names in dataset
   type Mismatch = { client: string; bcbas: { name: string; hours: number }[]; totalHours: number };
   const mismatches = useMemo<Mismatch[]>(() => {
     const byClient = new Map<string, Map<string, number>>();
@@ -222,25 +233,16 @@ export default function CeoDashboardV2() {
     return out.sort((a, b) => b.totalHours - a.totalHours);
   }, [filtered]);
 
-  function toggle(bcba: string) {
-    setExpanded((prev) => {
-      const n = new Set(prev);
-      if (n.has(bcba)) n.delete(bcba); else n.add(bcba);
-      return n;
-    });
-  }
-
-  // BCBA detail (RBTs, patients, codes)
   const bcbaDetail = useMemo(() => {
     if (!detailBcba) return null;
     const rows = filtered.filter((s) => (s.bcba_name ?? UNASSIGNED) === detailBcba);
     const byClient = new Map<string, { hours: number; sessions: number; rbts: Set<string>; byCode: Map<string, number> }>();
     const byRbt = new Map<string, { hours: number; sessions: number; clients: Set<string> }>();
     const byCode = new Map<string, number>();
-    let totalHours = 0;
+    let total = 0;
     for (const s of rows) {
       const h = Number(s.hours) || 0;
-      totalHours += h;
+      total += h;
       const code = s.procedure_code || "—";
       byCode.set(code, (byCode.get(code) || 0) + h);
       const client = s.client_full || "Unknown client";
@@ -255,7 +257,7 @@ export default function CeoDashboardV2() {
       r.hours += h; r.sessions += 1; r.clients.add(client);
     }
     return {
-      totalHours,
+      totalHours: total,
       sessionCount: rows.length,
       clients: Array.from(byClient.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
       rbts: Array.from(byRbt.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
@@ -263,286 +265,266 @@ export default function CeoDashboardV2() {
     };
   }, [detailBcba, filtered]);
 
+  const activeFilterCount =
+    (codeFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+
+  const clearFilters = () => { setCodeFilter("all"); setDateFrom(""); setDateTo(""); };
+
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-32 md:pb-12">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">CEO Dashboard V2</h1>
-          <p className="text-sm text-muted-foreground">Billable hours per BCBA, with breakdown by billing code. Upload a fresh CSV any time.</p>
-          {importInfo && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Active dataset: <span className="font-medium text-foreground">{importInfo.filename}</span> · {importInfo.row_count.toLocaleString()} sessions · uploaded {format(parseISO(importInfo.uploaded_at), "PP p")}
-            </p>
-          )}
+    <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12">
+      {/* HERO HEADER */}
+      <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/5 px-4 pt-5 pb-4 md:px-8 md:pt-8 md:pb-6">
+        <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 bottom-0 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+              <TrendingUp className="h-3 w-3" /> Executive
+            </div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">CEO Dashboard V2</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Billable hours per BCBA · live label-driven attribution</p>
+            {importInfo ? (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success mr-1.5 align-middle" />
+                {importInfo.row_count.toLocaleString()} sessions · uploaded {format(parseISO(importInfo.uploaded_at), "MMM d, p")}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={loadActive} className="h-9">
+              <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
+            </Button>
+            <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 shadow-[var(--shadow-brand)]">
+              <Upload className="h-3.5 w-3.5 mr-1.5" />{uploading ? "Uploading…" : "Upload CSV"}
+            </Button>
+          </div>
         </div>
+
+        {/* KPI strip */}
+        <div className="relative mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+          <KpiTile icon={Clock} label="Billable hours" value={totalHours.toLocaleString(undefined, { maximumFractionDigits: 1 })} accent="primary" />
+          <KpiTile icon={UserCog} label="BCBAs" value={groups.length.toString()} accent="petal-purple" />
+          <KpiTile icon={FileBarChart} label="Sessions" value={filtered.length.toLocaleString()} accent="petal-sage" />
+          <KpiTile icon={Users} label="Billing codes" value={new Set(filtered.map((s) => s.procedure_code).filter(Boolean)).size.toString()} accent="accent" />
+        </div>
+      </div>
+
+      <div className="px-3 pt-4 md:px-8 md:pt-6 space-y-4">
+        {/* CONTROL BAR */}
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadActive}><RefreshCw className="h-4 w-4 mr-1.5" />Refresh</Button>
-          <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-          <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
-            <Upload className="h-4 w-4 mr-1.5" />{uploading ? "Uploading…" : "Upload CSV"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat icon={Clock} label="Total billable hours" value={totalHours.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
-        <Stat icon={Users} label="BCBAs" value={groups.length.toString()} />
-        <Stat icon={FileBarChart} label="Sessions" value={filtered.length.toLocaleString()} />
-        <Stat icon={FileBarChart} label="Billing codes" value={new Set(filtered.map((s) => s.procedure_code).filter(Boolean)).size.toString()} />
-      </div>
-
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Search BCBA, client, or RBT</label>
-            <div className="relative">
-              <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="pl-8" />
-            </div>
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search BCBA, patient, or RBT…"
+              className="h-10 rounded-xl pl-9 bg-card border-border/60"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Billing code</label>
-            <Select value={codeFilter} onValueChange={setCodeFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-80">
-                <SelectItem value="all">All codes</SelectItem>
-                {allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">From</label>
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">To</label>
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {(unassignedClients.length > 0 || mismatches.length > 0) && (
-        <div className="rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-          <div className="flex-1 text-sm">
-            <p className="font-medium text-foreground">Label issues detected</p>
-            <p className="text-muted-foreground mt-0.5">
-              {unassignedClients.length > 0 && (
-                <>
-                  <span className="font-medium text-foreground">{unassignedHours.toFixed(1)}h</span> across{" "}
-                  <span className="font-medium text-foreground">{unassignedSessions.toLocaleString()}</span> sessions for{" "}
-                  <span className="font-medium text-foreground">{unassignedClients.length}</span> client(s) couldn't be mapped to a current BCBA.
-                </>
-              )}
-              {unassignedClients.length > 0 && mismatches.length > 0 && " "}
-              {mismatches.length > 0 && (
-                <>
-                  <span className="font-medium text-foreground">{mismatches.length}</span> client(s) have hours assigned to multiple BCBAs (possible mid-period transition or duplicate labels).
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {unassignedClients.length > 0 && (
-        <Card className="overflow-hidden border-warning/30">
-          <button
-            onClick={() => setUnassignedOpen((v) => !v)}
-            className="w-full px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between gap-3 hover:bg-warning/10 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {unassignedOpen ? <ChevronDown className="h-4 w-4 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-warning shrink-0" />}
-              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-              <h2 className="text-sm font-semibold truncate">Unassigned hours — needs label fix</h2>
-            </div>
-            <span className="text-[11px] md:text-xs text-muted-foreground whitespace-nowrap">{unassignedHours.toFixed(1)}h · {unassignedClients.length}</span>
-          </button>
-          {unassignedOpen && (
-            <>
-              {unassignedClients.slice(0, 50).map((c) => (
-                <div key={c.client} className="px-4 py-3 border-b border-border/30 last:border-0 text-sm space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium truncate flex-1" title={c.client}>{c.client}</span>
-                    <span className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">{c.sessions} sessions</div>
-                  {c.candidateNames.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {c.candidateNames.map((n) => (
-                        <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
-                      ))}
-                    </div>
-                  )}
-                  {c.sampleLabels && (
-                    <div className="text-[11px] text-muted-foreground line-clamp-2">{c.sampleLabels}</div>
-                  )}
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 gap-1.5 rounded-xl shrink-0">
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden sm:inline">Filters</span>
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{activeFilterCount}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl border-x-0 border-b-0 max-h-[85dvh]">
+              <SheetHeader className="text-left">
+                <SheetTitle>Filter sessions</SheetTitle>
+                <SheetDescription>Narrow billable hours by code or date range.</SheetDescription>
+              </SheetHeader>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Billing code</label>
+                  <Select value={codeFilter} onValueChange={setCodeFilter}>
+                    <SelectTrigger className="mt-1.5 h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">All codes</SelectItem>
+                      {allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-              {unassignedClients.length > 50 && (
-                <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
-                  Showing top 50 of {unassignedClients.length} unassigned clients.
-                </div>
-              )}
-            </>
-          )}
-        </Card>
-      )}
-
-      {mismatches.length > 0 && (
-        <Card className="overflow-hidden border-warning/30">
-          <button
-            onClick={() => setMismatchesOpen((v) => !v)}
-            className="w-full px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between gap-3 hover:bg-warning/10 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {mismatchesOpen ? <ChevronDown className="h-4 w-4 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-warning shrink-0" />}
-              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-              <h2 className="text-sm font-semibold truncate">Multiple BCBAs per client</h2>
-            </div>
-            <span className="text-[11px] md:text-xs text-muted-foreground whitespace-nowrap">{mismatches.length} clients</span>
-          </button>
-          {mismatchesOpen && (
-            <>
-              {mismatches.slice(0, 50).map((m) => (
-                <div key={m.client} className="px-4 py-3 border-b border-border/30 last:border-0 text-sm space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium truncate flex-1" title={m.client}>{m.client}</span>
-                    <span className="tabular-nums font-semibold whitespace-nowrap">{m.totalHours.toFixed(1)}h</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From</label>
+                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1.5 h-11" />
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {m.bcbas.map((b) => (
-                      <Badge key={b.name} variant="secondary" className="font-normal text-[10px]">{b.name} · {b.hours.toFixed(1)}h</Badge>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {mismatches.length > 50 && (
-                <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">Showing top 50 of {mismatches.length}.</div>
-              )}
-            </>
-          )}
-        </Card>
-      )}
-
-      <Card className="overflow-hidden">
-        <div className="hidden md:grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-          <div className="col-span-5">BCBA</div>
-          <div className="col-span-2 text-right">Hours</div>
-          <div className="col-span-2 text-right">Sessions</div>
-          <div className="col-span-2 text-right">Clients</div>
-          <div className="col-span-1 text-right">% of total</div>
-        </div>
-        {loading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
-        ) : groups.length === 0 ? (
-          <div className="p-10 text-center">
-            <p className="text-sm text-muted-foreground">No data yet. Upload a CSV to get started.</p>
-          </div>
-        ) : groups.map((g) => {
-          const isOpen = expanded.has(g.bcba);
-          const pct = totalHours > 0 ? (g.totalHours / totalHours) * 100 : 0;
-          return (
-            <div key={g.bcba} className="border-b border-border/40 last:border-0">
-              {/* Desktop row */}
-              <div className="hidden md:grid grid-cols-12 px-4 py-3 items-center hover:bg-muted/30 transition-colors">
-                <button onClick={() => toggle(g.bcba)} className="col-span-5 flex items-center gap-2 min-w-0 text-left">
-                  {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                  <span className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</span>
-                </button>
-                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums font-semibold hover:text-primary">{g.totalHours.toFixed(1)}</button>
-                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.sessionCount}</button>
-                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.clientCount}</button>
-                <div className="col-span-1 text-right text-xs text-muted-foreground">{pct.toFixed(1)}%</div>
-              </div>
-              {/* Mobile row */}
-              <div className="md:hidden px-4 py-3 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <button onClick={() => setDetailBcba(g.bcba)} className="flex-1 text-left min-w-0">
-                    <div className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {g.sessionCount} sessions · {g.clientCount} patients · {pct.toFixed(1)}%
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button onClick={() => setDetailBcba(g.bcba)} className="text-right">
-                      <div className="tabular-nums font-semibold text-base leading-none">{g.totalHours.toFixed(1)}</div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">hours</div>
-                    </button>
-                    <button onClick={() => toggle(g.bcba)} aria-label="Expand" className="p-1 -mr-1">
-                      {isOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                    </button>
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">To</label>
+                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1.5 h-11" />
                   </div>
                 </div>
               </div>
-              {isOpen && (
-                <div className="bg-muted/20 px-3 md:px-4 py-3 space-y-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {Array.from(g.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
-                      <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
-                    ))}
-                  </div>
-                  <div className="rounded-lg border border-border/50 bg-background overflow-hidden">
-                    <div className="hidden md:grid grid-cols-12 px-3 py-1.5 border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-                      <div className="col-span-6">Client</div>
-                      <div className="col-span-2 text-right">Hours</div>
-                      <div className="col-span-1 text-right">Sessions</div>
-                      <div className="col-span-3">By code</div>
-                    </div>
-                    {Array.from(g.byClient.values()).sort((a, b) => b.hours - a.hours).map((c) => (
-                      <div key={c.client} className="px-3 py-2 text-sm border-b border-border/30 last:border-0 md:grid md:grid-cols-12 md:items-center">
-                        <div className="md:col-span-6 truncate font-medium md:font-normal">{c.client}</div>
-                        <div className="flex items-center justify-between gap-2 mt-1 md:mt-0 md:contents">
-                          <div className="md:col-span-2 md:text-right tabular-nums font-medium text-xs md:text-sm">
-                            <span className="md:hidden text-muted-foreground font-normal">Hours: </span>{c.hours.toFixed(1)}
-                          </div>
-                          <div className="md:col-span-1 md:text-right tabular-nums text-muted-foreground text-xs md:text-sm">
-                            <span className="md:hidden">· </span>{c.sessions} <span className="md:hidden">sess</span>
-                          </div>
-                        </div>
-                        <div className="md:col-span-3 flex flex-wrap gap-1 mt-1.5 md:mt-0">
-                          {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
-                            <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
+              <SheetFooter className="mt-4 flex-row gap-2 pb-[env(safe-area-inset-bottom)]">
+                <Button variant="outline" className="flex-1" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear</Button>
+                <Button className="flex-1" onClick={() => setFiltersOpen(false)}>Done</Button>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Active filter chips */}
+        {(activeFilterCount > 0 || search) && (
+          <div className="flex flex-wrap gap-1.5">
+            {search && <FilterChip label={`"${search}"`} onClear={() => setSearch("")} />}
+            {codeFilter !== "all" && <FilterChip label={`Code: ${codeFilter}`} onClear={() => setCodeFilter("all")} />}
+            {dateFrom && <FilterChip label={`From: ${dateFrom}`} onClear={() => setDateFrom("")} />}
+            {dateTo && <FilterChip label={`To: ${dateTo}`} onClear={() => setDateTo("")} />}
+          </div>
+        )}
+
+        {/* ALERTS */}
+        {(unassignedClients.length > 0 || mismatches.length > 0) && (
+          <div className="space-y-2.5">
+            {unassignedClients.length > 0 && (
+              <CollapsibleAlert
+                open={unassignedOpen}
+                onOpenChange={setUnassignedOpen}
+                title="Unassigned hours"
+                subtitle="Sessions missing a current BCBA label"
+                metric={`${unassignedHours.toFixed(1)}h`}
+                meta={`${unassignedSessions.toLocaleString()} sessions · ${unassignedClients.length} clients`}
+              >
+                <div className="divide-y divide-border/40">
+                  {unassignedClients.slice(0, 50).map((c) => (
+                    <div key={c.client} className="px-4 py-3 text-sm space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium truncate flex-1">{c.client}</span>
+                        <span className="tabular-nums font-semibold whitespace-nowrap text-warning">{c.hours.toFixed(1)}h</span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">{c.sessions} sessions</div>
+                      {c.candidateNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {c.candidateNames.map((n) => (
+                            <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
                           ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </div>
+                  ))}
+                  {unassignedClients.length > 50 && (
+                    <div className="px-4 py-2 text-xs text-muted-foreground text-center">
+                      Showing top 50 of {unassignedClients.length}.
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </Card>
-
-      <Dialog open={!!detailBcba} onOpenChange={(o) => !o && setDetailBcba(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className={cn(detailBcba === UNASSIGNED && "italic text-muted-foreground")}>{detailBcba}</DialogTitle>
-            {bcbaDetail && (
-              <DialogDescription>
-                {bcbaDetail.totalHours.toFixed(1)} hours · {bcbaDetail.sessionCount} sessions · {bcbaDetail.clients.length} patients · {bcbaDetail.rbts.length} RBTs
-              </DialogDescription>
+              </CollapsibleAlert>
             )}
-          </DialogHeader>
-          {bcbaDetail && (
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">By billing code</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {bcbaDetail.codes.map(([code, h]) => (
-                    <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
+            {mismatches.length > 0 && (
+              <CollapsibleAlert
+                open={mismatchesOpen}
+                onOpenChange={setMismatchesOpen}
+                title="Multiple BCBAs per client"
+                subtitle="Possible mid-period transitions or duplicate labels"
+                metric={`${mismatches.length}`}
+                meta="clients flagged"
+              >
+                <div className="divide-y divide-border/40">
+                  {mismatches.slice(0, 50).map((m) => (
+                    <div key={m.client} className="px-4 py-3 text-sm space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium truncate flex-1">{m.client}</span>
+                        <span className="tabular-nums font-semibold whitespace-nowrap">{m.totalHours.toFixed(1)}h</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {m.bcbas.map((b) => (
+                          <Badge key={b.name} variant="secondary" className="font-normal text-[10px]">{b.name} · {b.hours.toFixed(1)}h</Badge>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </CollapsibleAlert>
+            )}
+          </div>
+        )}
 
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">RBTs ({bcbaDetail.rbts.length})</h3>
-                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+        {/* BCBA SECTION HEADER */}
+        <div className="flex items-baseline justify-between pt-1">
+          <h2 className="text-base font-semibold">BCBAs by billable hours</h2>
+          <span className="text-[11px] text-muted-foreground">{groups.length} total</span>
+        </div>
+
+        {/* BCBA LIST */}
+        {loading ? (
+          <div className="space-y-2.5">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[88px] rounded-2xl" />)}
+          </div>
+        ) : groups.length === 0 ? (
+          <EmptyState onUpload={() => fileRef.current?.click()} />
+        ) : (
+          <div className="space-y-2.5">
+            {groups.map((g) => (
+              <BcbaCard
+                key={g.bcba}
+                group={g}
+                maxHours={maxHours}
+                totalHours={totalHours}
+                onOpen={() => setDetailBcba(g.bcba)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* DETAIL DRAWER */}
+      <Sheet open={!!detailBcba} onOpenChange={(o) => !o && setDetailBcba(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col">
+          <SheetHeader className="border-b border-border/60 bg-gradient-to-br from-primary/8 via-card to-accent/5 px-5 py-5 text-left">
+            {detailBcba && (
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white text-base font-semibold shadow-md",
+                  detailBcba === UNASSIGNED ? "bg-muted-foreground" : ""
+                )} style={detailBcba === UNASSIGNED ? undefined : { background: `hsl(var(--${petalFor(detailBcba)}))` }}>
+                  {detailBcba === UNASSIGNED ? "?" : initials(detailBcba)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <SheetTitle className={cn("text-lg leading-tight truncate", detailBcba === UNASSIGNED && "italic text-muted-foreground")}>
+                    {detailBcba}
+                  </SheetTitle>
+                  {bcbaDetail && (
+                    <SheetDescription className="mt-0.5 text-xs">
+                      {bcbaDetail.totalHours.toFixed(1)}h · {bcbaDetail.sessionCount} sessions
+                    </SheetDescription>
+                  )}
+                </div>
+              </div>
+            )}
+            {bcbaDetail && (
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <DetailStat label="Hours" value={bcbaDetail.totalHours.toFixed(1)} />
+                <DetailStat label="Patients" value={bcbaDetail.clients.length.toString()} />
+                <DetailStat label="RBTs" value={bcbaDetail.rbts.length.toString()} />
+              </div>
+            )}
+          </SheetHeader>
+
+          {bcbaDetail && (
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+              <section>
+                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Billing codes</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {bcbaDetail.codes.map(([code, h]) => (
+                    <Badge key={code} variant="secondary" className="font-medium">{code} · {h.toFixed(1)}h</Badge>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">RBTs ({bcbaDetail.rbts.length})</h3>
+                <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
                   {bcbaDetail.rbts.map((r) => (
-                    <div key={r.name} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                    <div key={r.name} className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">{r.name}</div>
                         <div className="text-[11px] text-muted-foreground">{r.sessions} sessions · {r.clients.size} patients</div>
@@ -551,18 +533,20 @@ export default function CeoDashboardV2() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Patients ({bcbaDetail.clients.length})</h3>
-                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+              <section>
+                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Patients ({bcbaDetail.clients.length})</h3>
+                <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
                   {bcbaDetail.clients.map((c) => (
-                    <div key={c.name} className="px-3 py-2 text-sm space-y-1">
+                    <div key={c.name} className="px-3.5 py-3 text-sm space-y-1.5">
                       <div className="flex items-center justify-between gap-3">
                         <div className="font-medium truncate flex-1">{c.name}</div>
                         <div className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">{c.sessions} sessions · RBTs: {Array.from(c.rbts).join(", ") || "—"}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {c.sessions} sessions · RBTs: {Array.from(c.rbts).join(", ") || "—"}
+                      </div>
                       <div className="flex flex-wrap gap-1">
                         {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
                           <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
@@ -571,23 +555,171 @@ export default function CeoDashboardV2() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+function KpiTile({ icon: Icon, label, value, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; accent: string }) {
   return (
-    <Card className="p-4">
+    <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur p-3 md:p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{label}</p>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-lg"
+          style={{ background: `hsl(var(--${accent}) / 0.12)`, color: `hsl(var(--${accent}))` }}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </span>
       </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
-    </Card>
+      <div className="mt-2 text-xl md:text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
+    </div>
+  );
+}
+
+function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <button
+      onClick={onClear}
+      className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
+    >
+      {label}
+      <X className="h-3 w-3" />
+    </button>
+  );
+}
+
+function CollapsibleAlert({
+  open, onOpenChange, title, subtitle, metric, meta, children,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  subtitle: string;
+  metric: string;
+  meta: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-warning/40 bg-warning/5">
+      <button
+        onClick={() => onOpenChange(!open)}
+        aria-expanded={open}
+        className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-warning/10 transition-colors"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+          <AlertTriangle className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold truncate">{title}</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground truncate">{subtitle}</div>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-sm font-semibold tabular-nums">{metric}</div>
+          <div className="text-[10px] text-muted-foreground">{meta}</div>
+        </div>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="border-t border-warning/30 bg-card/60">{children}</div>}
+    </div>
+  );
+}
+
+function BcbaCard({
+  group, maxHours, totalHours, onOpen,
+}: {
+  group: { bcba: string; totalHours: number; sessionCount: number; clientCount: number; rbtCount: number; byCode: Map<string, number> };
+  maxHours: number;
+  totalHours: number;
+  onOpen: () => void;
+}) {
+  const pct = totalHours > 0 ? (group.totalHours / totalHours) * 100 : 0;
+  const barPct = maxHours > 0 ? (group.totalHours / maxHours) * 100 : 0;
+  const isUnassigned = group.bcba === "Unassigned BCBA";
+  const codes = Array.from(group.byCode.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  return (
+    <button
+      onClick={onOpen}
+      className="group w-full text-left rounded-2xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.995]"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white text-sm font-semibold shadow-sm",
+            isUnassigned && "bg-muted-foreground"
+          )}
+          style={isUnassigned ? undefined : { background: `hsl(var(--${petalFor(group.bcba)}))` }}
+        >
+          {isUnassigned ? "?" : initials(group.bcba)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className={cn("font-semibold truncate", isUnassigned && "italic text-muted-foreground")}>{group.bcba}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                {group.sessionCount} sessions · {group.clientCount} patients · {group.rbtCount} RBTs
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-lg font-semibold tabular-nums leading-none">{group.totalHours.toFixed(1)}<span className="text-xs text-muted-foreground font-normal">h</span></div>
+              <div className="text-[10px] text-muted-foreground mt-1">{pct.toFixed(1)}% of total</div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground mt-1 shrink-0 group-hover:text-primary transition-colors" />
+          </div>
+
+          {/* Progress bar */}
+          <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${barPct}%`,
+                background: isUnassigned
+                  ? "hsl(var(--muted-foreground))"
+                  : `linear-gradient(90deg, hsl(var(--${petalFor(group.bcba)})), hsl(var(--primary)))`,
+              }}
+            />
+          </div>
+
+          {/* Code chips */}
+          {codes.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1">
+              {codes.map(([code, h]) => (
+                <span key={code} className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted/60 text-muted-foreground tabular-nums font-medium">
+                  {code} · {h.toFixed(1)}h
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function DetailStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-3 py-2.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
+      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function EmptyState({ onUpload }: { onUpload: () => void }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <Upload className="h-5 w-5" />
+      </div>
+      <h3 className="mt-3 font-semibold">No data yet</h3>
+      <p className="mt-1 text-sm text-muted-foreground">Upload a BCBA sessions CSV to populate the dashboard.</p>
+      <Button className="mt-4" onClick={onUpload}><Upload className="h-4 w-4 mr-1.5" />Upload CSV</Button>
+    </div>
   );
 }
