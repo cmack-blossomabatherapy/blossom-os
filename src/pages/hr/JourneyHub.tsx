@@ -269,8 +269,7 @@ export default function JourneyHub() {
         progressPercent={percent}
         progressLabel={`${completedCount} of ${data.steps.length} steps complete`}
         ctaLabel={`Continue: ${currentStep.shortLabel}`}
-        ctaTo="#"
-        rightSlot={null}
+        ctaOnClick={() => openStepSheet(effectiveCurrentIndex)}
       />
 
       <WelcomeToBlossomCard />
