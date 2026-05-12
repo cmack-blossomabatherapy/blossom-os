@@ -235,6 +235,7 @@ const App = () => (
                   <Route path="/onboarding/mission" element={<OnboardingMission />} />
                   <Route path="/onboarding/values" element={<OnboardingValues />} />
                   <Route path="/onboarding/team" element={<OnboardingTeam />} />
+                  <Route path="/onboarding/org-chart" element={<OnboardingOrgChart />} />
                   <Route path="/onboarding/how-it-works" element={<OnboardingHowItWorks />} />
                   <Route path="/onboarding/required-role" element={<OnboardingRequiredRole />} />
                   <Route path="/onboarding/required-systems" element={<OnboardingRequiredSystems />} />
