@@ -1,4 +1,4 @@
-import { Sparkles, PlayCircle, ArrowRight, Heart, Compass, Users } from "lucide-react";
+import { ArrowRight, Heart, Compass, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
@@ -21,12 +21,13 @@ export default function OnboardingWelcome() {
       description="Welcome to Blossom ABA Therapy. We are so excited to have you here. Blossom Academy was created to help you feel confident, supported, and prepared as you begin your role. This journey will introduce you to who we are, what we believe, how we serve families, and how we work together as one team."
     >
       <section className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-        <div className="aspect-video w-full bg-[linear-gradient(135deg,hsl(var(--primary)/0.18),hsl(var(--accent)/0.12))] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <PlayCircle className="h-12 w-12 text-primary/70" />
-            <p className="text-xs">Leadership welcome video — coming soon</p>
-          </div>
-        </div>
+        <video
+          src="/videos/intro-welcome.mp4"
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full bg-black object-cover"
+        />
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
