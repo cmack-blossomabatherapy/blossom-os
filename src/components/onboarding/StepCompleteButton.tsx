@@ -15,7 +15,7 @@ interface Props {
   acknowledged?: string[];
 }
 
-export function StepCompleteButton({ stepId, label = "Mark complete & continue", requiredAcks, acknowledged }: Props) {
+export function StepCompleteButton({ stepId, label = "Mark complete & return to journey", requiredAcks, acknowledged }: Props) {
   const navigate = useNavigate();
   const [done, setDone] = useState(false);
   const [tick, setTick] = useState(0);
