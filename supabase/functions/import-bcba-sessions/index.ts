@@ -31,29 +31,82 @@ function extractBcba(labels: string): string | null {
   return null;
 }
 
-// Robust CSV row parser (handles quoted fields, embedded commas, escaped quotes)
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
+type CsvRowHandler = (row: string[], rowNumber: number) => Promise<void> | void;
+
+// Streaming CSV parser (handles quoted fields, embedded commas, escaped quotes)
+async function parseCsvStream(blob: Blob, onRow: CsvRowHandler) {
   let cur: string[] = [];
   let field = "";
   let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ",") { cur.push(field); field = ""; }
-      else if (c === "\n") { cur.push(field); rows.push(cur); cur = []; field = ""; }
-      else if (c === "\r") { /* skip */ }
-      else field += c;
+  let pendingQuote = false;
+  let rowNumber = 0;
+  const reader = blob.stream().getReader();
+  const decoder = new TextDecoder();
+
+  const emitRow = async () => {
+    cur.push(field);
+    field = "";
+    await onRow(cur, rowNumber++);
+    cur = [];
+  };
+
+  const consume = async (text: string) => {
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (pendingQuote) {
+        if (c === '"') {
+          field += '"';
+          pendingQuote = false;
+          continue;
+        }
+        inQuotes = false;
+        pendingQuote = false;
+      }
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else if (i === text.length - 1) pendingQuote = true;
+          else inQuotes = false;
+        } else field += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ",") { cur.push(field); field = ""; }
+        else if (c === "\n") await emitRow();
+        else if (c === "\r") { /* skip */ }
+        else field += c;
+      }
     }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    await consume(decoder.decode(value, { stream: true }));
   }
-  if (field.length || cur.length) { cur.push(field); rows.push(cur); }
-  return rows;
+  const tail = decoder.decode();
+  if (tail) await consume(tail);
+  if (field.length || cur.length) await emitRow();
+}
+
+function getRequiredColumnIndexes(header: string[]) {
+  const idx = (n: string) => header.indexOf(n);
+  const cols = {
+    id: idx("Id"),
+    dos: idx("DateOfService"),
+    cf: idx("ClientFirstName"),
+    cl: idx("ClientLastName"),
+    labels: idx("ClientContactLabels"),
+    pf: idx("ProviderFirstName"),
+    pl: idx("ProviderLastName"),
+    code: idx("ProcedureCode"),
+    desc: idx("ProcedureCodeDescription"),
+    hours: idx("TimeWorkedInHours"),
+    voided: idx("IsVoid"),
+    deleted: idx("IsDeleted"),
+  };
+  const missing = Object.entries(cols).filter(([, value]) => value < 0).map(([key]) => key);
+  if (missing.length) throw new Error(`CSV is missing required columns: ${missing.join(", ")}`);
+  return cols;
 }
 
 function parseDate(s: string): string | null {
