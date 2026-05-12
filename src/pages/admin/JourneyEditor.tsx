@@ -181,7 +181,7 @@ export default function JourneyEditor() {
           </TabsTrigger>
           {ONBOARDING_PHASES.map((p) => (
             <TabsTrigger key={p.id} value={p.id} className="gap-1.5 text-xs">
-              <p.icon className="h-3.5 w-3.5" /> {p.weekLabel}
+              <p.icon className="h-3.5 w-3.5" /> {p.weekLabel}: {p.title}
             </TabsTrigger>
           ))}
         </TabsList>
