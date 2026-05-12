@@ -30,27 +30,28 @@ export default function RBTDetail() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div>
-        <button
-          onClick={() => navigate("/staffing")}
-          className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 mb-3"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to Staffing
-        </button>
-        <div className="flex items-start justify-between">
+      <button
+        onClick={() => navigate("/staffing")}
+        className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to Staffing
+      </button>
+      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-6 text-primary-foreground shadow-lg">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-lg font-semibold">
-              {rbt.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+            <div className="h-14 w-14 rounded-2xl bg-primary-foreground/15 flex items-center justify-center text-primary-foreground text-lg font-semibold backdrop-blur-md">
+              {rbt.name.split(" ").map((n) => n[0]).join("")}
             </div>
             <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md mb-2">
+                RBT Profile
+              </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-foreground">{rbt.name}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{rbt.name}</h1>
                 <StatusBadge status={rbt.status} variant={statusVariant(rbt.status)} />
               </div>
-              <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-primary-foreground/85">
                 <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {rbt.state} · {rbt.clinic}</span>
                 <span className="inline-flex items-center gap-1"><Award className="h-3 w-3" /> {rbt.experience}</span>
                 <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {assignedClients.length} clients</span>
@@ -58,11 +59,11 @@ export default function RBTDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">Edit Profile</Button>
-            <Button size="sm">Assign Client</Button>
+            <Button variant="outline" size="sm" className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20">Edit Profile</Button>
+            <Button size="sm" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">Assign Client</Button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Snapshot KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Compass, BookOpen, Library, LifeBuoy, Lock, Map } from "lucide-react";
+import { ArrowRight, Compass, BookOpen, Library, LifeBuoy, Lock, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { JourneyTimeline } from "@/components/onboarding/JourneyTimeline";
+import { JourneyHero } from "@/components/onboarding/JourneyHero";
 
 export default function OnboardingHome() {
   const { user } = useAuth();
@@ -20,41 +20,14 @@ export default function OnboardingHome() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 pb-12">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-6 text-primary-foreground shadow-lg sm:p-10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
-        <div className="relative space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md">
-            <Sparkles className="h-3.5 w-3.5" /> Welcome to Blossom
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Welcome to Blossom, <span className="capitalize">{firstName}</span>
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-primary-foreground/85 sm:text-base">
-              Your home for onboarding, training, and growth at Blossom ABA Therapy. Let's get you ready — start with your guided onboarding journey.
-            </p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-medium text-primary-foreground/85">
-                <span>Onboarding progress</span>
-                <span>{journeyPercent}%</span>
-              </div>
-              <Progress value={journeyPercent} className="h-2 bg-primary-foreground/20" />
-              <p className="text-[11px] text-primary-foreground/80">{moduleDoneCount} of {totalModules} modules complete</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="lg" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
-                <Link to={nextPhase?.path || "/onboarding"}>
-                  {moduleDoneCount === 0 ? "Start Your Blossom Journey" : `Continue: ${nextPhase?.weekLabel || "Journey"}`}
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <JourneyHero
+        title={`Welcome to Blossom, ${firstName.charAt(0).toUpperCase()}${firstName.slice(1)}`}
+        description="Your home for onboarding, training, and growth at Blossom ABA Therapy. Let's get you ready — start with your guided onboarding journey."
+        progressPercent={journeyPercent}
+        progressLabel={`${moduleDoneCount} of ${totalModules} modules complete`}
+        ctaLabel={moduleDoneCount === 0 ? "Start Your Blossom Journey" : `Continue: ${nextPhase?.weekLabel || "Journey"}`}
+        ctaTo={nextPhase?.path || "/onboarding"}
+      />
 
       {/* Show Your Journey CTA */}
       <Link

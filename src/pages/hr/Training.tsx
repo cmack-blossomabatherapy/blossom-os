@@ -3,6 +3,8 @@ import { GraduationCap, Plus, Sparkles, Search, Pin, PinOff, Trash2, Pencil, Use
 import { GlassPageShell } from "@/components/shared/GlassPageShell";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 import { GlassStat } from "@/components/shared/GlassStat";
+import { JourneyHero } from "@/components/onboarding/JourneyHero";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -272,10 +274,26 @@ export default function Training() {
   }
 
   if (!canManage) {
-    return <GlassPageShell eyebrow="Training Admin" eyebrowIcon={GraduationCap} title="Access required" description="You need Training Admin permissions to manage the catalog."><GlassPanel bodyClassName="p-6">Contact an HR Admin.</GlassPanel></GlassPageShell>;
+    return (
+      <div className="mx-auto w-full max-w-6xl space-y-6 pb-12">
+        <JourneyHero
+          eyebrow="Training Admin"
+          title="Access required"
+          description="You need Training Admin permissions to manage the catalog. In the meantime, your Welcome to Blossom is right below."
+        />
+        <WelcomeToBlossomCard />
+      </div>
+    );
   }
 
   return (
+    <div className="space-y-6">
+      <JourneyHero
+        eyebrow="HR · Training Command"
+        title="Training Admin"
+        description="Build, edit, pin, assign, and AI-generate trainings for every role — including the universal Welcome to Blossom phase that opens every journey."
+      />
+      <WelcomeToBlossomCard />
     <GlassPageShell
       eyebrow="HR · Training Command"
       eyebrowIcon={GraduationCap}
@@ -622,6 +640,7 @@ export default function Training() {
         </AlertDialogContent>
       </AlertDialog>
     </GlassPageShell>
+    </div>
   );
 }
 

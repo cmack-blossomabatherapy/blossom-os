@@ -61,7 +61,7 @@ export const AUTOMATIONS_ROLES: AppRole[] = ["admin", "ops_manager"];
  * staff-facing items: Blossom Training (locked until Academy done),
  * Operations Academy, and Resource Hub.
  */
-const DEFAULT_LIMITED_INTELLIGENCE_PATHS = ["/training", "/training/academy", "/resources"];
+const DEFAULT_LIMITED_INTELLIGENCE_PATHS = ["/onboarding", "/onboarding/phase/welcome", "/training", "/training/academy", "/resources"];
 const DEFAULT_LIMITED_EXCEPTION: RoleNavigationException = {
   intelligenceItemPaths: DEFAULT_LIMITED_INTELLIGENCE_PATHS,
 };
@@ -90,11 +90,11 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
-  rbt: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
-  bcba: { intelligenceItemPaths: ["/hr/journey", "/resources"] },
+  rbt: { intelligenceItemPaths: ["/onboarding", "/onboarding/phase/welcome", "/hr/journey", "/resources"] },
+  bcba: { intelligenceItemPaths: ["/onboarding", "/onboarding/phase/welcome", "/hr/journey", "/resources"] },
 };
 
-const intelligenceRoutePrefixes = ["/training", "/resources", "/hr/journey"];
+const intelligenceRoutePrefixes = ["/onboarding", "/training", "/resources", "/hr/journey"];
 
 const dashboardPreviewSection: NavigationPreviewSection = {
   title: "Dashboards",
@@ -130,6 +130,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Tasks", path: "/tasks", perm: "tasks.view" },
   ] },
   { title: "Intelligence", items: [
+    { label: "Welcome to Blossom", path: "/onboarding/phase/welcome" },
     { label: "Training Hub", path: "/hr/journey", allowedRoles: ["rbt", "bcba"] },
     { label: "Training", path: "/training" },
     { label: "Resource Hub", path: "/resources" },
