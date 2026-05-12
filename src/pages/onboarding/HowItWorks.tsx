@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, Search, Sparkles, Heart, Compass, Crown, Activity,
+  ArrowLeft, ArrowRight, Search, Sparkles, Heart, Activity,
   Phone, FileCheck, ShieldCheck, Calendar, Users, Stethoscope, Briefcase, GraduationCap,
   MessageSquare, Database, ClipboardList, FileSignature, Mail, RefreshCw, BarChart3,
-  Megaphone, UserCheck, CheckCircle2, Layers, Target, Network, Zap, X,
+  Megaphone, UserCheck, CheckCircle2, Layers, Target, Network, Zap, Crown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { JourneyHero } from "@/components/onboarding/JourneyHero";
 import { StepCompleteButton } from "@/components/onboarding/StepCompleteButton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
