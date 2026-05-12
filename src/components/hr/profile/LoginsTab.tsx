@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { KeyRound, Plus, Loader2, Trash2, Pencil, ExternalLink, ShieldAlert, ShieldCheck, Lock } from "lucide-react";
+import { KeyRound, Plus, Loader2, Trash2, Pencil, ExternalLink, ShieldAlert, ShieldCheck, Lock, Eye, EyeOff, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Employee } from "@/lib/hr/types";
+import { UnlockSheet } from "@/components/profile/UnlockSheet";
 
 type LoginRow = {
   id: string;
@@ -37,6 +38,26 @@ export function LoginsTab({ employee }: { employee: Employee }) {
   const [form, setForm] = useState({ ...blank });
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState<LoginRow | null>(null);
+  const [unlockFor, setUnlockFor] = useState<LoginRow | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, number>>({}); // id -> expiresAt
+  const [, setTick] = useState(0);
+
+  // Auto-hide revealed passwords after 30s
+  useEffect(() => {
+    const t = setInterval(() => {
+      setTick((n) => n + 1);
+      setRevealed((prev) => {
+        const now = Date.now();
+        let changed = false;
+        const next: Record<string, number> = {};
+        for (const [k, exp] of Object.entries(prev)) {
+          if (exp > now) next[k] = exp; else changed = true;
+        }
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: logins, isLoading } = useQuery({
     queryKey: ["employee_logins", employee.user_id],
@@ -188,17 +209,40 @@ export function LoginsTab({ employee }: { employee: Employee }) {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {active.map((l) => (
-            <LoginCard key={l.id} l={l} canManage={canManage} onEdit={openEdit} onArchive={archive} onDelete={() => setConfirmDel(l)} />
+            <LoginCard key={l.id} l={l} canManage={canManage}
+              revealed={!!revealed[l.id] && revealed[l.id] > Date.now()}
+              onReveal={() => setUnlockFor(l)}
+              onHide={() => setRevealed((p) => { const { [l.id]: _, ...rest } = p; return rest; })}
+              onEdit={openEdit} onArchive={archive} onDelete={() => setConfirmDel(l)} />
           ))}
           {archived.length > 0 && (
             <>
               <p className="sm:col-span-2 mt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Archived</p>
               {archived.map((l) => (
-                <LoginCard key={l.id} l={l} canManage={canManage} onEdit={openEdit} onArchive={archive} onDelete={() => setConfirmDel(l)} />
+                <LoginCard key={l.id} l={l} canManage={canManage}
+                  revealed={!!revealed[l.id] && revealed[l.id] > Date.now()}
+                  onReveal={() => setUnlockFor(l)}
+                  onHide={() => setRevealed((p) => { const { [l.id]: _, ...rest } = p; return rest; })}
+                  onEdit={openEdit} onArchive={archive} onDelete={() => setConfirmDel(l)} />
               ))}
             </>
           )}
         </div>
+      )}
+
+      {employee.user_id && (
+        <UnlockSheet
+          open={!!unlockFor}
+          onOpenChange={(v) => { if (!v) setUnlockFor(null); }}
+          userId={employee.user_id}
+          loginId={unlockFor?.id ?? null}
+          onUnlocked={() => {
+            if (unlockFor) {
+              setRevealed((p) => ({ ...p, [unlockFor.id]: Date.now() + 30_000 }));
+              setUnlockFor(null);
+            }
+          }}
+        />
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -267,7 +311,11 @@ export function LoginsTab({ employee }: { employee: Employee }) {
   );
 }
 
-function LoginCard({ l, canManage, onEdit, onArchive, onDelete }: { l: LoginRow; canManage: boolean; onEdit: (l: LoginRow) => void; onArchive: (l: LoginRow) => void; onDelete: (l: LoginRow) => void }) {
+function LoginCard({ l, canManage, revealed, onReveal, onHide, onEdit, onArchive, onDelete }: {
+  l: LoginRow; canManage: boolean;
+  revealed: boolean; onReveal: () => void; onHide: () => void;
+  onEdit: (l: LoginRow) => void; onArchive: (l: LoginRow) => void; onDelete: (l: LoginRow) => void;
+}) {
   return (
     <Card className={`p-4 ${l.is_active ? "" : "opacity-60"}`}>
       <div className="flex items-start justify-between gap-2">
@@ -287,10 +335,32 @@ function LoginCard({ l, canManage, onEdit, onArchive, onDelete }: { l: LoginRow;
           </a>
         )}
         <p className="text-muted-foreground">Username: <span className="font-medium text-foreground">{l.username || "—"}</span></p>
-        <p className="text-muted-foreground inline-flex items-center gap-1.5">
-          Password: <span className="font-mono">{l.encrypted_password ? "••••••••" : "—"}</span>
-          {l.encrypted_password && <Lock className="h-3 w-3 text-primary" />}
-        </p>
+        {l.encrypted_password ? (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <span>Password:</span>
+            <span className={`font-mono ${revealed ? "text-foreground" : ""}`}>
+              {revealed ? l.encrypted_password : "••••••••"}
+            </span>
+            <Button
+              size="sm" variant="ghost" className="h-6 w-6 p-0"
+              onClick={() => (revealed ? onHide() : onReveal())}
+              aria-label={revealed ? "Hide password" : "Reveal password with PIN"}
+            >
+              {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            </Button>
+            {revealed && (
+              <Button
+                size="sm" variant="ghost" className="h-6 w-6 p-0"
+                onClick={() => { navigator.clipboard.writeText(l.encrypted_password!); toast.success("Password copied"); }}
+                aria-label="Copy password"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Password: <span className="font-mono">—</span></p>
+        )}
         {l.notes && <p className="text-[11px] text-muted-foreground line-clamp-2">{l.notes}</p>}
       </div>
       {canManage && (
