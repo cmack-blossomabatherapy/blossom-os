@@ -125,6 +125,7 @@ import OnboardingWelcome from "./pages/onboarding/Welcome";
 import OnboardingMission from "./pages/onboarding/Mission";
 import OnboardingValues from "./pages/onboarding/Values";
 import OnboardingTeam from "./pages/onboarding/Team";
+import OnboardingOrgChart from "./pages/onboarding/OrgChart";
 import OnboardingHowItWorks from "./pages/onboarding/HowItWorks";
 import OnboardingRequiredRole from "./pages/onboarding/RequiredRole";
 import OnboardingRequiredSystems from "./pages/onboarding/RequiredSystems";
