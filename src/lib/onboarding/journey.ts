@@ -100,8 +100,8 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
         ] },
       { key: "p0.team", title: "Meet the Team", blurb: "Who you'll work with at Blossom.", icon: Users, estMinutes: 5, kind: "content",
         actions: [
-          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/team" },
-          { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/hr/org-chart" },
+          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/onboarding/team" },
+          { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/onboarding/org-chart" },
           { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/team" },
         ] },
       { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content",
@@ -134,8 +134,8 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     modules: [
       { key: "w1.team", title: "Team Introductions", blurb: "Meet key team members and learn roles & responsibilities.", icon: Users, estMinutes: 30, kind: "content",
         actions: [
-          { id: "team", label: "Open the Team page", hint: "Browse everyone in the company.", icon: Users, href: "/team" },
-          { id: "org", label: "Open the Org Chart", hint: "See reporting lines.", icon: Network, href: "/hr/org-chart" },
+          { id: "team", label: "Open the Team page", hint: "Browse everyone in the company.", icon: Users, href: "/onboarding/team" },
+          { id: "org", label: "Open the Org Chart", hint: "See reporting lines.", icon: Network, href: "/onboarding/org-chart" },
           { id: "directory", label: "Open the Employee Directory", icon: ListChecks, href: "/hr/directory" },
           { id: "intro", label: "Introduce yourself in the team channel", icon: MessageSquare, optional: true },
         ] },
