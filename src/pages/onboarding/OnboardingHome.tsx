@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, BookOpen, Library, LifeBuoy, Lock, Map, Users } from "lucide-react";
+import { ArrowRight, Compass, BookOpen, Library, LifeBuoy, Lock, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,13 +27,6 @@ export default function OnboardingHome() {
         progressLabel={`${moduleDoneCount} of ${totalModules} modules complete`}
         ctaLabel={moduleDoneCount === 0 ? "Start Your Blossom Journey" : `Continue: ${nextPhase?.weekLabel || "Journey"}`}
         ctaTo={nextPhase?.path || "/onboarding"}
-        rightSlot={
-          <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground">
-            <Link to="/team">
-              <Users className="mr-1.5 h-4 w-4" /> Team Directory
-            </Link>
-          </Button>
-        }
       />
 
       {/* Show Your Journey CTA */}
