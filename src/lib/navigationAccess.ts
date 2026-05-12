@@ -61,7 +61,7 @@ export const AUTOMATIONS_ROLES: AppRole[] = ["admin", "ops_manager"];
  * staff-facing items: Blossom Training (locked until Academy done),
  * Operations Academy, and Resource Hub.
  */
-const DEFAULT_LIMITED_INTELLIGENCE_PATHS = ["/onboarding", "/training", "/training/academy", "/resources"];
+const DEFAULT_LIMITED_INTELLIGENCE_PATHS = ["/onboarding", "/onboarding/phase/welcome", "/training", "/training/academy", "/resources"];
 const DEFAULT_LIMITED_EXCEPTION: RoleNavigationException = {
   intelligenceItemPaths: DEFAULT_LIMITED_INTELLIGENCE_PATHS,
 };
@@ -90,8 +90,8 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
-  rbt: { intelligenceItemPaths: ["/onboarding", "/hr/journey", "/resources"] },
-  bcba: { intelligenceItemPaths: ["/onboarding", "/hr/journey", "/resources"] },
+  rbt: { intelligenceItemPaths: ["/onboarding", "/onboarding/phase/welcome", "/hr/journey", "/resources"] },
+  bcba: { intelligenceItemPaths: ["/onboarding", "/onboarding/phase/welcome", "/hr/journey", "/resources"] },
 };
 
 const intelligenceRoutePrefixes = ["/onboarding", "/training", "/resources", "/hr/journey"];
