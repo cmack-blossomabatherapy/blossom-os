@@ -78,12 +78,22 @@ export default function CeoDashboardV2() {
   async function handleFile(file: File) {
     setUploading(true);
     try {
-      const text = await file.text();
+      // Get user id to namespace the upload (storage RLS allows admins anywhere in the bucket)
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u?.user?.id ?? "anon";
+      const path = `${uid}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      toast.info("Uploading CSV…");
+      const { error: upErr } = await supabase.storage
+        .from("bcba-imports")
+        .upload(path, file, { contentType: "text/csv", upsert: true });
+      if (upErr) throw upErr;
+      toast.info("Processing CSV — this can take up to a minute…");
       const { data, error } = await supabase.functions.invoke("import-bcba-sessions", {
-        body: { csv: text, filename: file.name },
+        body: { storagePath: path, filename: file.name },
       });
       if (error) throw error;
-      toast.success(`Imported ${data?.rows ?? 0} sessions`);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Imported ${(data as any)?.rows ?? 0} sessions`);
       await loadActive();
     } catch (e) {
       toast.error((e as Error).message ?? "Upload failed");

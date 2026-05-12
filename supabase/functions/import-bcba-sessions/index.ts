@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const STATUS_LABELS = new Set([
@@ -96,9 +97,19 @@ Deno.serve(async (req) => {
     if (!roleRow) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "content-type": "application/json" } });
 
     const body = await req.json();
-    const csv: string = body.csv ?? "";
+    const storagePath: string = body.storagePath ?? "";
     const filename: string = body.filename ?? "upload.csv";
-    if (!csv) return new Response(JSON.stringify({ error: "Missing csv" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
+    if (!storagePath) {
+      return new Response(JSON.stringify({ error: "Missing storagePath" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
+    }
+
+    // Download CSV from storage using service role
+    const { data: fileBlob, error: dlErr } = await supabase.storage.from("bcba-imports").download(storagePath);
+    if (dlErr || !fileBlob) {
+      return new Response(JSON.stringify({ error: `Could not download CSV: ${dlErr?.message ?? "not found"}` }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
+    }
+    const csv = await fileBlob.text();
+    console.log(`Downloaded CSV: ${csv.length} chars`);
 
     const rows = parseCsv(csv);
     if (rows.length < 2) return new Response(JSON.stringify({ error: "Empty CSV" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
@@ -151,19 +162,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log(`Parsed ${records.length} records from ${rows.length - 1} rows`);
+
     // Insert in batches
-    const batchSize = 1000;
+    const batchSize = 500;
     for (let i = 0; i < records.length; i += batchSize) {
       const batch = records.slice(i, i + batchSize);
       const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
-      if (error) throw error;
+      if (error) {
+        console.error("Insert error at batch", i, error);
+        throw error;
+      }
     }
 
-    // Activate this import; deactivate others
-    await supabase.from("bcba_billable_imports").update({ is_active: false }).neq("id", imp.id);
+    // Activate this import; deactivate (and clean up) others
+    const { data: oldImports } = await supabase
+      .from("bcba_billable_imports")
+      .select("id")
+      .neq("id", imp.id);
+    if (oldImports && oldImports.length > 0) {
+      const oldIds = oldImports.map((x: any) => x.id);
+      // Delete old sessions and old import rows so storage stays lean
+      await supabase.from("bcba_billable_sessions").delete().in("import_id", oldIds);
+      await supabase.from("bcba_billable_imports").delete().in("id", oldIds);
+    }
     await supabase.from("bcba_billable_imports").update({ is_active: true, row_count: records.length }).eq("id", imp.id);
 
-    // Optional: delete sessions from non-active imports older than 30 days
+    // Remove the uploaded CSV from storage now that it's been processed
+    await supabase.storage.from("bcba-imports").remove([storagePath]);
+
     return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: records.length }), {
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
