@@ -4,6 +4,7 @@ import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
   ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText, Crosshair,
+  Sparkles, Workflow, Crown, Filter, ArrowRight, MessageCircle, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
@@ -43,12 +44,12 @@ function levelOf(title: string): Level {
 }
 
 const LEVEL_META: Record<Level, { label: string; ring: string; chip: string }> = {
-  ceo:      { label: "Executive",      ring: "ring-petal-purple/40 bg-petal-purple/5",  chip: "bg-petal-purple/15 text-petal-purple border-petal-purple/30" },
-  c_suite:  { label: "C-Suite",        ring: "ring-primary/40 bg-primary/5",            chip: "bg-primary/15 text-primary border-primary/30" },
-  director: { label: "Director",       ring: "ring-petal-orange/40 bg-petal-orange/5",  chip: "bg-petal-orange/15 text-petal-orange border-petal-orange/30" },
-  manager:  { label: "Manager",        ring: "ring-petal-sage/40 bg-petal-sage/5",      chip: "bg-petal-sage/15 text-petal-sage border-petal-sage/30" },
-  lead:     { label: "Lead",           ring: "ring-petal-pink/40 bg-petal-pink/5",      chip: "bg-petal-pink/15 text-petal-pink border-petal-pink/30" },
-  ic:       { label: "Team Member",    ring: "ring-border bg-card",                     chip: "bg-muted text-muted-foreground border-border" },
+  ceo:      { label: "Executive",      ring: "ring-petal-purple/50 shadow-[0_10px_40px_-12px_hsl(var(--petal-purple)/0.45)]",  chip: "bg-petal-purple/15 text-petal-purple border-petal-purple/30" },
+  c_suite:  { label: "C-Suite",        ring: "ring-primary/50 shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.45)]",            chip: "bg-primary/15 text-primary border-primary/30" },
+  director: { label: "Director",       ring: "ring-petal-orange/50 shadow-[0_8px_32px_-12px_hsl(var(--petal-orange)/0.40)]",  chip: "bg-petal-orange/15 text-petal-orange border-petal-orange/30" },
+  manager:  { label: "Manager",        ring: "ring-petal-sage/50 shadow-[0_8px_28px_-12px_hsl(var(--petal-sage)/0.35)]",      chip: "bg-petal-sage/15 text-petal-sage border-petal-sage/30" },
+  lead:     { label: "Lead",           ring: "ring-petal-pink/50 shadow-[0_8px_24px_-12px_hsl(var(--petal-pink)/0.30)]",      chip: "bg-petal-pink/15 text-petal-pink border-petal-pink/30" },
+  ic:       { label: "Team Member",    ring: "ring-border/70",                                                                  chip: "bg-muted text-muted-foreground border-border" },
 };
 
 interface DeptRow { id: string; name: string; category: string | null }
@@ -250,6 +251,9 @@ export default function OrgChart() {
   const [exportFormat, setExportFormat] = useState<"png" | "pdf">("pdf");
   const [exportScope, setExportScope] = useState<"full" | "subtree">("full");
   const [exportLegend, setExportLegend] = useState(true);
+  const [flowMode, setFlowMode] = useState(true);
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [leadershipOnly, setLeadershipOnly] = useState(false);
 
   // Persist view + collapsed
   useEffect(() => { savePersisted({ view }); }, [view]);
@@ -313,17 +317,23 @@ export default function OrgChart() {
 
   // Search highlights – returns a set of ids matching + their ancestors so they're visible
   const matches = useMemo(() => {
-    if (!search.trim()) return null;
+    const hasSearch = !!search.trim();
+    const hasState = stateFilter !== "all";
+    const hasLeadership = leadershipOnly;
+    if (!hasSearch && !hasState && !hasLeadership) return null;
     const q = search.toLowerCase();
     const matched = new Set<string>();
     const ancestors = new Set<string>();
     const visit = (n: Node, parents: string[]) => {
-      const hit =
+      const matchesSearch = !hasSearch ||
         employeeFullName(n.emp).toLowerCase().includes(q) ||
         n.emp.job_title.toLowerCase().includes(q) ||
         (n.emp.email ?? "").toLowerCase().includes(q) ||
         n.deptName.toLowerCase().includes(q) ||
         n.emp.state.toLowerCase().includes(q);
+      const matchesState = !hasState || n.emp.state === stateFilter;
+      const matchesLeadership = !hasLeadership || ["ceo","c_suite","director","manager"].includes(n.level);
+      const hit = matchesSearch && matchesState && matchesLeadership;
       if (hit) {
         matched.add(n.emp.id);
         parents.forEach((p) => ancestors.add(p));
@@ -332,7 +342,7 @@ export default function OrgChart() {
     };
     tree.roots.forEach((r) => visit(r, []));
     return { matched, ancestors };
-  }, [search, tree]);
+  }, [search, stateFilter, leadershipOnly, tree]);
 
   const toggle = (id: string) =>
     setCollapsed((prev) => {
@@ -394,8 +404,8 @@ export default function OrgChart() {
 
   return (
     <PageShell
-      title="Org Chart"
-      description="Live, interactive org structure built from the employee directory."
+      title="Organizational Ecosystem"
+      description="Understand how every department, leader, and workflow connects."
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
@@ -428,26 +438,28 @@ export default function OrgChart() {
         </div>
       }
     >
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-        <KpiTile label="Total" value={counts.total} icon={Users} accent="primary" />
-        <KpiTile label="Executive" value={counts.byLevel.ceo + counts.byLevel.c_suite} accent="petal-purple" />
-        <KpiTile label="Directors" value={counts.byLevel.director} accent="petal-orange" />
-        <KpiTile label="Managers" value={counts.byLevel.manager} accent="petal-sage" />
-        <KpiTile label="Leads" value={counts.byLevel.lead} accent="petal-pink" />
-        <KpiTile label="Team" value={counts.byLevel.ic} accent="muted" />
-        <KpiTile label="States" value={counts.byState.size} icon={Globe2} accent="primary" />
-      </div>
+      {/* Cinematic hero */}
+      <OrgHero counts={counts} />
+
+      {/* Operational flow mode */}
+      {flowMode && <OperationalFlowSection onToggle={() => setFlowMode(false)} />}
+      {!flowMode && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setFlowMode(true)}>
+            <Workflow className="h-3.5 w-3.5 mr-1.5" /> Show Operational Flow
+          </Button>
+        </div>
+      )}
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
         <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, title, email, department, or state…"
+            placeholder="Search anyone — name, title, department, or state…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
+            className="pl-9 h-10 rounded-xl"
           />
           {search && (
             <button
@@ -458,8 +470,28 @@ export default function OrgChart() {
             </button>
           )}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={stateFilter}
+            onChange={(e) => setStateFilter(e.target.value)}
+            className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="all">All states</option>
+            {[...counts.byState.keys()].sort().map((s) => (
+              <option key={s} value={s}>{s} ({counts.byState.get(s)})</option>
+            ))}
+          </select>
+          <Button
+            variant={leadershipOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLeadershipOnly((v) => !v)}
+            className="h-10 rounded-xl text-xs"
+          >
+            <Crown className="h-3.5 w-3.5 mr-1.5" /> Leadership
+          </Button>
+        </div>
         <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
-          <TabsList className="h-9">
+          <TabsList className="h-10 rounded-xl">
             <TabsTrigger value="hierarchy" className="text-xs gap-1.5">
               <GitBranch className="h-3.5 w-3.5" /> Hierarchy
             </TabsTrigger>
@@ -474,12 +506,11 @@ export default function OrgChart() {
       </div>
 
       {loading ? (
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 rounded-2xl" />
       ) : (
-        <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-          <Card className="p-4 overflow-hidden">
+        <Card className="p-3 sm:p-4 overflow-hidden org-glass rounded-2xl">
             {view === "hierarchy" && (
-              <div className="relative h-[680px] w-full bg-muted/20 rounded-md overflow-hidden">
+              <div className="relative h-[72vh] min-h-[560px] w-full rounded-xl overflow-hidden bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(ellipse_at_bottom_right,hsl(var(--accent)/0.06),transparent_55%)]">
                 <TransformWrapper
                   ref={zoomRef}
                   initialScale={persisted.transform?.scale ?? 1}
@@ -504,7 +535,7 @@ export default function OrgChart() {
                 >
                   {({ zoomIn, zoomOut, resetTransform, centerView }) => (
                     <>
-                      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 bg-card border border-border/60 rounded-md p-1 shadow-sm">
+                      <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 org-glass rounded-xl p-1 shadow-lg">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in">
                           <ZoomIn className="h-3.5 w-3.5" />
                         </Button>
@@ -518,14 +549,14 @@ export default function OrgChart() {
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <div className="absolute bottom-2 left-2 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur px-2 py-1 rounded border border-border/60">
-                        Drag to pan · Scroll to zoom
+                      <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground org-glass px-2.5 py-1.5 rounded-lg">
+                        Drag to pan · Scroll to zoom · Click any node
                       </div>
                       <TransformComponent
                         wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing"
                         contentClass="!p-6"
                       >
-                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit bg-background p-4">
+                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit p-4">
                           {tree.roots.map((root) => (
                             <TreeNode
                               key={root.emp.id}
@@ -547,7 +578,7 @@ export default function OrgChart() {
             )}
 
             {view === "department" && (
-              <ScrollArea className="h-[680px]">
+              <ScrollArea className="h-[72vh] min-h-[560px]">
                 <div ref={view === "department" ? exportRef : undefined} className="bg-background p-2">
                   <DepartmentView
                     employees={employees}
@@ -561,7 +592,7 @@ export default function OrgChart() {
             )}
 
             {view === "state" && (
-              <ScrollArea className="h-[680px]">
+              <ScrollArea className="h-[72vh] min-h-[560px]">
                 <div ref={view === "state" ? exportRef : undefined} className="bg-background p-2">
                   <StateView
                     employees={employees}
@@ -573,11 +604,15 @@ export default function OrgChart() {
                 </div>
               </ScrollArea>
             )}
-          </Card>
-
-          <DetailPanel node={selected} tree={tree} onSelect={setSelectedId} />
-        </div>
+        </Card>
       )}
+
+      {/* ===== Premium fullscreen profile modal ===== */}
+      <Dialog open={!!selectedId} onOpenChange={(o) => !o && setSelectedId(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden border-border/60">
+          {selected && <ProfileModal node={selected} tree={tree} onSelect={setSelectedId} />}
+        </DialogContent>
+      </Dialog>
 
       {/* ===== Off-screen export render (always present so the ref is stable) ===== */}
       <div
@@ -845,12 +880,12 @@ function NodeCard({
       onClick={() => onSelect(node.emp.id)}
       data-node-id={node.emp.id}
       className={cn(
-        "group flex items-center gap-2.5 p-2 pr-3 rounded-lg ring-1 transition-all min-w-[260px] text-left",
+        "group flex items-center gap-2.5 p-2.5 pr-3 rounded-xl ring-1 transition-all duration-300 min-w-[260px] text-left org-glass hover:-translate-y-0.5 hover:scale-[1.015]",
         meta.ring,
-        selected && "ring-2 ring-primary shadow-md",
-        highlighted && !selected && "ring-2 ring-warning/60",
+        selected && "ring-2 ring-primary shadow-lg scale-[1.02]",
+        highlighted && !selected && "ring-2 ring-warning/70",
         dimmed && "opacity-40",
-        !selected && !highlighted && "hover:ring-primary/40 hover:shadow-sm",
+        !selected && !highlighted && "hover:ring-primary/50",
       )}
     >
       <EmployeeAvatar employee={node.emp} size="md" />
@@ -1242,4 +1277,269 @@ function ExportLegend() {
       </div>
     </div>
   );
+}
+
+// ============================================================
+//  NEW PREMIUM COMPONENTS
+// ============================================================
+
+function OrgHero({
+  counts,
+}: {
+  counts: { total: number; byLevel: Record<Level, number>; byState: Map<string, number> };
+}) {
+  const stats = [
+    { label: "Team members", value: counts.total },
+    { label: "Departments", value: 18 },
+    { label: "States", value: counts.byState.size },
+    { label: "Leadership", value: counts.byLevel.ceo + counts.byLevel.c_suite + counts.byLevel.director + counts.byLevel.manager },
+  ];
+  return (
+    <section className="org-hero p-6 sm:p-10">
+      <div className="org-hero-grid" />
+      {/* Floating glow nodes */}
+      <span className="org-floating-node" style={{ top: "18%", left: "12%", animationDelay: "0s" }} />
+      <span className="org-floating-node" style={{ top: "62%", left: "22%", animationDelay: "1.2s" }} />
+      <span className="org-floating-node" style={{ top: "30%", left: "78%", animationDelay: "2.1s" }} />
+      <span className="org-floating-node" style={{ top: "70%", left: "85%", animationDelay: "0.6s" }} />
+      <span className="org-floating-node" style={{ top: "12%", left: "55%", animationDelay: "1.8s" }} />
+
+      <div className="relative space-y-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur-md ring-1 ring-white/15">
+          <Sparkles className="h-3.5 w-3.5" /> Blossom Ecosystem
+        </div>
+        <div className="max-w-3xl">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white">
+            Blossom Organizational Ecosystem
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-white/80 max-w-2xl">
+            Understanding how every department, leader, and workflow connects together — a living map of how Blossom supports families, every day.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-2xl">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl bg-white/10 backdrop-blur-md ring-1 ring-white/15 px-3 py-2.5"
+            >
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-white/70">{s.label}</p>
+              <p className="text-2xl font-bold text-white tabular-nums mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OperationalFlowSection({ onToggle }: { onToggle: () => void }) {
+  const stages = [
+    { label: "Marketing", color: "petal-pink" },
+    { label: "Intake", color: "primary" },
+    { label: "Authorizations", color: "petal-orange" },
+    { label: "Scheduling", color: "petal-yellow" },
+    { label: "Clinical", color: "petal-sage" },
+    { label: "QA", color: "petal-purple" },
+    { label: "Family Support", color: "primary" },
+  ];
+  return (
+    <section className="org-glass rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+            <Workflow className="h-3 w-3" /> Operational Flow Mode
+          </div>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground mt-1">
+            How operations move through Blossom
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Every family is supported by this connected pipeline of teams.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onToggle}>
+          Hide flow
+        </Button>
+      </div>
+
+      <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+          {stages.map((s, i) => (
+            <div key={s.label} className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div
+                className="relative shrink-0 px-3.5 py-2.5 rounded-xl border bg-card text-foreground text-xs font-semibold whitespace-nowrap shadow-sm"
+                style={{
+                  borderColor: `hsl(var(--${s.color}) / 0.45)`,
+                  background: `linear-gradient(135deg, hsl(var(--${s.color}) / 0.10), hsl(var(--${s.color}) / 0.02))`,
+                  boxShadow: `0 8px 24px -16px hsl(var(--${s.color}) / 0.45)`,
+                  animation: `org-node-pulse 3.4s ease-out infinite`,
+                  animationDelay: `${i * 0.25}s`,
+                }}
+              >
+                <span
+                  className="absolute -top-1.5 -left-1.5 h-2 w-2 rounded-full"
+                  style={{ background: `hsl(var(--${s.color}))`, boxShadow: `0 0 10px hsl(var(--${s.color}))` }}
+                />
+                {s.label}
+              </div>
+              {i < stages.length - 1 && (
+                <svg width="36" height="14" viewBox="0 0 36 14" className="shrink-0 text-primary/60">
+                  <line x1="0" y1="7" x2="36" y2="7" stroke="currentColor" strokeWidth="2" className="org-flow-line" />
+                </svg>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProfileModal({
+  node, tree, onSelect,
+}: {
+  node: Node;
+  tree: { nodeById: Map<string, Node> };
+  onSelect: (id: string) => void;
+}) {
+  const e = node.emp;
+  const meta = LEVEL_META[node.level];
+  const directReports = node.reports;
+  const totalUnder = descendantsOf(node).length;
+  return (
+    <div className="relative">
+      {/* Hero band */}
+      <div className="relative h-32 sm:h-40 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow))_55%,hsl(var(--accent))_120%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(0_0%_100%/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(0_0%_100%/0.18),transparent_50%)]" />
+      </div>
+      <div className="px-6 pb-6 -mt-12 relative">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="ring-4 ring-background rounded-full bg-background">
+            <EmployeeAvatar employee={e} size="xl" />
+          </div>
+          <div className="flex-1 min-w-0 sm:pb-1">
+            <DialogTitle className="text-xl font-semibold text-foreground">{employeeFullName(e)}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+              {e.job_title} · {node.deptName}
+            </DialogDescription>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-medium border", meta.chip)}>
+                {meta.label}
+              </span>
+              <EmployeeStatusBadge status={e.status} />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border border-border bg-muted/40 text-muted-foreground">
+                <MapPin className="h-3 w-3" /> {e.state}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick action row */}
+        <div className="flex flex-wrap gap-2 mt-5">
+          {e.email && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`mailto:${e.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" /> Email</a>
+            </Button>
+          )}
+          {e.phone && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`tel:${e.phone}`}><Phone className="h-3.5 w-3.5 mr-1.5" /> Call</a>
+            </Button>
+          )}
+          {e.email && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(e.email)}`} target="_blank" rel="noreferrer">
+                <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Teams
+              </a>
+            </Button>
+          )}
+          <Button asChild size="sm" className="h-8 text-xs ml-auto">
+            <Link to={`/hr/employees/${e.id}`}>
+              Open full profile <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+            </Link>
+          </Button>
+        </div>
+
+        {/* Body grid */}
+        <div className="grid sm:grid-cols-2 gap-4 mt-6">
+          <div className="rounded-xl border border-border/60 p-4 bg-card/40">
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              About this role
+            </p>
+            <p className="text-sm text-foreground leading-relaxed">
+              {roleBlurb(node)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/60 p-4 bg-card/40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Direct reports
+              </p>
+              <Badge variant="secondary" className="text-[10px]">
+                {directReports.length}{totalUnder !== directReports.length && ` · ${totalUnder} total`}
+              </Badge>
+            </div>
+            {directReports.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Individual contributor — supports the team directly.</p>
+            ) : (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {directReports.map((r) => (
+                  <button
+                    key={r.emp.id}
+                    onClick={() => onSelect(r.emp.id)}
+                    className="w-full flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/40 text-left transition-colors"
+                  >
+                    <EmployeeAvatar employee={r.emp} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{employeeFullName(r.emp)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{r.emp.job_title}</p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-3 mt-4">
+          <InfoTile icon={Building2} label="Department" value={node.deptName} />
+          {e.clinic && <InfoTile icon={Building2} label="Clinic" value={e.clinic} />}
+          <InfoTile icon={MapPin} label="State" value={e.state} />
+          {e.email && <InfoTile icon={Mail} label="Email" value={e.email} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 p-3 bg-card/40">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="h-3 w-3" />
+        <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
+      </div>
+      <p className="text-xs font-medium text-foreground mt-1 truncate">{value}</p>
+    </div>
+  );
+}
+
+function roleBlurb(node: Node): string {
+  const dept = node.deptName;
+  const reports = node.reports.length;
+  switch (node.level) {
+    case "ceo":
+      return "Sets the vision for Blossom and ensures every department is aligned around supporting families with exceptional care.";
+    case "c_suite":
+      return "Oversees company-wide operations, connecting clinical, business, and support functions into one coordinated system.";
+    case "director":
+      return `Leads the ${dept} department and ${reports > 0 ? `directly supports ${reports} teammate${reports === 1 ? "" : "s"}` : "drives strategy across the organization"}.`;
+    case "manager":
+      return `Manages day-to-day execution within ${dept}, coaching the team and keeping operations running smoothly.`;
+    case "lead":
+      return `Coordinates work inside ${dept} and is a go-to resource for newer teammates.`;
+    default:
+      return `Part of the ${dept} team — directly supporting Blossom families and the colleagues who serve them.`;
+  }
 }
