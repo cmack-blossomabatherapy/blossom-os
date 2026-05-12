@@ -404,8 +404,8 @@ export default function OrgChart() {
 
   return (
     <PageShell
-      title="Org Chart"
-      description="Live, interactive org structure built from the employee directory."
+      title="Organizational Ecosystem"
+      description="Understand how every department, leader, and workflow connects."
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
@@ -438,26 +438,28 @@ export default function OrgChart() {
         </div>
       }
     >
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-        <KpiTile label="Total" value={counts.total} icon={Users} accent="primary" />
-        <KpiTile label="Executive" value={counts.byLevel.ceo + counts.byLevel.c_suite} accent="petal-purple" />
-        <KpiTile label="Directors" value={counts.byLevel.director} accent="petal-orange" />
-        <KpiTile label="Managers" value={counts.byLevel.manager} accent="petal-sage" />
-        <KpiTile label="Leads" value={counts.byLevel.lead} accent="petal-pink" />
-        <KpiTile label="Team" value={counts.byLevel.ic} accent="muted" />
-        <KpiTile label="States" value={counts.byState.size} icon={Globe2} accent="primary" />
-      </div>
+      {/* Cinematic hero */}
+      <OrgHero counts={counts} />
+
+      {/* Operational flow mode */}
+      {flowMode && <OperationalFlowSection onToggle={() => setFlowMode(false)} />}
+      {!flowMode && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setFlowMode(true)}>
+            <Workflow className="h-3.5 w-3.5 mr-1.5" /> Show Operational Flow
+          </Button>
+        </div>
+      )}
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col lg:flex-row gap-2 lg:items-center">
         <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, title, email, department, or state…"
+            placeholder="Search anyone — name, title, department, or state…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
+            className="pl-9 h-10 rounded-xl"
           />
           {search && (
             <button
@@ -468,8 +470,28 @@ export default function OrgChart() {
             </button>
           )}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={stateFilter}
+            onChange={(e) => setStateFilter(e.target.value)}
+            className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="all">All states</option>
+            {[...counts.byState.keys()].sort().map((s) => (
+              <option key={s} value={s}>{s} ({counts.byState.get(s)})</option>
+            ))}
+          </select>
+          <Button
+            variant={leadershipOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLeadershipOnly((v) => !v)}
+            className="h-10 rounded-xl text-xs"
+          >
+            <Crown className="h-3.5 w-3.5 mr-1.5" /> Leadership
+          </Button>
+        </div>
         <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
-          <TabsList className="h-9">
+          <TabsList className="h-10 rounded-xl">
             <TabsTrigger value="hierarchy" className="text-xs gap-1.5">
               <GitBranch className="h-3.5 w-3.5" /> Hierarchy
             </TabsTrigger>
@@ -484,12 +506,11 @@ export default function OrgChart() {
       </div>
 
       {loading ? (
-        <Skeleton className="h-96" />
+        <Skeleton className="h-96 rounded-2xl" />
       ) : (
-        <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-          <Card className="p-4 overflow-hidden">
+        <Card className="p-3 sm:p-4 overflow-hidden org-glass rounded-2xl">
             {view === "hierarchy" && (
-              <div className="relative h-[680px] w-full bg-muted/20 rounded-md overflow-hidden">
+              <div className="relative h-[72vh] min-h-[560px] w-full rounded-xl overflow-hidden bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.08),transparent_60%),radial-gradient(ellipse_at_bottom_right,hsl(var(--accent)/0.06),transparent_55%)]">
                 <TransformWrapper
                   ref={zoomRef}
                   initialScale={persisted.transform?.scale ?? 1}
@@ -514,7 +535,7 @@ export default function OrgChart() {
                 >
                   {({ zoomIn, zoomOut, resetTransform, centerView }) => (
                     <>
-                      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 bg-card border border-border/60 rounded-md p-1 shadow-sm">
+                      <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 org-glass rounded-xl p-1 shadow-lg">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in">
                           <ZoomIn className="h-3.5 w-3.5" />
                         </Button>
@@ -528,14 +549,14 @@ export default function OrgChart() {
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <div className="absolute bottom-2 left-2 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur px-2 py-1 rounded border border-border/60">
-                        Drag to pan · Scroll to zoom
+                      <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground org-glass px-2.5 py-1.5 rounded-lg">
+                        Drag to pan · Scroll to zoom · Click any node
                       </div>
                       <TransformComponent
                         wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing"
                         contentClass="!p-6"
                       >
-                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit bg-background p-4">
+                        <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit p-4">
                           {tree.roots.map((root) => (
                             <TreeNode
                               key={root.emp.id}
@@ -557,7 +578,7 @@ export default function OrgChart() {
             )}
 
             {view === "department" && (
-              <ScrollArea className="h-[680px]">
+              <ScrollArea className="h-[72vh] min-h-[560px]">
                 <div ref={view === "department" ? exportRef : undefined} className="bg-background p-2">
                   <DepartmentView
                     employees={employees}
@@ -571,7 +592,7 @@ export default function OrgChart() {
             )}
 
             {view === "state" && (
-              <ScrollArea className="h-[680px]">
+              <ScrollArea className="h-[72vh] min-h-[560px]">
                 <div ref={view === "state" ? exportRef : undefined} className="bg-background p-2">
                   <StateView
                     employees={employees}
@@ -583,11 +604,15 @@ export default function OrgChart() {
                 </div>
               </ScrollArea>
             )}
-          </Card>
-
-          <DetailPanel node={selected} tree={tree} onSelect={setSelectedId} />
-        </div>
+        </Card>
       )}
+
+      {/* ===== Premium fullscreen profile modal ===== */}
+      <Dialog open={!!selectedId} onOpenChange={(o) => !o && setSelectedId(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden border-border/60">
+          {selected && <ProfileModal node={selected} tree={tree} onSelect={setSelectedId} />}
+        </DialogContent>
+      </Dialog>
 
       {/* ===== Off-screen export render (always present so the ref is stable) ===== */}
       <div
