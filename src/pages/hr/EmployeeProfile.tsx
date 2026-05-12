@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeAvatar } from "@/components/hr/EmployeeAvatar";
+import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { EmployeeStatusBadge } from "@/components/hr/HRStatusBadge";
 import { employeeFullName, type Department, type Employee } from "@/lib/hr/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -95,7 +96,18 @@ export default function EmployeeProfile() {
           <EmployeeInfoEditor employee={employee} departments={departments} canEditEmployee={canEditEmployee} canEditPayroll={canEditPayroll} onSaved={() => load(employee.id)} />
         </div>
         <div className="p-5 flex flex-col gap-5 md:flex-row md:items-start">
-          <EmployeeAvatar employee={employee} size="xl" />
+          {canEditEmployee ? (
+            <AvatarUploader
+              ownerUserId={employee.user_id || employee.id}
+              employeeId={employee.id}
+              currentUrl={employee.avatar_url || (employee as any).photo_url || null}
+              initials={(employee.first_name?.[0] || "") + (employee.last_name?.[0] || "")}
+              size="xl"
+              onChange={() => load(employee.id)}
+            />
+          ) : (
+            <EmployeeAvatar employee={employee} size="xl" />
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-2xl font-semibold text-foreground">{employeeFullName(employee)}</h1>
