@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, BookOpen, Library, LifeBuoy, Lock, Map } from "lucide-react";
+import { ArrowRight, Compass, BookOpen, Library, LifeBuoy, Lock, Map, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
