@@ -127,6 +127,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "academy_checkins_with_employee_id_fkey"
+            columns: ["with_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       academy_enrollment_audit: {
@@ -233,10 +240,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "academy_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "academy_enrollments_mentor_employee_id_fkey"
             columns: ["mentor_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_mentor_employee_id_fkey"
+            columns: ["mentor_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
           {
@@ -607,6 +628,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "academy_shadow_sessions_shadowed_employee_id_fkey"
+            columns: ["shadowed_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       academy_tracks: {
@@ -911,6 +939,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_exceptions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
           {
@@ -1982,6 +2017,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_bonuses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_cases: {
@@ -2047,6 +2089,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_cases_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_documents_hr: {
@@ -2104,6 +2153,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_hr_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2285,6 +2341,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_notes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_onboarding: {
@@ -2327,6 +2390,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_onboarding_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
           {
@@ -2478,6 +2548,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_pay_changes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employee_pin_settings: {
@@ -2556,10 +2633,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employee_relationships_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employee_relationships_related_employee_id_fkey"
             columns: ["related_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_relationships_related_employee_id_fkey"
+            columns: ["related_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2643,10 +2734,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employee_reviews_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employee_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2688,6 +2793,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_timeline_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2759,18 +2871,32 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_trainings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employees: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          certifications: string[]
           clinic: string | null
+          competencies: string[]
+          contact_visibility: Database["public"]["Enums"]["contact_visibility"]
           created_at: string
           created_by: string | null
+          credential: string | null
           department_id: string | null
+          directory_onboarding_status: Database["public"]["Enums"]["directory_onboarding_status"]
           email: string | null
           employee_code: string | null
           employment_type: Database["public"]["Enums"]["employment_type"]
+          featured: boolean
           first_name: string
           grandfathered: boolean
           hire_date: string | null
@@ -2780,17 +2906,27 @@ export type Database = {
           kiosk_pin: string | null
           last_name: string
           last_review_date: string | null
+          leadership_badge: string | null
+          leadership_level: Database["public"]["Enums"]["leadership_level"]
+          manager_id: string | null
           next_review_date: string | null
           notes: string | null
           pay_rate: number | null
           pay_type: Database["public"]["Enums"]["pay_type"]
           phone: string | null
+          photo_url: string | null
           preferred_name: string | null
+          pronouns: string | null
           resource_hub_access: boolean
+          show_in_directory: boolean
+          show_in_org_chart: boolean
           start_date: string | null
           state: string
+          states_supported: string[]
           status: Database["public"]["Enums"]["employee_status"]
+          supports_onboarding: boolean
           termination_date: string | null
+          unlock_level: number
           updated_at: string
           user_id: string | null
           viventium_employee_id: string | null
@@ -2800,13 +2936,20 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[]
           clinic?: string | null
+          competencies?: string[]
+          contact_visibility?: Database["public"]["Enums"]["contact_visibility"]
           created_at?: string
           created_by?: string | null
+          credential?: string | null
           department_id?: string | null
+          directory_onboarding_status?: Database["public"]["Enums"]["directory_onboarding_status"]
           email?: string | null
           employee_code?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
+          featured?: boolean
           first_name: string
           grandfathered?: boolean
           hire_date?: string | null
@@ -2816,17 +2959,27 @@ export type Database = {
           kiosk_pin?: string | null
           last_name: string
           last_review_date?: string | null
+          leadership_badge?: string | null
+          leadership_level?: Database["public"]["Enums"]["leadership_level"]
+          manager_id?: string | null
           next_review_date?: string | null
           notes?: string | null
           pay_rate?: number | null
           pay_type?: Database["public"]["Enums"]["pay_type"]
           phone?: string | null
+          photo_url?: string | null
           preferred_name?: string | null
+          pronouns?: string | null
           resource_hub_access?: boolean
+          show_in_directory?: boolean
+          show_in_org_chart?: boolean
           start_date?: string | null
           state: string
+          states_supported?: string[]
           status?: Database["public"]["Enums"]["employee_status"]
+          supports_onboarding?: boolean
           termination_date?: string | null
+          unlock_level?: number
           updated_at?: string
           user_id?: string | null
           viventium_employee_id?: string | null
@@ -2836,13 +2989,20 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          certifications?: string[]
           clinic?: string | null
+          competencies?: string[]
+          contact_visibility?: Database["public"]["Enums"]["contact_visibility"]
           created_at?: string
           created_by?: string | null
+          credential?: string | null
           department_id?: string | null
+          directory_onboarding_status?: Database["public"]["Enums"]["directory_onboarding_status"]
           email?: string | null
           employee_code?: string | null
           employment_type?: Database["public"]["Enums"]["employment_type"]
+          featured?: boolean
           first_name?: string
           grandfathered?: boolean
           hire_date?: string | null
@@ -2852,17 +3012,27 @@ export type Database = {
           kiosk_pin?: string | null
           last_name?: string
           last_review_date?: string | null
+          leadership_badge?: string | null
+          leadership_level?: Database["public"]["Enums"]["leadership_level"]
+          manager_id?: string | null
           next_review_date?: string | null
           notes?: string | null
           pay_rate?: number | null
           pay_type?: Database["public"]["Enums"]["pay_type"]
           phone?: string | null
+          photo_url?: string | null
           preferred_name?: string | null
+          pronouns?: string | null
           resource_hub_access?: boolean
+          show_in_directory?: boolean
+          show_in_org_chart?: boolean
           start_date?: string | null
           state?: string
+          states_supported?: string[]
           status?: Database["public"]["Enums"]["employee_status"]
+          supports_onboarding?: boolean
           termination_date?: string | null
+          unlock_level?: number
           updated_at?: string
           user_id?: string | null
           viventium_employee_id?: string | null
@@ -2876,6 +3046,27 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["department_id"]
+          },
+          {
+            foreignKeyName: "employees_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -2985,6 +3176,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hours_timesheets_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]
           },
         ]
@@ -3115,6 +3313,10 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          slug: string | null
+          sort_order: number
+          spotlight: boolean
+          tagline: string | null
         }
         Insert: {
           category?: string | null
@@ -3122,6 +3324,10 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          slug?: string | null
+          sort_order?: number
+          spotlight?: boolean
+          tagline?: string | null
         }
         Update: {
           category?: string | null
@@ -3129,6 +3335,10 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          slug?: string | null
+          sort_order?: number
+          spotlight?: boolean
+          tagline?: string | null
         }
         Relationships: []
       }
@@ -4252,6 +4462,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payroll_run_items_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payroll_run_items_payroll_run_id_fkey"
             columns: ["payroll_run_id"]
             isOneToOne: false
@@ -5056,6 +5273,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "time_clock_punches_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
         ]
       }
       training_assignments: {
@@ -5734,6 +5958,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "training_track_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "training_track_enrollments_track_id_fkey"
             columns: ["track_id"]
             isOneToOne: false
@@ -5830,7 +6061,67 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_employee_directory: {
+        Row: {
+          bio: string | null
+          certifications: string[] | null
+          competencies: string[] | null
+          contact_visibility:
+            | Database["public"]["Enums"]["contact_visibility"]
+            | null
+          credential: string | null
+          department_id: string | null
+          department_name: string | null
+          department_slug: string | null
+          department_sort_order: number | null
+          department_spotlight: boolean | null
+          department_tagline: string | null
+          directory_onboarding_status:
+            | Database["public"]["Enums"]["directory_onboarding_status"]
+            | null
+          display_name: string | null
+          email: string | null
+          employee_code: string | null
+          featured: boolean | null
+          first_name: string | null
+          id: string | null
+          image_url: string | null
+          job_title: string | null
+          last_name: string | null
+          leadership_badge: string | null
+          leadership_level:
+            | Database["public"]["Enums"]["leadership_level"]
+            | null
+          manager_id: string | null
+          phone: string | null
+          photo_url: string | null
+          preferred_name: string | null
+          pronouns: string | null
+          show_in_directory: boolean | null
+          show_in_org_chart: boolean | null
+          state: string | null
+          states_supported: string[] | null
+          status: Database["public"]["Enums"]["employee_status"] | null
+          supports_onboarding: boolean | null
+          unlock_level: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_rollback_onboarding: {
@@ -6070,6 +6361,14 @@ export type Database = {
         | "Staffing"
         | "Utilization"
         | "Reauth"
+      contact_visibility: "public" | "internal" | "leadership"
+      directory_onboarding_status:
+        | "not_started"
+        | "welcome"
+        | "mission"
+        | "orientation"
+        | "training"
+        | "complete"
       employee_status:
         | "pending_start"
         | "active"
@@ -6210,6 +6509,12 @@ export type Database = {
         | "Received"
         | "Approved"
         | "Payment Plan Required"
+      leadership_level:
+        | "executive"
+        | "director"
+        | "manager"
+        | "lead"
+        | "individual"
       login_access_action:
         | "viewed"
         | "copied_username"
@@ -6665,6 +6970,15 @@ export const Constants = {
         "Utilization",
         "Reauth",
       ],
+      contact_visibility: ["public", "internal", "leadership"],
+      directory_onboarding_status: [
+        "not_started",
+        "welcome",
+        "mission",
+        "orientation",
+        "training",
+        "complete",
+      ],
       employee_status: [
         "pending_start",
         "active",
@@ -6819,6 +7133,13 @@ export const Constants = {
         "Received",
         "Approved",
         "Payment Plan Required",
+      ],
+      leadership_level: [
+        "executive",
+        "director",
+        "manager",
+        "lead",
+        "individual",
       ],
       login_access_action: [
         "viewed",
