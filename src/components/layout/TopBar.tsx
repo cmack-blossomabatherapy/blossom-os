@@ -1,7 +1,7 @@
 import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertsPanel } from "@/components/alerts/AlertsPanel";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { ResumeOnboardingButton } from "@/components/onboarding/ResumeOnboardingButton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
