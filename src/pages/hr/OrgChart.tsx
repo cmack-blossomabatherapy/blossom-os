@@ -1278,3 +1278,268 @@ function ExportLegend() {
     </div>
   );
 }
+
+// ============================================================
+//  NEW PREMIUM COMPONENTS
+// ============================================================
+
+function OrgHero({
+  counts,
+}: {
+  counts: { total: number; byLevel: Record<Level, number>; byState: Map<string, number> };
+}) {
+  const stats = [
+    { label: "Team members", value: counts.total },
+    { label: "Departments", value: 18 },
+    { label: "States", value: counts.byState.size },
+    { label: "Leadership", value: counts.byLevel.ceo + counts.byLevel.c_suite + counts.byLevel.director + counts.byLevel.manager },
+  ];
+  return (
+    <section className="org-hero p-6 sm:p-10">
+      <div className="org-hero-grid" />
+      {/* Floating glow nodes */}
+      <span className="org-floating-node" style={{ top: "18%", left: "12%", animationDelay: "0s" }} />
+      <span className="org-floating-node" style={{ top: "62%", left: "22%", animationDelay: "1.2s" }} />
+      <span className="org-floating-node" style={{ top: "30%", left: "78%", animationDelay: "2.1s" }} />
+      <span className="org-floating-node" style={{ top: "70%", left: "85%", animationDelay: "0.6s" }} />
+      <span className="org-floating-node" style={{ top: "12%", left: "55%", animationDelay: "1.8s" }} />
+
+      <div className="relative space-y-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur-md ring-1 ring-white/15">
+          <Sparkles className="h-3.5 w-3.5" /> Blossom Ecosystem
+        </div>
+        <div className="max-w-3xl">
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white">
+            Blossom Organizational Ecosystem
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-white/80 max-w-2xl">
+            Understanding how every department, leader, and workflow connects together — a living map of how Blossom supports families, every day.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-2xl">
+          {stats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl bg-white/10 backdrop-blur-md ring-1 ring-white/15 px-3 py-2.5"
+            >
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-white/70">{s.label}</p>
+              <p className="text-2xl font-bold text-white tabular-nums mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OperationalFlowSection({ onToggle }: { onToggle: () => void }) {
+  const stages = [
+    { label: "Marketing", color: "petal-pink" },
+    { label: "Intake", color: "primary" },
+    { label: "Authorizations", color: "petal-orange" },
+    { label: "Scheduling", color: "petal-yellow" },
+    { label: "Clinical", color: "petal-sage" },
+    { label: "QA", color: "petal-purple" },
+    { label: "Family Support", color: "primary" },
+  ];
+  return (
+    <section className="org-glass rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+            <Workflow className="h-3 w-3" /> Operational Flow Mode
+          </div>
+          <h2 className="text-base sm:text-lg font-semibold text-foreground mt-1">
+            How operations move through Blossom
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Every family is supported by this connected pipeline of teams.
+          </p>
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onToggle}>
+          Hide flow
+        </Button>
+      </div>
+
+      <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+          {stages.map((s, i) => (
+            <div key={s.label} className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div
+                className="relative shrink-0 px-3.5 py-2.5 rounded-xl border bg-card text-foreground text-xs font-semibold whitespace-nowrap shadow-sm"
+                style={{
+                  borderColor: `hsl(var(--${s.color}) / 0.45)`,
+                  background: `linear-gradient(135deg, hsl(var(--${s.color}) / 0.10), hsl(var(--${s.color}) / 0.02))`,
+                  boxShadow: `0 8px 24px -16px hsl(var(--${s.color}) / 0.45)`,
+                  animation: `org-node-pulse 3.4s ease-out infinite`,
+                  animationDelay: `${i * 0.25}s`,
+                }}
+              >
+                <span
+                  className="absolute -top-1.5 -left-1.5 h-2 w-2 rounded-full"
+                  style={{ background: `hsl(var(--${s.color}))`, boxShadow: `0 0 10px hsl(var(--${s.color}))` }}
+                />
+                {s.label}
+              </div>
+              {i < stages.length - 1 && (
+                <svg width="36" height="14" viewBox="0 0 36 14" className="shrink-0 text-primary/60">
+                  <line x1="0" y1="7" x2="36" y2="7" stroke="currentColor" strokeWidth="2" className="org-flow-line" />
+                </svg>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProfileModal({
+  node, tree, onSelect,
+}: {
+  node: Node;
+  tree: { nodeById: Map<string, Node> };
+  onSelect: (id: string) => void;
+}) {
+  const e = node.emp;
+  const meta = LEVEL_META[node.level];
+  const directReports = node.reports;
+  const totalUnder = descendantsOf(node).length;
+  return (
+    <div className="relative">
+      {/* Hero band */}
+      <div className="relative h-32 sm:h-40 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow))_55%,hsl(var(--accent))_120%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(0_0%_100%/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(0_0%_100%/0.18),transparent_50%)]" />
+      </div>
+      <div className="px-6 pb-6 -mt-12 relative">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="ring-4 ring-background rounded-full bg-background">
+            <EmployeeAvatar employee={e} size="xl" />
+          </div>
+          <div className="flex-1 min-w-0 sm:pb-1">
+            <DialogTitle className="text-xl font-semibold text-foreground">{employeeFullName(e)}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+              {e.job_title} · {node.deptName}
+            </DialogDescription>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-medium border", meta.chip)}>
+                {meta.label}
+              </span>
+              <EmployeeStatusBadge status={e.status} />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border border-border bg-muted/40 text-muted-foreground">
+                <MapPin className="h-3 w-3" /> {e.state}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick action row */}
+        <div className="flex flex-wrap gap-2 mt-5">
+          {e.email && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`mailto:${e.email}`}><Mail className="h-3.5 w-3.5 mr-1.5" /> Email</a>
+            </Button>
+          )}
+          {e.phone && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`tel:${e.phone}`}><Phone className="h-3.5 w-3.5 mr-1.5" /> Call</a>
+            </Button>
+          )}
+          {e.email && (
+            <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+              <a href={`https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(e.email)}`} target="_blank" rel="noreferrer">
+                <MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Teams
+              </a>
+            </Button>
+          )}
+          <Button asChild size="sm" className="h-8 text-xs ml-auto">
+            <Link to={`/hr/employees/${e.id}`}>
+              Open full profile <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+            </Link>
+          </Button>
+        </div>
+
+        {/* Body grid */}
+        <div className="grid sm:grid-cols-2 gap-4 mt-6">
+          <div className="rounded-xl border border-border/60 p-4 bg-card/40">
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              About this role
+            </p>
+            <p className="text-sm text-foreground leading-relaxed">
+              {roleBlurb(node)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/60 p-4 bg-card/40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                Direct reports
+              </p>
+              <Badge variant="secondary" className="text-[10px]">
+                {directReports.length}{totalUnder !== directReports.length && ` · ${totalUnder} total`}
+              </Badge>
+            </div>
+            {directReports.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Individual contributor — supports the team directly.</p>
+            ) : (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {directReports.map((r) => (
+                  <button
+                    key={r.emp.id}
+                    onClick={() => onSelect(r.emp.id)}
+                    className="w-full flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/40 text-left transition-colors"
+                  >
+                    <EmployeeAvatar employee={r.emp} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{employeeFullName(r.emp)}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{r.emp.job_title}</p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-3 mt-4">
+          <InfoTile icon={Building2} label="Department" value={node.deptName} />
+          {e.clinic && <InfoTile icon={Building2} label="Clinic" value={e.clinic} />}
+          <InfoTile icon={MapPin} label="State" value={e.state} />
+          {e.email && <InfoTile icon={Mail} label="Email" value={e.email} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }: { icon: typeof Mail; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border/60 p-3 bg-card/40">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="h-3 w-3" />
+        <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
+      </div>
+      <p className="text-xs font-medium text-foreground mt-1 truncate">{value}</p>
+    </div>
+  );
+}
+
+function roleBlurb(node: Node): string {
+  const dept = node.deptName;
+  const reports = node.reports.length;
+  switch (node.level) {
+    case "ceo":
+      return "Sets the vision for Blossom and ensures every department is aligned around supporting families with exceptional care.";
+    case "c_suite":
+      return "Oversees company-wide operations, connecting clinical, business, and support functions into one coordinated system.";
+    case "director":
+      return `Leads the ${dept} department and ${reports > 0 ? `directly supports ${reports} teammate${reports === 1 ? "" : "s"}` : "drives strategy across the organization"}.`;
+    case "manager":
+      return `Manages day-to-day execution within ${dept}, coaching the team and keeping operations running smoothly.`;
+    case "lead":
+      return `Coordinates work inside ${dept} and is a go-to resource for newer teammates.`;
+    default:
+      return `Part of the ${dept} team — directly supporting Blossom families and the colleagues who serve them.`;
+  }
+}
