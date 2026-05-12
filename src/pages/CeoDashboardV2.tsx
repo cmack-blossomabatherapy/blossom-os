@@ -276,6 +276,102 @@ export default function CeoDashboardV2() {
         </div>
       </Card>
 
+      {(unassignedClients.length > 0 || mismatches.length > 0) && (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm">
+            <p className="font-medium text-foreground">Label issues detected</p>
+            <p className="text-muted-foreground mt-0.5">
+              {unassignedClients.length > 0 && (
+                <>
+                  <span className="font-medium text-foreground">{unassignedHours.toFixed(1)}h</span> across{" "}
+                  <span className="font-medium text-foreground">{unassignedSessions.toLocaleString()}</span> sessions for{" "}
+                  <span className="font-medium text-foreground">{unassignedClients.length}</span> client(s) couldn't be mapped to a current BCBA.
+                </>
+              )}
+              {unassignedClients.length > 0 && mismatches.length > 0 && " "}
+              {mismatches.length > 0 && (
+                <>
+                  <span className="font-medium text-foreground">{mismatches.length}</span> client(s) have hours assigned to multiple BCBAs (possible mid-period transition or duplicate labels).
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {unassignedClients.length > 0 && (
+        <Card className="overflow-hidden border-warning/30">
+          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <h2 className="text-sm font-semibold">Unassigned hours — needs label fix</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{unassignedHours.toFixed(1)}h · {unassignedSessions} sessions · {unassignedClients.length} clients</span>
+          </div>
+          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+            <div className="col-span-3">Client</div>
+            <div className="col-span-1 text-right">Hours</div>
+            <div className="col-span-1 text-right">Sessions</div>
+            <div className="col-span-3">Possible BCBA names in labels</div>
+            <div className="col-span-4">Sample labels</div>
+          </div>
+          {unassignedClients.slice(0, 50).map((c) => (
+            <div key={c.client} className="grid grid-cols-12 px-4 py-2 items-start border-b border-border/30 last:border-0 text-sm">
+              <div className="col-span-3 font-medium truncate" title={c.client}>{c.client}</div>
+              <div className="col-span-1 text-right tabular-nums font-semibold">{c.hours.toFixed(1)}</div>
+              <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.sessions}</div>
+              <div className="col-span-3 flex flex-wrap gap-1">
+                {c.candidateNames.length === 0 ? (
+                  <span className="text-[11px] text-muted-foreground italic">No name candidates in labels</span>
+                ) : c.candidateNames.map((n) => (
+                  <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
+                ))}
+              </div>
+              <div className="col-span-4 text-[11px] text-muted-foreground truncate" title={c.sampleLabels}>{c.sampleLabels}</div>
+            </div>
+          ))}
+          {unassignedClients.length > 50 && (
+            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
+              Showing top 50 of {unassignedClients.length} unassigned clients.
+            </div>
+          )}
+        </Card>
+      )}
+
+      {mismatches.length > 0 && (
+        <Card className="overflow-hidden border-warning/30">
+          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <h2 className="text-sm font-semibold">Multiple BCBAs per client — possible mismatch</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{mismatches.length} clients</span>
+          </div>
+          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+            <div className="col-span-4">Client</div>
+            <div className="col-span-2 text-right">Total hours</div>
+            <div className="col-span-6">BCBA split</div>
+          </div>
+          {mismatches.slice(0, 50).map((m) => (
+            <div key={m.client} className="grid grid-cols-12 px-4 py-2 items-center border-b border-border/30 last:border-0 text-sm">
+              <div className="col-span-4 font-medium truncate" title={m.client}>{m.client}</div>
+              <div className="col-span-2 text-right tabular-nums font-semibold">{m.totalHours.toFixed(1)}</div>
+              <div className="col-span-6 flex flex-wrap gap-1.5">
+                {m.bcbas.map((b) => (
+                  <Badge key={b.name} variant="secondary" className="font-normal">{b.name} · {b.hours.toFixed(1)}h</Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+          {mismatches.length > 50 && (
+            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
+              Showing top 50 of {mismatches.length}.
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card className="overflow-hidden">
         <div className="grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
           <div className="col-span-5">BCBA</div>
