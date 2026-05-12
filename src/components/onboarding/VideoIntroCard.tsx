@@ -43,10 +43,21 @@ export function VideoIntroCard({ moduleKey, title, description, videoSrc, poster
             src={videoSrc}
             poster={posterSrc}
             controls
-            playsInline
             preload="metadata"
             className="h-full w-full bg-black object-cover"
             onEnded={markWatched}
+            onPlay={(e) => {
+              const v = e.currentTarget as HTMLVideoElement & {
+                webkitEnterFullscreen?: () => void;
+                webkitRequestFullscreen?: () => void;
+              };
+              if (document.fullscreenElement) return;
+              try {
+                if (typeof v.webkitEnterFullscreen === "function") v.webkitEnterFullscreen();
+                else if (typeof v.requestFullscreen === "function") void v.requestFullscreen();
+                else if (typeof v.webkitRequestFullscreen === "function") v.webkitRequestFullscreen();
+              } catch { /* user gesture / browser may block — ignore */ }
+            }}
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
