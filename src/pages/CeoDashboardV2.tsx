@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ interface Session {
   procedure_code: string | null;
   procedure_description: string | null;
   hours: number;
+  raw_labels: string | null;
 }
 
 interface ImportInfo {
@@ -60,7 +61,7 @@ export default function CeoDashboardV2() {
     while (true) {
       const { data, error } = await supabase
         .from("bcba_billable_sessions")
-        .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours")
+        .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours, raw_labels")
         .eq("import_id", imp.id)
         .range(from, from + pageSize - 1);
       if (error) { toast.error(error.message); break; }
