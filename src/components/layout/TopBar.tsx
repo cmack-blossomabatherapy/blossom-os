@@ -45,10 +45,14 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
           alt="Blossom ABA Therapy"
           className="h-7 shrink-0 object-contain sm:h-8 md:h-9"
         />
-        <div className="hidden h-6 w-px bg-border/70 sm:block" />
-        <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
-          {title}
-        </h1>
+        {!isHome && (
+          <>
+            <div className="hidden h-6 w-px bg-border/70 sm:block" />
+            <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
+              {title}
+            </h1>
+          </>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
