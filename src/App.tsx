@@ -126,6 +126,7 @@ import OnboardingMission from "./pages/onboarding/Mission";
 import OnboardingValues from "./pages/onboarding/Values";
 import OnboardingTeam from "./pages/onboarding/Team";
 import OnboardingOrgChart from "./pages/onboarding/OrgChart";
+import OnboardingMeetTheTeam from "./pages/onboarding/MeetTheTeam";
 import OnboardingHowItWorks from "./pages/onboarding/HowItWorks";
 import OnboardingRequiredRole from "./pages/onboarding/RequiredRole";
 import OnboardingRequiredSystems from "./pages/onboarding/RequiredSystems";
@@ -236,6 +237,7 @@ const App = () => (
                   <Route path="/onboarding/values" element={<OnboardingValues />} />
                   <Route path="/onboarding/team" element={<OnboardingTeam />} />
                   <Route path="/onboarding/org-chart" element={<OnboardingOrgChart />} />
+                  <Route path="/onboarding/meet-the-team" element={<OnboardingMeetTheTeam />} />
                   <Route path="/onboarding/how-it-works" element={<OnboardingHowItWorks />} />
                   <Route path="/onboarding/required-role" element={<OnboardingRequiredRole />} />
                   <Route path="/onboarding/required-systems" element={<OnboardingRequiredSystems />} />
