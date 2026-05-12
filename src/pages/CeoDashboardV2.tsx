@@ -428,7 +428,7 @@ export default function CeoDashboardV2() {
       )}
 
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+        <div className="hidden md:grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
           <div className="col-span-5">BCBA</div>
           <div className="col-span-2 text-right">Hours</div>
           <div className="col-span-2 text-right">Sessions</div>
@@ -446,36 +446,63 @@ export default function CeoDashboardV2() {
           const pct = totalHours > 0 ? (g.totalHours / totalHours) * 100 : 0;
           return (
             <div key={g.bcba} className="border-b border-border/40 last:border-0">
-              <button onClick={() => toggle(g.bcba)} className="w-full grid grid-cols-12 px-4 py-3 items-center hover:bg-muted/30 transition-colors text-left">
-                <div className="col-span-5 flex items-center gap-2 min-w-0">
+              {/* Desktop row */}
+              <div className="hidden md:grid grid-cols-12 px-4 py-3 items-center hover:bg-muted/30 transition-colors">
+                <button onClick={() => toggle(g.bcba)} className="col-span-5 flex items-center gap-2 min-w-0 text-left">
                   {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   <span className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</span>
-                </div>
-                <div className="col-span-2 text-right tabular-nums font-semibold">{g.totalHours.toFixed(1)}</div>
-                <div className="col-span-2 text-right tabular-nums text-sm">{g.sessionCount}</div>
-                <div className="col-span-2 text-right tabular-nums text-sm">{g.clientCount}</div>
+                </button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums font-semibold hover:text-primary">{g.totalHours.toFixed(1)}</button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.sessionCount}</button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.clientCount}</button>
                 <div className="col-span-1 text-right text-xs text-muted-foreground">{pct.toFixed(1)}%</div>
-              </button>
+              </div>
+              {/* Mobile row */}
+              <div className="md:hidden px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <button onClick={() => setDetailBcba(g.bcba)} className="flex-1 text-left min-w-0">
+                    <div className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {g.sessionCount} sessions · {g.clientCount} patients · {pct.toFixed(1)}%
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => setDetailBcba(g.bcba)} className="text-right">
+                      <div className="tabular-nums font-semibold text-base leading-none">{g.totalHours.toFixed(1)}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">hours</div>
+                    </button>
+                    <button onClick={() => toggle(g.bcba)} aria-label="Expand" className="p-1 -mr-1">
+                      {isOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
               {isOpen && (
-                <div className="bg-muted/20 px-4 py-3 space-y-3">
+                <div className="bg-muted/20 px-3 md:px-4 py-3 space-y-3">
                   <div className="flex flex-wrap gap-1.5">
                     {Array.from(g.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
                       <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
                     ))}
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background overflow-hidden">
-                    <div className="grid grid-cols-12 px-3 py-1.5 border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                    <div className="hidden md:grid grid-cols-12 px-3 py-1.5 border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
                       <div className="col-span-6">Client</div>
                       <div className="col-span-2 text-right">Hours</div>
                       <div className="col-span-1 text-right">Sessions</div>
                       <div className="col-span-3">By code</div>
                     </div>
                     {Array.from(g.byClient.values()).sort((a, b) => b.hours - a.hours).map((c) => (
-                      <div key={c.client} className="grid grid-cols-12 px-3 py-2 items-center text-sm border-b border-border/30 last:border-0">
-                        <div className="col-span-6 truncate">{c.client}</div>
-                        <div className="col-span-2 text-right tabular-nums font-medium">{c.hours.toFixed(1)}</div>
-                        <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.sessions}</div>
-                        <div className="col-span-3 flex flex-wrap gap-1">
+                      <div key={c.client} className="px-3 py-2 text-sm border-b border-border/30 last:border-0 md:grid md:grid-cols-12 md:items-center">
+                        <div className="md:col-span-6 truncate font-medium md:font-normal">{c.client}</div>
+                        <div className="flex items-center justify-between gap-2 mt-1 md:mt-0 md:contents">
+                          <div className="md:col-span-2 md:text-right tabular-nums font-medium text-xs md:text-sm">
+                            <span className="md:hidden text-muted-foreground font-normal">Hours: </span>{c.hours.toFixed(1)}
+                          </div>
+                          <div className="md:col-span-1 md:text-right tabular-nums text-muted-foreground text-xs md:text-sm">
+                            <span className="md:hidden">· </span>{c.sessions} <span className="md:hidden">sess</span>
+                          </div>
+                        </div>
+                        <div className="md:col-span-3 flex flex-wrap gap-1 mt-1.5 md:mt-0">
                           {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
                             <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
                           ))}
@@ -489,6 +516,66 @@ export default function CeoDashboardV2() {
           );
         })}
       </Card>
+
+      <Dialog open={!!detailBcba} onOpenChange={(o) => !o && setDetailBcba(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className={cn(detailBcba === UNASSIGNED && "italic text-muted-foreground")}>{detailBcba}</DialogTitle>
+            {bcbaDetail && (
+              <DialogDescription>
+                {bcbaDetail.totalHours.toFixed(1)} hours · {bcbaDetail.sessionCount} sessions · {bcbaDetail.clients.length} patients · {bcbaDetail.rbts.length} RBTs
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {bcbaDetail && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">By billing code</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {bcbaDetail.codes.map(([code, h]) => (
+                    <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">RBTs ({bcbaDetail.rbts.length})</h3>
+                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+                  {bcbaDetail.rbts.map((r) => (
+                    <div key={r.name} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{r.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{r.sessions} sessions · {r.clients.size} patients</div>
+                      </div>
+                      <div className="tabular-nums font-semibold whitespace-nowrap">{r.hours.toFixed(1)}h</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Patients ({bcbaDetail.clients.length})</h3>
+                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+                  {bcbaDetail.clients.map((c) => (
+                    <div key={c.name} className="px-3 py-2 text-sm space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium truncate flex-1">{c.name}</div>
+                        <div className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</div>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">{c.sessions} sessions · RBTs: {Array.from(c.rbts).join(", ") || "—"}</div>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
+                          <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
