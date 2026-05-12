@@ -1,77 +1,101 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Crown, Network, ArrowLeft, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { JourneyHero } from "@/components/onboarding/JourneyHero";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.svg";
 
-function initials(name: string) {
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-}
-
-const GRADIENTS = [
-  "from-sky-400 to-blue-600", "from-emerald-400 to-teal-600", "from-violet-400 to-purple-600",
-  "from-rose-400 to-pink-600", "from-amber-400 to-orange-600", "from-cyan-400 to-blue-500",
-];
-function gradientFor(id: string) {
-  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return GRADIENTS[h % GRADIENTS.length];
-}
-
-function Avatar({ m, size = "md" }: { m: DirectoryEmployee; size?: "sm" | "md" }) {
-  const cls = size === "sm" ? "h-10 w-10 text-xs" : "h-14 w-14 text-sm";
-  const [broken, setBroken] = useState(false);
-  if (m.photo && !broken) {
-    return (
-      <img
-        src={m.photo}
-        alt={m.name}
-        onError={() => setBroken(true)}
-        className={cn(cls, "rounded-xl object-cover ring-2 ring-background shadow-sm")}
-      />
-    );
-  }
+/** Purple section/department pill — matches the brochure org-chart styling. */
+function SectionPill({ label, className }: { label: string; className?: string }) {
   return (
-    <div className={cn(cls, "rounded-xl bg-gradient-to-br text-white font-semibold flex items-center justify-center ring-2 ring-background shadow-sm", gradientFor(m.id))}>
-      {initials(m.name)}
+    <div
+      className={cn(
+        "inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold text-white shadow-sm",
+        "bg-[#6B4A8C]",
+        className,
+      )}
+    >
+      {label}
     </div>
   );
 }
 
-function PersonCard({ m, size = "md" }: { m: DirectoryEmployee; size?: "sm" | "md" }) {
+/** Teal node — managers / directors / coordinators (leadership). */
+function TealNode({ m }: { m: DirectoryEmployee }) {
   return (
-    <div className={cn(
-      "min-w-[200px] max-w-[240px] rounded-2xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
-    )}>
-      <div className="flex items-center gap-2.5">
-        <Avatar m={m} size={size} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1">
-            <p className="truncate text-sm font-semibold text-foreground">{m.name}</p>
-            {m.leadership && <Crown className="h-3 w-3 shrink-0 text-amber-500" />}
-          </div>
-          <p className="line-clamp-2 text-[11px] text-muted-foreground">{m.title}</p>
-          {m.credential && (
-            <Badge variant="outline" className="mt-1 h-4 px-1 text-[9px]">{m.credential}</Badge>
-          )}
-        </div>
-      </div>
+    <div className="rounded-xl bg-[#3FB1B4] px-3 py-1.5 text-center text-white shadow-sm min-w-[150px] max-w-[180px]">
+      <p className="text-[12px] font-semibold leading-tight">{m.name}</p>
+      <p className="text-[10px] leading-tight opacity-90">{m.title}</p>
     </div>
   );
 }
 
-function Branch({ node, all }: { node: DirectoryEmployee; all: DirectoryEmployee[] }) {
-  const reports = node.uuid ? all.filter((m) => m.managerId === node.uuid) : [];
+/** Green node — individual contributors / specialists. */
+function GreenNode({ m }: { m: DirectoryEmployee }) {
   return (
-    <div className="flex flex-col items-center gap-4">
-      <PersonCard m={node} />
-      {reports.length > 0 && (
+    <div className="rounded-xl bg-[#7BB661] px-3 py-1.5 text-center text-white shadow-sm min-w-[140px] max-w-[170px]">
+      <p className="text-[11px] font-semibold leading-tight">{m.name}</p>
+      <p className="text-[10px] leading-tight opacity-90">{m.title}</p>
+    </div>
+  );
+}
+
+function isLeader(m: DirectoryEmployee) {
+  return (
+    m.leadershipLevel === "executive" ||
+    m.leadershipLevel === "director" ||
+    m.leadershipLevel === "manager" ||
+    m.leadership
+  );
+}
+
+/** Vertical connector. */
+const VLine = () => <div className="h-5 w-px bg-border" />;
+
+/** Horizontal bar over a row of children. */
+function HBar({ count }: { count: number }) {
+  if (count <= 1) return null;
+  return <div className="h-px w-full max-w-[80%] bg-border" />;
+}
+
+/** Department block: purple pill, optional leader(s), then ICs underneath. */
+function DepartmentBlock({
+  name,
+  members,
+  className,
+}: {
+  name: string;
+  members: DirectoryEmployee[];
+  className?: string;
+}) {
+  if (members.length === 0) return null;
+  const leaders = members.filter(isLeader);
+  const ics = members.filter((m) => !isLeader(m));
+
+  return (
+    <div className={cn("flex flex-col items-center gap-3", className)}>
+      <SectionPill label={name} />
+
+      {leaders.length > 0 && (
         <>
-          <div className="h-4 w-px bg-border" />
-          <div className="flex flex-wrap items-start justify-center gap-4">
-            {reports.map((r) => <Branch key={r.id} node={r} all={all} />)}
+          <VLine />
+          <div className="flex flex-wrap items-start justify-center gap-3">
+            {leaders.map((m) => (
+              <TealNode key={m.id} m={m} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {ics.length > 0 && (
+        <>
+          <VLine />
+          <HBar count={ics.length} />
+          <div className="flex flex-wrap items-start justify-center gap-3">
+            {ics.map((m) => (
+              <GreenNode key={m.id} m={m} />
+            ))}
           </div>
         </>
       )}
@@ -80,26 +104,39 @@ function Branch({ node, all }: { node: DirectoryEmployee; all: DirectoryEmployee
 }
 
 export default function OnboardingOrgChart() {
-  const { members, loading } = useEmployeeDirectory();
+  const { members, departments, loading } = useEmployeeDirectory();
 
-  // Roots = leaders without a manager in the directory
-  const roots = useMemo(() => {
+  const byDept = useMemo(() => {
+    const map = new Map<string, DirectoryEmployee[]>();
+    for (const d of departments) map.set(d.id, []);
+    for (const m of members) {
+      const arr = map.get(m.department);
+      if (arr) arr.push(m);
+    }
+    // Sort: leaders first, then by name
+    for (const [k, list] of map) {
+      list.sort((a, b) => {
+        const al = isLeader(a) ? 0 : 1;
+        const bl = isLeader(b) ? 0 : 1;
+        if (al !== bl) return al - bl;
+        return a.name.localeCompare(b.name);
+      });
+      map.set(k, list);
+    }
+    return map;
+  }, [members, departments]);
+
+  // Top-row executives: people with no manager / executive level
+  const executives = useMemo(() => {
     const uuids = new Set(members.map((m) => m.uuid).filter(Boolean) as string[]);
-    return members.filter((m) => !m.managerId || !uuids.has(m.managerId));
+    return members
+      .filter((m) => m.leadershipLevel === "executive" || (!m.managerId && isLeader(m)) || (m.managerId && !uuids.has(m.managerId) && isLeader(m)))
+      .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i)
+      .slice(0, 4);
   }, [members]);
 
-  // Group roots: executives first
-  const exec = roots.filter((r) => r.leadershipLevel === "executive" || r.leadership);
-  const otherRoots = roots.filter((r) => !(r.leadershipLevel === "executive" || r.leadership));
-
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-16 animate-fade-in">
-      <JourneyHero
-        eyebrow="Organizational Chart"
-        title="How Blossom is organized"
-        description="See who leads each area and how teams report up. Click any name to learn more."
-      />
-
+    <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-16 animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button asChild variant="outline" size="sm">
           <Link to="/onboarding"><ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to journey</Link>
@@ -114,23 +151,83 @@ export default function OnboardingOrgChart() {
           <Loader2 className="h-4 w-4 animate-spin" /> Loading org chart…
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-3xl border border-border/60 bg-card/70 p-6 backdrop-blur-md sm:p-8">
-          <div className="flex min-w-fit flex-col items-center gap-10">
-            {exec.length > 0 && (
-              <div className="flex flex-wrap items-start justify-center gap-6">
-                {exec.map((r) => <Branch key={r.id} node={r} all={members} />)}
+        <div className="overflow-x-auto rounded-3xl border border-border/60 bg-white p-6 shadow-sm sm:p-10">
+          <div className="min-w-[1100px]">
+            {/* Header */}
+            <div className="mb-10 flex items-start justify-between gap-6">
+              <div className="flex flex-col gap-2">
+                <img src={logo} alt="Blossom ABA Therapy" className="h-14 w-auto" />
+                <p className="text-lg font-medium text-[#3FB1B4]">Organizational Chart | May 2026</p>
               </div>
-            )}
-            {otherRoots.length > 0 && (
-              <div className="w-full">
-                <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                  <Network className="h-3.5 w-3.5" /> Additional teams
+              {executives.length > 0 && (
+                <div className="flex flex-col items-center gap-3">
+                  <SectionPill label="CEO / COO" />
+                  <VLine />
+                  <div className="flex flex-wrap items-start justify-center gap-3">
+                    {executives.map((m) => <TealNode key={m.id} m={m} />)}
+                  </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {otherRoots.map((m) => <PersonCard key={m.id} m={m} size="sm" />)}
-                </div>
+              )}
+            </div>
+
+            {/* Two big rows of departments */}
+            <div className="space-y-12">
+              {/* Row 1: leadership / operational */}
+              <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
+                {[
+                  "operations",
+                  "hr-payroll",
+                  "marketing",
+                  "state-directors",
+                  "qa",
+                ].map((id) => {
+                  const dept = departments.find((d) => d.id === id);
+                  if (!dept) return null;
+                  return (
+                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
+                  );
+                })}
               </div>
-            )}
+
+              {/* Row 2: clinical / case ops */}
+              <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
+                {[
+                  "authorizations",
+                  "scheduling-rbt",
+                  "asst-state-directors",
+                  "regional-bcbas",
+                  "behavioral-support",
+                ].map((id) => {
+                  const dept = departments.find((d) => d.id === id);
+                  if (!dept) return null;
+                  return (
+                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
+                  );
+                })}
+              </div>
+
+              {/* Row 3: intake & support */}
+              <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
+                {[
+                  "ga-case-management",
+                  "intake",
+                  "recruiting",
+                ].map((id) => {
+                  const dept = departments.find((d) => d.id === id);
+                  if (!dept) return null;
+                  return (
+                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2"><span className="inline-block h-3 w-6 rounded-full bg-[#6B4A8C]" /> Department</span>
+              <span className="flex items-center gap-2"><span className="inline-block h-3 w-6 rounded bg-[#3FB1B4]" /> Leadership</span>
+              <span className="flex items-center gap-2"><span className="inline-block h-3 w-6 rounded bg-[#7BB661]" /> Team member</span>
+            </div>
           </div>
         </div>
       )}
