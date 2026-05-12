@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Sparkles, Save, Video, EyeOff, Eye, Check, Compass, RotateCcw, Home } from "lucide-react";
+import { Sparkles, Save, Video, EyeOff, Eye, Check, Compass, RotateCcw, Home, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,7 @@ export default function JourneyEditor() {
   const [modDrafts, setModDrafts] = useState<Record<string, ModuleDraft>>({});
   const [homeDraft, setHomeDraft] = useState<HomeDraft>({ eyebrow: "Your Blossom Journey", title: "Your First 5 Weeks at", title_highlight: "Blossom", objective: "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line." });
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
 
   // Hydrate drafts from base + overrides
   useEffect(() => {
@@ -137,6 +138,25 @@ export default function JourneyEditor() {
     if (error) { toast({ title: "Couldn't reset", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Module reset to default" });
     void refresh();
+  };
+
+  const uploadVideo = async (moduleKey: string, file: File) => {
+    const k = `${phase.id}:${moduleKey}`;
+    setUploading(k);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
+    const path = `${phase.id}/${moduleKey}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("journey-videos")
+      .upload(path, file, { upsert: true, contentType: file.type || undefined, cacheControl: "3600" });
+    if (upErr) {
+      setUploading(null);
+      toast({ title: "Upload failed", description: upErr.message, variant: "destructive" });
+      return;
+    }
+    const { data } = supabase.storage.from("journey-videos").getPublicUrl(path);
+    setModDrafts((s) => ({ ...s, [k]: { ...s[k], video_url: data.publicUrl } }));
+    setUploading(null);
+    toast({ title: "Video uploaded", description: "Click Save module to apply." });
   };
 
   return (
@@ -274,7 +294,27 @@ export default function JourneyEditor() {
                       <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-3">
                         <div className="mb-2 flex items-center gap-2 text-xs font-medium text-foreground">
                           <Video className="h-3.5 w-3.5 text-primary" /> Video
-                          <span className="text-muted-foreground font-normal">— paste a video URL (MP4, Loom, Vimeo direct link, or hosted file)</span>
+                          <span className="text-muted-foreground font-normal">— upload a file or paste a URL (MP4, Loom, Vimeo direct)</span>
+                        </div>
+                        <div className="mb-3">
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted">
+                            {uploading === k ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 text-primary" />}
+                            {uploading === k ? "Uploading…" : "Upload video file"}
+                            <input
+                              type="file"
+                              accept="video/*"
+                              className="hidden"
+                              disabled={uploading === k}
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) void uploadVideo(m.key, f);
+                                e.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                          {d.video_url && (
+                            <span className="ml-3 text-[11px] text-muted-foreground">Current: <a href={d.video_url} target="_blank" rel="noreferrer" className="text-primary underline truncate">file set</a></span>
+                          )}
                         </div>
                         <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
                           <Input placeholder="https://…" value={d.video_url} onChange={(e) => setModDrafts((s) => ({ ...s, [k]: { ...s[k], video_url: e.target.value } }))} />
