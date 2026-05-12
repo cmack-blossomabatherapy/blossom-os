@@ -10,7 +10,7 @@ import { HRSection } from "@/components/profile/HRSection";
 import { LoginsSection } from "@/components/profile/LoginsSection";
 import { SettingsSection } from "@/components/profile/SettingsSection";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const TABS = [
@@ -31,6 +31,7 @@ export default function Profile() {
   const initial = (loc.hash.replace("#", "") as TabId) || "overview";
   const [tab, setTab] = useState<TabId>(TABS.some((t) => t.id === initial) ? initial : "overview");
   const [hrPanel, setHrPanel] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   useEffect(() => { nav({ hash: tab }, { replace: true }); }, [tab, nav]);
 
@@ -58,6 +59,20 @@ export default function Profile() {
     enabled: !!user?.id,
     queryFn: async () => {
       const { data } = await supabase.from("employee_hr_profiles").select("*").eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
+
+  // Central employee record (drives photo + cross-system identity)
+  const { data: employeeRow } = useQuery({
+    queryKey: ["employee_self", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("id, photo_url, avatar_url")
+        .eq("user_id", user!.id)
+        .maybeSingle();
       return data;
     },
   });
@@ -95,6 +110,10 @@ export default function Profile() {
         onRequestPTO={() => { setTab("hr"); setHrPanel("pto"); }}
         onViewLogins={() => setTab("logins")}
         onViewCertificates={() => setTab("certs")}
+        ownerUserId={user.id}
+        employeeId={employeeRow?.id ?? null}
+        photoUrl={employeeRow?.photo_url ?? employeeRow?.avatar_url ?? null}
+        onPhotoChange={() => qc.invalidateQueries({ queryKey: ["employee_self", user.id] })}
       />
 
       {/* Segmented tab nav */}

@@ -1,6 +1,7 @@
 import { Sparkles, GraduationCap, KeyRound, Plane, Award, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AvatarUploader } from "@/components/profile/AvatarUploader";
 
 interface ProfileHeroProps {
   name: string;
@@ -19,6 +20,15 @@ interface ProfileHeroProps {
   onRequestPTO: () => void;
   onViewLogins: () => void;
   onViewCertificates: () => void;
+  /** Auth user id (used as the storage folder for avatar uploads). */
+  ownerUserId?: string;
+  /** Employee row id to update on photo change. */
+  employeeId?: string | null;
+  /** Current avatar URL — drives the preview. */
+  photoUrl?: string | null;
+  /** Allow editing (defaults to true when ownerUserId is present). */
+  canEditPhoto?: boolean;
+  onPhotoChange?: (url: string | null) => void;
 }
 
 export function ProfileHero(p: ProfileHeroProps) {
@@ -34,12 +44,24 @@ export function ProfileHero(p: ProfileHeroProps) {
       <div className="relative p-5 sm:p-7 lg:p-8 space-y-6">
         {/* Identity row */}
         <div className="flex items-start gap-4">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-white/30 to-white/0" aria-hidden />
-            <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-white/10 text-xl sm:text-2xl font-semibold backdrop-blur-xl ring-1 ring-white/20 shadow-md">
-              {p.initials}
+          {p.ownerUserId ? (
+            <AvatarUploader
+              ownerUserId={p.ownerUserId}
+              employeeId={p.employeeId ?? undefined}
+              currentUrl={p.photoUrl ?? undefined}
+              initials={p.initials}
+              size="lg"
+              editable={p.canEditPhoto ?? true}
+              onChange={p.onPhotoChange}
+            />
+          ) : (
+            <div className="relative shrink-0">
+              <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-white/30 to-white/0" aria-hidden />
+              <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-white/10 text-xl sm:text-2xl font-semibold backdrop-blur-xl ring-1 ring-white/20 shadow-md">
+                {p.initials}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl sm:text-2xl font-semibold tracking-tight capitalize">{p.name}</h1>
