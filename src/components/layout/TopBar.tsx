@@ -1,7 +1,7 @@
 import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertsPanel } from "@/components/alerts/AlertsPanel";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CommandPalette, useCommandPalette } from "./CommandPalette";
 import { ResumeOnboardingButton } from "@/components/onboarding/ResumeOnboardingButton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -17,6 +17,8 @@ interface TopBarProps {
 
 export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: TopBarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
   const { user, roles, isAdmin, signOut } = useAuth();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const primaryRole = roles[0] ?? "viewer";
@@ -43,10 +45,14 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
           alt="Blossom ABA Therapy"
           className="h-7 shrink-0 object-contain sm:h-8 md:h-9"
         />
-        <div className="hidden h-6 w-px bg-border/70 sm:block" />
-        <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
-          {title}
-        </h1>
+        {!isHome && (
+          <>
+            <div className="hidden h-6 w-px bg-border/70 sm:block" />
+            <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
+              {title}
+            </h1>
+          </>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
