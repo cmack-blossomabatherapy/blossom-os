@@ -269,7 +269,7 @@ export default function OnboardingTeam() {
               <div className="space-y-4 p-6">
                 <p className="text-sm leading-relaxed text-foreground">{open.blurb}</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">{DEPARTMENTS.find((d) => d.id === open.department)?.name}</Badge>
+                  <Badge variant="outline">{open.departmentName ?? DEPARTMENTS.find((d) => d.id === open.department)?.name ?? "Team"}</Badge>
                   {open.states?.map((s) => <Badge key={s} variant="outline"><MapPin className="mr-1 h-3 w-3" />{s}</Badge>)}
                   {open.supportsOnboarding && (
                     <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
