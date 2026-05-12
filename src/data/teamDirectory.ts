@@ -38,18 +38,54 @@ export const DEPARTMENTS: { id: DepartmentId; name: string; tagline: string; spo
   { id: "authorizations", name: "Authorizations", tagline: "Insurance, eligibility, and credentialing." },
 ];
 
+import ahuvaFlorans from "@/assets/team/ahuva-florans.jpg";
+import alizaRubnitz from "@/assets/team/aliza-rubnitz.jpg";
+import amandaAvalos from "@/assets/team/amanda-avalos.jpg";
+import anjeGrobler from "@/assets/team/anje-grobler.jpg";
+import ashleyConklin from "@/assets/team/ashley-conklin.jpg";
+import bailaFriedman from "@/assets/team/baila-friedman.jpg";
+import beccaBailey from "@/assets/team/becca-bailey.jpg";
+import breannaDodson from "@/assets/team/breanna-dodson.jpg";
 import chadKaufman from "@/assets/team/chad-kaufman.jpg";
-import shiraLasry from "@/assets/team/shira-lasry.jpg";
-import eliBerman from "@/assets/team/eli-berman.jpg";
+import chanieChernitzky from "@/assets/team/chanie-chernitzky.jpg";
 import coreyMack from "@/assets/team/corey-mack.jpg";
-import moipaOlentiki from "@/assets/team/moipa-olentiki.jpg";
-import gabiKaweblum from "@/assets/team/gabi-kaweblum.jpg";
-import ezraSopher from "@/assets/team/ezra-sopher.jpg";
-import yosefAharonoff from "@/assets/team/yosef-aharonoff.jpg";
-import garyFrank from "@/assets/team/gary-frank.jpg";
+import cymbreBrumbeloe from "@/assets/team/cymbre-brumbeloe.jpg";
+import daylisYepez from "@/assets/team/daylis-yepez.jpg";
+import devorahBenenfeld from "@/assets/team/devorah-benenfeld.jpg";
+import eliBerman from "@/assets/team/eli-berman.jpg";
 import eliMillman from "@/assets/team/eli-millman.jpg";
+import ezraSopher from "@/assets/team/ezra-sopher.jpg";
+import gabiKaweblum from "@/assets/team/gabi-kaweblum.jpg";
+import garyFrank from "@/assets/team/gary-frank.jpg";
+import hannahHayes from "@/assets/team/hannah-hayes.jpg";
+import hannahSandidge from "@/assets/team/hannah-sandidge.jpg";
+import jamekaDixon from "@/assets/team/jameka-dixon.jpg";
+import jessicaLabrovic from "@/assets/team/jessica-labrovic.jpg";
+import juliaPinder from "@/assets/team/julia-pinder.jpg";
+import julianneRodriguez from "@/assets/team/julianne-rodriguez.jpg";
+import kaylaBrown from "@/assets/team/kayla-brown.jpg";
 import leviGarfunkel from "@/assets/team/levi-garfunkel.jpg";
+import michalSilberberg from "@/assets/team/michal-silberberg.jpg";
+import michelleMckenzie from "@/assets/team/michelle-mckenzie.jpg";
+import miriamMetzger from "@/assets/team/miriam-metzger.jpg";
+import moipaOlentiki from "@/assets/team/moipa-olentiki.jpg";
 import mordyGobioff from "@/assets/team/mordy-gobioff.jpg";
+import nicholasSchlotterer from "@/assets/team/nicholas-schlotterer.jpg";
+import nickyNewman from "@/assets/team/nicky-newman.jpg";
+import nikkiGoldenberg from "@/assets/team/nikki-goldenberg.jpg";
+import rachelGreenspan from "@/assets/team/rachel-greenspan.jpg";
+import raizyFolger from "@/assets/team/raizy-folger.jpg";
+import rikiWallach from "@/assets/team/riki-wallach.jpg";
+import rivkyWeissman from "@/assets/team/rivky-weissman.jpg";
+import rochelWalzman from "@/assets/team/rochel-walzman.jpg";
+import rochellCoulson from "@/assets/team/rochell-coulson.jpg";
+import samPerlow from "@/assets/team/sam-perlow.jpg";
+import saraUhr from "@/assets/team/sara-uhr.jpg";
+import sarahRebuelta from "@/assets/team/sarah-rebuelta.jpg";
+import shiraLasry from "@/assets/team/shira-lasry.jpg";
+import surieGoldstein from "@/assets/team/surie-goldstein.jpg";
+import taylorOliver from "@/assets/team/taylor-oliver.jpg";
+import yosefAharonoff from "@/assets/team/yosef-aharonoff.jpg";
 
 export const TEAM_MEMBERS: TeamMember[] = [
   // Operations
@@ -71,58 +107,58 @@ export const TEAM_MEMBERS: TeamMember[] = [
   { id: "mordy-gobioff", name: "Mordy Gobioff", title: "Assistant State Director – VA & Clinic Setup", blurb: "Mordy assists in leading services and staff in Virginia and assists with new clinic setup.", department: "asst-state-directors", states: ["VA"], photo: mordyGobioff },
 
   // Intake
-  { id: "michal-silberberg", name: "Michal Silberberg", title: "Intake Coordinator", blurb: "Michal guides new families through the intake process.", department: "intake" },
-  { id: "aliza-rubnitz", name: "Aliza Rubnitz", title: "Intake Coordinator", blurb: "Aliza guides new families through the intake process.", department: "intake" },
-  { id: "michelle-mckenzie", name: "Michelle McKenzie", title: "Assistant Intake Coordinator", blurb: "Michelle supports intake after hours and on weekends.", department: "intake" },
+  { id: "michal-silberberg", name: "Michal Silberberg", title: "Intake Coordinator", blurb: "Michal guides new families through the intake process.", department: "intake", photo: michalSilberberg },
+  { id: "aliza-rubnitz", name: "Aliza Rubnitz", title: "Intake Coordinator", blurb: "Aliza guides new families through the intake process.", department: "intake", photo: alizaRubnitz },
+  { id: "michelle-mckenzie", name: "Michelle McKenzie", title: "Assistant Intake Coordinator", blurb: "Michelle supports intake after hours and on weekends.", department: "intake", photo: michelleMckenzie },
 
   // Marketing
-  { id: "nicholas-schlotterer", name: "Nicholas Schlotterer", title: "Marketing Director", blurb: "Nicholas leads strategy and execution across the company's marketing efforts.", department: "marketing", leadership: true },
-  { id: "sam-perlow", name: "Sam Perlow", title: "Outreach Coordinator", blurb: "Sam leads outreach efforts.", department: "marketing" },
+  { id: "nicholas-schlotterer", name: "Nicholas Schlotterer", title: "Marketing Director", blurb: "Nicholas leads strategy and execution across the company's marketing efforts.", department: "marketing", leadership: true, photo: nicholasSchlotterer },
+  { id: "sam-perlow", name: "Sam Perlow", title: "Outreach Coordinator", blurb: "Sam leads outreach efforts.", department: "marketing", photo: samPerlow },
 
   // HR & Payroll
-  { id: "nikki-goldenberg", name: "Nikki Goldenberg", title: "HR Manager", blurb: "Nikki handles all HR related issues.", department: "hr-payroll", leadership: true, supportsOnboarding: true },
-  { id: "baila-friedman", name: "Baila Friedman", title: "Payroll Manager", blurb: "Baila handles all payroll related issues.", department: "hr-payroll", supportsOnboarding: true },
+  { id: "nikki-goldenberg", name: "Nikki Goldenberg", title: "HR Manager", blurb: "Nikki handles all HR related issues.", department: "hr-payroll", leadership: true, supportsOnboarding: true, photo: nikkiGoldenberg },
+  { id: "baila-friedman", name: "Baila Friedman", title: "Payroll Manager", blurb: "Baila handles all payroll related issues.", department: "hr-payroll", supportsOnboarding: true, photo: bailaFriedman },
 
   // QA
-  { id: "rochel-walzman", name: "Rochel Walzman", credential: "BCBA", title: "QA Director", blurb: "Rochel leads all quality assurance across the company.", department: "qa", leadership: true },
-  { id: "amanda-avalos", name: "Amanda Avalos", credential: "BCBA", title: "QA – Initial Assessments", blurb: "Amanda reviews IAs, leads BCBA orientations, handles insurance denials, and assists with reports.", department: "qa", supportsOnboarding: true },
-  { id: "julianne-rodriguez", name: "Julianne Rodriguez", credential: "BCBA", title: "QA Reviewer", blurb: "Julianne reviews progress reports, prepares insurance submissions, and evaluates learning trees.", department: "qa" },
-  { id: "raizy-folger", name: "Raizy Folger", title: "QA Specialist", blurb: "Raizy supports new staff, maintains insurance standards, and manages Central Reach accounts.", department: "qa", supportsOnboarding: true },
-  { id: "anje-grobler", name: "Anje Grobler", title: "QA Specialist", blurb: "Anje supports new staff, maintains insurance standards, and manages Central Reach accounts.", department: "qa", supportsOnboarding: true },
+  { id: "rochel-walzman", name: "Rochel Walzman", credential: "BCBA", title: "QA Director", blurb: "Rochel leads all quality assurance across the company.", department: "qa", leadership: true, photo: rochelWalzman },
+  { id: "amanda-avalos", name: "Amanda Avalos", credential: "BCBA", title: "QA – Initial Assessments", blurb: "Amanda reviews IAs, leads BCBA orientations, handles insurance denials, and assists with reports.", department: "qa", supportsOnboarding: true, photo: amandaAvalos },
+  { id: "julianne-rodriguez", name: "Julianne Rodriguez", credential: "BCBA", title: "QA Reviewer", blurb: "Julianne reviews progress reports, prepares insurance submissions, and evaluates learning trees.", department: "qa", photo: julianneRodriguez },
+  { id: "raizy-folger", name: "Raizy Folger", title: "QA Specialist", blurb: "Raizy supports new staff, maintains insurance standards, and manages Central Reach accounts.", department: "qa", supportsOnboarding: true, photo: raizyFolger },
+  { id: "anje-grobler", name: "Anje Grobler", title: "QA Specialist", blurb: "Anje supports new staff, maintains insurance standards, and manages Central Reach accounts.", department: "qa", supportsOnboarding: true, photo: anjeGrobler },
 
   // Regional BCBAs & Training
-  { id: "becca-bailey", name: "Becca Bailey", credential: "BCBA", title: "Training, Support & Orientations", blurb: "Becca provides training and support for therapists and new BCBAs.", department: "regional-bcbas", supportsOnboarding: true },
-  { id: "breanna-dodson", name: "BreAnna Dodson", credential: "BCBA", title: "RBT Orientations", blurb: "BreAnna provides orientation for new RBTs in Georgia.", department: "regional-bcbas", states: ["GA"], supportsOnboarding: true },
-  { id: "hannah-hayes", name: "Hannah Hayes", credential: "BCBA", title: "Fellowship Lead", blurb: "Hannah mentors RBTs in their role as they become BCBAs.", department: "regional-bcbas", supportsOnboarding: true },
-  { id: "jameka-dixon", name: "Jameka Dixon", credential: "BCBA", title: "BCBA Training – GA", blurb: "Jameka provides training for new BCBAs.", department: "regional-bcbas", states: ["GA"], supportsOnboarding: true },
-  { id: "jessica-labrovic", name: "Jessica Labrovic", credential: "BCBA", title: "Regional BCBA – NC", blurb: "Jessica leads clinical support through training and events to ensure quality service delivery throughout North Carolina.", department: "regional-bcbas", states: ["NC"], leadership: true },
-  { id: "taylor-oliver", name: "Taylor Oliver", credential: "BCBA", title: "Regional BCBA – TN", blurb: "Taylor leads clinical support through training and events to ensure quality service delivery throughout Tennessee.", department: "regional-bcbas", states: ["TN"], leadership: true },
+  { id: "becca-bailey", name: "Becca Bailey", credential: "BCBA", title: "Training, Support & Orientations", blurb: "Becca provides training and support for therapists and new BCBAs.", department: "regional-bcbas", supportsOnboarding: true, photo: beccaBailey },
+  { id: "breanna-dodson", name: "BreAnna Dodson", credential: "BCBA", title: "RBT Orientations", blurb: "BreAnna provides orientation for new RBTs in Georgia.", department: "regional-bcbas", states: ["GA"], supportsOnboarding: true, photo: breannaDodson },
+  { id: "hannah-hayes", name: "Hannah Hayes", credential: "BCBA", title: "Fellowship Lead", blurb: "Hannah mentors RBTs in their role as they become BCBAs.", department: "regional-bcbas", supportsOnboarding: true, photo: hannahHayes },
+  { id: "jameka-dixon", name: "Jameka Dixon", credential: "BCBA", title: "BCBA Training – GA", blurb: "Jameka provides training for new BCBAs.", department: "regional-bcbas", states: ["GA"], supportsOnboarding: true, photo: jamekaDixon },
+  { id: "jessica-labrovic", name: "Jessica Labrovic", credential: "BCBA", title: "Regional BCBA – NC", blurb: "Jessica leads clinical support through training and events to ensure quality service delivery throughout North Carolina.", department: "regional-bcbas", states: ["NC"], leadership: true, photo: jessicaLabrovic },
+  { id: "taylor-oliver", name: "Taylor Oliver", credential: "BCBA", title: "Regional BCBA – TN", blurb: "Taylor leads clinical support through training and events to ensure quality service delivery throughout Tennessee.", department: "regional-bcbas", states: ["TN"], leadership: true, photo: taylorOliver },
 
   // Behavioral Support
-  { id: "julia-pinder", name: "Julia Pinder", credential: "BCBA", title: "Behavioral Support Director", blurb: "Julia assists and supports BCBAs with clinical and day-to-day needs.", department: "behavioral-support", leadership: true, supportsOnboarding: true },
-  { id: "ashley-conklin", name: "Ashley Conklin", credential: "BCBA", title: "Senior Behavioral Support Director", blurb: "Ashley supports BCBAs with high-level clinical needs.", department: "behavioral-support", leadership: true },
-  { id: "cymbre-brumbeloe", name: "Cymbre Brumbeloe", credential: "BCBA", title: "Regional Clinical Director – GA", blurb: "Cymbre leads services and staff in our Georgia clinics.", department: "behavioral-support", leadership: true, states: ["GA"] },
+  { id: "julia-pinder", name: "Julia Pinder", credential: "BCBA", title: "Behavioral Support Director", blurb: "Julia assists and supports BCBAs with clinical and day-to-day needs.", department: "behavioral-support", leadership: true, supportsOnboarding: true, photo: juliaPinder },
+  { id: "ashley-conklin", name: "Ashley Conklin", credential: "BCBA", title: "Senior Behavioral Support Director", blurb: "Ashley supports BCBAs with high-level clinical needs.", department: "behavioral-support", leadership: true, photo: ashleyConklin },
+  { id: "cymbre-brumbeloe", name: "Cymbre Brumbeloe", credential: "BCBA", title: "Regional Clinical Director – GA", blurb: "Cymbre leads services and staff in our Georgia clinics.", department: "behavioral-support", leadership: true, states: ["GA"], photo: cymbreBrumbeloe },
 
   // Scheduling & RBT Reps
-  { id: "daylis-yepez", name: "Daylis Yepez", title: "Scheduling Coordinator – MD, NC, TN, VA", blurb: "Daylis manages session scheduling, changes and updates.", department: "scheduling-rbt", states: ["MD", "NC", "TN", "VA"], supportsOnboarding: true },
-  { id: "hannah-sandidge", name: "Hannah Sandidge", title: "Scheduling Coordinator – GA & RBT Representative", blurb: "Hannah manages session scheduling, changes and updates in GA. She is also a rep for our RBTs!", department: "scheduling-rbt", states: ["GA"], supportsOnboarding: true },
-  { id: "sarah-rebuelta", name: "Sarah Rebuelta", credential: "BCBA", title: "RBT Representative (Clinical Support)", blurb: "Sarah assists in high-level training questions for our RBTs and sources materials for our staff.", department: "scheduling-rbt", supportsOnboarding: true },
+  { id: "daylis-yepez", name: "Daylis Yepez", title: "Scheduling Coordinator – MD, NC, TN, VA", blurb: "Daylis manages session scheduling, changes and updates.", department: "scheduling-rbt", states: ["MD", "NC", "TN", "VA"], supportsOnboarding: true, photo: daylisYepez },
+  { id: "hannah-sandidge", name: "Hannah Sandidge", title: "Scheduling Coordinator – GA & RBT Representative", blurb: "Hannah manages session scheduling, changes and updates in GA. She is also a rep for our RBTs!", department: "scheduling-rbt", states: ["GA"], supportsOnboarding: true, photo: hannahSandidge },
+  { id: "sarah-rebuelta", name: "Sarah Rebuelta", credential: "BCBA", title: "RBT Representative (Clinical Support)", blurb: "Sarah assists in high-level training questions for our RBTs and sources materials for our staff.", department: "scheduling-rbt", supportsOnboarding: true, photo: sarahRebuelta },
 
   // Recruiting
-  { id: "surie-goldstein", name: "Surie Goldstein", title: "Recruiting Coordinator – GA", blurb: "Surie oversees Recruiting in GA and hires top-notch BCBAs.", department: "recruiting", states: ["GA"], leadership: true },
-  { id: "chanie-chernitzky", name: "Chanie Chernitzky", title: "Recruiting Assistant", blurb: "Chanie recruits and hires top-notch RBTs.", department: "recruiting" },
-  { id: "rochell-coulson", name: "Rochell Coulson", title: "Recruiting Assistant", blurb: "Rochell recruits and hires top-notch RBTs.", department: "recruiting" },
+  { id: "surie-goldstein", name: "Surie Goldstein", title: "Recruiting Coordinator – GA", blurb: "Surie oversees Recruiting in GA and hires top-notch BCBAs.", department: "recruiting", states: ["GA"], leadership: true, photo: surieGoldstein },
+  { id: "chanie-chernitzky", name: "Chanie Chernitzky", title: "Recruiting Assistant", blurb: "Chanie recruits and hires top-notch RBTs.", department: "recruiting", photo: chanieChernitzky },
+  { id: "rochell-coulson", name: "Rochell Coulson", title: "Recruiting Assistant", blurb: "Rochell recruits and hires top-notch RBTs.", department: "recruiting", photo: rochellCoulson },
 
   // Authorizations
-  { id: "rachel-greenspan", name: "Rachel Greenspan", title: "Case Manager – GA", blurb: "Rachel oversees services and staff in Georgia.", department: "ga-case-management", states: ["GA"], leadership: true },
-  { id: "nicky-newman", name: "Nicky Newman", title: "Case Manager – GA", blurb: "Nicky manages cases and communication for Georgia families.", department: "ga-case-management", states: ["GA"] },
-  { id: "ahuva-florans", name: "Ahuva Florans", title: "Case Manager – GA", blurb: "Ahuva manages cases and communication for Georgia families.", department: "ga-case-management", states: ["GA"] },
-  { id: "sara-uhr", name: "Sara Uhr", title: "RBT/BT & Staffing Coordinator – GA", blurb: "Sara manages case staffing, coordination and communication in Georgia.", department: "ga-case-management", states: ["GA"] },
-  { id: "devorah-benenfeld", name: "Devorah Benenfeld", title: "Authorizations Manager", blurb: "Devorah oversees authorizations, denials, and eligibility.", department: "authorizations", leadership: true },
-  { id: "miriam-metzger", name: "Miriam Metzger", title: "Authorizations Coordinator – GA", blurb: "Miriam manages Georgia's insurance submissions, follow-ups for IAs, initial treatment & progress reports.", department: "authorizations", states: ["GA"] },
-  { id: "rivky-weissman", name: "Rivky Weissman", title: "Authorizations Coordinator – GA", blurb: "Rivky handles Georgia's insurance submissions and follow-ups for progress reports.", department: "authorizations", states: ["GA"] },
-  { id: "kayla-brown", name: "Kayla Brown", title: "Authorizations Coordinator – MD, NC, TN, VA", blurb: "Kayla manages IA authorizations outside of Georgia and credentialing.", department: "authorizations", states: ["MD", "NC", "TN", "VA"] },
-  { id: "riki-wallach", name: "Riki Wallach", title: "Authorizations Coordinator – MD, NC, TN, VA", blurb: "Riki manages all auths outside of Georgia for progress reports.", department: "authorizations", states: ["MD", "NC", "TN", "VA"] },
+  { id: "rachel-greenspan", name: "Rachel Greenspan", title: "Case Manager – GA", blurb: "Rachel oversees services and staff in Georgia.", department: "ga-case-management", states: ["GA"], leadership: true, photo: rachelGreenspan },
+  { id: "nicky-newman", name: "Nicky Newman", title: "Case Manager – GA", blurb: "Nicky manages cases and communication for Georgia families.", department: "ga-case-management", states: ["GA"], photo: nickyNewman },
+  { id: "ahuva-florans", name: "Ahuva Florans", title: "Case Manager – GA", blurb: "Ahuva manages cases and communication for Georgia families.", department: "ga-case-management", states: ["GA"], photo: ahuvaFlorans },
+  { id: "sara-uhr", name: "Sara Uhr", title: "RBT/BT & Staffing Coordinator – GA", blurb: "Sara manages case staffing, coordination and communication in Georgia.", department: "ga-case-management", states: ["GA"], photo: saraUhr },
+  { id: "devorah-benenfeld", name: "Devorah Benenfeld", title: "Authorizations Manager", blurb: "Devorah oversees authorizations, denials, and eligibility.", department: "authorizations", leadership: true, photo: devorahBenenfeld },
+  { id: "miriam-metzger", name: "Miriam Metzger", title: "Authorizations Coordinator – GA", blurb: "Miriam manages Georgia's insurance submissions, follow-ups for IAs, initial treatment & progress reports.", department: "authorizations", states: ["GA"], photo: miriamMetzger },
+  { id: "rivky-weissman", name: "Rivky Weissman", title: "Authorizations Coordinator – GA", blurb: "Rivky handles Georgia's insurance submissions and follow-ups for progress reports.", department: "authorizations", states: ["GA"], photo: rivkyWeissman },
+  { id: "kayla-brown", name: "Kayla Brown", title: "Authorizations Coordinator – MD, NC, TN, VA", blurb: "Kayla manages IA authorizations outside of Georgia and credentialing.", department: "authorizations", states: ["MD", "NC", "TN", "VA"], photo: kaylaBrown },
+  { id: "riki-wallach", name: "Riki Wallach", title: "Authorizations Coordinator – MD, NC, TN, VA", blurb: "Riki manages all auths outside of Georgia for progress reports.", department: "authorizations", states: ["MD", "NC", "TN", "VA"], photo: rikiWallach },
 ];
 
 export function membersByDepartment(id: DepartmentId): TeamMember[] {
