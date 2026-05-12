@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -41,6 +42,9 @@ export default function CeoDashboardV2() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [unassignedOpen, setUnassignedOpen] = useState(false);
+  const [mismatchesOpen, setMismatchesOpen] = useState(false);
+  const [detailBcba, setDetailBcba] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadActive() {
@@ -226,9 +230,42 @@ export default function CeoDashboardV2() {
     });
   }
 
+  // BCBA detail (RBTs, patients, codes)
+  const bcbaDetail = useMemo(() => {
+    if (!detailBcba) return null;
+    const rows = filtered.filter((s) => (s.bcba_name ?? UNASSIGNED) === detailBcba);
+    const byClient = new Map<string, { hours: number; sessions: number; rbts: Set<string>; byCode: Map<string, number> }>();
+    const byRbt = new Map<string, { hours: number; sessions: number; clients: Set<string> }>();
+    const byCode = new Map<string, number>();
+    let totalHours = 0;
+    for (const s of rows) {
+      const h = Number(s.hours) || 0;
+      totalHours += h;
+      const code = s.procedure_code || "—";
+      byCode.set(code, (byCode.get(code) || 0) + h);
+      const client = s.client_full || "Unknown client";
+      let c = byClient.get(client);
+      if (!c) { c = { hours: 0, sessions: 0, rbts: new Set(), byCode: new Map() }; byClient.set(client, c); }
+      c.hours += h; c.sessions += 1;
+      if (s.provider_full) c.rbts.add(s.provider_full);
+      c.byCode.set(code, (c.byCode.get(code) || 0) + h);
+      const rbt = s.provider_full || "Unknown RBT";
+      let r = byRbt.get(rbt);
+      if (!r) { r = { hours: 0, sessions: 0, clients: new Set() }; byRbt.set(rbt, r); }
+      r.hours += h; r.sessions += 1; r.clients.add(client);
+    }
+    return {
+      totalHours,
+      sessionCount: rows.length,
+      clients: Array.from(byClient.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
+      rbts: Array.from(byRbt.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
+      codes: Array.from(byCode.entries()).sort((a, b) => b[1] - a[1]),
+    };
+  }, [detailBcba, filtered]);
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-32 md:pb-12">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">CEO Dashboard V2</h1>
           <p className="text-sm text-muted-foreground">Billable hours per BCBA, with breakdown by billing code. Upload a fresh CSV any time.</p>
@@ -312,78 +349,86 @@ export default function CeoDashboardV2() {
 
       {unassignedClients.length > 0 && (
         <Card className="overflow-hidden border-warning/30">
-          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <h2 className="text-sm font-semibold">Unassigned hours — needs label fix</h2>
+          <button
+            onClick={() => setUnassignedOpen((v) => !v)}
+            className="w-full px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between gap-3 hover:bg-warning/10 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {unassignedOpen ? <ChevronDown className="h-4 w-4 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-warning shrink-0" />}
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+              <h2 className="text-sm font-semibold truncate">Unassigned hours — needs label fix</h2>
             </div>
-            <span className="text-xs text-muted-foreground">{unassignedHours.toFixed(1)}h · {unassignedSessions} sessions · {unassignedClients.length} clients</span>
-          </div>
-          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-            <div className="col-span-3">Client</div>
-            <div className="col-span-1 text-right">Hours</div>
-            <div className="col-span-1 text-right">Sessions</div>
-            <div className="col-span-3">Possible BCBA names in labels</div>
-            <div className="col-span-4">Sample labels</div>
-          </div>
-          {unassignedClients.slice(0, 50).map((c) => (
-            <div key={c.client} className="grid grid-cols-12 px-4 py-2 items-start border-b border-border/30 last:border-0 text-sm">
-              <div className="col-span-3 font-medium truncate" title={c.client}>{c.client}</div>
-              <div className="col-span-1 text-right tabular-nums font-semibold">{c.hours.toFixed(1)}</div>
-              <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.sessions}</div>
-              <div className="col-span-3 flex flex-wrap gap-1">
-                {c.candidateNames.length === 0 ? (
-                  <span className="text-[11px] text-muted-foreground italic">No name candidates in labels</span>
-                ) : c.candidateNames.map((n) => (
-                  <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
-                ))}
-              </div>
-              <div className="col-span-4 text-[11px] text-muted-foreground truncate" title={c.sampleLabels}>{c.sampleLabels}</div>
-            </div>
-          ))}
-          {unassignedClients.length > 50 && (
-            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
-              Showing top 50 of {unassignedClients.length} unassigned clients.
-            </div>
+            <span className="text-[11px] md:text-xs text-muted-foreground whitespace-nowrap">{unassignedHours.toFixed(1)}h · {unassignedClients.length}</span>
+          </button>
+          {unassignedOpen && (
+            <>
+              {unassignedClients.slice(0, 50).map((c) => (
+                <div key={c.client} className="px-4 py-3 border-b border-border/30 last:border-0 text-sm space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-medium truncate flex-1" title={c.client}>{c.client}</span>
+                    <span className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">{c.sessions} sessions</div>
+                  {c.candidateNames.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {c.candidateNames.map((n) => (
+                        <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
+                      ))}
+                    </div>
+                  )}
+                  {c.sampleLabels && (
+                    <div className="text-[11px] text-muted-foreground line-clamp-2">{c.sampleLabels}</div>
+                  )}
+                </div>
+              ))}
+              {unassignedClients.length > 50 && (
+                <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
+                  Showing top 50 of {unassignedClients.length} unassigned clients.
+                </div>
+              )}
+            </>
           )}
         </Card>
       )}
 
       {mismatches.length > 0 && (
         <Card className="overflow-hidden border-warning/30">
-          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <h2 className="text-sm font-semibold">Multiple BCBAs per client — possible mismatch</h2>
+          <button
+            onClick={() => setMismatchesOpen((v) => !v)}
+            className="w-full px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between gap-3 hover:bg-warning/10 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {mismatchesOpen ? <ChevronDown className="h-4 w-4 text-warning shrink-0" /> : <ChevronRight className="h-4 w-4 text-warning shrink-0" />}
+              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+              <h2 className="text-sm font-semibold truncate">Multiple BCBAs per client</h2>
             </div>
-            <span className="text-xs text-muted-foreground">{mismatches.length} clients</span>
-          </div>
-          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-            <div className="col-span-4">Client</div>
-            <div className="col-span-2 text-right">Total hours</div>
-            <div className="col-span-6">BCBA split</div>
-          </div>
-          {mismatches.slice(0, 50).map((m) => (
-            <div key={m.client} className="grid grid-cols-12 px-4 py-2 items-center border-b border-border/30 last:border-0 text-sm">
-              <div className="col-span-4 font-medium truncate" title={m.client}>{m.client}</div>
-              <div className="col-span-2 text-right tabular-nums font-semibold">{m.totalHours.toFixed(1)}</div>
-              <div className="col-span-6 flex flex-wrap gap-1.5">
-                {m.bcbas.map((b) => (
-                  <Badge key={b.name} variant="secondary" className="font-normal">{b.name} · {b.hours.toFixed(1)}h</Badge>
-                ))}
-              </div>
-            </div>
-          ))}
-          {mismatches.length > 50 && (
-            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
-              Showing top 50 of {mismatches.length}.
-            </div>
+            <span className="text-[11px] md:text-xs text-muted-foreground whitespace-nowrap">{mismatches.length} clients</span>
+          </button>
+          {mismatchesOpen && (
+            <>
+              {mismatches.slice(0, 50).map((m) => (
+                <div key={m.client} className="px-4 py-3 border-b border-border/30 last:border-0 text-sm space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-medium truncate flex-1" title={m.client}>{m.client}</span>
+                    <span className="tabular-nums font-semibold whitespace-nowrap">{m.totalHours.toFixed(1)}h</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {m.bcbas.map((b) => (
+                      <Badge key={b.name} variant="secondary" className="font-normal text-[10px]">{b.name} · {b.hours.toFixed(1)}h</Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {mismatches.length > 50 && (
+                <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">Showing top 50 of {mismatches.length}.</div>
+              )}
+            </>
           )}
         </Card>
       )}
 
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+        <div className="hidden md:grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
           <div className="col-span-5">BCBA</div>
           <div className="col-span-2 text-right">Hours</div>
           <div className="col-span-2 text-right">Sessions</div>
@@ -401,36 +446,63 @@ export default function CeoDashboardV2() {
           const pct = totalHours > 0 ? (g.totalHours / totalHours) * 100 : 0;
           return (
             <div key={g.bcba} className="border-b border-border/40 last:border-0">
-              <button onClick={() => toggle(g.bcba)} className="w-full grid grid-cols-12 px-4 py-3 items-center hover:bg-muted/30 transition-colors text-left">
-                <div className="col-span-5 flex items-center gap-2 min-w-0">
+              {/* Desktop row */}
+              <div className="hidden md:grid grid-cols-12 px-4 py-3 items-center hover:bg-muted/30 transition-colors">
+                <button onClick={() => toggle(g.bcba)} className="col-span-5 flex items-center gap-2 min-w-0 text-left">
                   {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   <span className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</span>
-                </div>
-                <div className="col-span-2 text-right tabular-nums font-semibold">{g.totalHours.toFixed(1)}</div>
-                <div className="col-span-2 text-right tabular-nums text-sm">{g.sessionCount}</div>
-                <div className="col-span-2 text-right tabular-nums text-sm">{g.clientCount}</div>
+                </button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums font-semibold hover:text-primary">{g.totalHours.toFixed(1)}</button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.sessionCount}</button>
+                <button onClick={() => setDetailBcba(g.bcba)} className="col-span-2 text-right tabular-nums text-sm hover:text-primary">{g.clientCount}</button>
                 <div className="col-span-1 text-right text-xs text-muted-foreground">{pct.toFixed(1)}%</div>
-              </button>
+              </div>
+              {/* Mobile row */}
+              <div className="md:hidden px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <button onClick={() => setDetailBcba(g.bcba)} className="flex-1 text-left min-w-0">
+                    <div className={cn("font-medium truncate", g.bcba === UNASSIGNED && "text-muted-foreground italic")}>{g.bcba}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {g.sessionCount} sessions · {g.clientCount} patients · {pct.toFixed(1)}%
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => setDetailBcba(g.bcba)} className="text-right">
+                      <div className="tabular-nums font-semibold text-base leading-none">{g.totalHours.toFixed(1)}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">hours</div>
+                    </button>
+                    <button onClick={() => toggle(g.bcba)} aria-label="Expand" className="p-1 -mr-1">
+                      {isOpen ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
               {isOpen && (
-                <div className="bg-muted/20 px-4 py-3 space-y-3">
+                <div className="bg-muted/20 px-3 md:px-4 py-3 space-y-3">
                   <div className="flex flex-wrap gap-1.5">
                     {Array.from(g.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
                       <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
                     ))}
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background overflow-hidden">
-                    <div className="grid grid-cols-12 px-3 py-1.5 border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                    <div className="hidden md:grid grid-cols-12 px-3 py-1.5 border-b border-border/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
                       <div className="col-span-6">Client</div>
                       <div className="col-span-2 text-right">Hours</div>
                       <div className="col-span-1 text-right">Sessions</div>
                       <div className="col-span-3">By code</div>
                     </div>
                     {Array.from(g.byClient.values()).sort((a, b) => b.hours - a.hours).map((c) => (
-                      <div key={c.client} className="grid grid-cols-12 px-3 py-2 items-center text-sm border-b border-border/30 last:border-0">
-                        <div className="col-span-6 truncate">{c.client}</div>
-                        <div className="col-span-2 text-right tabular-nums font-medium">{c.hours.toFixed(1)}</div>
-                        <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.sessions}</div>
-                        <div className="col-span-3 flex flex-wrap gap-1">
+                      <div key={c.client} className="px-3 py-2 text-sm border-b border-border/30 last:border-0 md:grid md:grid-cols-12 md:items-center">
+                        <div className="md:col-span-6 truncate font-medium md:font-normal">{c.client}</div>
+                        <div className="flex items-center justify-between gap-2 mt-1 md:mt-0 md:contents">
+                          <div className="md:col-span-2 md:text-right tabular-nums font-medium text-xs md:text-sm">
+                            <span className="md:hidden text-muted-foreground font-normal">Hours: </span>{c.hours.toFixed(1)}
+                          </div>
+                          <div className="md:col-span-1 md:text-right tabular-nums text-muted-foreground text-xs md:text-sm">
+                            <span className="md:hidden">· </span>{c.sessions} <span className="md:hidden">sess</span>
+                          </div>
+                        </div>
+                        <div className="md:col-span-3 flex flex-wrap gap-1 mt-1.5 md:mt-0">
                           {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
                             <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
                           ))}
@@ -444,6 +516,66 @@ export default function CeoDashboardV2() {
           );
         })}
       </Card>
+
+      <Dialog open={!!detailBcba} onOpenChange={(o) => !o && setDetailBcba(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className={cn(detailBcba === UNASSIGNED && "italic text-muted-foreground")}>{detailBcba}</DialogTitle>
+            {bcbaDetail && (
+              <DialogDescription>
+                {bcbaDetail.totalHours.toFixed(1)} hours · {bcbaDetail.sessionCount} sessions · {bcbaDetail.clients.length} patients · {bcbaDetail.rbts.length} RBTs
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {bcbaDetail && (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">By billing code</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {bcbaDetail.codes.map(([code, h]) => (
+                    <Badge key={code} variant="secondary" className="font-normal">{code} · {h.toFixed(1)}h</Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">RBTs ({bcbaDetail.rbts.length})</h3>
+                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+                  {bcbaDetail.rbts.map((r) => (
+                    <div key={r.name} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{r.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{r.sessions} sessions · {r.clients.size} patients</div>
+                      </div>
+                      <div className="tabular-nums font-semibold whitespace-nowrap">{r.hours.toFixed(1)}h</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-2">Patients ({bcbaDetail.clients.length})</h3>
+                <div className="rounded-lg border border-border/50 divide-y divide-border/40">
+                  {bcbaDetail.clients.map((c) => (
+                    <div key={c.name} className="px-3 py-2 text-sm space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium truncate flex-1">{c.name}</div>
+                        <div className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</div>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">{c.sessions} sessions · RBTs: {Array.from(c.rbts).join(", ") || "—"}</div>
+                      <div className="flex flex-wrap gap-1">
+                        {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
+                          <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
