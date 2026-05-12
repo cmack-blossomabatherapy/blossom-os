@@ -88,7 +88,7 @@ export default function OnboardingTeam() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
-      if (deptFilter !== "all" && m.department !== deptFilter) return false;
+      if (deptFilter !== "all" && m.departmentId !== deptFilter && m.department !== deptFilter) return false;
       if (stateFilter !== "all" && !m.states?.includes(stateFilter)) return false;
       if (leadershipOnly && !m.leadership) return false;
       if (supportOnly && !m.supportsOnboarding) return false;
@@ -97,23 +97,36 @@ export default function OnboardingTeam() {
     });
   }, [members, search, deptFilter, stateFilter, leadershipOnly, supportOnly]);
 
+  // Build a live department list from members so filters reflect actual data.
+  const liveDepartments = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    members.forEach((m) => {
+      if (m.departmentId && m.departmentName) {
+        map.set(m.departmentId, { id: m.departmentId, name: m.departmentName });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [members]);
+
   const grouped = useMemo(() => {
-    const knownIds = new Set(DEPARTMENTS.map((d) => d.id));
-    const known = DEPARTMENTS
-      .map((d) => ({ dept: d, members: filtered.filter((m) => m.department === d.id) }))
-      .filter((g) => g.members.length > 0);
-    const extras = filtered.filter((m) => !knownIds.has(m.department));
-    if (extras.length > 0) {
-      known.push({
-        dept: {
-          id: "unassigned" as typeof DEPARTMENTS[number]["id"],
-          name: "Team",
-          tagline: "Teammates not yet assigned to a department.",
-        },
-        members: extras,
-      });
-    }
-    return known;
+    // Group by live department (uuid). Falls back to "Team" for unassigned.
+    const groups = new Map<string, { dept: { id: string; name: string; tagline: string; spotlight?: boolean }; members: typeof filtered }>();
+    filtered.forEach((m) => {
+      const key = m.departmentId ?? "unassigned";
+      const name = m.departmentName ?? "Team";
+      if (!groups.has(key)) {
+        groups.set(key, {
+          dept: {
+            id: key,
+            name,
+            tagline: key === "unassigned" ? "Teammates not yet assigned to a department." : "",
+          },
+          members: [],
+        });
+      }
+      groups.get(key)!.members.push(m);
+    });
+    return Array.from(groups.values()).sort((a, b) => a.dept.name.localeCompare(b.dept.name));
   }, [filtered, DEPARTMENTS]);
 
   const stats = {
@@ -166,7 +179,7 @@ export default function OnboardingTeam() {
           <div className="flex flex-wrap gap-2">
             <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="rounded-md border border-border bg-card px-3 py-2 text-xs">
               <option value="all">All departments</option>
-              {DEPARTMENTS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              {liveDepartments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
             <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="rounded-md border border-border bg-card px-3 py-2 text-xs">
               <option value="all">All states</option>
