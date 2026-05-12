@@ -20,6 +20,11 @@ export const ALWAYS_OPEN_ROUTES: (string | RegExp)[] = [
   "/hr/assistant",
   "/notification-preferences",
   "/mobile/permissions",
+  // Team Directory & Org Chart are part of the Welcome / Meet the Team
+  // experience and must be reachable for users who are still onboarding.
+  "/team",
+  "/hr/org-chart",
+  "/hr/directory",
   /^\/onboarding(\/.*)?$/,
   // The training course player is allowed so users can complete required onboarding training.
   /^\/training\/course\/.*/,
