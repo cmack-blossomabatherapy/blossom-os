@@ -187,12 +187,12 @@ Deno.serve(async (req) => {
         cols = getRequiredColumnIndexes(r);
         return;
       }
-      if (!r || r.length < 5) continue;
+      if (!r || r.length < 5) return;
       parsedRows += 1;
       const c = cols!;
       const voided = (r[c.voided] || "").toLowerCase();
       const deleted = (r[c.deleted] || "").toLowerCase();
-      if (voided === "true" || deleted === "true") continue;
+      if (voided === "true" || deleted === "true") return;
       const hours = parseFloat(r[c.hours] || "0") || 0;
       const labels = r[c.labels] || "";
       records.push({
