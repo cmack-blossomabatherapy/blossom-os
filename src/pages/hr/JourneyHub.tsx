@@ -29,7 +29,6 @@ import {
   applyChecklistOverrides, JOURNEY_CHECKLIST_OVERRIDES_EVENT,
 } from "@/data/journeyChecklistOverrides";
 
-import { HeroBanner } from "@/components/journey/HeroBanner";
 import { JourneyHero } from "@/components/onboarding/JourneyHero";
 import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
