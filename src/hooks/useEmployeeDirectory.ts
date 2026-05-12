@@ -84,7 +84,7 @@ function mapRow(r: ViewRow): DirectoryEmployee {
     name: r.display_name,
     title: r.job_title,
     blurb: r.bio ?? "",
-    department: (r.department_slug as DepartmentId) ?? "operations",
+    department: (r.department_slug as DepartmentId) ?? ("unassigned" as DepartmentId),
     states: r.states_supported && r.states_supported.length ? r.states_supported : [r.state],
     leadership: isLeader || r.featured,
     supportsOnboarding: r.supports_onboarding,
