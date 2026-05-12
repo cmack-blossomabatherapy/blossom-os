@@ -111,8 +111,9 @@ export default function OnboardingOrgChart() {
     const map = new Map<string, DirectoryEmployee[]>();
     for (const d of departments) map.set(d.id, []);
     for (const m of members) {
-      const arr = map.get(m.department);
-      if (arr) arr.push(m);
+      const key = m.department || "unassigned";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
     }
     // Sort: leaders first, then by name
     for (const [k, list] of map) {
@@ -135,6 +136,26 @@ export default function OnboardingOrgChart() {
       .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i)
       .slice(0, 4);
   }, [members]);
+
+  const ROW_1 = ["operations", "hr-payroll", "marketing", "state-directors", "qa"];
+  const ROW_2 = ["authorizations", "scheduling-rbt", "asst-state-directors", "regional-bcbas", "behavioral-support"];
+  const ROW_3 = ["ga-case-management", "intake", "recruiting"];
+  const KNOWN = new Set([...ROW_1, ...ROW_2, ...ROW_3]);
+
+  // Anything else with members (extra DB departments, "unassigned", etc.)
+  const extraDeptIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const [id, list] of byDept) {
+      if (!KNOWN.has(id) && list.length > 0) ids.push(id);
+    }
+    return ids;
+  }, [byDept]);
+
+  const deptNameFor = (id: string) => {
+    if (id === "unassigned") return "Unassigned";
+    return departments.find((d) => d.id === id)?.name
+      ?? id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-16 animate-fade-in">
@@ -175,52 +196,33 @@ export default function OnboardingOrgChart() {
             <div className="space-y-12">
               {/* Row 1: leadership / operational */}
               <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
-                {[
-                  "operations",
-                  "hr-payroll",
-                  "marketing",
-                  "state-directors",
-                  "qa",
-                ].map((id) => {
-                  const dept = departments.find((d) => d.id === id);
-                  if (!dept) return null;
-                  return (
-                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
-                  );
-                })}
+                {ROW_1.map((id) => (
+                  <DepartmentBlock key={id} name={deptNameFor(id)} members={byDept.get(id) ?? []} />
+                ))}
               </div>
 
               {/* Row 2: clinical / case ops */}
               <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
-                {[
-                  "authorizations",
-                  "scheduling-rbt",
-                  "asst-state-directors",
-                  "regional-bcbas",
-                  "behavioral-support",
-                ].map((id) => {
-                  const dept = departments.find((d) => d.id === id);
-                  if (!dept) return null;
-                  return (
-                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
-                  );
-                })}
+                {ROW_2.map((id) => (
+                  <DepartmentBlock key={id} name={deptNameFor(id)} members={byDept.get(id) ?? []} />
+                ))}
               </div>
 
               {/* Row 3: intake & support */}
               <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
-                {[
-                  "ga-case-management",
-                  "intake",
-                  "recruiting",
-                ].map((id) => {
-                  const dept = departments.find((d) => d.id === id);
-                  if (!dept) return null;
-                  return (
-                    <DepartmentBlock key={id} name={dept.name} members={byDept.get(id) ?? []} />
-                  );
-                })}
+                {ROW_3.map((id) => (
+                  <DepartmentBlock key={id} name={deptNameFor(id)} members={byDept.get(id) ?? []} />
+                ))}
               </div>
+
+              {/* Row 4: any other department (incl. Unassigned) so every employee shows up */}
+              {extraDeptIds.length > 0 && (
+                <div className="flex flex-wrap items-start justify-center gap-x-8 gap-y-10">
+                  {extraDeptIds.map((id) => (
+                    <DepartmentBlock key={id} name={deptNameFor(id)} members={byDept.get(id) ?? []} />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Legend */}
