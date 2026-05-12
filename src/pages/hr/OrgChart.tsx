@@ -880,12 +880,12 @@ function NodeCard({
       onClick={() => onSelect(node.emp.id)}
       data-node-id={node.emp.id}
       className={cn(
-        "group flex items-center gap-2.5 p-2 pr-3 rounded-lg ring-1 transition-all min-w-[260px] text-left",
+        "group flex items-center gap-2.5 p-2.5 pr-3 rounded-xl ring-1 transition-all duration-300 min-w-[260px] text-left org-glass hover:-translate-y-0.5 hover:scale-[1.015]",
         meta.ring,
-        selected && "ring-2 ring-primary shadow-md",
-        highlighted && !selected && "ring-2 ring-warning/60",
+        selected && "ring-2 ring-primary shadow-lg scale-[1.02]",
+        highlighted && !selected && "ring-2 ring-warning/70",
         dimmed && "opacity-40",
-        !selected && !highlighted && "hover:ring-primary/40 hover:shadow-sm",
+        !selected && !highlighted && "hover:ring-primary/50",
       )}
     >
       <EmployeeAvatar employee={node.emp} size="md" />
