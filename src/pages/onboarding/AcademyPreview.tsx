@@ -65,7 +65,7 @@ export default function OnboardingAcademyPreview() {
         Sample data shown for preview. Tracks, progress, and courses become interactive once you've completed onboarding.
       </p>
 
-      <StepCompleteButton stepId="how" />
+      <StepCompleteButton stepId="how-it-works" />
     </div>
   );
 }
