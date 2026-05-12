@@ -17,6 +17,8 @@ interface TopBarProps {
 
 export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: TopBarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
   const { user, roles, isAdmin, signOut } = useAuth();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const primaryRole = roles[0] ?? "viewer";
