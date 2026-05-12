@@ -84,7 +84,7 @@ function mapRow(r: ViewRow): DirectoryEmployee {
     name: r.display_name,
     title: r.job_title,
     blurb: r.bio ?? "",
-    department: (r.department_slug as DepartmentId) ?? "operations",
+    department: (r.department_slug as DepartmentId) ?? ("unassigned" as DepartmentId),
     states: r.states_supported && r.states_supported.length ? r.states_supported : [r.state],
     leadership: isLeader || r.featured,
     supportsOnboarding: r.supports_onboarding,
@@ -110,7 +110,6 @@ export function useEmployeeDirectory(): DirectoryResult {
       .select(
         "id,employee_code,display_name,preferred_name,first_name,last_name,email,phone,photo_url,image_url,bio,job_title,credential,state,states_supported,leadership_level,leadership_badge,supports_onboarding,featured,manager_id,department_slug",
       )
-      .like("employee_code", "dir-%")
       .order("last_name");
 
     if (!error && data && data.length > 0) {
