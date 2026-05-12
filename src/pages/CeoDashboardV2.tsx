@@ -230,9 +230,42 @@ export default function CeoDashboardV2() {
     });
   }
 
+  // BCBA detail (RBTs, patients, codes)
+  const bcbaDetail = useMemo(() => {
+    if (!detailBcba) return null;
+    const rows = filtered.filter((s) => (s.bcba_name ?? UNASSIGNED) === detailBcba);
+    const byClient = new Map<string, { hours: number; sessions: number; rbts: Set<string>; byCode: Map<string, number> }>();
+    const byRbt = new Map<string, { hours: number; sessions: number; clients: Set<string> }>();
+    const byCode = new Map<string, number>();
+    let totalHours = 0;
+    for (const s of rows) {
+      const h = Number(s.hours) || 0;
+      totalHours += h;
+      const code = s.procedure_code || "—";
+      byCode.set(code, (byCode.get(code) || 0) + h);
+      const client = s.client_full || "Unknown client";
+      let c = byClient.get(client);
+      if (!c) { c = { hours: 0, sessions: 0, rbts: new Set(), byCode: new Map() }; byClient.set(client, c); }
+      c.hours += h; c.sessions += 1;
+      if (s.provider_full) c.rbts.add(s.provider_full);
+      c.byCode.set(code, (c.byCode.get(code) || 0) + h);
+      const rbt = s.provider_full || "Unknown RBT";
+      let r = byRbt.get(rbt);
+      if (!r) { r = { hours: 0, sessions: 0, clients: new Set() }; byRbt.set(rbt, r); }
+      r.hours += h; r.sessions += 1; r.clients.add(client);
+    }
+    return {
+      totalHours,
+      sessionCount: rows.length,
+      clients: Array.from(byClient.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
+      rbts: Array.from(byRbt.entries()).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.hours - a.hours),
+      codes: Array.from(byCode.entries()).sort((a, b) => b[1] - a[1]),
+    };
+  }, [detailBcba, filtered]);
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 pb-32 md:pb-12">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">CEO Dashboard V2</h1>
           <p className="text-sm text-muted-foreground">Billable hours per BCBA, with breakdown by billing code. Upload a fresh CSV any time.</p>
