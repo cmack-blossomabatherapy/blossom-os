@@ -58,6 +58,7 @@ const legacyOperationsDashboards: { title: string; items: NavItem[] } = {
   title: "Dashboards",
   items: [
     { label: "CEO & Leadership", icon: BarChart3, path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "CEO Dashboard V2", icon: BarChart3, path: "/ceo-dashboard-v2", perm: "", superAdminOnly: true },
     { label: "Intake Dashboard", icon: Users, path: "/intake-dashboard", perm: "leads.view", superAdminOnly: true },
     { label: "Authorizations Dashboard", icon: ShieldCheck, path: "/authorizations-dashboard", perm: "dashboard.view", superAdminOnly: true },
     { label: "Scheduling Dashboard", icon: Calendar, path: "/scheduling-dashboard", perm: "dashboard.view", superAdminOnly: true },

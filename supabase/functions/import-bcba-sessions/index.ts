@@ -1,0 +1,174 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const STATUS_LABELS = new Set([
+  "needs verification","client","reassessment approved","telehealth approved",
+  "initial treatment approved","concurrent treatment approved","reassessment",
+  "initial assessment approved","tms - billable sessions pulled for secondary",
+  "initial treatment","concurrent treatment","initial assessment",
+  "staffing needed","secondary for rf","new client","ready to schedule",
+  "ready to staff","awaiting auth","awaiting assessment",
+]);
+
+function extractBcba(labels: string): string | null {
+  if (!labels) return null;
+  const parts = labels.split(",").map((s) => s.trim()).filter(Boolean);
+  for (const p of parts) {
+    const lower = p.toLowerCase();
+    if (STATUS_LABELS.has(lower)) continue;
+    if (lower.startsWith("case manager")) continue;
+    if (lower.includes("location")) continue;
+    if (lower.includes("clinic")) continue;
+    if (lower.includes("approved")) continue;
+    if (lower.includes("pending")) continue;
+    if (/^\d/.test(p)) continue;
+    // Heuristic: looks like a person name (2+ words, mostly letters)
+    const words = p.split(/\s+/).filter(Boolean);
+    if (words.length < 2) continue;
+    if (!/^[A-Za-z][A-Za-z'.\- ]+$/.test(p)) continue;
+    return p;
+  }
+  return null;
+}
+
+// Robust CSV row parser (handles quoted fields, embedded commas, escaped quotes)
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let cur: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { cur.push(field); field = ""; }
+      else if (c === "\n") { cur.push(field); rows.push(cur); cur = []; field = ""; }
+      else if (c === "\r") { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || cur.length) { cur.push(field); rows.push(cur); }
+  return rows;
+}
+
+function parseDate(s: string): string | null {
+  if (!s) return null;
+  // Expecting M/D/YYYY [time]
+  const datePart = s.split(" ")[0];
+  const m = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  const mm = m[1].padStart(2, "0");
+  const dd = m[2].padStart(2, "0");
+  let yy = m[3];
+  if (yy.length === 2) yy = "20" + yy;
+  return `${yy}-${mm}-${dd}`;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Verify caller is admin
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: userRes } = await userClient.auth.getUser();
+    const userId = userRes?.user?.id;
+    if (!userId) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } });
+    const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (!roleRow) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { ...corsHeaders, "content-type": "application/json" } });
+
+    const body = await req.json();
+    const csv: string = body.csv ?? "";
+    const filename: string = body.filename ?? "upload.csv";
+    if (!csv) return new Response(JSON.stringify({ error: "Missing csv" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
+
+    const rows = parseCsv(csv);
+    if (rows.length < 2) return new Response(JSON.stringify({ error: "Empty CSV" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
+    const header = rows[0];
+    const idx = (n: string) => header.indexOf(n);
+    const cols = {
+      id: idx("Id"),
+      dos: idx("DateOfService"),
+      cf: idx("ClientFirstName"),
+      cl: idx("ClientLastName"),
+      labels: idx("ClientContactLabels"),
+      pf: idx("ProviderFirstName"),
+      pl: idx("ProviderLastName"),
+      code: idx("ProcedureCode"),
+      desc: idx("ProcedureCodeDescription"),
+      hours: idx("TimeWorkedInHours"),
+      voided: idx("IsVoid"),
+      deleted: idx("IsDeleted"),
+    };
+
+    // Create import record
+    const { data: imp, error: impErr } = await supabase
+      .from("bcba_billable_imports")
+      .insert({ uploaded_by: userId, filename, row_count: 0, is_active: false })
+      .select("id").single();
+    if (impErr || !imp) throw impErr ?? new Error("import insert failed");
+
+    const records: any[] = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 5) continue;
+      const voided = (r[cols.voided] || "").toLowerCase();
+      const deleted = (r[cols.deleted] || "").toLowerCase();
+      if (voided === "true" || deleted === "true") continue;
+      const hours = parseFloat(r[cols.hours] || "0") || 0;
+      const labels = r[cols.labels] || "";
+      records.push({
+        import_id: imp.id,
+        source_id: r[cols.id] || null,
+        date_of_service: parseDate(r[cols.dos] || ""),
+        client_first: r[cols.cf] || null,
+        client_last: r[cols.cl] || null,
+        bcba_name: extractBcba(labels),
+        provider_first: r[cols.pf] || null,
+        provider_last: r[cols.pl] || null,
+        procedure_code: r[cols.code] || null,
+        procedure_description: r[cols.desc] || null,
+        hours,
+        raw_labels: labels,
+      });
+    }
+
+    // Insert in batches
+    const batchSize = 1000;
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize);
+      const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
+      if (error) throw error;
+    }
+
+    // Activate this import; deactivate others
+    await supabase.from("bcba_billable_imports").update({ is_active: false }).neq("id", imp.id);
+    await supabase.from("bcba_billable_imports").update({ is_active: true, row_count: records.length }).eq("id", imp.id);
+
+    // Optional: delete sessions from non-active imports older than 30 days
+    return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: records.length }), {
+      headers: { ...corsHeaders, "content-type": "application/json" },
+    });
+  } catch (e) {
+    console.error(e);
+    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "content-type": "application/json" } });
+  }
+});
