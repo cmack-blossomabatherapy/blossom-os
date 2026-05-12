@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
