@@ -317,17 +317,23 @@ export default function OrgChart() {
 
   // Search highlights – returns a set of ids matching + their ancestors so they're visible
   const matches = useMemo(() => {
-    if (!search.trim()) return null;
+    const hasSearch = !!search.trim();
+    const hasState = stateFilter !== "all";
+    const hasLeadership = leadershipOnly;
+    if (!hasSearch && !hasState && !hasLeadership) return null;
     const q = search.toLowerCase();
     const matched = new Set<string>();
     const ancestors = new Set<string>();
     const visit = (n: Node, parents: string[]) => {
-      const hit =
+      const matchesSearch = !hasSearch ||
         employeeFullName(n.emp).toLowerCase().includes(q) ||
         n.emp.job_title.toLowerCase().includes(q) ||
         (n.emp.email ?? "").toLowerCase().includes(q) ||
         n.deptName.toLowerCase().includes(q) ||
         n.emp.state.toLowerCase().includes(q);
+      const matchesState = !hasState || n.emp.state === stateFilter;
+      const matchesLeadership = !hasLeadership || ["ceo","c_suite","director","manager"].includes(n.level);
+      const hit = matchesSearch && matchesState && matchesLeadership;
       if (hit) {
         matched.add(n.emp.id);
         parents.forEach((p) => ancestors.add(p));
@@ -336,7 +342,7 @@ export default function OrgChart() {
     };
     tree.roots.forEach((r) => visit(r, []));
     return { matched, ancestors };
-  }, [search, tree]);
+  }, [search, stateFilter, leadershipOnly, tree]);
 
   const toggle = (id: string) =>
     setCollapsed((prev) => {
