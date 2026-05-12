@@ -83,7 +83,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     path: "/onboarding/phase/welcome",
     modules: [
       { key: "p0.intro-video", title: "Welcome video from Blossom!", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
-        video: { presenter: "Blossom", duration: "~3 min" },
+        video: { url: "/videos/intro-welcome.mp4", presenter: "Blossom", duration: "~3 min" },
         actions: [
           { id: "watch", label: "Watch the welcome video", icon: PlayCircle },
           { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
