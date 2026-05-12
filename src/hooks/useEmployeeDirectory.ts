@@ -89,7 +89,8 @@ function mapRow(r: ViewRow): DirectoryEmployee {
     leadership: isLeader || r.featured,
     supportsOnboarding: r.supports_onboarding,
     credential: r.credential ?? undefined,
-    photo: PHOTO_BY_CODE[code] ?? r.image_url ?? undefined,
+    // Uploaded photo wins so HR/admin/self updates show everywhere instantly.
+    photo: r.photo_url ?? r.image_url ?? PHOTO_BY_CODE[code] ?? undefined,
     email: r.email,
     phone: r.phone,
     managerId: r.manager_id,
