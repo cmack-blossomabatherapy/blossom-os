@@ -70,16 +70,29 @@ export default function Journey() {
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {!status.isComplete && status.nextPhase && (
-              <Button asChild size="lg" className="gap-2 rounded-2xl shadow-lg shadow-primary/20">
-                <Link to={status.nextPhase.path}>
-                  <Sparkles className="h-4 w-4" />
-                  {status.moduleDoneCount === 0 ? "Start Your Blossom Journey" : `Continue: ${status.nextPhase.weekLabel} — ${status.nextPhase.title}`}
-                  <ArrowRight className="h-4 w-4" />
+              <Button
+                asChild
+                size="lg"
+                className="w-full gap-2 rounded-2xl shadow-lg shadow-primary/20 sm:w-auto"
+              >
+                <Link to={status.nextPhase.path} className="min-w-0">
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-center sm:text-left">
+                    {status.moduleDoneCount === 0
+                      ? "Start Your Blossom Journey"
+                      : (
+                        <>
+                          <span className="sm:hidden">Continue: {status.nextPhase.weekLabel}</span>
+                          <span className="hidden sm:inline">Continue: {status.nextPhase.weekLabel} — {status.nextPhase.title}</span>
+                        </>
+                      )}
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0" />
                 </Link>
               </Button>
             )}
             {status.isComplete && (
-              <Button asChild size="lg" className="gap-2 rounded-2xl">
+              <Button asChild size="lg" className="w-full gap-2 rounded-2xl sm:w-auto">
                 <Link to="/onboarding/graduation"><Award className="h-4 w-4" /> View certificate</Link>
               </Button>
             )}
