@@ -33,7 +33,7 @@ export interface JourneyModule {
   /** For video kind — optional URL; leave empty to render the branded "coming soon" placeholder. */
   video?: { url?: string; poster?: string; duration?: string; presenter?: string };
   /** Optional details by kind */
-  leader?: { name: string; role: string; message: string; initials: string };
+  leader?: { name: string; role: string; message: string; initials: string; letter?: { greeting: string; paragraphs: string[]; signOff: string[] } };
   system?: { name: string; videoLabel?: string; sopLabel?: string; tangoLabel?: string };
   shadowing?: {
     /** Optional ordered stages — used for transition scenarios (e.g. shadow A, then Gary Frank). */
