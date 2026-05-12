@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ interface Session {
   procedure_code: string | null;
   procedure_description: string | null;
   hours: number;
+  raw_labels: string | null;
 }
 
 interface ImportInfo {
@@ -60,7 +61,7 @@ export default function CeoDashboardV2() {
     while (true) {
       const { data, error } = await supabase
         .from("bcba_billable_sessions")
-        .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours")
+        .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours, raw_labels")
         .eq("import_id", imp.id)
         .range(from, from + pageSize - 1);
       if (error) { toast.error(error.message); break; }
@@ -146,6 +147,67 @@ export default function CeoDashboardV2() {
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
 
+  // Unassigned & mismatch analysis (always computed from filtered set)
+  type UnassignedClient = {
+    client: string;
+    hours: number;
+    sessions: number;
+    sampleLabels: string;
+    candidateNames: string[]; // label fragments that look like names but were skipped
+  };
+
+  const unassignedClients = useMemo<UnassignedClient[]>(() => {
+    const byClient = new Map<string, { hours: number; sessions: number; labels: Set<string> }>();
+    for (const s of filtered) {
+      if (s.bcba_name) continue;
+      const key = s.client_full || "Unknown client";
+      let entry = byClient.get(key);
+      if (!entry) { entry = { hours: 0, sessions: 0, labels: new Set() }; byClient.set(key, entry); }
+      entry.hours += Number(s.hours) || 0;
+      entry.sessions += 1;
+      if (s.raw_labels) entry.labels.add(s.raw_labels);
+    }
+    return Array.from(byClient.entries()).map(([client, v]) => {
+      // Pull plausible name candidates from the raw labels for review
+      const allLabelParts = new Set<string>();
+      v.labels.forEach((l) => l.split(",").forEach((p) => {
+        const t = p.trim();
+        if (t && /^[A-Za-z][A-Za-z'.\- ]+$/.test(t) && t.split(/\s+/).length >= 2) allLabelParts.add(t);
+      }));
+      return {
+        client,
+        hours: v.hours,
+        sessions: v.sessions,
+        sampleLabels: Array.from(v.labels)[0] ?? "",
+        candidateNames: Array.from(allLabelParts).slice(0, 6),
+      };
+    }).sort((a, b) => b.hours - a.hours);
+  }, [filtered]);
+
+  const unassignedHours = unassignedClients.reduce((s, c) => s + c.hours, 0);
+  const unassignedSessions = unassignedClients.reduce((s, c) => s + c.sessions, 0);
+
+  // Mismatch detection: same client with multiple BCBA names in dataset
+  type Mismatch = { client: string; bcbas: { name: string; hours: number }[]; totalHours: number };
+  const mismatches = useMemo<Mismatch[]>(() => {
+    const byClient = new Map<string, Map<string, number>>();
+    for (const s of filtered) {
+      if (!s.bcba_name) continue;
+      const key = s.client_full || "Unknown client";
+      let m = byClient.get(key);
+      if (!m) { m = new Map(); byClient.set(key, m); }
+      m.set(s.bcba_name, (m.get(s.bcba_name) || 0) + (Number(s.hours) || 0));
+    }
+    const out: Mismatch[] = [];
+    for (const [client, m] of byClient) {
+      if (m.size < 2) continue;
+      const bcbas = Array.from(m.entries()).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours);
+      const totalHours = bcbas.reduce((s, x) => s + x.hours, 0);
+      out.push({ client, bcbas, totalHours });
+    }
+    return out.sort((a, b) => b.totalHours - a.totalHours);
+  }, [filtered]);
+
   function toggle(bcba: string) {
     setExpanded((prev) => {
       const n = new Set(prev);
@@ -213,6 +275,102 @@ export default function CeoDashboardV2() {
           </div>
         </div>
       </Card>
+
+      {(unassignedClients.length > 0 || mismatches.length > 0) && (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm">
+            <p className="font-medium text-foreground">Label issues detected</p>
+            <p className="text-muted-foreground mt-0.5">
+              {unassignedClients.length > 0 && (
+                <>
+                  <span className="font-medium text-foreground">{unassignedHours.toFixed(1)}h</span> across{" "}
+                  <span className="font-medium text-foreground">{unassignedSessions.toLocaleString()}</span> sessions for{" "}
+                  <span className="font-medium text-foreground">{unassignedClients.length}</span> client(s) couldn't be mapped to a current BCBA.
+                </>
+              )}
+              {unassignedClients.length > 0 && mismatches.length > 0 && " "}
+              {mismatches.length > 0 && (
+                <>
+                  <span className="font-medium text-foreground">{mismatches.length}</span> client(s) have hours assigned to multiple BCBAs (possible mid-period transition or duplicate labels).
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {unassignedClients.length > 0 && (
+        <Card className="overflow-hidden border-warning/30">
+          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <h2 className="text-sm font-semibold">Unassigned hours — needs label fix</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{unassignedHours.toFixed(1)}h · {unassignedSessions} sessions · {unassignedClients.length} clients</span>
+          </div>
+          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+            <div className="col-span-3">Client</div>
+            <div className="col-span-1 text-right">Hours</div>
+            <div className="col-span-1 text-right">Sessions</div>
+            <div className="col-span-3">Possible BCBA names in labels</div>
+            <div className="col-span-4">Sample labels</div>
+          </div>
+          {unassignedClients.slice(0, 50).map((c) => (
+            <div key={c.client} className="grid grid-cols-12 px-4 py-2 items-start border-b border-border/30 last:border-0 text-sm">
+              <div className="col-span-3 font-medium truncate" title={c.client}>{c.client}</div>
+              <div className="col-span-1 text-right tabular-nums font-semibold">{c.hours.toFixed(1)}</div>
+              <div className="col-span-1 text-right tabular-nums text-muted-foreground">{c.sessions}</div>
+              <div className="col-span-3 flex flex-wrap gap-1">
+                {c.candidateNames.length === 0 ? (
+                  <span className="text-[11px] text-muted-foreground italic">No name candidates in labels</span>
+                ) : c.candidateNames.map((n) => (
+                  <Badge key={n} variant="outline" className="font-normal text-[10px]">{n}</Badge>
+                ))}
+              </div>
+              <div className="col-span-4 text-[11px] text-muted-foreground truncate" title={c.sampleLabels}>{c.sampleLabels}</div>
+            </div>
+          ))}
+          {unassignedClients.length > 50 && (
+            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
+              Showing top 50 of {unassignedClients.length} unassigned clients.
+            </div>
+          )}
+        </Card>
+      )}
+
+      {mismatches.length > 0 && (
+        <Card className="overflow-hidden border-warning/30">
+          <div className="px-4 py-3 border-b border-border/50 bg-warning/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <h2 className="text-sm font-semibold">Multiple BCBAs per client — possible mismatch</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{mismatches.length} clients</span>
+          </div>
+          <div className="grid grid-cols-12 px-4 py-2 border-b border-border/40 bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+            <div className="col-span-4">Client</div>
+            <div className="col-span-2 text-right">Total hours</div>
+            <div className="col-span-6">BCBA split</div>
+          </div>
+          {mismatches.slice(0, 50).map((m) => (
+            <div key={m.client} className="grid grid-cols-12 px-4 py-2 items-center border-b border-border/30 last:border-0 text-sm">
+              <div className="col-span-4 font-medium truncate" title={m.client}>{m.client}</div>
+              <div className="col-span-2 text-right tabular-nums font-semibold">{m.totalHours.toFixed(1)}</div>
+              <div className="col-span-6 flex flex-wrap gap-1.5">
+                {m.bcbas.map((b) => (
+                  <Badge key={b.name} variant="secondary" className="font-normal">{b.name} · {b.hours.toFixed(1)}h</Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+          {mismatches.length > 50 && (
+            <div className="px-4 py-2 text-xs text-muted-foreground text-center bg-muted/10">
+              Showing top 50 of {mismatches.length}.
+            </div>
+          )}
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="grid grid-cols-12 px-4 py-2 border-b border-border/50 bg-muted/30 text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
