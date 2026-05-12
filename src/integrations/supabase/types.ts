@@ -957,6 +957,101 @@ export type Database = {
           },
         ]
       }
+      bcba_billable_imports: {
+        Row: {
+          filename: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          row_count: number
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          filename?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          row_count?: number
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          filename?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          row_count?: number
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      bcba_billable_sessions: {
+        Row: {
+          bcba_name: string | null
+          client_first: string | null
+          client_full: string | null
+          client_last: string | null
+          created_at: string
+          date_of_service: string | null
+          hours: number
+          id: string
+          import_id: string
+          procedure_code: string | null
+          procedure_description: string | null
+          provider_first: string | null
+          provider_full: string | null
+          provider_last: string | null
+          raw_labels: string | null
+          source_id: string | null
+        }
+        Insert: {
+          bcba_name?: string | null
+          client_first?: string | null
+          client_full?: string | null
+          client_last?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          hours?: number
+          id?: string
+          import_id: string
+          procedure_code?: string | null
+          procedure_description?: string | null
+          provider_first?: string | null
+          provider_full?: string | null
+          provider_last?: string | null
+          raw_labels?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          bcba_name?: string | null
+          client_first?: string | null
+          client_full?: string | null
+          client_last?: string | null
+          created_at?: string
+          date_of_service?: string | null
+          hours?: number
+          id?: string
+          import_id?: string
+          procedure_code?: string | null
+          procedure_description?: string | null
+          provider_first?: string | null
+          provider_full?: string | null
+          provider_last?: string | null
+          raw_labels?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bcba_billable_sessions_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "bcba_billable_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
