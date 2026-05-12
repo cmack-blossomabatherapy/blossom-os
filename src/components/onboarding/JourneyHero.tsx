@@ -14,9 +14,10 @@ interface Props {
   progressPercent?: number;
   /** Optional progress label, e.g. "3 of 12 modules complete". */
   progressLabel?: string;
-  /** Optional CTA button. */
+  /** Optional CTA button. Provide either ctaTo (router link) or ctaOnClick. */
   ctaLabel?: string;
   ctaTo?: string;
+  ctaOnClick?: () => void;
   /** Optional secondary action node rendered next to the CTA. */
   rightSlot?: React.ReactNode;
 }
@@ -33,6 +34,7 @@ export function JourneyHero({
   progressLabel,
   ctaLabel,
   ctaTo,
+  ctaOnClick,
   rightSlot,
 }: Props) {
   const showProgress = typeof progressPercent === "number";
@@ -70,6 +72,12 @@ export function JourneyHero({
                     {ctaLabel}
                     <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Link>
+                </Button>
+              )}
+              {ctaLabel && !ctaTo && ctaOnClick && (
+                <Button size="lg" onClick={ctaOnClick} className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                  {ctaLabel}
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               )}
               {rightSlot}
