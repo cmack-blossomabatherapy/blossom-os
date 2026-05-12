@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
@@ -138,8 +138,8 @@ export default function OnboardingOrgChart() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-6 pb-16 animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/onboarding"><ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to journey</Link>
+        <Button variant="outline" size="sm" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/onboarding"))}>
+          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
         </Button>
         <Button asChild variant="outline" size="sm">
           <Link to="/onboarding/team"><Users className="mr-1 h-3.5 w-3.5" /> Team Directory</Link>
