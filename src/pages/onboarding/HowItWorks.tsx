@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Search, Sparkles, Heart, Activity,
   Phone, FileCheck, ShieldCheck, Calendar, Users, Stethoscope, Briefcase, GraduationCap,
@@ -212,6 +212,7 @@ function FlowConnector({ active }: { active: boolean }) {
 /* ───────────────────────── Page ───────────────────────── */
 
 export default function OnboardingHowItWorks() {
+  const navigate = useNavigate();
   const [activeFlow, setActiveFlow] = useState<string>(FLOW[0].id);
   const [openStage, setOpenStage] = useState<FlowStage | null>(null);
   const [search, setSearch] = useState("");
@@ -282,8 +283,8 @@ export default function OnboardingHowItWorks() {
 
       {/* Quick nav */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/onboarding"><ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to journey</Link>
+        <Button variant="outline" size="sm" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/onboarding"))}>
+          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
         </Button>
         <div className="flex flex-wrap gap-2 text-xs">
           {[

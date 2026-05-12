@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Compass, Clock, Users as UsersIcon, Eye, ArrowLeft, Lock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { StepCompleteButton } from "@/components/onboarding/StepCompleteButton";
 import { academyTracks } from "@/data/blossomOS";
 
 export default function OnboardingAcademyPreview() {
+  const navigate = useNavigate();
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 pb-16 animate-fade-in">
       <JourneyHero
@@ -17,8 +18,8 @@ export default function OnboardingAcademyPreview() {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/onboarding"><ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back to journey</Link>
+        <Button variant="outline" size="sm" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/onboarding"))}>
+          <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Back
         </Button>
         <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-3 py-1 text-[11px] font-medium text-muted-foreground">
           <Eye className="h-3.5 w-3.5" /> Read-only preview
