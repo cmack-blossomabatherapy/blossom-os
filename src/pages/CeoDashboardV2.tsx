@@ -147,6 +147,67 @@ export default function CeoDashboardV2() {
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
 
+  // Unassigned & mismatch analysis (always computed from filtered set)
+  type UnassignedClient = {
+    client: string;
+    hours: number;
+    sessions: number;
+    sampleLabels: string;
+    candidateNames: string[]; // label fragments that look like names but were skipped
+  };
+
+  const unassignedClients = useMemo<UnassignedClient[]>(() => {
+    const byClient = new Map<string, { hours: number; sessions: number; labels: Set<string> }>();
+    for (const s of filtered) {
+      if (s.bcba_name) continue;
+      const key = s.client_full || "Unknown client";
+      let entry = byClient.get(key);
+      if (!entry) { entry = { hours: 0, sessions: 0, labels: new Set() }; byClient.set(key, entry); }
+      entry.hours += Number(s.hours) || 0;
+      entry.sessions += 1;
+      if (s.raw_labels) entry.labels.add(s.raw_labels);
+    }
+    return Array.from(byClient.entries()).map(([client, v]) => {
+      // Pull plausible name candidates from the raw labels for review
+      const allLabelParts = new Set<string>();
+      v.labels.forEach((l) => l.split(",").forEach((p) => {
+        const t = p.trim();
+        if (t && /^[A-Za-z][A-Za-z'.\- ]+$/.test(t) && t.split(/\s+/).length >= 2) allLabelParts.add(t);
+      }));
+      return {
+        client,
+        hours: v.hours,
+        sessions: v.sessions,
+        sampleLabels: Array.from(v.labels)[0] ?? "",
+        candidateNames: Array.from(allLabelParts).slice(0, 6),
+      };
+    }).sort((a, b) => b.hours - a.hours);
+  }, [filtered]);
+
+  const unassignedHours = unassignedClients.reduce((s, c) => s + c.hours, 0);
+  const unassignedSessions = unassignedClients.reduce((s, c) => s + c.sessions, 0);
+
+  // Mismatch detection: same client with multiple BCBA names in dataset
+  type Mismatch = { client: string; bcbas: { name: string; hours: number }[]; totalHours: number };
+  const mismatches = useMemo<Mismatch[]>(() => {
+    const byClient = new Map<string, Map<string, number>>();
+    for (const s of filtered) {
+      if (!s.bcba_name) continue;
+      const key = s.client_full || "Unknown client";
+      let m = byClient.get(key);
+      if (!m) { m = new Map(); byClient.set(key, m); }
+      m.set(s.bcba_name, (m.get(s.bcba_name) || 0) + (Number(s.hours) || 0));
+    }
+    const out: Mismatch[] = [];
+    for (const [client, m] of byClient) {
+      if (m.size < 2) continue;
+      const bcbas = Array.from(m.entries()).map(([name, hours]) => ({ name, hours })).sort((a, b) => b.hours - a.hours);
+      const totalHours = bcbas.reduce((s, x) => s + x.hours, 0);
+      out.push({ client, bcbas, totalHours });
+    }
+    return out.sort((a, b) => b.totalHours - a.totalHours);
+  }, [filtered]);
+
   function toggle(bcba: string) {
     setExpanded((prev) => {
       const n = new Set(prev);
