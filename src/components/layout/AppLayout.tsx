@@ -47,7 +47,7 @@ const pageTitles: Record<string, string> = {
 
 export function AppLayout() {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || "Blossom ABA";
+  const title = pageTitles[location.pathname] || "";
   const mainRef = useRef<HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuFloating, setMobileMenuFloating] = useState(false);

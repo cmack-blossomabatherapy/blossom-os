@@ -19,6 +19,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isHome = pathname === "/";
+  const showTitle = !isHome && Boolean(title);
   const { user, roles, isAdmin, signOut } = useAuth();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const primaryRole = roles[0] ?? "viewer";
@@ -45,7 +46,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
           alt="Blossom ABA Therapy"
           className="h-7 shrink-0 object-contain sm:h-8 md:h-9"
         />
-        {!isHome && (
+        {showTitle && (
           <>
             <div className="hidden h-6 w-px bg-border/70 sm:block" />
             <h1 className="truncate text-[15px] font-semibold tracking-tight text-foreground/90 sm:text-base md:text-[17px]">
