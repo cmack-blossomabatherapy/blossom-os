@@ -30,6 +30,8 @@ import {
 } from "@/data/journeyChecklistOverrides";
 
 import { HeroBanner } from "@/components/journey/HeroBanner";
+import { JourneyHero } from "@/components/onboarding/JourneyHero";
+import { WelcomeToBlossomCard } from "@/components/onboarding/WelcomeToBlossomCard";
 import { LifecycleTracker } from "@/components/journey/LifecycleTracker";
 import { CurrentStagePanel } from "@/components/journey/CurrentStagePanel";
 import { TrainingModulesGrid } from "@/components/journey/TrainingModulesGrid";
@@ -192,15 +194,22 @@ export default function JourneyHub() {
 
   if (!eligible) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-muted text-muted-foreground flex items-center justify-center mb-4">
-            <ShieldAlert className="h-6 w-6" />
+      // Even non-RBT/BCBA users get the universal Welcome to Blossom phase.
+      <div className="aurora-bg -mx-4 -my-4 px-4 py-4 md:-mx-6 md:-my-6 md:px-6 md:py-6 min-h-full">
+        <div className="mx-auto max-w-5xl space-y-6 animate-fade-in">
+          <JourneyHero
+            title={`Welcome to Blossom${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
+            description="The full Training Hub is tailored to RBTs and BCBAs. In the meantime, every Blossom teammate starts here — meet the team, learn our mission, and watch the welcome video."
+            ctaLabel="Open Welcome to Blossom"
+            ctaTo="/onboarding/phase/welcome"
+          />
+          <WelcomeToBlossomCard />
+          <div className="rounded-2xl border border-border/60 bg-card p-5 text-sm text-muted-foreground shadow-sm flex items-start gap-3">
+            <ShieldAlert className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <p>
+              The week-by-week training experience below this point is reserved for RBTs and BCBAs. If you should have access, ask your HR admin to update your job title.
+            </p>
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Training Hub is for RBTs and BCBAs</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            This experience guides RBTs and BCBAs through their lifecycle at Blossom. If you should have access, ask your HR admin to update your job title.
-          </p>
         </div>
       </div>
     );
@@ -253,14 +262,18 @@ export default function JourneyHub() {
         </div>
       )}
 
-      <HeroBanner
-        viewerName={data.viewerName}
-        roleLabel={data.roleLabel}
-        currentStageLabel={currentStep.label}
-        percent={percent}
-        nextStepLabel={currentStep.shortLabel}
-        onNextStep={() => openStepSheet(effectiveCurrentIndex)}
+      <JourneyHero
+        eyebrow={`${data.roleLabel} · Training Hub`}
+        title={`Welcome to Blossom, ${data.viewerName.split(" ")[0]}`}
+        description={`You're in ${currentStep.label}. Keep going — the next step is ${currentStep.shortLabel}.`}
+        progressPercent={percent}
+        progressLabel={`${completedCount} of ${data.steps.length} steps complete`}
+        ctaLabel={`Continue: ${currentStep.shortLabel}`}
+        ctaTo="#"
+        rightSlot={null}
       />
+
+      <WelcomeToBlossomCard />
 
       <LifecycleTracker
         steps={data.steps}
