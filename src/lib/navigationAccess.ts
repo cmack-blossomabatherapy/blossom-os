@@ -94,7 +94,7 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
   bcba: { intelligenceItemPaths: ["/onboarding", "/onboarding/phase/welcome", "/hr/journey", "/resources", "/hr/org-chart"] },
 };
 
-const intelligenceRoutePrefixes = ["/onboarding", "/training", "/resources", "/hr/journey"];
+const intelligenceRoutePrefixes = ["/onboarding", "/training", "/resources", "/hr/journey", "/hr/org-chart"];
 
 const dashboardPreviewSection: NavigationPreviewSection = {
   title: "Dashboards",
