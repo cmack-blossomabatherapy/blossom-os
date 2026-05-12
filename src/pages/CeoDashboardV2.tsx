@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ChevronDown, ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw, AlertTriangle, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,9 @@ export default function CeoDashboardV2() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [unassignedOpen, setUnassignedOpen] = useState(false);
+  const [mismatchesOpen, setMismatchesOpen] = useState(false);
+  const [detailBcba, setDetailBcba] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadActive() {
