@@ -156,27 +156,7 @@ Deno.serve(async (req) => {
     if (dlErr || !fileBlob) {
       return new Response(JSON.stringify({ error: `Could not download CSV: ${dlErr?.message ?? "not found"}` }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
     }
-    const csv = await fileBlob.text();
-    console.log(`Downloaded CSV: ${csv.length} chars`);
-
-    const rows = parseCsv(csv);
-    if (rows.length < 2) return new Response(JSON.stringify({ error: "Empty CSV" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
-    const header = rows[0];
-    const idx = (n: string) => header.indexOf(n);
-    const cols = {
-      id: idx("Id"),
-      dos: idx("DateOfService"),
-      cf: idx("ClientFirstName"),
-      cl: idx("ClientLastName"),
-      labels: idx("ClientContactLabels"),
-      pf: idx("ProviderFirstName"),
-      pl: idx("ProviderLastName"),
-      code: idx("ProcedureCode"),
-      desc: idx("ProcedureCodeDescription"),
-      hours: idx("TimeWorkedInHours"),
-      voided: idx("IsVoid"),
-      deleted: idx("IsDeleted"),
-    };
+    console.log(`Processing CSV from storage: ${storagePath}`);
 
     // Create import record
     const { data: imp, error: impErr } = await supabase
@@ -185,43 +165,56 @@ Deno.serve(async (req) => {
       .select("id").single();
     if (impErr || !imp) throw impErr ?? new Error("import insert failed");
 
-    const records: any[] = [];
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
+    const batchSize = 500;
+    let cols: ReturnType<typeof getRequiredColumnIndexes> | null = null;
+    let records: any[] = [];
+    let parsedRows = 0;
+    let insertedRows = 0;
+    const flushRecords = async () => {
+      if (records.length === 0) return;
+      const batch = records;
+      records = [];
+      const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
+      if (error) {
+        console.error("Insert error after parsed row", parsedRows, error);
+        throw error;
+      }
+      insertedRows += batch.length;
+    };
+
+    await parseCsvStream(fileBlob, async (r, rowNumber) => {
+      if (rowNumber === 0) {
+        cols = getRequiredColumnIndexes(r);
+        return;
+      }
       if (!r || r.length < 5) continue;
-      const voided = (r[cols.voided] || "").toLowerCase();
-      const deleted = (r[cols.deleted] || "").toLowerCase();
+      parsedRows += 1;
+      const c = cols!;
+      const voided = (r[c.voided] || "").toLowerCase();
+      const deleted = (r[c.deleted] || "").toLowerCase();
       if (voided === "true" || deleted === "true") continue;
-      const hours = parseFloat(r[cols.hours] || "0") || 0;
-      const labels = r[cols.labels] || "";
+      const hours = parseFloat(r[c.hours] || "0") || 0;
+      const labels = r[c.labels] || "";
       records.push({
         import_id: imp.id,
-        source_id: r[cols.id] || null,
-        date_of_service: parseDate(r[cols.dos] || ""),
-        client_first: r[cols.cf] || null,
-        client_last: r[cols.cl] || null,
+        source_id: r[c.id] || null,
+        date_of_service: parseDate(r[c.dos] || ""),
+        client_first: r[c.cf] || null,
+        client_last: r[c.cl] || null,
         bcba_name: extractBcba(labels),
-        provider_first: r[cols.pf] || null,
-        provider_last: r[cols.pl] || null,
-        procedure_code: r[cols.code] || null,
-        procedure_description: r[cols.desc] || null,
+        provider_first: r[c.pf] || null,
+        provider_last: r[c.pl] || null,
+        procedure_code: r[c.code] || null,
+        procedure_description: r[c.desc] || null,
         hours,
         raw_labels: labels,
       });
-    }
+      if (records.length >= batchSize) await flushRecords();
+    });
+    await flushRecords();
+    if (!cols || parsedRows === 0) return new Response(JSON.stringify({ error: "Empty CSV" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
 
-    console.log(`Parsed ${records.length} records from ${rows.length - 1} rows`);
-
-    // Insert in batches
-    const batchSize = 500;
-    for (let i = 0; i < records.length; i += batchSize) {
-      const batch = records.slice(i, i + batchSize);
-      const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
-      if (error) {
-        console.error("Insert error at batch", i, error);
-        throw error;
-      }
-    }
+    console.log(`Parsed ${insertedRows} records from ${parsedRows} rows`);
 
     // Activate this import; deactivate (and clean up) others
     const { data: oldImports } = await supabase
@@ -234,12 +227,12 @@ Deno.serve(async (req) => {
       await supabase.from("bcba_billable_sessions").delete().in("import_id", oldIds);
       await supabase.from("bcba_billable_imports").delete().in("id", oldIds);
     }
-    await supabase.from("bcba_billable_imports").update({ is_active: true, row_count: records.length }).eq("id", imp.id);
+    await supabase.from("bcba_billable_imports").update({ is_active: true, row_count: insertedRows }).eq("id", imp.id);
 
     // Remove the uploaded CSV from storage now that it's been processed
     await supabase.storage.from("bcba-imports").remove([storagePath]);
 
-    return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: records.length }), {
+    return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: insertedRows }), {
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
   } catch (e) {
