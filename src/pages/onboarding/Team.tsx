@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, Sparkles, Crown, HeartHandshake, MapPin, X, Mail, MessageSquare, Loader2 } from "lucide-react";
+import { Search, Sparkles, Crown, HeartHandshake, MapPin, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
