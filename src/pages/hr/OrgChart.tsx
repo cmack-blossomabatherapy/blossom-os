@@ -4,6 +4,7 @@ import {
   Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, Maximize2, Minimize2, LayoutGrid, GitBranch, Globe2,
   ZoomIn, ZoomOut, Maximize, RotateCcw, Download, FileImage, FileText, Crosshair,
+  Sparkles, Workflow, Crown, Filter, ArrowRight, MessageCircle, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { useRef } from "react";
@@ -43,12 +44,12 @@ function levelOf(title: string): Level {
 }
 
 const LEVEL_META: Record<Level, { label: string; ring: string; chip: string }> = {
-  ceo:      { label: "Executive",      ring: "ring-petal-purple/40 bg-petal-purple/5",  chip: "bg-petal-purple/15 text-petal-purple border-petal-purple/30" },
-  c_suite:  { label: "C-Suite",        ring: "ring-primary/40 bg-primary/5",            chip: "bg-primary/15 text-primary border-primary/30" },
-  director: { label: "Director",       ring: "ring-petal-orange/40 bg-petal-orange/5",  chip: "bg-petal-orange/15 text-petal-orange border-petal-orange/30" },
-  manager:  { label: "Manager",        ring: "ring-petal-sage/40 bg-petal-sage/5",      chip: "bg-petal-sage/15 text-petal-sage border-petal-sage/30" },
-  lead:     { label: "Lead",           ring: "ring-petal-pink/40 bg-petal-pink/5",      chip: "bg-petal-pink/15 text-petal-pink border-petal-pink/30" },
-  ic:       { label: "Team Member",    ring: "ring-border bg-card",                     chip: "bg-muted text-muted-foreground border-border" },
+  ceo:      { label: "Executive",      ring: "ring-petal-purple/50 shadow-[0_10px_40px_-12px_hsl(var(--petal-purple)/0.45)]",  chip: "bg-petal-purple/15 text-petal-purple border-petal-purple/30" },
+  c_suite:  { label: "C-Suite",        ring: "ring-primary/50 shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.45)]",            chip: "bg-primary/15 text-primary border-primary/30" },
+  director: { label: "Director",       ring: "ring-petal-orange/50 shadow-[0_8px_32px_-12px_hsl(var(--petal-orange)/0.40)]",  chip: "bg-petal-orange/15 text-petal-orange border-petal-orange/30" },
+  manager:  { label: "Manager",        ring: "ring-petal-sage/50 shadow-[0_8px_28px_-12px_hsl(var(--petal-sage)/0.35)]",      chip: "bg-petal-sage/15 text-petal-sage border-petal-sage/30" },
+  lead:     { label: "Lead",           ring: "ring-petal-pink/50 shadow-[0_8px_24px_-12px_hsl(var(--petal-pink)/0.30)]",      chip: "bg-petal-pink/15 text-petal-pink border-petal-pink/30" },
+  ic:       { label: "Team Member",    ring: "ring-border/70",                                                                  chip: "bg-muted text-muted-foreground border-border" },
 };
 
 interface DeptRow { id: string; name: string; category: string | null }
