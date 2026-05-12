@@ -98,9 +98,22 @@ export default function OnboardingTeam() {
   }, [members, search, deptFilter, stateFilter, leadershipOnly, supportOnly]);
 
   const grouped = useMemo(() => {
-    return DEPARTMENTS
+    const knownIds = new Set(DEPARTMENTS.map((d) => d.id));
+    const known = DEPARTMENTS
       .map((d) => ({ dept: d, members: filtered.filter((m) => m.department === d.id) }))
       .filter((g) => g.members.length > 0);
+    const extras = filtered.filter((m) => !knownIds.has(m.department));
+    if (extras.length > 0) {
+      known.push({
+        dept: {
+          id: "unassigned" as typeof DEPARTMENTS[number]["id"],
+          name: "Team",
+          tagline: "Teammates not yet assigned to a department.",
+        },
+        members: extras,
+      });
+    }
+    return known;
   }, [filtered, DEPARTMENTS]);
 
   const stats = {
