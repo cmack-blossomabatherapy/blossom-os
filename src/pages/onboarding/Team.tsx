@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { Search, Sparkles, Crown, HeartHandshake, MapPin, X, Mail, MessageSquare } from "lucide-react";
+import { Search, Sparkles, Crown, HeartHandshake, MapPin, X, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { JourneyHero } from "@/components/onboarding/JourneyHero";
 import { StepCompleteButton } from "@/components/onboarding/StepCompleteButton";
-import { DEPARTMENTS, TEAM_MEMBERS, ALL_STATES, ORG_FLOW, type TeamMember } from "@/data/teamDirectory";
+import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { cn } from "@/lib/utils";
 
 function initials(name: string) {
@@ -22,7 +22,7 @@ function gradientFor(id: string) {
   return GRADIENTS[h % GRADIENTS.length];
 }
 
-function Avatar({ m, size = "md" }: { m: TeamMember; size?: "md" | "lg" }) {
+function Avatar({ m, size = "md" }: { m: DirectoryEmployee; size?: "md" | "lg" }) {
   const cls = size === "lg" ? "h-28 w-28 text-2xl" : "h-16 w-16 text-base";
   if (m.photo) {
     return <img src={m.photo} alt={m.name} className={cn(cls, "rounded-2xl object-cover ring-2 ring-background shadow-md")} />;
@@ -34,7 +34,7 @@ function Avatar({ m, size = "md" }: { m: TeamMember; size?: "md" | "lg" }) {
   );
 }
 
-function MemberCard({ m, onOpen }: { m: TeamMember; onOpen: (m: TeamMember) => void }) {
+function MemberCard({ m, onOpen }: { m: DirectoryEmployee; onOpen: (m: DirectoryEmployee) => void }) {
   return (
     <button
       onClick={() => onOpen(m)}
@@ -69,16 +69,17 @@ function MemberCard({ m, onOpen }: { m: TeamMember; onOpen: (m: TeamMember) => v
 }
 
 export default function OnboardingTeam() {
+  const { members, departments: DEPARTMENTS, states: ALL_STATES, orgFlow: ORG_FLOW, loading } = useEmployeeDirectory();
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [leadershipOnly, setLeadershipOnly] = useState(false);
   const [supportOnly, setSupportOnly] = useState(false);
-  const [open, setOpen] = useState<TeamMember | null>(null);
+  const [open, setOpen] = useState<DirectoryEmployee | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return TEAM_MEMBERS.filter((m) => {
+    return members.filter((m) => {
       if (deptFilter !== "all" && m.department !== deptFilter) return false;
       if (stateFilter !== "all" && !m.states?.includes(stateFilter)) return false;
       if (leadershipOnly && !m.leadership) return false;
@@ -86,18 +87,18 @@ export default function OnboardingTeam() {
       if (q && !`${m.name} ${m.title} ${m.blurb}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [search, deptFilter, stateFilter, leadershipOnly, supportOnly]);
+  }, [members, search, deptFilter, stateFilter, leadershipOnly, supportOnly]);
 
   const grouped = useMemo(() => {
     return DEPARTMENTS
       .map((d) => ({ dept: d, members: filtered.filter((m) => m.department === d.id) }))
       .filter((g) => g.members.length > 0);
-  }, [filtered]);
+  }, [filtered, DEPARTMENTS]);
 
   const stats = {
-    total: TEAM_MEMBERS.length,
-    leadership: TEAM_MEMBERS.filter((m) => m.leadership).length,
-    onboarding: TEAM_MEMBERS.filter((m) => m.supportsOnboarding).length,
+    total: members.length,
+    leadership: members.filter((m) => m.leadership).length,
+    onboarding: members.filter((m) => m.supportsOnboarding).length,
     departments: DEPARTMENTS.length,
   };
 
@@ -108,6 +109,11 @@ export default function OnboardingTeam() {
         title="The humans behind Blossom"
         description="The people supporting families, building systems, leading operations, and helping Blossom grow every day."
       />
+      {loading && (
+        <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Syncing live directory…
+        </p>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
