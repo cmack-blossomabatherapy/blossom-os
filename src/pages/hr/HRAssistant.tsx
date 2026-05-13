@@ -230,7 +230,7 @@ export default function HRAssistant() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">Conversations are saved to your private history. Sensitive info (pay, SSN, reviews) is off-limits.</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">Public directory info only (name, role, work email/phone). For pay, benefits, or personal records, contact HR.</p>
           </form>
         </GlassPanel>
       </div>

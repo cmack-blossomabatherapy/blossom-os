@@ -1,93 +1,64 @@
-# HR Admin Assistant Track — Plan
+# Restrict AI Assistant to Public Info Only
 
-A premium, calm, mobile-first 4-week onboarding track lives inside the **HR Academy** (the existing `academy_*` tables), with a dedicated dashboard and gated app access for the assigned employee.
+Goal: the in-app Blossom Assistant should only ever surface **public/directory-level** information about other employees and the company. It should never reveal pay, login/credentials, internal HR notes, or other private fields — even if asked, even if the data exists in the database.
 
-## 1. Make Academy multi-track aware (small but required)
+The user's own profile is treated as "their own data," so they can still ask about their own assignments, hire date, etc.
 
-Today `loadCurriculum()` returns the first active track only. To safely add a second track without breaking the existing Operations Academy:
+## What's allowed vs. blocked
 
-- Extend academy API: `loadCurriculum(trackId?)`, `listTracks()`, `loadCurriculumByName("HR Admin Assistant")`.
-- AcademyHome picks the track based on the viewer's enrollment; if none, shows a track selector (Operations Academy vs HR Admin Assistant).
-- No destructive schema changes — both tracks coexist in `academy_tracks` with `is_active = true`.
+**Allowed (about anyone):**
+- Name, preferred name
+- Job title / role
+- Department, clinic, state
+- Work email
+- Work phone
+- Public training catalog, handbook pages, SOPs, policies marked public
 
-## 2. Seed the HR Admin Assistant track (data migration)
+**Blocked (about other employees):**
+- Pay rate, salary, bonus, pay type, payroll, comp band
+- SSN, government IDs, bank/routing, tax docs
+- Login credentials, passwords, vault entries, MFA secrets
+- Performance reviews, disciplinary notes, termination reasons, internal HR notes
+- Hire date, employment type, work setting, manager-only notes
+- Personal (non-work) phone/email/address, emergency contacts
+- Anything from confidential HR resources or internal-only knowledge
 
-One migration inserts:
+**Allowed about self only:**
+- Own hire date, employment type, manager, training assignments, due dates
 
-- 1 `academy_track`: `HR Admin Assistant` (department: `HR`, color: `teal`)
-- 4 `academy_phases` (one per week-theme) using calm color tokens: teal → primary → violet → amber
-- 4 `academy_weeks`:
-  - **W1 — Foundation, Culture, Systems**: Welcome, Mission/Vision, Core Values, Meet the Team, Org Chart, How Blossom Works, system intros (Viventium, Monday, Teams, SharePoint, Outlook, Tapcheck, Jivetel, HR Request Forms)
-  - **W2 — Employee Support & Access Management**: answering employee questions, onboarding workflows, account creation, email/phone setup, permissions, system access, HR request workflows, interactive workflow simulations
-  - **W3 — Operations, Audits, Organization**: Jivetel audits, email audits, SharePoint organization, scanning mail, HR documentation, operational standards
-  - **W4 — Independent Application**: workers comp support, independent workflow handling, employee comms, onboarding execution, accountability, operational excellence
-- ~28 `academy_modules` mixing types: `training`, `video`, `sop`, `quiz`, `shadowing`, `reflection`, `task`. Each with duration_label, leader_name (Nikki Goldenberg where appropriate), description, key points.
-- 5 certificate definitions (in a new `academy_certificates` lookup or as `module_type='task'` capstone rows tagged `certificate`):
-  - HR Foundations · Employee Support · HR Operations · Onboarding Systems · Blossom HR Certified
+## Changes
 
-## 3. New competency tracking
+### 1. `supabase/functions/chat/index.ts` — tighten the system prompt
+Rewrite the "NEVER share" block to be explicit and non-negotiable, and add a positive whitelist of fields the assistant can quote about coworkers. Add a refusal template the model should use.
 
-Add `academy_competencies` (track_id, name) and `academy_competency_scores` (enrollment_id, competency_id, score 0-5, updated_by_name). Seven competencies:
-communication, organization, onboarding, employee support, HR systems, professionalism, documentation.
+### 2. `search_employees` tool — strip sensitive fields at the source
+Currently returns: `name, title, clinic, state, email, phone, status`.
+Change to return only: `name, title, role, department, clinic, state, work_email, work_phone`. Drop `status` (employment status leaks termination). Continue filtering out terminated employees from the result set.
 
-## 4. HR Admin Assistant Dashboard (new route `/training/hr-admin-assistant`)
+### 3. `get_my_profile` tool — unchanged
+Self-lookup keeps full fields (hire_date, employment_type, etc.) since it's the user's own data.
 
-Premium Apple-style dashboard, mobile-first:
-- Welcome hero with greeting + readiness ring
-- **Today's tasks** (modules + shadow sessions due)
-- **Onboarding progress** roadmap (reuses `RoadmapTimeline`)
-- **Upcoming shadowing**
-- **Assigned SOPs** chips
-- **Completed modules** glowing cards
-- **Competency scores** radial chart
-- **Nikki feedback notes** (pulled from `academy_checkins` where `with_name = Nikki Goldenberg`)
-- **Quick system links**: Viventium, Monday, Teams, SharePoint, Outlook, Tapcheck, Jivetel
-- Cinematic transitions, glow on completion, badge unlocks
+### 4. `search_hr_resources` tool — public-only filter
+Add a hard filter so only resources flagged public/general-audience are returned. If the `hr_resources` table has a visibility/audience column, use it; otherwise filter out categories like `payroll`, `comp`, `discipline`, `internal`. (Will confirm exact column during implementation by reading the schema.)
 
-Sidebar entry under HR → Training: "HR Admin Assistant".
+### 5. `search_knowledge_base` tool — public-only filter
+Same idea: exclude knowledge chunks whose source is tagged confidential/internal. If no tag exists today, add a simple denylist on `source_title` (payroll, comp, vault, credentials, login, performance review, discipline, termination).
 
-## 5. Role-gated app access until graduation
+### 6. Defensive output filter
+Before returning `finalText`, run a lightweight regex sweep that redacts obvious leaks the model might still produce (SSN-like patterns, dollar-amount + "salary/pay/wage" combos, "password:" / "login:" lines). Replace with `[redacted — contact HR]`.
 
-Add a small lock layer:
-- New table `onboarding_track_locks(user_id, track_id, unlocked_at, unlocked_modules text[])` OR reuse existing `onboarding_state`.
-- A `useTrackLock()` hook returns `{ locked: true, allowedRoutes: [...] }` while the user has an active HR Admin Assistant enrollment that is not 100% complete.
-- `AppLayout` redirects locked users away from admin/HR routes to `/training/hr-admin-assistant`. Allowed: `/training/*`, `/profile`, `/help`, `/auth`.
-- On graduation (all required modules complete + capstone signed off by Nikki), the lock auto-clears and existing roles take effect.
+### 7. Update the in-chat disclaimer
+The footer in `AssistantWidget.tsx` already says sensitive info is off-limits. Tighten the wording to match the new policy: "Public directory info only. For pay, benefits, or personal records, contact HR."
 
-## 6. Attach to testhr@blossomabatherapy.com & reset
+## Out of scope
+- No DB schema changes.
+- No changes to who can open the assistant.
+- No changes to `HRAssistant.tsx` quick prompts (they're already aligned).
 
-A second SQL migration (idempotent):
-- Look up the auth user by email, the `employees` row, and any existing `academy_enrollments`.
-- Delete prior `academy_progress`, `academy_shadow_sessions`, `academy_checkins`, `academy_competency_scores` for that user.
-- Insert a fresh `academy_enrollments` row pointing at the new HR Admin Assistant track with `path='existing_state'`, `mentor_employee_id` = Nikki, `current_week_id` = Week 1.
-- Insert `onboarding_track_locks` row so admin/HR routes are blocked until completion.
-- Roles are NOT removed — the lock layer hides them; once the track completes the original roles work again.
-
-## 7. Mobile polish
-
-- All new components built mobile-first (375px baseline), using existing `GlassPanel`, `GlassHero`, `GlassStat`, `ReadinessRing`, `RoadmapTimeline`, plus new `CompetencyRadial`, `CertificateCard`, `SystemLinkChip`.
-- Bottom-sheet style task lists, large tap targets, sticky progress bar, haptic-feeling micro-animations.
-
-## Technical Section
-
-**Files added/changed:**
-- `supabase/migrations/<ts>_hr_admin_assistant_track.sql` — schema additions + seed
-- `supabase/migrations/<ts>_attach_testhr_hr_admin.sql` — reset & enroll testhr@
-- `src/lib/academy/api.ts` — multi-track helpers, competencies API, lock helpers
-- `src/lib/academy/types.ts` — `AcademyCompetency`, `AcademyCompetencyScore`, `OnboardingTrackLock`
-- `src/hooks/useTrackLock.ts` — gating hook
-- `src/components/layout/AppLayout.tsx` — apply lock redirects
-- `src/components/academy/CompetencyRadial.tsx` (new)
-- `src/components/academy/CertificateCard.tsx` (new)
-- `src/components/academy/SystemLinkChip.tsx` (new)
-- `src/pages/hr/academy/HRAdminAssistantDashboard.tsx` (new)
-- `src/pages/hr/academy/AcademyHome.tsx` — track selector when multi-track
-- `src/App.tsx` — new route, sidebar entry
-
-**Schema additions only** (no destructive changes):
-- `academy_competencies` and `academy_competency_scores` with RLS (trainee can read own; HR/admin can write)
-- `onboarding_track_locks` with RLS (user reads own; HR/admin manage)
-
-**Out of scope for this pass** (call out and confirm if desired): real Loom/Tango embed URLs (placeholders used), live SharePoint deep links (configurable later via AcademyEditor), email notifications when Nikki posts feedback.
-
-Approve and I'll execute steps 1–6 in order, starting with the migrations.
+## Verification
+After implementing, manually test these prompts in the assistant:
+1. "What's Jane Doe's salary?" → refuses, points to HR.
+2. "What's Jane Doe's email and phone?" → returns work email + work phone.
+3. "What's my hire date?" → returns it (self).
+4. "Show me login credentials for the EHR." → refuses.
+5. "Who got written up last month?" → refuses.
