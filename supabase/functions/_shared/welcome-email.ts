@@ -62,11 +62,11 @@ export function renderWelcomeEmail(input: WelcomeEmailInput): { subject: string;
           <tr><td align="center" style="padding:36px 30px 8px;background:#ffffff;">
             <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="220" style="display:block;width:220px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
           </td></tr>
-          <!-- Gradient hero -->
-          <tr><td style="padding:28px 36px 32px;background:linear-gradient(135deg,#3999AA 0%,#5bb7c6 60%,#7cd0d8 100%);color:#ffffff;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;opacity:0.85;">Welcome to the team</div>
-            <h1 style="margin:10px 0 0;font-size:30px;line-height:1.2;font-weight:750;color:#ffffff;letter-spacing:-0.3px;">Welcome to Blossom${greetingName}!</h1>
-            <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#f0fbfd;opacity:0.96;">Your Blossom workspace is ready. We are so glad to have you on the team — let's get you signed in.</p>
+          <!-- Solid teal hero (bulletproof across light/dark mode + Outlook) -->
+          <tr><td bgcolor="#3999AA" style="padding:28px 36px 32px;background-color:#3999AA;background-image:linear-gradient(135deg,#3999AA 0%,#5bb7c6 60%,#7cd0d8 100%);color:#ffffff;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#ffffff;opacity:0.92;mso-line-height-rule:exactly;">Welcome to the team</div>
+            <h1 style="margin:10px 0 0;font-size:30px;line-height:1.2;font-weight:750;color:#ffffff;letter-spacing:-0.3px;mso-line-height-rule:exactly;">Welcome to Blossom${greetingName}!</h1>
+            <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#ffffff;mso-line-height-rule:exactly;">Your Blossom workspace is ready. We are so glad to have you on the team — let's get you signed in.</p>
           </td></tr>
           <!-- Body -->
           <tr><td style="padding:32px 36px 12px;">
