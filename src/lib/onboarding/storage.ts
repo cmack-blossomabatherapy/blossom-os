@@ -100,9 +100,17 @@ export function unmarkStep(id: OnboardingStepId) {
 
 export function markModuleComplete(key: string) {
   const s = read();
-  if (!s.modules.includes(key)) s.modules = [...s.modules, key];
+  const isNew = !s.modules.includes(key);
+  if (isNew) s.modules = [...s.modules, key];
   maybeMarkAllComplete(s);
   write(s);
+  if (isNew) {
+    // Lightweight, fire-and-forget analytics — keep this import lazy to avoid
+    // pulling the supabase client into call sites that don't need it.
+    import("@/lib/analytics/journey")
+      .then((m) => m.trackJourneyEvent({ type: "module_complete", metadata: { module_key: key } }))
+      .catch(() => {});
+  }
 }
 
 export function unmarkModule(key: string) {
