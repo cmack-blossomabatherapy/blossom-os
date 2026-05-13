@@ -173,6 +173,49 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Best-effort: create a matching `employees` row so the new member appears in the
+  // Team Directory, Org Chart, and any module that pulls from the live employee list.
+  // We only insert when nothing exists yet for this user_id or email — admins can
+  // edit clinic / state / department afterwards from the Team Admin panel.
+  try {
+    const { data: existingEmp } = await admin
+      .from("employees")
+      .select("id")
+      .or(`user_id.eq.${created.user.id},email.eq.${email}`)
+      .maybeSingle();
+    if (!existingEmp) {
+      const nameParts = (displayName ?? email.split("@")[0] ?? "Team Member")
+        .split(/\s+/)
+        .filter(Boolean);
+      const firstName = nameParts[0] ?? "Team";
+      const lastName = nameParts.slice(1).join(" ") || "Member";
+      const jobTitle = roles
+        .map((r) => r.replace(/_/g, " "))
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(", ") || "Team Member";
+      const { error: empErr } = await admin.from("employees").insert({
+        user_id: created.user.id,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        job_title: jobTitle,
+        state: "GA",
+        status: "active",
+        employment_type: "full_time",
+        pay_type: "salaried",
+        work_setting: "admin",
+        hire_date: new Date().toISOString().slice(0, 10),
+        start_date: new Date().toISOString().slice(0, 10),
+      });
+      if (empErr) console.error("Failed to seed employees row for invite", empErr.message);
+    } else {
+      // Link existing employee record (e.g. created earlier) to this auth user.
+      await admin.from("employees").update({ user_id: created.user.id }).eq("id", existingEmp.id);
+    }
+  } catch (e) {
+    console.error("employees seed/link threw", (e as Error).message);
+  }
+
   return new Response(
     JSON.stringify({
       ok: true,

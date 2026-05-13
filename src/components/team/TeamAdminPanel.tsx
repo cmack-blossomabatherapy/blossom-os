@@ -194,6 +194,9 @@ export function TeamAdminPanel() {
 
   useEffect(() => {
     void load();
+    const onRefresh = () => void load();
+    window.addEventListener("team-directory:refresh", onRefresh);
+    return () => window.removeEventListener("team-directory:refresh", onRefresh);
   }, []);
 
   const filtered = useMemo(() => {
