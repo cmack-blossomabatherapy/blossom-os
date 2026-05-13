@@ -55,6 +55,8 @@ export default function AcademyEditor() {
   const canEdit = hasPerm("hr.training.assign");
   const [loading, setLoading] = useState(true);
   const [tree, setTree] = useState<Tree>(null);
+  const [allTracks, setAllTracks] = useState<AcademyTrack[]>([]);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({});
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
@@ -75,17 +77,20 @@ export default function AcademyEditor() {
   const [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string; table: string } | null>(null);
   const [aiTarget, setAiTarget] = useState<{ kind: "module"; data: any } | { kind: "week"; data: any } | null>(null);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [selectedTrackId]);
 
   async function load() {
     setLoading(true);
-    const { data: tracks } = await supabase.from("academy_tracks").select("*").order("created_at").limit(1);
-    const track = (tracks?.[0] as AcademyTrack | undefined) ?? null;
+    const { data: tracks } = await supabase.from("academy_tracks").select("*").order("created_at");
+    const list = (tracks ?? []) as AcademyTrack[];
+    setAllTracks(list);
+    const track = (selectedTrackId ? list.find((t) => t.id === selectedTrackId) : list[0]) ?? null;
     if (!track) { setTree(null); setLoading(false); return; }
+    if (!selectedTrackId) setSelectedTrackId(track.id);
     const [{ data: phases }, { data: weeks }, { data: modules }, { data: resources }] = await Promise.all([
       supabase.from("academy_phases").select("*").eq("track_id", track.id).order("position"),
       supabase.from("academy_weeks").select("*, phase:academy_phases!inner(track_id)").eq("phase.track_id", track.id).order("week_number"),
-      supabase.from("academy_modules").select("*").order("position"),
+      supabase.from("academy_modules").select("*, week:academy_weeks!inner(phase:academy_phases!inner(track_id))").eq("week.phase.track_id", track.id).order("position"),
       supabase.from("academy_module_resources").select("*").order("created_at"),
     ]);
 
@@ -317,6 +322,19 @@ export default function AcademyEditor() {
       description="Curriculum tree — tracks, phases, weeks, modules, and resources."
       actions={
         <div className="flex items-center gap-2">
+          {allTracks.length > 0 && (
+            <Select value={selectedTrackId ?? tree.track.id} onValueChange={(v) => setSelectedTrackId(v)}>
+              <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {allTracks.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button variant="heroOutline" size="sm" onClick={createTrack}>
+            <Plus className="h-4 w-4" /> New track
+          </Button>
           <Button variant="hero" size="sm" onClick={() => setShowArchived((s) => !s)}>
             {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             {showArchived ? "Hide archived" : "Show archived"}
