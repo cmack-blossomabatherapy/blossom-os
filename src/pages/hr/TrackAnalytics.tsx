@@ -65,7 +65,7 @@ export default function TrackAnalytics() {
         supabase.from("academy_competencies").select("id, track_id, name, code")
           .eq("track_id", trackId).order("position"),
         supabase.from("academy_enrollments")
-          .select("id, employee_id, track_id, status, start_date, created_at, employee:employees(first_name, last_name, job_title)")
+          .select("id, employee_id, track_id, status, start_date, created_at, employee:employees!academy_enrollments_employee_id_fkey(first_name, last_name, job_title)")
           .eq("track_id", trackId),
       ]);
       const ph = (phasesRes.data ?? []) as Phase[];
@@ -83,7 +83,7 @@ export default function TrackAnalytics() {
             .in("week_id", weekIds)
         : { data: [] as Module[] };
       const mods = (modsRes.data ?? []) as Module[];
-      const enrollIds = ((enrollRes.data ?? []) as Enrollment[]).map((e) => e.id);
+      const enrollIds = ((enrollRes.data ?? []) as unknown as Enrollment[]).map((e) => e.id);
       const [progRes, scoresRes] = enrollIds.length
         ? await Promise.all([
             supabase.from("academy_progress")
@@ -100,7 +100,7 @@ export default function TrackAnalytics() {
       setWeeks(wk);
       setModules(mods);
       setCompetencies((compsRes.data ?? []) as Competency[]);
-      setEnrollments((enrollRes.data ?? []) as Enrollment[]);
+      setEnrollments((enrollRes.data ?? []) as unknown as Enrollment[]);
       setProgress((progRes.data ?? []) as Progress[]);
       setScores((scoresRes.data ?? []) as CompScore[]);
       setLoading(false);
