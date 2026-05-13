@@ -144,12 +144,34 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Ensure the profile flag is set so first sign-in forces a password reset.
+  await admin.from("profiles").update({ must_change_password: true }).eq("user_id", created.user.id);
+
+  // Generate a one-click magic link so the recipient is signed in automatically
+  // when they click "Sign in to Blossom" in the welcome email. The
+  // ForcePasswordChange modal then prompts them to set their own password.
+  let signInUrl = `${siteUrl}/auth`;
+  try {
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: `${siteUrl}/` },
+    });
+    if (linkErr) {
+      console.error("Failed to generate magic link for invite", linkErr.message);
+    } else if (linkData?.properties?.action_link) {
+      signInUrl = linkData.properties.action_link;
+    }
+  } catch (e) {
+    console.error("generateLink threw for invite", (e as Error).message);
+  }
+
   const welcomeEmailResult = await sendBlossomWelcomeEmail({
     email,
     displayName,
     roles,
     tempPassword,
-    loginUrl: `${siteUrl}/auth`,
+    loginUrl: signInUrl,
   });
 
   const { error: logErr } = await admin.from("invite_email_logs").insert({
