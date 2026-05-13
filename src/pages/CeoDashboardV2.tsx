@@ -732,6 +732,15 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
   );
 }
 
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 function CollapsibleAlert({
   open, onOpenChange, title, subtitle, metric, meta, children,
 }: {
