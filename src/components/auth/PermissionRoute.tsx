@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function PermissionRoute({ children, permission, allowedRoles }: Props) {
-  const { user, loading, hasPerm, roles } = useAuth();
+  const { user, loading, hasPerm, roles, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -24,7 +24,7 @@ export function PermissionRoute({ children, permission, allowedRoles }: Props) {
   if (!user) return <Navigate to="/auth" replace />;
 
   const permOk = !permission || hasPerm(permission);
-  const roleOk = !allowedRoles || allowedRoles.some((role) => roles.includes(role));
+  const roleOk = isAdmin || !allowedRoles || allowedRoles.some((role) => roles.includes(role));
   if (!permOk || !roleOk) {
     return <Unauthorized permission={permission} />;
   }
