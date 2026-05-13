@@ -278,11 +278,14 @@ export default function AcademyEditor() {
   }
 
   async function createTrack() {
+    const name = window.prompt("New track name?", "New Track");
+    if (!name) return;
     const { data, error } = await supabase.from("academy_tracks").insert({
-      name: "Operations Academy", description: "Onboarding curriculum for office operations.", is_active: true,
+      name, description: "", is_active: true,
     }).select("*").single();
     if (error) { toast.error(error.message); return; }
     toast.success("Track created");
+    setSelectedTrackId((data as AcademyTrack).id);
     await load();
     setEdit({ kind: "track", data: data as AcademyTrack });
   }
