@@ -37,6 +37,25 @@ interface ImportInfo {
 
 const UNASSIGNED = "Unassigned BCBA";
 const STORAGE_KEY = "ceoDashV2.filters.v1";
+const CACHE_KEY = "ceoDashV2.cache.v1";
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+type WindowKey = "30d" | "90d" | "6mo" | "12mo" | "all";
+const WINDOW_LABELS: Record<WindowKey, string> = {
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+  "6mo": "Last 6 months",
+  "12mo": "Last 12 months",
+  all: "All history",
+};
+const WINDOW_ORDER: WindowKey[] = ["30d", "90d", "6mo", "12mo", "all"];
+function windowSinceISO(w: WindowKey): string | null {
+  if (w === "all") return null;
+  const days = w === "30d" ? 30 : w === "90d" ? 90 : w === "6mo" ? 183 : 365;
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
 
 type SortKey = "hours_desc" | "hours_asc" | "name_asc" | "sessions_desc" | "patients_desc" | "rbts_desc";
 const SORT_LABELS: Record<SortKey, string> = {
