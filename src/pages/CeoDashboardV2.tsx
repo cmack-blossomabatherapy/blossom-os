@@ -255,7 +255,7 @@ export default function CeoDashboardV2() {
   }, [filtered, sortKey]);
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
-  const maxHours = groups[0]?.totalHours ?? 0;
+  const maxHours = useMemo(() => groups.reduce((m, g) => Math.max(m, g.totalHours), 0), [groups]);
 
   type UnassignedClient = { client: string; hours: number; sessions: number; sampleLabels: string; candidateNames: string[] };
   const unassignedClients = useMemo<UnassignedClient[]>(() => {
