@@ -14,15 +14,35 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
-const TEAM_DEPARTMENTS = ["Exec", "Intake", "Auth", "QA", "Scheduling", "Staffing", "Clinics"];
+const TEAM_DEPARTMENTS: string[] = [
+  "Executive Leadership",
+  "Operations",
+  "Finance",
+  "Human Resources",
+  "Systems & Software",
+  "Marketing",
+  "Business Development",
+  "State Leadership",
+  "Intake Department",
+  "Authorizations",
+  "Scheduling",
+  "Staffing",
+  "Case Management",
+  "Recruiting",
+  "Training",
+  "QA Department",
+  "Behavioral Support",
+  "Clinic Operations",
+  "Regional BCBAs",
+];
+
+// Map the friendly Team-side department label to the canonical name stored in
+// `hr_departments` so the Employees / HR side stays in sync. Anything not listed
+// here is passed through unchanged.
 const HR_DEPARTMENT_BY_TEAM: Record<string, string> = {
-  Exec: "Executive",
-  Intake: "Intake",
-  Auth: "Authorizations",
-  QA: "QA / Compliance",
-  Scheduling: "Scheduling",
-  Staffing: "Staffing",
-  Clinics: "Clinic Operations",
+  "Executive Leadership": "Executive",
+  "Intake Department": "Intake",
+  "QA Department": "QA / Compliance",
 };
 
 interface ProfileRow {
