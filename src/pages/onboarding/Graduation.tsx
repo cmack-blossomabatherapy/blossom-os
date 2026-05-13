@@ -31,7 +31,7 @@ export default function Graduation() {
           Congratulations — Blossom Onboarding Complete
         </h1>
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          You've moved through every phase of your first five weeks at Blossom. The full Academy is now unlocked — Training Catalog, Resource Hub, Growth Pathways, and more.
+          You've moved through every phase of your first four weeks at Blossom. The full Academy is now unlocked — Training Catalog, Resource Hub, Growth Pathways, and more.
         </p>
       </header>
 
