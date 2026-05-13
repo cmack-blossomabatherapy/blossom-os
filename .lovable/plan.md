@@ -1,80 +1,93 @@
-## Goal
+# HR Admin Assistant Track — Plan
 
-Today every CSV upload wipes the table and the dashboard pulls **every** session in 1k pages on each visit. As uploads pile up daily this gets slower and risks losing history when someone uploads a partial CSV. We'll fix three things:
+A premium, calm, mobile-first 4-week onboarding track lives inside the **HR Academy** (the existing `academy_*` tables), with a dedicated dashboard and gated app access for the assigned employee.
 
-1. Let each upload choose **Replace** or **Append** (merge).
-2. Make the dashboard load the **last 90 days** by default, with a one-click "Load older" expansion.
-3. Cache the loaded window in `sessionStorage` so refreshes/navigation are instant.
+## 1. Make Academy multi-track aware (small but required)
 
-No visual redesign — just better data flow.
+Today `loadCurriculum()` returns the first active track only. To safely add a second track without breaking the existing Operations Academy:
 
----
+- Extend academy API: `loadCurriculum(trackId?)`, `listTracks()`, `loadCurriculumByName("HR Admin Assistant")`.
+- AcademyHome picks the track based on the viewer's enrollment; if none, shows a track selector (Operations Academy vs HR Admin Assistant).
+- No destructive schema changes — both tracks coexist in `academy_tracks` with `is_active = true`.
 
-## 1. Upload: Replace vs Append
+## 2. Seed the HR Admin Assistant track (data migration)
 
-In the upload sheet, add a small toggle next to the file picker:
+One migration inserts:
 
-- **Replace all data** (current behavior — deactivates + deletes prior imports)
-- **Append to existing** (keeps prior imports active, dedupes by natural key)
+- 1 `academy_track`: `HR Admin Assistant` (department: `HR`, color: `teal`)
+- 4 `academy_phases` (one per week-theme) using calm color tokens: teal → primary → violet → amber
+- 4 `academy_weeks`:
+  - **W1 — Foundation, Culture, Systems**: Welcome, Mission/Vision, Core Values, Meet the Team, Org Chart, How Blossom Works, system intros (Viventium, Monday, Teams, SharePoint, Outlook, Tapcheck, Jivetel, HR Request Forms)
+  - **W2 — Employee Support & Access Management**: answering employee questions, onboarding workflows, account creation, email/phone setup, permissions, system access, HR request workflows, interactive workflow simulations
+  - **W3 — Operations, Audits, Organization**: Jivetel audits, email audits, SharePoint organization, scanning mail, HR documentation, operational standards
+  - **W4 — Independent Application**: workers comp support, independent workflow handling, employee comms, onboarding execution, accountability, operational excellence
+- ~28 `academy_modules` mixing types: `training`, `video`, `sop`, `quiz`, `shadowing`, `reflection`, `task`. Each with duration_label, leader_name (Nikki Goldenberg where appropriate), description, key points.
+- 5 certificate definitions (in a new `academy_certificates` lookup or as `module_type='task'` capstone rows tagged `certificate`):
+  - HR Foundations · Employee Support · HR Operations · Onboarding Systems · Blossom HR Certified
 
-Pass `mode: "replace" | "append"` to the `import-bcba-sessions` edge function.
+## 3. New competency tracking
 
-Edge function changes:
-- `replace`: unchanged (existing flow).
-- `append`: insert the new import row as `is_active = true`, do NOT touch prior imports, and dedupe rows on insert using a natural key `(date_of_service, client_full, provider_full, procedure_code, hours)` so re-uploading an overlapping CSV doesn't double-count.
-  - Add a unique index on that tuple (nullable-safe via `coalesce`) and use `ON CONFLICT DO NOTHING`.
+Add `academy_competencies` (track_id, name) and `academy_competency_scores` (enrollment_id, competency_id, score 0-5, updated_by_name). Seven competencies:
+communication, organization, onboarding, employee support, HR systems, professionalism, documentation.
 
-Dashboard reads change from `.eq("is_active", true) … limit 1` to "all active imports" — totals become the union of every active import.
+## 4. HR Admin Assistant Dashboard (new route `/training/hr-admin-assistant`)
 
----
+Premium Apple-style dashboard, mobile-first:
+- Welcome hero with greeting + readiness ring
+- **Today's tasks** (modules + shadow sessions due)
+- **Onboarding progress** roadmap (reuses `RoadmapTimeline`)
+- **Upcoming shadowing**
+- **Assigned SOPs** chips
+- **Completed modules** glowing cards
+- **Competency scores** radial chart
+- **Nikki feedback notes** (pulled from `academy_checkins` where `with_name = Nikki Goldenberg`)
+- **Quick system links**: Viventium, Monday, Teams, SharePoint, Outlook, Tapcheck, Jivetel
+- Cinematic transitions, glow on completion, badge unlocks
 
-## 2. Dashboard: recent window by default, expand on demand
+Sidebar entry under HR → Training: "HR Admin Assistant".
 
-Replace the unbounded paged fetch with a date-windowed query.
+## 5. Role-gated app access until graduation
 
-- Default window: **last 90 days** (`date_of_service >= today − 90d`).
-- Window selector chips at the top of the page: `30d · 90d · 6mo · 12mo · All`.
-- Persist the chosen window in the same `localStorage` key as the other filters.
-- Server-side filter via `.gte("date_of_service", …)` — much smaller payload than today.
-- "Load older" button appears at the bottom of the BCBA list whenever a window is active; clicking expands to the next tier (90d → 6mo → 12mo → All) and re-fetches.
-- Existing date-range pickers in the filter sheet still work and override the chip when set.
+Add a small lock layer:
+- New table `onboarding_track_locks(user_id, track_id, unlocked_at, unlocked_modules text[])` OR reuse existing `onboarding_state`.
+- A `useTrackLock()` hook returns `{ locked: true, allowedRoutes: [...] }` while the user has an active HR Admin Assistant enrollment that is not 100% complete.
+- `AppLayout` redirects locked users away from admin/HR routes to `/training/hr-admin-assistant`. Allowed: `/training/*`, `/profile`, `/help`, `/auth`.
+- On graduation (all required modules complete + capstone signed off by Nikki), the lock auto-clears and existing roles take effect.
 
-Keep the 1k pagination loop, but it'll usually finish in one page now.
+## 6. Attach to testhr@blossomabatherapy.com & reset
 
----
+A second SQL migration (idempotent):
+- Look up the auth user by email, the `employees` row, and any existing `academy_enrollments`.
+- Delete prior `academy_progress`, `academy_shadow_sessions`, `academy_checkins`, `academy_competency_scores` for that user.
+- Insert a fresh `academy_enrollments` row pointing at the new HR Admin Assistant track with `path='existing_state'`, `mentor_employee_id` = Nikki, `current_week_id` = Week 1.
+- Insert `onboarding_track_locks` row so admin/HR routes are blocked until completion.
+- Roles are NOT removed — the lock layer hides them; once the track completes the original roles work again.
 
-## 3. Cache the loaded window
+## 7. Mobile polish
 
-After a successful fetch, write `{ windowKey, fetchedAt, sessions }` to `sessionStorage` (key: `ceoDashV2.cache.v1`).
+- All new components built mobile-first (375px baseline), using existing `GlassPanel`, `GlassHero`, `GlassStat`, `ReadinessRing`, `RoadmapTimeline`, plus new `CompetencyRadial`, `CertificateCard`, `SystemLinkChip`.
+- Bottom-sheet style task lists, large tap targets, sticky progress bar, haptic-feeling micro-animations.
 
-On mount:
-- If cache exists and `windowKey` matches the current selection and `fetchedAt` is < 10 minutes old → hydrate instantly, then revalidate in the background.
-- Otherwise fetch fresh.
+## Technical Section
 
-A small "Refresh" icon button in the header force-refetches and rewrites the cache. Successful upload also invalidates the cache.
+**Files added/changed:**
+- `supabase/migrations/<ts>_hr_admin_assistant_track.sql` — schema additions + seed
+- `supabase/migrations/<ts>_attach_testhr_hr_admin.sql` — reset & enroll testhr@
+- `src/lib/academy/api.ts` — multi-track helpers, competencies API, lock helpers
+- `src/lib/academy/types.ts` — `AcademyCompetency`, `AcademyCompetencyScore`, `OnboardingTrackLock`
+- `src/hooks/useTrackLock.ts` — gating hook
+- `src/components/layout/AppLayout.tsx` — apply lock redirects
+- `src/components/academy/CompetencyRadial.tsx` (new)
+- `src/components/academy/CertificateCard.tsx` (new)
+- `src/components/academy/SystemLinkChip.tsx` (new)
+- `src/pages/hr/academy/HRAdminAssistantDashboard.tsx` (new)
+- `src/pages/hr/academy/AcademyHome.tsx` — track selector when multi-track
+- `src/App.tsx` — new route, sidebar entry
 
-`sessionStorage` (not `localStorage`) so it doesn't bloat across tabs/devices and clears naturally.
+**Schema additions only** (no destructive changes):
+- `academy_competencies` and `academy_competency_scores` with RLS (trainee can read own; HR/admin can write)
+- `onboarding_track_locks` with RLS (user reads own; HR/admin manage)
 
----
+**Out of scope for this pass** (call out and confirm if desired): real Loom/Tango embed URLs (placeholders used), live SharePoint deep links (configurable later via AcademyEditor), email notifications when Nikki posts feedback.
 
-## 4. Small supporting pieces
-
-- Add an index on `bcba_billable_sessions(date_of_service)` and `(import_id, date_of_service)` so the windowed query stays fast as the table grows.
-- Header shows `N sessions · window: last 90 days · updated 2m ago` so the user can see exactly what's loaded.
-- If append mode is used, the "active import" badge becomes "N active imports" and clicking it lists them with delete buttons (so a bad partial upload can be rolled back).
-
----
-
-## Out of scope (call out if you want these next)
-
-- Server-side aggregation / RPC views (not needed yet given the smaller window).
-- Cross-session caching to IndexedDB.
-- Background pre-warming of older windows.
-
----
-
-## Files touched
-
-- `supabase/functions/import-bcba-sessions/index.ts` — accept `mode`, append path, dedupe.
-- New migration — unique index for dedupe + `date_of_service` indexes.
-- `src/pages/CeoDashboardV2.tsx` — window chips, multi-import fetch, sessionStorage cache, append/replace toggle, active-imports manager.
+Approve and I'll execute steps 1–6 in order, starting with the migrations.
