@@ -57,7 +57,7 @@ export default function OnboardingHome() {
         <section className="space-y-3 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <Compass className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Your first 5 weeks</h2>
+            <h2 className="text-sm font-semibold text-foreground">Your first 4 weeks</h2>
           </div>
           <JourneyTimeline phaseProgress={phaseProgress} activeId={nextPhase?.id} />
           <Button asChild variant="outline" size="sm" className="w-full">
