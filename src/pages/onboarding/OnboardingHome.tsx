@@ -43,7 +43,7 @@ export default function OnboardingHome() {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Your Path</p>
               <p className="mt-0.5 text-lg font-semibold text-foreground">Show Your Journey</p>
-              <p className="mt-1 text-sm text-muted-foreground">See every phase, week, and module across your first five weeks at Blossom.</p>
+              <p className="mt-1 text-sm text-muted-foreground">See every phase, week, and module across your first four weeks at Blossom.</p>
             </div>
           </div>
           <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform group-hover:translate-x-0.5 sm:self-auto">
