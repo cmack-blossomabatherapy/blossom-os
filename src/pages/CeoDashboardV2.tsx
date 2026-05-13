@@ -10,7 +10,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
-  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown,
+  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -36,6 +36,27 @@ interface ImportInfo {
 }
 
 const UNASSIGNED = "Unassigned BCBA";
+const STORAGE_KEY = "ceoDashV2.filters.v1";
+
+type SortKey = "hours_desc" | "hours_asc" | "name_asc" | "sessions_desc" | "patients_desc" | "rbts_desc";
+const SORT_LABELS: Record<SortKey, string> = {
+  hours_desc: "Hours (high → low)",
+  hours_asc: "Hours (low → high)",
+  name_asc: "Name (A → Z)",
+  sessions_desc: "Sessions (most)",
+  patients_desc: "Patients (most)",
+  rbts_desc: "RBTs (most)",
+};
+
+function extractState(labels: string | null): string | null {
+  if (!labels) return null;
+  for (const part of labels.split(",")) {
+    const t = part.trim();
+    const m = t.match(/^([A-Za-z][A-Za-z .'-]+?)\s+Location$/i);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
 
 function initials(name: string) {
   return name
