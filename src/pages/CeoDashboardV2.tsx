@@ -478,6 +478,7 @@ export default function CeoDashboardV2() {
                 group={g}
                 maxHours={maxHours}
                 totalHours={totalHours}
+                searchQuery={search.trim()}
                 onOpen={() => setDetailBcba(g.bcba)}
               />
             ))}
@@ -641,21 +642,38 @@ function CollapsibleAlert({
 }
 
 function BcbaCard({
-  group, maxHours, totalHours, onOpen,
+  group, maxHours, totalHours, onOpen, searchQuery,
 }: {
-  group: { bcba: string; totalHours: number; sessionCount: number; clientCount: number; rbtCount: number; byCode: Map<string, number> };
+  group: {
+    bcba: string;
+    totalHours: number;
+    sessionCount: number;
+    clientCount: number;
+    rbtCount: number;
+    byCode: Map<string, number>;
+    byClient: Map<string, { client: string; hours: number; sessions: number; rbts: Set<string>; byCode: Map<string, number> }>;
+  };
   maxHours: number;
   totalHours: number;
   onOpen: () => void;
+  searchQuery: string;
 }) {
   const pct = totalHours > 0 ? (group.totalHours / totalHours) * 100 : 0;
   const barPct = maxHours > 0 ? (group.totalHours / maxHours) * 100 : 0;
   const isUnassigned = group.bcba === "Unassigned BCBA";
   const codes = Array.from(group.byCode.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const q = searchQuery.toLowerCase();
+  const expanded = q.length > 0;
+  const patients = expanded
+    ? Array.from(group.byClient.values())
+        .map((c) => ({ ...c, match: c.client.toLowerCase().includes(q) }))
+        .sort((a, b) => (Number(b.match) - Number(a.match)) || (b.hours - a.hours))
+    : [];
   return (
+    <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
     <button
       onClick={onOpen}
-      className="group w-full text-left rounded-2xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.995]"
+      className="group w-full text-left p-4 hover:bg-muted/30 transition-colors"
     >
       <div className="flex items-start gap-3">
         <div
@@ -708,6 +726,35 @@ function BcbaCard({
         </div>
       </div>
     </button>
+    {expanded && patients.length > 0 && (
+      <div className="border-t border-border/60 bg-muted/20 divide-y divide-border/40">
+        <div className="px-4 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center justify-between">
+          <span>Patients ({patients.length})</span>
+          {patients.some((p) => p.match) && (
+            <span className="text-primary normal-case tracking-normal">
+              {patients.filter((p) => p.match).length} match{patients.filter((p) => p.match).length === 1 ? "" : "es"}
+            </span>
+          )}
+        </div>
+        {patients.slice(0, 25).map((p) => (
+          <div key={p.client} className={cn("px-4 py-2.5 text-sm", p.match && "bg-primary/5")}>
+            <div className="flex items-center justify-between gap-2">
+              <span className={cn("truncate font-medium", p.match && "text-primary")}>{p.client}</span>
+              <span className="tabular-nums font-semibold text-xs whitespace-nowrap">{p.hours.toFixed(1)}h</span>
+            </div>
+            <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+              {p.sessions} sessions · RBTs: {Array.from(p.rbts).join(", ") || "—"}
+            </div>
+          </div>
+        ))}
+        {patients.length > 25 && (
+          <div className="px-4 py-2 text-[11px] text-muted-foreground text-center">
+            +{patients.length - 25} more — open BCBA for full list
+          </div>
+        )}
+      </div>
+    )}
+    </div>
   );
 }
 
