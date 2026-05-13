@@ -82,15 +82,32 @@ export default function CeoDashboardV2() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [codeFilter, setCodeFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const persisted = (() => {
+    if (typeof window === "undefined") return null;
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
+  })();
+  const [search, setSearch] = useState<string>(persisted?.search ?? "");
+  const [codeFilter, setCodeFilter] = useState<string>(persisted?.codeFilter ?? "all");
+  const [stateFilter, setStateFilter] = useState<string>(persisted?.stateFilter ?? "all");
+  const [bcbaFilter, setBcbaFilter] = useState<string>(persisted?.bcbaFilter ?? "all");
+  const [dateFrom, setDateFrom] = useState<string>(persisted?.dateFrom ?? "");
+  const [dateTo, setDateTo] = useState<string>(persisted?.dateTo ?? "");
+  const [sortKey, setSortKey] = useState<SortKey>((persisted?.sortKey as SortKey) ?? "hours_desc");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Persist filters across refresh / navigation
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey }),
+      );
+    } catch { /* quota/SSR */ }
+  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey]);
 
   async function loadActive() {
     setLoading(true);
