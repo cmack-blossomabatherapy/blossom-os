@@ -2,7 +2,7 @@ import {
   Sparkles, Heart, Compass, Users, GraduationCap, BookOpen, ShieldCheck, ClipboardCheck, Award,
   Building2, UserCheck, Eye, MonitorPlay, Workflow, Database, MapPin, Briefcase, Megaphone,
   CalendarDays, BarChart3, MessageSquare, Target, Rocket, Trophy, FileText, PlayCircle, Wand2,
-  Network, Phone, Building, ListChecks, type LucideIcon,
+  Network, Phone, Building, ListChecks, Mail, Inbox, Folder, HeadphonesIcon, type LucideIcon,
 } from "lucide-react";
 
 export type OnboardingPath = "existing_state" | "new_state";
