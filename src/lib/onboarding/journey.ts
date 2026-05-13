@@ -51,7 +51,7 @@ export interface JourneyModule {
 }
 
 export interface JourneyPhase {
-  id: "welcome" | "w1" | "w2" | "w3" | "w45" | "graduation";
+  id: "welcome" | "w1" | "w2" | "w3" | "w4" | "graduation";
   index: number;
   weekLabel: string;          // e.g. "Phase 0", "Week 1"
   title: string;
@@ -70,6 +70,7 @@ const LEADERS = {
   nick: { name: "Nick", role: "Marketing", initials: "NK" },
   corey: { name: "Corey", role: "Tracking & Reporting", initials: "CO" },
   eli: { name: "Eli Berman", role: "CR Backend", initials: "EB" },
+  nikki: { name: "Nikki Goldenberg", role: "HR Lead", initials: "NG" },
 };
 
 export const ONBOARDING_PHASES: JourneyPhase[] = [
