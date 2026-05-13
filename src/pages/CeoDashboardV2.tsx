@@ -135,9 +135,17 @@ export default function CeoDashboardV2() {
       if (dateFrom && (!s.date_of_service || s.date_of_service < dateFrom)) return false;
       if (dateTo && (!s.date_of_service || s.date_of_service > dateTo)) return false;
       if (search) {
-        const q = search.toLowerCase();
-        const bcba = (s.bcba_name ?? UNASSIGNED).toLowerCase();
-        if (!bcba.includes(q) && !s.client_full.toLowerCase().includes(q) && !s.provider_full.toLowerCase().includes(q)) return false;
+        const q = search.trim().toLowerCase();
+        if (q) {
+          const bcba = (s.bcba_name ?? UNASSIGNED).toLowerCase();
+          const labels = (s.raw_labels ?? "").toLowerCase();
+          if (
+            !bcba.includes(q) &&
+            !s.client_full.toLowerCase().includes(q) &&
+            !s.provider_full.toLowerCase().includes(q) &&
+            !labels.includes(q)
+          ) return false;
+        }
       }
       return true;
     });
@@ -156,7 +164,7 @@ export default function CeoDashboardV2() {
     clientCount: number;
     rbtCount: number;
     byCode: Map<string, number>;
-    byClient: Map<string, { client: string; hours: number; sessions: number; byCode: Map<string, number> }>;
+    byClient: Map<string, { client: string; hours: number; sessions: number; rbts: Set<string>; byCode: Map<string, number> }>;
   };
 
   const groups = useMemo<Group[]>(() => {
@@ -171,10 +179,11 @@ export default function CeoDashboardV2() {
       g.byCode.set(code, (g.byCode.get(code) || 0) + (Number(s.hours) || 0));
       const client = s.client_full || "Unknown client";
       let c = g.byClient.get(client);
-      if (!c) { c = { client, hours: 0, sessions: 0, byCode: new Map() }; g.byClient.set(client, c); }
+      if (!c) { c = { client, hours: 0, sessions: 0, rbts: new Set(), byCode: new Map() }; g.byClient.set(client, c); }
       c.hours += Number(s.hours) || 0;
       c.sessions += 1;
       c.byCode.set(code, (c.byCode.get(code) || 0) + (Number(s.hours) || 0));
+      if (s.provider_full) c.rbts.add(s.provider_full);
       if (s.provider_full) g.rbts.add(s.provider_full);
     }
     for (const g of m.values()) { g.clientCount = g.byClient.size; g.rbtCount = g.rbts.size; }
