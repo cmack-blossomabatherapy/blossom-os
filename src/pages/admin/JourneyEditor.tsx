@@ -31,7 +31,7 @@ export default function JourneyEditor() {
   const [activePhase, setActivePhase] = useState<string>(ONBOARDING_PHASES[0].id);
   const [phaseDrafts, setPhaseDrafts] = useState<Record<string, PhaseDraft>>({});
   const [modDrafts, setModDrafts] = useState<Record<string, ModuleDraft>>({});
-  const [homeDraft, setHomeDraft] = useState<HomeDraft>({ eyebrow: "Your Blossom Journey", title: "Your First 5 Weeks at", title_highlight: "Blossom", objective: "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line." });
+  const [homeDraft, setHomeDraft] = useState<HomeDraft>({ eyebrow: "Your Blossom Journey", title: "Your First 4 Weeks at", title_highlight: "Blossom", objective: "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line." });
   const [saving, setSaving] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -41,7 +41,7 @@ export default function JourneyEditor() {
     const ho = phaseOverrides["__home"];
     setHomeDraft({
       eyebrow: ho?.eyebrow ?? "Your Blossom Journey",
-      title: ho?.title ?? "Your First 5 Weeks at",
+      title: ho?.title ?? "Your First 4 Weeks at",
       title_highlight: ho?.title_highlight ?? "Blossom",
       objective: ho?.objective ?? "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line.",
     });
