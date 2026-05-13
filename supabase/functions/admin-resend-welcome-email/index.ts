@@ -103,5 +103,3 @@ function json(value: unknown, status = 200) {
   });
 }
 
-function escapeHtml(value: string) {
-  return value
