@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  const welcomeEmailResult = await sendWelcomeEmail({
+  const welcomeEmailResult = await sendBlossomWelcomeEmail({
     email,
     displayName,
     roles,
