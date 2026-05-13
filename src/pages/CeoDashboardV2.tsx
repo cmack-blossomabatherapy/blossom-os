@@ -170,6 +170,11 @@ export default function CeoDashboardV2() {
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
       if (codeFilter !== "all" && s.procedure_code !== codeFilter) return false;
+      if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
+      if (stateFilter !== "all") {
+        const st = extractState(s.raw_labels) ?? "Unknown";
+        if (st !== stateFilter) return false;
+      }
       if (dateFrom && (!s.date_of_service || s.date_of_service < dateFrom)) return false;
       if (dateTo && (!s.date_of_service || s.date_of_service > dateTo)) return false;
       if (search) {
@@ -187,11 +192,23 @@ export default function CeoDashboardV2() {
       }
       return true;
     });
-  }, [sessions, search, codeFilter, dateFrom, dateTo]);
+  }, [sessions, search, codeFilter, bcbaFilter, stateFilter, dateFrom, dateTo]);
 
   const allCodes = useMemo(() => {
     const set = new Set<string>();
     sessions.forEach((s) => { if (s.procedure_code) set.add(s.procedure_code); });
+    return Array.from(set).sort();
+  }, [sessions]);
+
+  const allStates = useMemo(() => {
+    const set = new Set<string>();
+    sessions.forEach((s) => { const st = extractState(s.raw_labels); if (st) set.add(st); });
+    return Array.from(set).sort();
+  }, [sessions]);
+
+  const allBcbas = useMemo(() => {
+    const set = new Set<string>();
+    sessions.forEach((s) => set.add(s.bcba_name ?? UNASSIGNED));
     return Array.from(set).sort();
   }, [sessions]);
 
@@ -225,8 +242,17 @@ export default function CeoDashboardV2() {
       if (s.provider_full) g.rbts.add(s.provider_full);
     }
     for (const g of m.values()) { g.clientCount = g.byClient.size; g.rbtCount = g.rbts.size; }
-    return Array.from(m.values()).sort((a, b) => b.totalHours - a.totalHours);
-  }, [filtered]);
+    const arr = Array.from(m.values());
+    const cmp: Record<SortKey, (a: Group, b: Group) => number> = {
+      hours_desc: (a, b) => b.totalHours - a.totalHours,
+      hours_asc: (a, b) => a.totalHours - b.totalHours,
+      name_asc: (a, b) => a.bcba.localeCompare(b.bcba),
+      sessions_desc: (a, b) => b.sessionCount - a.sessionCount,
+      patients_desc: (a, b) => b.clientCount - a.clientCount,
+      rbts_desc: (a, b) => b.rbtCount - a.rbtCount,
+    };
+    return arr.sort(cmp[sortKey] ?? cmp.hours_desc);
+  }, [filtered, sortKey]);
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
   const maxHours = groups[0]?.totalHours ?? 0;
