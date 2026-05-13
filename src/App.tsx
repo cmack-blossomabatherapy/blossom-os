@@ -47,6 +47,7 @@ import AcademyWeekDetail from "./pages/hr/academy/WeekDetail";
 import AcademyLeadership from "./pages/hr/academy/LeadershipDashboard";
 import AcademyEditor from "./pages/hr/academy/AcademyEditor";
 import HRAdminAssistantDashboard from "./pages/training/HRAdminAssistantDashboard";
+import TrackAnalytics from "./pages/hr/TrackAnalytics";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
@@ -332,6 +333,8 @@ const App = () => (
                   <Route path="/hr/reviews" element={<PermissionRoute permission="hr.reviews.view"><Reviews /></PermissionRoute>} />
                   <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><Training /></PermissionRoute>} />
                   <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingDashboard /></PermissionRoute>} />
+                  <Route path="/hr/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
+                  <Route path="/admin/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
