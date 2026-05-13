@@ -1,13 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendBlossomWelcomeEmail } from "../_shared/welcome-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
 
 type Role =
   | "admin" | "exec" | "ops_manager" | "intake" | "auth_team" | "qa" | "scheduling"
@@ -61,7 +59,7 @@ Deno.serve(async (req) => {
 
   if (!userId || !email) return json({ error: "User and email are required" }, 400);
 
-  const welcomeEmailResult = await sendWelcomeEmail({
+  const welcomeEmailResult = await sendBlossomWelcomeEmail({
     email,
     displayName,
     roles,
