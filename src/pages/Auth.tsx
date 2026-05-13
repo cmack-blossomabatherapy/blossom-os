@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,11 @@ const LOVABLE_PUBLISHED_HOST = "blossom-os.lovable.app";
 export default function Auth() {
   const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromState = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
+  const redirectTo = fromState?.pathname
+    ? `${fromState.pathname}${fromState.search ?? ""}${fromState.hash ?? ""}`
+    : "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,8 +37,8 @@ export default function Auth() {
   }, []);
 
   useEffect(() => {
-    if (!loading && user) navigate("/", { replace: true });
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate(redirectTo, { replace: true });
+  }, [user, loading, navigate, redirectTo]);
 
   if (loading) {
     return (
@@ -42,7 +47,7 @@ export default function Auth() {
       </div>
     );
   }
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={redirectTo} replace />;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
