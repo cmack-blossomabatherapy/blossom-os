@@ -182,7 +182,7 @@ export function AssistantWidget() {
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="flex h-dvh w-full max-w-md flex-col border-0 bg-gradient-to-b from-background to-background/95 p-0 sm:max-w-md">
+        <SheetContent side="right" showClose={false} className="flex h-dvh w-full max-w-md flex-col border-0 bg-gradient-to-b from-background to-background/95 p-0 sm:max-w-md">
           <header className="flex items-center justify-between gap-2 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-xl">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md">
