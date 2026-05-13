@@ -7,26 +7,40 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are Blossom Assistant, the in-app AI helper for Blossom ABA Therapy staff.
 
-You help employees with:
-- Training questions (what's assigned to them, what's overdue, course content)
-- HR handbook, policies, SOPs, and how-to questions
-- Looking up coworkers (name, title, department, clinic, work email/phone — directory info only)
-- Pulling HR resources / documents the employee is allowed to see
-- Their own profile basics (title, department, hire date, training status)
-- How to use Blossom OS
+## What you help with
+- Training questions (what's assigned to the user, what's overdue, course content)
+- HR handbook, public policies, SOPs, how-to questions about Blossom OS
+- Looking up coworkers — DIRECTORY-LEVEL info only
+- The user's OWN profile (their hire date, employment type, manager, training status)
 
-Use the provided KNOWLEDGE excerpts as your primary source. When you need live data (a coworker, a training assignment, a document, the user's own info), CALL A TOOL. Don't guess.
+Use KNOWLEDGE excerpts as your primary source. For live data, CALL A TOOL. Don't guess.
 
-NEVER share or discuss:
-- Pay rates, salaries, bonuses, payroll details
-- Social Security numbers, government IDs, bank info
-- Performance reviews, disciplinary notes, internal HR notes about other employees
-- Termination reasons or anything in employee_notes
-- Other people's personal contact info beyond name + work email + work phone + title
+## About COWORKERS, you may share ONLY these fields
+- Name / preferred name
+- Job title / role
+- Department, clinic, state
+- Work email
+- Work phone
 
-If asked for restricted info, politely decline and tell them to contact HR.
+## NEVER share or discuss about ANY other employee (even if you find it)
+- Pay, salary, hourly rate, bonus, pay type, comp band, payroll details
+- SSN, government IDs, date of birth, bank/routing, tax forms
+- Login credentials, passwords, vault entries, MFA secrets, API keys
+- Performance reviews, disciplinary notes, write-ups, PIPs
+- Termination reasons, internal HR notes, manager-only notes
+- Hire date, employment type, work setting, employment status of OTHER employees
+- Personal (non-work) phone, personal email, home address, emergency contacts
+- Anything from confidential / internal-only HR resources
 
-Tone: warm, concise, practical. Use markdown (lists, bold, headings). Cite source titles in italics when quoting from KNOWLEDGE. If you used a tool, briefly mention what you looked up.`;
+The user's OWN information (their own hire date, employment type, etc.) IS allowed.
+
+## Refusal template
+If asked for restricted info about another person, respond:
+"I can only share public directory info (name, role, department, clinic, work email, work phone). For anything else, please contact HR."
+
+Do not name the restricted field, do not hint at the value, do not say "I see it but can't share it."
+
+Tone: warm, concise, practical. Use markdown. Cite source titles in italics when quoting KNOWLEDGE.`;
 
 const tools = [
   {
@@ -152,13 +166,24 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
       const like = `%${q}%`;
       const { data } = await admin
         .from("employees")
-        .select("first_name, last_name, preferred_name, email, phone, job_title, clinic, state, status, department_id")
+        .select("first_name, last_name, preferred_name, email, phone, job_title, clinic, state, department_id")
         .or(`first_name.ilike.${like},last_name.ilike.${like},preferred_name.ilike.${like},job_title.ilike.${like},clinic.ilike.${like}`)
         .neq("status", "terminated")
         .limit(limit);
+      const deptIds = Array.from(new Set((data ?? []).map((e: any) => e.department_id).filter(Boolean)));
+      let deptMap: Record<string, string> = {};
+      if (deptIds.length) {
+        const { data: deps } = await admin.from("hr_departments").select("id,name").in("id", deptIds);
+        deptMap = Object.fromEntries((deps ?? []).map((d: any) => [d.id, d.name]));
+      }
       return { count: data?.length ?? 0, items: (data ?? []).map((e: any) => ({
         name: `${e.preferred_name || e.first_name} ${e.last_name}`.trim(),
-        title: e.job_title, clinic: e.clinic, state: e.state, email: e.email, phone: e.phone, status: e.status,
+        title: e.job_title,
+        department: e.department_id ? deptMap[e.department_id] ?? null : null,
+        clinic: e.clinic,
+        state: e.state,
+        work_email: e.email,
+        work_phone: e.phone,
       })) };
     }
     if (name === "search_training_courses") {
@@ -177,11 +202,13 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
       const q = String(args.query ?? "").trim();
       const limit = Math.min(Number(args.limit ?? 8), 25);
       const like = `%${q}%`;
+      const BLOCKED_CATEGORIES = ["payroll", "comp", "compensation", "discipline", "performance", "internal", "confidential"];
       let qb = admin
         .from("hr_resources")
         .select("title, description, kind, category, url")
         .eq("is_active", true)
         .or(`title.ilike.${like},description.ilike.${like}`)
+        .not("category", "in", `(${BLOCKED_CATEGORIES.join(",")})`)
         .limit(limit);
       if (args.category) qb = qb.eq("category", args.category);
       const { data } = await qb;
@@ -195,8 +222,10 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
         .from("knowledge_chunks")
         .select("source_title, source_url, content")
         .textSearch("search", q, { type: "websearch", config: "english" })
-        .limit(limit);
-      return { count: data?.length ?? 0, items: data ?? [] };
+        .limit(limit * 2);
+      const DENY = /(payroll|salary|compensation|comp\s*band|bonus|pay\s*rate|vault|credential|password|login|performance\s*review|discipline|write[-\s]?up|termination|ssn)/i;
+      const filtered = (data ?? []).filter((r: any) => !DENY.test(r.source_title ?? "") && !DENY.test(r.content ?? "")).slice(0, limit);
+      return { count: filtered.length, items: filtered };
     }
     return { error: `Unknown tool ${name}` };
   } catch (e) {
@@ -328,6 +357,12 @@ Deno.serve(async (req) => {
     }
 
     if (!finalText) finalText = "I wasn't able to put together an answer this time. Try rephrasing your question.";
+
+    // Defensive output redaction — last line of defense against model leaks.
+    finalText = finalText
+      .replace(/\b\d{3}-\d{2}-\d{4}\b/g, "[redacted — contact HR]")
+      .replace(/(salary|pay\s*rate|hourly\s*rate|wage|bonus|compensation)[^\n.]{0,40}\$\s?[\d,]+(?:\.\d+)?/gi, "$1: [redacted — contact HR]")
+      .replace(/(password|passcode|api[\s_-]?key|secret|token|login\s*credentials?)\s*[:=]\s*\S+/gi, "$1: [redacted — contact HR]");
 
     // Dedupe sources by title+url.
     const seen = new Set<string>();
