@@ -17,13 +17,13 @@ export async function trackJourneyEvent({ type, phaseId, path, metadata }: Track
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("journey_events").insert({
+    await supabase.from("journey_events").insert([{
       user_id: user.id,
       event_type: type,
-      phase_id: phaseId ?? null,
-      path: path ?? (typeof window !== "undefined" ? window.location.pathname : null),
-      metadata: metadata ?? {},
-    });
+      phase_id: phaseId ?? undefined,
+      path: path ?? (typeof window !== "undefined" ? window.location.pathname : undefined),
+      metadata: (metadata ?? {}) as never,
+    }]);
   } catch {
     // analytics never blocks UX
   }
