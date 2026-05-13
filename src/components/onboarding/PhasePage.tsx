@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, Clock, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { CheckInTracker } from "./CheckInTracker";
 import { OutcomeCard } from "./OutcomeCard";
 import { ActionChecklist } from "./ActionChecklist";
 import { VideoIntroCard } from "./VideoIntroCard";
+import { trackJourneyEvent } from "@/lib/analytics/journey";
 
 interface Props { phaseId: JourneyPhase["id"]; }
 
@@ -25,6 +26,13 @@ export function PhasePage({ phaseId }: Props) {
   const [tick, setTick] = useState(0);
   const refresh = () => setTick((t) => t + 1);
   const { phase } = usePhaseWithOverrides(phaseId);
+  useEffect(() => {
+    trackJourneyEvent({
+      type: "phase_view",
+      phaseId,
+      path: typeof window !== "undefined" ? window.location.pathname : undefined,
+    });
+  }, [phaseId]);
   const mods = modulesForPath(phase, status.path);
   const doneCount = mods.filter((m) => status.modulesComplete.includes(m.key)).length;
   const percent = mods.length === 0 ? 0 : Math.round((doneCount / mods.length) * 100);
