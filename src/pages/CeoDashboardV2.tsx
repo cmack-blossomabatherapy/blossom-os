@@ -427,18 +427,31 @@ export default function CeoDashboardV2() {
             </div>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">CEO Dashboard V2</h1>
             <p className="mt-1 text-sm text-muted-foreground">Billable hours per BCBA · live label-driven attribution</p>
-            {importInfo ? (
+            {imports.length > 0 ? (
               <p className="mt-2 text-[11px] text-muted-foreground">
                 <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success mr-1.5 align-middle" />
-                {importInfo.row_count.toLocaleString()} sessions · uploaded {format(parseISO(importInfo.uploaded_at), "MMM d, p")}
+                {sessions.length.toLocaleString()} loaded · {WINDOW_LABELS[windowKey].toLowerCase()} ·{" "}
+                {imports.length === 1
+                  ? `uploaded ${format(parseISO(imports[0].uploaded_at), "MMM d, p")}`
+                  : `${imports.length} active imports`}
+                {fetchedAt ? ` · refreshed ${format(new Date(fetchedAt), "p")}` : ""}
               </p>
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={loadActive} className="h-9">
+            <Button variant="outline" size="sm" onClick={() => loadActive({ force: true })} className="h-9">
               <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
             </Button>
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
+              <SelectTrigger className="h-9 w-[110px] text-xs" aria-label="Upload mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="append">Append</SelectItem>
+                <SelectItem value="replace">Replace</SelectItem>
+              </SelectContent>
+            </Select>
             <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 shadow-[var(--shadow-brand)]">
               <Upload className="h-3.5 w-3.5 mr-1.5" />{uploading ? "Uploading…" : "Upload CSV"}
             </Button>
@@ -451,6 +464,25 @@ export default function CeoDashboardV2() {
           <KpiTile icon={UserCog} label="BCBAs" value={groups.length.toString()} accent="petal-purple" />
           <KpiTile icon={FileBarChart} label="Sessions" value={filtered.length.toLocaleString()} accent="petal-sage" />
           <KpiTile icon={Users} label="Billing codes" value={new Set(filtered.map((s) => s.procedure_code).filter(Boolean)).size.toString()} accent="accent" />
+        </div>
+
+        {/* Window chips */}
+        <div className="relative mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1 shrink-0">Range</span>
+          {WINDOW_ORDER.map((w) => (
+            <button
+              key={w}
+              onClick={() => setWindowKey(w)}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors",
+                windowKey === w
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {WINDOW_LABELS[w]}
+            </button>
+          ))}
         </div>
       </div>
 
