@@ -320,6 +320,9 @@ export function AssistantWidget() {
                 {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Public directory info only. For pay, benefits, or personal records, contact HR.
+            </p>
           </form>
         </SheetContent>
       </Sheet>
