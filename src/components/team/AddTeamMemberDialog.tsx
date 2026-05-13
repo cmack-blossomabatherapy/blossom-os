@@ -91,6 +91,8 @@ export function AddTeamMemberDialog({ open, onOpenChange, onCreated }: Props) {
     });
     toast.success(data.welcomeEmailSent ? "Team member invited and welcome email sent" : "Team member invited");
     onCreated?.();
+    // Notify any live team directories / admin panels to refresh immediately.
+    window.dispatchEvent(new CustomEvent("team-directory:refresh"));
   };
 
   const copy = async () => {
