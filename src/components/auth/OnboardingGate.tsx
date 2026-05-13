@@ -28,6 +28,8 @@ export const ALWAYS_OPEN_ROUTES: (string | RegExp)[] = [
   /^\/onboarding(\/.*)?$/,
   // The training course player is allowed so users can complete required onboarding training.
   /^\/training\/course\/.*/,
+  // HR Admin Assistant onboarding dashboard.
+  "/training/hr-admin-assistant",
 ];
 
 function isOpenPath(pathname: string): boolean {
