@@ -25,6 +25,7 @@ export type AppRole =
   | "rbt"
   | "bcba"
   | "staff"
+  | "hr_admin_assistant"
   | "viewer";
 
 export interface RoleMeta {
@@ -64,6 +65,7 @@ export const ROLE_META: RoleMeta[] = [
   { key: "rbt", label: "RBT (Registered Behavior Technician)", group: "Service", description: "Direct-care behavior technician — sees the Training Hub experience", permissionLevel: "View Only", scope: "Training Hub + own training/resources", owners: ["RBTs"], owns: ["Own training journey"], can: ["Access the Training Hub", "Complete assigned trainings", "View own resources"], cannot: ["Access other HR modules", "Access general training catalog or admin tools"] },
   { key: "bcba", label: "BCBA (Board Certified Behavior Analyst)", group: "Service", description: "Clinical lead — sees the Training Hub experience tailored to BCBAs", permissionLevel: "View Only", scope: "Training Hub + own training/resources", owners: ["BCBAs"], owns: ["Own training journey", "Clinical mentorship"], can: ["Access the Training Hub", "Complete assigned trainings", "View own resources"], cannot: ["Access other HR modules", "Access general training catalog or admin tools"] },
   { key: "staff", label: "Staff", group: "Legacy", description: "Basic employee access", permissionLevel: "View Only", scope: "Own training, resources, tasks", owners: ["Staff"], owns: ["Own work"], can: ["Complete training", "View resources", "View announcements", "View assigned tasks"] },
+  { key: "hr_admin_assistant", label: "HR Admin Assistant (Trainee)", group: "People", description: "New-hire trainee enrolled in the HR Admin Assistant onboarding track. No HR/admin access until graduation.", permissionLevel: "View Only", scope: "Onboarding journey + HR Admin Assistant track only", owners: ["Trainees"], owns: ["Own onboarding journey"], can: ["Complete the Welcome to Blossom journey", "Work through the HR Admin Assistant track", "View own profile and resources"], cannot: ["Access HR module", "Access Admin Hub", "View employee records or payroll"] },
   { key: "viewer", label: "Viewer", group: "Legacy", description: "Read-only system access", permissionLevel: "View Only", scope: "Read-only across allowed modules", owners: ["Auditors"], owns: ["No workflow ownership"], can: ["See data", "Review dashboards"], cannot: ["Edit records", "Override workflows"] },
 ];
 
