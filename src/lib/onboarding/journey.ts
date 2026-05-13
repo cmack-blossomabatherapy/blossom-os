@@ -79,7 +79,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     index: 0,
     weekLabel: "Phase 0",
     title: "Welcome to Blossom",
-    objective: "Get grounded in who we are, what we believe, and what to expect over your first five weeks.",
+    objective: "Get grounded in who we are, what we believe, and what to expect over your first four weeks as an HR Admin Assistant.",
     icon: Sparkles,
     path: "/onboarding/phase/welcome",
     modules: [
