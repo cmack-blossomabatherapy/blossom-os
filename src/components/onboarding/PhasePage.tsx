@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Clock, RotateCcw, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, Clock, PlayCircle, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ export function PhasePage({ phaseId }: Props) {
   const [tick, setTick] = useState(0);
   const refresh = () => setTick((t) => t + 1);
   const { phase } = usePhaseWithOverrides(phaseId);
+  const location = useLocation();
+  const didScrollRef = useRef(false);
   useEffect(() => {
     trackJourneyEvent({
       type: "phase_view",
@@ -41,6 +43,31 @@ export function PhasePage({ phaseId }: Props) {
   const idx = ONBOARDING_PHASES.findIndex((p) => p.id === phase.id);
   const next = ONBOARDING_PHASES[idx + 1];
   const prev = ONBOARDING_PHASES[idx - 1];
+
+  // First incomplete module in *this* phase — used to mark the resume point.
+  const firstIncompleteKey = useMemo(
+    () => mods.find((m) => !status.modulesComplete.includes(m.key))?.key ?? null,
+    [mods, status.modulesComplete],
+  );
+
+  // Resume on deep-link: once status has loaded and we know the first incomplete
+  // module, scroll to it (or to the explicit `#mod-<key>` hash if present).
+  useEffect(() => {
+    if (status.loading) return;
+    if (didScrollRef.current) return;
+    if (mods.length === 0) return;
+    const hash = location.hash?.replace(/^#/, "") || "";
+    const targetKey = hash.startsWith("mod-")
+      ? decodeURIComponent(hash.slice(4))
+      : firstIncompleteKey;
+    if (!targetKey) return;
+    didScrollRef.current = true;
+    // Wait one frame so the module list is painted.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`mod-${targetKey}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [status.loading, mods.length, firstIncompleteKey, location.hash]);
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 pb-12">
@@ -78,14 +105,21 @@ export function PhasePage({ phaseId }: Props) {
         {mods.map((m, i) => {
           const ModIcon = m.icon;
           const done = status.modulesComplete.includes(m.key);
+          const isResume = !done && m.key === firstIncompleteKey;
           const onComplete = () => markModuleComplete(m.key);
           const onUncheck = () => { unmarkModule(m.key); refresh(); };
 
           return (
-            <li key={m.key} className={cn(
-              "rounded-2xl border bg-card p-4 shadow-sm transition-all sm:p-5",
-              done ? "border-emerald-500/30" : "border-border/60",
-            )}>
+            <li
+              key={m.key}
+              id={`mod-${m.key}`}
+              className={cn(
+                "scroll-mt-24 rounded-2xl border bg-card p-4 shadow-sm transition-all sm:p-5",
+                done && "border-emerald-500/30",
+                !done && isResume && "border-primary/50 ring-2 ring-primary/20",
+                !done && !isResume && "border-border/60",
+              )}
+            >
               <div className="flex items-start gap-3">
                 <div className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold tabular-nums",
@@ -98,6 +132,11 @@ export function PhasePage({ phaseId }: Props) {
                     <ModIcon className="h-4 w-4 text-primary" />
                     <p className="text-sm font-semibold text-foreground sm:text-base">{m.title}</p>
                     {done && <Badge variant="secondary" className="text-[10px]">Complete</Badge>}
+                    {isResume && (
+                      <Badge className="gap-1 text-[10px]">
+                        <PlayCircle className="h-3 w-3" /> Resume here
+                      </Badge>
+                    )}
                     {m.pathOnly && <Badge variant="outline" className="text-[10px]">{m.pathOnly === "new_state" ? "New state" : "Existing state"}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground sm:text-sm">{m.blurb}</p>
