@@ -6409,6 +6409,10 @@ export type Database = {
         Returns: undefined
       }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      evaluate_hr_admin_assistant_graduation: {
+        Args: { _enrollment_id: string }
+        Returns: undefined
+      }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: { _perm: string; _user_id: string }
