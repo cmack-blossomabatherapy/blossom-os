@@ -195,7 +195,7 @@ export default function AcademyHome() {
       </section>
 
       {/* Roadmap */}
-      <GlassPanel title="Your roadmap" description="Five weeks. Four phases. One operational standard." icon={Compass}>
+      <GlassPanel title="Your roadmap" description="Four weeks. Four phases. One operational standard." icon={Compass}>
         <RoadmapTimeline weeks={flatWeeks} progress={progress} currentWeekId={currentWeek?.id ?? null} />
       </GlassPanel>
 
