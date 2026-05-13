@@ -339,9 +339,16 @@ export default function CeoDashboardV2() {
   }, [detailBcba, filtered]);
 
   const activeFilterCount =
-    (codeFilter !== "all" ? 1 : 0) + (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+    (codeFilter !== "all" ? 1 : 0) +
+    (stateFilter !== "all" ? 1 : 0) +
+    (bcbaFilter !== "all" ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0);
 
-  const clearFilters = () => { setCodeFilter("all"); setDateFrom(""); setDateTo(""); };
+  const clearFilters = () => {
+    setCodeFilter("all"); setStateFilter("all"); setBcbaFilter("all");
+    setDateFrom(""); setDateTo("");
+  };
 
   return (
     <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12">
@@ -385,14 +392,14 @@ export default function CeoDashboardV2() {
 
       <div className="px-3 pt-4 md:px-8 md:pt-6 space-y-4">
         {/* CONTROL BAR */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search BCBA, patient, or RBT…"
-              className="h-10 rounded-xl pl-9 bg-card border-border/60"
+              className="h-11 rounded-xl pl-10 pr-9 bg-card border-border/60 text-sm"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted">
@@ -400,49 +407,97 @@ export default function CeoDashboardV2() {
               </button>
             )}
           </div>
+          <div className="flex items-center gap-2">
           <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="h-10 gap-1.5 rounded-xl shrink-0">
+              <Button variant="outline" size="sm" className="h-11 px-3.5 gap-1.5 rounded-xl shrink-0 flex-1 sm:flex-initial">
                 <SlidersHorizontal className="h-4 w-4" />
-                <span className="hidden sm:inline">Filters</span>
+                <span>Filters</span>
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{activeFilterCount}</Badge>
+                  <Badge variant="secondary" className="h-5 min-w-[1.25rem] justify-center px-1 text-[10px] bg-primary text-primary-foreground">{activeFilterCount}</Badge>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl border-x-0 border-b-0 max-h-[85dvh]">
-              <SheetHeader className="text-left">
-                <SheetTitle>Filter sessions</SheetTitle>
-                <SheetDescription>Narrow billable hours by code or date range.</SheetDescription>
+            <SheetContent side="bottom" className="rounded-t-2xl border-x-0 border-b-0 max-h-[88dvh] p-0 flex flex-col">
+              <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
+              <SheetHeader className="text-left px-5 pt-3 pb-4">
+                <SheetTitle className="text-base">Filter sessions</SheetTitle>
+                <SheetDescription className="text-xs">
+                  {activeFilterCount === 0 ? "No filters active — saved automatically" : `${activeFilterCount} active · saved automatically`}
+                </SheetDescription>
               </SheetHeader>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Billing code</label>
+              <div className="flex-1 space-y-5 overflow-y-auto border-t border-border/60 px-5 py-5">
+                <FilterField label="Billing code">
                   <Select value={codeFilter} onValueChange={setCodeFilter}>
-                    <SelectTrigger className="mt-1.5 h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="all">All codes</SelectItem>
                       {allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From</label>
-                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1.5 h-11" />
+                </FilterField>
+                <FilterField label="State / location">
+                  <Select value={stateFilter} onValueChange={setStateFilter}>
+                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">All states</SelectItem>
+                      {allStates.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      <SelectItem value="Unknown">Unknown / no location</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+                <FilterField label="BCBA">
+                  <Select value={bcbaFilter} onValueChange={setBcbaFilter}>
+                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="all">All BCBAs</SelectItem>
+                      {allBcbas.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
+                <FilterField label="Date range">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">From</div>
+                      <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-12 text-sm" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">To</div>
+                      <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-12 text-sm" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">To</label>
-                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1.5 h-11" />
-                  </div>
-                </div>
+                </FilterField>
+                <FilterField label="Sort BCBAs by">
+                  <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                        <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
               </div>
-              <SheetFooter className="mt-4 flex-row gap-2 pb-[env(safe-area-inset-bottom)]">
-                <Button variant="outline" className="flex-1" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear</Button>
-                <Button className="flex-1" onClick={() => setFiltersOpen(false)}>Done</Button>
+              <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                <Button variant="outline" className="flex-1 h-11" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear all</Button>
+                <Button className="flex-1 h-11" onClick={() => setFiltersOpen(false)}>
+                  Done{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+                </Button>
               </SheetFooter>
             </SheetContent>
           </Sheet>
+          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+            <SelectTrigger className="h-11 w-auto gap-1.5 rounded-xl px-3 text-sm shrink-0 flex-1 sm:flex-initial sm:min-w-[180px]">
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          </div>
         </div>
 
         {/* Active filter chips */}
@@ -450,8 +505,18 @@ export default function CeoDashboardV2() {
           <div className="flex flex-wrap gap-1.5">
             {search && <FilterChip label={`"${search}"`} onClear={() => setSearch("")} />}
             {codeFilter !== "all" && <FilterChip label={`Code: ${codeFilter}`} onClear={() => setCodeFilter("all")} />}
+            {stateFilter !== "all" && <FilterChip label={`State: ${stateFilter}`} onClear={() => setStateFilter("all")} />}
+            {bcbaFilter !== "all" && <FilterChip label={`BCBA: ${bcbaFilter}`} onClear={() => setBcbaFilter("all")} />}
             {dateFrom && <FilterChip label={`From: ${dateFrom}`} onClear={() => setDateFrom("")} />}
             {dateTo && <FilterChip label={`To: ${dateTo}`} onClear={() => setDateTo("")} />}
+            {activeFilterCount + (search ? 1 : 0) > 1 && (
+              <button
+                onClick={() => { setSearch(""); clearFilters(); }}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                Clear all
+              </button>
+            )}
           </div>
         )}
 
