@@ -97,10 +97,12 @@ function petalFor(name: string) {
 }
 
 export default function CeoDashboardV2() {
-  const [importInfo, setImportInfo] = useState<ImportInfo | null>(null);
+  const [imports, setImports] = useState<ImportInfo[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchedAt, setFetchedAt] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"replace" | "append">("append");
   const persisted = (() => {
     if (typeof window === "undefined") return null;
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
@@ -112,6 +114,7 @@ export default function CeoDashboardV2() {
   const [dateFrom, setDateFrom] = useState<string>(persisted?.dateFrom ?? "");
   const [dateTo, setDateTo] = useState<string>(persisted?.dateTo ?? "");
   const [sortKey, setSortKey] = useState<SortKey>((persisted?.sortKey as SortKey) ?? "hours_desc");
+  const [windowKey, setWindowKey] = useState<WindowKey>((persisted?.windowKey as WindowKey) ?? "90d");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
@@ -123,41 +126,82 @@ export default function CeoDashboardV2() {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey }),
+        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey }),
       );
     } catch { /* quota/SSR */ }
-  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey]);
+  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey]);
 
-  async function loadActive() {
-    setLoading(true);
-    const { data: imp } = await supabase
-      .from("bcba_billable_imports")
-      .select("id, uploaded_at, filename, row_count")
-      .eq("is_active", true)
-      .order("uploaded_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (!imp) { setSessions([]); setImportInfo(null); setLoading(false); return; }
-    setImportInfo(imp as ImportInfo);
-    const all: Session[] = [];
-    const pageSize = 1000;
-    let from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from("bcba_billable_sessions")
-        .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours, raw_labels")
-        .eq("import_id", imp.id)
-        .range(from, from + pageSize - 1);
-      if (error) { toast.error(error.message); break; }
-      all.push(...((data ?? []) as Session[]));
-      if (!data || data.length < pageSize) break;
-      from += pageSize;
+  async function loadActive(opts: { force?: boolean; window?: WindowKey } = {}) {
+    const w = opts.window ?? windowKey;
+    // Try sessionStorage cache first
+    if (!opts.force && typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as { windowKey: WindowKey; fetchedAt: number; sessions: Session[]; imports: ImportInfo[] };
+          if (cached.windowKey === w && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+            setSessions(cached.sessions);
+            setImports(cached.imports ?? []);
+            setFetchedAt(cached.fetchedAt);
+            setLoading(false);
+            // Background revalidate
+            void fetchFresh(w, /*background*/ true);
+            return;
+          }
+        }
+      } catch { /* ignore */ }
     }
-    setSessions(all);
-    setLoading(false);
+    setLoading(true);
+    await fetchFresh(w, false);
   }
 
-  useEffect(() => { loadActive(); }, []);
+  async function fetchFresh(w: WindowKey, background: boolean) {
+    try {
+      const { data: imps } = await supabase
+        .from("bcba_billable_imports")
+        .select("id, uploaded_at, filename, row_count")
+        .eq("is_active", true)
+        .order("uploaded_at", { ascending: false });
+      const importsList = (imps ?? []) as ImportInfo[];
+      if (importsList.length === 0) {
+        setSessions([]); setImports([]); setFetchedAt(Date.now());
+        if (!background) setLoading(false);
+        try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+        return;
+      }
+      const importIds = importsList.map((i) => i.id);
+      const since = windowSinceISO(w);
+      const all: Session[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        let q = supabase
+          .from("bcba_billable_sessions")
+          .select("id, date_of_service, client_full, bcba_name, provider_full, procedure_code, procedure_description, hours, raw_labels")
+          .in("import_id", importIds)
+          .order("date_of_service", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (since) q = q.gte("date_of_service", since);
+        const { data, error } = await q;
+        if (error) { if (!background) toast.error(error.message); break; }
+        all.push(...((data ?? []) as Session[]));
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      const ts = Date.now();
+      setSessions(all);
+      setImports(importsList);
+      setFetchedAt(ts);
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ windowKey: w, fetchedAt: ts, sessions: all, imports: importsList }));
+      } catch { /* quota — drop cache */ }
+    } finally {
+      if (!background) setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadActive(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { loadActive({ window: windowKey }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [windowKey]);
 
   async function handleFile(file: File) {
     setUploading(true);
@@ -170,14 +214,15 @@ export default function CeoDashboardV2() {
         .from("bcba-imports")
         .upload(path, file, { contentType: "text/csv", upsert: true });
       if (upErr) throw upErr;
-      toast.info("Processing CSV — this can take up to a minute…");
+      toast.info(`Processing CSV (${uploadMode === "append" ? "append" : "replace"}) — this can take up to a minute…`);
       const { data, error } = await supabase.functions.invoke("import-bcba-sessions", {
-        body: { storagePath: path, filename: file.name },
+        body: { storagePath: path, filename: file.name, mode: uploadMode },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Imported ${(data as any)?.rows ?? 0} sessions`);
-      await loadActive();
+      try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+      await loadActive({ force: true });
     } catch (e) {
       toast.error((e as Error).message ?? "Upload failed");
     } finally {
