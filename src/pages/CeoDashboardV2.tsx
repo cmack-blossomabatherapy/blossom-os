@@ -707,6 +707,22 @@ export default function CeoDashboardV2() {
                 onOpen={() => setDetailBcba(g.bcba)}
               />
             ))}
+            {windowKey !== "all" && (
+              <div className="pt-2 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 rounded-full px-5 text-xs"
+                  onClick={() => {
+                    const idx = WINDOW_ORDER.indexOf(windowKey);
+                    const next = WINDOW_ORDER[Math.min(idx + 1, WINDOW_ORDER.length - 1)];
+                    setWindowKey(next);
+                  }}
+                >
+                  Load older · {WINDOW_LABELS[WINDOW_ORDER[Math.min(WINDOW_ORDER.indexOf(windowKey) + 1, WINDOW_ORDER.length - 1)]]}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
