@@ -13,7 +13,7 @@ export default function Journey() {
   const { phaseOverrides } = useJourneyOverrides();
   const home = phaseOverrides["__home"];
   const eyebrow = home?.eyebrow || "Your Blossom Journey";
-  const titleLead = home?.title || "Your First 5 Weeks at";
+  const titleLead = home?.title || "Your First 4 Weeks at";
   const titleHighlight = home?.title_highlight || "Blossom";
   const subheading = home?.objective || "A guided journey through who we are, how we work, and how you'll grow into ownership. Move at your own pace — the rest of the Academy unlocks at the finish line.";
   const minutes = totalMinutes(status.path);
