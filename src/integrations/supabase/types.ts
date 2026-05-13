@@ -4188,6 +4188,36 @@ export type Database = {
         }
         Relationships: []
       }
+      journey_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          path: string | null
+          phase_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          path?: string | null
+          phase_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          path?: string | null
+          phase_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       journey_module_overrides: {
         Row: {
           blurb: string | null
