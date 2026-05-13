@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const storagePath: string = body.storagePath ?? "";
     const filename: string = body.filename ?? "upload.csv";
+    const mode: "replace" | "append" = body.mode === "append" ? "append" : "replace";
     if (!storagePath) {
       return new Response(JSON.stringify({ error: "Missing storagePath" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
     }
@@ -174,12 +175,26 @@ Deno.serve(async (req) => {
       if (records.length === 0) return;
       const batch = records;
       records = [];
-      const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
-      if (error) {
-        console.error("Insert error after parsed row", parsedRows, error);
-        throw error;
+      // In append mode dedupe by source_id (upsert/ignore conflicts).
+      // In replace mode prior data is wiped after the parse, so plain insert is fine.
+      if (mode === "append") {
+        const { error, data } = await supabase
+          .from("bcba_billable_sessions")
+          .upsert(batch, { onConflict: "source_id", ignoreDuplicates: true })
+          .select("id");
+        if (error) {
+          console.error("Upsert error after parsed row", parsedRows, error);
+          throw error;
+        }
+        insertedRows += data?.length ?? 0;
+      } else {
+        const { error } = await supabase.from("bcba_billable_sessions").insert(batch);
+        if (error) {
+          console.error("Insert error after parsed row", parsedRows, error);
+          throw error;
+        }
+        insertedRows += batch.length;
       }
-      insertedRows += batch.length;
     };
 
     await parseCsvStream(fileBlob, async (r, rowNumber) => {
@@ -214,25 +229,27 @@ Deno.serve(async (req) => {
     await flushRecords();
     if (!cols || parsedRows === 0) return new Response(JSON.stringify({ error: "Empty CSV" }), { status: 400, headers: { ...corsHeaders, "content-type": "application/json" } });
 
-    console.log(`Parsed ${insertedRows} records from ${parsedRows} rows`);
+    console.log(`Parsed ${insertedRows} records from ${parsedRows} rows (mode=${mode})`);
 
-    // Activate this import; deactivate (and clean up) others
-    const { data: oldImports } = await supabase
-      .from("bcba_billable_imports")
-      .select("id")
-      .neq("id", imp.id);
-    if (oldImports && oldImports.length > 0) {
-      const oldIds = oldImports.map((x: any) => x.id);
-      // Delete old sessions and old import rows so storage stays lean
-      await supabase.from("bcba_billable_sessions").delete().in("import_id", oldIds);
-      await supabase.from("bcba_billable_imports").delete().in("id", oldIds);
+    if (mode === "replace") {
+      // Replace: wipe all prior imports + sessions
+      const { data: oldImports } = await supabase
+        .from("bcba_billable_imports")
+        .select("id")
+        .neq("id", imp.id);
+      if (oldImports && oldImports.length > 0) {
+        const oldIds = oldImports.map((x: any) => x.id);
+        await supabase.from("bcba_billable_sessions").delete().in("import_id", oldIds);
+        await supabase.from("bcba_billable_imports").delete().in("id", oldIds);
+      }
     }
+    // Activate this import either way (append keeps prior imports active too)
     await supabase.from("bcba_billable_imports").update({ is_active: true, row_count: insertedRows }).eq("id", imp.id);
 
     // Remove the uploaded CSV from storage now that it's been processed
     await supabase.storage.from("bcba-imports").remove([storagePath]);
 
-    return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: insertedRows }), {
+    return new Response(JSON.stringify({ ok: true, importId: imp.id, rows: insertedRows, mode }), {
       headers: { ...corsHeaders, "content-type": "application/json" },
     });
   } catch (e) {
