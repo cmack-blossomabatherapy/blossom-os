@@ -59,6 +59,54 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_certificates: {
+        Row: {
+          awarded_after_phase_id: string | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          position: number
+          track_id: string
+        }
+        Insert: {
+          awarded_after_phase_id?: string | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          position?: number
+          track_id: string
+        }
+        Update: {
+          awarded_after_phase_id?: string | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          position?: number
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificates_awarded_after_phase_id_fkey"
+            columns: ["awarded_after_phase_id"]
+            isOneToOne: false
+            referencedRelation: "academy_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_certificates_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_checkins: {
         Row: {
           action_items: string | null
@@ -132,6 +180,92 @@ export type Database = {
             columns: ["with_employee_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_competencies: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          position: number
+          track_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          position?: number
+          track_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          position?: number
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_competencies_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "academy_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_competency_scores: {
+        Row: {
+          competency_id: string
+          enrollment_id: string
+          id: string
+          notes: string | null
+          score: number
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          competency_id: string
+          enrollment_id: string
+          id?: string
+          notes?: string | null
+          score?: number
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          competency_id?: string
+          enrollment_id?: string
+          id?: string
+          notes?: string | null
+          score?: number
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_competency_scores_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "academy_competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_competency_scores_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
             referencedColumns: ["id"]
           },
         ]
@@ -672,6 +806,48 @@ export type Database = {
           pinned_at?: string | null
         }
         Relationships: []
+      }
+      academy_user_certificates: {
+        Row: {
+          awarded_at: string
+          awarded_by: string | null
+          awarded_by_name: string | null
+          certificate_id: string
+          enrollment_id: string
+          id: string
+        }
+        Insert: {
+          awarded_at?: string
+          awarded_by?: string | null
+          awarded_by_name?: string | null
+          certificate_id: string
+          enrollment_id: string
+          id?: string
+        }
+        Update: {
+          awarded_at?: string
+          awarded_by?: string | null
+          awarded_by_name?: string | null
+          certificate_id?: string
+          enrollment_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_user_certificates_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "academy_certificates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_user_certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academy_weeks: {
         Row: {
