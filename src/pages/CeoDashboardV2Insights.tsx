@@ -368,6 +368,62 @@ export default function CeoDashboardV2Insights() {
     })).sort((a, b) => b.hours - a.hours);
   }, [filtered]);
 
+  // -------------------- MOVERS (period-over-period) --------------------
+  // Splits the filtered window into two equal halves by date and computes
+  // hours delta per BCBA, code, and state. Powers the Improving / Declining widgets.
+  const movers = useMemo(() => {
+    const dated = filtered.filter((s) => s.date_of_service);
+    if (dated.length < 4) return { bcbaUp: [], bcbaDown: [], codeUp: [], codeDown: [], stateUp: [], stateDown: [] };
+    const times = dated.map((s) => parseISO(s.date_of_service!).getTime()).sort((a, b) => a - b);
+    const mid = times[Math.floor(times.length / 2)];
+    type Pair = { prev: number; curr: number };
+    const bcba = new Map<string, Pair>();
+    const code = new Map<string, Pair>();
+    const state = new Map<string, Pair>();
+    const add = (m: Map<string, Pair>, k: string, h: number, isCurr: boolean) => {
+      let p = m.get(k);
+      if (!p) { p = { prev: 0, curr: 0 }; m.set(k, p); }
+      if (isCurr) p.curr += h; else p.prev += h;
+    };
+    for (const s of dated) {
+      const t = parseISO(s.date_of_service!).getTime();
+      const isCurr = t >= mid;
+      const h = Number(s.hours) || 0;
+      const name = s.bcba_name ?? UNASSIGNED;
+      if (name !== UNASSIGNED) add(bcba, name, h, isCurr);
+      add(code, normalizeCode(s.procedure_code), h, isCurr);
+      add(state, extractState(s.raw_labels) ?? "Unknown", h, isCurr);
+    }
+    const toRows = (m: Map<string, Pair>) =>
+      Array.from(m.entries()).map(([name, p]) => ({
+        name, prev: p.prev, curr: p.curr,
+        delta: p.curr - p.prev,
+        deltaPct: pctDelta(p.curr, p.prev),
+      }));
+    const bRows = toRows(bcba).filter((r) => r.prev + r.curr >= 5);
+    const cRows = toRows(code).filter((r) => r.prev + r.curr >= 5);
+    const sRows = toRows(state).filter((r) => r.prev + r.curr >= 5 && r.name !== "Unknown");
+    return {
+      bcbaUp: [...bRows].filter((r) => r.delta > 0).sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 4),
+      bcbaDown: [...bRows].filter((r) => r.delta < 0).sort((a, b) => a.deltaPct - b.deltaPct).slice(0, 4),
+      codeUp: [...cRows].filter((r) => r.delta > 0).sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 3),
+      codeDown: [...cRows].filter((r) => r.delta < 0).sort((a, b) => a.deltaPct - b.deltaPct).slice(0, 3),
+      stateUp: [...sRows].filter((r) => r.delta > 0).sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 3),
+      stateDown: [...sRows].filter((r) => r.delta < 0).sort((a, b) => a.deltaPct - b.deltaPct).slice(0, 3),
+    };
+  }, [filtered]);
+
+  // Drill-down: set a filter and scroll to the matching graph section.
+  function drillTo(target: "bcba" | "code" | "state", value: string, anchor: string) {
+    if (target === "bcba") setBcbaFilter(value);
+    if (target === "code") setCodeFilter(value);
+    if (target === "state") setStateFilter(value);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(anchor);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   // Forecast (linear projection from last 4 weekly buckets)
   const forecast = useMemo(() => {
     if (trendData.length < 3) return null;
