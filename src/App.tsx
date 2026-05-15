@@ -37,6 +37,7 @@ import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import HRDashboard from "./pages/hr/HRDashboard";
 import TrainingHub from "./pages/TrainingHub";
 import TrainingDepartment from "./pages/TrainingDepartment";
