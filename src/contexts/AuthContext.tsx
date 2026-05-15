@@ -146,6 +146,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const refreshAccess = () => {
+      void Promise.all([loadRolesAndAccess(user.id), loadProfileFlag(user.id)]);
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshAccess();
+    };
+    window.addEventListener("focus", refreshAccess);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshAccess);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [user?.id]);
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
