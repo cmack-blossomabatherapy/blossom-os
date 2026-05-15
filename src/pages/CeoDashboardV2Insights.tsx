@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ResponsiveContainer, LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ReferenceLine,
@@ -15,7 +16,7 @@ import {
 import {
   ArrowLeft, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Activity, AlertTriangle,
   Sparkles, Users, Clock, MapPin, UserCog, FileBarChart, ShieldAlert, Lightbulb, Target,
-  Download, ChevronRight, Zap, CheckCircle2, AlertCircle, Minus,
+  Download, ChevronRight, Zap, CheckCircle2, AlertCircle, Minus, ExternalLink, Eye,
 } from "lucide-react";
 import { format, parseISO, startOfWeek, startOfMonth, startOfQuarter, addDays, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
