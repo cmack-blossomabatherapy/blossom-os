@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Session {
@@ -143,6 +143,40 @@ export default function CeoDashboardV2() {
   const [detailTab, setDetailTab] = useState<string>("overview");
   const [showUnassigned, setShowUnassigned] = useState<boolean>(persisted?.showUnassigned ?? false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // ----- URL <-> filter sync (two-way deep-link with Insights) -----
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAppliedRef = useRef(false);
+  useEffect(() => {
+    if (urlAppliedRef.current) return;
+    urlAppliedRef.current = true;
+    const w = searchParams.get("window") as WindowKey | null;
+    const b = searchParams.get("bcba");
+    const c = searchParams.get("code");
+    const st = searchParams.get("state");
+    const drawer = searchParams.get("drawer");
+    if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
+    if (b) setBcbaFilter(b);
+    if (c) setCodeFilter(c);
+    if (st) setStateFilter(st);
+    if (drawer) setDetailBcba(drawer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!urlAppliedRef.current) return;
+    const params = new URLSearchParams(searchParams);
+    const set = (k: string, v: string, def: string) => {
+      if (v && v !== def) params.set(k, v); else params.delete(k);
+    };
+    set("window", windowKey, "90d");
+    set("bcba", bcbaFilter, "all");
+    set("code", codeFilter, "all");
+    set("state", stateFilter, "all");
+    if (detailBcba) params.set("drawer", detailBcba); else params.delete("drawer");
+    const next = params.toString();
+    if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowKey, bcbaFilter, codeFilter, stateFilter, detailBcba]);
 
   // Persist filters across refresh / navigation
   useEffect(() => {

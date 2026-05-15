@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   ResponsiveContainer, LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ReferenceLine,
@@ -15,7 +16,7 @@ import {
 import {
   ArrowLeft, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Activity, AlertTriangle,
   Sparkles, Users, Clock, MapPin, UserCog, FileBarChart, ShieldAlert, Lightbulb, Target,
-  Download, ChevronRight, Zap, CheckCircle2, AlertCircle, Minus,
+  Download, ChevronRight, Zap, CheckCircle2, AlertCircle, Minus, ExternalLink, Eye,
 } from "lucide-react";
 import { format, parseISO, startOfWeek, startOfMonth, startOfQuarter, addDays, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -105,6 +106,65 @@ export default function CeoDashboardV2Insights() {
   const [bcbaFilter, setBcbaFilter] = useState<string>("all");
   const [codeFilter, setCodeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
+
+  // ---- Cross-highlight (hover) + drill modal ----
+  type HoverKey = { type: "bcba" | "code" | "state"; name: string } | null;
+  const [hovered, setHovered] = useState<HoverKey>(null);
+  type Drill = { type: "bcba" | "code" | "state" | "all"; name: string } | null;
+  const [drill, setDrill] = useState<Drill>(null);
+
+  // ---- URL <-> filter sync (two-way deep-link with V2 dashboard) ----
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAppliedRef = useRef(false);
+  useEffect(() => {
+    if (urlAppliedRef.current) return;
+    urlAppliedRef.current = true;
+    const w = searchParams.get("window") as WindowKey | null;
+    const g = searchParams.get("granularity") as Granularity | null;
+    const b = searchParams.get("bcba");
+    const c = searchParams.get("code");
+    const st = searchParams.get("state");
+    if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
+    if (g && ["weekly", "monthly", "quarterly"].includes(g)) setGranularity(g);
+    if (b) setBcbaFilter(b);
+    if (c) setCodeFilter(c);
+    if (st) setStateFilter(st);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!urlAppliedRef.current) return;
+    const params = new URLSearchParams(searchParams);
+    const set = (k: string, v: string, def: string) => {
+      if (v && v !== def) params.set(k, v); else params.delete(k);
+    };
+    set("window", windowKey, "90d");
+    set("granularity", granularity, "weekly");
+    set("bcba", bcbaFilter, "all");
+    set("code", codeFilter, "all");
+    set("state", stateFilter, "all");
+    const next = params.toString();
+    if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowKey, granularity, bcbaFilter, codeFilter, stateFilter]);
+
+  // Build a deep-link to V2 dashboard with current filters + optional drawer.
+  function v2Link(extra: { bcba?: string; code?: string; state?: string; drawer?: string } = {}) {
+    const p = new URLSearchParams();
+    if (windowKey !== "90d") p.set("window", windowKey);
+    const b = extra.bcba ?? (bcbaFilter !== "all" ? bcbaFilter : undefined);
+    const c = extra.code ?? (codeFilter !== "all" ? codeFilter : undefined);
+    const s = extra.state ?? (stateFilter !== "all" ? stateFilter : undefined);
+    if (b) p.set("bcba", b);
+    if (c) p.set("code", c);
+    if (s) p.set("state", s);
+    if (extra.drawer) p.set("drawer", extra.drawer);
+    const qs = p.toString();
+    return `/ceo-dashboard-v2${qs ? `?${qs}` : ""}`;
+  }
+  function openInV2(extra: Parameters<typeof v2Link>[0] = {}) {
+    navigate(v2Link(extra));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -596,6 +656,11 @@ export default function CeoDashboardV2Insights() {
             <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={exportCsv}>
               <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
+            <Button asChild variant="default" size="sm" className="h-9 gap-1.5 rounded-xl">
+              <Link to={v2Link()} title="Open the V2 dashboard with current filters applied">
+                <ExternalLink className="h-3.5 w-3.5" /> Open in V2
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -727,13 +792,30 @@ export default function CeoDashboardV2Insights() {
 
             {/* GRAPH 2 — BCBA PERFORMANCE */}
             <Card id="bcba-perf" className="p-4 md:p-5 scroll-mt-4">
-              <SectionHeader icon={UserCog} title="BCBA performance ranking" subtitle="Hours, percentile, and warning indicators" />
+              <div className="flex items-start justify-between gap-3">
+                <SectionHeader icon={UserCog} title="BCBA performance ranking" subtitle="Hover to highlight · click for drill-down · arrow opens in dashboard" />
+                <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px]">
+                  <Link to={v2Link()}><ExternalLink className="h-3 w-3" /> Open in V2</Link>
+                </Button>
+              </div>
               <div className="mt-4 space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
                 {bcbaPerformance.slice(0, 20).map((b) => {
                   const max = bcbaPerformance[0]?.hours || 1;
                   const w = (b.hours / max) * 100;
+                  const isHover = hovered?.type === "bcba" && hovered.name === b.name;
+                  const dim = hovered?.type === "bcba" && hovered.name !== b.name;
                   return (
-                    <div key={b.name} className="rounded-lg border border-border/40 bg-card/60 px-3 py-2.5 hover:border-primary/30 transition-colors">
+                    <div
+                      key={b.name}
+                      onMouseEnter={() => setHovered({ type: "bcba", name: b.name })}
+                      onMouseLeave={() => setHovered(null)}
+                      onClick={() => setDrill({ type: "bcba", name: b.name })}
+                      className={cn(
+                        "group cursor-pointer rounded-lg border bg-card/60 px-3 py-2.5 transition-all",
+                        isHover ? "border-primary/60 bg-muted/60 shadow-sm" : "border-border/40 hover:border-primary/30",
+                        dim && "opacity-40",
+                      )}
+                    >
                       <div className="flex items-center justify-between text-xs gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[10px] font-mono text-muted-foreground w-6">#{b.rank}</span>
@@ -745,6 +827,13 @@ export default function CeoDashboardV2Insights() {
                           <span className="text-muted-foreground">{b.clients}c · {b.rbts}r</span>
                           <span className="font-semibold">{b.hours.toFixed(0)}h</span>
                           <span className="text-muted-foreground">P{b.percentile}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openInV2({ bcba: b.name, drawer: b.name }); }}
+                            title="Open BCBA detail in V2 Dashboard"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-5 w-5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
                       <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -837,9 +926,20 @@ export default function CeoDashboardV2Insights() {
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={120} />
                     <RTooltip contentStyle={tooltipStyle} />
                     <ReferenceLine x={rbtLoad[0]?.avg ?? 0} stroke="hsl(var(--accent))" strokeDasharray="4 3" label={{ value: "avg", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                    <Bar dataKey="rbts" radius={[0, 6, 6, 0]}>
+                    <Bar
+                      dataKey="rbts"
+                      radius={[0, 6, 6, 0]}
+                      cursor="pointer"
+                      onClick={(d: any) => d?.name && setDrill({ type: "bcba", name: d.name })}
+                    >
                       {rbtLoad.slice(0, 15).map((r, i) => (
-                        <Cell key={i} fill={r.overloaded ? "hsl(var(--destructive))" : r.underutilized ? "hsl(var(--warning, var(--accent)))" : "hsl(var(--primary))"} />
+                        <Cell
+                          key={i}
+                          fill={r.overloaded ? "hsl(var(--destructive))" : r.underutilized ? "hsl(var(--warning, var(--accent)))" : "hsl(var(--primary))"}
+                          opacity={hovered?.type === "bcba" ? (hovered.name === r.name ? 1 : 0.3) : 1}
+                          onMouseEnter={() => setHovered({ type: "bcba", name: r.name })}
+                          onMouseLeave={() => setHovered(null)}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -864,8 +964,27 @@ export default function CeoDashboardV2Insights() {
                   </thead>
                   <tbody>
                     {stateData.map((s) => (
-                      <tr key={s.state} className="border-b border-border/30 hover:bg-muted/40 transition-colors">
-                        <td className="py-2 px-2 font-medium">{s.state}</td>
+                      <tr
+                        key={s.state}
+                        onMouseEnter={() => setHovered({ type: "state", name: s.state })}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => setDrill({ type: "state", name: s.state })}
+                        className={cn(
+                          "border-b border-border/30 cursor-pointer transition-colors",
+                          hovered?.type === "state" && hovered.name === s.state ? "bg-muted/60"
+                            : hovered?.type === "state" ? "opacity-40"
+                            : "hover:bg-muted/40",
+                        )}
+                      >
+                        <td className="py-2 px-2 font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {s.state}
+                            <ExternalLink
+                              className="h-3 w-3 text-muted-foreground/50 hover:text-primary"
+                              onClick={(e) => { e.stopPropagation(); openInV2({ state: s.state }); }}
+                            />
+                          </span>
+                        </td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.hours.toFixed(0)}h</td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.sessions}</td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.clients}</td>
@@ -888,7 +1007,23 @@ export default function CeoDashboardV2Insights() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={codeDistribution} dataKey="hours" nameKey="code" innerRadius={48} outerRadius={78} paddingAngle={2}>
-                      {codeDistribution.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+                      {codeDistribution.map((c, i) => {
+                        const isHover = hovered?.type === "code" && hovered.name === c.code;
+                        const dim = hovered?.type === "code" && hovered.name !== c.code;
+                        return (
+                          <Cell
+                            key={i}
+                            fill={PALETTE[i % PALETTE.length]}
+                            opacity={dim ? 0.25 : 1}
+                            stroke={isHover ? "hsl(var(--foreground))" : "transparent"}
+                            strokeWidth={isHover ? 2 : 0}
+                            cursor="pointer"
+                            onMouseEnter={() => setHovered({ type: "code", name: c.code })}
+                            onMouseLeave={() => setHovered(null)}
+                            onClick={() => setDrill({ type: "code", name: c.code })}
+                          />
+                        );
+                      })}
                     </Pie>
                     <RTooltip contentStyle={tooltipStyle} />
                   </PieChart>
@@ -896,7 +1031,19 @@ export default function CeoDashboardV2Insights() {
               </div>
               <div className="space-y-1.5 mt-2">
                 {codeDistribution.map((c, i) => (
-                  <div key={c.code} className="flex items-center justify-between text-xs">
+                  <button
+                    key={c.code}
+                    onMouseEnter={() => setHovered({ type: "code", name: c.code })}
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={() => setDrill({ type: "code", name: c.code })}
+                    className={cn(
+                      "group w-full flex items-center justify-between text-xs rounded-md px-1.5 py-1 transition-all",
+                      hovered?.type === "code" && hovered.name === c.code
+                        ? "bg-muted/70"
+                        : hovered?.type === "code" && "opacity-40",
+                      "hover:bg-muted/60",
+                    )}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PALETTE[i % PALETTE.length] }} />
                       <span className="font-mono">{c.code}</span>
@@ -905,8 +1052,12 @@ export default function CeoDashboardV2Insights() {
                       <span className="text-muted-foreground">{c.pct.toFixed(1)}%</span>
                       <span className="font-medium">{c.hours.toFixed(0)}h</span>
                       <span className="text-[10px] text-muted-foreground">~${(c.revenue / 1000).toFixed(1)}k</span>
+                      <ExternalLink
+                        className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); openInV2({ code: c.code }); }}
+                      />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </Card>
@@ -975,6 +1126,14 @@ export default function CeoDashboardV2Insights() {
         </div>
         </div>
       )}
+
+      {/* DRILL-DOWN MODAL */}
+      <DrillDialog
+        drill={drill}
+        onClose={() => setDrill(null)}
+        sessions={filtered}
+        onOpenInV2={(extra) => { setDrill(null); openInV2(extra); }}
+      />
     </div>
   );
 }
@@ -1182,6 +1341,128 @@ function RiskCard({ severity, title, detail, action }: { severity: "high" | "med
         <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
         <span className="text-foreground/80">{action}</span>
       </div>
+    </div>
+  );
+}
+
+/* ======================== DRILL DIALOG ======================== */
+
+function DrillDialog({
+  drill, onClose, sessions, onOpenInV2,
+}: {
+  drill: { type: "bcba" | "code" | "state" | "all"; name: string } | null;
+  onClose: () => void;
+  sessions: Session[];
+  onOpenInV2: (extra: { bcba?: string; code?: string; state?: string; drawer?: string }) => void;
+}) {
+  const matched = useMemo(() => {
+    if (!drill) return [] as Session[];
+    return sessions.filter((s) => {
+      if (drill.type === "bcba") return (s.bcba_name ?? UNASSIGNED) === drill.name;
+      if (drill.type === "code") return normalizeCode(s.procedure_code) === drill.name;
+      if (drill.type === "state") return (extractState(s.raw_labels) ?? "Unknown") === drill.name;
+      return true;
+    });
+  }, [drill, sessions]);
+
+  const totals = useMemo(() => {
+    let h = 0; const clients = new Set<string>(); const rbts = new Set<string>(); const codes = new Set<string>();
+    for (const s of matched) {
+      h += Number(s.hours) || 0;
+      if (s.client_full) clients.add(s.client_full);
+      if (s.provider_full) rbts.add(s.provider_full);
+      codes.add(normalizeCode(s.procedure_code));
+    }
+    return { hours: h, sessions: matched.length, clients: clients.size, rbts: rbts.size, codes: codes.size };
+  }, [matched]);
+
+  const open = !!drill;
+  const title =
+    !drill ? "" :
+    drill.type === "bcba" ? `BCBA · ${drill.name}` :
+    drill.type === "code" ? `Code · ${drill.name}` :
+    drill.type === "state" ? `Region · ${drill.name}` : "All sessions";
+
+  const v2Extra = !drill ? {} :
+    drill.type === "bcba" ? { bcba: drill.name, drawer: drill.name } :
+    drill.type === "code" ? { code: drill.name } :
+    drill.type === "state" ? { state: drill.name } : {};
+
+  const sorted = useMemo(
+    () => [...matched].sort((a, b) => (b.date_of_service ?? "").localeCompare(a.date_of_service ?? "")).slice(0, 200),
+    [matched]
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogHeader className="border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="truncate">{title}</DialogTitle>
+              <DialogDescription className="text-[11px]">
+                Underlying sessions in the current filter window
+              </DialogDescription>
+            </div>
+            {drill && (
+              <Button size="sm" variant="default" className="h-8 gap-1.5 shrink-0" onClick={() => onOpenInV2(v2Extra)}>
+                <ExternalLink className="h-3.5 w-3.5" /> Open in V2 Dashboard
+              </Button>
+            )}
+          </div>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <DrillStat label="Hours" value={totals.hours.toFixed(1)} />
+            <DrillStat label="Sessions" value={totals.sessions.toLocaleString()} />
+            <DrillStat label="Clients" value={totals.clients.toString()} />
+            <DrillStat label="RBTs" value={totals.rbts.toString()} />
+            <DrillStat label="Codes" value={totals.codes.toString()} />
+          </div>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-y-auto px-5 py-3">
+          {sorted.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">No sessions match.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-background">
+                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+                  <th className="text-left py-2">Date</th>
+                  <th className="text-left py-2">Client</th>
+                  <th className="text-left py-2">BCBA</th>
+                  <th className="text-left py-2">RBT</th>
+                  <th className="text-left py-2">Code</th>
+                  <th className="text-right py-2">Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((s) => (
+                  <tr key={s.id} className="border-b border-border/30 hover:bg-muted/40">
+                    <td className="py-1.5 tabular-nums text-muted-foreground">{s.date_of_service ?? "—"}</td>
+                    <td className="py-1.5 truncate max-w-[160px]">{s.client_full}</td>
+                    <td className={cn("py-1.5 truncate max-w-[140px]", !s.bcba_name && "italic text-muted-foreground")}>{s.bcba_name ?? "Unassigned"}</td>
+                    <td className="py-1.5 truncate max-w-[140px] text-muted-foreground">{s.provider_full}</td>
+                    <td className="py-1.5 font-mono text-[10px]">{normalizeCode(s.procedure_code)}</td>
+                    <td className="py-1.5 text-right tabular-nums">{Number(s.hours).toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {matched.length > sorted.length && (
+            <div className="text-[10px] text-muted-foreground text-center pt-2">
+              Showing {sorted.length} of {matched.length.toLocaleString()} matching sessions
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DrillStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
