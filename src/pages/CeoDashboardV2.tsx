@@ -138,6 +138,8 @@ export default function CeoDashboardV2() {
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
+  const [detailSearch, setDetailSearch] = useState<string>("");
+  const [detailTab, setDetailTab] = useState<string>("overview");
   const [showUnassigned, setShowUnassigned] = useState<boolean>(persisted?.showUnassigned ?? false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -222,6 +224,9 @@ export default function CeoDashboardV2() {
 
   useEffect(() => { loadActive(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   useEffect(() => { loadActive({ window: windowKey }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [windowKey]);
+
+  // Reset drawer-local UI state when switching BCBAs
+  useEffect(() => { setDetailSearch(""); setDetailTab("overview"); }, [detailBcba]);
 
   async function handleFile(file: File) {
     setUploading(true);
