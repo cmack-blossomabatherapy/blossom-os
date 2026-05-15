@@ -18,7 +18,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Session {
