@@ -953,8 +953,27 @@ export default function CeoDashboardV2Insights() {
                   </thead>
                   <tbody>
                     {stateData.map((s) => (
-                      <tr key={s.state} className="border-b border-border/30 hover:bg-muted/40 transition-colors">
-                        <td className="py-2 px-2 font-medium">{s.state}</td>
+                      <tr
+                        key={s.state}
+                        onMouseEnter={() => setHovered({ type: "state", name: s.state })}
+                        onMouseLeave={() => setHovered(null)}
+                        onClick={() => setDrill({ type: "state", name: s.state })}
+                        className={cn(
+                          "border-b border-border/30 cursor-pointer transition-colors",
+                          hovered?.type === "state" && hovered.name === s.state ? "bg-muted/60"
+                            : hovered?.type === "state" ? "opacity-40"
+                            : "hover:bg-muted/40",
+                        )}
+                      >
+                        <td className="py-2 px-2 font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {s.state}
+                            <ExternalLink
+                              className="h-3 w-3 text-muted-foreground/50 hover:text-primary"
+                              onClick={(e) => { e.stopPropagation(); openInV2({ state: s.state }); }}
+                            />
+                          </span>
+                        </td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.hours.toFixed(0)}h</td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.sessions}</td>
                         <td className="py-2 px-2 text-right tabular-nums">{s.clients}</td>
