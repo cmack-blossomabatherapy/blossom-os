@@ -1130,6 +1130,77 @@ function FilterField({ label, children }: { label: string; children: React.React
   );
 }
 
+function MultiPillSelect({
+  options, selected, onChange, allLabel, searchable = false,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  allLabel: string;
+  searchable?: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const norm = q.trim().toLowerCase();
+  const visible = norm ? options.filter((o) => o.toLowerCase().includes(norm)) : options;
+  const toggle = (v: string) => {
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className={cn(
+            "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+            selected.length === 0
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card text-foreground hover:border-primary/40",
+          )}
+        >
+          {allLabel}
+        </button>
+        {selected.length > 0 && (
+          <span className="text-[11px] text-muted-foreground">{selected.length} selected</span>
+        )}
+      </div>
+      {searchable && options.length > 8 && (
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search…"
+          className="h-9 text-xs"
+        />
+      )}
+      <div className="max-h-56 overflow-y-auto rounded-xl border border-border/60 bg-card/40 p-2">
+        <div className="flex flex-wrap gap-1.5">
+          {visible.map((o) => {
+            const active = selected.includes(o);
+            return (
+              <button
+                key={o}
+                type="button"
+                onClick={() => toggle(o)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/40",
+                )}
+              >
+                {o}
+              </button>
+            );
+          })}
+          {visible.length === 0 && (
+            <span className="px-1 py-1 text-[11px] text-muted-foreground">No matches</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CollapsibleAlert({
   open, onOpenChange, title, subtitle, metric, meta, children,
 }: {
