@@ -241,15 +241,27 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [mobileNavQuery, setMobileNavQuery] = useState("");
   // Admin roles see the Admin + Operations groups; everyone sees the Academy group.
   const showAdmin = canAccessAdminHub(user, roles);
-  const showOperations = roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
+  // Executives get a curated menu: Academy + Admin + only the BCBA Performance
+  // dashboard. They do NOT see the legacy Operations/HR/Enterprise groups.
+  const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
+  const showOperations = !isExecOnly && roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
   void academyComplete;
 
+  // Trimmed Dashboards group shown to Executive: only BCBA Performance.
+  const execDashboardsSection: NavSection = {
+    title: "Dashboards",
+    items: [
+      { label: "BCBA Performance", icon: BarChart3, path: "/ceo-dashboard-v2", perm: "" },
+    ],
+  };
+
   const allSections: NavSection[] = [
     ...academySections,
     ...(showAdmin ? adminSections : []),
+    ...(isExecOnly ? [execDashboardsSection] : []),
     ...(showOperations ? operationsSections : []),
     ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
   ];
