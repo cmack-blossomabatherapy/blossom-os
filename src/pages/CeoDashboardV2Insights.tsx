@@ -646,7 +646,39 @@ export default function CeoDashboardV2Insights() {
           </Card>
         </div>
       ) : (
-        <div className="px-4 pt-5 md:px-8 grid gap-4 lg:grid-cols-3">
+        <div className="px-4 pt-5 md:px-8 space-y-4">
+          {/* EXECUTIVE INTELLIGENCE WIDGETS */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <MoverWidget
+              tone="positive"
+              icon={TrendingUp}
+              title="Improving"
+              subtitle="Period-over-period gains"
+              empty="No upward movers yet."
+              groups={[
+                { label: "BCBAs", anchor: "bcba-perf", target: "bcba", rows: movers.bcbaUp },
+                { label: "Codes", anchor: "code-mix", target: "code", rows: movers.codeUp },
+                { label: "States", anchor: "state-perf", target: "state", rows: movers.stateUp },
+              ]}
+              onDrill={drillTo}
+            />
+            <MoverWidget
+              tone="negative"
+              icon={TrendingDown}
+              title="Declining"
+              subtitle="Largest period-over-period drops"
+              empty="Nothing declining — momentum is strong."
+              groups={[
+                { label: "BCBAs", anchor: "bcba-perf", target: "bcba", rows: movers.bcbaDown },
+                { label: "Codes", anchor: "code-mix", target: "code", rows: movers.codeDown },
+                { label: "States", anchor: "state-perf", target: "state", rows: movers.stateDown },
+              ]}
+              onDrill={drillTo}
+            />
+            <RiskWidget risks={risks} />
+          </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
           {/* MAIN COLUMN */}
           <div className="space-y-4 lg:col-span-2">
             {/* AI INSIGHT CARDS */}
@@ -694,7 +726,7 @@ export default function CeoDashboardV2Insights() {
             </Card>
 
             {/* GRAPH 2 — BCBA PERFORMANCE */}
-            <Card className="p-4 md:p-5">
+            <Card id="bcba-perf" className="p-4 md:p-5 scroll-mt-4">
               <SectionHeader icon={UserCog} title="BCBA performance ranking" subtitle="Hours, percentile, and warning indicators" />
               <div className="mt-4 space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
                 {bcbaPerformance.slice(0, 20).map((b) => {
@@ -816,7 +848,7 @@ export default function CeoDashboardV2Insights() {
             </Card>
 
             {/* GRAPH 7 — STATE */}
-            <Card className="p-4 md:p-5">
+            <Card id="state-perf" className="p-4 md:p-5 scroll-mt-4">
               <SectionHeader icon={MapPin} title="State / location performance" subtitle="Hours, sessions, and staffing by region" />
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-xs">
@@ -850,7 +882,7 @@ export default function CeoDashboardV2Insights() {
           {/* RIGHT RAIL */}
           <div className="space-y-4">
             {/* GRAPH 3 — DONUT */}
-            <Card className="p-4 md:p-5">
+            <Card id="code-mix" className="p-4 md:p-5 scroll-mt-4">
               <SectionHeader icon={FileBarChart} title="Billing code mix" subtitle="Hours & est. revenue weight" />
               <div className="mt-3 h-52">
                 <ResponsiveContainer width="100%" height="100%">
