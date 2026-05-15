@@ -366,8 +366,42 @@ export default function CeoDashboardV2RevenueLeaks() {
               {allPayors.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-1 ml-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">Range</span>
+            {LEAK_WINDOW_ORDER.map((w) => (
+              <button
+                key={w}
+                onClick={() => setWindowKey(w)}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
+                  windowKey === w
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >{LEAK_WINDOW_LABELS[w]}</button>
+            ))}
+          </div>
+          {windowKey === "custom" && (
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8 w-[140px] text-xs"
+                aria-label="Custom range from"
+              />
+              <span className="text-[10px] text-muted-foreground">to</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-8 w-[140px] text-xs"
+                aria-label="Custom range to"
+              />
+            </div>
+          )}
           <span className="ml-auto text-[11px] text-muted-foreground">
-            {auths.length.toLocaleString()} auths · {sessions.length.toLocaleString()} sessions (last 90d)
+            {auths.length.toLocaleString()} auths · {sessions.length.toLocaleString()} sessions ({LEAK_WINDOW_LABELS[windowKey].toLowerCase()})
           </span>
         </Card>
       </div>
