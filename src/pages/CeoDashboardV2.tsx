@@ -626,33 +626,14 @@ export default function CeoDashboardV2() {
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 space-y-5 overflow-y-auto border-t border-border/60 px-5 py-5">
-                <FilterField label="Billing code">
-                  <Select value={codeFilter} onValueChange={setCodeFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All codes</SelectItem>
-                      {allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`Billing codes${codeFilter.length ? ` · ${codeFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={allCodes} selected={codeFilter} onChange={setCodeFilter} allLabel="All codes" />
                 </FilterField>
-                <FilterField label="State / location">
-                  <Select value={stateFilter} onValueChange={setStateFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All states</SelectItem>
-                      {allStates.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      <SelectItem value="Unknown">Unknown / no location</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`State / location${stateFilter.length ? ` · ${stateFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={Array.from(new Set([...allStates, "Unknown"]))} selected={stateFilter} onChange={setStateFilter} allLabel="All states" />
                 </FilterField>
-                <FilterField label="BCBA">
-                  <Select value={bcbaFilter} onValueChange={setBcbaFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All BCBAs</SelectItem>
-                      {allBcbas.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`BCBAs${bcbaFilter.length ? ` · ${bcbaFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={allBcbas} selected={bcbaFilter} onChange={setBcbaFilter} allLabel="All BCBAs" searchable />
                 </FilterField>
                 <FilterField label="Date range">
                   <div className="grid grid-cols-2 gap-3">
@@ -719,9 +700,15 @@ export default function CeoDashboardV2() {
         {(activeFilterCount > 0 || search) && (
           <div className="flex flex-wrap gap-1.5">
             {search && <FilterChip label={`"${search}"`} onClear={() => setSearch("")} />}
-            {codeFilter !== "all" && <FilterChip label={`Code: ${codeFilter}`} onClear={() => setCodeFilter("all")} />}
-            {stateFilter !== "all" && <FilterChip label={`State: ${stateFilter}`} onClear={() => setStateFilter("all")} />}
-            {bcbaFilter !== "all" && <FilterChip label={`BCBA: ${bcbaFilter}`} onClear={() => setBcbaFilter("all")} />}
+            {codeFilter.map((v) => (
+              <FilterChip key={`c-${v}`} label={`Code: ${v}`} onClear={() => setCodeFilter(codeFilter.filter((x) => x !== v))} />
+            ))}
+            {stateFilter.map((v) => (
+              <FilterChip key={`s-${v}`} label={`State: ${v}`} onClear={() => setStateFilter(stateFilter.filter((x) => x !== v))} />
+            ))}
+            {bcbaFilter.map((v) => (
+              <FilterChip key={`b-${v}`} label={`BCBA: ${v}`} onClear={() => setBcbaFilter(bcbaFilter.filter((x) => x !== v))} />
+            ))}
             {dateFrom && <FilterChip label={`From: ${dateFrom}`} onClear={() => setDateFrom("")} />}
             {dateTo && <FilterChip label={`To: ${dateTo}`} onClear={() => setDateTo("")} />}
             {activeFilterCount + (search ? 1 : 0) > 1 && (
