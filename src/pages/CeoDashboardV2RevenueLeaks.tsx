@@ -260,6 +260,35 @@ export default function CeoDashboardV2RevenueLeaks() {
   // Aggregate revenue at risk across all three categories.
   const totalLeak = delays.totalValue + expiring.valueExpired + expiring.value30 + bottlenecks.unassignedRev;
 
+  // -------------------- DRILL-DOWN --------------------
+  // The drill modal opens an in-page list of the underlying records for a
+  // given bucket, with a deep-link back into the source dashboard
+  // (Authorizations or V2) that matches the same filter.
+  type DrillState =
+    | { kind: "delays"; severity: Severity }
+    | { kind: "expiring"; bucket: "expired" | "30" | "60" }
+    | { kind: "bcba"; bcba: { name: string; hours: number; clients: number; rbts: number; revenue: number; shareOfHours: number }; reason: "concentration" | "overloaded" }
+    | { kind: "unassigned" }
+    | null;
+  const [drill, setDrill] = useState<DrillState>(null);
+  const navigate = useNavigate();
+
+  // Build a deep-link URL into the existing Authorizations Dashboard.
+  // It already supports ?kpi=<KpiFilter> via useDeepLink.
+  function authsUrl(kpi: string, focus?: string) {
+    const p = new URLSearchParams({ kpi });
+    if (focus) p.set("focus", focus);
+    return `/authorizations-dashboard?${p.toString()}`;
+  }
+  // Deep-link into V2 dashboard; we already wired ?bcba=&drawer= there.
+  function v2Url(opts: { bcba?: string; drawer?: string } = {}) {
+    const p = new URLSearchParams();
+    if (opts.bcba) p.set("bcba", opts.bcba);
+    if (opts.drawer) p.set("drawer", opts.drawer);
+    const qs = p.toString();
+    return `/ceo-dashboard-v2${qs ? `?${qs}` : ""}`;
+  }
+
   // -------------------- RENDER --------------------
   if (loading) {
     return (
