@@ -1469,3 +1469,94 @@ function DrillStat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function MultiSelectPopover({
+  label, allLabel, options, selected, onChange, searchable = false, width = "w-44",
+}: {
+  label: string;
+  allLabel: string;
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  searchable?: boolean;
+  width?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const norm = q.trim().toLowerCase();
+  const visible = norm ? options.filter((o) => o.toLowerCase().includes(norm)) : options;
+  const toggle = (v: string) =>
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  const triggerLabel =
+    selected.length === 0 ? allLabel
+    : selected.length === 1 ? selected[0]
+    : `${selected.length} ${label.toLowerCase()}`;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("h-8 justify-between gap-1.5 text-xs font-normal", width)}
+        >
+          <span className="truncate">{triggerLabel}</span>
+          {selected.length > 0 ? (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); onChange([]); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onChange([]); } }}
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={`Clear ${label}`}
+            >
+              <X className="h-3 w-3" />
+            </span>
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-0">
+        <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              Clear ({selected.length})
+            </button>
+          )}
+        </div>
+        {searchable && options.length > 8 && (
+          <div className="border-b border-border/60 p-2">
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="h-8 text-xs" />
+          </div>
+        )}
+        <div className="max-h-64 overflow-y-auto py-1">
+          {visible.map((o) => {
+            const active = selected.includes(o);
+            return (
+              <button
+                key={o}
+                type="button"
+                onClick={() => toggle(o)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-muted/60",
+                  active && "bg-primary/5",
+                )}
+              >
+                <span className="truncate">{o}</span>
+                {active && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+              </button>
+            );
+          })}
+          {visible.length === 0 && (
+            <div className="px-3 py-3 text-center text-[11px] text-muted-foreground">No matches</div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
