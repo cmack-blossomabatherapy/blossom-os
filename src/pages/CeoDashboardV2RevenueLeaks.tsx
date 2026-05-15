@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,11 +10,14 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
 import {
   ArrowLeft, AlertTriangle, Clock, CalendarClock, UserCog, DollarSign,
-  TrendingDown, ShieldAlert, ChevronRight, FileWarning, Users,
+  TrendingDown, ShieldAlert, ChevronRight, FileWarning, Users, ExternalLink, Eye,
 } from "lucide-react";
 import { differenceInDays, format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -257,6 +260,35 @@ export default function CeoDashboardV2RevenueLeaks() {
   // Aggregate revenue at risk across all three categories.
   const totalLeak = delays.totalValue + expiring.valueExpired + expiring.value30 + bottlenecks.unassignedRev;
 
+  // -------------------- DRILL-DOWN --------------------
+  // The drill modal opens an in-page list of the underlying records for a
+  // given bucket, with a deep-link back into the source dashboard
+  // (Authorizations or V2) that matches the same filter.
+  type DrillState =
+    | { kind: "delays"; severity: Severity }
+    | { kind: "expiring"; bucket: "expired" | "30" | "60" }
+    | { kind: "bcba"; bcba: { name: string; hours: number; clients: number; rbts: number; revenue: number; shareOfHours: number }; reason: "concentration" | "overloaded" }
+    | { kind: "unassigned" }
+    | null;
+  const [drill, setDrill] = useState<DrillState>(null);
+  const navigate = useNavigate();
+
+  // Build a deep-link URL into the existing Authorizations Dashboard.
+  // It already supports ?kpi=<KpiFilter> via useDeepLink.
+  function authsUrl(kpi: string, focus?: string) {
+    const p = new URLSearchParams({ kpi });
+    if (focus) p.set("focus", focus);
+    return `/authorizations-dashboard?${p.toString()}`;
+  }
+  // Deep-link into V2 dashboard; we already wired ?bcba=&drawer= there.
+  function v2Url(opts: { bcba?: string; drawer?: string } = {}) {
+    const p = new URLSearchParams();
+    if (opts.bcba) p.set("bcba", opts.bcba);
+    if (opts.drawer) p.set("drawer", opts.drawer);
+    const qs = p.toString();
+    return `/ceo-dashboard-v2${qs ? `?${qs}` : ""}`;
+  }
+
   // -------------------- RENDER --------------------
   if (loading) {
     return (
@@ -330,6 +362,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${delays.byBucket.high} critical (30+ days) · ${delays.byBucket.medium} aging (14–29 days)`}
           value={fmtMoney(delays.totalValue)}
           valueLabel="value at risk"
+          onClick={() => setDrill({ kind: "delays", severity: delays.byBucket.high > 0 ? "high" : delays.byBucket.medium > 0 ? "medium" : "low" })}
         />
         <LeakCard
           icon={CalendarClock}
@@ -339,6 +372,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${expiring.expired.length} expired · ${expiring.within30.length} within 30 days · ${expiring.within60.length} within 60`}
           value={fmtMoney(expiring.valueExpired + expiring.value30)}
           valueLabel="immediate exposure"
+          onClick={() => setDrill({ kind: "expiring", bucket: expiring.expired.length > 0 ? "expired" : expiring.within30.length > 0 ? "30" : "60" })}
         />
         <LeakCard
           icon={UserCog}
@@ -348,6 +382,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${bottlenecks.concentration.length} concentration · ${bottlenecks.overloaded.length} overloaded · ${bottlenecks.unassignedHours.toFixed(0)}h unassigned`}
           value={fmtMoney(bottlenecks.unassignedRev)}
           valueLabel="unattributed revenue"
+          onClick={() => bottlenecks.unassignedHours > 0 ? setDrill({ kind: "unassigned" }) : navigate(v2Url())}
         />
       </div>
 
@@ -355,13 +390,18 @@ export default function CeoDashboardV2RevenueLeaks() {
       <div className="px-4 pt-5 md:px-8 space-y-4">
         {/* SECTION 1 — AUTH DELAYS */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={Clock}
-            title="Authorization delays"
-            subtitle="Submitted but not yet approved · sorted by days outstanding"
-            badge={delays.count > 0 ? `${delays.count} open` : undefined}
-            tone={delays.byBucket.high > 0 ? "negative" : delays.byBucket.medium > 0 ? "warning" : "neutral"}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={Clock}
+              title="Authorization delays"
+              subtitle="Submitted but not yet approved · sorted by days outstanding"
+              badge={delays.count > 0 ? `${delays.count} open` : undefined}
+              tone={delays.byBucket.high > 0 ? "negative" : delays.byBucket.medium > 0 ? "warning" : "neutral"}
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={authsUrl("submitted")}><ExternalLink className="h-3 w-3" /> Open in Authorizations</Link>
+            </Button>
+          </div>
           {delays.rows.length === 0 ? (
             <EmptyState
               icon={Clock}
@@ -376,24 +416,40 @@ export default function CeoDashboardV2RevenueLeaks() {
               {(["high", "medium", "low"] as Severity[]).map((sev) => {
                 const items = delays.rows.filter((d) => d.severity === sev);
                 if (items.length === 0) return null;
+                const bucketKpi = sev === "high" ? "submitted" : "awaiting";
                 return (
                   <AccordionItem key={sev} value={sev} className="border-border/60">
                     <AccordionTrigger className="hover:no-underline py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                         <SevDot sev={sev} />
                         <span className="text-sm font-medium capitalize">{sev}</span>
                         <span className="text-xs text-muted-foreground">
                           ({items.length} · {fmtMoney(items.reduce((s, x) => s + x.valueAtRisk, 0))} at risk)
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDrill({ kind: "delays", severity: sev }); }}
+                          className="ml-auto mr-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground/60 hover:text-primary hover:bg-primary/5"
+                        >
+                          <Eye className="h-3 w-3" /> Drill
+                        </button>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-1.5">
                         {items.slice(0, 25).map((d) => (
-                          <DelayRow key={d.auth.id} d={d} />
+                          <DelayRow
+                            key={d.auth.id}
+                            d={d}
+                            onOpen={() => navigate(authsUrl(bucketKpi, d.auth.id))}
+                          />
                         ))}
                         {items.length > 25 && (
-                          <div className="text-[11px] text-muted-foreground pt-1.5 pl-2">+ {items.length - 25} more…</div>
+                          <button
+                            onClick={() => setDrill({ kind: "delays", severity: sev })}
+                            className="block w-full text-left text-[11px] text-primary hover:underline pt-1.5 pl-2"
+                          >
+                            + {items.length - 25} more — view all in drill modal
+                          </button>
                         )}
                       </div>
                     </AccordionContent>
@@ -406,13 +462,18 @@ export default function CeoDashboardV2RevenueLeaks() {
 
         {/* SECTION 2 — EXPIRING */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={CalendarClock}
-            title="Expiring authorizations"
-            subtitle="Auths expiring in the next 60 days · re-auth needed to protect revenue"
-            badge={expiring.total > 0 ? `${expiring.total} flagged` : undefined}
-            tone={expiring.expired.length > 0 ? "negative" : expiring.within30.length > 0 ? "warning" : "neutral"}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={CalendarClock}
+              title="Expiring authorizations"
+              subtitle="Auths expiring in the next 60 days · re-auth needed to protect revenue"
+              badge={expiring.total > 0 ? `${expiring.total} flagged` : undefined}
+              tone={expiring.expired.length > 0 ? "negative" : expiring.within30.length > 0 ? "warning" : "neutral"}
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={authsUrl("expiring")}><ExternalLink className="h-3 w-3" /> Open in Authorizations</Link>
+            </Button>
+          </div>
           {expiring.total === 0 ? (
             <EmptyState
               icon={CalendarClock}
@@ -420,28 +481,48 @@ export default function CeoDashboardV2RevenueLeaks() {
             />
           ) : (
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <ExpiringBucket label="Already expired" tone="negative" rows={expiring.expired} value={expiring.valueExpired} />
-              <ExpiringBucket label="Within 30 days" tone="warning" rows={expiring.within30} value={expiring.value30} />
-              <ExpiringBucket label="30 – 60 days" tone="neutral" rows={expiring.within60} value={expiring.value60} />
+              <ExpiringBucket
+                label="Already expired" tone="negative"
+                rows={expiring.expired} value={expiring.valueExpired}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "expired" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
+              <ExpiringBucket
+                label="Within 30 days" tone="warning"
+                rows={expiring.within30} value={expiring.value30}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "30" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
+              <ExpiringBucket
+                label="30 – 60 days" tone="neutral"
+                rows={expiring.within60} value={expiring.value60}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "60" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
             </div>
           )}
         </Card>
 
         {/* SECTION 3 — CAPACITY BOTTLENECKS */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={UserCog}
-            title="BCBA capacity bottlenecks"
-            subtitle="Concentration, overload, and attribution risk based on the last 90 days"
-            badge={bottlenecks.bcbas.length > 0 ? `${bottlenecks.bcbas.length} BCBAs` : undefined}
-            tone={
-              bottlenecks.concentration.length > 0 || bottlenecks.unassignedHours > 50
-                ? "negative"
-                : bottlenecks.overloaded.length > 0
-                  ? "warning"
-                  : "neutral"
-            }
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={UserCog}
+              title="BCBA capacity bottlenecks"
+              subtitle="Concentration, overload, and attribution risk based on the last 90 days"
+              badge={bottlenecks.bcbas.length > 0 ? `${bottlenecks.bcbas.length} BCBAs` : undefined}
+              tone={
+                bottlenecks.concentration.length > 0 || bottlenecks.unassignedHours > 50
+                  ? "negative"
+                  : bottlenecks.overloaded.length > 0
+                    ? "warning"
+                    : "neutral"
+              }
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={v2Url()}><ExternalLink className="h-3 w-3" /> Open in V2 Dashboard</Link>
+            </Button>
+          </div>
 
           {/* Unassigned banner */}
           {bottlenecks.unassignedHours > 0 && (
@@ -454,6 +535,14 @@ export default function CeoDashboardV2RevenueLeaks() {
                 <div className="text-[11px] text-muted-foreground mt-0.5">
                   Tag the BCBA in Hubstaff/CR and re-upload in Replace mode to recover attribution.
                 </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => setDrill({ kind: "unassigned" })}>
+                  <Eye className="h-3 w-3" /> View sessions
+                </Button>
+                <Button asChild size="sm" variant="default" className="h-7 gap-1 text-[11px]">
+                  <Link to={v2Url({ bcba: "Unassigned BCBA" })}><ExternalLink className="h-3 w-3" /> Open in V2</Link>
+                </Button>
               </div>
             </div>
           )}
@@ -476,6 +565,8 @@ export default function CeoDashboardV2RevenueLeaks() {
                     primary={`${b.shareOfHours.toFixed(1)}% of all hours`}
                     secondary={`${b.hours.toFixed(0)}h · ${b.clients} clients · ${fmtMoney(b.revenue)}`}
                     sev="high"
+                    onDrill={() => setDrill({ kind: "bcba", bcba: b, reason: "concentration" })}
+                    onOpenV2={() => navigate(v2Url({ bcba: b.name, drawer: b.name }))}
                   />
                 ))}
               </div>
@@ -500,6 +591,8 @@ export default function CeoDashboardV2RevenueLeaks() {
                     primary={`${b.clients} clients`}
                     secondary={`${b.hours.toFixed(0)}h · ${b.rbts} RBTs · ${b.shareOfHours.toFixed(1)}% of hours`}
                     sev="medium"
+                    onDrill={() => setDrill({ kind: "bcba", bcba: b, reason: "overloaded" })}
+                    onOpenV2={() => navigate(v2Url({ bcba: b.name, drawer: b.name }))}
                   />
                 ))}
               </div>
@@ -525,6 +618,17 @@ export default function CeoDashboardV2RevenueLeaks() {
           )}
         </Card>
       </div>
+
+      {/* DRILL-DOWN MODAL */}
+      <LeakDrillDialog
+        drill={drill}
+        onClose={() => setDrill(null)}
+        delays={delays}
+        expiring={expiring}
+        sessions={sessions}
+        onOpenAuths={(kpi, focus) => { setDrill(null); navigate(authsUrl(kpi, focus)); }}
+        onOpenV2={(opts) => { setDrill(null); navigate(v2Url(opts)); }}
+      />
     </div>
   );
 }
@@ -532,17 +636,25 @@ export default function CeoDashboardV2RevenueLeaks() {
 // -------------------- SUBCOMPONENTS --------------------
 
 function LeakCard({
-  icon: Icon, tone, label, headline, sub, value, valueLabel,
+  icon: Icon, tone, label, headline, sub, value, valueLabel, onClick,
 }: {
   icon: any; tone: "warning" | "negative" | "neutral"; label: string;
   headline: string; sub: string; value: string; valueLabel: string;
+  onClick?: () => void;
 }) {
   const toneCls =
     tone === "negative" ? "text-destructive border-destructive/30 bg-destructive/5"
     : tone === "warning" ? "text-warning border-warning/30 bg-warning/5"
     : "text-muted-foreground border-border bg-card";
   return (
-    <Card className={cn("p-4 border", toneCls)}>
+    <Card
+      onClick={onClick}
+      className={cn(
+        "p-4 border transition-all",
+        toneCls,
+        onClick && "cursor-pointer hover:shadow-md hover:scale-[1.01]",
+      )}
+    >
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider">
           <Icon className="h-3.5 w-3.5" /> {label}
@@ -554,6 +666,11 @@ function LeakCard({
       </div>
       <div className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{headline}</div>
       <div className="mt-1 text-[11px] text-muted-foreground">{sub}</div>
+      {onClick && (
+        <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-foreground/70">
+          <Eye className="h-3 w-3" /> View underlying records
+        </div>
+      )}
     </Card>
   );
 }
@@ -605,10 +722,21 @@ function SevDot({ sev }: { sev: Severity }) {
   return <span className={cn("h-2 w-2 rounded-full", cls)} />;
 }
 
-function DelayRow({ d }: { d: { auth: Auth; days: number; severity: Severity; valueAtRisk: number } }) {
+function DelayRow({
+  d, onOpen,
+}: {
+  d: { auth: Auth; days: number; severity: Severity; valueAtRisk: number };
+  onOpen?: () => void;
+}) {
   const a = d.auth;
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2">
+    <div
+      onClick={onOpen}
+      className={cn(
+        "group flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2 transition-colors",
+        onOpen && "cursor-pointer hover:border-primary/40 hover:bg-card/80",
+      )}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm font-medium">
           <SevDot sev={d.severity} />
@@ -620,26 +748,40 @@ function DelayRow({ d }: { d: { auth: Auth; days: number; severity: Severity; va
           {a.next_action ? ` · ${a.next_action}` : ""}
         </div>
       </div>
-      <div className="text-right pl-3">
+      <div className="text-right pl-3 flex items-center gap-3">
+        <div>
         <div className="text-sm font-semibold tabular-nums">{d.days}d</div>
         <div className="text-[10px] text-muted-foreground">{fmtMoney(d.valueAtRisk)}</div>
+        </div>
+        {onOpen && (
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        )}
       </div>
     </div>
   );
 }
 
 function ExpiringBucket({
-  label, tone, rows, value,
+  label, tone, rows, value, onDrill, onOpenRow,
 }: {
   label: string; tone: "negative" | "warning" | "neutral";
   rows: { auth: Auth; days: number; expiration: Date }[]; value: number;
+  onDrill?: () => void;
+  onOpenRow?: (id: string) => void;
 }) {
   const toneCls =
     tone === "negative" ? "border-destructive/30 bg-destructive/5"
     : tone === "warning" ? "border-warning/30 bg-warning/5"
     : "border-border bg-card";
   return (
-    <Card className={cn("p-3 border", toneCls)}>
+    <Card
+      onClick={onDrill}
+      className={cn(
+        "p-3 border transition-all",
+        toneCls,
+        onDrill && rows.length > 0 && "cursor-pointer hover:shadow-md hover:scale-[1.005]",
+      )}
+    >
       <div className="flex items-baseline justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="text-sm font-semibold tabular-nums">{rows.length}</div>
@@ -648,15 +790,22 @@ function ExpiringBucket({
       {rows.length > 0 && (
         <div className="mt-2 space-y-1">
           {rows.slice(0, 5).map((r) => (
-            <div key={r.auth.id} className="flex items-center justify-between text-[11px]">
+            <button
+              key={r.auth.id}
+              onClick={(e) => { e.stopPropagation(); onOpenRow?.(r.auth.id); }}
+              className="group w-full flex items-center justify-between text-[11px] rounded px-1 py-0.5 hover:bg-card/60"
+            >
               <span className="truncate text-foreground">{r.auth.payor ?? "Unknown"} · {r.auth.service_type ?? "—"}</span>
-              <span className="tabular-nums text-muted-foreground pl-2">
+              <span className="tabular-nums text-muted-foreground pl-2 inline-flex items-center gap-1">
                 {r.days < 0 ? `${Math.abs(r.days)}d ago` : `${r.days}d`}
+                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </span>
-            </div>
+            </button>
           ))}
           {rows.length > 5 && (
-            <div className="text-[10px] text-muted-foreground pt-0.5">+ {rows.length - 5} more</div>
+            <div className="text-[10px] text-primary pt-0.5 inline-flex items-center gap-1">
+              <Eye className="h-3 w-3" /> + {rows.length - 5} more — click card to view all
+            </div>
           )}
         </div>
       )}
@@ -665,10 +814,19 @@ function ExpiringBucket({
 }
 
 function BottleneckRow({
-  name, primary, secondary, sev,
-}: { name: string; primary: string; secondary: string; sev: Severity }) {
+  name, primary, secondary, sev, onDrill, onOpenV2,
+}: {
+  name: string; primary: string; secondary: string; sev: Severity;
+  onDrill?: () => void; onOpenV2?: () => void;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2">
+    <div
+      onClick={onDrill}
+      className={cn(
+        "group flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2 transition-colors",
+        onDrill && "cursor-pointer hover:border-primary/40 hover:bg-card/80",
+      )}
+    >
       <div className="flex items-center gap-2 min-w-0">
         <SevDot sev={sev} />
         <div className="min-w-0">
@@ -676,7 +834,18 @@ function BottleneckRow({
           <div className="text-[11px] text-muted-foreground truncate">{secondary}</div>
         </div>
       </div>
-      <div className="text-sm font-semibold tabular-nums pl-3 whitespace-nowrap">{primary}</div>
+      <div className="flex items-center gap-2 pl-3 shrink-0">
+        <div className="text-sm font-semibold tabular-nums whitespace-nowrap">{primary}</div>
+        {onOpenV2 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenV2(); }}
+            title="Open BCBA in V2 Dashboard"
+            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-6 w-6 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -687,5 +856,170 @@ function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
       <Icon className="h-5 w-5 text-muted-foreground/60" />
       <p className="text-xs text-muted-foreground">{text}</p>
     </div>
+  );
+}
+
+// -------------------- DRILL DIALOG --------------------
+
+type LeakDrillState =
+  | { kind: "delays"; severity: Severity }
+  | { kind: "expiring"; bucket: "expired" | "30" | "60" }
+  | { kind: "bcba"; bcba: { name: string; hours: number; clients: number; rbts: number; revenue: number; shareOfHours: number }; reason: "concentration" | "overloaded" }
+  | { kind: "unassigned" }
+  | null;
+
+function LeakDrillDialog({
+  drill, onClose, delays, expiring, sessions, onOpenAuths, onOpenV2,
+}: {
+  drill: LeakDrillState;
+  onClose: () => void;
+  delays: { rows: { auth: Auth; days: number; severity: Severity; valueAtRisk: number }[] };
+  expiring: { expired: { auth: Auth; days: number }[]; within30: { auth: Auth; days: number }[]; within60: { auth: Auth; days: number }[] };
+  sessions: Session[];
+  onOpenAuths: (kpi: string, focus?: string) => void;
+  onOpenV2: (opts: { bcba?: string; drawer?: string }) => void;
+}) {
+  const open = !!drill;
+  let title = "";
+  let subtitle = "";
+  let body: React.ReactNode = null;
+  let action: React.ReactNode = null;
+
+  if (drill?.kind === "delays") {
+    const items = delays.rows.filter((d) => d.severity === drill.severity);
+    title = `Delayed authorizations · ${drill.severity}`;
+    subtitle = `${items.length} open · ${fmtMoney(items.reduce((s, x) => s + x.valueAtRisk, 0))} at risk`;
+    const kpi = drill.severity === "high" ? "submitted" : "awaiting";
+    action = (
+      <Button size="sm" onClick={() => onOpenAuths(kpi)} className="h-8 gap-1.5">
+        <ExternalLink className="h-3.5 w-3.5" /> Open in Authorizations
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Payor</th>
+            <th className="text-left py-2">Service</th>
+            <th className="text-left py-2">Submitted</th>
+            <th className="text-left py-2">Coordinator</th>
+            <th className="text-right py-2">Days</th>
+            <th className="text-right py-2">At risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((d) => (
+            <tr
+              key={d.auth.id}
+              onClick={() => onOpenAuths(kpi, d.auth.id)}
+              className="border-b border-border/30 hover:bg-muted/40 cursor-pointer"
+            >
+              <td className="py-1.5">{d.auth.payor ?? "—"}</td>
+              <td className="py-1.5">{d.auth.service_type ?? "—"}</td>
+              <td className="py-1.5 tabular-nums text-muted-foreground">{d.auth.submitted_date ?? "—"}</td>
+              <td className="py-1.5 truncate max-w-[140px]">{d.auth.assigned_auth_coordinator ?? "—"}</td>
+              <td className="py-1.5 text-right tabular-nums font-semibold">{d.days}d</td>
+              <td className="py-1.5 text-right tabular-nums">{fmtMoney(d.valueAtRisk)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  } else if (drill?.kind === "expiring") {
+    const rows = drill.bucket === "expired" ? expiring.expired : drill.bucket === "30" ? expiring.within30 : expiring.within60;
+    title = `Expiring · ${drill.bucket === "expired" ? "Already expired" : drill.bucket === "30" ? "Within 30 days" : "30 – 60 days"}`;
+    subtitle = `${rows.length} authorization${rows.length === 1 ? "" : "s"}`;
+    action = (
+      <Button size="sm" onClick={() => onOpenAuths("expiring")} className="h-8 gap-1.5">
+        <ExternalLink className="h-3.5 w-3.5" /> Open in Authorizations
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Payor</th>
+            <th className="text-left py-2">Service</th>
+            <th className="text-left py-2">Expiration</th>
+            <th className="text-right py-2">Days</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr
+              key={r.auth.id}
+              onClick={() => onOpenAuths("expiring", r.auth.id)}
+              className="border-b border-border/30 hover:bg-muted/40 cursor-pointer"
+            >
+              <td className="py-1.5">{r.auth.payor ?? "—"}</td>
+              <td className="py-1.5">{r.auth.service_type ?? "—"}</td>
+              <td className="py-1.5 tabular-nums text-muted-foreground">{r.auth.expiration_date ?? "—"}</td>
+              <td className="py-1.5 text-right tabular-nums font-semibold">
+                {r.days < 0 ? `${Math.abs(r.days)}d ago` : `${r.days}d`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  } else if (drill?.kind === "bcba" || drill?.kind === "unassigned") {
+    const isUnassigned = drill.kind === "unassigned";
+    const target = isUnassigned ? null : (drill as Extract<LeakDrillState, { kind: "bcba" }>).bcba.name;
+    const matched = sessions.filter((s) => isUnassigned ? !s.bcba_name : s.bcba_name === target);
+    const sorted = [...matched].sort((a, b) => (b.date_of_service ?? "").localeCompare(a.date_of_service ?? "")).slice(0, 200);
+    title = isUnassigned ? "Unassigned sessions" : `${target}`;
+    subtitle = `${matched.length} session${matched.length === 1 ? "" : "s"} · ${matched.reduce((s, x) => s + (Number(x.hours) || 0), 0).toFixed(1)}h`;
+    action = (
+      <Button
+        size="sm"
+        onClick={() => onOpenV2(isUnassigned ? { bcba: "Unassigned BCBA" } : { bcba: target!, drawer: target! })}
+        className="h-8 gap-1.5"
+      >
+        <ExternalLink className="h-3.5 w-3.5" /> Open in V2 Dashboard
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Date</th>
+            <th className="text-left py-2">Client</th>
+            <th className="text-left py-2">RBT</th>
+            <th className="text-left py-2">Code</th>
+            <th className="text-right py-2">Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((s, i) => (
+            <tr key={i} className="border-b border-border/30 hover:bg-muted/40">
+              <td className="py-1.5 tabular-nums text-muted-foreground">{s.date_of_service ?? "—"}</td>
+              <td className="py-1.5 truncate max-w-[160px]">{s.client_full}</td>
+              <td className="py-1.5 truncate max-w-[140px] text-muted-foreground">{s.provider_full}</td>
+              <td className="py-1.5 font-mono text-[10px]">{normalizeCode(s.procedure_code)}</td>
+              <td className="py-1.5 text-right tabular-nums">{Number(s.hours).toFixed(1)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogHeader className="border-b border-border/60 bg-gradient-to-br from-destructive/10 via-background to-warning/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="truncate">{title}</DialogTitle>
+              <DialogDescription className="text-[11px]">{subtitle}</DialogDescription>
+            </div>
+            {action}
+          </div>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-y-auto px-5 py-3">
+          {body || <p className="text-xs text-muted-foreground py-6 text-center">No records.</p>}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
