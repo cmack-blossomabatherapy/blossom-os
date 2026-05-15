@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
+import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -372,6 +372,23 @@ export function TeamAdminPanel() {
     toast.success(data.resendMessageId ? "Welcome email sent through Resend" : "Welcome email sent");
   };
 
+  const sendPasswordReset = async (member: Member) => {
+    if (!member.email) {
+      toast.error("No email on file for this member");
+      return;
+    }
+    setSavingId(member.user_id);
+    const { error } = await supabase.auth.resetPasswordForEmail(member.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSavingId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Password reset link sent to ${member.email}`);
+  };
+
   if (loading) {
     return (
       <div className="rounded-xl border border-border/60 bg-card p-10 flex items-center justify-center">
@@ -413,6 +430,7 @@ export function TeamAdminPanel() {
             onToggleRole={(role) => toggleRole(m, role)}
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
+            onSendPasswordReset={() => sendPasswordReset(m)}
             onVisited={() => trackVisited(m.user_id)}
             lastVisitedAt={!showFullList && !query.trim() ? recentVisits.find((visit) => visit.id === m.user_id)?.visitedAt ?? null : null}
             roleActivity={roleActivity.find((activity) => activity.id === m.user_id) ?? null}
@@ -433,6 +451,7 @@ function MemberRow({
   onToggleRole,
   onSaveInfo,
   onSendWelcome,
+  onSendPasswordReset,
   onVisited,
   lastVisitedAt,
   roleActivity,
@@ -443,6 +462,7 @@ function MemberRow({
   onToggleRole: (role: AppRole) => void;
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
+  onSendPasswordReset: () => void;
   onVisited: () => void;
   lastVisitedAt: string | null;
   roleActivity: RoleActivity | null;
@@ -791,6 +811,26 @@ function MemberRow({
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
               {welcomeLabel}
+            </Button>
+          </div>
+
+          {/* Password reset */}
+          <div className="rounded-md border border-border/40 bg-card/60 p-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-foreground">Password reset</p>
+              <p className="text-[11px] text-muted-foreground">
+                Emails a branded reset link that opens the Blossom reset page.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs shrink-0"
+              onClick={onSendPasswordReset}
+              disabled={!member.email || saving}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5 mr-1.5" />}
+              Send password reset
             </Button>
           </div>
         </div>

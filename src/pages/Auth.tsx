@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, Sparkles, Mail } from "lucide-react";
 import logoWordmark from "@/assets/blossom-logo-wordmark.png";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setRememberPreference, getRememberPreference } from "@/lib/rememberSession";
@@ -27,6 +31,27 @@ export default function Auth() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState<boolean>(() => getRememberPreference());
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) return;
+    setForgotBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setForgotSent(true);
+    toast.success("Password reset link sent");
+  };
 
   useEffect(() => {
     if (window.location.hostname !== LOVABLE_PUBLISHED_HOST) return;
@@ -172,9 +197,59 @@ export default function Auth() {
                 />
                 Remember me
               </label>
-              <span className="text-[11px] text-muted-foreground">
-                Trusted device only
-              </span>
+              <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) { setForgotSent(false); setForgotEmail(email); } }}>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotEmail(email); setForgotSent(false); }}
+                    className="text-[12px] font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <DialogTitle>Reset your password</DialogTitle>
+                    <DialogDescription>
+                      {forgotSent
+                        ? "If an account exists for that email, a branded reset link is on its way. Check your inbox (and spam folder)."
+                        : "Enter the email tied to your Blossom account and we'll send a secure reset link."}
+                    </DialogDescription>
+                  </DialogHeader>
+                  {!forgotSent && (
+                    <form onSubmit={handleForgot} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="forgot-email" className="text-xs font-medium text-foreground/80">Email</Label>
+                        <Input
+                          id="forgot-email"
+                          type="email"
+                          required
+                          autoComplete="email"
+                          placeholder="you@blossomabatherapy.com"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          className="h-11 rounded-xl bg-background"
+                        />
+                      </div>
+                      <DialogFooter className="gap-2 sm:gap-2">
+                        <Button type="button" variant="outline" onClick={() => setForgotOpen(false)} className="rounded-xl">Cancel</Button>
+                        <Button type="submit" className="rounded-xl" disabled={forgotBusy}>
+                          {forgotBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Send reset link
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  )}
+                  {forgotSent && (
+                    <DialogFooter>
+                      <Button onClick={() => setForgotOpen(false)} className="rounded-xl w-full sm:w-auto">Done</Button>
+                    </DialogFooter>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
             <Button
               type="submit"
