@@ -10,10 +10,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
-  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin,
+  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Session {
@@ -77,6 +78,21 @@ function extractState(labels: string | null): string | null {
   return null;
 }
 
+/**
+ * Normalize procedure codes so clinic / VA fee-schedule variants are grouped
+ * with their base code for BCBA attribution. Eli: BCBAs aren't penalized
+ * because a client happens to be a clinic client — the work is the same.
+ *   97153, "97153 RBT Clinic", "97153 BCBA Clinic" -> 97153
+ *   97155, "97155 VA",         "97155 BCBA Clinic" -> 97155
+ */
+function normalizeCode(code: string | null | undefined): string {
+  if (!code) return "—";
+  const trimmed = code.trim();
+  if (/^97153(\b|\s)/i.test(trimmed)) return "97153";
+  if (/^97155(\b|\s)/i.test(trimmed)) return "97155";
+  return trimmed;
+}
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -119,6 +135,7 @@ export default function CeoDashboardV2() {
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
+  const [showUnassigned, setShowUnassigned] = useState<boolean>(persisted?.showUnassigned ?? false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Persist filters across refresh / navigation
@@ -126,10 +143,10 @@ export default function CeoDashboardV2() {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey }),
+        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey, showUnassigned }),
       );
     } catch { /* quota/SSR */ }
-  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey]);
+  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey, showUnassigned]);
 
   async function loadActive(opts: { force?: boolean; window?: WindowKey } = {}) {
     const w = opts.window ?? windowKey;
@@ -233,7 +250,7 @@ export default function CeoDashboardV2() {
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
-      if (codeFilter !== "all" && s.procedure_code !== codeFilter) return false;
+      if (codeFilter !== "all" && normalizeCode(s.procedure_code) !== codeFilter) return false;
       if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
       if (stateFilter !== "all") {
         const st = extractState(s.raw_labels) ?? "Unknown";
@@ -260,7 +277,7 @@ export default function CeoDashboardV2() {
 
   const allCodes = useMemo(() => {
     const set = new Set<string>();
-    sessions.forEach((s) => { if (s.procedure_code) set.add(s.procedure_code); });
+    sessions.forEach((s) => { if (s.procedure_code) set.add(normalizeCode(s.procedure_code)); });
     return Array.from(set).sort();
   }, [sessions]);
 
@@ -290,11 +307,14 @@ export default function CeoDashboardV2() {
     const m = new Map<string, Group & { rbts: Set<string> }>();
     for (const s of filtered) {
       const bcba = s.bcba_name ?? UNASSIGNED;
+      // Hide Unassigned from the main BCBA leaderboard unless the user opts in.
+      // Unassigned hours are still surfaced in the dedicated alert above the list.
+      if (!showUnassigned && bcba === UNASSIGNED) continue;
       let g = m.get(bcba);
       if (!g) { g = { bcba, totalHours: 0, sessionCount: 0, clientCount: 0, rbtCount: 0, byCode: new Map(), byClient: new Map(), rbts: new Set() }; m.set(bcba, g); }
       g.totalHours += Number(s.hours) || 0;
       g.sessionCount += 1;
-      const code = s.procedure_code || "—";
+      const code = normalizeCode(s.procedure_code);
       g.byCode.set(code, (g.byCode.get(code) || 0) + (Number(s.hours) || 0));
       const client = s.client_full || "Unknown client";
       let c = g.byClient.get(client);
@@ -316,7 +336,7 @@ export default function CeoDashboardV2() {
       rbts_desc: (a, b) => b.rbtCount - a.rbtCount,
     };
     return arr.sort(cmp[sortKey] ?? cmp.hours_desc);
-  }, [filtered, sortKey]);
+  }, [filtered, sortKey, showUnassigned]);
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
   const maxHours = useMemo(() => groups.reduce((m, g) => Math.max(m, g.totalHours), 0), [groups]);
@@ -380,7 +400,7 @@ export default function CeoDashboardV2() {
     for (const s of rows) {
       const h = Number(s.hours) || 0;
       total += h;
-      const code = s.procedure_code || "—";
+      const code = normalizeCode(s.procedure_code);
       byCode.set(code, (byCode.get(code) || 0) + h);
       const client = s.client_full || "Unknown client";
       let c = byClient.get(client);
