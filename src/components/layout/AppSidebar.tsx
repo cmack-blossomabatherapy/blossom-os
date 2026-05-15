@@ -214,7 +214,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
-  const DEFAULT_OPEN_SECTIONS = ["Academy", "Admin"];
+  const DEFAULT_OPEN_SECTIONS = ["Dashboards", "Academy", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(DEFAULT_OPEN_SECTIONS);
     try {
