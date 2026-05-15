@@ -674,10 +674,21 @@ function SevDot({ sev }: { sev: Severity }) {
   return <span className={cn("h-2 w-2 rounded-full", cls)} />;
 }
 
-function DelayRow({ d }: { d: { auth: Auth; days: number; severity: Severity; valueAtRisk: number } }) {
+function DelayRow({
+  d, onOpen,
+}: {
+  d: { auth: Auth; days: number; severity: Severity; valueAtRisk: number };
+  onOpen?: () => void;
+}) {
   const a = d.auth;
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2">
+    <div
+      onClick={onOpen}
+      className={cn(
+        "group flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2 transition-colors",
+        onOpen && "cursor-pointer hover:border-primary/40 hover:bg-card/80",
+      )}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm font-medium">
           <SevDot sev={d.severity} />
@@ -689,9 +700,14 @@ function DelayRow({ d }: { d: { auth: Auth; days: number; severity: Severity; va
           {a.next_action ? ` · ${a.next_action}` : ""}
         </div>
       </div>
-      <div className="text-right pl-3">
+      <div className="text-right pl-3 flex items-center gap-3">
+        <div>
         <div className="text-sm font-semibold tabular-nums">{d.days}d</div>
         <div className="text-[10px] text-muted-foreground">{fmtMoney(d.valueAtRisk)}</div>
+        </div>
+        {onOpen && (
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        )}
       </div>
     </div>
   );
