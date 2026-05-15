@@ -459,6 +459,17 @@ export default function CeoDashboardV2() {
             ) : null}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              title="How this dashboard works"
+            >
+              <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => loadActive({ force: true })} className="h-9">
               <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
             </Button>
