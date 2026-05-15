@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown, Check, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
@@ -103,9 +105,9 @@ export default function CeoDashboardV2Insights() {
   const [loading, setLoading] = useState(true);
   const [windowKey, setWindowKey] = useState<WindowKey>("90d");
   const [granularity, setGranularity] = useState<Granularity>("weekly");
-  const [bcbaFilter, setBcbaFilter] = useState<string>("all");
-  const [codeFilter, setCodeFilter] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [bcbaFilter, setBcbaFilter] = useState<string[]>([]);
+  const [codeFilter, setCodeFilter] = useState<string[]>([]);
+  const [stateFilter, setStateFilter] = useState<string[]>([]);
 
   // ---- Cross-highlight (hover) + drill modal ----
   type HoverKey = { type: "bcba" | "code" | "state"; name: string } | null;
@@ -127,11 +129,9 @@ export default function CeoDashboardV2Insights() {
     const st = searchParams.get("state");
     if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
     if (g && ["weekly", "monthly", "quarterly"].includes(g)) setGranularity(g);
-    // V2 dashboard supports multi-select; Insights is single-select.
-    // Only adopt the URL value when it's a single selection.
-    if (b && !b.includes(",")) setBcbaFilter(b);
-    if (c && !c.includes(",")) setCodeFilter(c);
-    if (st && !st.includes(",")) setStateFilter(st);
+    if (b) setBcbaFilter(b.split(",").filter(Boolean));
+    if (c) setCodeFilter(c.split(",").filter(Boolean));
+    if (st) setStateFilter(st.split(",").filter(Boolean));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -142,9 +142,9 @@ export default function CeoDashboardV2Insights() {
     };
     set("window", windowKey, "90d");
     set("granularity", granularity, "weekly");
-    set("bcba", bcbaFilter, "all");
-    set("code", codeFilter, "all");
-    set("state", stateFilter, "all");
+    set("bcba", bcbaFilter.join(","), "");
+    set("code", codeFilter.join(","), "");
+    set("state", stateFilter.join(","), "");
     const next = params.toString();
     if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,9 +154,9 @@ export default function CeoDashboardV2Insights() {
   function v2Link(extra: { bcba?: string; code?: string; state?: string; drawer?: string } = {}) {
     const p = new URLSearchParams();
     if (windowKey !== "90d") p.set("window", windowKey);
-    const b = extra.bcba ?? (bcbaFilter !== "all" ? bcbaFilter : undefined);
-    const c = extra.code ?? (codeFilter !== "all" ? codeFilter : undefined);
-    const s = extra.state ?? (stateFilter !== "all" ? stateFilter : undefined);
+    const b = extra.bcba ?? (bcbaFilter.length ? bcbaFilter.join(",") : undefined);
+    const c = extra.code ?? (codeFilter.length ? codeFilter.join(",") : undefined);
+    const s = extra.state ?? (stateFilter.length ? stateFilter.join(",") : undefined);
     if (b) p.set("bcba", b);
     if (c) p.set("code", c);
     if (s) p.set("state", s);
@@ -206,9 +206,9 @@ export default function CeoDashboardV2Insights() {
   }, [windowKey]);
 
   const filtered = useMemo(() => sessions.filter((s) => {
-    if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
-    if (codeFilter !== "all" && normalizeCode(s.procedure_code) !== codeFilter) return false;
-    if (stateFilter !== "all" && (extractState(s.raw_labels) ?? "Unknown") !== stateFilter) return false;
+    if (bcbaFilter.length && !bcbaFilter.includes(s.bcba_name ?? UNASSIGNED)) return false;
+    if (codeFilter.length && !codeFilter.includes(normalizeCode(s.procedure_code))) return false;
+    if (stateFilter.length && !stateFilter.includes(extractState(s.raw_labels) ?? "Unknown")) return false;
     return true;
   }), [sessions, bcbaFilter, codeFilter, stateFilter]);
 
@@ -477,9 +477,9 @@ export default function CeoDashboardV2Insights() {
 
   // Drill-down: set a filter and scroll to the matching graph section.
   function drillTo(target: "bcba" | "code" | "state", value: string, anchor: string) {
-    if (target === "bcba") setBcbaFilter(value);
-    if (target === "code") setCodeFilter(value);
-    if (target === "state") setStateFilter(value);
+    if (target === "bcba") setBcbaFilter([value]);
+    if (target === "code") setCodeFilter([value]);
+    if (target === "state") setStateFilter([value]);
     requestAnimationFrame(() => {
       const el = document.getElementById(anchor);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -681,18 +681,19 @@ export default function CeoDashboardV2Insights() {
       <div className="px-4 pt-5 md:px-8">
         <Card className="flex flex-wrap items-center gap-2 p-3">
           <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mr-1">Filters</span>
-          <Select value={bcbaFilter} onValueChange={setBcbaFilter}>
-            <SelectTrigger className="h-8 w-44 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-72"><SelectItem value="all">All BCBAs</SelectItem>{allBcbas.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={codeFilter} onValueChange={setCodeFilter}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-72"><SelectItem value="all">All codes</SelectItem>{allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent className="max-h-72"><SelectItem value="all">All states</SelectItem>{allStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
+          <MultiSelectPopover label="BCBAs" allLabel="All BCBAs" options={allBcbas} selected={bcbaFilter} onChange={setBcbaFilter} searchable width="w-52" />
+          <MultiSelectPopover label="Codes" allLabel="All codes" options={allCodes} selected={codeFilter} onChange={setCodeFilter} width="w-40" />
+          <MultiSelectPopover label="States" allLabel="All states" options={allStates} selected={stateFilter} onChange={setStateFilter} width="w-40" />
+          {(bcbaFilter.length + codeFilter.length + stateFilter.length) > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setBcbaFilter([]); setCodeFilter([]); setStateFilter([]); }}
+              className="h-8 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </Button>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Granularity</span>
             <ToggleGroup type="single" value={granularity} onValueChange={(v) => v && setGranularity(v as Granularity)} size="sm">
