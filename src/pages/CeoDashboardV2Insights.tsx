@@ -57,13 +57,14 @@ function extractState(labels: string | null): string | null {
 }
 
 type Granularity = "weekly" | "monthly" | "quarterly";
-type WindowKey = "30d" | "90d" | "6mo" | "12mo" | "all";
+type WindowKey = "30d" | "90d" | "6mo" | "12mo" | "all" | "custom";
 const WINDOW_LABELS: Record<WindowKey, string> = {
-  "30d": "30 days", "90d": "90 days", "6mo": "6 months", "12mo": "12 months", all: "All",
+  "30d": "30 days", "90d": "90 days", "6mo": "6 months", "12mo": "12 months", all: "All", custom: "Custom",
 };
-const WINDOW_ORDER: WindowKey[] = ["30d", "90d", "6mo", "12mo", "all"];
-function windowSinceISO(w: WindowKey): string | null {
+const WINDOW_ORDER: WindowKey[] = ["30d", "90d", "6mo", "12mo", "all", "custom"];
+function windowSinceISO(w: WindowKey, customFrom?: string): string | null {
   if (w === "all") return null;
+  if (w === "custom") return customFrom && customFrom.length === 10 ? customFrom : null;
   const days = w === "30d" ? 30 : w === "90d" ? 90 : w === "6mo" ? 183 : 365;
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
@@ -104,6 +105,8 @@ export default function CeoDashboardV2Insights() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [windowKey, setWindowKey] = useState<WindowKey>("90d");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [granularity, setGranularity] = useState<Granularity>("weekly");
   const [bcbaFilter, setBcbaFilter] = useState<string[]>([]);
   const [codeFilter, setCodeFilter] = useState<string[]>([]);
@@ -179,7 +182,8 @@ export default function CeoDashboardV2Insights() {
           .eq("is_active", true);
         const ids = (imps ?? []).map((i: any) => i.id);
         if (ids.length === 0) { if (!cancelled) { setSessions([]); setLoading(false); } return; }
-        const since = windowSinceISO(windowKey);
+        const since = windowSinceISO(windowKey, dateFrom);
+        const until = windowKey === "custom" && dateTo && dateTo.length === 10 ? dateTo : null;
         const all: Session[] = [];
         const pageSize = 1000;
         let from = 0;
@@ -191,6 +195,7 @@ export default function CeoDashboardV2Insights() {
             .order("date_of_service", { ascending: false })
             .range(from, from + pageSize - 1);
           if (since) q = q.gte("date_of_service", since);
+          if (until) q = q.lte("date_of_service", until);
           const { data, error } = await q;
           if (error) { toast.error(error.message); break; }
           all.push(...((data ?? []) as Session[]));
@@ -203,7 +208,7 @@ export default function CeoDashboardV2Insights() {
       }
     })();
     return () => { cancelled = true; };
-  }, [windowKey]);
+  }, [windowKey, dateFrom, dateTo]);
 
   const filtered = useMemo(() => sessions.filter((s) => {
     if (bcbaFilter.length && !bcbaFilter.includes(s.bcba_name ?? UNASSIGNED)) return false;
@@ -655,6 +660,25 @@ export default function CeoDashboardV2Insights() {
                 >{WINDOW_LABELS[w]}</button>
               ))}
             </div>
+            {windowKey === "custom" && (
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-9 w-[140px] text-xs"
+                  aria-label="Custom range from"
+                />
+                <span className="text-[10px] text-muted-foreground">to</span>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-9 w-[140px] text-xs"
+                  aria-label="Custom range to"
+                />
+              </div>
+            )}
             <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={exportCsv}>
               <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
