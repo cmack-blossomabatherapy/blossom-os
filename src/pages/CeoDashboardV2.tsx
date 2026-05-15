@@ -127,10 +127,16 @@ export default function CeoDashboardV2() {
     if (typeof window === "undefined") return null;
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
   })();
+  // Migrate legacy single-string filters → arrays. Empty array = "All".
+  const toArr = (v: unknown): string[] => {
+    if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string" && !!x);
+    if (typeof v === "string" && v && v !== "all") return v.split(",").map((s) => s.trim()).filter(Boolean);
+    return [];
+  };
   const [search, setSearch] = useState<string>(persisted?.search ?? "");
-  const [codeFilter, setCodeFilter] = useState<string>(persisted?.codeFilter ?? "all");
-  const [stateFilter, setStateFilter] = useState<string>(persisted?.stateFilter ?? "all");
-  const [bcbaFilter, setBcbaFilter] = useState<string>(persisted?.bcbaFilter ?? "all");
+  const [codeFilter, setCodeFilter] = useState<string[]>(toArr(persisted?.codeFilter));
+  const [stateFilter, setStateFilter] = useState<string[]>(toArr(persisted?.stateFilter));
+  const [bcbaFilter, setBcbaFilter] = useState<string[]>(toArr(persisted?.bcbaFilter));
   const [dateFrom, setDateFrom] = useState<string>(persisted?.dateFrom ?? "");
   const [dateTo, setDateTo] = useState<string>(persisted?.dateTo ?? "");
   const [sortKey, setSortKey] = useState<SortKey>((persisted?.sortKey as SortKey) ?? "hours_desc");
@@ -156,9 +162,9 @@ export default function CeoDashboardV2() {
     const st = searchParams.get("state");
     const drawer = searchParams.get("drawer");
     if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
-    if (b) setBcbaFilter(b);
-    if (c) setCodeFilter(c);
-    if (st) setStateFilter(st);
+    if (b) setBcbaFilter(b.split(",").filter(Boolean));
+    if (c) setCodeFilter(c.split(",").filter(Boolean));
+    if (st) setStateFilter(st.split(",").filter(Boolean));
     if (drawer) setDetailBcba(drawer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -169,9 +175,9 @@ export default function CeoDashboardV2() {
       if (v && v !== def) params.set(k, v); else params.delete(k);
     };
     set("window", windowKey, "90d");
-    set("bcba", bcbaFilter, "all");
-    set("code", codeFilter, "all");
-    set("state", stateFilter, "all");
+    set("bcba", bcbaFilter.join(","), "");
+    set("code", codeFilter.join(","), "");
+    set("state", stateFilter.join(","), "");
     if (detailBcba) params.set("drawer", detailBcba); else params.delete("drawer");
     const next = params.toString();
     if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
@@ -293,11 +299,11 @@ export default function CeoDashboardV2() {
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
-      if (codeFilter !== "all" && normalizeCode(s.procedure_code) !== codeFilter) return false;
-      if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
-      if (stateFilter !== "all") {
+      if (codeFilter.length && !codeFilter.includes(normalizeCode(s.procedure_code))) return false;
+      if (bcbaFilter.length && !bcbaFilter.includes(s.bcba_name ?? UNASSIGNED)) return false;
+      if (stateFilter.length) {
         const st = extractState(s.raw_labels) ?? "Unknown";
-        if (st !== stateFilter) return false;
+        if (!stateFilter.includes(st)) return false;
       }
       if (dateFrom && (!s.date_of_service || s.date_of_service < dateFrom)) return false;
       if (dateTo && (!s.date_of_service || s.date_of_service > dateTo)) return false;
