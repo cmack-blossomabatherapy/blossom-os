@@ -462,13 +462,18 @@ export default function CeoDashboardV2RevenueLeaks() {
 
         {/* SECTION 2 — EXPIRING */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={CalendarClock}
-            title="Expiring authorizations"
-            subtitle="Auths expiring in the next 60 days · re-auth needed to protect revenue"
-            badge={expiring.total > 0 ? `${expiring.total} flagged` : undefined}
-            tone={expiring.expired.length > 0 ? "negative" : expiring.within30.length > 0 ? "warning" : "neutral"}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={CalendarClock}
+              title="Expiring authorizations"
+              subtitle="Auths expiring in the next 60 days · re-auth needed to protect revenue"
+              badge={expiring.total > 0 ? `${expiring.total} flagged` : undefined}
+              tone={expiring.expired.length > 0 ? "negative" : expiring.within30.length > 0 ? "warning" : "neutral"}
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={authsUrl("expiring")}><ExternalLink className="h-3 w-3" /> Open in Authorizations</Link>
+            </Button>
+          </div>
           {expiring.total === 0 ? (
             <EmptyState
               icon={CalendarClock}
@@ -476,28 +481,48 @@ export default function CeoDashboardV2RevenueLeaks() {
             />
           ) : (
             <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <ExpiringBucket label="Already expired" tone="negative" rows={expiring.expired} value={expiring.valueExpired} />
-              <ExpiringBucket label="Within 30 days" tone="warning" rows={expiring.within30} value={expiring.value30} />
-              <ExpiringBucket label="30 – 60 days" tone="neutral" rows={expiring.within60} value={expiring.value60} />
+              <ExpiringBucket
+                label="Already expired" tone="negative"
+                rows={expiring.expired} value={expiring.valueExpired}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "expired" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
+              <ExpiringBucket
+                label="Within 30 days" tone="warning"
+                rows={expiring.within30} value={expiring.value30}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "30" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
+              <ExpiringBucket
+                label="30 – 60 days" tone="neutral"
+                rows={expiring.within60} value={expiring.value60}
+                onDrill={() => setDrill({ kind: "expiring", bucket: "60" })}
+                onOpenRow={(id) => navigate(authsUrl("expiring", id))}
+              />
             </div>
           )}
         </Card>
 
         {/* SECTION 3 — CAPACITY BOTTLENECKS */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={UserCog}
-            title="BCBA capacity bottlenecks"
-            subtitle="Concentration, overload, and attribution risk based on the last 90 days"
-            badge={bottlenecks.bcbas.length > 0 ? `${bottlenecks.bcbas.length} BCBAs` : undefined}
-            tone={
-              bottlenecks.concentration.length > 0 || bottlenecks.unassignedHours > 50
-                ? "negative"
-                : bottlenecks.overloaded.length > 0
-                  ? "warning"
-                  : "neutral"
-            }
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={UserCog}
+              title="BCBA capacity bottlenecks"
+              subtitle="Concentration, overload, and attribution risk based on the last 90 days"
+              badge={bottlenecks.bcbas.length > 0 ? `${bottlenecks.bcbas.length} BCBAs` : undefined}
+              tone={
+                bottlenecks.concentration.length > 0 || bottlenecks.unassignedHours > 50
+                  ? "negative"
+                  : bottlenecks.overloaded.length > 0
+                    ? "warning"
+                    : "neutral"
+              }
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={v2Url()}><ExternalLink className="h-3 w-3" /> Open in V2 Dashboard</Link>
+            </Button>
+          </div>
 
           {/* Unassigned banner */}
           {bottlenecks.unassignedHours > 0 && (
@@ -510,6 +535,14 @@ export default function CeoDashboardV2RevenueLeaks() {
                 <div className="text-[11px] text-muted-foreground mt-0.5">
                   Tag the BCBA in Hubstaff/CR and re-upload in Replace mode to recover attribution.
                 </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => setDrill({ kind: "unassigned" })}>
+                  <Eye className="h-3 w-3" /> View sessions
+                </Button>
+                <Button asChild size="sm" variant="default" className="h-7 gap-1 text-[11px]">
+                  <Link to={v2Url({ bcba: "Unassigned BCBA" })}><ExternalLink className="h-3 w-3" /> Open in V2</Link>
+                </Button>
               </div>
             </div>
           )}
@@ -532,6 +565,8 @@ export default function CeoDashboardV2RevenueLeaks() {
                     primary={`${b.shareOfHours.toFixed(1)}% of all hours`}
                     secondary={`${b.hours.toFixed(0)}h · ${b.clients} clients · ${fmtMoney(b.revenue)}`}
                     sev="high"
+                    onDrill={() => setDrill({ kind: "bcba", bcba: b, reason: "concentration" })}
+                    onOpenV2={() => navigate(v2Url({ bcba: b.name, drawer: b.name }))}
                   />
                 ))}
               </div>
@@ -556,6 +591,8 @@ export default function CeoDashboardV2RevenueLeaks() {
                     primary={`${b.clients} clients`}
                     secondary={`${b.hours.toFixed(0)}h · ${b.rbts} RBTs · ${b.shareOfHours.toFixed(1)}% of hours`}
                     sev="medium"
+                    onDrill={() => setDrill({ kind: "bcba", bcba: b, reason: "overloaded" })}
+                    onOpenV2={() => navigate(v2Url({ bcba: b.name, drawer: b.name }))}
                   />
                 ))}
               </div>
