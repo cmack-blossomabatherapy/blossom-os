@@ -15,6 +15,7 @@ import {
   AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
   Briefcase, UserCircle2, Tag, Activity,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
@@ -468,11 +469,28 @@ export default function CeoDashboardV2() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-card/60 backdrop-blur p-1">
-              <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title="How this dashboard works">
-                <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
-                  <HelpCircle className="h-4 w-4" />
-                </Link>
-              </Button>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                      <Link to="/ceo-dashboard-v2/insights" aria-label="Insights & Trends">
+                        <Activity className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Insights & Trends</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                      <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                        <HelpCircle className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">How this dashboard works</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button variant="ghost" size="icon" onClick={() => loadActive({ force: true })} className="h-8 w-8 rounded-lg" title="Refresh">
                 <RefreshCw className="h-4 w-4" />
               </Button>
