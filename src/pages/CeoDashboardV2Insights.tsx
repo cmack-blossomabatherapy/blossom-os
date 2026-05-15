@@ -162,7 +162,7 @@ export default function CeoDashboardV2Insights() {
     if (s) p.set("state", s);
     if (extra.drawer) p.set("drawer", extra.drawer);
     const qs = p.toString();
-    return `/ceo-dashboard-v2${qs ? `?${qs}` : ""}`;
+    return `/bcba-performance-dashboard${qs ? `?${qs}` : ""}`;
   }
   function openInV2(extra: Parameters<typeof v2Link>[0] = {}) {
     navigate(v2Link(extra));
@@ -634,7 +634,7 @@ export default function CeoDashboardV2Insights() {
         <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2 h-8 text-xs">
-              <Link to="/ceo-dashboard-v2"><ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to BCBA Performance</Link>
+              <Link to="/bcba-performance-dashboard"><ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to BCBA Performance</Link>
             </Button>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
               <Sparkles className="h-3 w-3" /> Intelligence
