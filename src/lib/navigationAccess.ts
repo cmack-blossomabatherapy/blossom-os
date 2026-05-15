@@ -100,6 +100,7 @@ const dashboardPreviewSection: NavigationPreviewSection = {
   title: "Dashboards",
   items: [
     { label: "CEO & Leadership", path: "/leadership-dashboard", perm: "dashboard.view", superAdminOnly: true },
+    { label: "BCBA Performance", path: "/bcba-performance-dashboard", superAdminOnly: true },
     { label: "Intake Dashboard", path: "/intake-dashboard", perm: "leads.view", superAdminOnly: true },
     { label: "Authorizations Dashboard", path: "/authorizations-dashboard", perm: "dashboard.view", superAdminOnly: true },
     { label: "Scheduling Dashboard", path: "/scheduling-dashboard", perm: "dashboard.view", superAdminOnly: true },
@@ -166,6 +167,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
 const sectionRoutePrefixes: Record<string, string[]> = {
   Dashboards: [
     "/leadership-dashboard",
+    "/bcba-performance-dashboard",
     "/intake-dashboard",
     "/authorizations-dashboard",
     "/scheduling-dashboard",
