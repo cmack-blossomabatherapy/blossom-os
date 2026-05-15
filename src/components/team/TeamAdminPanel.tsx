@@ -813,6 +813,26 @@ function MemberRow({
               {welcomeLabel}
             </Button>
           </div>
+
+          {/* Password reset */}
+          <div className="rounded-md border border-border/40 bg-card/60 p-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-foreground">Password reset</p>
+              <p className="text-[11px] text-muted-foreground">
+                Emails a branded reset link that opens the Blossom reset page.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs shrink-0"
+              onClick={onSendPasswordReset}
+              disabled={!member.email || saving}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5 mr-1.5" />}
+              Send password reset
+            </Button>
+          </div>
         </div>
       )}
     </div>
