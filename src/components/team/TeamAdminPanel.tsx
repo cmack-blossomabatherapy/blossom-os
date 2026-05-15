@@ -451,6 +451,7 @@ function MemberRow({
   onToggleRole,
   onSaveInfo,
   onSendWelcome,
+  onSendPasswordReset,
   onVisited,
   lastVisitedAt,
   roleActivity,
@@ -461,6 +462,7 @@ function MemberRow({
   onToggleRole: (role: AppRole) => void;
   onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean }) => Promise<boolean>;
   onSendWelcome: () => void;
+  onSendPasswordReset: () => void;
   onVisited: () => void;
   lastVisitedAt: string | null;
   roleActivity: RoleActivity | null;
