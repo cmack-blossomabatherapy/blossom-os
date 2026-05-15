@@ -926,9 +926,20 @@ export default function CeoDashboardV2Insights() {
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={120} />
                     <RTooltip contentStyle={tooltipStyle} />
                     <ReferenceLine x={rbtLoad[0]?.avg ?? 0} stroke="hsl(var(--accent))" strokeDasharray="4 3" label={{ value: "avg", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                    <Bar dataKey="rbts" radius={[0, 6, 6, 0]}>
+                    <Bar
+                      dataKey="rbts"
+                      radius={[0, 6, 6, 0]}
+                      cursor="pointer"
+                      onClick={(d: any) => d?.name && setDrill({ type: "bcba", name: d.name })}
+                    >
                       {rbtLoad.slice(0, 15).map((r, i) => (
-                        <Cell key={i} fill={r.overloaded ? "hsl(var(--destructive))" : r.underutilized ? "hsl(var(--warning, var(--accent)))" : "hsl(var(--primary))"} />
+                        <Cell
+                          key={i}
+                          fill={r.overloaded ? "hsl(var(--destructive))" : r.underutilized ? "hsl(var(--warning, var(--accent)))" : "hsl(var(--primary))"}
+                          opacity={hovered?.type === "bcba" ? (hovered.name === r.name ? 1 : 0.3) : 1}
+                          onMouseEnter={() => setHovered({ type: "bcba", name: r.name })}
+                          onMouseLeave={() => setHovered(null)}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
