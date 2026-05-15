@@ -1,6 +1,6 @@
 ## Rename to "BCBA Performance"
 
-Update only the user-facing labels and headings. Routes, file names, and component names stay the same to avoid risky refactors and broken bookmarks.
+Update the user-facing labels/headings and move the public dashboard URL to `/bcba-performance-dashboard`, while keeping legacy redirects for old bookmarks.
 
 ### Changes
 
@@ -18,8 +18,9 @@ Update only the user-facing labels and headings. Routes, file names, and compone
 4. **Logic page heading** — `src/pages/CeoDashboardV2Logic.tsx` (line 32)
    - `"How CEO Dashboard V2 works"` → `"How BCBA Performance works"`
 
-### Out of scope
+### Route update
 
-- Route paths (`/ceo-dashboard-v2/*`) stay the same — changing them would break existing links from Insights/Leaks deep-linking and any saved bookmarks.
+- New route paths use `/bcba-performance-dashboard/*`.
+- Legacy `/ceo-dashboard-v2/*` routes redirect to the matching new URL.
 - File names and component identifiers (`CeoDashboardV2*`) stay the same — pure internal naming, no user impact.
 - Sub-page titles ("Insights & Trends", "Revenue Leaks") stay as they are — they already work as section names under the parent.
