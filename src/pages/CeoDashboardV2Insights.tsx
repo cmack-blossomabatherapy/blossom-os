@@ -787,13 +787,30 @@ export default function CeoDashboardV2Insights() {
 
             {/* GRAPH 2 — BCBA PERFORMANCE */}
             <Card id="bcba-perf" className="p-4 md:p-5 scroll-mt-4">
-              <SectionHeader icon={UserCog} title="BCBA performance ranking" subtitle="Hours, percentile, and warning indicators" />
+              <div className="flex items-start justify-between gap-3">
+                <SectionHeader icon={UserCog} title="BCBA performance ranking" subtitle="Hover to highlight · click for drill-down · arrow opens in dashboard" />
+                <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px]">
+                  <Link to={v2Link()}><ExternalLink className="h-3 w-3" /> Open in V2</Link>
+                </Button>
+              </div>
               <div className="mt-4 space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
                 {bcbaPerformance.slice(0, 20).map((b) => {
                   const max = bcbaPerformance[0]?.hours || 1;
                   const w = (b.hours / max) * 100;
+                  const isHover = hovered?.type === "bcba" && hovered.name === b.name;
+                  const dim = hovered?.type === "bcba" && hovered.name !== b.name;
                   return (
-                    <div key={b.name} className="rounded-lg border border-border/40 bg-card/60 px-3 py-2.5 hover:border-primary/30 transition-colors">
+                    <div
+                      key={b.name}
+                      onMouseEnter={() => setHovered({ type: "bcba", name: b.name })}
+                      onMouseLeave={() => setHovered(null)}
+                      onClick={() => setDrill({ type: "bcba", name: b.name })}
+                      className={cn(
+                        "group cursor-pointer rounded-lg border bg-card/60 px-3 py-2.5 transition-all",
+                        isHover ? "border-primary/60 bg-muted/60 shadow-sm" : "border-border/40 hover:border-primary/30",
+                        dim && "opacity-40",
+                      )}
+                    >
                       <div className="flex items-center justify-between text-xs gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[10px] font-mono text-muted-foreground w-6">#{b.rank}</span>
@@ -805,6 +822,13 @@ export default function CeoDashboardV2Insights() {
                           <span className="text-muted-foreground">{b.clients}c · {b.rbts}r</span>
                           <span className="font-semibold">{b.hours.toFixed(0)}h</span>
                           <span className="text-muted-foreground">P{b.percentile}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openInV2({ bcba: b.name, drawer: b.name }); }}
+                            title="Open BCBA detail in V2 Dashboard"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-5 w-5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
                       <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
