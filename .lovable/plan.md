@@ -1,26 +1,35 @@
-## Rename to "BCBA Performance"
+## Problem
 
-Update the user-facing labels/headings and move the public dashboard URL to `/bcba-performance-dashboard`, while keeping legacy redirects for old bookmarks.
+The BCBA Performance dashboard reads from `bcba_billable_imports` and `bcba_billable_sessions`. Both tables have RLS policies that only allow `admin`:
 
-### Changes
+```
+SELECT/ALL  USING has_role(auth.uid(), 'admin')
+```
 
-1. **Sidebar label** — `src/components/layout/AppSidebar.tsx` (line 61)
-   - `"CEO Dashboard V2"` → `"BCBA Performance"`
+The user is signed in as Executive (`exec` role only, no `admin`). The route now permits `exec`, the sidebar shows the link, but every Supabase query returns zero rows because RLS blocks them. That's why the dashboard renders empty.
 
-2. **Main page hero heading** — `src/pages/CeoDashboardV2.tsx` (line 494)
-   - `<h1>CEO Dashboard V2</h1>` → `<h1>BCBA Performance</h1>`
+## Fix
 
-3. **Sub-page back links** (3 files)
-   - `src/pages/CeoDashboardV2Insights.tsx` (line 637): "Back to CEO Dashboard V2" → "Back to BCBA Performance"
-   - `src/pages/CeoDashboardV2RevenueLeaks.tsx` (line 313): same
-   - `src/pages/CeoDashboardV2Logic.tsx` (line 27): same
+Add SELECT policies for the `exec` role on both tables (read-only — execs view the dashboard but don't upload CSVs).
 
-4. **Logic page heading** — `src/pages/CeoDashboardV2Logic.tsx` (line 32)
-   - `"How CEO Dashboard V2 works"` → `"How BCBA Performance works"`
+### Migration
 
-### Route update
+```sql
+CREATE POLICY "execs read imports"
+  ON public.bcba_billable_imports
+  FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'exec'::app_role));
 
-- New route paths use `/bcba-performance-dashboard/*`.
-- Legacy `/ceo-dashboard-v2/*` routes redirect to the matching new URL.
-- File names and component identifiers (`CeoDashboardV2*`) stay the same — pure internal naming, no user impact.
-- Sub-page titles ("Insights & Trends", "Revenue Leaks") stay as they are — they already work as section names under the parent.
+CREATE POLICY "execs read sessions"
+  ON public.bcba_billable_sessions
+  FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'exec'::app_role));
+```
+
+Admin write/upload policies remain unchanged — execs cannot import or modify data, only view it.
+
+## Files
+
+- New migration under `supabase/migrations/` adding the two SELECT policies above.
+
+No frontend changes required; the dashboard will populate as soon as RLS allows the read.
