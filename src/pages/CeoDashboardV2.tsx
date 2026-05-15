@@ -1233,12 +1233,28 @@ function BcbaCard({
   );
 }
 
-function DetailStat({ label, value }: { label: string; value: string }) {
+function DetailStat({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-2.5 py-2">
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+        {Icon && <Icon className="h-3 w-3" />}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-0.5 text-lg font-semibold tabular-nums leading-tight">{value}</div>
     </div>
+  );
+}
+
+function DetailSection({ title, icon: Icon, count, children }: { title: string; icon?: React.ComponentType<{ className?: string }>; count?: number; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="flex items-center gap-1.5 mb-2">
+        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{title}</h3>
+        {typeof count === "number" && <span className="text-[11px] text-muted-foreground">· {count}</span>}
+      </div>
+      {children}
+    </section>
   );
 }
 
