@@ -942,7 +942,7 @@ export default function CeoDashboardV2Insights() {
             </Card>
 
             {/* RISKS */}
-            <Card className="p-4 md:p-5">
+            <Card id="operational-risks" className="p-4 md:p-5 scroll-mt-4">
               <SectionHeader icon={ShieldAlert} title="Operational risks" subtitle={`${risks.length} flagged`} />
               <div className="mt-3 space-y-2">
                 {risks.length === 0 && <p className="text-xs text-muted-foreground">No risks flagged in this window. ✨</p>}
