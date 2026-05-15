@@ -362,6 +362,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${delays.byBucket.high} critical (30+ days) · ${delays.byBucket.medium} aging (14–29 days)`}
           value={fmtMoney(delays.totalValue)}
           valueLabel="value at risk"
+          onClick={() => setDrill({ kind: "delays", severity: delays.byBucket.high > 0 ? "high" : delays.byBucket.medium > 0 ? "medium" : "low" })}
         />
         <LeakCard
           icon={CalendarClock}
@@ -371,6 +372,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${expiring.expired.length} expired · ${expiring.within30.length} within 30 days · ${expiring.within60.length} within 60`}
           value={fmtMoney(expiring.valueExpired + expiring.value30)}
           valueLabel="immediate exposure"
+          onClick={() => setDrill({ kind: "expiring", bucket: expiring.expired.length > 0 ? "expired" : expiring.within30.length > 0 ? "30" : "60" })}
         />
         <LeakCard
           icon={UserCog}
@@ -380,6 +382,7 @@ export default function CeoDashboardV2RevenueLeaks() {
           sub={`${bottlenecks.concentration.length} concentration · ${bottlenecks.overloaded.length} overloaded · ${bottlenecks.unassignedHours.toFixed(0)}h unassigned`}
           value={fmtMoney(bottlenecks.unassignedRev)}
           valueLabel="unattributed revenue"
+          onClick={() => bottlenecks.unassignedHours > 0 ? setDrill({ kind: "unassigned" }) : navigate(v2Url())}
         />
       </div>
 
