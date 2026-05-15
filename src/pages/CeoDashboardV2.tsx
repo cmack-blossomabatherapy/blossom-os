@@ -472,14 +472,11 @@ export default function CeoDashboardV2() {
   }, [detailBcba, filtered]);
 
   const activeFilterCount =
-    (codeFilter !== "all" ? 1 : 0) +
-    (stateFilter !== "all" ? 1 : 0) +
-    (bcbaFilter !== "all" ? 1 : 0) +
-    (dateFrom ? 1 : 0) +
-    (dateTo ? 1 : 0);
+    codeFilter.length + stateFilter.length + bcbaFilter.length +
+    (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const clearFilters = () => {
-    setCodeFilter("all"); setStateFilter("all"); setBcbaFilter("all");
+    setCodeFilter([]); setStateFilter([]); setBcbaFilter([]);
     setDateFrom(""); setDateTo("");
   };
 
