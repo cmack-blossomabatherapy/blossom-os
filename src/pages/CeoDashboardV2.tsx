@@ -13,7 +13,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
   AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
-  Briefcase, UserCircle2, Tag, Activity,
+  Briefcase, UserCircle2, Tag, Activity, ShieldAlert,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -479,6 +479,16 @@ export default function CeoDashboardV2() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Insights & Trends</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                      <Link to="/ceo-dashboard-v2/revenue-leaks" aria-label="Revenue Leak Analysis">
+                        <ShieldAlert className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Revenue Leak Analysis</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
