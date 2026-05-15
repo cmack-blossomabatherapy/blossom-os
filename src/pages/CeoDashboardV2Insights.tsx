@@ -981,6 +981,115 @@ export default function CeoDashboardV2Insights() {
 
 /* ======================== HELPERS ======================== */
 
+type MoverRow = { name: string; prev: number; curr: number; delta: number; deltaPct: number };
+type MoverGroup = { label: string; anchor: string; target: "bcba" | "code" | "state"; rows: MoverRow[] };
+
+function MoverWidget({
+  tone, icon: Icon, title, subtitle, empty, groups, onDrill,
+}: {
+  tone: "positive" | "negative";
+  icon: any;
+  title: string;
+  subtitle: string;
+  empty: string;
+  groups: MoverGroup[];
+  onDrill: (target: "bcba" | "code" | "state", value: string, anchor: string) => void;
+}) {
+  const totalRows = groups.reduce((s, g) => s + g.rows.length, 0);
+  const accent = tone === "positive" ? "success" : "destructive";
+  const Arrow = tone === "positive" ? ArrowUpRight : ArrowDownRight;
+  return (
+    <Card className={cn(
+      "p-4 md:p-5 animate-fade-in border-t-2",
+      tone === "positive" ? "border-t-success/60" : "border-t-destructive/60",
+    )}>
+      <div className="flex items-start justify-between gap-2">
+        <SectionHeader icon={Icon} title={title} subtitle={subtitle} tone={tone === "negative" ? "destructive" : undefined} />
+        <Badge variant="outline" className={cn("text-[10px]", `text-${accent} border-${accent}/30`)}>{totalRows}</Badge>
+      </div>
+      <div className="mt-3 space-y-3">
+        {totalRows === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">{empty}</p>
+        ) : groups.map((g) => g.rows.length > 0 && (
+          <div key={g.label}>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{g.label}</div>
+            <div className="space-y-1">
+              {g.rows.map((r) => (
+                <button
+                  key={r.name}
+                  onClick={() => onDrill(g.target, r.name, g.anchor)}
+                  className="group w-full flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-card/60 px-2.5 py-1.5 text-left hover:border-primary/40 hover:bg-muted/60 transition-all"
+                  title="Filter and scroll to detail"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium truncate">{r.name}</div>
+                    <div className="text-[10px] text-muted-foreground tabular-nums">
+                      {r.prev.toFixed(0)}h → {r.curr.toFixed(0)}h
+                    </div>
+                  </div>
+                  <div className={cn("flex items-center gap-0.5 shrink-0 text-[11px] font-semibold tabular-nums",
+                    tone === "positive" ? "text-success" : "text-destructive")}>
+                    <Arrow className="h-3 w-3" />
+                    {Math.abs(r.deltaPct).toFixed(0)}%
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function RiskWidget({ risks }: { risks: { severity: "high" | "medium" | "low"; title: string; detail: string; action: string }[] }) {
+  const high = risks.filter((r) => r.severity === "high").length;
+  const med = risks.filter((r) => r.severity === "medium").length;
+  return (
+    <Card className="p-4 md:p-5 animate-fade-in border-t-2 border-t-warning/60">
+      <div className="flex items-start justify-between gap-2">
+        <SectionHeader icon={ShieldAlert} title="Emerging risks" subtitle={`${high} high · ${med} medium`} />
+        <Link
+          to="#operational-risks"
+          onClick={(e) => { e.preventDefault(); document.getElementById("operational-risks")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+          className="text-[11px] text-primary hover:underline shrink-0 inline-flex items-center gap-0.5"
+        >
+          View all <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="mt-3 space-y-2">
+        {risks.length === 0 && <p className="text-xs text-muted-foreground py-4 text-center">All clear — no risks flagged. ✨</p>}
+        {risks.slice(0, 4).map((r, i) => (
+          <button
+            key={i}
+            onClick={() => document.getElementById("operational-risks")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className={cn(
+              "group w-full text-left rounded-lg border px-3 py-2 transition-all hover:scale-[1.01]",
+              r.severity === "high" ? "border-destructive/40 bg-destructive/5"
+              : r.severity === "medium" ? "border-warning/40 bg-warning/5"
+              : "border-border/60 bg-muted/40",
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-xs font-semibold leading-snug">{r.title}</div>
+              <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider shrink-0",
+                r.severity === "high" ? "bg-destructive text-destructive-foreground"
+                : r.severity === "medium" ? "bg-warning text-warning-foreground"
+                : "bg-muted text-muted-foreground",
+              )}>{r.severity.toUpperCase()}</span>
+            </div>
+            <div className="mt-1 flex items-start gap-1 text-[11px] text-muted-foreground">
+              <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+              <span className="text-foreground/75 line-clamp-2">{r.action}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 const tooltipStyle: React.CSSProperties = {
   background: "hsl(var(--card))",
   border: "1px solid hsl(var(--border))",
