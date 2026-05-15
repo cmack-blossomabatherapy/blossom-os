@@ -196,15 +196,17 @@ export default function CeoDashboardV2() {
     } catch { /* quota/SSR */ }
   }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey, showUnassigned]);
 
-  async function loadActive(opts: { force?: boolean; window?: WindowKey } = {}) {
+  async function loadActive(opts: { force?: boolean; window?: WindowKey; from?: string; to?: string } = {}) {
     const w = opts.window ?? windowKey;
+    const fromCustom = opts.from ?? dateFrom;
+    const toCustom = opts.to ?? dateTo;
     // Try sessionStorage cache first
     if (!opts.force && typeof window !== "undefined") {
       try {
         const raw = sessionStorage.getItem(CACHE_KEY);
         if (raw) {
           const cached = JSON.parse(raw) as { windowKey: WindowKey; fetchedAt: number; sessions: Session[]; imports: ImportInfo[] };
-          if (cached.windowKey === w && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+          if (w !== "custom" && cached.windowKey === w && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
             setSessions(cached.sessions);
             setImports(cached.imports ?? []);
             setFetchedAt(cached.fetchedAt);
@@ -217,10 +219,10 @@ export default function CeoDashboardV2() {
       } catch { /* ignore */ }
     }
     setLoading(true);
-    await fetchFresh(w, false);
+    await fetchFresh(w, false, fromCustom, toCustom);
   }
 
-  async function fetchFresh(w: WindowKey, background: boolean) {
+  async function fetchFresh(w: WindowKey, background: boolean, fromCustom?: string, toCustom?: string) {
     try {
       const { data: imps } = await supabase
         .from("bcba_billable_imports")
@@ -235,7 +237,8 @@ export default function CeoDashboardV2() {
         return;
       }
       const importIds = importsList.map((i) => i.id);
-      const since = windowSinceISO(w);
+      const since = windowSinceISO(w, fromCustom);
+      const until = w === "custom" && toCustom && toCustom.length === 10 ? toCustom : null;
       const all: Session[] = [];
       const pageSize = 1000;
       let from = 0;
@@ -247,6 +250,7 @@ export default function CeoDashboardV2() {
           .order("date_of_service", { ascending: false })
           .range(from, from + pageSize - 1);
         if (since) q = q.gte("date_of_service", since);
+        if (until) q = q.lte("date_of_service", until);
         const { data, error } = await q;
         if (error) { if (!background) toast.error(error.message); break; }
         all.push(...((data ?? []) as Session[]));
@@ -258,7 +262,9 @@ export default function CeoDashboardV2() {
       setImports(importsList);
       setFetchedAt(ts);
       try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ windowKey: w, fetchedAt: ts, sessions: all, imports: importsList }));
+        if (w !== "custom") {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ windowKey: w, fetchedAt: ts, sessions: all, imports: importsList }));
+        }
       } catch { /* quota — drop cache */ }
     } finally {
       if (!background) setLoading(false);
@@ -267,6 +273,12 @@ export default function CeoDashboardV2() {
 
   useEffect(() => { loadActive(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   useEffect(() => { loadActive({ window: windowKey }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [windowKey]);
+  // Refetch when custom dates change while in custom mode
+  useEffect(() => {
+    if (windowKey !== "custom") return;
+    loadActive({ window: "custom", from: dateFrom, to: dateTo, force: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFrom, dateTo, windowKey]);
 
   // Reset drawer-local UI state when switching BCBAs
   useEffect(() => { setDetailSearch(""); setDetailTab("overview"); }, [detailBcba]);
