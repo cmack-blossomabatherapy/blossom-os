@@ -751,17 +751,26 @@ function DelayRow({
 }
 
 function ExpiringBucket({
-  label, tone, rows, value,
+  label, tone, rows, value, onDrill, onOpenRow,
 }: {
   label: string; tone: "negative" | "warning" | "neutral";
   rows: { auth: Auth; days: number; expiration: Date }[]; value: number;
+  onDrill?: () => void;
+  onOpenRow?: (id: string) => void;
 }) {
   const toneCls =
     tone === "negative" ? "border-destructive/30 bg-destructive/5"
     : tone === "warning" ? "border-warning/30 bg-warning/5"
     : "border-border bg-card";
   return (
-    <Card className={cn("p-3 border", toneCls)}>
+    <Card
+      onClick={onDrill}
+      className={cn(
+        "p-3 border transition-all",
+        toneCls,
+        onDrill && rows.length > 0 && "cursor-pointer hover:shadow-md hover:scale-[1.005]",
+      )}
+    >
       <div className="flex items-baseline justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="text-sm font-semibold tabular-nums">{rows.length}</div>
@@ -770,15 +779,22 @@ function ExpiringBucket({
       {rows.length > 0 && (
         <div className="mt-2 space-y-1">
           {rows.slice(0, 5).map((r) => (
-            <div key={r.auth.id} className="flex items-center justify-between text-[11px]">
+            <button
+              key={r.auth.id}
+              onClick={(e) => { e.stopPropagation(); onOpenRow?.(r.auth.id); }}
+              className="group w-full flex items-center justify-between text-[11px] rounded px-1 py-0.5 hover:bg-card/60"
+            >
               <span className="truncate text-foreground">{r.auth.payor ?? "Unknown"} · {r.auth.service_type ?? "—"}</span>
-              <span className="tabular-nums text-muted-foreground pl-2">
+              <span className="tabular-nums text-muted-foreground pl-2 inline-flex items-center gap-1">
                 {r.days < 0 ? `${Math.abs(r.days)}d ago` : `${r.days}d`}
+                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
               </span>
-            </div>
+            </button>
           ))}
           {rows.length > 5 && (
-            <div className="text-[10px] text-muted-foreground pt-0.5">+ {rows.length - 5} more</div>
+            <div className="text-[10px] text-primary pt-0.5 inline-flex items-center gap-1">
+              <Eye className="h-3 w-3" /> + {rows.length - 5} more — click card to view all
+            </div>
           )}
         </div>
       )}
@@ -787,10 +803,19 @@ function ExpiringBucket({
 }
 
 function BottleneckRow({
-  name, primary, secondary, sev,
-}: { name: string; primary: string; secondary: string; sev: Severity }) {
+  name, primary, secondary, sev, onDrill, onOpenV2,
+}: {
+  name: string; primary: string; secondary: string; sev: Severity;
+  onDrill?: () => void; onOpenV2?: () => void;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2">
+    <div
+      onClick={onDrill}
+      className={cn(
+        "group flex items-center justify-between rounded-md border border-border/60 bg-card/40 px-3 py-2 transition-colors",
+        onDrill && "cursor-pointer hover:border-primary/40 hover:bg-card/80",
+      )}
+    >
       <div className="flex items-center gap-2 min-w-0">
         <SevDot sev={sev} />
         <div className="min-w-0">
@@ -798,7 +823,18 @@ function BottleneckRow({
           <div className="text-[11px] text-muted-foreground truncate">{secondary}</div>
         </div>
       </div>
-      <div className="text-sm font-semibold tabular-nums pl-3 whitespace-nowrap">{primary}</div>
+      <div className="flex items-center gap-2 pl-3 shrink-0">
+        <div className="text-sm font-semibold tabular-nums whitespace-nowrap">{primary}</div>
+        {onOpenV2 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenV2(); }}
+            title="Open BCBA in V2 Dashboard"
+            className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center h-6 w-6 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
