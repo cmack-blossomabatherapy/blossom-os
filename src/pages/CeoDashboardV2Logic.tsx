@@ -24,12 +24,12 @@ export default function CeoDashboardV2Logic() {
       {/* HERO */}
       <div className="border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/5 px-4 pt-5 pb-5 md:px-8 md:pt-8 md:pb-7">
         <Button variant="ghost" size="sm" onClick={() => navigate("/ceo-dashboard-v2")} className="mb-3 -ml-2 h-8 text-xs">
-          <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to CEO Dashboard V2
+          <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to BCBA Performance
         </Button>
         <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
           <BookOpen className="h-3 w-3" /> Reference
         </div>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">How CEO Dashboard V2 works</h1>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">How BCBA Performance works</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           A complete walkthrough of every calculation. Each section answers one question: where does this number come from?
         </p>

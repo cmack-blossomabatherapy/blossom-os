@@ -634,7 +634,7 @@ export default function CeoDashboardV2Insights() {
         <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2 h-8 text-xs">
-              <Link to="/ceo-dashboard-v2"><ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to CEO Dashboard V2</Link>
+              <Link to="/ceo-dashboard-v2"><ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to BCBA Performance</Link>
             </Button>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
               <Sparkles className="h-3 w-3" /> Intelligence
@@ -710,7 +710,7 @@ export default function CeoDashboardV2Insights() {
       ) : sessions.length === 0 ? (
         <div className="px-4 pt-10 md:px-8">
           <Card className="p-10 text-center text-sm text-muted-foreground">
-            No billing data loaded yet. Upload a BCBA Billable CSV from the CEO Dashboard V2 page.
+            No billing data loaded yet. Upload a BCBA Billable CSV from the BCBA Performance page.
           </Card>
         </div>
       ) : (

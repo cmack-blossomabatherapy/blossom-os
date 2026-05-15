@@ -491,7 +491,7 @@ export default function CeoDashboardV2() {
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
               <TrendingUp className="h-3 w-3" /> Executive
             </div>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">CEO Dashboard V2</h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">BCBA Performance</h1>
             <p className="mt-1 text-sm text-muted-foreground">Billable hours per BCBA · live label-driven attribution</p>
             {imports.length > 0 ? (
               <p className="mt-2 text-[11px] text-muted-foreground">
