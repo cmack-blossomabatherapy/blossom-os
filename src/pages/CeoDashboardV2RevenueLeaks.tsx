@@ -564,17 +564,25 @@ export default function CeoDashboardV2RevenueLeaks() {
 // -------------------- SUBCOMPONENTS --------------------
 
 function LeakCard({
-  icon: Icon, tone, label, headline, sub, value, valueLabel,
+  icon: Icon, tone, label, headline, sub, value, valueLabel, onClick,
 }: {
   icon: any; tone: "warning" | "negative" | "neutral"; label: string;
   headline: string; sub: string; value: string; valueLabel: string;
+  onClick?: () => void;
 }) {
   const toneCls =
     tone === "negative" ? "text-destructive border-destructive/30 bg-destructive/5"
     : tone === "warning" ? "text-warning border-warning/30 bg-warning/5"
     : "text-muted-foreground border-border bg-card";
   return (
-    <Card className={cn("p-4 border", toneCls)}>
+    <Card
+      onClick={onClick}
+      className={cn(
+        "p-4 border transition-all",
+        toneCls,
+        onClick && "cursor-pointer hover:shadow-md hover:scale-[1.01]",
+      )}
+    >
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider">
           <Icon className="h-3.5 w-3.5" /> {label}
@@ -586,6 +594,11 @@ function LeakCard({
       </div>
       <div className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{headline}</div>
       <div className="mt-1 text-[11px] text-muted-foreground">{sub}</div>
+      {onClick && (
+        <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-foreground/70">
+          <Eye className="h-3 w-3" /> View underlying records
+        </div>
+      )}
     </Card>
   );
 }
