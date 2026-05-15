@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -160,6 +160,7 @@ import { ClientsProvider } from "@/contexts/ClientsContext";
 function RoleDashboardRedirect() {
   const { roles, isAdmin, hasPerm, partOfLeadership, dashboardAccess } = useAuth();
   const hasTrainingAdminAccess = roles.some((role) => TRAINING_ADMIN_ROLES.includes(role));
+  const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
   const dashboardRoutes: Record<string, string> = {
     ceo: "/leadership-dashboard",
     intake: "/intake-dashboard",
@@ -188,7 +189,7 @@ function RoleDashboardRedirect() {
     ["payroll_admin", "/hr/payroll"],
     ["phone_support", "/phone-calls"],
   ];
-  const profileRoute = dashboardAccess ? dashboardRoutes[dashboardAccess] : undefined;
+  const profileRoute = isExecOnly ? "/bcba-performance-dashboard" : dashboardAccess ? dashboardRoutes[dashboardAccess] : undefined;
   const route = profileRoute ?? (isAdmin || partOfLeadership || roles.includes("exec") || roles.includes("ops_manager") || roles.includes("state_director")
     ? "/leadership-dashboard"
     : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
@@ -200,6 +201,11 @@ function RoleDashboardRedirect() {
     : intelligenceFallback;
 
   return <Navigate to={allowedRoute} replace />;
+}
+
+function LegacyBcbaDashboardRedirect({ to }: { to: string }) {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
 }
 
 const App = () => (
@@ -279,10 +285,14 @@ const App = () => (
                   <Route path="/intelligence/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><ReportBuilder /></PermissionRoute>} />
                   <Route path="/intelligence/assistant" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><AssistantAnalytics /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
-                  <Route path="/ceo-dashboard-v2" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2 /></PermissionRoute>} />
-                  <Route path="/ceo-dashboard-v2/logic" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2Logic /></PermissionRoute>} />
-                  <Route path="/ceo-dashboard-v2/insights" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2Insights /></PermissionRoute>} />
-                  <Route path="/ceo-dashboard-v2/revenue-leaks" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2RevenueLeaks /></PermissionRoute>} />
+                  <Route path="/bcba-performance-dashboard" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2 /></PermissionRoute>} />
+                  <Route path="/bcba-performance-dashboard/logic" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2Logic /></PermissionRoute>} />
+                  <Route path="/bcba-performance-dashboard/insights" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2Insights /></PermissionRoute>} />
+                  <Route path="/bcba-performance-dashboard/revenue-leaks" element={<PermissionRoute allowedRoles={["admin", "exec"]}><CeoDashboardV2RevenueLeaks /></PermissionRoute>} />
+                  <Route path="/ceo-dashboard-v2" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard" />} />
+                  <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
+                  <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
+                  <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
                   <Route path="/scheduling-dashboard" element={<PermissionRoute permission="dashboard.view"><SchedulingDashboard /></PermissionRoute>} />

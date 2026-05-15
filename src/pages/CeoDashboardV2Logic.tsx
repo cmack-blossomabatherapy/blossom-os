@@ -23,7 +23,7 @@ export default function CeoDashboardV2Logic() {
     <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-12">
       {/* HERO */}
       <div className="border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/5 px-4 pt-5 pb-5 md:px-8 md:pt-8 md:pb-7">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/ceo-dashboard-v2")} className="mb-3 -ml-2 h-8 text-xs">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/bcba-performance-dashboard")} className="mb-3 -ml-2 h-8 text-xs">
           <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back to BCBA Performance
         </Button>
         <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
@@ -320,7 +320,7 @@ Total → 22.5 h`}</CodeBlock>
           </Section>
 
           <div className="pt-2">
-            <Button onClick={() => navigate("/ceo-dashboard-v2")} className="w-full sm:w-auto">
+            <Button onClick={() => navigate("/bcba-performance-dashboard")} className="w-full sm:w-auto">
               <ArrowLeft className="h-4 w-4 mr-2" /> Back to dashboard
             </Button>
           </div>
