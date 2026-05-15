@@ -86,6 +86,7 @@ import LeadershipDashboard from "./pages/LeadershipDashboard";
 import CeoDashboardV2 from "./pages/CeoDashboardV2";
 import CeoDashboardV2Logic from "./pages/CeoDashboardV2Logic";
 import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
+import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
 import IntakeDashboard from "./pages/IntakeDashboard";
 import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
 import SchedulingDashboard from "./pages/SchedulingDashboard";
@@ -279,6 +280,7 @@ const App = () => (
                   <Route path="/ceo-dashboard-v2" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2 /></PermissionRoute>} />
                   <Route path="/ceo-dashboard-v2/logic" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2Logic /></PermissionRoute>} />
                   <Route path="/ceo-dashboard-v2/insights" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2Insights /></PermissionRoute>} />
+                  <Route path="/ceo-dashboard-v2/revenue-leaks" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2RevenueLeaks /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
                   <Route path="/scheduling-dashboard" element={<PermissionRoute permission="dashboard.view"><SchedulingDashboard /></PermissionRoute>} />
