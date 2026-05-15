@@ -10,10 +10,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
-  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin,
+  AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Session {
@@ -77,6 +78,21 @@ function extractState(labels: string | null): string | null {
   return null;
 }
 
+/**
+ * Normalize procedure codes so clinic / VA fee-schedule variants are grouped
+ * with their base code for BCBA attribution. Eli: BCBAs aren't penalized
+ * because a client happens to be a clinic client — the work is the same.
+ *   97153, "97153 RBT Clinic", "97153 BCBA Clinic" -> 97153
+ *   97155, "97155 VA",         "97155 BCBA Clinic" -> 97155
+ */
+function normalizeCode(code: string | null | undefined): string {
+  if (!code) return "—";
+  const trimmed = code.trim();
+  if (/^97153(\b|\s)/i.test(trimmed)) return "97153";
+  if (/^97155(\b|\s)/i.test(trimmed)) return "97155";
+  return trimmed;
+}
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -119,6 +135,7 @@ export default function CeoDashboardV2() {
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
+  const [showUnassigned, setShowUnassigned] = useState<boolean>(persisted?.showUnassigned ?? false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Persist filters across refresh / navigation
@@ -126,10 +143,10 @@ export default function CeoDashboardV2() {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey }),
+        JSON.stringify({ search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey, showUnassigned }),
       );
     } catch { /* quota/SSR */ }
-  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey]);
+  }, [search, codeFilter, stateFilter, bcbaFilter, dateFrom, dateTo, sortKey, windowKey, showUnassigned]);
 
   async function loadActive(opts: { force?: boolean; window?: WindowKey } = {}) {
     const w = opts.window ?? windowKey;
@@ -233,7 +250,7 @@ export default function CeoDashboardV2() {
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
-      if (codeFilter !== "all" && s.procedure_code !== codeFilter) return false;
+      if (codeFilter !== "all" && normalizeCode(s.procedure_code) !== codeFilter) return false;
       if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
       if (stateFilter !== "all") {
         const st = extractState(s.raw_labels) ?? "Unknown";
@@ -260,7 +277,7 @@ export default function CeoDashboardV2() {
 
   const allCodes = useMemo(() => {
     const set = new Set<string>();
-    sessions.forEach((s) => { if (s.procedure_code) set.add(s.procedure_code); });
+    sessions.forEach((s) => { if (s.procedure_code) set.add(normalizeCode(s.procedure_code)); });
     return Array.from(set).sort();
   }, [sessions]);
 
@@ -290,11 +307,14 @@ export default function CeoDashboardV2() {
     const m = new Map<string, Group & { rbts: Set<string> }>();
     for (const s of filtered) {
       const bcba = s.bcba_name ?? UNASSIGNED;
+      // Hide Unassigned from the main BCBA leaderboard unless the user opts in.
+      // Unassigned hours are still surfaced in the dedicated alert above the list.
+      if (!showUnassigned && bcba === UNASSIGNED) continue;
       let g = m.get(bcba);
       if (!g) { g = { bcba, totalHours: 0, sessionCount: 0, clientCount: 0, rbtCount: 0, byCode: new Map(), byClient: new Map(), rbts: new Set() }; m.set(bcba, g); }
       g.totalHours += Number(s.hours) || 0;
       g.sessionCount += 1;
-      const code = s.procedure_code || "—";
+      const code = normalizeCode(s.procedure_code);
       g.byCode.set(code, (g.byCode.get(code) || 0) + (Number(s.hours) || 0));
       const client = s.client_full || "Unknown client";
       let c = g.byClient.get(client);
@@ -316,7 +336,7 @@ export default function CeoDashboardV2() {
       rbts_desc: (a, b) => b.rbtCount - a.rbtCount,
     };
     return arr.sort(cmp[sortKey] ?? cmp.hours_desc);
-  }, [filtered, sortKey]);
+  }, [filtered, sortKey, showUnassigned]);
 
   const totalHours = useMemo(() => groups.reduce((s, g) => s + g.totalHours, 0), [groups]);
   const maxHours = useMemo(() => groups.reduce((m, g) => Math.max(m, g.totalHours), 0), [groups]);
@@ -380,7 +400,7 @@ export default function CeoDashboardV2() {
     for (const s of rows) {
       const h = Number(s.hours) || 0;
       total += h;
-      const code = s.procedure_code || "—";
+      const code = normalizeCode(s.procedure_code);
       byCode.set(code, (byCode.get(code) || 0) + h);
       const client = s.client_full || "Unknown client";
       let c = byClient.get(client);
@@ -439,6 +459,17 @@ export default function CeoDashboardV2() {
             ) : null}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              title="How this dashboard works"
+            >
+              <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                <HelpCircle className="h-4 w-4" />
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => loadActive({ force: true })} className="h-9">
               <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
             </Button>
@@ -572,6 +603,22 @@ export default function CeoDashboardV2() {
                       ))}
                     </SelectContent>
                   </Select>
+                </FilterField>
+                <FilterField label="Unassigned BCBA">
+                  <button
+                    type="button"
+                    onClick={() => setShowUnassigned((v) => !v)}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors",
+                      showUnassigned ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card",
+                    )}
+                  >
+                    <span className="text-left">
+                      <div className="font-medium">{showUnassigned ? "Showing in leaderboard" : "Hidden from leaderboard"}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">Sessions without a BCBA label still appear in the alert above the list.</div>
+                    </span>
+                    <Badge variant={showUnassigned ? "default" : "outline"} className="ml-3 shrink-0">{showUnassigned ? "On" : "Off"}</Badge>
+                  </button>
                 </FilterField>
               </div>
               <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">

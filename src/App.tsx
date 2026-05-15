@@ -84,6 +84,7 @@ import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
 import CeoDashboardV2 from "./pages/CeoDashboardV2";
+import CeoDashboardV2Logic from "./pages/CeoDashboardV2Logic";
 import IntakeDashboard from "./pages/IntakeDashboard";
 import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
 import SchedulingDashboard from "./pages/SchedulingDashboard";
@@ -275,6 +276,7 @@ const App = () => (
                   <Route path="/intelligence/assistant" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><AssistantAnalytics /></PermissionRoute>} />
                   <Route path="/leadership-dashboard" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/ceo-dashboard-v2" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2 /></PermissionRoute>} />
+                  <Route path="/ceo-dashboard-v2/logic" element={<PermissionRoute allowedRoles={["admin"]}><CeoDashboardV2Logic /></PermissionRoute>} />
                   <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
                   <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
                   <Route path="/scheduling-dashboard" element={<PermissionRoute permission="dashboard.view"><SchedulingDashboard /></PermissionRoute>} />
