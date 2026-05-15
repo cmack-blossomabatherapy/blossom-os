@@ -258,13 +258,18 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ],
   };
 
-  const allSections: NavSection[] = [
-    ...academySections,
-    ...(showAdmin ? adminSections : []),
-    ...(isExecOnly ? [execDashboardsSection] : []),
-    ...(showOperations ? operationsSections : []),
-    ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
-  ];
+  const allSections: NavSection[] = isExecOnly
+    ? [
+        execDashboardsSection,
+        ...academySections,
+        ...(showAdmin ? adminSections : []),
+      ]
+    : [
+        ...academySections,
+        ...(showAdmin ? adminSections : []),
+        ...(showOperations ? operationsSections : []),
+        ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
+      ];
 
   const baseSections = allSections
     .map((s) => {
