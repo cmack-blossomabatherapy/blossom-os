@@ -45,17 +45,19 @@ const STORAGE_KEY = "ceoDashV2.filters.v1";
 const CACHE_KEY = "ceoDashV2.cache.v1";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-type WindowKey = "30d" | "90d" | "6mo" | "12mo" | "all";
+type WindowKey = "30d" | "90d" | "6mo" | "12mo" | "all" | "custom";
 const WINDOW_LABELS: Record<WindowKey, string> = {
   "30d": "Last 30 days",
   "90d": "Last 90 days",
   "6mo": "Last 6 months",
   "12mo": "Last 12 months",
   all: "All history",
+  custom: "Custom range",
 };
-const WINDOW_ORDER: WindowKey[] = ["30d", "90d", "6mo", "12mo", "all"];
-function windowSinceISO(w: WindowKey): string | null {
+const WINDOW_ORDER: WindowKey[] = ["30d", "90d", "6mo", "12mo", "all", "custom"];
+function windowSinceISO(w: WindowKey, customFrom?: string): string | null {
   if (w === "all") return null;
+  if (w === "custom") return customFrom && customFrom.length === 10 ? customFrom : null;
   const days = w === "30d" ? 30 : w === "90d" ? 90 : w === "6mo" ? 183 : 365;
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - days);
