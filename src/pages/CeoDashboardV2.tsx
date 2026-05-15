@@ -466,34 +466,33 @@ export default function CeoDashboardV2() {
               </p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              title="How this dashboard works"
-            >
-              <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
-                <HelpCircle className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => loadActive({ force: true })} className="h-9">
-              <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-card/60 backdrop-blur p-1">
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title="How this dashboard works">
+                <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                  <HelpCircle className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => loadActive({ force: true })} className="h-8 w-8 rounded-lg" title="Refresh">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
-              <SelectTrigger className="h-9 w-[110px] text-xs" aria-label="Upload mode">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="replace">Replace</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 shadow-[var(--shadow-brand)]">
-              <Upload className="h-3.5 w-3.5 mr-1.5" />{uploading ? "Uploading…" : "Upload CSV"}
-            </Button>
+            <div className="flex items-center rounded-xl border border-border/60 bg-card/60 backdrop-blur overflow-hidden">
+              <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
+                <SelectTrigger className="h-9 w-[100px] text-xs border-0 bg-transparent rounded-none focus:ring-0" aria-label="Upload mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="replace">Replace</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="h-5 w-px bg-border/60" />
+              <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 rounded-none gap-1.5 text-primary hover:text-primary hover:bg-primary/5">
+                <Upload className="h-3.5 w-3.5" />{uploading ? "Uploading…" : "Upload CSV"}
+              </Button>
+            </div>
           </div>
         </div>
 
