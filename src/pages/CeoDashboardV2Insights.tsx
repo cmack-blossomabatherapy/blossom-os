@@ -107,6 +107,65 @@ export default function CeoDashboardV2Insights() {
   const [codeFilter, setCodeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
 
+  // ---- Cross-highlight (hover) + drill modal ----
+  type HoverKey = { type: "bcba" | "code" | "state"; name: string } | null;
+  const [hovered, setHovered] = useState<HoverKey>(null);
+  type Drill = { type: "bcba" | "code" | "state" | "all"; name: string } | null;
+  const [drill, setDrill] = useState<Drill>(null);
+
+  // ---- URL <-> filter sync (two-way deep-link with V2 dashboard) ----
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAppliedRef = useRef(false);
+  useEffect(() => {
+    if (urlAppliedRef.current) return;
+    urlAppliedRef.current = true;
+    const w = searchParams.get("window") as WindowKey | null;
+    const g = searchParams.get("granularity") as Granularity | null;
+    const b = searchParams.get("bcba");
+    const c = searchParams.get("code");
+    const st = searchParams.get("state");
+    if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
+    if (g && ["weekly", "monthly", "quarterly"].includes(g)) setGranularity(g);
+    if (b) setBcbaFilter(b);
+    if (c) setCodeFilter(c);
+    if (st) setStateFilter(st);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!urlAppliedRef.current) return;
+    const params = new URLSearchParams(searchParams);
+    const set = (k: string, v: string, def: string) => {
+      if (v && v !== def) params.set(k, v); else params.delete(k);
+    };
+    set("window", windowKey, "90d");
+    set("granularity", granularity, "weekly");
+    set("bcba", bcbaFilter, "all");
+    set("code", codeFilter, "all");
+    set("state", stateFilter, "all");
+    const next = params.toString();
+    if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowKey, granularity, bcbaFilter, codeFilter, stateFilter]);
+
+  // Build a deep-link to V2 dashboard with current filters + optional drawer.
+  function v2Link(extra: { bcba?: string; code?: string; state?: string; drawer?: string } = {}) {
+    const p = new URLSearchParams();
+    if (windowKey !== "90d") p.set("window", windowKey);
+    const b = extra.bcba ?? (bcbaFilter !== "all" ? bcbaFilter : undefined);
+    const c = extra.code ?? (codeFilter !== "all" ? codeFilter : undefined);
+    const s = extra.state ?? (stateFilter !== "all" ? stateFilter : undefined);
+    if (b) p.set("bcba", b);
+    if (c) p.set("code", c);
+    if (s) p.set("state", s);
+    if (extra.drawer) p.set("drawer", extra.drawer);
+    const qs = p.toString();
+    return `/ceo-dashboard-v2${qs ? `?${qs}` : ""}`;
+  }
+  function openInV2(extra: Parameters<typeof v2Link>[0] = {}) {
+    navigate(v2Link(extra));
+  }
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
