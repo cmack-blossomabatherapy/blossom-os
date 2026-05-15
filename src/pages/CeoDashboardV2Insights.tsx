@@ -1344,3 +1344,125 @@ function RiskCard({ severity, title, detail, action }: { severity: "high" | "med
     </div>
   );
 }
+
+/* ======================== DRILL DIALOG ======================== */
+
+function DrillDialog({
+  drill, onClose, sessions, onOpenInV2,
+}: {
+  drill: { type: "bcba" | "code" | "state" | "all"; name: string } | null;
+  onClose: () => void;
+  sessions: Session[];
+  onOpenInV2: (extra: { bcba?: string; code?: string; state?: string; drawer?: string }) => void;
+}) {
+  const matched = useMemo(() => {
+    if (!drill) return [] as Session[];
+    return sessions.filter((s) => {
+      if (drill.type === "bcba") return (s.bcba_name ?? UNASSIGNED) === drill.name;
+      if (drill.type === "code") return normalizeCode(s.procedure_code) === drill.name;
+      if (drill.type === "state") return (extractState(s.raw_labels) ?? "Unknown") === drill.name;
+      return true;
+    });
+  }, [drill, sessions]);
+
+  const totals = useMemo(() => {
+    let h = 0; const clients = new Set<string>(); const rbts = new Set<string>(); const codes = new Set<string>();
+    for (const s of matched) {
+      h += Number(s.hours) || 0;
+      if (s.client_full) clients.add(s.client_full);
+      if (s.provider_full) rbts.add(s.provider_full);
+      codes.add(normalizeCode(s.procedure_code));
+    }
+    return { hours: h, sessions: matched.length, clients: clients.size, rbts: rbts.size, codes: codes.size };
+  }, [matched]);
+
+  const open = !!drill;
+  const title =
+    !drill ? "" :
+    drill.type === "bcba" ? `BCBA · ${drill.name}` :
+    drill.type === "code" ? `Code · ${drill.name}` :
+    drill.type === "state" ? `Region · ${drill.name}` : "All sessions";
+
+  const v2Extra = !drill ? {} :
+    drill.type === "bcba" ? { bcba: drill.name, drawer: drill.name } :
+    drill.type === "code" ? { code: drill.name } :
+    drill.type === "state" ? { state: drill.name } : {};
+
+  const sorted = useMemo(
+    () => [...matched].sort((a, b) => (b.date_of_service ?? "").localeCompare(a.date_of_service ?? "")).slice(0, 200),
+    [matched]
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogHeader className="border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="truncate">{title}</DialogTitle>
+              <DialogDescription className="text-[11px]">
+                Underlying sessions in the current filter window
+              </DialogDescription>
+            </div>
+            {drill && (
+              <Button size="sm" variant="default" className="h-8 gap-1.5 shrink-0" onClick={() => onOpenInV2(v2Extra)}>
+                <ExternalLink className="h-3.5 w-3.5" /> Open in V2 Dashboard
+              </Button>
+            )}
+          </div>
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <DrillStat label="Hours" value={totals.hours.toFixed(1)} />
+            <DrillStat label="Sessions" value={totals.sessions.toLocaleString()} />
+            <DrillStat label="Clients" value={totals.clients.toString()} />
+            <DrillStat label="RBTs" value={totals.rbts.toString()} />
+            <DrillStat label="Codes" value={totals.codes.toString()} />
+          </div>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-y-auto px-5 py-3">
+          {sorted.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">No sessions match.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-background">
+                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+                  <th className="text-left py-2">Date</th>
+                  <th className="text-left py-2">Client</th>
+                  <th className="text-left py-2">BCBA</th>
+                  <th className="text-left py-2">RBT</th>
+                  <th className="text-left py-2">Code</th>
+                  <th className="text-right py-2">Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((s) => (
+                  <tr key={s.id} className="border-b border-border/30 hover:bg-muted/40">
+                    <td className="py-1.5 tabular-nums text-muted-foreground">{s.date_of_service ?? "—"}</td>
+                    <td className="py-1.5 truncate max-w-[160px]">{s.client_full}</td>
+                    <td className={cn("py-1.5 truncate max-w-[140px]", !s.bcba_name && "italic text-muted-foreground")}>{s.bcba_name ?? "Unassigned"}</td>
+                    <td className="py-1.5 truncate max-w-[140px] text-muted-foreground">{s.provider_full}</td>
+                    <td className="py-1.5 font-mono text-[10px]">{normalizeCode(s.procedure_code)}</td>
+                    <td className="py-1.5 text-right tabular-nums">{Number(s.hours).toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {matched.length > sorted.length && (
+            <div className="text-[10px] text-muted-foreground text-center pt-2">
+              Showing {sorted.length} of {matched.length.toLocaleString()} matching sessions
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DrillStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-sm font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
