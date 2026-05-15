@@ -604,6 +604,22 @@ export default function CeoDashboardV2() {
                     </SelectContent>
                   </Select>
                 </FilterField>
+                <FilterField label="Unassigned BCBA">
+                  <button
+                    type="button"
+                    onClick={() => setShowUnassigned((v) => !v)}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors",
+                      showUnassigned ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card",
+                    )}
+                  >
+                    <span className="text-left">
+                      <div className="font-medium">{showUnassigned ? "Showing in leaderboard" : "Hidden from leaderboard"}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">Sessions without a BCBA label still appear in the alert above the list.</div>
+                    </span>
+                    <Badge variant={showUnassigned ? "default" : "outline"} className="ml-3 shrink-0">{showUnassigned ? "On" : "Off"}</Badge>
+                  </button>
+                </FilterField>
               </div>
               <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-background px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
                 <Button variant="outline" className="flex-1 h-11" onClick={clearFilters} disabled={activeFilterCount === 0}>Clear all</Button>
