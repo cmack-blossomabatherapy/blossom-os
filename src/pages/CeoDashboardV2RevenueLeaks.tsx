@@ -20,6 +20,7 @@ import {
   TrendingDown, ShieldAlert, ChevronRight, FileWarning, Users, ExternalLink, Eye,
 } from "lucide-react";
 import { differenceInDays, format, parseISO } from "date-fns";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -70,36 +71,55 @@ interface Auth {
 
 type Severity = "high" | "medium" | "low";
 
+type LeakWindowKey = "30d" | "90d" | "6mo" | "12mo" | "all" | "custom";
+const LEAK_WINDOW_LABELS: Record<LeakWindowKey, string> = {
+  "30d": "30 days", "90d": "90 days", "6mo": "6 months", "12mo": "12 months", all: "All", custom: "Custom",
+};
+const LEAK_WINDOW_ORDER: LeakWindowKey[] = ["30d", "90d", "6mo", "12mo", "all", "custom"];
+function leakSinceISO(w: LeakWindowKey, customFrom?: string): string | null {
+  if (w === "all") return null;
+  if (w === "custom") return customFrom && customFrom.length === 10 ? customFrom : null;
+  const days = w === "30d" ? 30 : w === "90d" ? 90 : w === "6mo" ? 183 : 365;
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function CeoDashboardV2RevenueLeaks() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [auths, setAuths] = useState<Auth[]>([]);
   const [loading, setLoading] = useState(true);
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [payorFilter, setPayorFilter] = useState<string>("all");
+  const [windowKey, setWindowKey] = useState<LeakWindowKey>("90d");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        // Pull active billable imports + last 90d sessions for capacity analysis.
+        // Pull active billable imports + sessions in selected range for capacity analysis.
         const { data: imps } = await supabase
           .from("bcba_billable_imports").select("id").eq("is_active", true);
         const ids = (imps ?? []).map((i: any) => i.id);
-        const since = new Date(); since.setUTCDate(since.getUTCDate() - 90);
-        const sinceISO = since.toISOString().slice(0, 10);
+        const sinceISO = leakSinceISO(windowKey, dateFrom);
+        const untilISO = windowKey === "custom" && dateTo && dateTo.length === 10 ? dateTo : null;
 
         const allSessions: Session[] = [];
         if (ids.length) {
           let from = 0;
           while (true) {
-            const { data, error } = await supabase
+            let q = supabase
               .from("bcba_billable_sessions")
               .select("date_of_service, client_full, bcba_name, provider_full, procedure_code, hours")
               .in("import_id", ids)
-              .gte("date_of_service", sinceISO)
               .order("date_of_service", { ascending: false })
               .range(from, from + 999);
+            if (sinceISO) q = q.gte("date_of_service", sinceISO);
+            if (untilISO) q = q.lte("date_of_service", untilISO);
+            const { data, error } = await q;
             if (error) { toast.error(error.message); break; }
             allSessions.push(...((data ?? []) as Session[]));
             if (!data || data.length < 1000) break;
@@ -121,7 +141,7 @@ export default function CeoDashboardV2RevenueLeaks() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [windowKey, dateFrom, dateTo]);
 
   // Filter option lists
   const allStates = useMemo(
