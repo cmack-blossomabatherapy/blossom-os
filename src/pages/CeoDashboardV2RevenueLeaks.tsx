@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,11 +10,14 @@ import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
 } from "recharts";
 import {
   ArrowLeft, AlertTriangle, Clock, CalendarClock, UserCog, DollarSign,
-  TrendingDown, ShieldAlert, ChevronRight, FileWarning, Users,
+  TrendingDown, ShieldAlert, ChevronRight, FileWarning, Users, ExternalLink, Eye,
 } from "lucide-react";
 import { differenceInDays, format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
