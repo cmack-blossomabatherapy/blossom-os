@@ -977,7 +977,23 @@ export default function CeoDashboardV2Insights() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={codeDistribution} dataKey="hours" nameKey="code" innerRadius={48} outerRadius={78} paddingAngle={2}>
-                      {codeDistribution.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+                      {codeDistribution.map((c, i) => {
+                        const isHover = hovered?.type === "code" && hovered.name === c.code;
+                        const dim = hovered?.type === "code" && hovered.name !== c.code;
+                        return (
+                          <Cell
+                            key={i}
+                            fill={PALETTE[i % PALETTE.length]}
+                            opacity={dim ? 0.25 : 1}
+                            stroke={isHover ? "hsl(var(--foreground))" : "transparent"}
+                            strokeWidth={isHover ? 2 : 0}
+                            cursor="pointer"
+                            onMouseEnter={() => setHovered({ type: "code", name: c.code })}
+                            onMouseLeave={() => setHovered(null)}
+                            onClick={() => setDrill({ type: "code", name: c.code })}
+                          />
+                        );
+                      })}
                     </Pie>
                     <RTooltip contentStyle={tooltipStyle} />
                   </PieChart>
@@ -985,7 +1001,19 @@ export default function CeoDashboardV2Insights() {
               </div>
               <div className="space-y-1.5 mt-2">
                 {codeDistribution.map((c, i) => (
-                  <div key={c.code} className="flex items-center justify-between text-xs">
+                  <button
+                    key={c.code}
+                    onMouseEnter={() => setHovered({ type: "code", name: c.code })}
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={() => setDrill({ type: "code", name: c.code })}
+                    className={cn(
+                      "group w-full flex items-center justify-between text-xs rounded-md px-1.5 py-1 transition-all",
+                      hovered?.type === "code" && hovered.name === c.code
+                        ? "bg-muted/70"
+                        : hovered?.type === "code" && "opacity-40",
+                      "hover:bg-muted/60",
+                    )}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="h-2 w-2 rounded-full shrink-0" style={{ background: PALETTE[i % PALETTE.length] }} />
                       <span className="font-mono">{c.code}</span>
@@ -994,8 +1022,12 @@ export default function CeoDashboardV2Insights() {
                       <span className="text-muted-foreground">{c.pct.toFixed(1)}%</span>
                       <span className="font-medium">{c.hours.toFixed(0)}h</span>
                       <span className="text-[10px] text-muted-foreground">~${(c.revenue / 1000).toFixed(1)}k</span>
+                      <ExternalLink
+                        className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); openInV2({ code: c.code }); }}
+                      />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </Card>
