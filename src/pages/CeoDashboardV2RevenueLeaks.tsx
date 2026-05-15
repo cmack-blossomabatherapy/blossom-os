@@ -618,6 +618,17 @@ export default function CeoDashboardV2RevenueLeaks() {
           )}
         </Card>
       </div>
+
+      {/* DRILL-DOWN MODAL */}
+      <LeakDrillDialog
+        drill={drill}
+        onClose={() => setDrill(null)}
+        delays={delays}
+        expiring={expiring}
+        sessions={sessions}
+        onOpenAuths={(kpi, focus) => { setDrill(null); navigate(authsUrl(kpi, focus)); }}
+        onOpenV2={(opts) => { setDrill(null); navigate(v2Url(opts)); }}
+      />
     </div>
   );
 }
