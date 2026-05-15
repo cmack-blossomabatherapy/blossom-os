@@ -973,6 +973,7 @@ export default function CeoDashboardV2Insights() {
             </Card>
           </div>
         </div>
+        </div>
       )}
     </div>
   );
