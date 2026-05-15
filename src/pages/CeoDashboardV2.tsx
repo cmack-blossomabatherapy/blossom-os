@@ -600,6 +600,25 @@ export default function CeoDashboardV2() {
               {WINDOW_LABELS[w]}
             </button>
           ))}
+          {windowKey === "custom" && (
+            <div className="flex items-center gap-1.5 ml-1 shrink-0">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-7 w-[140px] text-[11px] px-2"
+                aria-label="Custom range from"
+              />
+              <span className="text-[10px] text-muted-foreground">to</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-7 w-[140px] text-[11px] px-2"
+                aria-label="Custom range to"
+              />
+            </div>
+          )}
         </div>
       </div>
 
