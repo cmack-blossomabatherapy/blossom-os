@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X } from "lucide-react";
+import { ExternalLink, Loader2, Search, UserCircle2, Mail, Save, Pencil, X, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -372,6 +372,23 @@ export function TeamAdminPanel() {
     toast.success(data.resendMessageId ? "Welcome email sent through Resend" : "Welcome email sent");
   };
 
+  const sendPasswordReset = async (member: Member) => {
+    if (!member.email) {
+      toast.error("No email on file for this member");
+      return;
+    }
+    setSavingId(member.user_id);
+    const { error } = await supabase.auth.resetPasswordForEmail(member.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSavingId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Password reset link sent to ${member.email}`);
+  };
+
   if (loading) {
     return (
       <div className="rounded-xl border border-border/60 bg-card p-10 flex items-center justify-center">
@@ -413,6 +430,7 @@ export function TeamAdminPanel() {
             onToggleRole={(role) => toggleRole(m, role)}
             onSaveInfo={(next) => saveInfo(m, next)}
             onSendWelcome={() => sendWelcomeMail(m)}
+            onSendPasswordReset={() => sendPasswordReset(m)}
             onVisited={() => trackVisited(m.user_id)}
             lastVisitedAt={!showFullList && !query.trim() ? recentVisits.find((visit) => visit.id === m.user_id)?.visitedAt ?? null : null}
             roleActivity={roleActivity.find((activity) => activity.id === m.user_id) ?? null}
