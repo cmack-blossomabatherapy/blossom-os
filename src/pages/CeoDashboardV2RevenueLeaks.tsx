@@ -390,13 +390,18 @@ export default function CeoDashboardV2RevenueLeaks() {
       <div className="px-4 pt-5 md:px-8 space-y-4">
         {/* SECTION 1 — AUTH DELAYS */}
         <Card className="p-4 md:p-5">
-          <SectionHeader
-            icon={Clock}
-            title="Authorization delays"
-            subtitle="Submitted but not yet approved · sorted by days outstanding"
-            badge={delays.count > 0 ? `${delays.count} open` : undefined}
-            tone={delays.byBucket.high > 0 ? "negative" : delays.byBucket.medium > 0 ? "warning" : "neutral"}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <SectionHeader
+              icon={Clock}
+              title="Authorization delays"
+              subtitle="Submitted but not yet approved · sorted by days outstanding"
+              badge={delays.count > 0 ? `${delays.count} open` : undefined}
+              tone={delays.byBucket.high > 0 ? "negative" : delays.byBucket.medium > 0 ? "warning" : "neutral"}
+            />
+            <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-[11px] shrink-0">
+              <Link to={authsUrl("submitted")}><ExternalLink className="h-3 w-3" /> Open in Authorizations</Link>
+            </Button>
+          </div>
           {delays.rows.length === 0 ? (
             <EmptyState
               icon={Clock}
@@ -411,24 +416,40 @@ export default function CeoDashboardV2RevenueLeaks() {
               {(["high", "medium", "low"] as Severity[]).map((sev) => {
                 const items = delays.rows.filter((d) => d.severity === sev);
                 if (items.length === 0) return null;
+                const bucketKpi = sev === "high" ? "submitted" : "awaiting";
                 return (
                   <AccordionItem key={sev} value={sev} className="border-border/60">
                     <AccordionTrigger className="hover:no-underline py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1">
                         <SevDot sev={sev} />
                         <span className="text-sm font-medium capitalize">{sev}</span>
                         <span className="text-xs text-muted-foreground">
                           ({items.length} · {fmtMoney(items.reduce((s, x) => s + x.valueAtRisk, 0))} at risk)
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDrill({ kind: "delays", severity: sev }); }}
+                          className="ml-auto mr-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground/60 hover:text-primary hover:bg-primary/5"
+                        >
+                          <Eye className="h-3 w-3" /> Drill
+                        </button>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-1.5">
                         {items.slice(0, 25).map((d) => (
-                          <DelayRow key={d.auth.id} d={d} />
+                          <DelayRow
+                            key={d.auth.id}
+                            d={d}
+                            onOpen={() => navigate(authsUrl(bucketKpi, d.auth.id))}
+                          />
                         ))}
                         {items.length > 25 && (
-                          <div className="text-[11px] text-muted-foreground pt-1.5 pl-2">+ {items.length - 25} more…</div>
+                          <button
+                            onClick={() => setDrill({ kind: "delays", severity: sev })}
+                            className="block w-full text-left text-[11px] text-primary hover:underline pt-1.5 pl-2"
+                          >
+                            + {items.length - 25} more — view all in drill modal
+                          </button>
                         )}
                       </div>
                     </AccordionContent>
