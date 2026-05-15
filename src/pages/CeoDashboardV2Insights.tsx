@@ -1126,6 +1126,14 @@ export default function CeoDashboardV2Insights() {
         </div>
         </div>
       )}
+
+      {/* DRILL-DOWN MODAL */}
+      <DrillDialog
+        drill={drill}
+        onClose={() => setDrill(null)}
+        sessions={filtered}
+        onOpenInV2={(extra) => { setDrill(null); openInV2(extra); }}
+      />
     </div>
   );
 }
