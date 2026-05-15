@@ -214,6 +214,7 @@ const App = () => (
                 <PushNavigationListener />
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<WelcomeHome />} />
