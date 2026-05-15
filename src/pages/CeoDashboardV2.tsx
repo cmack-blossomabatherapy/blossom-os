@@ -127,10 +127,16 @@ export default function CeoDashboardV2() {
     if (typeof window === "undefined") return null;
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { return null; }
   })();
+  // Migrate legacy single-string filters → arrays. Empty array = "All".
+  const toArr = (v: unknown): string[] => {
+    if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string" && !!x);
+    if (typeof v === "string" && v && v !== "all") return v.split(",").map((s) => s.trim()).filter(Boolean);
+    return [];
+  };
   const [search, setSearch] = useState<string>(persisted?.search ?? "");
-  const [codeFilter, setCodeFilter] = useState<string>(persisted?.codeFilter ?? "all");
-  const [stateFilter, setStateFilter] = useState<string>(persisted?.stateFilter ?? "all");
-  const [bcbaFilter, setBcbaFilter] = useState<string>(persisted?.bcbaFilter ?? "all");
+  const [codeFilter, setCodeFilter] = useState<string[]>(toArr(persisted?.codeFilter));
+  const [stateFilter, setStateFilter] = useState<string[]>(toArr(persisted?.stateFilter));
+  const [bcbaFilter, setBcbaFilter] = useState<string[]>(toArr(persisted?.bcbaFilter));
   const [dateFrom, setDateFrom] = useState<string>(persisted?.dateFrom ?? "");
   const [dateTo, setDateTo] = useState<string>(persisted?.dateTo ?? "");
   const [sortKey, setSortKey] = useState<SortKey>((persisted?.sortKey as SortKey) ?? "hours_desc");
@@ -156,9 +162,9 @@ export default function CeoDashboardV2() {
     const st = searchParams.get("state");
     const drawer = searchParams.get("drawer");
     if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
-    if (b) setBcbaFilter(b);
-    if (c) setCodeFilter(c);
-    if (st) setStateFilter(st);
+    if (b) setBcbaFilter(b.split(",").filter(Boolean));
+    if (c) setCodeFilter(c.split(",").filter(Boolean));
+    if (st) setStateFilter(st.split(",").filter(Boolean));
     if (drawer) setDetailBcba(drawer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -169,9 +175,9 @@ export default function CeoDashboardV2() {
       if (v && v !== def) params.set(k, v); else params.delete(k);
     };
     set("window", windowKey, "90d");
-    set("bcba", bcbaFilter, "all");
-    set("code", codeFilter, "all");
-    set("state", stateFilter, "all");
+    set("bcba", bcbaFilter.join(","), "");
+    set("code", codeFilter.join(","), "");
+    set("state", stateFilter.join(","), "");
     if (detailBcba) params.set("drawer", detailBcba); else params.delete("drawer");
     const next = params.toString();
     if (next !== searchParams.toString()) setSearchParams(params, { replace: true });
@@ -293,11 +299,11 @@ export default function CeoDashboardV2() {
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
-      if (codeFilter !== "all" && normalizeCode(s.procedure_code) !== codeFilter) return false;
-      if (bcbaFilter !== "all" && (s.bcba_name ?? UNASSIGNED) !== bcbaFilter) return false;
-      if (stateFilter !== "all") {
+      if (codeFilter.length && !codeFilter.includes(normalizeCode(s.procedure_code))) return false;
+      if (bcbaFilter.length && !bcbaFilter.includes(s.bcba_name ?? UNASSIGNED)) return false;
+      if (stateFilter.length) {
         const st = extractState(s.raw_labels) ?? "Unknown";
-        if (st !== stateFilter) return false;
+        if (!stateFilter.includes(st)) return false;
       }
       if (dateFrom && (!s.date_of_service || s.date_of_service < dateFrom)) return false;
       if (dateTo && (!s.date_of_service || s.date_of_service > dateTo)) return false;
@@ -466,14 +472,11 @@ export default function CeoDashboardV2() {
   }, [detailBcba, filtered]);
 
   const activeFilterCount =
-    (codeFilter !== "all" ? 1 : 0) +
-    (stateFilter !== "all" ? 1 : 0) +
-    (bcbaFilter !== "all" ? 1 : 0) +
-    (dateFrom ? 1 : 0) +
-    (dateTo ? 1 : 0);
+    codeFilter.length + stateFilter.length + bcbaFilter.length +
+    (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
 
   const clearFilters = () => {
-    setCodeFilter("all"); setStateFilter("all"); setBcbaFilter("all");
+    setCodeFilter([]); setStateFilter([]); setBcbaFilter([]);
     setDateFrom(""); setDateTo("");
   };
 
@@ -623,33 +626,14 @@ export default function CeoDashboardV2() {
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 space-y-5 overflow-y-auto border-t border-border/60 px-5 py-5">
-                <FilterField label="Billing code">
-                  <Select value={codeFilter} onValueChange={setCodeFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All codes</SelectItem>
-                      {allCodes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`Billing codes${codeFilter.length ? ` · ${codeFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={allCodes} selected={codeFilter} onChange={setCodeFilter} allLabel="All codes" />
                 </FilterField>
-                <FilterField label="State / location">
-                  <Select value={stateFilter} onValueChange={setStateFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All states</SelectItem>
-                      {allStates.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      <SelectItem value="Unknown">Unknown / no location</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`State / location${stateFilter.length ? ` · ${stateFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={Array.from(new Set([...allStates, "Unknown"]))} selected={stateFilter} onChange={setStateFilter} allLabel="All states" />
                 </FilterField>
-                <FilterField label="BCBA">
-                  <Select value={bcbaFilter} onValueChange={setBcbaFilter}>
-                    <SelectTrigger className="h-12 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      <SelectItem value="all">All BCBAs</SelectItem>
-                      {allBcbas.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <FilterField label={`BCBAs${bcbaFilter.length ? ` · ${bcbaFilter.length} selected` : ""}`}>
+                  <MultiPillSelect options={allBcbas} selected={bcbaFilter} onChange={setBcbaFilter} allLabel="All BCBAs" searchable />
                 </FilterField>
                 <FilterField label="Date range">
                   <div className="grid grid-cols-2 gap-3">
@@ -716,9 +700,15 @@ export default function CeoDashboardV2() {
         {(activeFilterCount > 0 || search) && (
           <div className="flex flex-wrap gap-1.5">
             {search && <FilterChip label={`"${search}"`} onClear={() => setSearch("")} />}
-            {codeFilter !== "all" && <FilterChip label={`Code: ${codeFilter}`} onClear={() => setCodeFilter("all")} />}
-            {stateFilter !== "all" && <FilterChip label={`State: ${stateFilter}`} onClear={() => setStateFilter("all")} />}
-            {bcbaFilter !== "all" && <FilterChip label={`BCBA: ${bcbaFilter}`} onClear={() => setBcbaFilter("all")} />}
+            {codeFilter.map((v) => (
+              <FilterChip key={`c-${v}`} label={`Code: ${v}`} onClear={() => setCodeFilter(codeFilter.filter((x) => x !== v))} />
+            ))}
+            {stateFilter.map((v) => (
+              <FilterChip key={`s-${v}`} label={`State: ${v}`} onClear={() => setStateFilter(stateFilter.filter((x) => x !== v))} />
+            ))}
+            {bcbaFilter.map((v) => (
+              <FilterChip key={`b-${v}`} label={`BCBA: ${v}`} onClear={() => setBcbaFilter(bcbaFilter.filter((x) => x !== v))} />
+            ))}
             {dateFrom && <FilterChip label={`From: ${dateFrom}`} onClear={() => setDateFrom("")} />}
             {dateTo && <FilterChip label={`To: ${dateTo}`} onClear={() => setDateTo("")} />}
             {activeFilterCount + (search ? 1 : 0) > 1 && (
@@ -1136,6 +1126,77 @@ function FilterField({ label, children }: { label: string; children: React.React
     <div className="space-y-1.5">
       <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function MultiPillSelect({
+  options, selected, onChange, allLabel, searchable = false,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  allLabel: string;
+  searchable?: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const norm = q.trim().toLowerCase();
+  const visible = norm ? options.filter((o) => o.toLowerCase().includes(norm)) : options;
+  const toggle = (v: string) => {
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className={cn(
+            "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+            selected.length === 0
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-card text-foreground hover:border-primary/40",
+          )}
+        >
+          {allLabel}
+        </button>
+        {selected.length > 0 && (
+          <span className="text-[11px] text-muted-foreground">{selected.length} selected</span>
+        )}
+      </div>
+      {searchable && options.length > 8 && (
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search…"
+          className="h-9 text-xs"
+        />
+      )}
+      <div className="max-h-56 overflow-y-auto rounded-xl border border-border/60 bg-card/40 p-2">
+        <div className="flex flex-wrap gap-1.5">
+          {visible.map((o) => {
+            const active = selected.includes(o);
+            return (
+              <button
+                key={o}
+                type="button"
+                onClick={() => toggle(o)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/40",
+                )}
+              >
+                {o}
+              </button>
+            );
+          })}
+          {visible.length === 0 && (
+            <span className="px-1 py-1 text-[11px] text-muted-foreground">No matches</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

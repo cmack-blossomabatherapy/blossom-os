@@ -127,9 +127,11 @@ export default function CeoDashboardV2Insights() {
     const st = searchParams.get("state");
     if (w && (WINDOW_ORDER as string[]).includes(w)) setWindowKey(w);
     if (g && ["weekly", "monthly", "quarterly"].includes(g)) setGranularity(g);
-    if (b) setBcbaFilter(b);
-    if (c) setCodeFilter(c);
-    if (st) setStateFilter(st);
+    // V2 dashboard supports multi-select; Insights is single-select.
+    // Only adopt the URL value when it's a single selection.
+    if (b && !b.includes(",")) setBcbaFilter(b);
+    if (c && !c.includes(",")) setCodeFilter(c);
+    if (st && !st.includes(",")) setStateFilter(st);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
