@@ -858,3 +858,168 @@ function EmptyState({ icon: Icon, text }: { icon: any; text: string }) {
     </div>
   );
 }
+
+// -------------------- DRILL DIALOG --------------------
+
+type LeakDrillState =
+  | { kind: "delays"; severity: Severity }
+  | { kind: "expiring"; bucket: "expired" | "30" | "60" }
+  | { kind: "bcba"; bcba: { name: string; hours: number; clients: number; rbts: number; revenue: number; shareOfHours: number }; reason: "concentration" | "overloaded" }
+  | { kind: "unassigned" }
+  | null;
+
+function LeakDrillDialog({
+  drill, onClose, delays, expiring, sessions, onOpenAuths, onOpenV2,
+}: {
+  drill: LeakDrillState;
+  onClose: () => void;
+  delays: { rows: { auth: Auth; days: number; severity: Severity; valueAtRisk: number }[] };
+  expiring: { expired: { auth: Auth; days: number }[]; within30: { auth: Auth; days: number }[]; within60: { auth: Auth; days: number }[] };
+  sessions: Session[];
+  onOpenAuths: (kpi: string, focus?: string) => void;
+  onOpenV2: (opts: { bcba?: string; drawer?: string }) => void;
+}) {
+  const open = !!drill;
+  let title = "";
+  let subtitle = "";
+  let body: React.ReactNode = null;
+  let action: React.ReactNode = null;
+
+  if (drill?.kind === "delays") {
+    const items = delays.rows.filter((d) => d.severity === drill.severity);
+    title = `Delayed authorizations · ${drill.severity}`;
+    subtitle = `${items.length} open · ${fmtMoney(items.reduce((s, x) => s + x.valueAtRisk, 0))} at risk`;
+    const kpi = drill.severity === "high" ? "submitted" : "awaiting";
+    action = (
+      <Button size="sm" onClick={() => onOpenAuths(kpi)} className="h-8 gap-1.5">
+        <ExternalLink className="h-3.5 w-3.5" /> Open in Authorizations
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Payor</th>
+            <th className="text-left py-2">Service</th>
+            <th className="text-left py-2">Submitted</th>
+            <th className="text-left py-2">Coordinator</th>
+            <th className="text-right py-2">Days</th>
+            <th className="text-right py-2">At risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((d) => (
+            <tr
+              key={d.auth.id}
+              onClick={() => onOpenAuths(kpi, d.auth.id)}
+              className="border-b border-border/30 hover:bg-muted/40 cursor-pointer"
+            >
+              <td className="py-1.5">{d.auth.payor ?? "—"}</td>
+              <td className="py-1.5">{d.auth.service_type ?? "—"}</td>
+              <td className="py-1.5 tabular-nums text-muted-foreground">{d.auth.submitted_date ?? "—"}</td>
+              <td className="py-1.5 truncate max-w-[140px]">{d.auth.assigned_auth_coordinator ?? "—"}</td>
+              <td className="py-1.5 text-right tabular-nums font-semibold">{d.days}d</td>
+              <td className="py-1.5 text-right tabular-nums">{fmtMoney(d.valueAtRisk)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  } else if (drill?.kind === "expiring") {
+    const rows = drill.bucket === "expired" ? expiring.expired : drill.bucket === "30" ? expiring.within30 : expiring.within60;
+    title = `Expiring · ${drill.bucket === "expired" ? "Already expired" : drill.bucket === "30" ? "Within 30 days" : "30 – 60 days"}`;
+    subtitle = `${rows.length} authorization${rows.length === 1 ? "" : "s"}`;
+    action = (
+      <Button size="sm" onClick={() => onOpenAuths("expiring")} className="h-8 gap-1.5">
+        <ExternalLink className="h-3.5 w-3.5" /> Open in Authorizations
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Payor</th>
+            <th className="text-left py-2">Service</th>
+            <th className="text-left py-2">Expiration</th>
+            <th className="text-right py-2">Days</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr
+              key={r.auth.id}
+              onClick={() => onOpenAuths("expiring", r.auth.id)}
+              className="border-b border-border/30 hover:bg-muted/40 cursor-pointer"
+            >
+              <td className="py-1.5">{r.auth.payor ?? "—"}</td>
+              <td className="py-1.5">{r.auth.service_type ?? "—"}</td>
+              <td className="py-1.5 tabular-nums text-muted-foreground">{r.auth.expiration_date ?? "—"}</td>
+              <td className="py-1.5 text-right tabular-nums font-semibold">
+                {r.days < 0 ? `${Math.abs(r.days)}d ago` : `${r.days}d`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  } else if (drill?.kind === "bcba" || drill?.kind === "unassigned") {
+    const isUnassigned = drill.kind === "unassigned";
+    const target = isUnassigned ? null : (drill as Extract<LeakDrillState, { kind: "bcba" }>).bcba.name;
+    const matched = sessions.filter((s) => isUnassigned ? !s.bcba_name : s.bcba_name === target);
+    const sorted = [...matched].sort((a, b) => (b.date_of_service ?? "").localeCompare(a.date_of_service ?? "")).slice(0, 200);
+    title = isUnassigned ? "Unassigned sessions" : `${target}`;
+    subtitle = `${matched.length} session${matched.length === 1 ? "" : "s"} · ${matched.reduce((s, x) => s + (Number(x.hours) || 0), 0).toFixed(1)}h`;
+    action = (
+      <Button
+        size="sm"
+        onClick={() => onOpenV2(isUnassigned ? { bcba: "Unassigned BCBA" } : { bcba: target!, drawer: target! })}
+        className="h-8 gap-1.5"
+      >
+        <ExternalLink className="h-3.5 w-3.5" /> Open in V2 Dashboard
+      </Button>
+    );
+    body = (
+      <table className="w-full text-xs">
+        <thead className="sticky top-0 bg-background">
+          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <th className="text-left py-2">Date</th>
+            <th className="text-left py-2">Client</th>
+            <th className="text-left py-2">RBT</th>
+            <th className="text-left py-2">Code</th>
+            <th className="text-right py-2">Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((s, i) => (
+            <tr key={i} className="border-b border-border/30 hover:bg-muted/40">
+              <td className="py-1.5 tabular-nums text-muted-foreground">{s.date_of_service ?? "—"}</td>
+              <td className="py-1.5 truncate max-w-[160px]">{s.client_full}</td>
+              <td className="py-1.5 truncate max-w-[140px] text-muted-foreground">{s.provider_full}</td>
+              <td className="py-1.5 font-mono text-[10px]">{normalizeCode(s.procedure_code)}</td>
+              <td className="py-1.5 text-right tabular-nums">{Number(s.hours).toFixed(1)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden">
+        <DialogHeader className="border-b border-border/60 bg-gradient-to-br from-destructive/10 via-background to-warning/10 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="truncate">{title}</DialogTitle>
+              <DialogDescription className="text-[11px]">{subtitle}</DialogDescription>
+            </div>
+            {action}
+          </div>
+        </DialogHeader>
+        <div className="max-h-[55vh] overflow-y-auto px-5 py-3">
+          {body || <p className="text-xs text-muted-foreground py-6 text-center">No records.</p>}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
