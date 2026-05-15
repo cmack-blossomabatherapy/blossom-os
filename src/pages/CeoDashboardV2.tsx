@@ -510,7 +510,7 @@ export default function CeoDashboardV2() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <Link to="/ceo-dashboard-v2/insights" aria-label="Insights & Trends">
+                      <Link to="/bcba-performance-dashboard/insights" aria-label="Insights & Trends">
                         <Activity className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -520,7 +520,7 @@ export default function CeoDashboardV2() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <Link to="/ceo-dashboard-v2/revenue-leaks" aria-label="Revenue Leak Analysis">
+                      <Link to="/bcba-performance-dashboard/revenue-leaks" aria-label="Revenue Leak Analysis">
                         <ShieldAlert className="h-4 w-4" />
                       </Link>
                     </Button>
@@ -530,7 +530,7 @@ export default function CeoDashboardV2() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                      <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                      <Link to="/bcba-performance-dashboard/logic" aria-label="How this dashboard works">
                         <HelpCircle className="h-4 w-4" />
                       </Link>
                     </Button>
