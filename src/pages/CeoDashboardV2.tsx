@@ -8,9 +8,12 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter, SheetDescription,
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
   AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
+  Briefcase, UserCircle2, Tag, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -135,6 +138,8 @@ export default function CeoDashboardV2() {
   const [unassignedOpen, setUnassignedOpen] = useState(false);
   const [mismatchesOpen, setMismatchesOpen] = useState(false);
   const [detailBcba, setDetailBcba] = useState<string | null>(null);
+  const [detailSearch, setDetailSearch] = useState<string>("");
+  const [detailTab, setDetailTab] = useState<string>("overview");
   const [showUnassigned, setShowUnassigned] = useState<boolean>(persisted?.showUnassigned ?? false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -219,6 +224,9 @@ export default function CeoDashboardV2() {
 
   useEffect(() => { loadActive(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   useEffect(() => { loadActive({ window: windowKey }); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [windowKey]);
+
+  // Reset drawer-local UI state when switching BCBAs
+  useEffect(() => { setDetailSearch(""); setDetailTab("overview"); }, [detailBcba]);
 
   async function handleFile(file: File) {
     setUploading(true);
@@ -458,34 +466,33 @@ export default function CeoDashboardV2() {
               </p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              title="How this dashboard works"
-            >
-              <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
-                <HelpCircle className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => loadActive({ force: true })} className="h-9">
-              <RefreshCw className="h-3.5 w-3.5 md:mr-1.5" /><span className="hidden md:inline">Refresh</span>
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-card/60 backdrop-blur p-1">
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg" title="How this dashboard works">
+                <Link to="/ceo-dashboard-v2/logic" aria-label="How this dashboard works">
+                  <HelpCircle className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => loadActive({ force: true })} className="h-8 w-8 rounded-lg" title="Refresh">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
-              <SelectTrigger className="h-9 w-[110px] text-xs" aria-label="Upload mode">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                <SelectItem value="append">Append</SelectItem>
-                <SelectItem value="replace">Replace</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 shadow-[var(--shadow-brand)]">
-              <Upload className="h-3.5 w-3.5 mr-1.5" />{uploading ? "Uploading…" : "Upload CSV"}
-            </Button>
+            <div className="flex items-center rounded-xl border border-border/60 bg-card/60 backdrop-blur overflow-hidden">
+              <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
+                <SelectTrigger className="h-9 w-[100px] text-xs border-0 bg-transparent rounded-none focus:ring-0" aria-label="Upload mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="append">Append</SelectItem>
+                  <SelectItem value="replace">Replace</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="h-5 w-px bg-border/60" />
+              <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 rounded-none gap-1.5 text-primary hover:text-primary hover:bg-primary/5">
+                <Upload className="h-3.5 w-3.5" />{uploading ? "Uploading…" : "Upload CSV"}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -776,85 +783,256 @@ export default function CeoDashboardV2() {
 
       {/* DETAIL DRAWER */}
       <Sheet open={!!detailBcba} onOpenChange={(o) => !o && setDetailBcba(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col">
-          <SheetHeader className="border-b border-border/60 bg-gradient-to-br from-primary/8 via-card to-accent/5 px-5 py-5 text-left">
+        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col gap-0">
+          {/* Hero */}
+          <SheetHeader className="relative overflow-hidden border-b border-border/60 px-5 py-5 text-left space-y-0">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-card to-accent/5" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
             {detailBcba && (
-              <div className="flex items-center gap-3">
+              <div className="relative flex items-center gap-3">
                 <div className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white text-base font-semibold shadow-md",
+                  "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white text-lg font-semibold shadow-md ring-2 ring-background",
                   detailBcba === UNASSIGNED ? "bg-muted-foreground" : ""
                 )} style={detailBcba === UNASSIGNED ? undefined : { background: `hsl(var(--${petalFor(detailBcba)}))` }}>
                   {detailBcba === UNASSIGNED ? "?" : initials(detailBcba)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <SheetTitle className={cn("text-lg leading-tight truncate", detailBcba === UNASSIGNED && "italic text-muted-foreground")}>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">BCBA detail</div>
+                  <SheetTitle className={cn("text-xl leading-tight truncate", detailBcba === UNASSIGNED && "italic text-muted-foreground")}>
                     {detailBcba}
                   </SheetTitle>
                   {bcbaDetail && (
                     <SheetDescription className="mt-0.5 text-xs">
-                      {bcbaDetail.totalHours.toFixed(1)}h · {bcbaDetail.sessionCount} sessions
+                      {WINDOW_LABELS[windowKey]} · {bcbaDetail.sessionCount.toLocaleString()} sessions
                     </SheetDescription>
                   )}
                 </div>
               </div>
             )}
             {bcbaDetail && (
-              <div className="grid grid-cols-3 gap-2 mt-4">
-                <DetailStat label="Hours" value={bcbaDetail.totalHours.toFixed(1)} />
-                <DetailStat label="Patients" value={bcbaDetail.clients.length.toString()} />
-                <DetailStat label="RBTs" value={bcbaDetail.rbts.length.toString()} />
+              <div className="relative grid grid-cols-4 gap-2 mt-4">
+                <DetailStat label="Hours" value={bcbaDetail.totalHours.toFixed(1)} icon={Clock} />
+                <DetailStat label="Patients" value={bcbaDetail.clients.length.toString()} icon={UserCircle2} />
+                <DetailStat label="RBTs" value={bcbaDetail.rbts.length.toString()} icon={Briefcase} />
+                <DetailStat label="Codes" value={bcbaDetail.codes.length.toString()} icon={Tag} />
               </div>
             )}
           </SheetHeader>
 
           {bcbaDetail && (
-            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-              <section>
-                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Billing codes</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {bcbaDetail.codes.map(([code, h]) => (
-                    <Badge key={code} variant="secondary" className="font-medium">{code} · {h.toFixed(1)}h</Badge>
-                  ))}
-                </div>
-              </section>
+            <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col min-h-0">
+              <div className="px-5 pt-3 pb-2 border-b border-border/60 bg-card/40">
+                <TabsList className="grid grid-cols-4 w-full h-9 bg-muted/60">
+                  <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                  <TabsTrigger value="patients" className="text-xs gap-1">Patients <span className="text-[10px] opacity-70">{bcbaDetail.clients.length}</span></TabsTrigger>
+                  <TabsTrigger value="rbts" className="text-xs gap-1">RBTs <span className="text-[10px] opacity-70">{bcbaDetail.rbts.length}</span></TabsTrigger>
+                  <TabsTrigger value="codes" className="text-xs gap-1">Codes <span className="text-[10px] opacity-70">{bcbaDetail.codes.length}</span></TabsTrigger>
+                </TabsList>
+                {(detailTab === "patients" || detailTab === "rbts") && (
+                  <div className="relative mt-3">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={detailSearch}
+                      onChange={(e) => setDetailSearch(e.target.value)}
+                      placeholder={detailTab === "patients" ? "Search patients…" : "Search RBTs…"}
+                      className="h-9 rounded-lg pl-9 pr-9 text-sm bg-background"
+                    />
+                    {detailSearch && (
+                      <button onClick={() => setDetailSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              <section>
-                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">RBTs ({bcbaDetail.rbts.length})</h3>
-                <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
-                  {bcbaDetail.rbts.map((r) => (
-                    <div key={r.name} className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium truncate">{r.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{r.sessions} sessions · {r.clients.size} patients</div>
-                      </div>
-                      <div className="tabular-nums font-semibold whitespace-nowrap">{r.hours.toFixed(1)}h</div>
+              <div className="flex-1 overflow-y-auto px-5 py-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                {/* OVERVIEW */}
+                <TabsContent value="overview" className="mt-0 space-y-5">
+                  <DetailSection title="Billing code mix" icon={Tag} count={bcbaDetail.codes.length}>
+                    <div className="space-y-2">
+                      {bcbaDetail.codes.map(([code, h]) => {
+                        const pct = bcbaDetail.totalHours > 0 ? (h / bcbaDetail.totalHours) * 100 : 0;
+                        return (
+                          <div key={code} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium tabular-nums">{code}</span>
+                              <span className="text-muted-foreground tabular-nums">{h.toFixed(1)}h · {pct.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              </section>
+                  </DetailSection>
 
-              <section>
-                <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Patients ({bcbaDetail.clients.length})</h3>
-                <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
-                  {bcbaDetail.clients.map((c) => (
-                    <div key={c.name} className="px-3.5 py-3 text-sm space-y-1.5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-medium truncate flex-1">{c.name}</div>
-                        <div className="tabular-nums font-semibold whitespace-nowrap">{c.hours.toFixed(1)}h</div>
-                      </div>
-                      <div className="text-[11px] text-muted-foreground truncate">
-                        {c.sessions} sessions · RBTs: {Array.from(c.rbts).join(", ") || "—"}
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]).map(([code, h]) => (
-                          <span key={code} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">{code} {h.toFixed(1)}h</span>
-                        ))}
-                      </div>
+                  <DetailSection title="Top patients" icon={UserCircle2} count={Math.min(5, bcbaDetail.clients.length)}>
+                    <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
+                      {bcbaDetail.clients.slice(0, 5).map((c) => (
+                        <div key={c.name} className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{c.name}</div>
+                            <div className="text-[11px] text-muted-foreground">{c.sessions} sessions · {c.rbts.size} RBTs</div>
+                          </div>
+                          <div className="tabular-nums font-semibold whitespace-nowrap text-sm">{c.hours.toFixed(1)}h</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </section>
-            </div>
+                    {bcbaDetail.clients.length > 5 && (
+                      <button onClick={() => setDetailTab("patients")} className="mt-2 w-full text-center text-xs text-primary hover:underline">
+                        View all {bcbaDetail.clients.length} patients →
+                      </button>
+                    )}
+                  </DetailSection>
+
+                  <DetailSection title="Top RBTs" icon={Briefcase} count={Math.min(5, bcbaDetail.rbts.length)}>
+                    <div className="rounded-xl border border-border/60 divide-y divide-border/40 bg-card overflow-hidden">
+                      {bcbaDetail.rbts.slice(0, 5).map((r) => (
+                        <div key={r.name} className="px-3.5 py-2.5 flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{r.name}</div>
+                            <div className="text-[11px] text-muted-foreground">{r.sessions} sessions · {r.clients.size} patients</div>
+                          </div>
+                          <div className="tabular-nums font-semibold whitespace-nowrap text-sm">{r.hours.toFixed(1)}h</div>
+                        </div>
+                      ))}
+                    </div>
+                    {bcbaDetail.rbts.length > 5 && (
+                      <button onClick={() => setDetailTab("rbts")} className="mt-2 w-full text-center text-xs text-primary hover:underline">
+                        View all {bcbaDetail.rbts.length} RBTs →
+                      </button>
+                    )}
+                  </DetailSection>
+                </TabsContent>
+
+                {/* PATIENTS */}
+                <TabsContent value="patients" className="mt-0">
+                  {(() => {
+                    const q = detailSearch.trim().toLowerCase();
+                    const list = q
+                      ? bcbaDetail.clients.filter((c) => c.name.toLowerCase().includes(q) || Array.from(c.rbts).some((r) => r.toLowerCase().includes(q)))
+                      : bcbaDetail.clients;
+                    if (list.length === 0) {
+                      return <div className="py-10 text-center text-sm text-muted-foreground">No patients match "{detailSearch}".</div>;
+                    }
+                    return (
+                      <Accordion type="multiple" className="space-y-1.5">
+                        {list.map((c) => {
+                          const codes = Array.from(c.byCode.entries()).sort((a, b) => b[1] - a[1]);
+                          const rbts = Array.from(c.rbts);
+                          return (
+                            <AccordionItem key={c.name} value={c.name} className="border border-border/60 rounded-xl bg-card overflow-hidden data-[state=open]:shadow-sm">
+                              <AccordionTrigger className="px-3.5 py-2.5 hover:no-underline hover:bg-muted/40 [&[data-state=open]]:bg-muted/40">
+                                <div className="flex items-center justify-between gap-3 w-full pr-2 min-w-0">
+                                  <div className="min-w-0 flex-1 text-left">
+                                    <div className="font-medium truncate text-sm">{c.name}</div>
+                                    <div className="text-[11px] text-muted-foreground font-normal">{c.sessions} sessions · {rbts.length} RBT{rbts.length === 1 ? "" : "s"}</div>
+                                  </div>
+                                  <div className="tabular-nums font-semibold text-sm whitespace-nowrap">{c.hours.toFixed(1)}h</div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-3.5 pb-3 pt-1 space-y-3">
+                                <div>
+                                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">Codes</div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {codes.map(([code, h]) => (
+                                      <Badge key={code} variant="secondary" className="font-normal text-[10px] tabular-nums">{code} · {h.toFixed(1)}h</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">RBTs assigned</div>
+                                  {rbts.length === 0 ? (
+                                    <div className="text-xs text-muted-foreground italic">None</div>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                      {rbts.map((r) => (
+                                        <Badge key={r} variant="outline" className="font-normal text-[10px]">{r}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
+                    );
+                  })()}
+                </TabsContent>
+
+                {/* RBTs */}
+                <TabsContent value="rbts" className="mt-0">
+                  {(() => {
+                    const q = detailSearch.trim().toLowerCase();
+                    const list = q
+                      ? bcbaDetail.rbts.filter((r) => r.name.toLowerCase().includes(q) || Array.from(r.clients).some((c) => c.toLowerCase().includes(q)))
+                      : bcbaDetail.rbts;
+                    if (list.length === 0) {
+                      return <div className="py-10 text-center text-sm text-muted-foreground">No RBTs match "{detailSearch}".</div>;
+                    }
+                    return (
+                      <Accordion type="multiple" className="space-y-1.5">
+                        {list.map((r) => {
+                          const clients = Array.from(r.clients);
+                          return (
+                            <AccordionItem key={r.name} value={r.name} className="border border-border/60 rounded-xl bg-card overflow-hidden data-[state=open]:shadow-sm">
+                              <AccordionTrigger className="px-3.5 py-2.5 hover:no-underline hover:bg-muted/40 [&[data-state=open]]:bg-muted/40">
+                                <div className="flex items-center justify-between gap-3 w-full pr-2 min-w-0">
+                                  <div className="min-w-0 flex-1 text-left">
+                                    <div className="font-medium truncate text-sm">{r.name}</div>
+                                    <div className="text-[11px] text-muted-foreground font-normal">{r.sessions} sessions · {clients.length} patient{clients.length === 1 ? "" : "s"}</div>
+                                  </div>
+                                  <div className="tabular-nums font-semibold text-sm whitespace-nowrap">{r.hours.toFixed(1)}h</div>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-3.5 pb-3 pt-1">
+                                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">Patients</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {clients.map((c) => (
+                                    <Badge key={c} variant="outline" className="font-normal text-[10px]">{c}</Badge>
+                                  ))}
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
+                    );
+                  })()}
+                </TabsContent>
+
+                {/* CODES */}
+                <TabsContent value="codes" className="mt-0">
+                  <div className="space-y-2.5">
+                    {bcbaDetail.codes.map(([code, h]) => {
+                      const pct = bcbaDetail.totalHours > 0 ? (h / bcbaDetail.totalHours) * 100 : 0;
+                      return (
+                        <div key={code} className="rounded-xl border border-border/60 bg-card p-3.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <Tag className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="font-semibold tabular-nums">{code}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold tabular-nums">{h.toFixed(1)}h</div>
+                              <div className="text-[10px] text-muted-foreground">{pct.toFixed(1)}% of total</div>
+                            </div>
+                          </div>
+                          <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
           )}
         </SheetContent>
       </Sheet>
@@ -1055,12 +1233,28 @@ function BcbaCard({
   );
 }
 
-function DetailStat({ label, value }: { label: string; value: string }) {
+function DetailStat({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-3 py-2.5">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-2.5 py-2">
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+        {Icon && <Icon className="h-3 w-3" />}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-0.5 text-lg font-semibold tabular-nums leading-tight">{value}</div>
     </div>
+  );
+}
+
+function DetailSection({ title, icon: Icon, count, children }: { title: string; icon?: React.ComponentType<{ className?: string }>; count?: number; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="flex items-center gap-1.5 mb-2">
+        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{title}</h3>
+        {typeof count === "number" && <span className="text-[11px] text-muted-foreground">· {count}</span>}
+      </div>
+      {children}
+    </section>
   );
 }
 
