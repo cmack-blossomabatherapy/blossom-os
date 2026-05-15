@@ -656,6 +656,11 @@ export default function CeoDashboardV2Insights() {
             <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-xl" onClick={exportCsv}>
               <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
+            <Button asChild variant="default" size="sm" className="h-9 gap-1.5 rounded-xl">
+              <Link to={v2Link()} title="Open the V2 dashboard with current filters applied">
+                <ExternalLink className="h-3.5 w-3.5" /> Open in V2
+              </Link>
+            </Button>
           </div>
         </div>
 
