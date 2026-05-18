@@ -13,13 +13,16 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
   AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
-  Briefcase, UserCircle2, Tag, Activity, ShieldAlert,
+  Briefcase, UserCircle2, Tag, Activity, ShieldAlert, LineChart,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { computeScorecards, buildObservations } from "@/lib/analytics/bcbaIntel";
+import { ScorecardStrip } from "@/components/bcba-intel/ScorecardStrip";
+import { ObservationsRail } from "@/components/bcba-intel/ObservationsRail";
 
 interface Session {
   id: string;
@@ -494,6 +497,11 @@ export default function CeoDashboardV2() {
     setDateFrom(""); setDateTo("");
   };
 
+  // Phase 1 intelligence: executive scorecards + auto-observations.
+  // Both derive purely from the already-filtered sessions — no extra fetches.
+  const scorecards = useMemo(() => computeScorecards(filtered), [filtered]);
+  const observations = useMemo(() => buildObservations(filtered), [filtered]);
+
   return (
     <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12">
       {/* HERO HEADER */}
@@ -525,7 +533,7 @@ export default function CeoDashboardV2() {
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
                       <Link to="/bcba-performance-dashboard/insights" aria-label="Insights & Trends">
-                        <Activity className="h-4 w-4" />
+                        <LineChart className="h-4 w-4" />
                       </Link>
                     </Button>
                   </TooltipTrigger>
@@ -818,6 +826,14 @@ export default function CeoDashboardV2() {
                 </div>
               </CollapsibleAlert>
             )}
+          </div>
+        )}
+
+        {/* EXECUTIVE SCORECARDS */}
+        {!loading && filtered.length > 0 && (
+          <div className="space-y-3">
+            <ScorecardStrip cards={scorecards} />
+            <ObservationsRail observations={observations} />
           </div>
         )}
 
