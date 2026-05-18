@@ -829,6 +829,14 @@ export default function CeoDashboardV2() {
           </div>
         )}
 
+        {/* EXECUTIVE SCORECARDS */}
+        {!loading && filtered.length > 0 && (
+          <div className="space-y-3">
+            <ScorecardStrip cards={scorecards} />
+            <ObservationsRail observations={observations} />
+          </div>
+        )}
+
         {/* BCBA SECTION HEADER */}
         <div className="flex items-baseline justify-between pt-1">
           <h2 className="text-base font-semibold">BCBAs by billable hours</h2>
