@@ -13,13 +13,16 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import {
   ChevronRight, Upload, Search, Users, Clock, FileBarChart, RefreshCw,
   AlertTriangle, SlidersHorizontal, X, TrendingUp, UserCog, ChevronDown, ArrowUpDown, MapPin, HelpCircle,
-  Briefcase, UserCircle2, Tag, Activity, ShieldAlert,
+  Briefcase, UserCircle2, Tag, Activity, ShieldAlert, LineChart,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { Link, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { computeScorecards, buildObservations } from "@/lib/analytics/bcbaIntel";
+import { ScorecardStrip } from "@/components/bcba-intel/ScorecardStrip";
+import { ObservationsRail } from "@/components/bcba-intel/ObservationsRail";
 
 interface Session {
   id: string;
