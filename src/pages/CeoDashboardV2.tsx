@@ -497,6 +497,11 @@ export default function CeoDashboardV2() {
     setDateFrom(""); setDateTo("");
   };
 
+  // Phase 1 intelligence: executive scorecards + auto-observations.
+  // Both derive purely from the already-filtered sessions — no extra fetches.
+  const scorecards = useMemo(() => computeScorecards(filtered), [filtered]);
+  const observations = useMemo(() => buildObservations(filtered), [filtered]);
+
   return (
     <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12">
       {/* HERO HEADER */}
