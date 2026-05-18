@@ -528,7 +528,7 @@ export default function CeoDashboardV2() {
                   <TooltipTrigger asChild>
                     <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
                       <Link to="/bcba-performance-dashboard/insights" aria-label="Insights & Trends">
-                        <Activity className="h-4 w-4" />
+                        <LineChart className="h-4 w-4" />
                       </Link>
                     </Button>
                   </TooltipTrigger>
