@@ -1022,9 +1022,12 @@ export default function CeoDashboardV2() {
                                 <div>
                                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1.5">Codes</div>
                                   <div className="flex flex-wrap gap-1">
-                                    {codes.map(([code, h]) => (
-                                      <Badge key={code} variant="secondary" className="font-normal text-[10px] tabular-nums">{code} · {h.toFixed(1)}h</Badge>
-                                    ))}
+                                    {codes.map(([code, h]) => {
+                                      const codePct = c.hours > 0 ? (h / c.hours) * 100 : 0;
+                                      return (
+                                        <Badge key={code} variant="secondary" className="font-normal text-[10px] tabular-nums">{code} · {h.toFixed(1)}h · {codePct.toFixed(1)}%</Badge>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                                 <div>
