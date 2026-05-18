@@ -49,7 +49,7 @@ interface Props {
 export function OnboardingGate({ children, force, sectionLabel, description }: Props) {
   const { pathname } = useLocation();
   const { isComplete, loading } = useOnboardingStatus();
-  const { roles } = useAuth();
+  const { roles, isAdmin } = useAuth();
   const { locks, loading: locksLoading } = useMyRouteLocks();
   // Re-render on allowlist changes so admin edits take effect immediately.
   const [, setTick] = useState(0);
@@ -58,7 +58,7 @@ export function OnboardingGate({ children, force, sectionLabel, description }: P
   if (loading || locksLoading) return null;
 
   // Route locks apply to everyone (even fully-onboarded users) and override allow-lists.
-  const lock = findMatchingLock(pathname, locks);
+  const lock = isAdmin ? null : findMatchingLock(pathname, locks);
   if (lock) {
     return (
       <LockedStateCard

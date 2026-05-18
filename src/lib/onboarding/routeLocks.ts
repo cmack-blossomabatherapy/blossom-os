@@ -42,7 +42,8 @@ export function useMyRouteLocks() {
       const { data } = await supabase
         .from("onboarding_route_locks")
         .select("*")
-        .eq("active", true);
+        .eq("active", true)
+        .or(`user_id.eq.${user.id},user_id.is.null`);
       if (!alive) return;
       setLocks((data as RouteLock[] | null) ?? []);
       setLoading(false);
