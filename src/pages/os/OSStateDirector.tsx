@@ -6,6 +6,7 @@ import {
   AlertCircle, CheckCircle2, Workflow, Zap, Radio, Flame, UserPlus,
   ClipboardCheck, DollarSign, Plus, BookOpen, LifeBuoy, Send,
   Compass, Gauge, Inbox, ArrowRight, UserCog, BarChart3, MapPin,
+  Phone, MessageSquare, Trophy, Smile,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
