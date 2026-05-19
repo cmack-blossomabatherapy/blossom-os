@@ -155,11 +155,17 @@ import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSLeads from "./pages/os/OSLeads";
 import OSClients from "./pages/os/OSClients";
+import OSPermissions from "./pages/os/OSPermissions";
+import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { Users as UIcon, Heart as HIcon, UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon, BarChart3, GraduationCap, Building2, Settings as SIcon } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-const OSOutlet = () => <Outlet />;
+const OSOutlet = () => (
+  <OSRoleProvider>
+    <Outlet />
+  </OSRoleProvider>
+);
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
@@ -243,6 +249,7 @@ const App = () => (
                   <Route path="/os/training" element={<OSPlaceholder title="Training" description="Learning progress, roadmap, required trainings, department training cards, badges." icon={GraduationCap} />} />
                   <Route path="/os/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
                   <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
+                  <Route path="/os/permissions" element={<OSPermissions />} />
                 </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<WelcomeHome />} />
