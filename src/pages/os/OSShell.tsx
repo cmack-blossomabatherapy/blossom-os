@@ -16,34 +16,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
 import type { OSModule } from "@/lib/os/permissions";
+import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
 import blossomLogo from "@/assets/blossom-logo-full.png";
 import blossomMark from "@/assets/blossom-logo.png";
 
 type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
 type NavSection = { id: string; label: string; items: NavEntry[] };
 
+const HOME_EXTRAS: NavEntry[] = [
+  { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
+  { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
+  { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+  { to: "/os/notifications", label: "Notifications", icon: BellRing, module: "notifications" },
+];
+
 const NAV_SECTIONS: NavSection[] = [
-  {
-    id: "home", label: "Home", items: [
-      { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-      { to: "/os/executive", label: "Executive", icon: Target, module: "dashboard" },
-      { to: "/os/operations", label: "Operations", icon: Workflow, module: "dashboard" },
-      { to: "/os/state-director", label: "State Director", icon: MapPin, module: "dashboard" },
-      { to: "/os/intake-coordinator", label: "Intake Coordinator", icon: Headphones, module: "dashboard" },
-      { to: "/os/auth-coordinator", label: "Auth Coordinator", icon: FileCheck2, module: "dashboard" },
-      { to: "/os/scheduling-team", label: "Scheduling Team", icon: CalendarDays, module: "dashboard" },
-      { to: "/os/recruiting-team", label: "Recruiting Team", icon: UserPlus, module: "dashboard" },
-      { to: "/os/hr-team", label: "HR Team", icon: HeartHandshake, module: "dashboard" },
-      { to: "/os/billing-finance", label: "Billing & Finance", icon: DollarSign, module: "dashboard" },
-      { to: "/os/qa-team", label: "QA Team", icon: ShieldCheck, module: "dashboard" },
-      { to: "/os/bcba", label: "BCBA", icon: Heart, module: "dashboard" },
-      { to: "/os/rbt", label: "RBT", icon: UserCog, module: "dashboard" },
-      { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
-      { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
-      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-      { to: "/os/notifications", label: "Notifications", icon: BellRing, module: "notifications" },
-    ],
-  },
   {
     id: "intake_clients", label: "Intake & Clients", items: [
       { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
@@ -117,7 +104,24 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const showOldVersion = platform("accessOldVersion");
 
-  const sections = NAV_SECTIONS
+  // Build the Home section dynamically based on the current role.
+  const homeSection: NavSection = (() => {
+    const dashboardTo = ROLE_HOME[role];
+    const items: NavEntry[] = [];
+    if (role === "super_admin") {
+      // Super admins see the generic dashboard plus quick access to every role dashboard.
+      items.push({ to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
+      ALL_ROLE_DASHBOARDS.forEach((d) => {
+        items.push({ to: d.to, label: d.label, icon: Target, module: "dashboard" });
+      });
+    } else {
+      items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
+    }
+    HOME_EXTRAS.forEach((e) => items.push(e));
+    return { id: "home", label: "Home", items };
+  })();
+
+  const sections = [homeSection, ...NAV_SECTIONS]
     .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
     .filter((s) => s.items.length > 0);
 
