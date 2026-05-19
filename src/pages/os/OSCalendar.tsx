@@ -186,7 +186,14 @@ export default function OSCalendar() {
   const [today] = useState(17);
   const [selectedDay, setSelectedDay] = useState(17);
 
-  const events = useMemo(() => MOCK_EVENTS.filter((e) => activeSources[e.source]), [activeSources]);
+  const allowedTypes = useMemo(() => eventTypesForRole(urlRole), [urlRole]);
+  const events = useMemo(
+    () =>
+      MOCK_EVENTS.filter(
+        (e) => activeSources[e.source] && (!allowedTypes || allowedTypes.includes(e.type)),
+      ),
+    [activeSources, allowedTypes],
+  );
 
   return (
     <OSShell>
