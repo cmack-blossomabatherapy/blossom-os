@@ -32,6 +32,8 @@ import PhoneCalls from "./pages/PhoneCalls";
 import Documents from "./pages/Documents";
 import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
+import ReportsHome from "./pages/os/reports/ReportsHome";
+import ReportDetail from "./pages/os/reports/ReportDetail";
 import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
@@ -297,7 +299,8 @@ const App = () => (
                   <Route path="/os/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
                   <Route path="/os/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
                   <Route path="/os/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
-                  <Route path="/os/reports" element={<OSPlaceholder title="Reports" description="Charts, export cards, KPI widgets, report builder placeholders." icon={BarChart3} />} />
+                  <Route path="/os/reports" element={<ReportsHome />} />
+                  <Route path="/os/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/os/kpi" element={<OSPlaceholder title="KPI Tracking" description="Company-wide KPI visibility and targets." icon={Target} />} />
                   <Route path="/os/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
                   <Route path="/os/sop" element={<OSPlaceholder title="SOP Library" description="Central SOP database, search, and versioning." icon={BookOpen} />} />
