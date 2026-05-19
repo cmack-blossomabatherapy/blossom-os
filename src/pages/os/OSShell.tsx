@@ -8,6 +8,7 @@ import {
   Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
+  HeartHandshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/auth-coordinator", label: "Auth Coordinator", icon: FileCheck2, module: "dashboard" },
       { to: "/os/scheduling-team", label: "Scheduling Team", icon: CalendarDays, module: "dashboard" },
       { to: "/os/recruiting-team", label: "Recruiting Team", icon: UserPlus, module: "dashboard" },
+      { to: "/os/hr-team", label: "HR Team", icon: HeartHandshake, module: "dashboard" },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
       { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
