@@ -25,6 +25,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
+      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
       { to: "/os/notifications", label: "Notifications", icon: BellRing, module: "notifications" },
     ],
   },
@@ -49,7 +50,6 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "operations", label: "Operations & Intelligence", items: [
-      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
       { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
       { to: "/os/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
       { to: "/os/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
