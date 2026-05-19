@@ -325,7 +325,7 @@ export const ROLE_CALENDAR_CONFIG: Record<OSRole, RoleCalendarConfig> = {
   payroll_coordinator: PAYROLL,
   bcba: BCBA,
   rbt: RBT,
-  marketing_team: MARKETING,
+  marketing_team: MARKETING_DEF,
 };
 
 const MARKETING_DEF: RoleCalendarConfig = {
@@ -351,5 +351,3 @@ const MARKETING_DEF: RoleCalendarConfig = {
     { icon: Clock, text: "Friday 2–4 PM open — block for campaign retro?" },
   ],
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const MARKETING = MARKETING_DEF;
