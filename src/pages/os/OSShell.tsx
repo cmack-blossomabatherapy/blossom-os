@@ -16,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
 import type { OSModule } from "@/lib/os/permissions";
+import blossomLogo from "@/assets/blossom-logo-full.png";
+import blossomMark from "@/assets/blossom-logo.png";
 
 type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
 type NavSection = { id: string; label: string; items: NavEntry[] };
@@ -170,16 +172,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <div className="fixed inset-0 z-50 md:hidden" role="dialog">
             <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
             <aside className="os-glass-panel absolute left-3 right-3 top-3 bottom-3 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-5 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_72%)] text-white">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold leading-none tracking-tight">Blossom OS</p>
-                    <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Operations System</p>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-foreground/[0.06]">
+                <NavLink to="/os" onClick={() => setMobileOpen(false)} className="flex items-center min-w-0">
+                  <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+                </NavLink>
                 <button onClick={() => setMobileOpen(false)} className="os-glass-icon h-9 w-9 rounded-xl">
                   <X className="h-4 w-4" />
                 </button>
@@ -223,17 +219,19 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             collapsed ? "w-[78px]" : "w-[252px]",
           )}
         >
-          <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_72%)] text-white shadow-[0_8px_22px_-8px_hsl(265_85%_60%/0.55)]">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="text-[15px] font-semibold leading-none tracking-tight">Blossom OS</p>
-                <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Operations System</p>
-              </div>
+          <NavLink
+            to="/os"
+            className={cn(
+              "flex items-center px-4 pt-5 pb-4 border-b border-foreground/[0.06]",
+              collapsed ? "justify-center" : "justify-start",
             )}
-          </div>
+          >
+            {collapsed ? (
+              <img src={blossomMark} alt="Blossom" className="h-9 w-9 object-contain" />
+            ) : (
+              <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-11 w-auto object-contain" />
+            )}
+          </NavLink>
 
           <nav className="os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3">
             {collapsed ? (
