@@ -13,6 +13,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   hr_team: "/os/hr-team",
   billing_finance: "/os/billing-finance",
   qa_team: "/os/qa-team",
+  payroll_coordinator: "/os/payroll-coordinator",
   bcba: "/os/bcba",
   rbt: "/os/rbt",
 };
