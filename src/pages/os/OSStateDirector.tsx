@@ -1,12 +1,12 @@
 import {
   ArrowUpRight, ArrowDownRight, Sparkles, ShieldCheck, AlertTriangle,
   CalendarDays, ChevronRight, Users, Heart, FileCheck2, Briefcase,
-  GraduationCap, Activity, TrendingUp, Clock, BadgeCheck,
+  GraduationCap, Activity, TrendingUp, BadgeCheck,
   Megaphone, ClipboardList, Shield, Building2, Brain, Lightbulb,
-  AlertCircle, CheckCircle2, Workflow, Zap, Radio, Flame, UserPlus,
-  ClipboardCheck, DollarSign, Plus, BookOpen, LifeBuoy, Send,
-  Compass, Gauge, Inbox, ArrowRight, UserCog, BarChart3, MapPin,
-  Phone, MessageSquare, Trophy, Smile,
+  AlertCircle, CheckCircle2, Workflow, Flame, UserPlus,
+  ClipboardCheck, LifeBuoy, Lock,
+  Gauge, Inbox, ArrowRight, UserCog, BarChart3, MapPin,
+  Phone, MessageSquare, Trophy, Smile, Radio, Stethoscope,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -14,170 +14,70 @@ import {
 } from "recharts";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
+import { getStateData, type Tone, type KpiSeed, type DepartmentSeed, type AiInsightSeed, type ActivitySeed } from "@/lib/os/stateData";
 
-/* ============ types ============ */
+/* ===================== icon maps (kept on the client) ===================== */
 
-type Tone = "ok" | "warn" | "crit";
-
-type Kpi = {
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-  status: Tone;
-  hint: string;
-  spark: number[];
-  icon: React.ElementType;
+const KPI_ICONS: Record<string, React.ElementType> = {
+  "Active Clients": Heart,
+  "New Leads (7d)": UserPlus,
+  "Clients Awaiting Staffing": Inbox,
+  "Scheduling Fill Rate": CalendarDays,
+  "Open Authorizations": FileCheck2,
+  "Expiring Auths (30d)": AlertTriangle,
+  "Active RBTs": UserCog,
+  "Active BCBAs": ShieldCheck,
+  "Recruiting Pipeline": Users,
+  "Orientation Completion": GraduationCap,
+  "Client Retention (90d)": BadgeCheck,
+  "Session Completion": CheckCircle2,
 };
 
-/* ============ MOCK DATA ============ */
+const DEPT_META: Record<string, { icon: React.ElementType; tone: string }> = {
+  Intake:         { icon: ClipboardList,  tone: "os-tone-rose" },
+  Scheduling:     { icon: CalendarDays,   tone: "os-tone-sky" },
+  Staffing:       { icon: Briefcase,      tone: "os-tone-violet" },
+  Recruiting:     { icon: UserPlus,       tone: "os-tone-lilac" },
+  Credentialing:  { icon: BadgeCheck,     tone: "os-tone-coral" },
+  Authorizations: { icon: FileCheck2,     tone: "os-tone-amber" },
+  QA:             { icon: Shield,         tone: "os-tone-mint" },
+  Training:       { icon: GraduationCap,  tone: "os-tone-lilac" },
+  "Parent Comms": { icon: Megaphone,      tone: "os-tone-rose" },
+  Operations:     { icon: Workflow,       tone: "os-tone-violet" },
+};
 
-const kpis: Kpi[] = [
-  { label: "Active Clients",            value: "184", delta: "+9",   up: true,  status: "ok",   hint: "NC · Waitlist 22",        spark: [160,164,168,172,176,178,180,182,184], icon: Heart },
-  { label: "New Leads (7d)",            value: "28",  delta: "+18%", up: true,  status: "ok",   hint: "vs prior week",           spark: [12,14,16,18,20,22,25,27,28],            icon: UserPlus },
-  { label: "Clients Awaiting Staffing", value: "12",  delta: "+3",   up: false, status: "warn", hint: "Charlotte 7 · Raleigh 5", spark: [6,7,8,9,10,11,11,12,12],                icon: Inbox },
-  { label: "Scheduling Fill Rate",      value: "89%", delta: "+6%",  up: true,  status: "ok",   hint: "Target ≥ 92%",            spark: [80,82,83,85,86,87,88,89,89],            icon: CalendarDays },
-  { label: "Open Authorizations",       value: "31",  delta: "+4",   up: false, status: "warn", hint: "8 awaiting submit",       spark: [22,24,26,27,28,29,30,31,31],            icon: FileCheck2 },
-  { label: "Expiring Auths (30d)",      value: "11",  delta: "+2",   up: false, status: "warn", hint: "3 within 7 days",         spark: [4,5,6,7,8,9,10,11,11],                  icon: AlertTriangle },
-  { label: "Active RBTs",               value: "62",  delta: "+4",   up: true,  status: "ok",   hint: "8 onboarding",            spark: [54,55,56,58,59,60,61,62,62],            icon: UserCog },
-  { label: "Active BCBAs",              value: "14",  delta: "+1",   up: true,  status: "ok",   hint: "2 awaiting cred.",        spark: [12,12,13,13,13,13,14,14,14],            icon: ShieldCheck },
-  { label: "Recruiting Pipeline",       value: "47",  delta: "+11%", up: true,  status: "ok",   hint: "18 offers out",           spark: [30,33,36,38,40,42,44,46,47],            icon: Users },
-  { label: "Orientation Completion",    value: "82%", delta: "-3%",  up: false, status: "warn", hint: "5 new hires backlog",     spark: [88,87,86,85,84,83,82,82,82],            icon: GraduationCap },
-  { label: "Client Retention (90d)",    value: "94%", delta: "+1%",  up: true,  status: "ok",   hint: "State avg 91%",           spark: [90,91,91,92,92,93,93,94,94],            icon: BadgeCheck },
-  { label: "Session Completion",        value: "93%", delta: "+2%",  up: true,  status: "ok",   hint: "Target ≥ 95%",            spark: [88,89,90,91,91,92,92,93,93],            icon: CheckCircle2 },
-];
+const AI_META: Record<AiInsightSeed["kind"], { icon: React.ElementType; tone: string }> = {
+  alert: { icon: AlertCircle,   tone: "os-tone-coral" },
+  warn:  { icon: AlertTriangle, tone: "os-tone-amber" },
+  trend: { icon: Brain,         tone: "os-tone-sky" },
+  idea:  { icon: Lightbulb,     tone: "os-tone-lilac" },
+  flow:  { icon: Activity,      tone: "os-tone-mint" },
+};
 
-const departments = [
-  { name: "Intake",         icon: ClipboardList, status: "ok",   score: 93, workload: 14, overdue: 1, completion: 95, ai: "NC response time 16m · improving",  tone: "os-tone-rose" },
-  { name: "Scheduling",     icon: CalendarDays,  status: "warn", score: 84, workload: 22, overdue: 4, completion: 89, ai: "Charlotte has 18 uncovered hours",  tone: "os-tone-sky" },
-  { name: "Staffing",       icon: Briefcase,     status: "warn", score: 78, workload: 12, overdue: 3, completion: 82, ai: "12 clients awaiting RBT match",     tone: "os-tone-violet" },
-  { name: "Recruiting",     icon: UserPlus,      status: "ok",   score: 87, workload: 47, overdue: 2, completion: 88, ai: "Pipeline healthy · 18 offers out",  tone: "os-tone-lilac" },
-  { name: "Credentialing",  icon: BadgeCheck,    status: "crit", score: 62, workload: 7,  overdue: 3, completion: 58, ai: "3 BCBAs awaiting payer approval",   tone: "os-tone-coral" },
-  { name: "Authorizations", icon: FileCheck2,    status: "warn", score: 80, workload: 31, overdue: 5, completion: 84, ai: "11 expiring in 30 days",            tone: "os-tone-amber" },
-  { name: "QA",             icon: Shield,        status: "ok",   score: 90, workload: 9,  overdue: 0, completion: 93, ai: "Reports on schedule",               tone: "os-tone-mint" },
-  { name: "Training",       icon: GraduationCap, status: "warn", score: 82, workload: 11, overdue: 4, completion: 84, ai: "5 new hires awaiting orientation",  tone: "os-tone-lilac" },
-  { name: "Parent Comms",   icon: Megaphone,     status: "ok",   score: 91, workload: 8,  overdue: 1, completion: 94, ai: "Escalation volume low",             tone: "os-tone-rose" },
-  { name: "Operations",     icon: Workflow,      status: "ok",   score: 88, workload: 16, overdue: 2, completion: 90, ai: "Daily standups on track",           tone: "os-tone-violet" },
-];
+const ACTIVITY_META: Record<ActivitySeed["kind"], { icon: React.ElementType; tone: string }> = {
+  lead:     { icon: UserPlus,      tone: "os-tone-violet" },
+  schedule: { icon: CalendarDays,  tone: "os-tone-sky" },
+  cred:     { icon: BadgeCheck,    tone: "os-tone-mint" },
+  auth:     { icon: FileCheck2,    tone: "os-tone-amber" },
+  offer:    { icon: ClipboardCheck,tone: "os-tone-lilac" },
+  client:   { icon: Heart,         tone: "os-tone-rose" },
+  training: { icon: GraduationCap, tone: "os-tone-violet" },
+};
 
-const bottlenecks = [
-  { severity: "crit", title: "Charlotte — 18 uncovered hours this week",  dept: "Scheduling",    owner: "Jacob T.",   action: "Open coverage matching" },
-  { severity: "crit", title: "3 BCBAs pending insurance credentialing",    dept: "Credentialing", owner: "Olivia C.",  action: "Escalate to payer reps" },
-  { severity: "warn", title: "RBT shortage detected in Raleigh",           dept: "Staffing",      owner: "Marcus W.",  action: "Activate recruiting sprint" },
-  { severity: "warn", title: "11 authorizations expiring within 30 days",  dept: "Authorizations",owner: "Priya N.",   action: "Batch renewal workflow" },
-  { severity: "warn", title: "5 leads stalled awaiting intake forms",      dept: "Intake",        owner: "Emily R.",   action: "Send reminder + follow-up" },
-  { severity: "warn", title: "2 parent escalations open > 48h",            dept: "Parent Comms",  owner: "Ezra (you)", action: "Schedule outreach calls" },
-];
-
-const staffingByState = [
-  { s: "Charlotte",  fill: 78, need: 7 },
-  { s: "Raleigh",    fill: 84, need: 5 },
-  { s: "Greensboro", fill: 92, need: 2 },
-  { s: "Durham",     fill: 88, need: 3 },
-  { s: "Asheville",  fill: 95, need: 1 },
+const QUICK_ACTIONS = [
+  { label: "Add Lead",             icon: UserPlus,       tone: "os-tone-rose" },
+  { label: "Assign Staff",         icon: Briefcase,      tone: "os-tone-violet" },
+  { label: "Create Task",          icon: ClipboardCheck, tone: "os-tone-sky" },
+  { label: "Schedule Interview",   icon: CalendarDays,   tone: "os-tone-lilac" },
+  { label: "Submit Credentialing", icon: BadgeCheck,     tone: "os-tone-mint" },
+  { label: "Create Escalation",    icon: Flame,          tone: "os-tone-coral" },
+  { label: "Publish Training",     icon: GraduationCap,  tone: "os-tone-amber" },
+  { label: "Open Reports",         icon: BarChart3,      tone: "os-tone-violet" },
 ];
 
-const utilization = [
-  { d: "Mon", v: 82 }, { d: "Tue", v: 85 }, { d: "Wed", v: 88 },
-  { d: "Thu", v: 86 }, { d: "Fri", v: 91 }, { d: "Sat", v: 78 }, { d: "Sun", v: 72 },
-];
-
-const cancellationTrend = [
-  { d: "W1", v: 6.2 }, { d: "W2", v: 5.8 }, { d: "W3", v: 5.1 },
-  { d: "W4", v: 4.6 }, { d: "W5", v: 4.2 }, { d: "W6", v: 4.0 }, { d: "W7", v: 3.8 },
-];
-
-const leadConv = [
-  { m: "Mar", v: 47 }, { m: "Apr", v: 52 }, { m: "May", v: 58 },
-];
-const recruitFunnel = [
-  { stage: "Applicants",  v: 412 },
-  { stage: "Screened",    v: 218 },
-  { stage: "Interviewed", v: 124 },
-  { stage: "Offered",     v: 71 },
-  { stage: "Hired",       v: 41 },
-];
-const orientationDept = [
-  { dept: "Intake", v: 96 }, { dept: "Sched", v: 92 }, { dept: "RBT", v: 84 },
-  { dept: "BCBA",  v: 78 }, { dept: "Billing", v: 91 }, { dept: "QA", v: 82 },
-];
-
-const tasks = [
-  { title: "Approve Charlotte coverage matching plan",     owner: "Ezra",   dept: "Scheduling",    due: "Today",    priority: "High",   bucket: "Urgent" },
-  { title: "Follow up on BCBA credentialing (3 pending)",  owner: "Olivia", dept: "Credentialing", due: "Today",    priority: "High",   bucket: "Urgent" },
-  { title: "Call parent — escalation #NC-218",             owner: "Ezra",   dept: "Parent Comms",  due: "Today",    priority: "High",   bucket: "Escalations" },
-  { title: "Sign off on Raleigh intake auto-assign",       owner: "Emily",  dept: "Intake",        due: "Tomorrow", priority: "Medium", bucket: "Team" },
-  { title: "Review recruiting velocity plan",              owner: "Sarah",  dept: "Recruiting",    due: "Fri",      priority: "Medium", bucket: "Waiting" },
-  { title: "Orientation kickoff — 5 new hires",            owner: "HR Ops", dept: "Training",      due: "Mon",      priority: "Medium", bucket: "Team" },
-];
-
-const training = [
-  { name: "Scheduling Team",       pct: 94 },
-  { name: "Intake Team",           pct: 88 },
-  { name: "NC RBT Onboarding",     pct: 82 },
-  { name: "NC BCBA Documentation", pct: 71 },
-];
-
-const activity = [
-  { who: "Emily R.",  what: "submitted a new lead (Charlotte)",     when: "3m",  tone: "os-tone-violet", icon: UserPlus },
-  { who: "Jacob T.",  what: "resolved Raleigh scheduling conflict", when: "14m", tone: "os-tone-sky",    icon: CalendarDays },
-  { who: "Olivia C.", what: "approved RBT credential · NC",         when: "28m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "BCBS NC",   what: "approved auth #A-2841",                when: "41m", tone: "os-tone-amber",  icon: FileCheck2 },
-  { who: "Sarah M.",  what: "offer letter signed · Greensboro RBT", when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
-  { who: "System",    what: "client staffed · Durham",              when: "2h",  tone: "os-tone-rose",   icon: Heart },
-  { who: "Marcus W.", what: "completed orientation module",         when: "3h",  tone: "os-tone-violet", icon: GraduationCap },
-];
-
-const aiInsights = [
-  { icon: AlertCircle,  tone: "os-tone-coral", title: "NC staffing demand rising",      body: "Charlotte demand likely to grow next week — staffing buffer is below threshold.",      cta: "Open coverage" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "Credentialing → client starts",  body: "3 BCBA credential delays may impact 8 client starts within 10 days.",                  cta: "See forecast" },
-  { icon: Brain,        tone: "os-tone-sky",   title: "Fill rate projection",           body: "Scheduling fill rate projected to decline 4 pts if Raleigh RBT pipeline doesn't close.",cta: "View trend" },
-  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Recruiting pipeline gap",        body: "Pipeline insufficient for projected NC growth — add 6 candidates this week.",          cta: "Action plan" },
-  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",          body: "Auto-assign Charlotte intake to local pod — could save ~9h/week of triage.",           cta: "Apply rule" },
-];
-
-const meetings = [
-  { title: "NC Daily Standup",          time: "8:30 – 9:00 AM",  tone: "os-tone-sky" },
-  { title: "Charlotte Scheduling Sync", time: "10:00 – 10:30",   tone: "os-tone-violet" },
-  { title: "1:1 — Assistant Director",  time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
-  { title: "Parent Escalation Call",    time: "3:30 – 4:00 PM",  tone: "os-tone-amber" },
-];
-
-const quickActions = [
-  { label: "Add Lead",             icon: UserPlus,      tone: "os-tone-rose"   },
-  { label: "Assign Staff",         icon: Briefcase,     tone: "os-tone-violet" },
-  { label: "Create Task",          icon: ClipboardCheck,tone: "os-tone-sky"    },
-  { label: "Schedule Interview",   icon: CalendarDays,  tone: "os-tone-lilac"  },
-  { label: "Submit Credentialing", icon: BadgeCheck,    tone: "os-tone-mint"   },
-  { label: "Create Escalation",    icon: Flame,         tone: "os-tone-coral"  },
-  { label: "Publish Training",     icon: GraduationCap, tone: "os-tone-amber"  },
-  { label: "Open Reports",         icon: BarChart3,     tone: "os-tone-violet" },
-];
-
-const approvals = [
-  { what: "Recruiting offer · BCBA · Charlotte", who: "Sarah M.",  due: "Today" },
-  { what: "Coverage swap · Raleigh pod",         who: "Jacob T.",  due: "Today" },
-  { what: "Credentialing submission · 2 RBTs",   who: "Olivia C.", due: "Tomorrow" },
-];
-
-const regions = [
-  { name: "Charlotte",  clients: 58, fill: 78, recruit: 64, ops: 71, trend: "down" as const, status: "warn" as Tone, note: "RBT shortage risk" },
-  { name: "Raleigh",    clients: 47, fill: 84, recruit: 70, ops: 79, trend: "down" as const, status: "warn" as Tone, note: "Hiring velocity slowing" },
-  { name: "Greensboro", clients: 32, fill: 92, recruit: 88, ops: 91, trend: "up"   as const, status: "ok"   as Tone, note: "Top performer this month" },
-  { name: "Durham",     clients: 28, fill: 88, recruit: 82, ops: 86, trend: "up"   as const, status: "ok"   as Tone, note: "Stable & growing" },
-  { name: "Wilmington", clients: 14, fill: 81, recruit: 58, ops: 73, trend: "down" as const, status: "warn" as Tone, note: "Pipeline below target" },
-  { name: "Asheville",  clients: 5,  fill: 95, recruit: 90, ops: 93, trend: "up"   as const, status: "ok"   as Tone, note: "Excellent operational score" },
-];
-
-const support = [
-  { who: "Marisol Chen",  role: "VP State Operations", tone: "os-tone-violet" },
-  { who: "James Okafor",  role: "Asst. State Director", tone: "os-tone-sky"    },
-  { who: "Priya Nair",    role: "Auth Ops Lead",        tone: "os-tone-amber"  },
-  { who: "Jacob Thomas",  role: "Scheduling Lead",      tone: "os-tone-mint"   },
-];
-
-/* ============ helpers ============ */
+/* ===================== helpers ===================== */
 
 const toneText = (t: Tone) => t === "ok" ? "text-[hsl(155_55%_38%)]" : t === "warn" ? "text-[hsl(30_85%_45%)]" : "text-[hsl(355_72%_52%)]";
 const toneBg   = (t: Tone) => t === "ok" ? "bg-[hsl(150_70%_92%)]" : t === "warn" ? "bg-[hsl(40_100%_92%)]" : "bg-[hsl(355_100%_95%)]";
@@ -227,10 +127,8 @@ function Spark({ data, tone }: { data: number[]; tone: Tone }) {
   );
 }
 
-/* ============ KPI card ============ */
-
-function OpsKpi({ k }: { k: Kpi }) {
-  const Icon = k.icon;
+function OpsKpi({ k }: { k: KpiSeed }) {
+  const Icon = KPI_ICONS[k.key] ?? Gauge;
   return (
     <div className={cn(
       "os-rise group relative overflow-hidden rounded-3xl border border-white/70 bg-white/75 p-4 backdrop-blur transition hover:-translate-y-0.5",
@@ -240,13 +138,12 @@ function OpsKpi({ k }: { k: Kpi }) {
         "pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl opacity-70",
         k.status === "ok" ? "bg-[hsl(155_70%_70%/0.30)]" : k.status === "warn" ? "bg-[hsl(35_95%_70%/0.32)]" : "bg-[hsl(355_85%_75%/0.38)]"
       )} />
-
       <div className="relative flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className={cn("grid h-8 w-8 place-items-center rounded-xl", toneBg(k.status), toneText(k.status))}>
             <Icon className="h-4 w-4" />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground leading-tight">{k.label}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground leading-tight">{k.key}</p>
         </div>
         <span className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold tracking-wide", toneBg(k.status), toneText(k.status))}>
           <span className={cn("h-1 w-1 rounded-full",
@@ -254,7 +151,6 @@ function OpsKpi({ k }: { k: Kpi }) {
           {toneLabel(k.status)}
         </span>
       </div>
-
       <p className="relative mt-2.5 text-[26px] font-semibold tracking-tight leading-none tabular-nums">{k.value}</p>
       <div className="relative mt-1 flex items-center justify-between text-[10.5px]">
         <span className="text-muted-foreground">{k.hint}</span>
@@ -268,16 +164,28 @@ function OpsKpi({ k }: { k: Kpi }) {
   );
 }
 
-/* ============ PAGE ============ */
+/* ===================== PAGE ===================== */
 
 export default function OSStateDirector() {
   const { user } = useAuth();
+  const { activeState, role } = useOSRole();
+  const d = getStateData(activeState);
   const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Ezra").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const opsScore = 82;
   const taskBuckets = ["Urgent", "Team", "Waiting", "Escalations"];
+
+  const deptCounts = d.departments.reduce(
+    (acc, dept) => {
+      acc[dept.status] += 1;
+      return acc;
+    },
+    { ok: 0, warn: 0, crit: 0 } as Record<Tone, number>,
+  );
+  const critBottlenecks = d.bottlenecks.filter((b) => b.severity === "crit").length;
+  const warnBottlenecks = d.bottlenecks.filter((b) => b.severity === "warn").length;
+  const isStateDirector = role === "state_director";
 
   return (
     <OSShell
@@ -292,28 +200,31 @@ export default function OSStateDirector() {
                   <Brain className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-[14px] font-semibold tracking-tight">AI Ops Insights</h3>
+                  <h3 className="text-[14px] font-semibold tracking-tight">AI Ops Insights · {d.code}</h3>
                   <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Predictive · Actionable</p>
                 </div>
               </div>
             </header>
             <ul className="space-y-3">
-              {aiInsights.map((i) => (
-                <li key={i.title} className="group rounded-2xl border border-white/70 bg-white/70 p-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_hsl(265_60%_50%/0.25)]">
-                  <div className="flex items-start gap-2.5">
-                    <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", i.tone)}>
-                      <i.icon className="h-4 w-4" />
+              {d.ai.map((i) => {
+                const meta = AI_META[i.kind];
+                return (
+                  <li key={i.title} className="group rounded-2xl border border-white/70 bg-white/70 p-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_hsl(265_60%_50%/0.25)]">
+                    <div className="flex items-start gap-2.5">
+                      <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", meta.tone)}>
+                        <meta.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12.5px] font-semibold leading-tight">{i.title}</p>
+                        <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{i.body}</p>
+                        <button className="mt-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
+                          {i.cta} <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-semibold leading-tight">{i.title}</p>
-                      <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{i.body}</p>
-                      <button className="mt-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
-                        {i.cta} <ChevronRight className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -321,39 +232,39 @@ export default function OSStateDirector() {
           <section className="os-card relative overflow-hidden">
             <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(155_70%_70%/0.25)] to-transparent blur-2xl" />
             <header className="mb-2">
-              <h3 className="text-[14px] font-semibold tracking-tight">Operations Score</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">{d.code} Operations Score</h3>
               <p className="text-[10.5px] text-muted-foreground">Composite health · live</p>
             </header>
             <div className="relative grid place-items-center py-2">
               <div className="relative h-[140px] w-[140px]">
                 <ResponsiveContainer>
-                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={[{ v: opsScore }]} startAngle={90} endAngle={-270}>
+                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={[{ v: d.opsScore }]} startAngle={90} endAngle={-270}>
                     <RadialBar dataKey="v" cornerRadius={10} fill="hsl(265 85% 62%)" background={{ fill: "hsl(240 10% 94%)" }} />
                   </RadialBarChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 grid place-items-center">
                   <div className="text-center">
-                    <p className="text-[28px] font-semibold leading-none tracking-tight">{opsScore}</p>
-                    <p className="mt-1 text-[9.5px] uppercase tracking-wider text-muted-foreground">Healthy</p>
+                    <p className="text-[28px] font-semibold leading-none tracking-tight">{d.opsScore}</p>
+                    <p className="mt-1 text-[9.5px] uppercase tracking-wider text-muted-foreground">{d.opsLabel}</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="mt-1 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">6 Healthy</div>
-              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">3 Watch</div>
-              <div className="rounded-lg bg-[hsl(355_100%_95%)] py-1.5 font-semibold text-[hsl(355_70%_48%)]">1 Critical</div>
+              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">{deptCounts.ok} Healthy</div>
+              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">{deptCounts.warn} Watch</div>
+              <div className="rounded-lg bg-[hsl(355_100%_95%)] py-1.5 font-semibold text-[hsl(355_70%_48%)]">{deptCounts.crit} Critical</div>
             </div>
           </section>
 
           {/* TODAY */}
           <section className="os-card">
             <header className="mb-3 flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold tracking-tight">Today</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">Today · {d.code}</h3>
               <span className="text-[11px] text-muted-foreground">{today}</span>
             </header>
             <ul className="space-y-3">
-              {meetings.map((m) => (
+              {d.meetings.map((m) => (
                 <li key={m.title} className="flex items-center gap-3">
                   <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", m.tone)}>
                     <CalendarDays className="h-4 w-4" />
@@ -371,10 +282,10 @@ export default function OSStateDirector() {
           <section className="os-card">
             <header className="mb-3 flex items-center justify-between">
               <h3 className="text-[14px] font-semibold tracking-tight">Pending Approvals</h3>
-              <Pill tone="med">{approvals.length}</Pill>
+              <Pill tone="med">{d.approvals.length}</Pill>
             </header>
             <ul className="space-y-2">
-              {approvals.map((a) => (
+              {d.approvals.map((a) => (
                 <li key={a.what} className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[hsl(265_70%_55%)]" />
                   <div className="min-w-0 flex-1">
@@ -392,13 +303,13 @@ export default function OSStateDirector() {
             <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(355_85%_75%/0.25)] to-transparent blur-2xl" />
             <header className="mb-3 flex items-center gap-2">
               <LifeBuoy className="h-3.5 w-3.5 text-[hsl(355_70%_55%)]" />
-              <h3 className="text-[14px] font-semibold tracking-tight">Need Support?</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">Need Support? · {d.code}</h3>
             </header>
             <p className="text-[11.5px] leading-snug text-muted-foreground">
-              Your operational leadership and escalation paths — one tap away.
+              Your {d.name} leadership and escalation paths — one tap away.
             </p>
             <ul className="mt-3 space-y-2">
-              {support.map((s) => (
+              {d.support.map((s) => (
                 <li key={s.who} className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
                   <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[11px] font-bold", s.tone)}>
                     {s.who.split(" ").map((n) => n[0]).join("")}
@@ -424,27 +335,30 @@ export default function OSStateDirector() {
             <header className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Radio className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight">Live Activity</h3>
+                <h3 className="text-[14px] font-semibold tracking-tight">Live Activity · {d.code}</h3>
               </div>
               <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[hsl(155_55%_38%)]">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[hsl(155_60%_50%)]" /> Live
               </span>
             </header>
             <ul className="space-y-3">
-              {activity.map((a, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <div className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-xl", a.tone)}>
-                    <a.icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] leading-tight">
-                      <span className="font-semibold">{a.who}</span>{" "}
-                      <span className="text-muted-foreground">{a.what}</span>
-                    </p>
-                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{a.when} ago</p>
-                  </div>
-                </li>
-              ))}
+              {d.activity.map((a, i) => {
+                const meta = ACTIVITY_META[a.kind];
+                return (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <div className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-xl", meta.tone)}>
+                      <meta.icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] leading-tight">
+                        <span className="font-semibold">{a.who}</span>{" "}
+                        <span className="text-muted-foreground">{a.what}</span>
+                      </p>
+                      <p className="mt-0.5 text-[10.5px] text-muted-foreground">{a.when} ago</p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </>
@@ -457,26 +371,31 @@ export default function OSStateDirector() {
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <MapPin className="h-3 w-3 text-[hsl(265_70%_55%)]" /> State Director · North Carolina
+              <MapPin className="h-3 w-3 text-[hsl(265_70%_55%)]" /> State Director · {d.name}
+              {isStateDirector && (
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[hsl(265_100%_95%)] px-1.5 py-0.5 text-[9.5px] font-bold text-[hsl(265_70%_50%)]">
+                  <Lock className="h-2.5 w-2.5" /> {d.code} only
+                </span>
+              )}
             </div>
             <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
               {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
             </h1>
             <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening across North Carolina today.
+              {today} · Here's what's happening across {d.name} today.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <ShieldCheck className="h-3 w-3" /> NC ops score 82 · Stable
+                <ShieldCheck className="h-3 w-3" /> {d.code} ops score {d.opsScore} · {d.opsLabel}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <AlertTriangle className="h-3 w-3" /> 6 alerts
+                <AlertTriangle className="h-3 w-3" /> {d.alerts} alerts
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
-                <Flame className="h-3 w-3" /> 2 escalations
+                <Flame className="h-3 w-3" /> {d.escalations} escalations
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <Sparkles className="h-3 w-3" /> 5 AI insights
+                <Sparkles className="h-3 w-3" /> {d.insightsCount} AI insights
               </span>
             </div>
           </div>
@@ -488,18 +407,24 @@ export default function OSStateDirector() {
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">NC State AI Briefing</p>
+                <p className="text-[13px] font-semibold leading-none tracking-tight">{d.code} State AI Briefing</p>
                 <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 3 min ago</p>
               </div>
             </div>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              NC intake conversion improved <span className="font-semibold text-[hsl(155_55%_38%)]">+11%</span> this week, however
-              <span className="font-semibold text-[hsl(355_70%_52%)]"> Charlotte staffing shortages</span> may impact scheduling within 5 days.
-            </p>
+            <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">{d.briefing}</p>
             <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open State Insights <ChevronRight className="h-3.5 w-3.5" />
+              Open {d.code} State Insights <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
+        </div>
+
+        {/* Scope notice */}
+        <div className="relative mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-white/70 bg-white/60 px-3 py-2 text-[11px] text-muted-foreground backdrop-blur">
+          <Lock className="h-3 w-3 text-[hsl(265_70%_55%)]" />
+          <span>
+            Data scope: <span className="font-semibold text-foreground">{d.name} ({d.code})</span> · {d.regions.length} regions · all widgets,
+            drilldowns, AI insights and approvals filtered to this state.
+          </span>
         </div>
       </header>
 
@@ -508,8 +433,8 @@ export default function OSStateDirector() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Gauge className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">North Carolina · State KPIs</h2>
-            <Pill tone="default">{kpis.length} metrics</Pill>
+            <h2 className="text-[15px] font-semibold tracking-tight">{d.name} · State KPIs</h2>
+            <Pill tone="default">{d.kpis.length} metrics</Pill>
           </div>
           <div className="flex items-center gap-1.5">
             <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">Today</button>
@@ -518,7 +443,7 @@ export default function OSStateDirector() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {kpis.map((k) => <OpsKpi key={k.label} k={k} />)}
+          {d.kpis.map((k) => <OpsKpi key={k.key} k={k} />)}
         </div>
       </section>
 
@@ -526,37 +451,40 @@ export default function OSStateDirector() {
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">NC Department Operations</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Workload, completion, and AI insight across your state teams</p>
+            <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Department Operations</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Workload, completion, and AI insight across your {d.name} teams</p>
           </div>
           <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">View all</button>
         </header>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {departments.map((d) => (
-            <button key={d.name} className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/70 p-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={cn("grid h-8 w-8 place-items-center rounded-xl", d.tone)}>
-                    <d.icon className="h-4 w-4" />
+          {d.departments.map((dept: DepartmentSeed) => {
+            const meta = DEPT_META[dept.name] ?? { icon: Workflow, tone: "os-tone-violet" };
+            return (
+              <button key={dept.name} className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/70 p-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("grid h-8 w-8 place-items-center rounded-xl", meta.tone)}>
+                      <meta.icon className="h-4 w-4" />
+                    </div>
+                    <p className="text-[12.5px] font-semibold tracking-tight">{dept.name}</p>
                   </div>
-                  <p className="text-[12.5px] font-semibold tracking-tight">{d.name}</p>
+                  <StatusDot status={dept.status} />
                 </div>
-                <StatusDot status={d.status as Tone} />
-              </div>
-              <p className="mt-2.5 text-[20px] font-semibold tracking-tight tabular-nums">{d.score}<span className="ml-1 text-[10.5px] font-normal text-muted-foreground">score</span></p>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                <div className="h-full rounded-full" style={{ width: `${d.completion}%`, background: `linear-gradient(90deg, ${toneStrokeHsl(d.status as Tone)}, hsl(265 85% 72%))` }} />
-              </div>
-              <div className="mt-2 flex items-center gap-1.5 text-[10px]">
-                <Pill tone="default">{d.workload} active</Pill>
-                {d.overdue > 0 && <Pill tone={d.overdue >= 5 ? "crit" : "warn"}>{d.overdue} overdue</Pill>}
-              </div>
-              <p className="mt-2 flex items-start gap-1.5 text-[10.5px] text-muted-foreground">
-                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />
-                {d.ai}
-              </p>
-            </button>
-          ))}
+                <p className="mt-2.5 text-[20px] font-semibold tracking-tight tabular-nums">{dept.score}<span className="ml-1 text-[10.5px] font-normal text-muted-foreground">score</span></p>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+                  <div className="h-full rounded-full" style={{ width: `${dept.completion}%`, background: `linear-gradient(90deg, ${toneStrokeHsl(dept.status)}, hsl(265 85% 72%))` }} />
+                </div>
+                <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+                  <Pill tone="default">{dept.workload} active</Pill>
+                  {dept.overdue > 0 && <Pill tone={dept.overdue >= 5 ? "crit" : "warn"}>{dept.overdue} overdue</Pill>}
+                </div>
+                <p className="mt-2 flex items-start gap-1.5 text-[10.5px] text-muted-foreground">
+                  <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />
+                  {dept.ai}
+                </p>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -565,15 +493,15 @@ export default function OSStateDirector() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Operational Alerts & Escalations</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Operational Alerts & Escalations</h3>
           </div>
           <div className="flex items-center gap-1.5 text-[10.5px]">
-            <Pill tone="crit">2 critical</Pill>
-            <Pill tone="warn">4 watch</Pill>
+            <Pill tone="crit">{critBottlenecks} critical</Pill>
+            <Pill tone="warn">{warnBottlenecks} watch</Pill>
           </div>
         </header>
         <ul className="space-y-2">
-          {bottlenecks.map((b) => (
+          {d.bottlenecks.map((b) => (
             <li key={b.title} className={cn(
               "flex items-center gap-3 rounded-2xl border border-white/70 bg-white/70 p-3.5",
               b.severity === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
@@ -604,8 +532,8 @@ export default function OSStateDirector() {
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-transparent blur-3xl" />
         <header className="relative mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Regional Performance · NC</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Top-performing and at-risk regions across your state</p>
+            <h3 className="text-[15px] font-semibold tracking-tight">Regional Performance · {d.code}</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Top-performing and at-risk regions across {d.name}</p>
           </div>
           <div className="flex items-center gap-1.5">
             {["Ops Score", "Fill Rate", "Recruiting"].map((t, i) => (
@@ -617,7 +545,7 @@ export default function OSStateDirector() {
           </div>
         </header>
         <ul className="relative space-y-2">
-          {regions.map((r, idx) => (
+          {d.regions.map((r, idx) => (
             <li key={r.name} className={cn(
               "group grid grid-cols-[28px,1.4fr,2fr,auto] items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-3.5 transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]",
               r.status === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
@@ -639,9 +567,9 @@ export default function OSStateDirector() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "Fill",     v: r.fill    },
-                  { label: "Recruit",  v: r.recruit },
-                  { label: "Ops",      v: r.ops     },
+                  { label: "Fill",    v: r.fill },
+                  { label: "Recruit", v: r.recruit },
+                  { label: "Ops",     v: r.ops },
                 ].map((m) => (
                   <div key={m.label}>
                     <div className="flex items-center justify-between text-[10px]">
@@ -672,16 +600,16 @@ export default function OSStateDirector() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">NC Staffing & Scheduling</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Staffing & Scheduling</h3>
           </div>
-          <Pill tone="warn">18 open needs</Pill>
+          <Pill tone="warn">{d.openNeeds} open needs</Pill>
         </header>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Fill rate by state */}
+          {/* Fill rate by region */}
           <div className="rounded-2xl border border-white/70 bg-white/70 p-4">
-            <p className="text-[11.5px] font-medium text-muted-foreground">Fill Rate · NC clinics</p>
+            <p className="text-[11.5px] font-medium text-muted-foreground">Fill Rate · {d.code} clinics</p>
             <ul className="mt-3 space-y-2.5">
-              {staffingByState.map((s) => (
+              {d.staffing.map((s) => (
                 <li key={s.s}>
                   <div className="flex items-center justify-between text-[11.5px]">
                     <span className="font-semibold">{s.s}</span>
@@ -705,14 +633,16 @@ export default function OSStateDirector() {
           <div className="rounded-2xl border border-white/70 bg-white/70 p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11.5px] font-medium text-muted-foreground">Utilization · 7 days</p>
-                <p className="mt-0.5 text-[20px] font-semibold tracking-tight">86%</p>
+                <p className="text-[11.5px] font-medium text-muted-foreground">Utilization · 7 days · {d.code}</p>
+                <p className="mt-0.5 text-[20px] font-semibold tracking-tight">
+                  {Math.round(d.utilization.reduce((a, b) => a + b.v, 0) / d.utilization.length)}%
+                </p>
               </div>
               <Pill tone="ok">+4%</Pill>
             </div>
             <div className="mt-2 h-[140px]">
               <ResponsiveContainer>
-                <BarChart data={utilization} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+                <BarChart data={d.utilization} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
                   <XAxis dataKey="d" tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} />
                   <Bar dataKey="v" fill="hsl(265 85% 70%)" radius={[6, 6, 0, 0]} />
@@ -725,14 +655,14 @@ export default function OSStateDirector() {
           <div className="rounded-2xl border border-white/70 bg-white/70 p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11.5px] font-medium text-muted-foreground">Cancellation Rate · 7 wk</p>
-                <p className="mt-0.5 text-[20px] font-semibold tracking-tight">3.8%</p>
+                <p className="text-[11.5px] font-medium text-muted-foreground">Cancellation Rate · 7 wk · {d.code}</p>
+                <p className="mt-0.5 text-[20px] font-semibold tracking-tight">{d.cancellation[d.cancellation.length - 1].v}%</p>
               </div>
-              <Pill tone="ok">-2.4 pts</Pill>
+              <Pill tone="ok">↓ trend</Pill>
             </div>
             <div className="mt-2 h-[140px]">
               <ResponsiveContainer>
-                <LineChart data={cancellationTrend} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+                <LineChart data={d.cancellation} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
                   <XAxis dataKey="d" tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} />
                   <Line type="monotone" dataKey="v" stroke="hsl(155 55% 45%)" strokeWidth={2.25} dot={{ r: 2.5, fill: "hsl(155 55% 45%)" }} />
@@ -749,15 +679,15 @@ export default function OSStateDirector() {
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Recruiting Funnel</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Recruiting Funnel</h3>
             </div>
-            <Pill tone="warn">Velocity 11/wk · target 14</Pill>
+            <Pill tone="warn">Velocity {d.recruitFunnel[d.recruitFunnel.length - 1].v}/qtr</Pill>
           </header>
           <ul className="space-y-2.5">
-            {recruitFunnel.map((f, i) => {
-              const max = recruitFunnel[0].v;
+            {d.recruitFunnel.map((f, i) => {
+              const max = d.recruitFunnel[0].v;
               const pct = Math.round((f.v / max) * 100);
-              const next = recruitFunnel[i + 1];
+              const next = d.recruitFunnel[i + 1];
               const conv = next ? Math.round((next.v / f.v) * 100) : null;
               return (
                 <li key={f.stage}>
@@ -780,15 +710,15 @@ export default function OSStateDirector() {
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-[hsl(155_55%_40%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Intake Conversion</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Intake Conversion</h3>
             </div>
-            <Pill tone="ok">+12%</Pill>
+            <Pill tone="ok">3-mo</Pill>
           </header>
-          <p className="text-[28px] font-semibold tracking-tight tabular-nums">58%</p>
-          <p className="text-[10.5px] text-muted-foreground">3-mo trend</p>
+          <p className="text-[28px] font-semibold tracking-tight tabular-nums">{d.leadConv[d.leadConv.length - 1].v}%</p>
+          <p className="text-[10.5px] text-muted-foreground">3-mo trend · {d.name}</p>
           <div className="mt-2 h-[120px]">
             <ResponsiveContainer>
-              <AreaChart data={leadConv} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
+              <AreaChart data={d.leadConv} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="ic-ops" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(155 55% 45%)" stopOpacity={0.3} />
@@ -809,7 +739,7 @@ export default function OSStateDirector() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Operational Task Center</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Operational Task Center</h3>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             {["All", "My Tasks", ...taskBuckets].map((t, i) => (
@@ -821,7 +751,7 @@ export default function OSStateDirector() {
           </div>
         </header>
         <ul className="divide-y divide-foreground/[0.06]">
-          {tasks.map((t) => {
+          {d.tasks.map((t) => {
             const prio = t.priority === "High" ? "high" : t.priority === "Medium" ? "med" : "low";
             const bucketTone = t.bucket === "Urgent" ? "crit" : t.bucket === "Escalations" ? "warn" : t.bucket === "Waiting" ? "med" : "default";
             return (
@@ -833,8 +763,8 @@ export default function OSStateDirector() {
                   <p className="truncate text-[12.5px] font-medium">{t.title}</p>
                   <p className="mt-0.5 text-[10.5px] text-muted-foreground">{t.dept} · Owner {t.owner} · Due {t.due}</p>
                 </div>
-                <Pill tone={prio as any}>{t.priority}</Pill>
-                <Pill tone={bucketTone as any}>{t.bucket}</Pill>
+                <Pill tone={prio as "high" | "med" | "low"}>{t.priority}</Pill>
+                <Pill tone={bucketTone as "crit" | "warn" | "med" | "default"}>{t.bucket}</Pill>
               </li>
             );
           })}
@@ -847,12 +777,12 @@ export default function OSStateDirector() {
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Training & Engagement</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Training & Engagement</h3>
             </div>
-            <span className="text-[11px] text-muted-foreground">Co. completion <span className="font-semibold text-foreground">87%</span></span>
+            <span className="text-[11px] text-muted-foreground">{d.code} avg <span className="font-semibold text-foreground">{Math.round(d.training.reduce((a, b) => a + b.pct, 0) / d.training.length)}%</span></span>
           </header>
           <div className="grid grid-cols-2 gap-2.5">
-            {training.map((t) => (
+            {d.training.map((t) => (
               <div key={t.name} className="rounded-xl border border-white/70 bg-white/70 p-3">
                 <p className="truncate text-[11.5px] font-semibold">{t.name}</p>
                 <div className="mt-1 flex items-center justify-between text-[10.5px]">
@@ -868,11 +798,11 @@ export default function OSStateDirector() {
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             <div className="rounded-xl border border-white/70 bg-gradient-to-br from-[hsl(150_70%_96%)] to-white p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(155_55%_38%)]">Operational Ready</p>
-              <p className="mt-1 text-[12.5px] font-semibold">Scheduling · 92%</p>
+              <p className="mt-1 text-[12.5px] font-semibold">{d.training[0].name} · {d.training[0].pct}%</p>
             </div>
             <div className="rounded-xl border border-white/70 bg-gradient-to-br from-[hsl(355_100%_96%)] to-white p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(355_70%_50%)]">Onboarding Risk</p>
-              <p className="mt-1 text-[12.5px] font-semibold">3 employees delayed</p>
+              <p className="mt-1 text-[12.5px] font-semibold">{d.departments.find((x) => x.name === "Training")?.overdue ?? 0} employees delayed</p>
             </div>
           </div>
         </section>
@@ -881,18 +811,18 @@ export default function OSStateDirector() {
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Orientation by Department</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight">{d.code} Orientation by Department</h3>
             </div>
           </header>
           <div className="h-[210px]">
             <ResponsiveContainer>
-              <BarChart data={orientationDept} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <BarChart data={d.orientationDept} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <XAxis dataKey="dept" tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: "hsl(240 5% 55%)" }} axisLine={false} tickLine={false} domain={[0, 100]} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(255 30% 92%)" }} />
                 <Bar dataKey="v" radius={[6, 6, 0, 0]}>
-                  {orientationDept.map((d, i) => (
-                    <Cell key={i} fill={d.v >= 90 ? "hsl(155 55% 50%)" : d.v >= 80 ? "hsl(265 85% 68%)" : "hsl(35 90% 60%)"} />
+                  {d.orientationDept.map((entry, i) => (
+                    <Cell key={i} fill={entry.v >= 90 ? "hsl(155 55% 50%)" : entry.v >= 80 ? "hsl(265 85% 68%)" : "hsl(35 90% 60%)"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -901,7 +831,6 @@ export default function OSStateDirector() {
         </section>
       </div>
 
-      {/* QUICK ACTIONS */}
       {/* SECTION — CULTURE & MOTIVATION */}
       <section className="os-rise relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white via-[hsl(265_100%_99%)] to-[hsl(150_100%_98%)] p-6 shadow-[0_24px_60px_-30px_hsl(265_60%_50%/0.22)]">
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.28)] to-transparent blur-3xl" />
@@ -915,24 +844,24 @@ export default function OSStateDirector() {
               You're making a difference, <span className="capitalize">{name}</span>.
             </h3>
             <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
-              <span className="font-semibold text-[hsl(265_70%_50%)]">184 children</span> across North Carolina received
+              <span className="font-semibold text-[hsl(265_70%_50%)]">{d.childrenServed} children</span> across {d.name} received
               life-changing care this month — powered by your teams and your leadership.
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_30%)]">
-                <Trophy className="h-3 w-3" /> Greensboro: Top region
+                <Trophy className="h-3 w-3" /> {d.highlights.topRegion}: Top region
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <Sparkles className="h-3 w-3" /> 9 new hires this week
+                <Sparkles className="h-3 w-3" /> {d.highlights.newHires} new hires this week
               </span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { label: "Parent Satisfaction", value: "4.8 / 5", hint: "NC survey · 240 responses", tone: "os-tone-rose",   icon: Smile },
-              { label: "Team Engagement",     value: "92%",     hint: "Pulse · this month",        tone: "os-tone-violet", icon: Users },
-              { label: "Client Outcomes",     value: "+14%",    hint: "Goal mastery · 90d",        tone: "os-tone-mint",   icon: TrendingUp },
-              { label: "Operational Progress",value: "82",      hint: "State health score",        tone: "os-tone-sky",    icon: Activity },
+              { label: "Parent Satisfaction", value: d.highlights.parentSat, hint: `${d.code} survey responses`,  tone: "os-tone-rose",   icon: Smile },
+              { label: "Team Engagement",     value: d.highlights.engagement, hint: "Pulse · this month",          tone: "os-tone-violet", icon: Users },
+              { label: "Client Outcomes",     value: d.highlights.outcomes,   hint: "Goal mastery · 90d",          tone: "os-tone-mint",   icon: TrendingUp },
+              { label: "Operational Progress",value: String(d.opsScore),      hint: `${d.code} health score`,      tone: "os-tone-sky",    icon: Activity },
             ].map((m) => (
               <div key={m.label} className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-3.5 backdrop-blur">
                 <div className={cn("grid h-8 w-8 place-items-center rounded-xl", m.tone)}>
@@ -950,11 +879,11 @@ export default function OSStateDirector() {
       {/* QUICK ACTIONS */}
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between" id="quick-actions-header">
-          <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
+          <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions · {d.code}</h3>
           <span className="text-[11px] text-muted-foreground">⌘K to search anything</span>
         </header>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          {quickActions.map((a) => (
+          {QUICK_ACTIONS.map((a) => (
             <button key={a.label} className="group flex flex-col items-start gap-2 rounded-2xl border border-white/70 bg-white/70 p-3 text-left transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-20px_hsl(265_60%_50%/0.28)]">
               <div className={cn("grid h-9 w-9 place-items-center rounded-xl", a.tone)}>
                 <a.icon className="h-4 w-4" />
