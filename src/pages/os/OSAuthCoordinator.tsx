@@ -4,6 +4,7 @@ import {
   Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, UserPlus, ClipboardCheck,
   BookOpen, Inbox, ArrowRight, Phone, MessageSquare, Mail, Send, FileText,
   ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
+  CalendarClock, FileWarning, FileSignature, Building2, Stamp, ShieldAlert, TrendingUp,
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, RadialBarChart, RadialBar,
@@ -30,117 +31,115 @@ type Kpi = {
 /* ============ MOCK DATA ============ */
 
 const kpis: Kpi[] = [
-  { label: "New Leads Today",         value: "9",   delta: "+3",   up: true,  status: "ok",   hint: "vs yesterday",       spark: [3,4,5,5,6,7,8,9,9],         icon: UserPlus },
-  { label: "Awaiting Contact",        value: "14",  delta: "+5",   up: false, status: "warn", hint: "8 over 24h",         spark: [6,8,9,10,11,12,13,14,14],   icon: Inbox },
-  { label: "Avg Response Time",       value: "16m", delta: "-8m",  up: true,  status: "ok",   hint: "Target ≤ 20m",       spark: [28,26,24,22,20,19,18,17,16],icon: Clock },
-  { label: "Forms Sent",              value: "22",  delta: "+6",   up: true,  status: "ok",   hint: "This week",          spark: [10,12,14,16,18,20,21,22,22],icon: Send },
-  { label: "Forms Completed",         value: "14",  delta: "64%",  up: true,  status: "ok",   hint: "Of forms sent",      spark: [6,7,9,10,11,12,13,14,14],   icon: FileCheck2 },
-  { label: "VOB Pending",             value: "7",   delta: "+2",   up: false, status: "warn", hint: "2 over 3 days",      spark: [3,3,4,5,5,6,7,7,7],         icon: Hourglass },
-  { label: "VOB Completed",           value: "11",  delta: "+4",   up: true,  status: "ok",   hint: "This week",          spark: [4,5,6,7,8,9,10,11,11],      icon: BadgeCheck },
-  { label: "Intake Conversion",       value: "58%", delta: "+6%",  up: true,  status: "ok",   hint: "Lead → Setup",       spark: [48,50,52,53,54,55,56,57,58],icon: Activity },
-  { label: "Leads Stuck in Workflow", value: "6",   delta: "+1",   up: false, status: "warn", hint: "Form Sent stage",    spark: [3,3,4,4,5,5,6,6,6],         icon: AlertTriangle },
-  { label: "Follow-Ups Due",          value: "12",  delta: "-3",   up: true,  status: "ok",   hint: "5 due in next hour", spark: [18,17,16,15,14,13,13,12,12],icon: Phone },
-  { label: "Parent Response Rate",    value: "71%", delta: "+4%",  up: true,  status: "ok",   hint: "Within 48h",         spark: [62,64,66,67,68,69,70,70,71],icon: Smile },
-  { label: "Ready for Next Step",     value: "5",   delta: "+2",   up: true,  status: "ok",   hint: "Awaiting handoff",   spark: [1,2,2,3,3,4,4,5,5],         icon: CheckCircle2 },
+  { label: "Awaiting Submission",     value: "12",  delta: "+3",   up: false, status: "warn", hint: "4 over SLA",         spark: [6,7,8,9,10,11,11,12,12],    icon: Inbox },
+  { label: "Submitted Today",         value: "9",   delta: "+4",   up: true,  status: "ok",   hint: "vs yesterday",       spark: [3,4,5,6,7,7,8,8,9],         icon: Send },
+  { label: "Approved Auths",          value: "27",  delta: "+11",  up: true,  status: "ok",   hint: "This week",          spark: [10,12,15,17,19,22,24,26,27],icon: BadgeCheck },
+  { label: "Denied Auths",            value: "3",   delta: "-1",   up: true,  status: "warn", hint: "2 in appeal",        spark: [5,5,4,4,4,3,3,3,3],         icon: ShieldAlert },
+  { label: "Expiring Soon",           value: "6",   delta: "+2",   up: false, status: "crit", hint: "Within 14 days",     spark: [2,3,3,4,4,5,5,6,6],         icon: CalendarClock },
+  { label: "Pending Progress Reports",value: "8",   delta: "+2",   up: false, status: "warn", hint: "4 overdue",          spark: [3,4,5,6,6,7,7,8,8],         icon: FileText },
+  { label: "QA Review Pending",       value: "5",   delta: "-2",   up: true,  status: "warn", hint: "Target ≤ 3",         spark: [9,8,8,7,7,6,6,5,5],         icon: ClipboardCheck },
+  { label: "Missing Documentation",   value: "4",   delta: "+1",   up: false, status: "warn", hint: "2 client side",      spark: [2,2,3,3,3,3,4,4,4],         icon: FileWarning },
+  { label: "Avg Submission Turnaround",value:"2.1d",delta: "-0.4d",up: true,  status: "ok",   hint: "Target ≤ 2d",        spark: [3.2,3.0,2.8,2.6,2.5,2.4,2.3,2.2,2.1].map(n=>Math.round(n*10)), icon: Clock },
+  { label: "Payer Approval Rate",     value: "92%", delta: "+3%",  up: true,  status: "ok",   hint: "30d rolling",        spark: [85,86,87,88,89,90,91,91,92],icon: TrendingUp },
+  { label: "Reassessments Due",       value: "7",   delta: "+1",   up: false, status: "warn", hint: "Next 30 days",       spark: [4,4,5,5,6,6,6,7,7],         icon: RefreshCw },
+  { label: "Auths at Risk",           value: "4",   delta: "+2",   up: false, status: "crit", hint: "Coverage gap risk",  spark: [1,1,2,2,3,3,3,4,4],         icon: AlertTriangle },
 ];
 
 const stages = [
-  { name: "New Lead",            count: 9,  stalled: 0, avg: "0.5h",  tone: "os-tone-violet" },
-  { name: "Contact Attempted",   count: 14, stalled: 4, avg: "1d",    tone: "os-tone-sky" },
-  { name: "Connected",           count: 11, stalled: 1, avg: "0.7d",  tone: "os-tone-mint" },
-  { name: "Form Sent",           count: 22, stalled: 6, avg: "2.4d",  tone: "os-tone-lilac" },
-  { name: "Form Received",       count: 14, stalled: 1, avg: "1.1d",  tone: "os-tone-rose" },
-  { name: "Missing Information", count: 5,  stalled: 3, avg: "3.2d",  tone: "os-tone-coral" },
-  { name: "Sent to VOB",         count: 7,  stalled: 2, avg: "2.0d",  tone: "os-tone-amber" },
-  { name: "VOB Completed",       count: 11, stalled: 0, avg: "0.6d",  tone: "os-tone-mint" },
-  { name: "Pending Auth",        count: 8,  stalled: 1, avg: "3.8d",  tone: "os-tone-amber" },
-  { name: "Ready for Setup",     count: 5,  stalled: 0, avg: "0.4d",  tone: "os-tone-violet" },
+  { name: "Awaiting Submission",   count: 12, stalled: 4, avg: "1.8d", tone: "os-tone-lilac" },
+  { name: "Submitted",             count: 18, stalled: 2, avg: "2.1d", tone: "os-tone-sky" },
+  { name: "Approved",              count: 27, stalled: 0, avg: "0.6d", tone: "os-tone-mint" },
+  { name: "Denied",                count: 3,  stalled: 2, avg: "3.2d", tone: "os-tone-coral" },
+  { name: "Expiring Soon",         count: 6,  stalled: 3, avg: "—",    tone: "os-tone-rose" },
+  { name: "QA Review",             count: 5,  stalled: 1, avg: "1.4d", tone: "os-tone-violet" },
+  { name: "Missing Documentation", count: 4,  stalled: 2, avg: "2.7d", tone: "os-tone-amber" },
+  { name: "Flaked Client",         count: 2,  stalled: 2, avg: "5.0d", tone: "os-tone-coral" },
 ];
 
 const leads = [
-  { parent: "Erin Walker",     child: "Ava (5)",     insurance: "BCBS NC", owner: "Michelle", stage: "Form Sent",           since: "3d ago",  urgency: "crit" as Tone },
-  { parent: "Devon Pierce",    child: "Liam (4)",    insurance: "Aetna",   owner: "Michelle", stage: "Contact Attempted",   since: "1d ago",  urgency: "warn" as Tone },
-  { parent: "Priya Sharma",    child: "Reya (6)",    insurance: "Cigna",   owner: "Michelle", stage: "Sent to VOB",         since: "2d ago",  urgency: "warn" as Tone },
-  { parent: "Jordan Hayes",    child: "Mason (3)",   insurance: "UHC",     owner: "Michelle", stage: "Missing Information", since: "4d ago",  urgency: "crit" as Tone },
-  { parent: "Camila Ortiz",    child: "Sofia (5)",   insurance: "BCBS NC", owner: "Michelle", stage: "Connected",           since: "5h ago",  urgency: "ok"   as Tone },
-  { parent: "Tariq Davis",     child: "Noah (4)",    insurance: "Aetna",   owner: "Michelle", stage: "VOB Completed",       since: "1d ago",  urgency: "ok"   as Tone },
+  { parent: "Ava Walker",   child: "Treatment · 6m",   insurance: "BCBS NC",  owner: "Dr. Patel",  stage: "Expiring Soon",        since: "6d left",  urgency: "crit" as Tone },
+  { parent: "Liam Pierce",  child: "Reassessment",     insurance: "Aetna",    owner: "Dr. Nguyen", stage: "Awaiting Submission",  since: "2d open",  urgency: "warn" as Tone },
+  { parent: "Reya Sharma",  child: "Initial Eval",     insurance: "Cigna VA", owner: "Dr. Patel",  stage: "Submitted",            since: "3d ago",   urgency: "ok"   as Tone },
+  { parent: "Mason Hayes",  child: "Treatment · 6m",   insurance: "UHC",      owner: "Dr. Cole",   stage: "Missing Documentation",since: "4d open",  urgency: "crit" as Tone },
+  { parent: "Sofia Ortiz",  child: "Reassessment",     insurance: "BCBS NC",  owner: "Dr. Nguyen", stage: "QA Review",            since: "1d ago",   urgency: "warn" as Tone },
+  { parent: "Noah Davis",   child: "Treatment · 6m",   insurance: "Aetna",    owner: "Dr. Cole",   stage: "Approved",             since: "Today",    urgency: "ok"   as Tone },
 ];
 
 const followups = [
-  { kind: "Call",  parent: "Erin Walker",   time: "9:30 AM",  stage: "Form Sent",           priority: "High",   last: "Voicemail · 2d" },
-  { kind: "Text",  parent: "Devon Pierce",  time: "10:15 AM", stage: "Contact Attempted",   priority: "High",   last: "No reply · 1d" },
-  { kind: "Email", parent: "Priya Sharma",  time: "11:00 AM", stage: "Sent to VOB",         priority: "Medium", last: "Sent · 2d" },
-  { kind: "Call",  parent: "Jordan Hayes",  time: "1:00 PM",  stage: "Missing Information", priority: "High",   last: "Final attempt" },
-  { kind: "Text",  parent: "Maya Bennett",  time: "2:30 PM",  stage: "Form Sent",           priority: "Medium", last: "Viewed · 1d" },
-  { kind: "Call",  parent: "Anya Brooks",   time: "3:45 PM",  stage: "Pending Auth",        priority: "Medium", last: "Note · 1d" },
+  { kind: "Submit", parent: "Ava Walker · BCBS NC",     time: "Due today",   stage: "Expiring in 6d",     priority: "High",   last: "Plan received · 1d" },
+  { kind: "BCBA",   parent: "Liam Pierce · Aetna",      time: "10:15 AM",    stage: "Awaiting PR",        priority: "High",   last: "Pinged Dr. Nguyen · 2d" },
+  { kind: "QA",     parent: "Reya Sharma · Cigna VA",   time: "11:00 AM",    stage: "QA Review",          priority: "Medium", last: "Sent to QA · 2d" },
+  { kind: "Submit", parent: "Mason Hayes · UHC",        time: "1:00 PM",     stage: "Missing Docs",       priority: "High",   last: "Final attempt" },
+  { kind: "BCBA",   parent: "Sofia Ortiz · BCBS NC",    time: "2:30 PM",     stage: "Signature pending",  priority: "Medium", last: "Parent emailed · 1d" },
+  { kind: "QA",     parent: "Noah Davis · Aetna",       time: "3:45 PM",     stage: "Reassessment",       priority: "Medium", last: "Note · 1d" },
 ];
 
 const forms = [
-  { name: "Erin Walker · Intake Packet",   status: "Viewed",    pct: 60, days: 3, tone: "warn" as Tone },
-  { name: "Devon Pierce · Insurance Card", status: "Sent",      pct: 20, days: 2, tone: "warn" as Tone },
-  { name: "Priya Sharma · VOB",            status: "Awaiting Solum", pct: 40, days: 2, tone: "warn" as Tone },
-  { name: "Camila Ortiz · Intake Packet",  status: "Completed", pct: 100,days: 0, tone: "ok"   as Tone },
-  { name: "Tariq Davis · Payment Plan",    status: "Flagged",   pct: 70, days: 1, tone: "crit" as Tone },
+  { name: "Ava Walker · Treatment Plan",    status: "Awaiting QA",       pct: 75, days: 2, tone: "warn" as Tone },
+  { name: "Liam Pierce · Progress Report",  status: "Pending BCBA",      pct: 30, days: 3, tone: "warn" as Tone },
+  { name: "Reya Sharma · Treatment Plan",   status: "In QA Review",      pct: 60, days: 1, tone: "warn" as Tone },
+  { name: "Sofia Ortiz · Reassessment",     status: "Approved by QA",    pct: 100,days: 0, tone: "ok"   as Tone },
+  { name: "Mason Hayes · Progress Report",  status: "Overdue · escalated", pct: 20, days: 5, tone: "crit" as Tone },
 ];
 
 const comms = [
-  { who: "Erin Walker",   what: "Returned call · 2m",        when: "12m", tone: "os-tone-mint",   icon: Phone },
-  { who: "Devon Pierce",  what: "Read your text",            when: "35m", tone: "os-tone-sky",    icon: MessageSquare },
-  { who: "Priya Sharma",  what: "Replied to email",          when: "1h",  tone: "os-tone-violet", icon: Mail },
-  { who: "Jordan Hayes",  what: "Missed call · voicemail",   when: "2h",  tone: "os-tone-coral",  icon: Phone },
-  { who: "Maya Bennett",  what: "Opened intake form link",   when: "3h",  tone: "os-tone-lilac",  icon: FileText },
-  { who: "Anya Brooks",   what: "Sent insurance card photo", when: "4h",  tone: "os-tone-rose",   icon: Upload },
+  { who: "BCBS NC",       what: "approved 6-month auth · Walker",      when: "12m", tone: "os-tone-mint",   icon: BadgeCheck },
+  { who: "Dr. Nguyen",    what: "uploaded progress report · Pierce",   when: "35m", tone: "os-tone-sky",    icon: FileText },
+  { who: "Aetna portal",  what: "request for additional info · Davis", when: "1h",  tone: "os-tone-amber",  icon: FileWarning },
+  { who: "QA Team",       what: "completed review · Ortiz",            when: "2h",  tone: "os-tone-violet", icon: ClipboardCheck },
+  { who: "Cigna VA",      what: "pended for medical necessity",        when: "3h",  tone: "os-tone-coral",  icon: ShieldAlert },
+  { who: "Parent · Hayes",what: "returned signed consent",             when: "4h',  tone: "os-tone-rose",   icon: FileSignature },
 ];
 
 const bottlenecks = [
-  { severity: "crit", title: "Jordan Hayes — Missing Information for 4 days",  stage: "Missing Information", owner: "Michelle", action: "Final attempt call" },
-  { severity: "crit", title: "Erin Walker — Form Sent stalled 3 days",         stage: "Form Sent",           owner: "Michelle", action: "Send SMS reminder" },
-  { severity: "warn", title: "Priya Sharma — VOB awaiting Solum response",     stage: "Sent to VOB",         owner: "VOB Team", action: "Ping VOB team" },
-  { severity: "warn", title: "Devon Pierce — unreachable after 3 attempts",    stage: "Contact Attempted",   owner: "Michelle", action: "Escalate to lead" },
-  { severity: "warn", title: "Tariq Davis — payment plan flag",                stage: "Form Received",       owner: "Billing",  action: "Loop in billing" },
-  { severity: "warn", title: "Maya Bennett — insurance card missing",          stage: "Form Sent",           owner: "Michelle", action: "Request photo upload" },
+  { severity: "crit", title: "Ava Walker — VA auth expires in 6 days",          stage: "Expiring Soon",         owner: "Rivky",     action: "Submit reassessment" },
+  { severity: "crit", title: "Mason Hayes — Progress report overdue 5 days",    stage: "Missing Documentation", owner: "Dr. Cole",  action: "Escalate to State Director" },
+  { severity: "warn", title: "Liam Pierce — BCBA PR not received",              stage: "Awaiting BCBA",         owner: "Dr. Nguyen",action: "Ping BCBA" },
+  { severity: "warn", title: "Reya Sharma — Cigna pended for med necessity",    stage: "Submitted",             owner: "Rivky",     action: "Upload supporting docs" },
+  { severity: "warn", title: "Noah Davis — Parent signature missing",           stage: "Awaiting Signature",    owner: "Parent",    action: "Re-send signature link" },
+  { severity: "warn", title: "Sofia Ortiz — Treatment plan not yet from QA",    stage: "QA Review",             owner: "QA Team",   action: "Ping QA team" },
 ];
 
 const training = [
-  { name: "New Intake Workflow SOP",   pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
-  { name: "Phone Call Workflow",       pct: 60,  kind: "Training", tone: "os-tone-amber"  },
-  { name: "Tango Walkthrough · Forms", pct: 35,  kind: "Walkthru", tone: "os-tone-violet" },
-  { name: "VOB Updates · May",         pct: 80,  kind: "SOP",      tone: "os-tone-sky"    },
+  { name: "BCBS Auth Submission SOP · v3", pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
+  { name: "Aetna Reassessment Workflow",   pct: 60,  kind: "Training", tone: "os-tone-amber"  },
+  { name: "Tango Walkthrough · Payer Portal", pct: 35, kind: "Walkthru", tone: "os-tone-violet" },
+  { name: "QA Submission Workflow Updates", pct: 80, kind: "SOP",      tone: "os-tone-sky"    },
 ];
 
 const aiInsights = [
-  { icon: AlertCircle,  tone: "os-tone-coral", title: "Conversion at risk",         body: "Lead conversion likely to decline — 5 leads have waited > 24h for first contact.", cta: "View leads" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "3 leads may need escalation",body: "Jordan, Erin, and Devon are approaching final-attempt thresholds.",               cta: "Open queue" },
-  { icon: Brain,        tone: "os-tone-sky",   title: "Aetna converts higher",      body: "Aetna families are converting 12% above your state average this month.",          cta: "See trend" },
-  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Form timing",                body: "Forms sent after 5 PM have 22% lower completion. Send earlier when possible.",     cta: "Apply tip" },
-  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",      body: "Auto-text reminder 24h after Form Sent could recover ~4 stalled leads/week.",      cta: "Enable rule" },
+  { icon: AlertCircle,  tone: "os-tone-coral", title: "Aetna denial rate rising",   body: "Aetna denials up 14% in NC this month — mostly missing med-necessity language.", cta: "View denials" },
+  { icon: AlertTriangle,tone: "os-tone-amber", title: "3 auths likely to expire",    body: "Reassessments for Walker, Pierce, and Davis won't complete before expiration at current pace.", cta: "Open list" },
+  { icon: Brain,        tone: "os-tone-sky",   title: "BCBA response delaying subs", body: "Dr. Cole's PR turnaround averages 4.8d — 2.3d above team average.",            cta: "See trend" },
+  { icon: Lightbulb,    tone: "os-tone-lilac", title: "QA bottleneck detected",      body: "QA review queue is 2× normal — submitting earlier in the day clears 30% faster.", cta: "Apply tip" },
+  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",       body: "Auto-reminder 21 days before expiration could recover ~3 at-risk auths/week.",  cta: "Enable rule" },
 ];
 
 const calls = [
-  { title: "Intake call · Erin Walker",   time: "9:30 – 9:45 AM",   tone: "os-tone-sky" },
-  { title: "Family welcome · Camila O.",  time: "10:30 – 10:45",    tone: "os-tone-violet" },
-  { title: "1:1 — Intake Lead",           time: "1:00 – 1:30 PM",   tone: "os-tone-rose" },
-  { title: "Final attempt · Jordan H.",   time: "3:45 – 4:00 PM",   tone: "os-tone-amber" },
+  { title: "Submit BCBS auth · Walker",     time: "9:30 – 9:45 AM",  tone: "os-tone-sky" },
+  { title: "BCBA sync · Dr. Nguyen",        time: "10:30 – 10:45",   tone: "os-tone-violet" },
+  { title: "QA standup",                    time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
+  { title: "Aetna appeal call · Davis",     time: "3:45 – 4:00 PM",  tone: "os-tone-amber" },
 ];
 
 const quickActions = [
-  { label: "Add Lead",          icon: UserPlus,       tone: "os-tone-rose"   },
-  { label: "Call Parent",       icon: Phone,          tone: "os-tone-sky"    },
-  { label: "Send Intake Packet",icon: Send,           tone: "os-tone-violet" },
-  { label: "Upload Insurance",  icon: Upload,         tone: "os-tone-lilac"  },
-  { label: "Send Follow-Up",    icon: MessageSquare,  tone: "os-tone-mint"   },
-  { label: "Create Note",       icon: StickyNote,     tone: "os-tone-amber"  },
-  { label: "Escalate Issue",    icon: Flame,          tone: "os-tone-coral"  },
-  { label: "Open SOP",          icon: BookOpen,       tone: "os-tone-violet" },
+  { label: "Create Auth",            icon: FileCheck2,     tone: "os-tone-rose"   },
+  { label: "Submit Auth",            icon: Send,           tone: "os-tone-sky"    },
+  { label: "Upload Treatment Plan",  icon: Upload,         tone: "os-tone-violet" },
+  { label: "Request Progress Report",icon: FileText,       tone: "os-tone-lilac"  },
+  { label: "Contact BCBA",           icon: MessageSquare,  tone: "os-tone-mint"   },
+  { label: "Add Note",               icon: StickyNote,     tone: "os-tone-amber"  },
+  { label: "Escalate Issue",         icon: Flame,          tone: "os-tone-coral"  },
+  { label: "Open SOP",               icon: BookOpen,       tone: "os-tone-violet" },
 ];
 
 const activity = [
-  { who: "Maya B.",       what: "submitted intake form",              when: "4m",  tone: "os-tone-violet", icon: FileCheck2 },
-  { who: "VOB Team",      what: "completed VOB for Tariq D.",         when: "18m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Camila O.",     what: "uploaded insurance card",            when: "32m", tone: "os-tone-sky",    icon: Upload },
-  { who: "System",        what: "moved Anya B. to Pending Auth",      when: "55m", tone: "os-tone-amber",  icon: ArrowRight },
-  { who: "Erin W.",       what: "opened intake packet link",          when: "1h",  tone: "os-tone-lilac",  icon: FileText },
-  { who: "System",        what: "new lead received · BCBS NC",        when: "2h",  tone: "os-tone-rose",   icon: UserPlus },
+  { who: "Rivky",         what: "submitted auth · Walker (BCBS)",     when: "4m",  tone: "os-tone-violet", icon: Send },
+  { who: "Aetna",         what: "approved 6-month auth · Pierce",     when: "18m", tone: "os-tone-mint",   icon: BadgeCheck },
+  { who: "Dr. Nguyen",    what: "uploaded progress report",           when: "32m', tone: "os-tone-sky",    icon: FileText },
+  { who: "System",        what: "moved Hayes to Missing Documentation", when: "55m", tone: "os-tone-amber", icon: ArrowRight },
+  { who: "QA Team",       what: "completed review · Ortiz",           when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
+  { who: "Cigna VA",      what: "denial received · Sharma · appeal opened", when: "2h", tone: "os-tone-coral", icon: ShieldAlert },
 ];
 
 /* ============ helpers ============ */
