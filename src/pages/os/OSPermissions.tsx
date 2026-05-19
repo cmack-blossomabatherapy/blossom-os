@@ -26,7 +26,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
   campaigns: "Campaign Center",
   lead_sources: "Lead Source Analytics",
   seo_content: "SEO & Content",
-  social_planner: "Social Media Planner",
+  referrals: "Referrals",
   recruiting_marketing: "Recruiting Marketing",
   state_growth: "State Growth Analytics",
   reputation: "Reputation Mgmt",
