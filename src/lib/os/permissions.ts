@@ -318,7 +318,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       "campaigns", "lead_sources", "seo_content", "social_planner",
       "recruiting_marketing", "state_growth", "reputation", "community_outreach",
       "marketing_reports", "communications",
-      "ai_assistant", "ai_insights", "automation_center", "predictive_alerts", "ai_workflows",
+      "ai_assistant",
       "settings",
     ],
     scope: "company",
