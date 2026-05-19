@@ -147,7 +147,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     } else {
       items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
     }
-    HOME_EXTRAS.forEach((e) => items.push(e));
+    HOME_EXTRAS.forEach((e) => {
+      // Calendar route is role-specific — rewrite "/os/calendar" to the viewer's role calendar.
+      if (e.module === "calendar") {
+        items.push({ ...e, to: `/os/calendar/${role.replace(/_/g, "-")}` });
+      } else {
+        items.push(e);
+      }
+    });
     return { id: "home", label: "Home", items };
   })();
 
