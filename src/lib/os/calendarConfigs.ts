@@ -310,24 +310,6 @@ const RBT: RoleCalendarConfig = {
   ],
 };
 
-export const ROLE_CALENDAR_CONFIG: Record<OSRole, RoleCalendarConfig> = {
-  super_admin: STATE_DIRECTOR,
-  executive_leadership: EXECUTIVE,
-  operations_leadership: OPERATIONS,
-  state_director: STATE_DIRECTOR,
-  intake_coordinator: INTAKE,
-  authorization_coordinator: AUTH,
-  scheduling_team: SCHEDULING,
-  recruiting_team: RECRUITING,
-  hr_team: HR,
-  billing_finance: BILLING,
-  qa_team: QA,
-  payroll_coordinator: PAYROLL,
-  bcba: BCBA,
-  rbt: RBT,
-  marketing_team: MARKETING_DEF,
-};
-
 const MARKETING_DEF: RoleCalendarConfig = {
   badge: "Marketing Team · Growth Calendar",
   title: "Marketing Calendar",
@@ -350,4 +332,22 @@ const MARKETING_DEF: RoleCalendarConfig = {
     { icon: TrendingUp, text: "Calendly recruiting bookings up 22% — keep cadence." },
     { icon: Clock, text: "Friday 2–4 PM open — block for campaign retro?" },
   ],
+};
+
+export const ROLE_CALENDAR_CONFIG: Record<OSRole, RoleCalendarConfig> = {
+  super_admin: STATE_DIRECTOR,
+  executive_leadership: EXECUTIVE,
+  operations_leadership: OPERATIONS,
+  state_director: STATE_DIRECTOR,
+  intake_coordinator: INTAKE,
+  authorization_coordinator: AUTH,
+  scheduling_team: SCHEDULING,
+  recruiting_team: RECRUITING,
+  hr_team: HR,
+  billing_finance: BILLING,
+  qa_team: QA,
+  payroll_coordinator: PAYROLL,
+  bcba: BCBA,
+  rbt: RBT,
+  marketing_team: MARKETING_DEF,
 };
