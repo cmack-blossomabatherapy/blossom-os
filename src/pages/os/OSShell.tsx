@@ -309,12 +309,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <Menu className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-foreground/70" strokeWidth={2.25} />
               <input
-                placeholder="Search clients, leads, trainings, tasks…"
-                className="os-glass-input h-11 w-full rounded-2xl pl-11 pr-16 text-[13.5px] placeholder:text-muted-foreground/70 focus:outline-none"
+                aria-label="Search"
+                className="os-glass-input h-11 w-full rounded-2xl pl-11 pr-4 text-[13.5px] focus:outline-none"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-white/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
             </div>
             <button className="os-glass-icon relative">
               <Bell className="h-4 w-4 text-muted-foreground" />
