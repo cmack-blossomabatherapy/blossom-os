@@ -1,59 +1,73 @@
-# BCBA Performance Dashboard → Operational Intelligence Platform
+# Blossom OS — Premium Frontend Redesign
 
-This is a multi-week build, not a single pass. To ship value fast and avoid breaking the dashboard you rely on daily, I'll phase it. Each phase is independently shippable.
+This is a frontend-only redesign matching your attached mockup (light, airy, purple-gradient, glassmorphism, sidebar + topbar + main + right rail). No backend, data, or API work in this phase — every screen renders against mock state already in `src/data/*`.
 
-## Scope reality check
+Scope is large (9+ pages + global shell + new component primitives). Shipping it in one pass would break the working app. I'll phase it, ship each phase independently, and you can review the look before I move to the next.
 
-The spec touches ~15 distinct subsystems (filters, leaderboard, drawer tabs, unassigned engine, continuity engine, heatmaps, Discover, scorecards, forecasting, import UX, AI insights, header, etc.). Done well, that's roughly 6–10 implementation passes. Done in one pass it would regress the working dashboard. I will phase it and check in after each phase.
+## Phase 0 — Design system foundation (1 pass)
 
-## Phase 1 — Foundation (this pass)
+Establish the visual language so every page inherits it.
 
-Goal: make the existing dashboard immediately feel more intelligent without breaking anything.
+- Update `src/index.css` tokens: soft white background (`hsl(250 30% 99%)`), light gray surface, deep purple primary with glow, gradient utilities (`--gradient-brand`, `--gradient-aurora`), softer shadows, larger radii (`--radius: 1rem`).
+- Add tokenized utility classes: `.os-card`, `.os-card-floating`, `.os-glass`, `.os-kpi`, `.os-pill`, `.os-rail`.
+- Typography scale tuned for airy hierarchy (Inter, tighter tracking on headings).
+- Animation primitives: `fade-in`, `lift-on-hover`, KPI counter, skeleton shimmer.
+- Light theme is primary. Existing dark variants kept but de-emphasized.
 
-1. **Global header upgrade** on `CeoDashboardV2.tsx`, `CeoDashboardV2Insights.tsx`, `CeoDashboardV2RevenueLeaks.tsx`
-   - Unified glass header with: title, active-filter pills, date range, upload, append/replace toggle, search, help, **new Insights icon** (Lucide `LineChart`) linking to Insights page.
-2. **Smart filter bar** (new `BcbaFilterBar.tsx`)
-   - Pills for BCBA / Client / RBT / Code / State / Clinic / Assigned-status
-   - Quick-clear, saved-preset dropdown (QA View, Ops View, Unassigned, High-Risk, Low-Utilization)
-   - Presets persisted to `localStorage` per user
-   - State lifted so graphs/cards/tables/insights all read the same filter store
-3. **Executive scorecard strip** above leaderboard
-   - Total billable hrs, Avg hrs/BCBA, Supervision ratio, Active clients, Active RBTs, Utilization %, Unassigned %, Continuity score — each vs prior period with trend arrow.
-4. **Auto-observations engine** (new `lib/analytics/observations.ts`)
-   - Pure functions that scan the in-memory dataset and emit observation strings (e.g. "97155 hours declined 14%", "One BCBA = 28% of billable hours").
-   - Rendered as a horizontal "Live Observations" rail under the scorecards.
+## Phase 1 — Global shell (1 pass)
 
-## Phase 2 — BCBA Leaderboard + Drawer upgrade
+Rebuild the chrome to match the mockup exactly.
 
-- Elite BCBA cards: ranking badge, utilization color, animated bars, quick insight badges, hover preview.
-- Drawer adds **Trends**, **Risks**, **AI Insights** tabs powered by the observation engine.
+- **New `AppSidebar`** — floating glass panel, rounded, soft shadow, collapsible. Logo + "Operations System" subtitle. Items: Dashboard, Leads, Clients, RBT/BCBA, Scheduling, Intake, Case Management, Billing, Reports, Training, HR Suite, Settings. Active item glow. AI assistant card pinned bottom with "Ask Blossom AI". "Old Version" link below it, visible only when `isAdmin` (Super Admin).
+- **New `TopBar`** — centered global search with ⌘K chip, notifications bell, messages, profile with role line. Greeting handled inside dashboard, not topbar.
+- **`RightRail`** — new optional slot in `AppLayout` for per-page widgets (Tasks, Calendar, Activity).
+- Mobile: sidebar becomes sheet, right rail collapses below main, bottom nav stays.
 
-## Phase 3 — Unassigned Sessions + Continuity engine
+## Phase 2 — Dashboard (1 pass)
 
-- Dedicated unassigned operational panel with fix-suggestions (fuzzy match), location clustering, revenue-at-risk.
-- Multiple-BCBA continuity timelines.
+Rebuild `src/pages/Index.tsx` (or `Dashboard.tsx`) into the command-center shown in your mockup.
 
-## Phase 4 — Heatmaps + Discover + Forecasting
+- Greeting block ("Good morning, {name} 👋").
+- KPI strip: New Leads, Active Clients, Today's Appts, Revenue MTD — with trend chips.
+- Revenue Overview area chart + Lead Pipeline donut (Recharts, mock data).
+- Department Overview grid (Intake, Scheduling, RBT/BCBA, Billing, Case Management).
+- Quick Actions row.
+- Right rail: My Tasks, Upcoming Calendar, Recent Activity.
 
-- Interactive heatmaps (state × code, BCBA × week).
-- "Discover Insights" explorer (pivot-style question chips).
-- Lightweight rolling-average forecasts on Insights page.
+## Phase 3 — Operational pages (2 passes)
 
-## Phase 5 — Import UX polish
+Re-skin to the new system using shared primitives. Structure only, mock data.
 
-- Validation preview, column mapping confirmation, duplicate detection, import history log.
+Pass A: Leads, Clients, RBT/BCBA, Scheduling.
+Pass B: Intake, Case Management, Billing, Reports.
 
-## Technical approach
+Each page gets: hero strip, KPI row, primary view (pipeline / cards / calendar / table), filter rail, empty states.
 
-- All work stays in `src/pages/CeoDashboardV2*.tsx` and new modules under `src/components/bcba-intel/` and `src/lib/analytics/`.
-- No schema changes in Phase 1. The observation/forecast engines are pure TS over the data already fetched.
-- Filter state moves into a `BcbaFilterContext` so every subview subscribes to one source of truth.
-- All styling via existing semantic tokens (`glass-hero`, `glass-stat`, etc.) — no new color literals.
+## Phase 4 — Training + HR Suite (1 pass)
 
-## Questions before I start Phase 1
+Training as a standalone academy feel (roadmap, badges, continue learning, department cards). HR Suite hub linking to onboarding, recruiting, evaluations, compliance.
 
-1. **Saved-preset scope** — per-user (localStorage) for now, or do you want them shared team-wide (requires a new table)? I'll default to per-user localStorage unless you say otherwise.
-2. **"AI Insights" tab** — pure rule-based observations (instant, free, deterministic) or a Lovable AI call per BCBA (richer prose, costs credits, ~2s latency)? I recommend rule-based for Phase 2 and add an optional "Ask AI" button that calls Lovable AI on demand.
-3. **Confirm phase order** above, or do you want a different module first (e.g. Unassigned engine before leaderboard polish)?
+## Phase 5 — Component polish (1 pass)
 
-Approve and I'll ship Phase 1 immediately.
+Reusable primitives audit: cards, KPI block, status pills, tags, drawers, command palette refresh, empty-state illustrations, skeletons. Final responsive sweep at 430px / 768px / 1280px / 1920px.
+
+## Out of scope (this phase)
+
+- No new backend tables, edge functions, or RLS changes.
+- No CSV/import work.
+- No changes to the BCBA Performance dashboard intelligence engine you just shipped — it keeps working as-is and will inherit the new tokens automatically.
+
+## Technical notes
+
+- Work stays in `src/components/layout/*`, `src/components/shared/*`, `src/pages/*`, `src/index.css`, `tailwind.config.ts`.
+- All colors via semantic tokens — no hex literals in components.
+- Existing routes/auth/onboarding gates untouched.
+- "Old Version" link routes to `/legacy` (a thin wrapper that mounts the current `Dashboard.tsx` so nothing is lost during transition).
+
+## Questions before I start
+
+1. **Start point** — ship Phase 0 + Phase 1 + Phase 2 together as the first visible milestone (≈ the screen in your mockup), then pause for your review before rolling pages? Or do you want me to blast through Phases 0–5 back-to-back without checkpoints?
+2. **Light vs dark** — your mockup is light-mode. Keep dark mode working as a secondary theme, or drop it entirely for now?
+3. **"Old Version" target** — route `/legacy` to today's `Dashboard.tsx` only, or expose the entire current sidebar under `/legacy/*` so admins can reach every old page?
+
+Approve (with answers to 1–3) and I'll start with Phase 0 + 1 + 2 immediately.
