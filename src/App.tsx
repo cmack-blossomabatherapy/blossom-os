@@ -282,6 +282,7 @@ const App = () => (
                   <Route path="/os/rbt" element={<OSRBT />} />
                   <Route path="/os/command-center" element={<OSCommandCenterRouter />} />
                   <Route path="/os/calendar" element={<OSCalendar />} />
+                  <Route path="/os/calendar/:roleSlug" element={<OSCalendar />} />
                   <Route path="/os/notifications" element={<OSNotifications />} />
                   <Route path="/os/leads" element={<OSLeads />} />
                   <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, forms, onboarding, VOB workflow." icon={ClipboardList} />} />
