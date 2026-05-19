@@ -17,8 +17,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
 import type { OSModule } from "@/lib/os/permissions";
 import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
-import blossomLogo from "@/assets/blossom-logo-full.png";
-import blossomMark from "@/assets/blossom-logo.png";
+import blossomLogo from "@/assets/blossom-logo-color.png";
+import blossomMark from "@/assets/blossom-flower-mark.png";
 
 type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
 type NavSection = { id: string; label: string; items: NavEntry[] };
