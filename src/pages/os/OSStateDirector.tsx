@@ -870,6 +870,52 @@ export default function OSStateDirector() {
       </div>
 
       {/* QUICK ACTIONS */}
+      {/* SECTION — CULTURE & MOTIVATION */}
+      <section className="os-rise relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white via-[hsl(265_100%_99%)] to-[hsl(150_100%_98%)] p-6 shadow-[0_24px_60px_-30px_hsl(265_60%_50%/0.22)]">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.28)] to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(150_85%_75%/0.3)] to-transparent blur-3xl" />
+        <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr,2fr] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
+              <Heart className="h-3 w-3 text-[hsl(355_70%_55%)]" /> Mission · Culture · Impact
+            </div>
+            <h3 className="mt-3 text-[22px] font-semibold tracking-tight md:text-[26px]">
+              You're making a difference, <span className="capitalize">{name}</span>.
+            </h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
+              <span className="font-semibold text-[hsl(265_70%_50%)]">184 children</span> across North Carolina received
+              life-changing care this month — powered by your teams and your leadership.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_30%)]">
+                <Trophy className="h-3 w-3" /> Greensboro: Top region
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
+                <Sparkles className="h-3 w-3" /> 9 new hires this week
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { label: "Parent Satisfaction", value: "4.8 / 5", hint: "NC survey · 240 responses", tone: "os-tone-rose",   icon: Smile },
+              { label: "Team Engagement",     value: "92%",     hint: "Pulse · this month",        tone: "os-tone-violet", icon: Users },
+              { label: "Client Outcomes",     value: "+14%",    hint: "Goal mastery · 90d",        tone: "os-tone-mint",   icon: TrendingUp },
+              { label: "Operational Progress",value: "82",      hint: "State health score",        tone: "os-tone-sky",    icon: Activity },
+            ].map((m) => (
+              <div key={m.label} className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-3.5 backdrop-blur">
+                <div className={cn("grid h-8 w-8 place-items-center rounded-xl", m.tone)}>
+                  <m.icon className="h-4 w-4" />
+                </div>
+                <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{m.label}</p>
+                <p className="mt-0.5 text-[20px] font-semibold tracking-tight tabular-nums">{m.value}</p>
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{m.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* QUICK ACTIONS */}
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between" id="quick-actions-header">
           <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
