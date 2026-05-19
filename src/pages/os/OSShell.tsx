@@ -4,41 +4,53 @@ import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
   FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
   Search, Bell, MessageSquare, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
-  Menu, X,
+  Menu, X, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { RoleSwitcher } from "@/components/os/RoleSwitcher";
+import type { OSModule } from "@/lib/os/permissions";
 
-const nav = [
-  { to: "/os", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/os/leads", label: "Leads", icon: Users },
-  { to: "/os/clients", label: "Clients", icon: Heart },
-  { to: "/os/staff", label: "RBT / BCBA", icon: UserCog },
-  { to: "/os/scheduling", label: "Scheduling", icon: CalendarDays },
-  { to: "/os/intake", label: "Intake", icon: ClipboardList },
-  { to: "/os/cases", label: "Case Management", icon: FolderKanban },
-  { to: "/os/billing", label: "Billing", icon: DollarSign },
-  { to: "/os/reports", label: "Reports", icon: BarChart3 },
-  { to: "/os/training", label: "Training", icon: GraduationCap },
-  { to: "/os/hr", label: "HR Suite", icon: Building2 },
-  { to: "/os/settings", label: "Settings", icon: Settings },
+type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
+
+const ALL_NAV: NavEntry[] = [
+  { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+  { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
+  { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
+  { to: "/os/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
+  { to: "/os/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
+  { to: "/os/intake", label: "Intake", icon: ClipboardList, module: "intake" },
+  { to: "/os/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
+  { to: "/os/billing", label: "Billing", icon: DollarSign, module: "billing" },
+  { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
+  { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
+  { to: "/os/hr", label: "HR Suite", icon: Building2, module: "hr" },
+  { to: "/os/settings", label: "Settings", icon: Settings, module: "settings" },
+  { to: "/os/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
 ];
 
 export function OSShell({ children, rightRail }: { children: ReactNode; rightRail?: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, isAdmin, roles } = useAuth();
+  const { user } = useAuth();
+  const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
-  const role = roles[0] || "Member";
+  const showOldVersion = platform("accessOldVersion");
 
-  const bottomNav = [
+  const nav = ALL_NAV.filter((n) => canSee(n.module));
+
+  const bottomNavCandidates: NavEntry[] = [
     { to: "/os", label: "Home", icon: LayoutDashboard, end: true },
-    { to: "/os/leads", label: "Leads", icon: Users },
-    { to: "/os/scheduling", label: "Schedule", icon: CalendarDays },
-    { to: "/os/clients", label: "Clients", icon: Heart },
-  ];
+    { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
+    { to: "/os/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
+    { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
+    { to: "/os/cases", label: "Cases", icon: FolderKanban, module: "cases" },
+    { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
+  ].map((n) => ({ ...(n as NavEntry), module: (n as NavEntry).module ?? "dashboard" }));
+  const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
   return (
     <div className="min-h-screen w-full os-bg text-foreground">
@@ -85,7 +97,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     </li>
                   ))}
                 </ul>
-                {isAdmin && (
+                {showOldVersion && (
                   <button
                     onClick={() => { setMobileOpen(false); navigate("/"); }}
                     className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground hover:bg-foreground/[0.04]"
@@ -158,7 +170,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           )}
 
           {/* Old version */}
-          {!collapsed && isAdmin && (
+          {!collapsed && showOldVersion && (
             <button
               onClick={() => navigate("/")}
               className="mx-3 mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[11.5px] font-medium text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
@@ -202,7 +214,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(330_85%_60%)] px-1 text-[9px] font-bold text-white">7</span>
             </button>
-            <button className="os-glass-panel flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5">
+            <RoleSwitcher />
+            <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
               <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
                 {displayName.slice(0, 2).toUpperCase()}
               </div>
