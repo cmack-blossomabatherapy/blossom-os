@@ -8,7 +8,7 @@ import {
   Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
-  HeartHandshake,
+  HeartHandshake, Globe, Hash, Star,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,21 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
       { to: "/os/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
       { to: "/os/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
+    ],
+  },
+  {
+    id: "growth", label: "Growth & Marketing", items: [
+      { to: "/os/marketing-dashboard", label: "Marketing Dashboard", icon: LayoutDashboard, module: "marketing_dashboard" },
+      { to: "/os/marketing/campaigns", label: "Campaign Center", icon: Megaphone, module: "campaigns" },
+      { to: "/os/marketing/lead-sources", label: "Lead Source Analytics", icon: TrendingUp, module: "lead_sources" },
+      { to: "/os/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
+      { to: "/os/marketing/social", label: "Social Media Planner", icon: Hash, module: "social_planner" },
+      { to: "/os/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
+      { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
+      { to: "/os/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
+      { to: "/os/marketing/outreach", label: "Community Outreach", icon: HeartHandshake, module: "community_outreach" },
+      { to: "/os/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
+      { to: "/os/communications", label: "Communications", icon: MessageSquare, module: "communications" },
     ],
   },
   {

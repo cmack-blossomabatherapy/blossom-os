@@ -172,6 +172,7 @@ import OSRBT from "./pages/os/OSRBT";
 import OSCalendar from "./pages/os/OSCalendar";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSPermissions from "./pages/os/OSPermissions";
+import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
@@ -179,7 +180,7 @@ import {
   Radio, BellRing, FileCheck2, BadgeCheck, Briefcase, ClipboardCheck,
   Wallet, TrendingUp, ShieldAlert, Target, Workflow, BookOpen, Megaphone, PieChart,
   LifeBuoy, Inbox, AlertTriangle, KanbanSquare, Bot, Brain, Zap, Wand2, Activity,
-  Users2, MapPin, UserPlus,
+  Users2, MapPin, UserPlus, MessageSquare, Globe, Hash, Sparkles, Star, HeartHandshake,
 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -321,6 +322,18 @@ const App = () => (
                   <Route path="/os/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
                   <Route path="/os/permissions" element={<OSPermissions />} />
+                  {/* Marketing Team */}
+                  <Route path="/os/marketing-dashboard" element={<OSMarketingDashboard />} />
+                  <Route path="/os/marketing/campaigns" element={<OSPlaceholder title="Campaign Center" description="Active and upcoming campaigns, performance, assets, ad spend, landing pages, and conversion metrics." icon={Megaphone} />} />
+                  <Route path="/os/marketing/lead-sources" element={<OSPlaceholder title="Lead Source Analytics" description="Where leads come from: website, Facebook, Google Ads, referrals, organic, recruiting — with source conversion rates." icon={TrendingUp} />} />
+                  <Route path="/os/marketing/seo" element={<OSPlaceholder title="SEO & Content" description="Blogs, SEO rankings, local SEO, state pages, content calendar, AI content ideas, keyword tracking, GEO/AEO." icon={Globe} />} />
+                  <Route path="/os/marketing/social" element={<OSPlaceholder title="Social Media Planner" description="Content scheduling, social calendar, post approvals, engagement, asset library, AI caption generation." icon={Hash} />} />
+                  <Route path="/os/marketing/recruiting" element={<OSPlaceholder title="Recruiting Marketing" description="Recruiting campaigns, applicant sources, recruiting funnel analytics, employer-brand performance." icon={UserPlus} />} />
+                  <Route path="/os/marketing/state-growth" element={<OSPlaceholder title="State Growth Analytics" description="State-level growth: lead trends, staffing demand, recruiting trends, market saturation, conversion by state." icon={MapPin} />} />
+                  <Route path="/os/marketing/reputation" element={<OSPlaceholder title="Reputation Management" description="Google reviews, review requests and monitoring, sentiment tracking, escalation alerts." icon={Star} />} />
+                  <Route path="/os/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
+                  <Route path="/os/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
+                  <Route path="/os/communications" element={<OSPlaceholder title="Communications" description="Department channels, announcements, marketing channels, state communication channels." icon={MessageSquare} />} />
                 </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<WelcomeHome />} />

@@ -22,6 +22,17 @@ const MODULE_LABELS: Record<OSModule, string> = {
   predictive_alerts: "Predictive Alerts", ai_workflows: "AI Workflows",
   hr: "HR Suite", user_management: "User Management", state_management: "State Management",
   settings: "Settings", permissions: "Permissions",
+  marketing_dashboard: "Marketing Dashboard",
+  campaigns: "Campaign Center",
+  lead_sources: "Lead Source Analytics",
+  seo_content: "SEO & Content",
+  social_planner: "Social Media Planner",
+  recruiting_marketing: "Recruiting Marketing",
+  state_growth: "State Growth Analytics",
+  reputation: "Reputation Mgmt",
+  community_outreach: "Community Outreach",
+  marketing_reports: "Marketing Reports",
+  communications: "Communications",
 };
 
 export default function OSPermissions() {

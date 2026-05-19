@@ -24,7 +24,8 @@ export type OSRole =
   | "qa_team"
   | "payroll_coordinator"
   | "bcba"
-  | "rbt";
+  | "rbt"
+  | "marketing_team";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
   { id: "super_admin", label: "Super Admin", tier: "platform" },
@@ -41,6 +42,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },
+  { id: "marketing_team", label: "Marketing Team", tier: "operations" },
 ];
 
 export type OSAction = "view" | "create" | "edit" | "delete" | "approve" | "export" | "assign";
@@ -75,6 +77,17 @@ export type OSModule =
   | "sop"
   | "marketing"
   | "analytics_hub"
+  | "marketing_dashboard"
+  | "campaigns"
+  | "lead_sources"
+  | "seo_content"
+  | "social_planner"
+  | "recruiting_marketing"
+  | "state_growth"
+  | "reputation"
+  | "community_outreach"
+  | "marketing_reports"
+  | "communications"
   | "tech_requests"
   | "internal_requests"
   | "open_issues"
@@ -118,6 +131,17 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   sop: "/os/sop",
   marketing: "/os/marketing",
   analytics_hub: "/os/analytics",
+  marketing_dashboard: "/os/marketing-dashboard",
+  campaigns: "/os/marketing/campaigns",
+  lead_sources: "/os/marketing/lead-sources",
+  seo_content: "/os/marketing/seo",
+  social_planner: "/os/marketing/social",
+  recruiting_marketing: "/os/marketing/recruiting",
+  state_growth: "/os/marketing/state-growth",
+  reputation: "/os/marketing/reputation",
+  community_outreach: "/os/marketing/outreach",
+  marketing_reports: "/os/marketing/reports",
+  communications: "/os/communications",
   tech_requests: "/os/tech-requests",
   internal_requests: "/os/internal-requests",
   open_issues: "/os/open-issues",
@@ -286,6 +310,38 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     scope: "assigned",
     actions: { dashboard: VIEW, clients: VIEW, scheduling: VIEW, training: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
+  marketing_team: {
+    modules: [
+      "dashboard", "calendar", "notifications",
+      "leads", "marketing", "marketing_dashboard",
+      "campaigns", "lead_sources", "seo_content", "social_planner",
+      "recruiting_marketing", "state_growth", "reputation", "community_outreach",
+      "marketing_reports", "training", "communications",
+      "clients", "recruiting",
+      "ai_assistant", "settings",
+    ],
+    scope: "company",
+    actions: {
+      dashboard: VIEW,
+      marketing_dashboard: VIEW,
+      leads: ["view", "export"],
+      campaigns: VIEW_EDIT,
+      lead_sources: ["view", "export"],
+      seo_content: VIEW_EDIT,
+      social_planner: VIEW_EDIT,
+      recruiting_marketing: VIEW,
+      state_growth: ["view", "export"],
+      reputation: VIEW_EDIT,
+      community_outreach: VIEW_EDIT,
+      marketing_reports: ["view", "export"],
+      communications: VIEW_EDIT,
+      training: VIEW,
+      // Limited analytics-only visibility — no PHI / no edits.
+      clients: VIEW,
+      recruiting: VIEW,
+    },
+    leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: false, aiInsights: true },
   },
 };
 
