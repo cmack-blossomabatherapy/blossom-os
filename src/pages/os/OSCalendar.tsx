@@ -91,7 +91,7 @@ const MOCK_EVENTS: CalEvent[] = [
   { id: "e18", title: "State Director Check-In",     day: 4, start: "09:00", end: "09:30", type: "leadership",  source: "microsoft", attendees: ["Ops VP"] },
   { id: "e19", title: "Interview — RBT (Calendly)",  day: 4, start: "11:00", end: "11:30", type: "interview",   source: "calendly",  attendees: ["Candidate D. Ortiz"] },
   { id: "e20", title: "Training: De-escalation Refresher", day: 4, start: "14:00", end: "15:00", type: "training", source: "blossom", attendees: ["All RBTs"] },
-  { id: "e21", title: "Auth Deadline Follow-Up",     day: 4, start: "16:00", end: "16:30", type: "auth",        source: "blossom",   status: "needs-action" },
+  { id: "e21", title: "Auth Deadline Follow-Up",     day: 4, start: "16:00", end: "16:30", type: "auth",        source: "blossom",   attendees: ["Auth Coord"], status: "needs-action" },
 ];
 
 const TODAY_PRIORITIES = [
