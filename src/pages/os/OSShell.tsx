@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
@@ -155,7 +156,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   ];
   const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
-  const renderNavItem = (item: NavEntry, onClick?: () => void) => (
+  const renderNavItem = (item: NavEntry, onClick?: () => void) => {
+    const link = (
     <NavLink
       key={item.to}
       to={item.to}
@@ -164,6 +166,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       className={({ isActive }) =>
         cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
+          collapsed && "justify-center px-0",
           isActive
             ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]"
             : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
@@ -173,7 +176,15 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       <item.icon className="h-[16px] w-[16px] shrink-0" />
       {!collapsed && <span className="truncate">{item.label}</span>}
     </NavLink>
-  );
+    );
+    if (!collapsed) return link;
+    return (
+      <Tooltip key={item.to} delayDuration={120}>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right" className="text-[12px] font-medium">{item.label}</TooltipContent>
+      </Tooltip>
+    );
+  };
 
   return (
     <div className="min-h-screen w-full os-bg text-foreground md:h-screen md:overflow-hidden">
