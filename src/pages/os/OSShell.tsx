@@ -282,7 +282,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         </aside>
 
         {/* MAIN COLUMN */}
-        <div className="flex min-w-0 flex-1 flex-col gap-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-5 md:h-[calc(100vh-1.5rem)] md:overflow-y-auto">
           {/* TOPBAR */}
           <header className="flex items-center gap-3">
             <button
