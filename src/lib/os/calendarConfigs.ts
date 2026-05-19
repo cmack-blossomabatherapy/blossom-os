@@ -327,3 +327,29 @@ export const ROLE_CALENDAR_CONFIG: Record<OSRole, RoleCalendarConfig> = {
   rbt: RBT,
   marketing_team: MARKETING,
 };
+
+const MARKETING_DEF: RoleCalendarConfig = {
+  badge: "Marketing Team · Growth Calendar",
+  title: "Marketing Calendar",
+  subtitle: "Campaigns, content cadence, recruiting marketing, partner outreach, and growth syncs — unified across Microsoft and Calendly.",
+  stats: [
+    { icon: Megaphone, label: "Active campaigns", value: "6", tone: "violet" },
+    { icon: TrendingUp, label: "Lead lift WoW", value: "+14%", tone: "emerald" },
+    { icon: Sparkles, label: "Content posts", value: "11", tone: "fuchsia" },
+    { icon: Clock, label: "Strategy blocks", value: "4.0h", tone: "amber" },
+  ],
+  todayPriorities: [
+    { id: "p1", label: "Approve weekly content calendar", time: "9:00 AM", icon: Sparkles, tone: "violet" },
+    { id: "p2", label: "Review Google Ads creative refresh", time: "11:00 AM", icon: Megaphone, tone: "fuchsia" },
+    { id: "p3", label: "Recruiting campaign sync — Charlotte", time: "1:30 PM", icon: UserPlus, tone: "amber" },
+    { id: "p4", label: "Local SEO ranking audit — GA", time: "EOD", icon: TrendingUp, tone: "emerald" },
+  ],
+  aiInsights: [
+    { icon: Brain, text: "Charlotte staffing escalation = recruiting campaign demand. Spin up boost?" },
+    { icon: Lightbulb, text: "Blog 'Signs of Early Autism' is your top organic page — refresh for Q4." },
+    { icon: TrendingUp, text: "Calendly recruiting bookings up 22% — keep cadence." },
+    { icon: Clock, text: "Friday 2–4 PM open — block for campaign retro?" },
+  ],
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const MARKETING = MARKETING_DEF;
