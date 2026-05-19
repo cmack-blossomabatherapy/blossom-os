@@ -269,6 +269,12 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     actions: { dashboard: VIEW, clients: VIEW, cases: VIEW_EDIT.concat("approve") as OSAction[], staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
+  payroll_coordinator: {
+    modules: ["dashboard", "calendar", "notifications", "payroll", "billing", "staff", "employee_ops", "reports", "sop", "ai_assistant"],
+    scope: "company",
+    actions: { dashboard: VIEW, payroll: FULL, staff: VIEW, reports: ["view", "export"] },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
   bcba: {
     modules: ["dashboard", "calendar", "notifications", "clients", "scheduling", "cases", "evaluations", "training", "sop", "ai_assistant"],
     scope: "assigned",
