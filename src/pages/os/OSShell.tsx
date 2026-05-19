@@ -382,9 +382,21 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           </header>
 
           {/* CONTENT GRID */}
-          <div className={cn("grid min-w-0 gap-5", rightRail && !rightRailHidden ? "xl:grid-cols-[1fr_320px]" : "grid-cols-1")}>
-            <div className="min-w-0 space-y-5">{children}</div>
-            {rightRail && !rightRailHidden && <div className="min-w-0 space-y-5">{rightRail}</div>}
+          <div className="flex min-w-0 gap-5">
+            <div className="min-w-0 flex-1 space-y-5">{children}</div>
+            {rightRail && (
+              <aside
+                aria-hidden={rightRailHidden}
+                className={cn(
+                  "hidden min-w-0 shrink-0 space-y-5 overflow-hidden transition-all duration-300 ease-out xl:block",
+                  rightRailHidden
+                    ? "w-0 -translate-x-2 opacity-0 pointer-events-none"
+                    : "w-[320px] translate-x-0 opacity-100",
+                )}
+              >
+                {rightRail}
+              </aside>
+            )}
           </div>
         </div>
       </div>
