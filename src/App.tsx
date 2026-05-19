@@ -155,6 +155,7 @@ import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSLeads from "./pages/os/OSLeads";
 import OSClients from "./pages/os/OSClients";
+import OSExecutive from "./pages/os/OSExecutive";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
@@ -245,6 +246,7 @@ const App = () => (
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/os" element={<OSDashboard />} />
+                  <Route path="/os/executive" element={<OSExecutive />} />
                   <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
                   <Route path="/os/calendar" element={<OSPlaceholder title="Calendar" description="Unified operational calendar: assessments, meetings, interviews, trainings, staffing." icon={CIcon} />} />
                   <Route path="/os/notifications" element={<OSPlaceholder title="Notifications" description="Operational notifications, approvals, and inbox." icon={BellRing} />} />
