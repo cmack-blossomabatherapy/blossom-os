@@ -95,7 +95,13 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 export function OSShell({ children, rightRail }: { children: ReactNode; rightRail?: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return window.localStorage.getItem("os.sidebar.collapsed") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
+  }, [collapsed]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
