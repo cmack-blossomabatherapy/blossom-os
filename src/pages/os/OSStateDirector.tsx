@@ -567,6 +567,74 @@ export default function OSStateDirector() {
         </ul>
       </section>
 
+      {/* SECTION 4b — REGIONAL LEADERBOARD */}
+      <section className="os-card relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-transparent blur-3xl" />
+        <header className="relative mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-[15px] font-semibold tracking-tight">Regional Performance · NC</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Top-performing and at-risk regions across your state</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {["Ops Score", "Fill Rate", "Recruiting"].map((t, i) => (
+              <button key={t} className={cn(
+                "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
+                i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
+              )}>{t}</button>
+            ))}
+          </div>
+        </header>
+        <ul className="relative space-y-2">
+          {regions.map((r, idx) => (
+            <li key={r.name} className={cn(
+              "group grid grid-cols-[28px,1.4fr,2fr,auto] items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-3.5 transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]",
+              r.status === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
+              r.status === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
+            )}>
+              <div className={cn("grid h-7 w-7 place-items-center rounded-xl text-[11px] font-bold tabular-nums",
+                idx === 0 ? "bg-[hsl(40_100%_88%)] text-[hsl(30_80%_38%)]" :
+                idx === 1 ? "bg-[hsl(265_100%_92%)] text-[hsl(265_70%_45%)]" :
+                idx === 2 ? "bg-[hsl(150_70%_88%)] text-[hsl(155_55%_30%)]" :
+                            "bg-foreground/[0.05] text-foreground/70"
+              )}>{idx + 1}</div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+                  <p className="truncate text-[13px] font-semibold leading-tight">{r.name}</p>
+                  <StatusDot status={r.status} />
+                </div>
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{r.clients} active clients · {r.note}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Fill",     v: r.fill    },
+                  { label: "Recruit",  v: r.recruit },
+                  { label: "Ops",      v: r.ops     },
+                ].map((m) => (
+                  <div key={m.label}>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-medium uppercase tracking-wider text-muted-foreground">{m.label}</span>
+                      <span className="tabular-nums font-semibold">{m.v}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+                      <div className="h-full rounded-full" style={{
+                        width: `${m.v}%`,
+                        background: m.v >= 90 ? "hsl(155 55% 45%)" : m.v >= 80 ? "linear-gradient(90deg, hsl(265 85% 65%), hsl(285 85% 72%))" : "hsl(35 90% 55%)",
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <span className={cn("inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10.5px] font-semibold",
+                r.trend === "up" ? "bg-[hsl(150_70%_92%)] text-[hsl(155_55%_32%)]" : "bg-[hsl(355_100%_94%)] text-[hsl(355_70%_48%)]")}>
+                {r.trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {r.trend === "up" ? "Improving" : "Watch"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* SECTION 5 — STAFFING & SCHEDULING HEALTH */}
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
