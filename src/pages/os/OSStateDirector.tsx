@@ -33,48 +33,48 @@ type Kpi = {
 /* ============ MOCK DATA ============ */
 
 const kpis: Kpi[] = [
-  { label: "New Leads Today",        value: "32",    delta: "+18%", up: true,  status: "ok",   hint: "vs yesterday",         spark: [12,16,18,20,22,24,28,30,32], icon: UserPlus },
-  { label: "Intake Response Time",   value: "14m",   delta: "-21%", up: true,  status: "ok",   hint: "Target ≤ 20m",         spark: [22,20,19,18,17,16,15,14,14], icon: Clock },
-  { label: "Active Clients",         value: "842",   delta: "+12",  up: true,  status: "ok",   hint: "Waitlist 73",          spark: [770,780,790,800,815,825,832,838,842], icon: Heart },
-  { label: "Staffing Needed",        value: "18",    delta: "+3",   up: false, status: "warn", hint: "GA 9 · NC 6 · TX 3",   spark: [10,12,13,14,15,16,17,18,18], icon: Briefcase },
-  { label: "Scheduling Fill Rate",   value: "92%",   delta: "+8%",  up: true,  status: "ok",   hint: "FL 96 · GA 88",        spark: [80,82,84,86,88,89,90,91,92], icon: CalendarDays },
-  { label: "Open Authorizations",    value: "47",    delta: "+5",   up: false, status: "warn", hint: "12 awaiting submit",   spark: [38,40,41,42,44,45,46,47,47], icon: FileCheck2 },
-  { label: "Expiring Auths (30d)",   value: "23",    delta: "+4",   up: false, status: "warn", hint: "5 within 7 days",      spark: [12,14,15,17,19,20,22,23,23], icon: AlertTriangle },
-  { label: "Recruiting Pipeline",    value: "124",   delta: "+9%",  up: true,  status: "ok",   hint: "71 offers out",        spark: [88,95,100,108,112,116,120,122,124], icon: Users },
-  { label: "Orientation Completion", value: "84%",   delta: "-2%",  up: false, status: "warn", hint: "12 staff backlog",     spark: [88,88,87,86,85,85,84,84,84], icon: GraduationCap },
-  { label: "Open Escalations",       value: "7",     delta: "+2",   up: false, status: "crit", hint: "2 critical",           spark: [3,4,4,5,6,6,7,7,7], icon: Flame },
-  { label: "Pending Tasks",          value: "38",    delta: "-6",   up: true,  status: "ok",   hint: "12 due today",         spark: [54,50,48,46,44,42,40,39,38], icon: ClipboardCheck },
-  { label: "Workflow Completion",    value: "91%",   delta: "+3%",  up: true,  status: "ok",   hint: "Across 14 workflows",  spark: [82,84,85,87,88,89,90,90,91], icon: Workflow },
+  { label: "Active Clients",            value: "184", delta: "+9",   up: true,  status: "ok",   hint: "NC · Waitlist 22",        spark: [160,164,168,172,176,178,180,182,184], icon: Heart },
+  { label: "New Leads (7d)",            value: "28",  delta: "+18%", up: true,  status: "ok",   hint: "vs prior week",           spark: [12,14,16,18,20,22,25,27,28],            icon: UserPlus },
+  { label: "Clients Awaiting Staffing", value: "12",  delta: "+3",   up: false, status: "warn", hint: "Charlotte 7 · Raleigh 5", spark: [6,7,8,9,10,11,11,12,12],                icon: Inbox },
+  { label: "Scheduling Fill Rate",      value: "89%", delta: "+6%",  up: true,  status: "ok",   hint: "Target ≥ 92%",            spark: [80,82,83,85,86,87,88,89,89],            icon: CalendarDays },
+  { label: "Open Authorizations",       value: "31",  delta: "+4",   up: false, status: "warn", hint: "8 awaiting submit",       spark: [22,24,26,27,28,29,30,31,31],            icon: FileCheck2 },
+  { label: "Expiring Auths (30d)",      value: "11",  delta: "+2",   up: false, status: "warn", hint: "3 within 7 days",         spark: [4,5,6,7,8,9,10,11,11],                  icon: AlertTriangle },
+  { label: "Active RBTs",               value: "62",  delta: "+4",   up: true,  status: "ok",   hint: "8 onboarding",            spark: [54,55,56,58,59,60,61,62,62],            icon: UserCog },
+  { label: "Active BCBAs",              value: "14",  delta: "+1",   up: true,  status: "ok",   hint: "2 awaiting cred.",        spark: [12,12,13,13,13,13,14,14,14],            icon: ShieldCheck },
+  { label: "Recruiting Pipeline",       value: "47",  delta: "+11%", up: true,  status: "ok",   hint: "18 offers out",           spark: [30,33,36,38,40,42,44,46,47],            icon: Users },
+  { label: "Orientation Completion",    value: "82%", delta: "-3%",  up: false, status: "warn", hint: "5 new hires backlog",     spark: [88,87,86,85,84,83,82,82,82],            icon: GraduationCap },
+  { label: "Client Retention (90d)",    value: "94%", delta: "+1%",  up: true,  status: "ok",   hint: "State avg 91%",           spark: [90,91,91,92,92,93,93,94,94],            icon: BadgeCheck },
+  { label: "Session Completion",        value: "93%", delta: "+2%",  up: true,  status: "ok",   hint: "Target ≥ 95%",            spark: [88,89,90,91,91,92,92,93,93],            icon: CheckCircle2 },
 ];
 
 const departments = [
-  { name: "Intake",         icon: ClipboardList, status: "ok",   score: 94, workload: 28, overdue: 2, completion: 96, ai: "Response time down to 14m", tone: "os-tone-rose" },
-  { name: "Scheduling",     icon: CalendarDays,  status: "ok",   score: 92, workload: 46, overdue: 4, completion: 92, ai: "Fill rate at 92% — best week", tone: "os-tone-sky" },
-  { name: "Recruiting",     icon: Users,         status: "warn", score: 78, workload: 71, overdue: 9, completion: 74, ai: "Follow-up completion below target", tone: "os-tone-violet" },
-  { name: "Credentialing",  icon: BadgeCheck,    status: "crit", score: 64, workload: 18, overdue: 5, completion: 62, ai: "5 VA credentials stalled >7d", tone: "os-tone-lilac" },
-  { name: "Authorizations", icon: FileCheck2,    status: "warn", score: 81, workload: 47, overdue: 7, completion: 84, ai: "23 expiring in 30 days", tone: "os-tone-amber" },
-  { name: "QA",             icon: Shield,        status: "warn", score: 76, workload: 22, overdue: 6, completion: 78, ai: "VA backlog growing 12%", tone: "os-tone-mint" },
-  { name: "Billing",        icon: DollarSign,    status: "ok",   score: 88, workload: 34, overdue: 3, completion: 91, ai: "Collections pacing +9%", tone: "os-tone-mint" },
-  { name: "Training",       icon: GraduationCap, status: "warn", score: 84, workload: 19, overdue: 5, completion: 87, ai: "12 overdue across 4 depts", tone: "os-tone-lilac" },
-  { name: "HR",             icon: Building2,     status: "ok",   score: 91, workload: 14, overdue: 1, completion: 94, ai: "Onboarding completion 94%", tone: "os-tone-violet" },
-  { name: "Marketing",      icon: Megaphone,     status: "ok",   score: 96, workload: 11, overdue: 0, completion: 98, ai: "Lead ROI 3.4× — strongest qtr", tone: "os-tone-coral" },
+  { name: "Intake",         icon: ClipboardList, status: "ok",   score: 93, workload: 14, overdue: 1, completion: 95, ai: "NC response time 16m · improving",  tone: "os-tone-rose" },
+  { name: "Scheduling",     icon: CalendarDays,  status: "warn", score: 84, workload: 22, overdue: 4, completion: 89, ai: "Charlotte has 18 uncovered hours",  tone: "os-tone-sky" },
+  { name: "Staffing",       icon: Briefcase,     status: "warn", score: 78, workload: 12, overdue: 3, completion: 82, ai: "12 clients awaiting RBT match",     tone: "os-tone-violet" },
+  { name: "Recruiting",     icon: UserPlus,      status: "ok",   score: 87, workload: 47, overdue: 2, completion: 88, ai: "Pipeline healthy · 18 offers out",  tone: "os-tone-lilac" },
+  { name: "Credentialing",  icon: BadgeCheck,    status: "crit", score: 62, workload: 7,  overdue: 3, completion: 58, ai: "3 BCBAs awaiting payer approval",   tone: "os-tone-coral" },
+  { name: "Authorizations", icon: FileCheck2,    status: "warn", score: 80, workload: 31, overdue: 5, completion: 84, ai: "11 expiring in 30 days",            tone: "os-tone-amber" },
+  { name: "QA",             icon: Shield,        status: "ok",   score: 90, workload: 9,  overdue: 0, completion: 93, ai: "Reports on schedule",               tone: "os-tone-mint" },
+  { name: "Training",       icon: GraduationCap, status: "warn", score: 82, workload: 11, overdue: 4, completion: 84, ai: "5 new hires awaiting orientation",  tone: "os-tone-lilac" },
+  { name: "Parent Comms",   icon: Megaphone,     status: "ok",   score: 91, workload: 8,  overdue: 1, completion: 94, ai: "Escalation volume low",             tone: "os-tone-rose" },
+  { name: "Operations",     icon: Workflow,      status: "ok",   score: 88, workload: 16, overdue: 2, completion: 90, ai: "Daily standups on track",           tone: "os-tone-violet" },
 ];
 
 const bottlenecks = [
-  { severity: "crit", title: "5 VA credentialing files stalled > 7 days",  dept: "Credentialing", owner: "Olivia C.", action: "Escalate to payer reps" },
-  { severity: "crit", title: "GA — 12 uncovered sessions this week",       dept: "Scheduling",    owner: "Jacob T.",  action: "Open coverage matching" },
-  { severity: "warn", title: "23 authorizations expiring within 30 days",  dept: "Authorizations",owner: "Marcus W.", action: "Batch renewal workflow" },
-  { severity: "warn", title: "Recruiting follow-ups overdue (9)",          dept: "Recruiting",    owner: "Sarah M.",  action: "Assign follow-up sprint" },
-  { severity: "warn", title: "Intake — 3 unassigned leads >24h",           dept: "Intake",        owner: "Emily R.",  action: "Auto-assign to FL pod" },
-  { severity: "warn", title: "12 overdue trainings · 4 departments",       dept: "Training",      owner: "HR Ops",    action: "Send completion reminders" },
+  { severity: "crit", title: "Charlotte — 18 uncovered hours this week",  dept: "Scheduling",    owner: "Jacob T.",   action: "Open coverage matching" },
+  { severity: "crit", title: "3 BCBAs pending insurance credentialing",    dept: "Credentialing", owner: "Olivia C.",  action: "Escalate to payer reps" },
+  { severity: "warn", title: "RBT shortage detected in Raleigh",           dept: "Staffing",      owner: "Marcus W.",  action: "Activate recruiting sprint" },
+  { severity: "warn", title: "11 authorizations expiring within 30 days",  dept: "Authorizations",owner: "Priya N.",   action: "Batch renewal workflow" },
+  { severity: "warn", title: "5 leads stalled awaiting intake forms",      dept: "Intake",        owner: "Emily R.",   action: "Send reminder + follow-up" },
+  { severity: "warn", title: "2 parent escalations open > 48h",            dept: "Parent Comms",  owner: "Ezra (you)", action: "Schedule outreach calls" },
 ];
 
 const staffingByState = [
-  { s: "FL", fill: 96, need: 2 },
-  { s: "GA", fill: 88, need: 9 },
-  { s: "NC", fill: 82, need: 6 },
-  { s: "TX", fill: 91, need: 3 },
-  { s: "AZ", fill: 86, need: 2 },
+  { s: "Charlotte",  fill: 78, need: 7 },
+  { s: "Raleigh",    fill: 84, need: 5 },
+  { s: "Greensboro", fill: 92, need: 2 },
+  { s: "Durham",     fill: 88, need: 3 },
+  { s: "Asheville",  fill: 95, need: 1 },
 ];
 
 const utilization = [
@@ -103,61 +103,61 @@ const orientationDept = [
 ];
 
 const tasks = [
-  { title: "Approve GA coverage matching plan",      owner: "Shira",  dept: "Scheduling",    due: "Today",    priority: "High",   bucket: "Urgent" },
-  { title: "Escalate VA credentialing batch",        owner: "Olivia", dept: "Credentialing", due: "Today",    priority: "High",   bucket: "Urgent" },
-  { title: "Sign off on intake auto-assign rules",   owner: "Emily",  dept: "Intake",        due: "Tomorrow", priority: "Medium", bucket: "Team" },
-  { title: "Review recruiting velocity action plan", owner: "Sarah",  dept: "Recruiting",    due: "Fri",      priority: "High",   bucket: "Waiting" },
-  { title: "Coordinate training completion sprint",  owner: "HR Ops", dept: "Training",      due: "May 30",   priority: "Medium", bucket: "Team" },
-  { title: "Escalation: Aetna denial pattern",       owner: "Legal",  dept: "Billing",       due: "Jun 03",   priority: "High",   bucket: "Escalations" },
+  { title: "Approve Charlotte coverage matching plan",     owner: "Ezra",   dept: "Scheduling",    due: "Today",    priority: "High",   bucket: "Urgent" },
+  { title: "Follow up on BCBA credentialing (3 pending)",  owner: "Olivia", dept: "Credentialing", due: "Today",    priority: "High",   bucket: "Urgent" },
+  { title: "Call parent — escalation #NC-218",             owner: "Ezra",   dept: "Parent Comms",  due: "Today",    priority: "High",   bucket: "Escalations" },
+  { title: "Sign off on Raleigh intake auto-assign",       owner: "Emily",  dept: "Intake",        due: "Tomorrow", priority: "Medium", bucket: "Team" },
+  { title: "Review recruiting velocity plan",              owner: "Sarah",  dept: "Recruiting",    due: "Fri",      priority: "Medium", bucket: "Waiting" },
+  { title: "Orientation kickoff — 5 new hires",            owner: "HR Ops", dept: "Training",      due: "Mon",      priority: "Medium", bucket: "Team" },
 ];
 
 const training = [
-  { name: "Scheduling Team",   pct: 92 },
-  { name: "Intake Team",       pct: 88 },
-  { name: "RBT Onboarding",    pct: 84 },
-  { name: "BCBA Documentation",pct: 64 },
+  { name: "Scheduling Team",       pct: 94 },
+  { name: "Intake Team",           pct: 88 },
+  { name: "NC RBT Onboarding",     pct: 82 },
+  { name: "NC BCBA Documentation", pct: 71 },
 ];
 
 const activity = [
-  { who: "Emily R.",  what: "submitted a new lead (FL)",       when: "2m",  tone: "os-tone-violet", icon: UserPlus },
-  { who: "Jacob T.",  what: "resolved GA scheduling conflict", when: "11m", tone: "os-tone-sky",    icon: CalendarDays },
-  { who: "Olivia C.", what: "approved BCBA credential",        when: "22m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Aetna",     what: "approved auth #A-2841",           when: "38m", tone: "os-tone-amber",  icon: FileCheck2 },
-  { who: "Sarah M.",  what: "offer letter signed · RBT",       when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
-  { who: "System",    what: "published Intake SOP v3",         when: "2h",  tone: "os-tone-rose",   icon: BookOpen },
-  { who: "Shira",     what: "assigned 4 unstaffed clients",    when: "3h",  tone: "os-tone-violet", icon: Briefcase },
+  { who: "Emily R.",  what: "submitted a new lead (Charlotte)",     when: "3m",  tone: "os-tone-violet", icon: UserPlus },
+  { who: "Jacob T.",  what: "resolved Raleigh scheduling conflict", when: "14m", tone: "os-tone-sky",    icon: CalendarDays },
+  { who: "Olivia C.", what: "approved RBT credential · NC",         when: "28m", tone: "os-tone-mint",   icon: BadgeCheck },
+  { who: "BCBS NC",   what: "approved auth #A-2841",                when: "41m", tone: "os-tone-amber",  icon: FileCheck2 },
+  { who: "Sarah M.",  what: "offer letter signed · Greensboro RBT", when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
+  { who: "System",    what: "client staffed · Durham",              when: "2h",  tone: "os-tone-rose",   icon: Heart },
+  { who: "Marcus W.", what: "completed orientation module",         when: "3h",  tone: "os-tone-violet", icon: GraduationCap },
 ];
 
 const aiInsights = [
-  { icon: AlertCircle, tone: "os-tone-coral",  title: "GA staffing pressure",    body: "GA has 12 uncovered sessions — projected to grow if 3 RBT hires don't close this week.", cta: "Open coverage" },
-  { icon: Brain,       tone: "os-tone-sky",    title: "Intake risk",             body: "Intake conversion likely to decline if response time rises above 22m.",                  cta: "View trend" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "Credentialing → NC impact",body:"Credentialing delays may impact NC staffing within 10 days.",                            cta: "See forecast" },
-  { icon: Lightbulb,   tone: "os-tone-lilac",  title: "Recruiting bottleneck",   body: "Recruiting follow-up bottleneck detected in GA — 14 candidates idle 3+ days.",         cta: "Action plan" },
-  { icon: Activity,    tone: "os-tone-mint",   title: "Workflow optimization",   body: "Auto-assign intake to FL pod — could save ~18h/week of triage.",                       cta: "Apply rule" },
+  { icon: AlertCircle,  tone: "os-tone-coral", title: "NC staffing demand rising",      body: "Charlotte demand likely to grow next week — staffing buffer is below threshold.",      cta: "Open coverage" },
+  { icon: AlertTriangle,tone: "os-tone-amber", title: "Credentialing → client starts",  body: "3 BCBA credential delays may impact 8 client starts within 10 days.",                  cta: "See forecast" },
+  { icon: Brain,        tone: "os-tone-sky",   title: "Fill rate projection",           body: "Scheduling fill rate projected to decline 4 pts if Raleigh RBT pipeline doesn't close.",cta: "View trend" },
+  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Recruiting pipeline gap",        body: "Pipeline insufficient for projected NC growth — add 6 candidates this week.",          cta: "Action plan" },
+  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",          body: "Auto-assign Charlotte intake to local pod — could save ~9h/week of triage.",           cta: "Apply rule" },
 ];
 
 const meetings = [
-  { title: "Ops Standup",            time: "8:30 – 9:00 AM",  tone: "os-tone-sky" },
-  { title: "Scheduling Sync",        time: "10:00 – 10:30",   tone: "os-tone-violet" },
-  { title: "Recruiting 1:1 — Sarah", time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
-  { title: "QA Review",              time: "3:30 – 4:00 PM",  tone: "os-tone-amber" },
+  { title: "NC Daily Standup",          time: "8:30 – 9:00 AM",  tone: "os-tone-sky" },
+  { title: "Charlotte Scheduling Sync", time: "10:00 – 10:30",   tone: "os-tone-violet" },
+  { title: "1:1 — Assistant Director",  time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
+  { title: "Parent Escalation Call",    time: "3:30 – 4:00 PM",  tone: "os-tone-amber" },
 ];
 
 const quickActions = [
-  { label: "Add Lead",         icon: UserPlus,     tone: "os-tone-rose"   },
-  { label: "Create Client",    icon: Heart,        tone: "os-tone-violet" },
-  { label: "Assign Staff",     icon: Briefcase,    tone: "os-tone-sky"    },
-  { label: "Create Task",      icon: ClipboardCheck,tone: "os-tone-lilac" },
-  { label: "Publish SOP",      icon: BookOpen,     tone: "os-tone-mint"   },
-  { label: "Create Training",  icon: GraduationCap,tone: "os-tone-amber"  },
-  { label: "Submit Tech Req",  icon: LifeBuoy,     tone: "os-tone-coral"  },
-  { label: "Open Workflow",    icon: Workflow,     tone: "os-tone-violet" },
+  { label: "Add Lead",             icon: UserPlus,      tone: "os-tone-rose"   },
+  { label: "Assign Staff",         icon: Briefcase,     tone: "os-tone-violet" },
+  { label: "Create Task",          icon: ClipboardCheck,tone: "os-tone-sky"    },
+  { label: "Schedule Interview",   icon: CalendarDays,  tone: "os-tone-lilac"  },
+  { label: "Submit Credentialing", icon: BadgeCheck,    tone: "os-tone-mint"   },
+  { label: "Create Escalation",    icon: Flame,         tone: "os-tone-coral"  },
+  { label: "Publish Training",     icon: GraduationCap, tone: "os-tone-amber"  },
+  { label: "Open Reports",         icon: BarChart3,     tone: "os-tone-violet" },
 ];
 
 const approvals = [
-  { what: "Recruiting offer · BCBA · GA",  who: "Sarah M.",  due: "Today" },
-  { what: "Coverage swap · FL pod",         who: "Jacob T.",  due: "Today" },
-  { what: "SOP update · Documentation",     who: "Olivia C.", due: "Tomorrow" },
+  { what: "Recruiting offer · BCBA · Charlotte", who: "Sarah M.",  due: "Today" },
+  { what: "Coverage swap · Raleigh pod",         who: "Jacob T.",  due: "Today" },
+  { what: "Credentialing submission · 2 RBTs",   who: "Olivia C.", due: "Tomorrow" },
 ];
 
 /* ============ helpers ============ */
