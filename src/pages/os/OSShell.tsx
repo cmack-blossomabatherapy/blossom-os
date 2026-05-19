@@ -67,7 +67,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/marketing/campaigns", label: "Campaign Center", icon: Megaphone, module: "campaigns" },
       { to: "/os/marketing/lead-sources", label: "Lead Source Analytics", icon: TrendingUp, module: "lead_sources" },
       { to: "/os/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
-      { to: "/os/marketing/social", label: "Social Media Planner", icon: Hash, module: "social_planner" },
+      { to: "/os/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
       { to: "/os/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
       { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
       { to: "/os/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
