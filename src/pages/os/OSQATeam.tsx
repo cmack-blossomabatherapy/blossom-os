@@ -128,7 +128,7 @@ const activity = [
   { who: "System",          what: "Tx Plan received · Liam Carter (BCBS)",  when: "18m", tone: "os-tone-mint",   icon: FileText },
   { who: "BCBA Daylis",     what: "uploaded PR · Noah Brooks",              when: "32m", tone: "os-tone-sky",    icon: ScrollText },
   { who: "QA System",       what: "compliance issue escalated · Sofia M.",  when: "55m", tone: "os-tone-coral",  icon: ShieldAlert },
-  { who: "Auth Team",       path: "approved · BCBS · Liam Carter",          what: "auth approved · BCBS · Liam Carter", when: "1h",  tone: "os-tone-amber",  icon: Gavel },
+  { who: "Auth Team",       what: "auth approved · BCBS · Liam Carter",     when: "1h",  tone: "os-tone-amber",  icon: Gavel },
   { who: "BCBA Wilson",     what: "submitted corrections · Aria Johnson",   when: "2h",  tone: "os-tone-rose",   icon: FileSignature },
 ];
 
