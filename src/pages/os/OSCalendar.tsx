@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { ROLE_CALENDAR_CONFIG, type RoleCalendarConfig } from "@/lib/os/calendarConfigs";
 
 /* ============ TYPES ============ */
 type Source = "microsoft" | "calendly" | "blossom";
@@ -94,21 +96,6 @@ const MOCK_EVENTS: CalEvent[] = [
   { id: "e21", title: "Auth Deadline Follow-Up",     day: 4, start: "16:00", end: "16:30", type: "auth",        source: "blossom",   attendees: ["Auth Coord"], status: "needs-action" },
 ];
 
-const TODAY_PRIORITIES = [
-  { id: "p1", label: "Prep NC state huddle deck",     time: "8:00 AM", icon: Briefcase, tone: "violet" },
-  { id: "p2", label: "Follow up: Charlotte staffing gap", time: "By noon", icon: Flame, tone: "red" },
-  { id: "p3", label: "Review 3 Calendly interview notes", time: "Afternoon", icon: ClipboardCheck, tone: "fuchsia" },
-  { id: "p4", label: "Sign off on Raleigh site report",   time: "EOD", icon: FileCheck2, tone: "amber" },
-];
-
-const AI_INSIGHTS = [
-  { icon: Brain,     text: "You haven't met with Scheduling this week. Suggest 30m Thursday 9:00 AM." },
-  { icon: Flame,     text: "Raleigh staffing escalation has no follow-up meeting scheduled." },
-  { icon: Lightbulb, text: "3 Calendly interviews completed — auto-create post-interview tasks?" },
-  { icon: Zap,       text: "Progress report escalation needs an owner — suggested: BCBA Lead Maria L." },
-  { icon: Clock,     text: "You have a 2hr open block Friday afternoon — protected for deep work?" },
-];
-
 const CONFLICTS = [
   { id: "c1", a: "Leadership Meeting", b: "BCBA Sync — Greensboro", time: "Tue 10:30–11:00", suggestion: "Move BCBA Sync to 11:15" },
   { id: "c2", a: "Site Visit — Raleigh", b: "Auth Follow-Up — J. Park", time: "Mon 15:30 buffer", suggestion: "Add 30m travel buffer" },
@@ -144,6 +131,8 @@ type ViewKind = (typeof VIEWS)[number];
 
 /* ============ PAGE ============ */
 export default function OSCalendar() {
+  const { role } = useOSRole();
+  const config = ROLE_CALENDAR_CONFIG[role];
   const [view, setView] = useState<ViewKind>("Week");
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [activeSources, setActiveSources] = useState<Record<Source, boolean>>({ microsoft: true, calendly: true, blossom: true });
@@ -158,7 +147,7 @@ export default function OSCalendar() {
     <OSShell>
       <div className="space-y-5 pb-10">
         {/* HERO */}
-        <Hero onConnect={() => setShowConnect(true)} />
+        <Hero onConnect={() => setShowConnect(true)} config={config} />
 
         {/* VIEW TABS + DATE NAV */}
         <div className="os-glass-panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2.5">
@@ -211,9 +200,9 @@ export default function OSCalendar() {
 
           {/* RIGHT RAIL */}
           <aside className="col-span-12 space-y-4 lg:col-span-3">
-            <TodayPriorities />
+            <TodayPriorities config={config} />
             <ConflictsPanel />
-            <AIPanel />
+            <AIPanel config={config} />
             <QuickActions />
           </aside>
         </div>
@@ -227,7 +216,7 @@ export default function OSCalendar() {
 }
 
 /* ============ HERO ============ */
-function Hero({ onConnect }: { onConnect: () => void }) {
+function Hero({ onConnect, config }: { onConnect: () => void; config: RoleCalendarConfig }) {
   return (
     <section className="os-glass-panel relative overflow-hidden rounded-3xl">
       <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-[hsl(330_85%_70%/0.10)] blur-3xl" />
@@ -235,18 +224,14 @@ function Hero({ onConnect }: { onConnect: () => void }) {
       <div className="relative flex flex-col gap-5 p-6 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/60 bg-violet-50/80 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-violet-700">
-            <Sparkles className="h-3 w-3" /> State Director · Calendar Command Center
+            <Sparkles className="h-3 w-3" /> {config.badge}
           </div>
-          <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[32px]">State Director Calendar</h1>
-          <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
-            Manage meetings, interviews, trainings, and state operations in one connected calendar — Microsoft, Calendly, and Blossom OS unified.
-          </p>
+          <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[32px]">{config.title}</h1>
+          <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">{config.subtitle}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Stat icon={CalendarDays} label="This week" value="21 events" tone="violet" />
-            <Stat icon={UserPlus} label="Interviews" value="4" tone="fuchsia" />
-            <Stat icon={Flame} label="Escalations" value="1" tone="red" />
-            <Stat icon={AlertTriangle} label="Conflicts" value="2" tone="amber" />
-            <Stat icon={Clock} label="Open blocks" value="6.5h" tone="emerald" />
+            {config.stats.map((s, i) => (
+              <Stat key={i} icon={s.icon} label={s.label} value={s.value} tone={s.tone} />
+            ))}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -731,7 +716,8 @@ function StateTimeline() {
 }
 
 /* ============ RIGHT RAIL ============ */
-function TodayPriorities() {
+function TodayPriorities({ config }: { config: RoleCalendarConfig }) {
+  const TODAY_PRIORITIES = config.todayPriorities;
   return (
     <div className="os-glass-panel rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -780,7 +766,8 @@ function ConflictsPanel() {
   );
 }
 
-function AIPanel() {
+function AIPanel({ config }: { config: RoleCalendarConfig }) {
+  const AI_INSIGHTS = config.aiInsights;
   return (
     <div className="os-glass-panel relative overflow-hidden rounded-2xl p-4">
       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-[hsl(330_85%_70%/0.10)] blur-2xl" />
