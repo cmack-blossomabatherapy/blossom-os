@@ -22,6 +22,7 @@ export type OSRole =
   | "hr_team"
   | "billing_finance"
   | "qa_team"
+  | "payroll_coordinator"
   | "bcba"
   | "rbt";
 
@@ -37,6 +38,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "hr_team", label: "HR Team", tier: "operations" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
   { id: "qa_team", label: "QA Team", tier: "operations" },
+  { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },
 ];
