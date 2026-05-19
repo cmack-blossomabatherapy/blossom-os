@@ -367,7 +367,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setRightRailHidden((v) => !v)}
-                    className="os-glass-icon hidden xl:inline-flex"
+                    className="os-glass-icon inline-flex"
                     aria-label={rightRailHidden ? "Show side panel" : "Hide side panel"}
                   >
                     <PanelRight className={cn("h-4 w-4 text-muted-foreground transition-transform", rightRailHidden && "rotate-180")} />
@@ -391,16 +391,16 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           </header>
 
           {/* CONTENT GRID */}
-          <div className="flex min-w-0 gap-5">
+          <div className="flex min-w-0 flex-col gap-5 xl:flex-row">
             <div className="min-w-0 flex-1 space-y-5">{children}</div>
             {rightRail && (
               <aside
                 aria-hidden={rightRailHidden}
                 className={cn(
-                  "hidden min-w-0 shrink-0 space-y-5 overflow-hidden transition-all duration-300 ease-out xl:block",
+                  "min-w-0 shrink-0 space-y-5 overflow-hidden transition-all duration-300 ease-out",
                   rightRailHidden
-                    ? "w-0 -translate-x-2 opacity-0 pointer-events-none"
-                    : "w-[320px] translate-x-0 opacity-100",
+                    ? "max-h-0 xl:max-h-none xl:w-0 -translate-x-2 opacity-0 pointer-events-none"
+                    : "max-h-[4000px] w-full xl:w-[320px] translate-x-0 opacity-100",
                 )}
               >
                 {rightRail}
