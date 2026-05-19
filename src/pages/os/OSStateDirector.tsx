@@ -6,6 +6,7 @@ import {
   AlertCircle, CheckCircle2, Workflow, Zap, Radio, Flame, UserPlus,
   ClipboardCheck, DollarSign, Plus, BookOpen, LifeBuoy, Send,
   Compass, Gauge, Inbox, ArrowRight, UserCog, BarChart3, MapPin,
+  Phone, MessageSquare, Trophy, Smile,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -158,6 +159,22 @@ const approvals = [
   { what: "Recruiting offer · BCBA · Charlotte", who: "Sarah M.",  due: "Today" },
   { what: "Coverage swap · Raleigh pod",         who: "Jacob T.",  due: "Today" },
   { what: "Credentialing submission · 2 RBTs",   who: "Olivia C.", due: "Tomorrow" },
+];
+
+const regions = [
+  { name: "Charlotte",  clients: 58, fill: 78, recruit: 64, ops: 71, trend: "down" as const, status: "warn" as Tone, note: "RBT shortage risk" },
+  { name: "Raleigh",    clients: 47, fill: 84, recruit: 70, ops: 79, trend: "down" as const, status: "warn" as Tone, note: "Hiring velocity slowing" },
+  { name: "Greensboro", clients: 32, fill: 92, recruit: 88, ops: 91, trend: "up"   as const, status: "ok"   as Tone, note: "Top performer this month" },
+  { name: "Durham",     clients: 28, fill: 88, recruit: 82, ops: 86, trend: "up"   as const, status: "ok"   as Tone, note: "Stable & growing" },
+  { name: "Wilmington", clients: 14, fill: 81, recruit: 58, ops: 73, trend: "down" as const, status: "warn" as Tone, note: "Pipeline below target" },
+  { name: "Asheville",  clients: 5,  fill: 95, recruit: 90, ops: 93, trend: "up"   as const, status: "ok"   as Tone, note: "Excellent operational score" },
+];
+
+const support = [
+  { who: "Marisol Chen",  role: "VP State Operations", tone: "os-tone-violet" },
+  { who: "James Okafor",  role: "Asst. State Director", tone: "os-tone-sky"    },
+  { who: "Priya Nair",    role: "Auth Ops Lead",        tone: "os-tone-amber"  },
+  { who: "Jacob Thomas",  role: "Scheduling Lead",      tone: "os-tone-mint"   },
 ];
 
 /* ============ helpers ============ */
@@ -370,6 +387,38 @@ export default function OSStateDirector() {
             </ul>
           </section>
 
+          {/* NEED SUPPORT */}
+          <section className="os-card relative overflow-hidden">
+            <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(355_85%_75%/0.25)] to-transparent blur-2xl" />
+            <header className="mb-3 flex items-center gap-2">
+              <LifeBuoy className="h-3.5 w-3.5 text-[hsl(355_70%_55%)]" />
+              <h3 className="text-[14px] font-semibold tracking-tight">Need Support?</h3>
+            </header>
+            <p className="text-[11.5px] leading-snug text-muted-foreground">
+              Your operational leadership and escalation paths — one tap away.
+            </p>
+            <ul className="mt-3 space-y-2">
+              {support.map((s) => (
+                <li key={s.who} className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
+                  <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[11px] font-bold", s.tone)}>
+                    {s.who.split(" ").map((n) => n[0]).join("")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-semibold leading-tight">{s.who}</p>
+                    <p className="truncate text-[10.5px] text-muted-foreground">{s.role}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Message"><MessageSquare className="h-3 w-3" /></button>
+                    <button className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3 w-3" /></button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(355_75%_60%)] to-[hsl(15_85%_62%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(355_75%_55%/0.55)] transition hover:opacity-95">
+              <Flame className="h-3.5 w-3.5" /> Create Escalation
+            </button>
+          </section>
+
           {/* LIVE ACTIVITY */}
           <section className="os-card">
             <header className="mb-3 flex items-center justify-between">
@@ -545,6 +594,74 @@ export default function OSStateDirector() {
               <button className="ml-1 inline-flex items-center gap-1 rounded-lg bg-foreground/[0.05] px-2.5 py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]">
                 Resolve <ArrowRight className="h-3 w-3" />
               </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* SECTION 4b — REGIONAL LEADERBOARD */}
+      <section className="os-card relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-transparent blur-3xl" />
+        <header className="relative mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-[15px] font-semibold tracking-tight">Regional Performance · NC</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Top-performing and at-risk regions across your state</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {["Ops Score", "Fill Rate", "Recruiting"].map((t, i) => (
+              <button key={t} className={cn(
+                "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
+                i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
+              )}>{t}</button>
+            ))}
+          </div>
+        </header>
+        <ul className="relative space-y-2">
+          {regions.map((r, idx) => (
+            <li key={r.name} className={cn(
+              "group grid grid-cols-[28px,1.4fr,2fr,auto] items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-3.5 transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]",
+              r.status === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
+              r.status === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
+            )}>
+              <div className={cn("grid h-7 w-7 place-items-center rounded-xl text-[11px] font-bold tabular-nums",
+                idx === 0 ? "bg-[hsl(40_100%_88%)] text-[hsl(30_80%_38%)]" :
+                idx === 1 ? "bg-[hsl(265_100%_92%)] text-[hsl(265_70%_45%)]" :
+                idx === 2 ? "bg-[hsl(150_70%_88%)] text-[hsl(155_55%_30%)]" :
+                            "bg-foreground/[0.05] text-foreground/70"
+              )}>{idx + 1}</div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+                  <p className="truncate text-[13px] font-semibold leading-tight">{r.name}</p>
+                  <StatusDot status={r.status} />
+                </div>
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{r.clients} active clients · {r.note}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Fill",     v: r.fill    },
+                  { label: "Recruit",  v: r.recruit },
+                  { label: "Ops",      v: r.ops     },
+                ].map((m) => (
+                  <div key={m.label}>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-medium uppercase tracking-wider text-muted-foreground">{m.label}</span>
+                      <span className="tabular-nums font-semibold">{m.v}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
+                      <div className="h-full rounded-full" style={{
+                        width: `${m.v}%`,
+                        background: m.v >= 90 ? "hsl(155 55% 45%)" : m.v >= 80 ? "linear-gradient(90deg, hsl(265 85% 65%), hsl(285 85% 72%))" : "hsl(35 90% 55%)",
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <span className={cn("inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10.5px] font-semibold",
+                r.trend === "up" ? "bg-[hsl(150_70%_92%)] text-[hsl(155_55%_32%)]" : "bg-[hsl(355_100%_94%)] text-[hsl(355_70%_48%)]")}>
+                {r.trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {r.trend === "up" ? "Improving" : "Watch"}
+              </span>
             </li>
           ))}
         </ul>
@@ -785,8 +902,54 @@ export default function OSStateDirector() {
       </div>
 
       {/* QUICK ACTIONS */}
+      {/* SECTION — CULTURE & MOTIVATION */}
+      <section className="os-rise relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white via-[hsl(265_100%_99%)] to-[hsl(150_100%_98%)] p-6 shadow-[0_24px_60px_-30px_hsl(265_60%_50%/0.22)]">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.28)] to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -left-16 -bottom-20 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(150_85%_75%/0.3)] to-transparent blur-3xl" />
+        <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr,2fr] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
+              <Heart className="h-3 w-3 text-[hsl(355_70%_55%)]" /> Mission · Culture · Impact
+            </div>
+            <h3 className="mt-3 text-[22px] font-semibold tracking-tight md:text-[26px]">
+              You're making a difference, <span className="capitalize">{name}</span>.
+            </h3>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">
+              <span className="font-semibold text-[hsl(265_70%_50%)]">184 children</span> across North Carolina received
+              life-changing care this month — powered by your teams and your leadership.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_30%)]">
+                <Trophy className="h-3 w-3" /> Greensboro: Top region
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
+                <Sparkles className="h-3 w-3" /> 9 new hires this week
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {[
+              { label: "Parent Satisfaction", value: "4.8 / 5", hint: "NC survey · 240 responses", tone: "os-tone-rose",   icon: Smile },
+              { label: "Team Engagement",     value: "92%",     hint: "Pulse · this month",        tone: "os-tone-violet", icon: Users },
+              { label: "Client Outcomes",     value: "+14%",    hint: "Goal mastery · 90d",        tone: "os-tone-mint",   icon: TrendingUp },
+              { label: "Operational Progress",value: "82",      hint: "State health score",        tone: "os-tone-sky",    icon: Activity },
+            ].map((m) => (
+              <div key={m.label} className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-3.5 backdrop-blur">
+                <div className={cn("grid h-8 w-8 place-items-center rounded-xl", m.tone)}>
+                  <m.icon className="h-4 w-4" />
+                </div>
+                <p className="mt-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{m.label}</p>
+                <p className="mt-0.5 text-[20px] font-semibold tracking-tight tabular-nums">{m.value}</p>
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{m.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* QUICK ACTIONS */}
       <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between" id="quick-actions-header">
           <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
           <span className="text-[11px] text-muted-foreground">⌘K to search anything</span>
         </header>
