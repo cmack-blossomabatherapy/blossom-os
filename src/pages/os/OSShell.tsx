@@ -7,7 +7,7 @@ import {
   Menu, X, ShieldCheck, Home, Radio, BellRing, FileCheck2, Users2, BadgeCheck,
   Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
-  KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus,
+  KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/executive", label: "Executive", icon: Target, module: "dashboard" },
       { to: "/os/operations", label: "Operations", icon: Workflow, module: "dashboard" },
       { to: "/os/state-director", label: "State Director", icon: MapPin, module: "dashboard" },
+      { to: "/os/intake-coordinator", label: "Intake Coordinator", icon: Headphones, module: "dashboard" },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
       { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
