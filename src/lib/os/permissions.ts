@@ -88,6 +88,9 @@ export type OSModule =
   | "community_outreach"
   | "marketing_reports"
   | "communications"
+  | "web_analytics"
+  | "call_tracking"
+  | "attribution_roi"
   | "tech_requests"
   | "internal_requests"
   | "open_issues"
@@ -142,6 +145,9 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   community_outreach: "/os/marketing/outreach",
   marketing_reports: "/os/marketing/reports",
   communications: "/os/communications",
+  web_analytics: "/os/marketing/web-analytics",
+  call_tracking: "/os/marketing/call-tracking",
+  attribution_roi: "/os/marketing/attribution",
   tech_requests: "/os/tech-requests",
   internal_requests: "/os/internal-requests",
   open_issues: "/os/open-issues",
@@ -315,9 +321,12 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     modules: [
       "dashboard", "calendar", "notifications", "training",
       "marketing_dashboard",
-      "campaigns", "lead_sources", "seo_content", "referrals",
-      "recruiting_marketing", "state_growth", "reputation", "community_outreach",
-      "marketing_reports", "communications",
+      // Growth Engine
+      "campaigns", "lead_sources", "seo_content", "web_analytics", "call_tracking",
+      // Relationships
+      "referrals", "recruiting_marketing", "community_outreach", "reputation",
+      // Intelligence
+      "attribution_roi", "state_growth", "communications",
       "ai_assistant",
       "settings",
     ],
@@ -328,12 +337,14 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       campaigns: VIEW_EDIT,
       lead_sources: ["view", "export"],
       seo_content: VIEW_EDIT,
+      web_analytics: ["view", "export"],
+      call_tracking: ["view", "export"],
       referrals: VIEW_EDIT,
       recruiting_marketing: VIEW,
       state_growth: ["view", "export"],
       reputation: VIEW_EDIT,
       community_outreach: VIEW_EDIT,
-      marketing_reports: ["view", "export"],
+      attribution_roi: ["view", "export"],
       communications: VIEW_EDIT,
       training: VIEW,
     },
