@@ -34,6 +34,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/hr-team", label: "HR Team", icon: HeartHandshake, module: "dashboard" },
       { to: "/os/billing-finance", label: "Billing & Finance", icon: DollarSign, module: "dashboard" },
       { to: "/os/qa-team", label: "QA Team", icon: ShieldCheck, module: "dashboard" },
+      { to: "/os/bcba", label: "BCBA", icon: Heart, module: "dashboard" },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
       { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
