@@ -81,7 +81,7 @@ export type OSModule =
   | "campaigns"
   | "lead_sources"
   | "seo_content"
-  | "social_planner"
+  | "referrals"
   | "recruiting_marketing"
   | "state_growth"
   | "reputation"
@@ -135,7 +135,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   campaigns: "/os/marketing/campaigns",
   lead_sources: "/os/marketing/lead-sources",
   seo_content: "/os/marketing/seo",
-  social_planner: "/os/marketing/social",
+  referrals: "/os/marketing/referrals",
   recruiting_marketing: "/os/marketing/recruiting",
   state_growth: "/os/marketing/state-growth",
   reputation: "/os/marketing/reputation",
@@ -315,7 +315,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     modules: [
       "dashboard", "calendar", "notifications", "training",
       "marketing_dashboard",
-      "campaigns", "lead_sources", "seo_content", "social_planner",
+      "campaigns", "lead_sources", "seo_content", "referrals",
       "recruiting_marketing", "state_growth", "reputation", "community_outreach",
       "marketing_reports", "communications",
       "ai_assistant",
@@ -328,7 +328,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       campaigns: VIEW_EDIT,
       lead_sources: ["view", "export"],
       seo_content: VIEW_EDIT,
-      social_planner: VIEW_EDIT,
+      referrals: VIEW_EDIT,
       recruiting_marketing: VIEW,
       state_growth: ["view", "export"],
       reputation: VIEW_EDIT,
