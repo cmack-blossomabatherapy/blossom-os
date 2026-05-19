@@ -13,6 +13,9 @@ import {
 } from "recharts";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { ROLE_HOME } from "@/lib/os/roleHome";
+import { Navigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 /* ---------------- mock data ---------------- */
@@ -237,6 +240,11 @@ function KpiCard({ k }: { k: typeof kpis[number] }) {
 
 export default function OSDashboard() {
   const { user } = useAuth();
+  const { role } = useOSRole();
+  // Non-super-admin roles get redirected to their role-specific dashboard.
+  if (role !== "super_admin") {
+    return <Navigate to={ROLE_HOME[role]} replace />;
+  }
   const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Corey").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
