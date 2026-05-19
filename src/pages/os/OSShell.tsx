@@ -128,9 +128,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Default open: section that contains active route, plus first section.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
+    map["home"] = true;
     NAV_SECTIONS.forEach((s, idx) => {
       const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to));
-      map[s.id] = isActive || idx === 0 || idx === 1;
+      map[s.id] = isActive || idx === 0;
     });
     return map;
   });
@@ -139,7 +140,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const allItems = sections.flatMap((s) => s.items);
 
   const bottomNavCandidates: NavEntry[] = [
-    { to: "/os", label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
+    { to: ROLE_HOME[role], label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
     { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
     { to: "/os/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
     { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
