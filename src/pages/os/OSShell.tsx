@@ -4,7 +4,10 @@ import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
   FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
   Search, Bell, MessageSquare, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
-  Menu, X, ShieldCheck,
+  Menu, X, ShieldCheck, Home, Radio, BellRing, FileCheck2, Users2, BadgeCheck,
+  Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
+  Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
+  KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,21 +17,81 @@ import { RoleSwitcher } from "@/components/os/RoleSwitcher";
 import type { OSModule } from "@/lib/os/permissions";
 
 type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
+type NavSection = { id: string; label: string; items: NavEntry[] };
 
-const ALL_NAV: NavEntry[] = [
-  { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-  { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
-  { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
-  { to: "/os/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
-  { to: "/os/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
-  { to: "/os/intake", label: "Intake", icon: ClipboardList, module: "intake" },
-  { to: "/os/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
-  { to: "/os/billing", label: "Billing", icon: DollarSign, module: "billing" },
-  { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
-  { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
-  { to: "/os/hr", label: "HR Suite", icon: Building2, module: "hr" },
-  { to: "/os/settings", label: "Settings", icon: Settings, module: "settings" },
-  { to: "/os/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
+const NAV_SECTIONS: NavSection[] = [
+  {
+    id: "home", label: "Home", items: [
+      { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+      { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
+      { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
+      { to: "/os/notifications", label: "Notifications", icon: BellRing, module: "notifications" },
+    ],
+  },
+  {
+    id: "intake_clients", label: "Intake & Clients", items: [
+      { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
+      { to: "/os/intake", label: "Intake", icon: ClipboardList, module: "intake" },
+      { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
+      { to: "/os/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
+      { to: "/os/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
+      { to: "/os/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
+    ],
+  },
+  {
+    id: "staffing", label: "Staffing & Employees", items: [
+      { to: "/os/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
+      { to: "/os/recruiting", label: "Recruiting", icon: UserPlus, module: "recruiting" },
+      { to: "/os/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
+      { to: "/os/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
+      { to: "/os/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+    ],
+  },
+  {
+    id: "operations", label: "Operations & Intelligence", items: [
+      { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
+      { to: "/os/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
+      { to: "/os/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
+      { to: "/os/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
+      { to: "/os/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
+      { to: "/os/analytics", label: "Analytics Hub", icon: PieChart, module: "analytics_hub" },
+    ],
+  },
+  {
+    id: "financial", label: "Financial Operations", items: [
+      { to: "/os/billing", label: "Billing", icon: DollarSign, module: "billing" },
+      { to: "/os/payroll", label: "Payroll", icon: Wallet, module: "payroll" },
+      { to: "/os/revenue", label: "Revenue Analytics", icon: TrendingUp, module: "revenue" },
+      { to: "/os/insurance", label: "Insurance Tracking", icon: ShieldAlert, module: "insurance" },
+    ],
+  },
+  {
+    id: "internal", label: "Internal Operations", items: [
+      { to: "/os/tech-requests", label: "Tech Requests", icon: LifeBuoy, module: "tech_requests" },
+      { to: "/os/internal-requests", label: "Internal Requests", icon: Inbox, module: "internal_requests" },
+      { to: "/os/open-issues", label: "Open Issues", icon: AlertTriangle, module: "open_issues" },
+      { to: "/os/projects", label: "Project Tracking", icon: KanbanSquare, module: "projects" },
+    ],
+  },
+  {
+    id: "ai", label: "AI & Automations", items: [
+      { to: "/os/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      { to: "/os/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
+      { to: "/os/ai/automations", label: "Automation Center", icon: Zap, module: "automation_center" },
+      { to: "/os/ai/predictive", label: "Predictive Alerts", icon: Activity, module: "predictive_alerts" },
+      { to: "/os/ai/workflows", label: "AI Workflows", icon: Wand2, module: "ai_workflows" },
+    ],
+  },
+  {
+    id: "system", label: "System", items: [
+      { to: "/os/hr", label: "HR Suite", icon: Building2, module: "hr" },
+      { to: "/os/user-management", label: "User Management", icon: Users2, module: "user_management" },
+      { to: "/os/state-management", label: "State Management", icon: MapPin, module: "state_management" },
+      { to: "/os/settings", label: "Settings", icon: Settings, module: "settings" },
+      { to: "/os/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
+    ],
+  },
 ];
 
 export function OSShell({ children, rightRail }: { children: ReactNode; rightRail?: ReactNode }) {
@@ -37,10 +100,26 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const showOldVersion = platform("accessOldVersion");
 
-  const nav = ALL_NAV.filter((n) => canSee(n.module));
+  const sections = NAV_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
+    .filter((s) => s.items.length > 0);
+
+  // Default open: section that contains active route, plus first section.
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    NAV_SECTIONS.forEach((s, idx) => {
+      const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to));
+      map[s.id] = isActive || idx === 0 || idx === 1;
+    });
+    return map;
+  });
+  const toggleSection = (id: string) => setOpenSections((m) => ({ ...m, [id]: !m[id] }));
+
+  const allItems = sections.flatMap((s) => s.items);
 
   const bottomNavCandidates: NavEntry[] = [
     { to: "/os", label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
@@ -51,6 +130,26 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
   ];
   const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
+
+  const renderNavItem = (item: NavEntry, onClick?: () => void) => (
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.end}
+      onClick={onClick}
+      className={({ isActive }) =>
+        cn(
+          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
+          isActive
+            ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]"
+            : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
+        )
+      }
+    >
+      <item.icon className="h-[16px] w-[16px] shrink-0" />
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </NavLink>
+  );
 
   return (
     <div className="min-h-screen w-full os-bg text-foreground">
@@ -75,28 +174,24 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 </button>
               </div>
               <nav className="flex-1 overflow-y-auto px-3 pb-4">
-                <ul className="space-y-1">
-                  {nav.map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        end={item.end}
-                        onClick={() => setMobileOpen(false)}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-all",
-                            isActive
-                              ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white"
-                              : "text-foreground/75 hover:bg-foreground/[0.04]",
-                          )
-                        }
+                <div className="space-y-3">
+                  {sections.map((section) => (
+                    <div key={section.id}>
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className="flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
                       >
-                        <item.icon className="h-[18px] w-[18px] shrink-0" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </li>
+                        <span>{section.label}</span>
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", !openSections[section.id] && "-rotate-90")} />
+                      </button>
+                      {openSections[section.id] && (
+                        <div className="mt-1 space-y-0.5">
+                          {section.items.map((item) => renderNavItem(item, () => setMobileOpen(false)))}
+                        </div>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
                 {showOldVersion && (
                   <button
                     onClick={() => { setMobileOpen(false); navigate("/"); }}
@@ -114,7 +209,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         <aside
           className={cn(
             "os-glass-panel sticky top-3 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col md:flex transition-[width] duration-300",
-            collapsed ? "w-[78px]" : "w-[244px]",
+            collapsed ? "w-[78px]" : "w-[252px]",
           )}
         >
           <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
@@ -129,28 +224,29 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             )}
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 pb-3">
-            <ul className="space-y-1">
-              {nav.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    end={item.end}
-                    className={({ isActive }) =>
-                      cn(
-                        "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-all",
-                        isActive
-                          ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]"
-                          : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
-                      )
-                    }
-                  >
-                    <item.icon className="h-[18px] w-[18px] shrink-0" />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
+          <nav className="os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3">
+            {collapsed ? (
+              <div className="space-y-1">{allItems.map((item) => renderNavItem(item))}</div>
+            ) : (
+              <div className="space-y-2">
+                {sections.map((section) => (
+                  <div key={section.id}>
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground"
+                    >
+                      <span>{section.label}</span>
+                      <ChevronDown className={cn("h-3 w-3 transition-transform", !openSections[section.id] && "-rotate-90")} />
+                    </button>
+                    {openSections[section.id] && (
+                      <div className="mt-0.5 space-y-0.5 border-l border-foreground/[0.06] pl-1.5">
+                        {section.items.map((item) => renderNavItem(item))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </nav>
 
           {/* AI Assistant Card */}
