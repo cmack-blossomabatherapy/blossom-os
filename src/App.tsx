@@ -163,6 +163,7 @@ import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSHRTeam from "./pages/os/OSHRTeam";
+import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
