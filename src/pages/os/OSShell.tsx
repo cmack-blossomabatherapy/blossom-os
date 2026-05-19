@@ -104,27 +104,33 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   useEffect(() => {
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
-  // Right rail visibility: URL (?panel=hidden|open) wins, then localStorage, then default.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlPanel = searchParams.get("panel");
-  const storedPanelHidden = (() => {
-    if (typeof window === "undefined") return false;
-    try { return window.localStorage.getItem("os.rightRail.hidden") === "1"; } catch { return false; }
-  })();
-  const rightRailHidden =
-    urlPanel === "hidden" ? true : urlPanel === "open" ? false : storedPanelHidden;
-  const setRightRailHidden = (next: boolean | ((v: boolean) => boolean)) => {
-    const value = typeof next === "function" ? (next as (v: boolean) => boolean)(rightRailHidden) : next;
-    try { window.localStorage.setItem("os.rightRail.hidden", value ? "1" : "0"); } catch { /* ignore */ }
-    const params = new URLSearchParams(searchParams);
-    params.set("panel", value ? "hidden" : "open");
-    setSearchParams(params, { replace: true });
-  };
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // Right rail visibility — remembered per page. URL (?panel=hidden|open) overrides per-page memory.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const PANEL_MAP_KEY = "os.rightRail.byPath";
+  const readPanelMap = (): Record<string, boolean> => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(window.localStorage.getItem(PANEL_MAP_KEY) || "{}"); } catch { return {}; }
+  };
+  const urlPanel = searchParams.get("panel");
+  const storedForPath = readPanelMap()[pathname];
+  const rightRailHidden =
+    urlPanel === "hidden" ? true : urlPanel === "open" ? false : storedForPath ?? false;
+  const setRightRailHidden = (next: boolean | ((v: boolean) => boolean)) => {
+    const value = typeof next === "function" ? (next as (v: boolean) => boolean)(rightRailHidden) : next;
+    try {
+      const map = readPanelMap();
+      map[pathname] = value;
+      window.localStorage.setItem(PANEL_MAP_KEY, JSON.stringify(map));
+    } catch { /* ignore */ }
+    const params = new URLSearchParams(searchParams);
+    params.set("panel", value ? "hidden" : "open");
+    setSearchParams(params, { replace: true });
+  };
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const showOldVersion = platform("accessOldVersion");
 
