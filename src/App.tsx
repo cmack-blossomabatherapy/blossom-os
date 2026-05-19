@@ -168,6 +168,7 @@ import OSQATeam from "./pages/os/OSQATeam";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSRBT from "./pages/os/OSRBT";
 import OSCalendar from "./pages/os/OSCalendar";
+import OSNotifications from "./pages/os/OSNotifications";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
@@ -272,7 +273,7 @@ const App = () => (
                   <Route path="/os/rbt" element={<OSRBT />} />
                   <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
                   <Route path="/os/calendar" element={<OSCalendar />} />
-                  <Route path="/os/notifications" element={<OSPlaceholder title="Notifications" description="Operational notifications, approvals, and inbox." icon={BellRing} />} />
+                  <Route path="/os/notifications" element={<OSNotifications />} />
                   <Route path="/os/leads" element={<OSLeads />} />
                   <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, forms, onboarding, VOB workflow." icon={ClipboardList} />} />
                   <Route path="/os/clients" element={<OSClients />} />
