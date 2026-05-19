@@ -22,6 +22,7 @@ export type OSRole =
   | "hr_team"
   | "billing_finance"
   | "qa_team"
+  | "payroll_coordinator"
   | "bcba"
   | "rbt";
 
@@ -37,6 +38,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "hr_team", label: "HR Team", tier: "operations" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
   { id: "qa_team", label: "QA Team", tier: "operations" },
+  { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },
 ];
@@ -266,6 +268,12 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     scope: "company",
     actions: { dashboard: VIEW, clients: VIEW, cases: VIEW_EDIT.concat("approve") as OSAction[], staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
+  },
+  payroll_coordinator: {
+    modules: ["dashboard", "calendar", "notifications", "payroll", "billing", "staff", "employee_ops", "reports", "sop", "ai_assistant"],
+    scope: "company",
+    actions: { dashboard: VIEW, payroll: FULL, staff: VIEW, reports: ["view", "export"] },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   bcba: {
     modules: ["dashboard", "calendar", "notifications", "clients", "scheduling", "cases", "evaluations", "training", "sop", "ai_assistant"],

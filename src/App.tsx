@@ -275,6 +275,7 @@ const App = () => (
                   <Route path="/os/hr-team" element={<OSHRTeam />} />
                   <Route path="/os/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/os/qa-team" element={<OSQATeam />} />
+                  <Route path="/os/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/os/bcba" element={<OSBCBA />} />
                   <Route path="/os/rbt" element={<OSRBT />} />
                   <Route path="/os/command-center" element={<OSCommandCenterRouter />} />

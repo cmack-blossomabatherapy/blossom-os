@@ -13,6 +13,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   hr_team: "/os/hr-team",
   billing_finance: "/os/billing-finance",
   qa_team: "/os/qa-team",
+  payroll_coordinator: "/os/payroll-coordinator",
   bcba: "/os/bcba",
   rbt: "/os/rbt",
 };
@@ -29,6 +30,7 @@ export const ALL_ROLE_DASHBOARDS: { to: string; label: string }[] = [
   { to: "/os/hr-team", label: "HR Team" },
   { to: "/os/billing-finance", label: "Billing & Finance" },
   { to: "/os/qa-team", label: "QA Team" },
+  { to: "/os/payroll-coordinator", label: "Payroll Coordinator" },
   { to: "/os/bcba", label: "BCBA" },
   { to: "/os/rbt", label: "RBT" },
 ];
