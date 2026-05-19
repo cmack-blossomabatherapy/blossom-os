@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
   FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
   Search, Bell, MessageSquare, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
+  Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,14 +27,77 @@ const nav = [
 
 export function OSShell({ children, rightRail }: { children: ReactNode; rightRail?: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAdmin, roles } = useAuth();
   const navigate = useNavigate();
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const role = roles[0] || "Member";
 
+  const bottomNav = [
+    { to: "/os", label: "Home", icon: LayoutDashboard, end: true },
+    { to: "/os/leads", label: "Leads", icon: Users },
+    { to: "/os/scheduling", label: "Schedule", icon: CalendarDays },
+    { to: "/os/clients", label: "Clients", icon: Heart },
+  ];
+
   return (
     <div className="min-h-screen w-full os-bg text-foreground">
-      <div className="mx-auto flex max-w-[1680px] gap-4 p-3 md:p-5">
+      <div className="mx-auto flex max-w-[1680px] gap-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5">
+        {/* MOBILE MENU SHEET */}
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 md:hidden" role="dialog">
+            <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+            <aside className="os-glass-panel absolute left-3 right-3 top-3 bottom-3 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-4 pt-5 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_72%)] text-white">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold leading-none tracking-tight">Blossom OS</p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Operations System</p>
+                  </div>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="os-glass-icon h-9 w-9 rounded-xl">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-3 pb-4">
+                <ul className="space-y-1">
+                  {nav.map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        end={item.end}
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-all",
+                            isActive
+                              ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white"
+                              : "text-foreground/75 hover:bg-foreground/[0.04]",
+                          )
+                        }
+                      >
+                        <item.icon className="h-[18px] w-[18px] shrink-0" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+                {isAdmin && (
+                  <button
+                    onClick={() => { setMobileOpen(false); navigate("/"); }}
+                    className="mt-4 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-[13px] font-medium text-muted-foreground hover:bg-foreground/[0.04]"
+                  >
+                    <History className="h-4 w-4" /> Old Version
+                  </button>
+                )}
+              </nav>
+            </aside>
+          </div>
+        )}
+
         {/* SIDEBAR */}
         <aside
           className={cn(
@@ -115,6 +179,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         <div className="flex min-w-0 flex-1 flex-col gap-5">
           {/* TOPBAR */}
           <header className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="os-glass-icon h-11 w-11 shrink-0 md:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="h-4 w-4 text-muted-foreground" />
+            </button>
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -150,6 +221,40 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           </div>
         </div>
       </div>
+
+      {/* MOBILE BOTTOM NAV */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="mx-3 mb-3 os-glass-panel grid grid-cols-5 gap-1 p-1.5">
+          {bottomNav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                cn(
+                  "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-semibold transition-all",
+                  isActive
+                    ? "bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_8px_20px_-10px_hsl(265_85%_60%/0.6)]"
+                    : "text-muted-foreground hover:text-foreground",
+                )
+              }
+            >
+              <item.icon className="h-[18px] w-[18px]" />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <Menu className="h-[18px] w-[18px]" />
+            <span>More</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
