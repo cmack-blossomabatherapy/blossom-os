@@ -162,6 +162,7 @@ import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
 import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
+import OSHRTeam from "./pages/os/OSHRTeam";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
