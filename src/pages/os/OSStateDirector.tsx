@@ -161,6 +161,22 @@ const approvals = [
   { what: "Credentialing submission · 2 RBTs",   who: "Olivia C.", due: "Tomorrow" },
 ];
 
+const regions = [
+  { name: "Charlotte",  clients: 58, fill: 78, recruit: 64, ops: 71, trend: "down" as const, status: "warn" as Tone, note: "RBT shortage risk" },
+  { name: "Raleigh",    clients: 47, fill: 84, recruit: 70, ops: 79, trend: "down" as const, status: "warn" as Tone, note: "Hiring velocity slowing" },
+  { name: "Greensboro", clients: 32, fill: 92, recruit: 88, ops: 91, trend: "up"   as const, status: "ok"   as Tone, note: "Top performer this month" },
+  { name: "Durham",     clients: 28, fill: 88, recruit: 82, ops: 86, trend: "up"   as const, status: "ok"   as Tone, note: "Stable & growing" },
+  { name: "Wilmington", clients: 14, fill: 81, recruit: 58, ops: 73, trend: "down" as const, status: "warn" as Tone, note: "Pipeline below target" },
+  { name: "Asheville",  clients: 5,  fill: 95, recruit: 90, ops: 93, trend: "up"   as const, status: "ok"   as Tone, note: "Excellent operational score" },
+];
+
+const support = [
+  { who: "Marisol Chen",  role: "VP State Operations", tone: "os-tone-violet" },
+  { who: "James Okafor",  role: "Asst. State Director", tone: "os-tone-sky"    },
+  { who: "Priya Nair",    role: "Auth Ops Lead",        tone: "os-tone-amber"  },
+  { who: "Jacob Thomas",  role: "Scheduling Lead",      tone: "os-tone-mint"   },
+];
+
 /* ============ helpers ============ */
 
 const toneText = (t: Tone) => t === "ok" ? "text-[hsl(155_55%_38%)]" : t === "warn" ? "text-[hsl(30_85%_45%)]" : "text-[hsl(355_72%_52%)]";
