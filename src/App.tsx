@@ -226,7 +226,7 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
-                <Route element={<ProtectedRoute><></></ProtectedRoute>}>
+                <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/os" element={<OSDashboard />} />
                   <Route path="/os/leads" element={<OSPlaceholder title="Leads" description="Pipeline board, filters, lead stats, source analytics, communication history." icon={UIcon} />} />
                   <Route path="/os/clients" element={<OSPlaceholder title="Clients" description="Client cards, active/inactive filters, staffing & auth status, progress timeline, assigned team." icon={HIcon} />} />
