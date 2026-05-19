@@ -459,6 +459,88 @@
   animation: org-flow-dash 1.6s linear infinite;
 }
 
+/* ============================================================ */
+/*  Blossom OS — premium Apple-inspired shell utilities         */
+/* ============================================================ */
+@layer utilities {
+  .os-bg {
+    background:
+      radial-gradient(60% 40% at 12% 0%, hsl(265 100% 96%) 0%, transparent 55%),
+      radial-gradient(50% 35% at 100% 15%, hsl(290 100% 96%) 0%, transparent 60%),
+      radial-gradient(70% 50% at 50% 100%, hsl(220 100% 97%) 0%, transparent 55%),
+      hsl(250 30% 99%);
+  }
+  .os-glass-panel {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.85) 0%, hsl(0 0% 100% / 0.72) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(255 30% 92% / 0.9);
+    border-radius: 1.5rem;
+    box-shadow:
+      0 1px 0 hsl(0 0% 100%) inset,
+      0 24px 50px -28px hsl(265 60% 50% / 0.18),
+      0 4px 12px -4px hsl(255 30% 60% / 0.08);
+  }
+  .os-card {
+    @apply rounded-2xl border border-white/70 bg-white/85 backdrop-blur-xl p-5 transition-all duration-300;
+    box-shadow:
+      0 1px 0 hsl(0 0% 100%) inset,
+      0 12px 28px -20px hsl(265 60% 50% / 0.14),
+      0 2px 8px -2px hsl(255 30% 60% / 0.06);
+  }
+  .os-card:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100%) inset,
+      0 22px 44px -22px hsl(265 60% 50% / 0.22);
+  }
+  .os-glass-input {
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(255 30% 92%);
+    box-shadow: 0 1px 0 hsl(0 0% 100%) inset, 0 8px 20px -16px hsl(265 60% 50% / 0.12);
+  }
+  .os-glass-input:focus {
+    border-color: hsl(265 70% 70%);
+    box-shadow: 0 0 0 4px hsl(265 85% 90% / 0.6);
+  }
+  .os-glass-icon {
+    @apply relative grid h-11 w-11 place-items-center rounded-2xl transition-all;
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(255 30% 92%);
+    box-shadow: 0 1px 0 hsl(0 0% 100%) inset, 0 8px 20px -16px hsl(265 60% 50% / 0.12);
+  }
+  .os-glass-icon:hover {
+    border-color: hsl(265 50% 85%);
+    color: hsl(265 70% 50%);
+  }
+  .os-kpi-icon {
+    @apply grid h-11 w-11 place-items-center rounded-2xl;
+  }
+  .os-tone-violet { background: linear-gradient(135deg, hsl(265 100% 95%), hsl(280 100% 96%)); color: hsl(265 70% 55%); }
+  .os-tone-rose   { background: linear-gradient(135deg, hsl(340 100% 96%), hsl(355 100% 96%)); color: hsl(340 70% 55%); }
+  .os-tone-sky    { background: linear-gradient(135deg, hsl(210 100% 95%), hsl(225 100% 96%)); color: hsl(215 70% 55%); }
+  .os-tone-mint   { background: linear-gradient(135deg, hsl(150 70% 93%), hsl(165 70% 94%)); color: hsl(155 60% 38%); }
+  .os-tone-amber  { background: linear-gradient(135deg, hsl(40 100% 92%), hsl(30 100% 94%)); color: hsl(30 80% 45%); }
+  .os-tone-lilac  { background: linear-gradient(135deg, hsl(255 100% 96%), hsl(275 100% 97%)); color: hsl(265 60% 60%); }
+  .os-tone-coral  { background: linear-gradient(135deg, hsl(15 100% 94%), hsl(5 100% 95%)); color: hsl(10 75% 55%); }
+
+  .os-trend-up   { @apply text-[hsl(155_55%_40%)]; }
+  .os-trend-down { @apply text-[hsl(355_65%_55%)]; }
+
+  .os-skeleton {
+    background: linear-gradient(90deg, hsl(250 30% 96%) 0%, hsl(250 30% 92%) 50%, hsl(250 30% 96%) 100%);
+    background-size: 200% 100%;
+    animation: os-shimmer 1.6s ease-in-out infinite;
+  }
+}
+@keyframes os-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes os-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.os-rise { animation: os-rise 0.5s ease-out both; }
+
 .org-dept-glow {
   position: relative;
 }
