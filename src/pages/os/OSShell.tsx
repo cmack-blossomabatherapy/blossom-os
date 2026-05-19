@@ -45,17 +45,16 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
       { to: "/os/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
       { to: "/os/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
     ],
   },
   {
     id: "operations", label: "Operations & Intelligence", items: [
+      { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
       { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
       { to: "/os/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
       { to: "/os/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
       { to: "/os/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
       { to: "/os/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
-      { to: "/os/analytics", label: "Analytics Hub", icon: PieChart, module: "analytics_hub" },
     ],
   },
   {
@@ -71,7 +70,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/tech-requests", label: "Tech Requests", icon: LifeBuoy, module: "tech_requests" },
       { to: "/os/internal-requests", label: "Internal Requests", icon: Inbox, module: "internal_requests" },
       { to: "/os/open-issues", label: "Open Issues", icon: AlertTriangle, module: "open_issues" },
-      { to: "/os/projects", label: "Project Tracking", icon: KanbanSquare, module: "projects" },
     ],
   },
   {
