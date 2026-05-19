@@ -9,6 +9,7 @@ import {
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
+  LineChart, PhoneCall, Gauge,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,15 +64,25 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "growth", label: "Growth & Marketing", items: [
-      
-      { to: "/os/marketing/campaigns", label: "Campaign Center", icon: Megaphone, module: "campaigns" },
-      { to: "/os/marketing/lead-sources", label: "Lead Source Analytics", icon: TrendingUp, module: "lead_sources" },
+      { to: "/os/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "campaigns" },
+      { to: "/os/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "lead_sources" },
       { to: "/os/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
+      { to: "/os/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "web_analytics" },
+      { to: "/os/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "call_tracking" },
+    ],
+  },
+  {
+    id: "relationships", label: "Relationships", items: [
       { to: "/os/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
       { to: "/os/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
-      { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
+      { to: "/os/marketing/outreach", label: "Community Outreach", icon: Users2, module: "community_outreach" },
       { to: "/os/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
-      { to: "/os/marketing/outreach", label: "Community Outreach", icon: HeartHandshake, module: "community_outreach" },
+    ],
+  },
+  {
+    id: "intelligence", label: "Intelligence & ROI", items: [
+      { to: "/os/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "attribution_roi" },
+      { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
       { to: "/os/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
       { to: "/os/communications", label: "Communications", icon: MessageSquare, module: "communications" },
     ],
