@@ -159,6 +159,7 @@ import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
 import OSStateDirector from "./pages/os/OSStateDirector";
 import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
+import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
@@ -253,6 +254,7 @@ const App = () => (
                   <Route path="/os/operations" element={<OSOperations />} />
                   <Route path="/os/state-director" element={<OSStateDirector />} />
                   <Route path="/os/intake-coordinator" element={<OSIntakeCoordinator />} />
+                  <Route path="/os/auth-coordinator" element={<OSAuthCoordinator />} />
                   <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
                   <Route path="/os/calendar" element={<OSPlaceholder title="Calendar" description="Unified operational calendar: assessments, meetings, interviews, trainings, staffing." icon={CIcon} />} />
                   <Route path="/os/notifications" element={<OSPlaceholder title="Notifications" description="Operational notifications, approvals, and inbox." icon={BellRing} />} />
