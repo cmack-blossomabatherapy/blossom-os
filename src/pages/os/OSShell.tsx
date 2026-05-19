@@ -43,13 +43,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const nav = ALL_NAV.filter((n) => canSee(n.module));
 
   const bottomNavCandidates: NavEntry[] = [
-    { to: "/os", label: "Home", icon: LayoutDashboard, end: true },
+    { to: "/os", label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
     { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
     { to: "/os/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
     { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
     { to: "/os/cases", label: "Cases", icon: FolderKanban, module: "cases" },
     { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
-  ].map((n) => ({ ...(n as NavEntry), module: (n as NavEntry).module ?? "dashboard" }));
+  ];
   const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
   return (
