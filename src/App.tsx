@@ -154,6 +154,7 @@ import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSLeads from "./pages/os/OSLeads";
+import OSClients from "./pages/os/OSClients";
 import { Users as UIcon, Heart as HIcon, UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon, BarChart3, GraduationCap, Building2, Settings as SIcon } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -232,7 +233,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/os" element={<OSDashboard />} />
                   <Route path="/os/leads" element={<OSLeads />} />
-                  <Route path="/os/clients" element={<OSPlaceholder title="Clients" description="Client cards, active/inactive filters, staffing & auth status, progress timeline, assigned team." icon={HIcon} />} />
+                  <Route path="/os/clients" element={<OSClients />} />
                   <Route path="/os/staff" element={<OSPlaceholder title="RBT / BCBA" description="Staff directory, credentials, availability, assigned clients, hiring pipeline, risk indicators." icon={UserCog} />} />
                   <Route path="/os/scheduling" element={<OSPlaceholder title="Scheduling" description="Modern calendar, drag/drop placeholders, staffing conflicts, open coverage, scheduling metrics." icon={CIcon} />} />
                   <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, lead stages, missing documentation, VOB status, workflow tracking." icon={ClipboardList} />} />
