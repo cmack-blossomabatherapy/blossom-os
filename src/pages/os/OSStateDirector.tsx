@@ -871,7 +871,7 @@ export default function OSStateDirector() {
 
       {/* QUICK ACTIONS */}
       <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between" id="quick-actions-header">
           <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
           <span className="text-[11px] text-muted-foreground">⌘K to search anything</span>
         </header>
