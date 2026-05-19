@@ -25,6 +25,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
       { to: "/os/executive", label: "Executive", icon: Target, module: "dashboard" },
       { to: "/os/operations", label: "Operations", icon: Workflow, module: "dashboard" },
+      { to: "/os/state-director", label: "State Director", icon: MapPin, module: "dashboard" },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
       { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
