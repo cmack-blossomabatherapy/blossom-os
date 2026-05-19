@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
   FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
@@ -104,13 +104,22 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   useEffect(() => {
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
-  const [rightRailHidden, setRightRailHidden] = useState<boolean>(() => {
+  // Right rail visibility: URL (?panel=hidden|open) wins, then localStorage, then default.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlPanel = searchParams.get("panel");
+  const storedPanelHidden = (() => {
     if (typeof window === "undefined") return false;
     try { return window.localStorage.getItem("os.rightRail.hidden") === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    try { window.localStorage.setItem("os.rightRail.hidden", rightRailHidden ? "1" : "0"); } catch { /* ignore */ }
-  }, [rightRailHidden]);
+  })();
+  const rightRailHidden =
+    urlPanel === "hidden" ? true : urlPanel === "open" ? false : storedPanelHidden;
+  const setRightRailHidden = (next: boolean | ((v: boolean) => boolean)) => {
+    const value = typeof next === "function" ? (next as (v: boolean) => boolean)(rightRailHidden) : next;
+    try { window.localStorage.setItem("os.rightRail.hidden", value ? "1" : "0"); } catch { /* ignore */ }
+    const params = new URLSearchParams(searchParams);
+    params.set("panel", value ? "hidden" : "open");
+    setSearchParams(params, { replace: true });
+  };
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
