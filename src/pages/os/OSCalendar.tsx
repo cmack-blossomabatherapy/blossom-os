@@ -114,6 +114,25 @@ const CONFLICTS = [
   { id: "c2", a: "Site Visit — Raleigh", b: "Auth Follow-Up — J. Park", time: "Mon 15:30 buffer", suggestion: "Add 30m travel buffer" },
 ];
 
+/* ============ ROLE → OWNED EVENT TYPES ============ */
+/** Which calendar event types each role actually owns / should see by default.
+ *  Leadership-tier roles (state_director, exec, ops, super_admin) see everything. */
+const ROLE_EVENT_TYPES: Partial<Record<OSRole, EventType[]>> = {
+  bcba:                      ["bcba", "parent", "assessment", "progress", "training", "site", "personal"],
+  rbt:                       ["rbt", "training", "orientation", "parent", "personal"],
+  intake_coordinator:        ["intake", "parent", "task", "personal"],
+  authorization_coordinator: ["auth", "parent", "escalation", "task", "personal"],
+  scheduling_team:           ["staffing", "bcba", "rbt", "escalation", "task", "personal"],
+  recruiting_team:           ["interview", "orientation", "task", "personal"],
+  hr_team:                   ["orientation", "training", "interview", "task", "personal"],
+  billing_finance:           ["auth", "task", "personal"],
+  qa_team:                   ["progress", "assessment", "bcba", "site", "task", "personal"],
+  payroll_coordinator:       ["task", "personal"],
+};
+function eventTypesForRole(r: OSRole): EventType[] | null {
+  return ROLE_EVENT_TYPES[r] ?? null; // null = see all
+}
+
 const CONNECTED = [
   { id: "ms", name: "Microsoft Calendar", email: "director@blossomaba.com", status: "connected", last: "2 min ago", events: 142, icon: Mail, color: "blue" },
   { id: "cal",name: "Calendly",           email: "director@blossomaba.com", status: "connected", last: "5 min ago", events: 38,  icon: Link2, color: "violet" },
@@ -167,7 +186,14 @@ export default function OSCalendar() {
   const [today] = useState(17);
   const [selectedDay, setSelectedDay] = useState(17);
 
-  const events = useMemo(() => MOCK_EVENTS.filter((e) => activeSources[e.source]), [activeSources]);
+  const allowedTypes = useMemo(() => eventTypesForRole(urlRole), [urlRole]);
+  const events = useMemo(
+    () =>
+      MOCK_EVENTS.filter(
+        (e) => activeSources[e.source] && (!allowedTypes || allowedTypes.includes(e.type)),
+      ),
+    [activeSources, allowedTypes],
+  );
 
   return (
     <OSShell>
