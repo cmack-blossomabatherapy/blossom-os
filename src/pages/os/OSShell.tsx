@@ -29,6 +29,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/intake-coordinator", label: "Intake Coordinator", icon: Headphones, module: "dashboard" },
       { to: "/os/auth-coordinator", label: "Auth Coordinator", icon: FileCheck2, module: "dashboard" },
       { to: "/os/scheduling-team", label: "Scheduling Team", icon: CalendarDays, module: "dashboard" },
+      { to: "/os/recruiting-team", label: "Recruiting Team", icon: UserPlus, module: "dashboard" },
       { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
       { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
       { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
