@@ -103,6 +103,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   useEffect(() => {
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
+  const [rightRailHidden, setRightRailHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return window.localStorage.getItem("os.rightRail.hidden") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("os.rightRail.hidden", rightRailHidden ? "1" : "0"); } catch { /* ignore */ }
+  }, [rightRailHidden]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
@@ -345,6 +352,22 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(330_85%_60%)] px-1 text-[9px] font-bold text-white">7</span>
             </button>
             <RoleSwitcher />
+            {rightRail && (
+              <Tooltip delayDuration={120}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setRightRailHidden((v) => !v)}
+                    className="os-glass-icon hidden xl:inline-flex"
+                    aria-label={rightRailHidden ? "Show side panel" : "Hide side panel"}
+                  >
+                    <PanelRight className={cn("h-4 w-4 text-muted-foreground transition-transform", rightRailHidden && "rotate-180")} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[12px] font-medium">
+                  {rightRailHidden ? "Show panel" : "Hide panel"}
+                </TooltipContent>
+              </Tooltip>
+            )}
             <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
               <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
                 {displayName.slice(0, 2).toUpperCase()}
@@ -358,9 +381,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           </header>
 
           {/* CONTENT GRID */}
-          <div className={cn("grid min-w-0 gap-5", rightRail ? "xl:grid-cols-[1fr_320px]" : "grid-cols-1")}>
+          <div className={cn("grid min-w-0 gap-5", rightRail && !rightRailHidden ? "xl:grid-cols-[1fr_320px]" : "grid-cols-1")}>
             <div className="min-w-0 space-y-5">{children}</div>
-            {rightRail && <div className="min-w-0 space-y-5">{rightRail}</div>}
+            {rightRail && !rightRailHidden && <div className="min-w-0 space-y-5">{rightRail}</div>}
           </div>
         </div>
       </div>
