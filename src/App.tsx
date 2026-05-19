@@ -163,6 +163,7 @@ import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSHRTeam from "./pages/os/OSHRTeam";
+import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
@@ -261,6 +262,7 @@ const App = () => (
                   <Route path="/os/scheduling-team" element={<OSSchedulingTeam />} />
                   <Route path="/os/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/os/hr-team" element={<OSHRTeam />} />
+                  <Route path="/os/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
                   <Route path="/os/calendar" element={<OSPlaceholder title="Calendar" description="Unified operational calendar: assessments, meetings, interviews, trainings, staffing." icon={CIcon} />} />
                   <Route path="/os/notifications" element={<OSPlaceholder title="Notifications" description="Operational notifications, approvals, and inbox." icon={BellRing} />} />
