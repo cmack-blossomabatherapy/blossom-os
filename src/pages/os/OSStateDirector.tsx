@@ -387,6 +387,38 @@ export default function OSStateDirector() {
             </ul>
           </section>
 
+          {/* NEED SUPPORT */}
+          <section className="os-card relative overflow-hidden">
+            <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(355_85%_75%/0.25)] to-transparent blur-2xl" />
+            <header className="mb-3 flex items-center gap-2">
+              <LifeBuoy className="h-3.5 w-3.5 text-[hsl(355_70%_55%)]" />
+              <h3 className="text-[14px] font-semibold tracking-tight">Need Support?</h3>
+            </header>
+            <p className="text-[11.5px] leading-snug text-muted-foreground">
+              Your operational leadership and escalation paths — one tap away.
+            </p>
+            <ul className="mt-3 space-y-2">
+              {support.map((s) => (
+                <li key={s.who} className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
+                  <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[11px] font-bold", s.tone)}>
+                    {s.who.split(" ").map((n) => n[0]).join("")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-semibold leading-tight">{s.who}</p>
+                    <p className="truncate text-[10.5px] text-muted-foreground">{s.role}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Message"><MessageSquare className="h-3 w-3" /></button>
+                    <button className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3 w-3" /></button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(355_75%_60%)] to-[hsl(15_85%_62%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(355_75%_55%/0.55)] transition hover:opacity-95">
+              <Flame className="h-3.5 w-3.5" /> Create Escalation
+            </button>
+          </section>
+
           {/* LIVE ACTIVITY */}
           <section className="os-card">
             <header className="mb-3 flex items-center justify-between">
