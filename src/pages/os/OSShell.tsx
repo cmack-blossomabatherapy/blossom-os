@@ -150,8 +150,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   );
 
   return (
-    <div className="min-h-screen w-full os-bg text-foreground">
-      <div className="mx-auto flex max-w-[1680px] gap-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5">
+    <div className="min-h-screen w-full os-bg text-foreground md:h-screen md:overflow-hidden">
+      <div className="mx-auto flex max-w-[1680px] gap-4 p-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5 md:items-start">
         {/* MOBILE MENU SHEET */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden" role="dialog">
@@ -282,7 +282,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         </aside>
 
         {/* MAIN COLUMN */}
-        <div className="flex min-w-0 flex-1 flex-col gap-5">
+        <div className="flex min-w-0 flex-1 flex-col gap-5 md:h-[calc(100vh-1.5rem)] md:overflow-y-auto">
           {/* TOPBAR */}
           <header className="flex items-center gap-3">
             <button
