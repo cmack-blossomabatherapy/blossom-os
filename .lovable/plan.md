@@ -1,73 +1,86 @@
-# Blossom OS — Premium Frontend Redesign
+# Reports Operating System — Redesign Plan
 
-This is a frontend-only redesign matching your attached mockup (light, airy, purple-gradient, glassmorphism, sidebar + topbar + main + right rail). No backend, data, or API work in this phase — every screen renders against mock state already in `src/data/*`.
+Transform `/os/reports` from a tabbed KPI dump into an Apple-style, AI-native **Reports Operating System**: a home page where users browse, favorite, upload, request, and open rich dashboards — filtered by role.
 
-Scope is large (9+ pages + global shell + new component primitives). Shipping it in one pass would break the working app. I'll phase it, ship each phase independently, and you can review the look before I move to the next.
+This is a large redesign. To ship value fast and avoid a 30-file mega-PR, I'll deliver in 3 phases. **Phase 1 is the meaningful milestone** (you'll see the new experience). Phases 2–3 deepen it.
 
-## Phase 0 — Design system foundation (1 pass)
+---
 
-Establish the visual language so every page inherits it.
+## Phase 1 — Reports Home + Detail Shell + Request Modal (this PR)
 
-- Update `src/index.css` tokens: soft white background (`hsl(250 30% 99%)`), light gray surface, deep purple primary with glow, gradient utilities (`--gradient-brand`, `--gradient-aurora`), softer shadows, larger radii (`--radius: 1rem`).
-- Add tokenized utility classes: `.os-card`, `.os-card-floating`, `.os-glass`, `.os-kpi`, `.os-pill`, `.os-rail`.
-- Typography scale tuned for airy hierarchy (Inter, tighter tracking on headings).
-- Animation primitives: `fade-in`, `lift-on-hover`, KPI counter, skeleton shimmer.
-- Light theme is primary. Existing dark variants kept but de-emphasized.
+**New page structure (replaces current `Reports.tsx` content inside OS shell):**
 
-## Phase 1 — Global shell (1 pass)
+```
+ReportsHome (/os/reports)
+├── Hero            ← title, AI ops summary, 4 CTAs (Upload, Saved View, Request, Ask AI)
+├── AI Insights strip ← 3 pulse cards (auth risk ↑, parent training ↑, QA backlog)
+├── Featured Dashboards ← 4 large cards w/ mini sparkline preview, KPI chips, owner, AI snippet
+├── Category Grid   ← 10 category cards (Operations, QA, Auth, Scheduling, Recruiting,
+│                     Financial, Clinical, Training, Leadership, State Analytics)
+├── Saved Views + Recent + Favorites ← 3-column row
+├── Upload Center card ← drag/drop zone (visual only Phase 1)
+└── Request a New Report card ← opens modal
+```
 
-Rebuild the chrome to match the mockup exactly.
+**Role-aware visibility:**
+- New `src/lib/os/reportsCatalog.ts` defines all reports + categories with `visibleTo: OSRole[]`.
+- `useOSRole()` filters featured + categories + dashboards client-side.
+- Roles map per spec (QA → Supervision/PT 97156/QA Compliance; Auth → Utilization/Expiring/Denials; State Director → State Perf/Staffing/Recruiting/Auth Risk; BCBA → Caseload/Supervision/PT/Progress; Executive → Exec KPIs/Financials/Growth; Admin → all).
 
-- **New `AppSidebar`** — floating glass panel, rounded, soft shadow, collapsible. Logo + "Operations System" subtitle. Items: Dashboard, Leads, Clients, RBT/BCBA, Scheduling, Intake, Case Management, Billing, Reports, Training, HR Suite, Settings. Active item glow. AI assistant card pinned bottom with "Ask Blossom AI". "Old Version" link below it, visible only when `isAdmin` (Super Admin).
-- **New `TopBar`** — centered global search with ⌘K chip, notifications bell, messages, profile with role line. Greeting handled inside dashboard, not topbar.
-- **`RightRail`** — new optional slot in `AppLayout` for per-page widgets (Tasks, Calendar, Activity).
-- Mobile: sidebar becomes sheet, right rail collapses below main, bottom nav stays.
+**Report Detail page** (`/os/reports/:reportId`):
+- Reuses the existing `ExecutiveView/IntakeView/...` blocks but wrapped in a new shell with:
+  hero header, filter bar, AI summary panel, KPI strip, charts (existing components), action center, related reports, save view / export buttons.
+- Existing report content (`executiveKpis`, funnels, etc. from `src/data/reports.ts`) is preserved and rendered inside the new shell — no data loss.
 
-## Phase 2 — Dashboard (1 pass)
+**Request a Report modal:**
+- All 10 fields from spec (title, dept, purpose, metrics, data sources multi-select, example upload, frequency, priority, viz pref, AI assist toggle).
+- Multi-step wizard (3 steps: Context → Data → Delivery).
+- Submission stored in localStorage (Phase 1) under `os.reportRequests`. Toast confirmation.
 
-Rebuild `src/pages/Index.tsx` (or `Dashboard.tsx`) into the command-center shown in your mockup.
+**New files:**
+- `src/lib/os/reportsCatalog.ts` — categories + reports definitions + role filter helper.
+- `src/pages/os/reports/ReportsHome.tsx`
+- `src/pages/os/reports/ReportDetail.tsx`
+- `src/components/os/reports/ReportsHero.tsx`
+- `src/components/os/reports/AIInsightsStrip.tsx`
+- `src/components/os/reports/FeaturedDashboardCard.tsx`
+- `src/components/os/reports/CategoryCard.tsx`
+- `src/components/os/reports/UploadCenterCard.tsx`
+- `src/components/os/reports/RequestReportCard.tsx`
+- `src/components/os/reports/RequestReportDialog.tsx`
+- `src/components/os/reports/SavedViewsPanel.tsx`
 
-- Greeting block ("Good morning, {name} 👋").
-- KPI strip: New Leads, Active Clients, Today's Appts, Revenue MTD — with trend chips.
-- Revenue Overview area chart + Lead Pipeline donut (Recharts, mock data).
-- Department Overview grid (Intake, Scheduling, RBT/BCBA, Billing, Case Management).
-- Quick Actions row.
-- Right rail: My Tasks, Upcoming Calendar, Recent Activity.
+**Routing:**
+- `src/App.tsx` (or OS router): `/os/reports` → `ReportsHome`, `/os/reports/:reportId` → `ReportDetail`. Existing `/reports` (non-OS) untouched.
 
-## Phase 3 — Operational pages (2 passes)
+**Visual style:**
+- Soft white surfaces, subtle purple/blue gradient washes, glass cards (`bg-card/70 backdrop-blur border border-border/60`), generous spacing, lift-on-hover, AI pulse dot animation, skeleton shimmer for "loading" dashboards.
+- All colors via semantic tokens (no hardcoded hex in components).
 
-Re-skin to the new system using shared primitives. Structure only, mock data.
+---
 
-Pass A: Leads, Clients, RBT/BCBA, Scheduling.
-Pass B: Intake, Case Management, Billing, Reports.
+## Phase 2 — Upload Center + Request Queue (next PR)
 
-Each page gets: hero strip, KPI row, primary view (pipeline / cards / calendar / table), filter rail, empty states.
+- Functional drag/drop in Upload Center, file preview, mock auto-detect ("Looks like a CentralReach Supervision export").
+- Upload history list.
+- `/os/reports/requests` — Super Admin queue (status pipeline, assign builder, comments).
+- Status badges + filter chips.
 
-## Phase 4 — Training + HR Suite (1 pass)
+## Phase 3 — Backend persistence + AI assist
 
-Training as a standalone academy feel (roadmap, badges, continue learning, department cards). HR Suite hub linking to onboarding, recruiting, evaluations, compliance.
+- Lovable Cloud tables: `report_categories`, `reports`, `report_views`, `report_uploads`, `report_requests`, `report_request_comments`, `report_favorites` (RLS per spec).
+- Replace localStorage with Supabase queries.
+- Wire AI assist toggle to `google/gemini-2.5-flash` via Lovable AI gateway to suggest KPIs from uploaded sample.
+- Notifications hooks.
 
-## Phase 5 — Component polish (1 pass)
-
-Reusable primitives audit: cards, KPI block, status pills, tags, drawers, command palette refresh, empty-state illustrations, skeletons. Final responsive sweep at 430px / 768px / 1280px / 1920px.
-
-## Out of scope (this phase)
-
-- No new backend tables, edge functions, or RLS changes.
-- No CSV/import work.
-- No changes to the BCBA Performance dashboard intelligence engine you just shipped — it keeps working as-is and will inherit the new tokens automatically.
+---
 
 ## Technical notes
 
-- Work stays in `src/components/layout/*`, `src/components/shared/*`, `src/pages/*`, `src/index.css`, `tailwind.config.ts`.
-- All colors via semantic tokens — no hex literals in components.
-- Existing routes/auth/onboarding gates untouched.
-- "Old Version" link routes to `/legacy` (a thin wrapper that mounts the current `Dashboard.tsx` so nothing is lost during transition).
+- `OSShell` already handles the right utility rail / role context — no changes there.
+- Existing `src/data/reports.ts` mock data is reused for dashboard detail pages; no migration needed yet.
+- `RequestReportDialog` uses `react-hook-form` + `zod` (already in deps) for validation.
+- All new components are presentation-only in Phase 1 (no backend), keeping scope tight.
+- File count Phase 1: ~11 new + 2 edited (`App.tsx` route, possibly `OSShell` if a nested route is needed).
 
-## Questions before I start
-
-1. **Start point** — ship Phase 0 + Phase 1 + Phase 2 together as the first visible milestone (≈ the screen in your mockup), then pause for your review before rolling pages? Or do you want me to blast through Phases 0–5 back-to-back without checkpoints?
-2. **Light vs dark** — your mockup is light-mode. Keep dark mode working as a secondary theme, or drop it entirely for now?
-3. **"Old Version" target** — route `/legacy` to today's `Dashboard.tsx` only, or expose the entire current sidebar under `/legacy/*` so admins can reach every old page?
-
-Approve (with answers to 1–3) and I'll start with Phase 0 + 1 + 2 immediately.
+Approve to start Phase 1?
