@@ -271,7 +271,7 @@ const App = () => (
                   <Route path="/os/qa-team" element={<OSQATeam />} />
                   <Route path="/os/bcba" element={<OSBCBA />} />
                   <Route path="/os/rbt" element={<OSRBT />} />
-                  <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
+                  <Route path="/os/command-center" element={<OSCommandCenterRouter />} />
                   <Route path="/os/calendar" element={<OSCalendar />} />
                   <Route path="/os/notifications" element={<OSNotifications />} />
                   <Route path="/os/leads" element={<OSLeads />} />
