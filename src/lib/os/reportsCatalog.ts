@@ -184,6 +184,11 @@ export const ROLE_AI_SUMMARY: Record<OSRole, RoleAISummary> = {
     { icon: ShieldCheck, text: "Note compliance at 98%.", tone: "emerald" },
     { icon: AlertTriangle, text: "1 session note pending > 24h.", tone: "amber" },
   ]},
+  marketing_team:        { headline: "Growth trending up across organic and recruiting funnels.", insights: [
+    { icon: TrendingUp, text: "Lead volume +14% week-over-week.", tone: "emerald" },
+    { icon: Sparkles, text: "Google Ads CAC down 12% — scale leader.", tone: "violet" },
+    { icon: AlertTriangle, text: "GA local SEO ranking slipped on 4 terms.", tone: "amber" },
+  ]},
 };
 
 /* ---------- Request store (localStorage Phase 1) ---------- */

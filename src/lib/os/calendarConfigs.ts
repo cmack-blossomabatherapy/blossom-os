@@ -2,6 +2,7 @@ import {
   Briefcase, Flame, ClipboardCheck, FileCheck2, Brain, Lightbulb, Zap, Clock,
   Heart, UserPlus, GraduationCap, Wallet, DollarSign, ShieldCheck, FileText,
   Users, Megaphone, Bot, Target, Activity, BellRing, Phone, ListChecks,
+  TrendingUp, Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
@@ -324,4 +325,5 @@ export const ROLE_CALENDAR_CONFIG: Record<OSRole, RoleCalendarConfig> = {
   payroll_coordinator: PAYROLL,
   bcba: BCBA,
   rbt: RBT,
+  marketing_team: MARKETING,
 };
