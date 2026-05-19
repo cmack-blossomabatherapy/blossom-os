@@ -32,6 +32,9 @@ const MODULE_LABELS: Record<OSModule, string> = {
   reputation: "Reputation Mgmt",
   community_outreach: "Community Outreach",
   marketing_reports: "Marketing Reports",
+  web_analytics: "Web Analytics",
+  call_tracking: "Call Tracking",
+  attribution_roi: "Attribution & ROI",
   communications: "Communications",
 };
 
