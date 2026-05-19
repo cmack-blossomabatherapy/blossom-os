@@ -244,15 +244,19 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <NavLink
             to="/os"
             className={cn(
-              "flex items-center px-4 pt-5 pb-4 border-b border-foreground/[0.06]",
+              "relative flex items-center px-4 pt-5 pb-4 border-b border-foreground/[0.06] overflow-hidden",
               collapsed ? "justify-center" : "justify-start",
             )}
           >
-            {collapsed ? (
-              <img src={blossomMark} alt="Blossom" className="h-9 w-9 object-contain" />
-            ) : (
-              <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-11 w-auto object-contain" />
-            )}
+            <img
+              key={collapsed ? "mark" : "full"}
+              src={collapsed ? blossomMark : blossomLogo}
+              alt={collapsed ? "Blossom" : "Blossom ABA Therapy"}
+              className={cn(
+                "object-contain animate-scale-in transition-all duration-300",
+                collapsed ? "h-9 w-9" : "h-11 w-auto",
+              )}
+            />
           </NavLink>
 
           <nav className="os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3">
