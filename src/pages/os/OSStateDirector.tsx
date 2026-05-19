@@ -5,7 +5,7 @@ import {
   Megaphone, ClipboardList, Shield, Building2, Brain, Lightbulb,
   AlertCircle, CheckCircle2, Workflow, Zap, Radio, Flame, UserPlus,
   ClipboardCheck, DollarSign, Plus, BookOpen, LifeBuoy, Send,
-  Compass, Gauge, Inbox, ArrowRight,
+  Compass, Gauge, Inbox, ArrowRight, UserCog, BarChart3, MapPin,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -253,13 +253,13 @@ function OpsKpi({ k }: { k: Kpi }) {
 
 /* ============ PAGE ============ */
 
-export default function OSOperations() {
+export default function OSStateDirector() {
   const { user } = useAuth();
-  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Shira").split(" ")[0];
+  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Ezra").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const opsScore = 84;
+  const opsScore = 82;
   const taskBuckets = ["Urgent", "Team", "Waiting", "Escalations"];
 
   return (
@@ -408,20 +408,20 @@ export default function OSOperations() {
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <Compass className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Operations Leadership · Mission Control
+              <MapPin className="h-3 w-3 text-[hsl(265_70%_55%)]" /> State Director · North Carolina
             </div>
             <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
               {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
             </h1>
             <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening across Blossom operations today.
+              {today} · Here's what's happening across North Carolina today.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <ShieldCheck className="h-3 w-3" /> Ops score 84 · Healthy
+                <ShieldCheck className="h-3 w-3" /> NC ops score 82 · Stable
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <AlertTriangle className="h-3 w-3" /> 6 bottlenecks
+                <AlertTriangle className="h-3 w-3" /> 6 alerts
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
                 <Flame className="h-3 w-3" /> 2 escalations
@@ -439,17 +439,16 @@ export default function OSOperations() {
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">Operations AI Briefing</p>
+                <p className="text-[13px] font-semibold leading-none tracking-tight">NC State AI Briefing</p>
                 <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 3 min ago</p>
               </div>
             </div>
             <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              Scheduling delays increased in <span className="font-semibold text-[hsl(355_70%_52%)]">GA</span>, while intake conversion improved
-              <span className="font-semibold text-[hsl(155_55%_38%)]"> 12%</span> this week.
-              Recruiting follow-up completion is below target.
+              NC intake conversion improved <span className="font-semibold text-[hsl(155_55%_38%)]">+11%</span> this week, however
+              <span className="font-semibold text-[hsl(355_70%_52%)]"> Charlotte staffing shortages</span> may impact scheduling within 5 days.
             </p>
             <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open Operational Insights <ChevronRight className="h-3.5 w-3.5" />
+              Open State Insights <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -460,7 +459,7 @@ export default function OSOperations() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Gauge className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">Daily Operations KPIs</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight">North Carolina · State KPIs</h2>
             <Pill tone="default">{kpis.length} metrics</Pill>
           </div>
           <div className="flex items-center gap-1.5">
@@ -478,8 +477,8 @@ export default function OSOperations() {
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Department Operations</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Workload, completion, and AI insight per department</p>
+            <h3 className="text-[15px] font-semibold tracking-tight">NC Department Operations</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Workload, completion, and AI insight across your state teams</p>
           </div>
           <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">View all</button>
         </header>
@@ -517,7 +516,7 @@ export default function OSOperations() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Workflow Bottlenecks</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">Operational Alerts & Escalations</h3>
           </div>
           <div className="flex items-center gap-1.5 text-[10.5px]">
             <Pill tone="crit">2 critical</Pill>
@@ -556,14 +555,14 @@ export default function OSOperations() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Staffing & Scheduling</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">NC Staffing & Scheduling</h3>
           </div>
-          <Pill tone="warn">22 open needs</Pill>
+          <Pill tone="warn">18 open needs</Pill>
         </header>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Fill rate by state */}
           <div className="rounded-2xl border border-white/70 bg-white/70 p-4">
-            <p className="text-[11.5px] font-medium text-muted-foreground">Fill Rate · by state</p>
+            <p className="text-[11.5px] font-medium text-muted-foreground">Fill Rate · NC clinics</p>
             <ul className="mt-3 space-y-2.5">
               {staffingByState.map((s) => (
                 <li key={s.s}>
