@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -151,8 +151,13 @@ import Graduation from "./pages/onboarding/Graduation";
 import HelpPage from "./pages/Help";
 import JourneyEditor from "./pages/admin/JourneyEditor";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
+import OSDashboard from "./pages/os/OSDashboard";
+import OSPlaceholder from "./pages/os/OSPlaceholder";
+import { Users as UIcon, Heart as HIcon, UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon, BarChart3, GraduationCap, Building2, Settings as SIcon } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+const OSOutlet = () => <Outlet />;
 
 import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
@@ -223,6 +228,20 @@ const App = () => (
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
+                <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
+                  <Route path="/os" element={<OSDashboard />} />
+                  <Route path="/os/leads" element={<OSPlaceholder title="Leads" description="Pipeline board, filters, lead stats, source analytics, communication history." icon={UIcon} />} />
+                  <Route path="/os/clients" element={<OSPlaceholder title="Clients" description="Client cards, active/inactive filters, staffing & auth status, progress timeline, assigned team." icon={HIcon} />} />
+                  <Route path="/os/staff" element={<OSPlaceholder title="RBT / BCBA" description="Staff directory, credentials, availability, assigned clients, hiring pipeline, risk indicators." icon={UserCog} />} />
+                  <Route path="/os/scheduling" element={<OSPlaceholder title="Scheduling" description="Modern calendar, drag/drop placeholders, staffing conflicts, open coverage, scheduling metrics." icon={CIcon} />} />
+                  <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, lead stages, missing documentation, VOB status, workflow tracking." icon={ClipboardList} />} />
+                  <Route path="/os/cases" element={<OSPlaceholder title="Case Management" description="Active cases, escalations, parent communication, staffing issues, risk indicators." icon={FolderKanban} />} />
+                  <Route path="/os/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
+                  <Route path="/os/reports" element={<OSPlaceholder title="Reports" description="Charts, export cards, KPI widgets, report builder placeholders." icon={BarChart3} />} />
+                  <Route path="/os/training" element={<OSPlaceholder title="Training" description="Learning progress, roadmap, required trainings, department training cards, badges." icon={GraduationCap} />} />
+                  <Route path="/os/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
+                  <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
+                </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<WelcomeHome />} />
                   <Route path="/home-redirect" element={<RoleDashboardRedirect />} />
