@@ -157,7 +157,14 @@ import OSLeads from "./pages/os/OSLeads";
 import OSClients from "./pages/os/OSClients";
 import OSPermissions from "./pages/os/OSPermissions";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
-import { Users as UIcon, Heart as HIcon, UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon, BarChart3, GraduationCap, Building2, Settings as SIcon } from "lucide-react";
+import {
+  UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
+  BarChart3, GraduationCap, Building2, Settings as SIcon,
+  Radio, BellRing, FileCheck2, BadgeCheck, Briefcase, ClipboardCheck,
+  Wallet, TrendingUp, ShieldAlert, Target, Workflow, BookOpen, Megaphone, PieChart,
+  LifeBuoy, Inbox, AlertTriangle, KanbanSquare, Bot, Brain, Zap, Wand2, Activity,
+  Users2, MapPin, UserPlus,
+} from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -238,16 +245,43 @@ const App = () => (
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/os" element={<OSDashboard />} />
+                  <Route path="/os/command-center" element={<OSPlaceholder title="Command Center" description="Global operational overview: alerts, escalations, AI insights, bottlenecks, urgent tasks." icon={Radio} />} />
+                  <Route path="/os/calendar" element={<OSPlaceholder title="Calendar" description="Unified operational calendar: assessments, meetings, interviews, trainings, staffing." icon={CIcon} />} />
+                  <Route path="/os/notifications" element={<OSPlaceholder title="Notifications" description="Operational notifications, approvals, and inbox." icon={BellRing} />} />
                   <Route path="/os/leads" element={<OSLeads />} />
+                  <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, forms, onboarding, VOB workflow." icon={ClipboardList} />} />
                   <Route path="/os/clients" element={<OSClients />} />
-                  <Route path="/os/staff" element={<OSPlaceholder title="RBT / BCBA" description="Staff directory, credentials, availability, assigned clients, hiring pipeline, risk indicators." icon={UserCog} />} />
-                  <Route path="/os/scheduling" element={<OSPlaceholder title="Scheduling" description="Modern calendar, drag/drop placeholders, staffing conflicts, open coverage, scheduling metrics." icon={CIcon} />} />
-                  <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, lead stages, missing documentation, VOB status, workflow tracking." icon={ClipboardList} />} />
+                  <Route path="/os/authorizations" element={<OSPlaceholder title="Authorizations" description="Auth lifecycle, expirations, units used, QA tracking." icon={FileCheck2} />} />
+                  <Route path="/os/scheduling" element={<OSPlaceholder title="Scheduling" description="Modern calendar, drag/drop placeholders, staffing conflicts, open coverage." icon={CIcon} />} />
                   <Route path="/os/cases" element={<OSPlaceholder title="Case Management" description="Active cases, escalations, parent communication, staffing issues, risk indicators." icon={FolderKanban} />} />
+                  <Route path="/os/staff" element={<OSPlaceholder title="RBT / BCBA" description="Staff directory, credentials, availability, assigned clients, hiring pipeline, risk indicators." icon={UserCog} />} />
+                  <Route path="/os/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
+                  <Route path="/os/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
+                  <Route path="/os/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
+                  <Route path="/os/evaluations" element={<OSPlaceholder title="Evaluations" description="Performance reviews, coaching plans, scorecards." icon={ClipboardCheck} />} />
+                  <Route path="/os/training" element={<OSPlaceholder title="Training Academy" description="Operational onboarding and learning platform." icon={GraduationCap} />} />
                   <Route path="/os/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
+                  <Route path="/os/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
+                  <Route path="/os/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
+                  <Route path="/os/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/os/reports" element={<OSPlaceholder title="Reports" description="Charts, export cards, KPI widgets, report builder placeholders." icon={BarChart3} />} />
-                  <Route path="/os/training" element={<OSPlaceholder title="Training" description="Learning progress, roadmap, required trainings, department training cards, badges." icon={GraduationCap} />} />
+                  <Route path="/os/kpi" element={<OSPlaceholder title="KPI Tracking" description="Company-wide KPI visibility and targets." icon={Target} />} />
+                  <Route path="/os/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
+                  <Route path="/os/sop" element={<OSPlaceholder title="SOP Library" description="Central SOP database, search, and versioning." icon={BookOpen} />} />
+                  <Route path="/os/marketing" element={<OSPlaceholder title="Marketing Ops" description="Lead generation, campaigns, attribution." icon={Megaphone} />} />
+                  <Route path="/os/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
+                  <Route path="/os/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
+                  <Route path="/os/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
+                  <Route path="/os/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
+                  <Route path="/os/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
+                  <Route path="/os/ai/assistant" element={<OSPlaceholder title="Ask Blossom AI" description="Global AI assistant for operational questions." icon={Bot} />} />
+                  <Route path="/os/ai/insights" element={<OSPlaceholder title="AI Insights" description="AI-generated operational recommendations." icon={Brain} />} />
+                  <Route path="/os/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
+                  <Route path="/os/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
+                  <Route path="/os/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/os/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
+                  <Route path="/os/user-management" element={<OSPlaceholder title="User Management" description="Users, roles, and permission assignments." icon={Users2} />} />
+                  <Route path="/os/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
                   <Route path="/os/permissions" element={<OSPermissions />} />
                 </Route>

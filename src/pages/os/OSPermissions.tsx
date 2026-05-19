@@ -8,9 +8,20 @@ import {
 import { Navigate } from "react-router-dom";
 
 const MODULE_LABELS: Record<OSModule, string> = {
-  dashboard: "Dashboard", leads: "Leads", clients: "Clients", staff: "RBT / BCBA",
-  scheduling: "Scheduling", intake: "Intake", cases: "Cases", billing: "Billing",
-  reports: "Reports", training: "Training", hr: "HR", settings: "Settings", permissions: "Permissions",
+  dashboard: "Dashboard", command_center: "Command Center", calendar: "Calendar", notifications: "Notifications",
+  leads: "Leads", intake: "Intake", clients: "Clients", authorizations: "Authorizations",
+  scheduling: "Scheduling", cases: "Case Management",
+  staff: "RBT / BCBA", recruiting: "Recruiting", credentialing: "Credentialing",
+  employee_ops: "Employee Ops", evaluations: "Evaluations", training: "Training Academy",
+  reports: "Reports", kpi: "KPI Tracking", workflows: "Workflow Center", sop: "SOP Library",
+  marketing: "Marketing Ops", analytics_hub: "Analytics Hub",
+  billing: "Billing", payroll: "Payroll", revenue: "Revenue Analytics", insurance: "Insurance Tracking",
+  tech_requests: "Tech Requests", internal_requests: "Internal Requests",
+  open_issues: "Open Issues", projects: "Project Tracking",
+  ai_assistant: "Ask Blossom AI", ai_insights: "AI Insights", automation_center: "Automation Center",
+  predictive_alerts: "Predictive Alerts", ai_workflows: "AI Workflows",
+  hr: "HR Suite", user_management: "User Management", state_management: "State Management",
+  settings: "Settings", permissions: "Permissions",
 };
 
 export default function OSPermissions() {
