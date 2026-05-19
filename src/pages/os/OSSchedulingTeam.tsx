@@ -5,6 +5,7 @@ import {
   BookOpen, Inbox, ArrowRight, Phone, MessageSquare, Mail, Send, FileText,
   ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
   CalendarClock, FileWarning, FileSignature, Building2, Stamp, ShieldAlert, TrendingUp,
+  CalendarCheck2, CalendarX2, MapPin, Route, UserCheck, UserX, Zap, Timer, Battery,
 } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, RadialBarChart, RadialBar,
@@ -31,115 +32,115 @@ type Kpi = {
 /* ============ MOCK DATA ============ */
 
 const kpis: Kpi[] = [
-  { label: "Awaiting Submission",     value: "12",  delta: "+3",   up: false, status: "warn", hint: "4 over SLA",         spark: [6,7,8,9,10,11,11,12,12],    icon: Inbox },
-  { label: "Submitted Today",         value: "9",   delta: "+4",   up: true,  status: "ok",   hint: "vs yesterday",       spark: [3,4,5,6,7,7,8,8,9],         icon: Send },
-  { label: "Approved Auths",          value: "27",  delta: "+11",  up: true,  status: "ok",   hint: "This week",          spark: [10,12,15,17,19,22,24,26,27],icon: BadgeCheck },
-  { label: "Denied Auths",            value: "3",   delta: "-1",   up: true,  status: "warn", hint: "2 in appeal",        spark: [5,5,4,4,4,3,3,3,3],         icon: ShieldAlert },
-  { label: "Expiring Soon",           value: "6",   delta: "+2",   up: false, status: "crit", hint: "Within 14 days",     spark: [2,3,3,4,4,5,5,6,6],         icon: CalendarClock },
-  { label: "Pending Progress Reports",value: "8",   delta: "+2",   up: false, status: "warn", hint: "4 overdue",          spark: [3,4,5,6,6,7,7,8,8],         icon: FileText },
-  { label: "QA Review Pending",       value: "5",   delta: "-2",   up: true,  status: "warn", hint: "Target ≤ 3",         spark: [9,8,8,7,7,6,6,5,5],         icon: ClipboardCheck },
-  { label: "Missing Documentation",   value: "4",   delta: "+1",   up: false, status: "warn", hint: "2 client side",      spark: [2,2,3,3,3,3,4,4,4],         icon: FileWarning },
-  { label: "Avg Submission Turnaround",value:"2.1d",delta: "-0.4d",up: true,  status: "ok",   hint: "Target ≤ 2d",        spark: [3.2,3.0,2.8,2.6,2.5,2.4,2.3,2.2,2.1].map(n=>Math.round(n*10)), icon: Clock },
-  { label: "Payer Approval Rate",     value: "92%", delta: "+3%",  up: true,  status: "ok",   hint: "30d rolling",        spark: [85,86,87,88,89,90,91,91,92],icon: TrendingUp },
-  { label: "Reassessments Due",       value: "7",   delta: "+1",   up: false, status: "warn", hint: "Next 30 days",       spark: [4,4,5,5,6,6,6,7,7],         icon: RefreshCw },
-  { label: "Auths at Risk",           value: "4",   delta: "+2",   up: false, status: "crit", hint: "Coverage gap risk",  spark: [1,1,2,2,3,3,3,4,4],         icon: AlertTriangle },
+  { label: "Sessions Scheduled Today",value: "187", delta: "+12",  up: true,  status: "ok",   hint: "Across 3 states",     spark: [150,160,168,172,175,180,184,186,187], icon: CalendarCheck2 },
+  { label: "Open Sessions",           value: "14",  delta: "+4",   up: false, status: "warn", hint: "8 within 24h",        spark: [6,7,9,10,11,12,13,14,14],   icon: Inbox },
+  { label: "Staffing Needed",         value: "9",   delta: "+2",   up: false, status: "crit", hint: "3 urgent · evening",  spark: [4,5,6,6,7,7,8,9,9],         icon: UserPlus },
+  { label: "Coverage Fill Rate",      value: "92%", delta: "+9%",  up: true,  status: "ok",   hint: "Target ≥ 92%",        spark: [78,82,84,86,88,89,90,91,92],icon: TrendingUp },
+  { label: "Cancellation Rate",       value: "6%",  delta: "+1%",  up: false, status: "warn", hint: "7d rolling",          spark: [4,4,5,5,5,6,6,6,6],         icon: CalendarX2 },
+  { label: "RBT Utilization",         value: "84%", delta: "+3%",  up: true,  status: "ok",   hint: "Healthy band 80–88%", spark: [76,78,80,81,82,83,83,84,84],icon: Battery },
+  { label: "BCBA Utilization",        value: "71%", delta: "-2%",  up: false, status: "warn", hint: "Target ≥ 75%",        spark: [78,77,76,75,74,73,72,72,71],icon: UserCheck },
+  { label: "Avg Time to Fill",        value: "38m", delta: "-12m", up: true,  status: "ok",   hint: "Target ≤ 45m",        spark: [60,56,52,48,46,44,42,40,38], icon: Timer },
+  { label: "Scheduling Conflicts",    value: "5",   delta: "-3",   up: true,  status: "warn", hint: "2 same-time overlaps",spark: [9,8,8,7,7,6,6,5,5],         icon: AlertTriangle },
+  { label: "Pending Pair-Ups",        value: "11",  delta: "+2",   up: false, status: "warn", hint: "BCBA assignment",     spark: [5,6,7,8,9,10,10,11,11],     icon: Users },
+  { label: "Attendance Rate",         value: "94%", delta: "+1%",  up: true,  status: "ok",   hint: "Client side",         spark: [89,90,91,92,92,93,93,94,94],icon: CheckCircle2 },
+  { label: "Sessions at Risk",        value: "6",   delta: "+2",   up: false, status: "crit", hint: "Likely to cancel",    spark: [2,3,3,4,4,5,5,6,6],         icon: ShieldAlert },
 ];
 
 const stages = [
-  { name: "Awaiting Submission",   count: 12, stalled: 4, avg: "1.8d", tone: "os-tone-lilac" },
-  { name: "Submitted",             count: 18, stalled: 2, avg: "2.1d", tone: "os-tone-sky" },
-  { name: "Approved",              count: 27, stalled: 0, avg: "0.6d", tone: "os-tone-mint" },
-  { name: "Denied",                count: 3,  stalled: 2, avg: "3.2d", tone: "os-tone-coral" },
-  { name: "Expiring Soon",         count: 6,  stalled: 3, avg: "—",    tone: "os-tone-rose" },
-  { name: "QA Review",             count: 5,  stalled: 1, avg: "1.4d", tone: "os-tone-violet" },
-  { name: "Missing Documentation", count: 4,  stalled: 2, avg: "2.7d", tone: "os-tone-amber" },
-  { name: "Flaked Client",         count: 2,  stalled: 2, avg: "5.0d", tone: "os-tone-coral" },
+  { name: "Charlotte, NC",     count: 62, stalled: 4, avg: "94%", tone: "os-tone-sky" },
+  { name: "Raleigh, NC",       count: 41, stalled: 2, avg: "91%", tone: "os-tone-violet" },
+  { name: "Wilmington, NC",    count: 18, stalled: 1, avg: "88%", tone: "os-tone-mint" },
+  { name: "Atlanta, GA",       count: 34, stalled: 5, avg: "82%", tone: "os-tone-amber" },
+  { name: "Savannah, GA",      count: 14, stalled: 3, avg: "76%", tone: "os-tone-coral" },
+  { name: "Richmond, VA",      count: 12, stalled: 1, avg: "90%", tone: "os-tone-lilac" },
+  { name: "Virginia Beach, VA",count: 8,  stalled: 2, avg: "84%", tone: "os-tone-rose" },
+  { name: "Remote / Telehealth",count: 6, stalled: 0, avg: "97%", tone: "os-tone-mint" },
 ];
 
 const leads = [
-  { parent: "Ava Walker",   child: "Treatment · 6m",   insurance: "BCBS NC",  owner: "Dr. Patel",  stage: "Expiring Soon",        since: "6d left",  urgency: "crit" as Tone },
-  { parent: "Liam Pierce",  child: "Reassessment",     insurance: "Aetna",    owner: "Dr. Nguyen", stage: "Awaiting Submission",  since: "2d open",  urgency: "warn" as Tone },
-  { parent: "Reya Sharma",  child: "Initial Eval",     insurance: "Cigna VA", owner: "Dr. Patel",  stage: "Submitted",            since: "3d ago",   urgency: "ok"   as Tone },
-  { parent: "Mason Hayes",  child: "Treatment · 6m",   insurance: "UHC",      owner: "Dr. Cole",   stage: "Missing Documentation",since: "4d open",  urgency: "crit" as Tone },
-  { parent: "Sofia Ortiz",  child: "Reassessment",     insurance: "BCBS NC",  owner: "Dr. Nguyen", stage: "QA Review",            since: "1d ago",   urgency: "warn" as Tone },
-  { parent: "Noah Davis",   child: "Treatment · 6m",   insurance: "Aetna",    owner: "Dr. Cole",   stage: "Approved",             since: "Today",    urgency: "ok"   as Tone },
+  { parent: "Ava Walker",   child: "4:00 – 6:00 PM",  insurance: "Charlotte · Home", owner: "BCBA: Patel",  stage: "RBT needed · 2h",     since: "Unfilled 35m", urgency: "crit" as Tone },
+  { parent: "Liam Pierce",  child: "10:00 – 12:00",   insurance: "Atlanta · Clinic", owner: "BCBA: Nguyen", stage: "Pair-Up pending",     since: "Unfilled 1h",  urgency: "warn" as Tone },
+  { parent: "Reya Sharma",  child: "1:00 – 3:00 PM",  insurance: "Raleigh · Home",   owner: "BCBA: Patel",  stage: "Sub coverage",        since: "Filled · Dana",urgency: "ok"   as Tone },
+  { parent: "Mason Hayes",  child: "5:00 – 7:00 PM",  insurance: "Savannah · Home",  owner: "BCBA: Cole",   stage: "Evening · uncovered", since: "Unfilled 2h",  urgency: "crit" as Tone },
+  { parent: "Sofia Ortiz",  child: "9:00 – 11:00 AM", insurance: "Charlotte · Home", owner: "BCBA: Nguyen", stage: "Cancellation risk",   since: "Parent flag",  urgency: "warn" as Tone },
+  { parent: "Noah Davis",   child: "3:00 – 5:00 PM",  insurance: "Richmond · Clinic",owner: "BCBA: Cole",   stage: "Confirmed",           since: "Assigned",     urgency: "ok"   as Tone },
 ];
 
 const followups = [
-  { kind: "Submit", parent: "Ava Walker · BCBS NC",     time: "Due today",   stage: "Expiring in 6d",     priority: "High",   last: "Plan received · 1d" },
-  { kind: "BCBA",   parent: "Liam Pierce · Aetna",      time: "10:15 AM",    stage: "Awaiting PR",        priority: "High",   last: "Pinged Dr. Nguyen · 2d" },
-  { kind: "QA",     parent: "Reya Sharma · Cigna VA",   time: "11:00 AM",    stage: "QA Review",          priority: "Medium", last: "Sent to QA · 2d" },
-  { kind: "Submit", parent: "Mason Hayes · UHC",        time: "1:00 PM",     stage: "Missing Docs",       priority: "High",   last: "Final attempt" },
-  { kind: "BCBA",   parent: "Sofia Ortiz · BCBS NC",    time: "2:30 PM",     stage: "Signature pending",  priority: "Medium", last: "Parent emailed · 1d" },
-  { kind: "QA",     parent: "Noah Davis · Aetna",       time: "3:45 PM",     stage: "Reassessment",       priority: "Medium", last: "Note · 1d" },
+  { kind: "Assign",   parent: "Ava Walker · Charlotte",    time: "Cover by 4 PM", stage: "RBT needed · 2h",    priority: "High",   last: "Texted 3 RBTs · 10m" },
+  { kind: "PairUp",   parent: "Liam Pierce · Atlanta",     time: "10:15 AM",      stage: "Pair-Up pending",    priority: "High",   last: "BCBA Nguyen pinged · 1h" },
+  { kind: "Message",  parent: "Reya Sharma · Raleigh",     time: "11:00 AM",      stage: "Confirm with parent",priority: "Medium", last: "SMS sent · 30m" },
+  { kind: "Assign",   parent: "Mason Hayes · Savannah",    time: "Cover by 5 PM", stage: "Evening uncovered",  priority: "High",   last: "Escalated to Dana" },
+  { kind: "PairUp",   parent: "Sofia Ortiz · Charlotte",   time: "2:30 PM",       stage: "Sub RBT needed",     priority: "Medium", last: "RBT confirmed · 5m" },
+  { kind: "Message",  parent: "Noah Davis · Richmond",     time: "3:45 PM",       stage: "Schedule change",    priority: "Medium", last: "Note · 1d" },
 ];
 
 const forms = [
-  { name: "Ava Walker · Treatment Plan",    status: "Awaiting QA",       pct: 75, days: 2, tone: "warn" as Tone },
-  { name: "Liam Pierce · Progress Report",  status: "Pending BCBA",      pct: 30, days: 3, tone: "warn" as Tone },
-  { name: "Reya Sharma · Treatment Plan",   status: "In QA Review",      pct: 60, days: 1, tone: "warn" as Tone },
-  { name: "Sofia Ortiz · Reassessment",     status: "Approved by QA",    pct: 100,days: 0, tone: "ok"   as Tone },
-  { name: "Mason Hayes · Progress Report",  status: "Overdue · escalated", pct: 20, days: 5, tone: "crit" as Tone },
+  { name: "Dana M. · RBT · Charlotte",   status: "Available · 22h/wk",  pct: 78,  days: 0, tone: "ok"   as Tone },
+  { name: "Jordan K. · RBT · Atlanta",   status: "Near max · 36h/wk",   pct: 94,  days: 0, tone: "crit" as Tone },
+  { name: "Maya R. · RBT · Raleigh",     status: "Underutilized · 12h", pct: 38,  days: 0, tone: "warn" as Tone },
+  { name: "Dr. Patel · BCBA · NC",       status: "Pair-ups available",  pct: 72,  days: 0, tone: "ok"   as Tone },
+  { name: "Dr. Cole · BCBA · GA",        status: "Limited after 5 PM",  pct: 88,  days: 0, tone: "warn" as Tone },
 ];
 
 const comms = [
-  { who: "BCBS NC",       what: "approved 6-month auth · Walker",      when: "12m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Dr. Nguyen",    what: "uploaded progress report · Pierce",   when: "35m", tone: "os-tone-sky",    icon: FileText },
-  { who: "Aetna portal",  what: "request for additional info · Davis", when: "1h",  tone: "os-tone-amber",  icon: FileWarning },
-  { who: "QA Team",       what: "completed review · Ortiz",            when: "2h",  tone: "os-tone-violet", icon: ClipboardCheck },
-  { who: "Cigna VA",      what: "pended for medical necessity",        when: "3h",  tone: "os-tone-coral",  icon: ShieldAlert },
-  { who: "Parent · Hayes",what: "returned signed consent",             when: "4h",  tone: "os-tone-rose",   icon: FileSignature },
+  { who: "Parent · Ortiz",   what: "cancelled tomorrow's session",       when: "12m", tone: "os-tone-coral",  icon: CalendarX2 },
+  { who: "Parent · Hayes",   what: "cancelled 3 sessions this week",     when: "35m", tone: "os-tone-coral",  icon: AlertTriangle },
+  { who: "Riverdale clinic", what: "attendance declining",               when: "1h",  tone: "os-tone-amber",  icon: TrendingUp },
+  { who: "Client · Walker",  what: "no-show · session 2pm",              when: "2h",  tone: "os-tone-rose",   icon: UserX },
+  { who: "Client · Pierce",  what: "confirmed for tomorrow",             when: "3h",  tone: "os-tone-mint",   icon: CheckCircle2 },
+  { who: "Parent · Davis",   what: "requested schedule change",          when: "4h",  tone: "os-tone-violet", icon: RefreshCw },
 ];
 
 const bottlenecks = [
-  { severity: "crit", title: "Ava Walker — VA auth expires in 6 days",          stage: "Expiring Soon",         owner: "Rivky",     action: "Submit reassessment" },
-  { severity: "crit", title: "Mason Hayes — Progress report overdue 5 days",    stage: "Missing Documentation", owner: "Dr. Cole",  action: "Escalate to State Director" },
-  { severity: "warn", title: "Liam Pierce — BCBA PR not received",              stage: "Awaiting BCBA",         owner: "Dr. Nguyen",action: "Ping BCBA" },
-  { severity: "warn", title: "Reya Sharma — Cigna pended for med necessity",    stage: "Submitted",             owner: "Rivky",     action: "Upload supporting docs" },
-  { severity: "warn", title: "Noah Davis — Parent signature missing",           stage: "Awaiting Signature",    owner: "Parent",    action: "Re-send signature link" },
-  { severity: "warn", title: "Sofia Ortiz — Treatment plan not yet from QA",    stage: "QA Review",             owner: "QA Team",   action: "Ping QA team" },
+  { severity: "crit", title: "Ava Walker — RBT needed within 2 hours",          stage: "Charlotte · 4 PM",  owner: "Daylis",   action: "Assign Dana M." },
+  { severity: "crit", title: "Mason Hayes — evening session uncovered",         stage: "Savannah · 5 PM",   owner: "Daylis",   action: "Escalate to GA lead" },
+  { severity: "warn", title: "Liam Pierce — pair-up pending with BCBA",         stage: "Atlanta · 10 AM",   owner: "Dr. Nguyen", action: "Confirm pair-up" },
+  { severity: "warn", title: "GA evening coverage at risk",                     stage: "Atlanta/Savannah",  owner: "Daylis",   action: "Open availability" },
+  { severity: "warn", title: "Jordan K. nearing burnout · 36h scheduled",       stage: "Atlanta · RBT",     owner: "Daylis",   action: "Redistribute hours" },
+  { severity: "warn", title: "Sofia Ortiz — cancellation risk flagged by AI",   stage: "Charlotte · 9 AM",  owner: "Daylis",   action: "Call parent" },
 ];
 
 const training = [
-  { name: "BCBS Auth Submission SOP · v3", pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
-  { name: "Aetna Reassessment Workflow",   pct: 60,  kind: "Training", tone: "os-tone-amber"  },
-  { name: "Tango Walkthrough · Payer Portal", pct: 35, kind: "Walkthru", tone: "os-tone-violet" },
-  { name: "QA Submission Workflow Updates", pct: 80, kind: "SOP",      tone: "os-tone-sky"    },
+  { name: "New Pair-Up SOP · v2",          pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
+  { name: "Scheduling Escalation Workflow",pct: 60,  kind: "Training", tone: "os-tone-amber"  },
+  { name: "Tango Walkthrough · Coverage",  pct: 35,  kind: "Walkthru", tone: "os-tone-violet" },
+  { name: "Cancellation Policy Updates",   pct: 80,  kind: "SOP",      tone: "os-tone-sky"    },
 ];
 
 const aiInsights = [
-  { icon: AlertCircle,  tone: "os-tone-coral", title: "Aetna denial rate rising",   body: "Aetna denials up 14% in NC this month — mostly missing med-necessity language.", cta: "View denials" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "3 auths likely to expire",    body: "Reassessments for Walker, Pierce, and Davis won't complete before expiration at current pace.", cta: "Open list" },
-  { icon: Brain,        tone: "os-tone-sky",   title: "BCBA response delaying subs", body: "Dr. Cole's PR turnaround averages 4.8d — 2.3d above team average.",            cta: "See trend" },
-  { icon: Lightbulb,    tone: "os-tone-lilac", title: "QA bottleneck detected",      body: "QA review queue is 2× normal — submitting earlier in the day clears 30% faster.", cta: "Apply tip" },
-  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",       body: "Auto-reminder 21 days before expiration could recover ~3 at-risk auths/week.",  cta: "Enable rule" },
+  { icon: AlertCircle,  tone: "os-tone-coral", title: "GA evening coverage critical",  body: "Atlanta + Savannah evening fill rate trending toward 68% by Friday.",        cta: "View gaps" },
+  { icon: AlertTriangle,tone: "os-tone-amber", title: "Tuesday cancellations spiking",  body: "Client cancellations on Tuesdays up 22% over 3 weeks — proactive calls may help.", cta: "Open trend" },
+  { icon: Brain,        tone: "os-tone-sky",   title: "2 RBTs at burnout risk",         body: "Jordan K. and Mia S. logged > 35h scheduled this week — redistribute load.", cta: "Rebalance" },
+  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Route optimization · 3h saved",  body: "Re-pairing Charlotte routes could save ~3 hours of drive time this week.",   cta: "Apply tip" },
+  { icon: Activity,     tone: "os-tone-mint",  title: "Pairing efficiency below target",body: "BCBA-RBT pairings averaging 71% match score — target is 80%.",               cta: "View pairs" },
 ];
 
 const calls = [
-  { title: "Submit BCBS auth · Walker",     time: "9:30 – 9:45 AM",  tone: "os-tone-sky" },
-  { title: "BCBA sync · Dr. Nguyen",        time: "10:30 – 10:45",   tone: "os-tone-violet" },
-  { title: "QA standup",                    time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
-  { title: "Aetna appeal call · Davis",     time: "3:45 – 4:00 PM",  tone: "os-tone-amber" },
+  { title: "Coverage huddle · NC team",     time: "9:00 – 9:15 AM",  tone: "os-tone-sky" },
+  { title: "Pair-up review · Dr. Patel",    time: "10:30 – 10:45",   tone: "os-tone-violet" },
+  { title: "GA evening planning",           time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
+  { title: "Parent call · Hayes (cxl)",     time: "3:45 – 4:00 PM",  tone: "os-tone-amber" },
 ];
 
 const quickActions = [
-  { label: "Create Auth",            icon: FileCheck2,     tone: "os-tone-rose"   },
-  { label: "Submit Auth",            icon: Send,           tone: "os-tone-sky"    },
-  { label: "Upload Treatment Plan",  icon: Upload,         tone: "os-tone-violet" },
-  { label: "Request Progress Report",icon: FileText,       tone: "os-tone-lilac"  },
-  { label: "Contact BCBA",           icon: MessageSquare,  tone: "os-tone-mint"   },
-  { label: "Add Note",               icon: StickyNote,     tone: "os-tone-amber"  },
-  { label: "Escalate Issue",         icon: Flame,          tone: "os-tone-coral"  },
-  { label: "Open SOP",               icon: BookOpen,       tone: "os-tone-violet" },
+  { label: "Assign RBT",            icon: UserPlus,       tone: "os-tone-rose"   },
+  { label: "Coverage Request",      icon: CalendarClock,  tone: "os-tone-sky"    },
+  { label: "Pair-Up Therapist",     icon: Users,          tone: "os-tone-violet" },
+  { label: "Message Staff",         icon: MessageSquare,  tone: "os-tone-lilac"  },
+  { label: "Open Availability",     icon: CalendarCheck2, tone: "os-tone-mint"   },
+  { label: "View Reports",          icon: Activity,       tone: "os-tone-amber"  },
+  { label: "Escalate Issue",        icon: Flame,          tone: "os-tone-coral"  },
+  { label: "Open SOP",              icon: BookOpen,       tone: "os-tone-violet" },
 ];
 
 const activity = [
-  { who: "Rivky",         what: "submitted auth · Walker (BCBS)",     when: "4m",  tone: "os-tone-violet", icon: Send },
-  { who: "Aetna",         what: "approved 6-month auth · Pierce",     when: "18m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Dr. Nguyen",    what: "uploaded progress report",           when: "32m", tone: "os-tone-sky",    icon: FileText },
-  { who: "System",        what: "moved Hayes to Missing Documentation", when: "55m", tone: "os-tone-amber", icon: ArrowRight },
-  { who: "QA Team",       what: "completed review · Ortiz",           when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
-  { who: "Cigna VA",      what: "denial received · Sharma · appeal opened", when: "2h", tone: "os-tone-coral", icon: ShieldAlert },
+  { who: "Daylis",        what: "assigned Dana M. to Walker · 4 PM",  when: "4m",  tone: "os-tone-violet", icon: UserCheck },
+  { who: "System",        what: "pair-up completed · Pierce / Nguyen",when: "18m", tone: "os-tone-mint",   icon: Users },
+  { who: "Parent · Ortiz",what: "logged cancellation for tomorrow",   when: "32m", tone: "os-tone-coral",  icon: CalendarX2 },
+  { who: "System",        what: "coverage request created · Hayes",   when: "55m", tone: "os-tone-amber",  icon: CalendarClock },
+  { who: "Dana M.",       what: "accepted Charlotte coverage shift",  when: "1h",  tone: "os-tone-sky",    icon: CheckCircle2 },
+  { who: "Maya R.",       what: "added evening availability",         when: "2h",  tone: "os-tone-lilac",  icon: CalendarCheck2 },
 ];
 
 /* ============ helpers ============ */
@@ -228,14 +229,14 @@ function KpiCard({ k }: { k: Kpi }) {
   );
 }
 
-const kindIcon: Record<string, React.ElementType> = { Submit: Send, BCBA: MessageSquare, QA: ClipboardCheck };
-const kindTone: Record<string, string> = { Submit: "os-tone-sky", BCBA: "os-tone-violet", QA: "os-tone-lilac" };
+const kindIcon: Record<string, React.ElementType> = { Assign: UserPlus, PairUp: Users, Message: MessageSquare };
+const kindTone: Record<string, string> = { Assign: "os-tone-sky", PairUp: "os-tone-violet", Message: "os-tone-lilac" };
 
 /* ============ PAGE ============ */
 
-export default function OSAuthCoordinator() {
+export default function OSSchedulingTeam() {
   const { user } = useAuth();
-  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Rivky").split(" ")[0];
+  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Daylis").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
@@ -253,7 +254,7 @@ export default function OSAuthCoordinator() {
                 <Brain className="h-3.5 w-3.5" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold tracking-tight">AI Authorization Insights</h3>
+                <h3 className="text-[14px] font-semibold tracking-tight">AI Scheduling Insights</h3>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Predictive · Supportive</p>
               </div>
             </header>
@@ -281,8 +282,8 @@ export default function OSAuthCoordinator() {
           <section className="os-card relative overflow-hidden">
             <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(155_70%_70%/0.25)] to-transparent blur-2xl" />
             <header className="mb-2">
-              <h3 className="text-[14px] font-semibold tracking-tight">Your Auth Score</h3>
-              <p className="text-[10.5px] text-muted-foreground">Turnaround · Approval · Cleanliness</p>
+              <h3 className="text-[14px] font-semibold tracking-tight">Your Scheduling Score</h3>
+              <p className="text-[10.5px] text-muted-foreground">Fill Rate · Utilization · Speed</p>
             </header>
             <div className="relative grid place-items-center py-2">
               <div className="relative h-[140px] w-[140px]">
@@ -300,9 +301,9 @@ export default function OSAuthCoordinator() {
               </div>
             </div>
             <div className="mt-1 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Turn 92</div>
-              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Appr 84</div>
-              <div className="rounded-lg bg-[hsl(265_100%_95%)] py-1.5 font-semibold text-[hsl(265_70%_50%)]">Clean 88</div>
+              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Fill 92</div>
+              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Util 84</div>
+              <div className="rounded-lg bg-[hsl(265_100%_95%)] py-1.5 font-semibold text-[hsl(265_70%_50%)]">Speed 88</div>
             </div>
           </section>
 
@@ -395,26 +396,26 @@ export default function OSAuthCoordinator() {
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <Stamp className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Authorization Coordinator · Mission Control
+              <CalendarCheck2 className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Scheduling Team · Mission Control
             </div>
             <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
               {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
             </h1>
             <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening across Authorizations today.
+              {today} · Here's what's happening across Scheduling today.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <Inbox className="h-3 w-3" /> 12 awaiting submission
+                <Inbox className="h-3 w-3" /> 14 open sessions
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
-                <CalendarClock className="h-3 w-3" /> 6 expiring ≤ 14d
+                <UserPlus className="h-3 w-3" /> 9 staffing needed
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <FileText className="h-3 w-3" /> 8 PRs pending
+                <CalendarX2 className="h-3 w-3" /> 3 cancellations today
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <TrendingUp className="h-3 w-3" /> 92% approval
+                <TrendingUp className="h-3 w-3" /> 92% fill rate
               </span>
             </div>
           </div>
@@ -426,16 +427,16 @@ export default function OSAuthCoordinator() {
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">Authorization AI Briefing</p>
+                <p className="text-[13px] font-semibold leading-none tracking-tight">Scheduling AI Briefing</p>
                 <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 2 min ago</p>
               </div>
             </div>
             <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              <span className="font-semibold text-[hsl(355_70%_52%)]">6 treatment auths</span> expire within 14 days.
-              Two <span className="font-semibold">progress reports</span> are still pending from BCBAs.
+              <span className="font-semibold text-[hsl(355_70%_52%)]">8 sessions</span> still require staffing today.
+              Utilization is improving in NC, but <span className="font-semibold">GA evening coverage</span> is at risk.
             </p>
             <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open Authorization Insights <ChevronRight className="h-3.5 w-3.5" />
+              Open Scheduling Insights <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -446,7 +447,7 @@ export default function OSAuthCoordinator() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">Daily Authorization KPIs</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight">Daily Scheduling KPIs</h2>
             <Pill tone="default">{kpis.length} metrics</Pill>
           </div>
           <div className="flex items-center gap-1.5">
@@ -464,10 +465,10 @@ export default function OSAuthCoordinator() {
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Authorization Pipeline</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Every stage from submission through approval & expiration</p>
+            <h3 className="text-[15px] font-semibold tracking-tight">Coverage by Region</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Sessions today · stalled coverage · fill rate per location</p>
           </div>
-          <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">Open kanban</button>
+          <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">Open coverage map</button>
         </header>
         <div className="-mx-1 overflow-x-auto pb-1">
           <div className="flex min-w-max gap-3 px-1">
@@ -518,10 +519,10 @@ export default function OSAuthCoordinator() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Tasks & Workflow</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">Tasks & Coordination</h3>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {["All", "Due Today", "Awaiting BCBA", "Awaiting QA", "Expiring Soon", "Escalated", "Blocked"].map((t, i) => (
+            {["All", "Urgent Coverage", "Pair-Ups", "Follow-Ups", "Escalations", "Schedule Changes", "Waiting"].map((t, i) => (
               <button key={t} className={cn(
                 "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
                 i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
@@ -561,8 +562,8 @@ export default function OSAuthCoordinator() {
         <section className="os-card lg:col-span-2">
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">QA & Treatment Plan Tracking</h3>
+              <UserCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+              <h3 className="text-[15px] font-semibold tracking-tight">RBT / BCBA Availability</h3>
             </div>
             <div className="flex items-center gap-1.5">
               <Pill tone="warn">3 stalled</Pill>
@@ -597,10 +598,10 @@ export default function OSAuthCoordinator() {
         <section className="os-card">
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Payer & Insurance Activity</h3>
+              <CalendarX2 className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+              <h3 className="text-[15px] font-semibold tracking-tight">Cancellations & Attendance</h3>
             </div>
-            <Pill tone="ok">92% approval</Pill>
+            <Pill tone="ok">94% attendance</Pill>
           </header>
           <ul className="space-y-3">
             {comms.map((c, i) => (
@@ -619,9 +620,9 @@ export default function OSAuthCoordinator() {
             ))}
           </ul>
           <div className="mt-3 grid grid-cols-3 gap-1.5">
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Send className="mr-1 inline h-3 w-3" />Submit</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Ping BCBA</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><FileWarning className="mr-1 inline h-3 w-3" />Appeal</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Phone className="mr-1 inline h-3 w-3" />Call</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Text</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><CalendarClock className="mr-1 inline h-3 w-3" />Reschedule</button>
           </div>
         </section>
       </div>
@@ -631,7 +632,7 @@ export default function OSAuthCoordinator() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Expiring Soon & Urgent Alerts</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">Urgent Coverage & Open Sessions</h3>
           </div>
           <div className="flex items-center gap-1.5">
             <Pill tone="crit">2 critical</Pill>
