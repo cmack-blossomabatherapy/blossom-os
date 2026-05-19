@@ -8,6 +8,7 @@ import {
   Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
+  HeartHandshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
