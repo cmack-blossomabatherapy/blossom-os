@@ -228,14 +228,14 @@ function KpiCard({ k }: { k: Kpi }) {
   );
 }
 
-const kindIcon: Record<string, React.ElementType> = { Call: Phone, Text: MessageSquare, Email: Mail };
-const kindTone: Record<string, string> = { Call: "os-tone-sky", Text: "os-tone-violet", Email: "os-tone-lilac" };
+const kindIcon: Record<string, React.ElementType> = { Submit: Send, BCBA: MessageSquare, QA: ClipboardCheck };
+const kindTone: Record<string, string> = { Submit: "os-tone-sky", BCBA: "os-tone-violet", QA: "os-tone-lilac" };
 
 /* ============ PAGE ============ */
 
-export default function OSIntakeCoordinator() {
+export default function OSAuthCoordinator() {
   const { user } = useAuth();
-  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Michelle").split(" ")[0];
+  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Rivky").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
@@ -253,7 +253,7 @@ export default function OSIntakeCoordinator() {
                 <Brain className="h-3.5 w-3.5" />
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold tracking-tight">AI Intake Insights</h3>
+                <h3 className="text-[14px] font-semibold tracking-tight">AI Authorization Insights</h3>
                 <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Predictive · Supportive</p>
               </div>
             </header>
@@ -281,8 +281,8 @@ export default function OSIntakeCoordinator() {
           <section className="os-card relative overflow-hidden">
             <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(155_70%_70%/0.25)] to-transparent blur-2xl" />
             <header className="mb-2">
-              <h3 className="text-[14px] font-semibold tracking-tight">Your Intake Score</h3>
-              <p className="text-[10.5px] text-muted-foreground">Response · Conversion · Cleanliness</p>
+              <h3 className="text-[14px] font-semibold tracking-tight">Your Auth Score</h3>
+              <p className="text-[10.5px] text-muted-foreground">Turnaround · Approval · Cleanliness</p>
             </header>
             <div className="relative grid place-items-center py-2">
               <div className="relative h-[140px] w-[140px]">
@@ -300,8 +300,8 @@ export default function OSIntakeCoordinator() {
               </div>
             </div>
             <div className="mt-1 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Resp 92</div>
-              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Conv 84</div>
+              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Turn 92</div>
+              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Appr 84</div>
               <div className="rounded-lg bg-[hsl(265_100%_95%)] py-1.5 font-semibold text-[hsl(265_70%_50%)]">Clean 88</div>
             </div>
           </section>
@@ -395,26 +395,26 @@ export default function OSIntakeCoordinator() {
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <Headphones className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Intake Coordinator · Mission Control
+              <Stamp className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Authorization Coordinator · Mission Control
             </div>
             <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
               {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
             </h1>
             <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening in Intake today.
+              {today} · Here's what's happening across Authorizations today.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <UserPlus className="h-3 w-3" /> 9 new leads
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <Phone className="h-3 w-3" /> 12 follow-ups due
+                <Inbox className="h-3 w-3" /> 12 awaiting submission
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
-                <FileText className="h-3 w-3" /> 8 forms pending
+                <CalendarClock className="h-3 w-3" /> 6 expiring ≤ 14d
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
+                <FileText className="h-3 w-3" /> 8 PRs pending
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <ShieldCheck className="h-3 w-3" /> Avg response 16m
+                <TrendingUp className="h-3 w-3" /> 92% approval
               </span>
             </div>
           </div>
@@ -426,16 +426,16 @@ export default function OSIntakeCoordinator() {
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">Intake AI Briefing</p>
+                <p className="text-[13px] font-semibold leading-none tracking-tight">Authorization AI Briefing</p>
                 <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 2 min ago</p>
               </div>
             </div>
             <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              <span className="font-semibold text-[hsl(355_70%_52%)]">5 leads</span> are awaiting follow-up today.
-              Two <span className="font-semibold">VOBs</span> have not been returned within expected timeframe.
+              <span className="font-semibold text-[hsl(355_70%_52%)]">6 treatment auths</span> expire within 14 days.
+              Two <span className="font-semibold">progress reports</span> are still pending from BCBAs.
             </p>
             <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open Intake Insights <ChevronRight className="h-3.5 w-3.5" />
+              Open Authorization Insights <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -446,7 +446,7 @@ export default function OSIntakeCoordinator() {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">Daily Intake KPIs</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight">Daily Authorization KPIs</h2>
             <Pill tone="default">{kpis.length} metrics</Pill>
           </div>
           <div className="flex items-center gap-1.5">
@@ -464,8 +464,8 @@ export default function OSIntakeCoordinator() {
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Lead Pipeline</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Every stage from new lead to client setup</p>
+            <h3 className="text-[15px] font-semibold tracking-tight">Authorization Pipeline</h3>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Every stage from submission through approval & expiration</p>
           </div>
           <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">Open kanban</button>
         </header>
@@ -517,11 +517,11 @@ export default function OSIntakeCoordinator() {
       <section className="os-card">
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Follow-Ups & Tasks</h3>
+            <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+            <h3 className="text-[15px] font-semibold tracking-tight">Tasks & Workflow</h3>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {["All", "Calls", "Texts", "Emails", "Final Attempts", "Missing Info", "Escalations"].map((t, i) => (
+            {["All", "Due Today", "Awaiting BCBA", "Awaiting QA", "Expiring Soon", "Escalated", "Blocked"].map((t, i) => (
               <button key={t} className={cn(
                 "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
                 i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
@@ -561,8 +561,8 @@ export default function OSIntakeCoordinator() {
         <section className="os-card lg:col-span-2">
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Forms & VOB Tracking</h3>
+              <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+              <h3 className="text-[15px] font-semibold tracking-tight">QA & Treatment Plan Tracking</h3>
             </div>
             <div className="flex items-center gap-1.5">
               <Pill tone="warn">3 stalled</Pill>
@@ -597,10 +597,10 @@ export default function OSIntakeCoordinator() {
         <section className="os-card">
           <header className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Communication Hub</h3>
+              <Building2 className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+              <h3 className="text-[15px] font-semibold tracking-tight">Payer & Insurance Activity</h3>
             </div>
-            <Pill tone="ok">71% reply</Pill>
+            <Pill tone="ok">92% approval</Pill>
           </header>
           <ul className="space-y-3">
             {comms.map((c, i) => (
@@ -619,9 +619,9 @@ export default function OSIntakeCoordinator() {
             ))}
           </ul>
           <div className="mt-3 grid grid-cols-3 gap-1.5">
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Phone className="mr-1 inline h-3 w-3" />Call</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Text</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Mail className="mr-1 inline h-3 w-3" />Email</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Send className="mr-1 inline h-3 w-3" />Submit</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Ping BCBA</button>
+            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><FileWarning className="mr-1 inline h-3 w-3" />Appeal</button>
           </div>
         </section>
       </div>
@@ -631,7 +631,7 @@ export default function OSIntakeCoordinator() {
         <header className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Intake Bottlenecks</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">Expiring Soon & Urgent Alerts</h3>
           </div>
           <div className="flex items-center gap-1.5">
             <Pill tone="crit">2 critical</Pill>
