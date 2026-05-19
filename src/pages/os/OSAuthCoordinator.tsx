@@ -88,7 +88,7 @@ const comms = [
   { who: "Aetna portal",  what: "request for additional info · Davis", when: "1h",  tone: "os-tone-amber",  icon: FileWarning },
   { who: "QA Team",       what: "completed review · Ortiz",            when: "2h",  tone: "os-tone-violet", icon: ClipboardCheck },
   { who: "Cigna VA",      what: "pended for medical necessity",        when: "3h",  tone: "os-tone-coral",  icon: ShieldAlert },
-  { who: "Parent · Hayes",what: "returned signed consent",             when: "4h',  tone: "os-tone-rose",   icon: FileSignature },
+  { who: "Parent · Hayes",what: "returned signed consent",             when: "4h",  tone: "os-tone-rose",   icon: FileSignature },
 ];
 
 const bottlenecks = [
@@ -136,7 +136,7 @@ const quickActions = [
 const activity = [
   { who: "Rivky",         what: "submitted auth · Walker (BCBS)",     when: "4m",  tone: "os-tone-violet", icon: Send },
   { who: "Aetna",         what: "approved 6-month auth · Pierce",     when: "18m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Dr. Nguyen",    what: "uploaded progress report",           when: "32m', tone: "os-tone-sky",    icon: FileText },
+  { who: "Dr. Nguyen",    what: "uploaded progress report",           when: "32m", tone: "os-tone-sky",    icon: FileText },
   { who: "System",        what: "moved Hayes to Missing Documentation", when: "55m", tone: "os-tone-amber", icon: ArrowRight },
   { who: "QA Team",       what: "completed review · Ortiz",           when: "1h",  tone: "os-tone-lilac",  icon: ClipboardCheck },
   { who: "Cigna VA",      what: "denial received · Sharma · appeal opened", when: "2h", tone: "os-tone-coral", icon: ShieldAlert },
