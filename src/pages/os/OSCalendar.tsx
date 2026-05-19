@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Navigate, useParams } from "react-router-dom";
 import {
   Sparkles, Plus, RefreshCw, Settings2, Search, ChevronLeft, ChevronRight,
   CalendarDays, Users, Video, MapPin, Link2, AlertTriangle, CheckCircle2,
@@ -11,6 +12,18 @@ import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { ROLE_CALENDAR_CONFIG, type RoleCalendarConfig } from "@/lib/os/calendarConfigs";
+import type { OSRole } from "@/lib/os/permissions";
+
+/** Convert URL slug (e.g. "state-director" or "state_director") to an OSRole id. */
+function slugToRole(slug?: string): OSRole | null {
+  if (!slug) return null;
+  const normalized = slug.replace(/-/g, "_") as OSRole;
+  return normalized in ROLE_CALENDAR_CONFIG ? normalized : null;
+}
+
+export function roleToCalendarPath(role: OSRole): string {
+  return `/os/calendar/${role.replace(/_/g, "-")}`;
+}
 
 /* ============ TYPES ============ */
 type Source = "microsoft" | "calendly" | "blossom";
@@ -132,7 +145,20 @@ type ViewKind = (typeof VIEWS)[number];
 /* ============ PAGE ============ */
 export default function OSCalendar() {
   const { role } = useOSRole();
-  const config = ROLE_CALENDAR_CONFIG[role];
+  const { roleSlug } = useParams<{ roleSlug?: string }>();
+  const urlRole = slugToRole(roleSlug);
+
+  // No role in URL → redirect to the viewer's own calendar.
+  if (!urlRole) {
+    return <Navigate to={roleToCalendarPath(role)} replace />;
+  }
+
+  // Trying to access another role's calendar → only super_admin may do so.
+  if (urlRole !== role && role !== "super_admin") {
+    return <Navigate to={roleToCalendarPath(role)} replace />;
+  }
+
+  const config = ROLE_CALENDAR_CONFIG[urlRole];
   const [view, setView] = useState<ViewKind>("Week");
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [activeSources, setActiveSources] = useState<Record<Source, boolean>>({ microsoft: true, calendly: true, blossom: true });
