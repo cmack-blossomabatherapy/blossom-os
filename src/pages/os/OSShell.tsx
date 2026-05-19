@@ -10,6 +10,7 @@ import {
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake,
 } from "lucide-react";
+import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
