@@ -131,6 +131,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
@@ -187,6 +188,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const sections = [homeSection, ...NAV_SECTIONS]
     .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
     .filter((s) => s.items.length > 0);
+
+  const mobileSections = (() => {
+    const q = mobileSearch.trim().toLowerCase();
+    if (!q) return sections;
+    return sections
+      .map((s) => ({ ...s, items: s.items.filter((i) => i.label.toLowerCase().includes(q)) }))
+      .filter((s) => s.items.length > 0);
+  })();
 
   // Default open: section that contains active route, plus first section.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
@@ -250,17 +259,29 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           <div className="fixed inset-0 z-50 md:hidden" role="dialog">
             <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
             <aside className="os-glass-panel absolute left-3 right-3 top-3 bottom-3 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-5 pb-4 border-b border-foreground/[0.06]">
-                <NavLink to="/os" onClick={() => setMobileOpen(false)} className="flex items-center min-w-0">
-                  <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
-                </NavLink>
-                <button onClick={() => setMobileOpen(false)} className="os-glass-icon h-9 w-9 rounded-xl">
-                  <X className="h-4 w-4" />
-                </button>
+              <div className="px-4 pt-5 pb-3 border-b border-foreground/[0.06]">
+                <div className="flex items-center justify-between">
+                  <NavLink to="/os" onClick={() => { setMobileOpen(false); setMobileSearch(""); }} className="flex items-center min-w-0">
+                    <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
+                  </NavLink>
+                  <button onClick={() => { setMobileOpen(false); setMobileSearch(""); }} className="os-glass-icon h-9 w-9 rounded-xl">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="relative mt-4">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" strokeWidth={2.25} />
+                  <input
+                    value={mobileSearch}
+                    onChange={(e) => setMobileSearch(e.target.value)}
+                    placeholder="Search menu…"
+                    aria-label="Search menu"
+                    className="os-glass-input h-10 w-full rounded-2xl pl-10 pr-3 text-[13.5px] focus:outline-none"
+                  />
+                </div>
               </div>
-              <nav className="flex-1 overflow-y-auto px-3 pb-4">
+              <nav className="flex-1 overflow-y-auto px-3 py-3">
                 <div className="space-y-3">
-                  {sections.map((section) => (
+                  {mobileSections.map((section) => (
                     <div key={section.id}>
                       <button
                         onClick={() => toggleSection(section.id)}
@@ -269,14 +290,19 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                         <span>{section.label}</span>
                         <ChevronDown className={cn("h-3 w-3 transition-transform", !openSections[section.id] && "-rotate-90")} />
                       </button>
-                      {openSections[section.id] && (
+                      {(openSections[section.id] || mobileSearch.trim()) && (
                         <div className="mt-1 space-y-0.5">
-                          {section.items.map((item) => renderNavItem(item, () => setMobileOpen(false)))}
+                          {section.items.map((item) => renderNavItem(item, () => { setMobileOpen(false); setMobileSearch(""); }))}
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
+                {mobileSearch.trim() && mobileSections.length === 0 && (
+                  <p className="mt-6 rounded-xl border border-dashed border-foreground/10 bg-foreground/[0.02] p-4 text-center text-[12px] text-muted-foreground">
+                    No menu matches for “{mobileSearch.trim()}”.
+                  </p>
+                )}
                 {showOldVersion && (
                   <button
                     onClick={() => { setMobileOpen(false); navigate("/"); }}
@@ -385,13 +411,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             >
               <Menu className="h-4 w-4 text-muted-foreground" />
             </button>
-            <div className="relative flex-1">
+            <div className="relative hidden flex-1 md:block">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-foreground/70" strokeWidth={2.25} />
               <input
                 aria-label="Search"
                 className="os-glass-input h-11 w-full rounded-2xl pl-11 pr-4 text-[13.5px] focus:outline-none"
               />
             </div>
+            <div className="flex-1 md:hidden" />
             <button className="os-glass-icon relative">
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(265_85%_65%)] px-1 text-[9px] font-bold text-white">3</span>
