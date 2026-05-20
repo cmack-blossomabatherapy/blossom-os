@@ -131,6 +131,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     try { window.localStorage.setItem("os.sidebar.collapsed", collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
   const { user } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
@@ -187,6 +188,14 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const sections = [homeSection, ...NAV_SECTIONS]
     .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
     .filter((s) => s.items.length > 0);
+
+  const mobileSections = (() => {
+    const q = mobileSearch.trim().toLowerCase();
+    if (!q) return sections;
+    return sections
+      .map((s) => ({ ...s, items: s.items.filter((i) => i.label.toLowerCase().includes(q)) }))
+      .filter((s) => s.items.length > 0);
+  })();
 
   // Default open: section that contains active route, plus first section.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
