@@ -60,13 +60,6 @@ const performance = [
   { label: "Supervision Hours",  value: "4.5h",hint: "of 5h goal",    spark: [1,2,2.5,3,3.5,4,4,4.25,4.5], tone: "warn" as Tone, icon: Stethoscope },
 ];
 
-const messages = [
-  { who: "Jennifer P. · BCBA",   what: "Great session notes on Liam — let's review at supervision.", when: "12m", tone: "os-tone-violet", icon: MessageSquare, unread: true },
-  { who: "Scheduling",           what: "Tomorrow's 1 PM session moved to 1:30 PM.",                    when: "1h",  tone: "os-tone-amber",  icon: CalendarDays,  unread: true },
-  { who: "Aria's parent",        what: "Quick update request after today's session — thank you!",     when: "2h",  tone: "os-tone-mint",   icon: Baby,          unread: false },
-  { who: "HR · Announcements",   what: "August team huddle Friday 4 PM — virtual.",                    when: "1d",  tone: "os-tone-sky",    icon: BellRing,      unread: false },
-];
-
 const aiInsights = [
   { icon: Smile,       tone: "os-tone-mint",   title: "You're having a great week",       body: "Session completion is above team average. Keep it up!",                       cta: "See trends" },
   { icon: Lightbulb,   tone: "os-tone-sky",    title: "Lighter afternoon today",          body: "Only 1 session after 3 PM — great time to finish notes from yesterday.",     cta: "Open notes" },
@@ -76,7 +69,7 @@ const aiInsights = [
 
 const activity = [
   { who: "You",            what: "completed session · Liam Carter",          when: "yesterday", tone: "os-tone-mint",   icon: CheckCircle2 },
-  { who: "Jennifer P.",    what: "left feedback on your last note",          when: "yesterday", tone: "os-tone-violet", icon: MessageSquare },
+  { who: "Jennifer P.",    what: "left feedback on your last note",          when: "yesterday", tone: "os-tone-violet", icon: NotebookPen },
   { who: "You",            what: "submitted Crisis De-escalation training",  when: "2d",        tone: "os-tone-sky",    icon: GraduationCap },
   { who: "Scheduling",     what: "added Wed 4 PM supervision overlap",       when: "2d",        tone: "os-tone-amber",  icon: CalendarDays },
   { who: "You",            what: "uploaded consent form · Mia Reynolds",     when: "3d",        tone: "os-tone-rose",   icon: FileText },
@@ -432,7 +425,7 @@ export default function OSRBT() {
               <Pill tone="med">Confirm</Pill>
             </li>
             <li className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-xl os-tone-mint"><MessageSquare className="h-3.5 w-3.5" /></div>
+              <div className="grid h-8 w-8 place-items-center rounded-xl os-tone-mint"><NotebookPen className="h-3.5 w-3.5" /></div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-semibold leading-tight">Feedback ready · Marcus L.</p>
                 <p className="text-[10.5px] text-muted-foreground">Last week's overlap notes</p>
