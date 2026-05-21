@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity } from "lucide-react";
+import { Check, Copy, Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity, Info } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
