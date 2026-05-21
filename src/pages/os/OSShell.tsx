@@ -229,15 +229,22 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   })();
 
   // Default open: section that contains active route, plus first section.
+  // Persist user toggles in localStorage so collapsed groups stay collapsed.
+  const SECTIONS_KEY = "os.sidebar.openSections";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    const map: Record<string, boolean> = {};
-    map["home"] = true;
+    const defaults: Record<string, boolean> = { home: true };
     NAV_SECTIONS.forEach((s, idx) => {
       const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to));
-      map[s.id] = isActive || idx === 0;
+      defaults[s.id] = isActive || idx === 0;
     });
-    return map;
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(SECTIONS_KEY) || "{}") as Record<string, boolean>;
+      return { ...defaults, ...stored };
+    } catch { return defaults; }
   });
+  useEffect(() => {
+    try { window.localStorage.setItem(SECTIONS_KEY, JSON.stringify(openSections)); } catch { /* ignore */ }
+  }, [openSections]);
   const toggleSection = (id: string) => setOpenSections((m) => ({ ...m, [id]: !m[id] }));
 
   const allItems = sections.flatMap((s) => s.items);
@@ -407,7 +414,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <p className="text-[13px] font-semibold tracking-tight">Blossom OS AI</p>
               </div>
               <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted-foreground">Your intelligent operations assistant is ready.</p>
-              <button className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[hsl(265_50%_85%)] bg-white/70 px-2.5 py-1.5 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white">
+              <button
+                onClick={() => navigate("/ai/assistant")}
+                className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-[hsl(265_50%_85%)] bg-white/70 px-2.5 py-1.5 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:bg-white"
+              >
                 Ask Blossom AI <ChevronRight className="h-3 w-3" />
               </button>
             </div>
@@ -461,6 +471,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(265_85%_65%)] px-1 text-[9px] font-bold text-white">3</span>
             </button>
+            <Tooltip delayDuration={120}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate("/ai/assistant")}
+                  aria-label="Ask Blossom AI"
+                  className="os-glass-icon relative inline-flex items-center justify-center bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white hover:opacity-90"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Ask Blossom AI</TooltipContent>
+            </Tooltip>
           <RoleSwitcher />
             {rightRail && (
               <Tooltip delayDuration={120}>
