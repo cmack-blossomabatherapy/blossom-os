@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { allWorkforceUsers } from "@/lib/workforce/mockStaff";
 
 interface Row {
   user_id: string;
@@ -28,6 +29,7 @@ interface Row {
   viventium_employee_id: string | null;
   active: boolean;
   roles: AppRole[];
+  isWorkforce?: boolean;
 }
 
 const roleLabel = (r: AppRole) => ROLE_META.find((m) => m.key === r)?.label ?? r;
