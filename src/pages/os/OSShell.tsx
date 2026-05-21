@@ -443,11 +443,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <Menu className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="relative hidden flex-1 md:block">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-foreground/70" strokeWidth={2.25} />
-              <input
-                aria-label="Search"
-                className="os-glass-input h-11 w-full rounded-2xl pl-11 pr-4 text-[13.5px] focus:outline-none"
-              />
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                aria-label="Search Blossom OS"
+                className="os-glass-input flex h-11 w-full items-center gap-3 rounded-2xl pl-4 pr-2 text-left text-[13.5px] text-muted-foreground transition hover:text-foreground"
+              >
+                <Search className="h-[18px] w-[18px] shrink-0 text-foreground/70" strokeWidth={2.25} />
+                <span className="flex-1 truncate">Search pages, clients, staff, leads…</span>
+                <kbd className="ml-auto hidden items-center gap-1 rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-foreground/60 lg:inline-flex">
+                  <span className="text-[11px]">⌘</span>K
+                </kbd>
+              </button>
             </div>
             <div className="flex-1 md:hidden" />
             <button className="os-glass-icon relative">
