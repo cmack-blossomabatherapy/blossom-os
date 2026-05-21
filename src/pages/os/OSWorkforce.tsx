@@ -245,10 +245,21 @@ export default function OSWorkforce() {
                 action={<button className="text-[11.5px] font-semibold text-foreground/60 hover:text-foreground inline-flex items-center gap-1">View all <ChevronRight className="h-3 w-3" /></button>}
               />
               <div className="mt-4 px-5 space-y-3">
-                {filteredBcbas.map((b) => (
+                {filteredBcbas.slice(0, bcbaVisible).map((b) => (
                   <BcbaCard key={b.id} b={b} onOpen={() => setSelectedBcba(b)} />
                 ))}
               </div>
+              {filteredBcbas.length > bcbaVisible && (
+                <div className="mt-4 px-5">
+                  <button
+                    onClick={() => setBcbaVisible(v => v + 5)}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-foreground/[0.08] bg-white/70 py-2.5 text-[12px] font-semibold text-foreground/70 transition hover:bg-white hover:text-foreground"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                    Show 5 more ({filteredBcbas.length - bcbaVisible} remaining)
+                  </button>
+                </div>
+              )}
             </Card>
 
             {/* RBT OVERVIEW */}
