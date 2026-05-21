@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ArrowUpRight, ArrowDownRight, AlertTriangle, Flame, ArrowRight,
-  Sparkles, Activity, ShieldCheck, Wallet, CheckCircle2, Database,
+  Sparkles, Activity, ShieldCheck, Wallet, CheckCircle2, Database, CalendarIcon,
 } from "lucide-react";
+import { format } from "date-fns";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
@@ -14,6 +15,9 @@ import {
 } from "@/lib/analytics/stateOps";
 import { HoursVsClientsChart } from "@/components/state-director/HoursVsClientsChart";
 import { SupervisionLeaderboard } from "@/components/state-director/SupervisionLeaderboard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 const STATE_NAMES: Record<string, string> = {
   NC: "North Carolina", GA: "Georgia", VA: "Virginia", TN: "Tennessee",
