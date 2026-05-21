@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Sparkles, Upload, Plus, MessageCircleQuestion, Bookmark, Star, History,
+  Sparkles, Plus, Bookmark, Star, History,
   ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Pin,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
@@ -59,7 +59,7 @@ export default function ReportsHome() {
           </div>
           <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">Reports &amp; Analytics</h1>
           <p className="mt-1 max-w-2xl text-[14px] text-muted-foreground">
-            Operational intelligence for every department. Browse dashboards, save views, upload exports, or request something new.
+            Operational intelligence for every department. Browse dashboards across your role.
           </p>
 
           {/* AI summary */}
@@ -104,20 +104,7 @@ export default function ReportsHome() {
 
           {/* CTAs */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <Button size="sm" className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]" onClick={() => setRequestOpen(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" />Request New Report
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <Upload className="mr-1 h-3.5 w-3.5" />Upload Export
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <Bookmark className="mr-1 h-3.5 w-3.5" />Create Saved View
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <MessageCircleQuestion className="mr-1 h-3.5 w-3.5" />Ask Blossom AI
-            </Button>
-
-            <div className="relative ml-auto w-full max-w-xs">
+            <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
@@ -168,10 +155,12 @@ export default function ReportsHome() {
         </SidePanel>
       </section>
 
-      {/* ============== UPLOAD + REQUEST ============== */}
-      <section className="mt-10 grid gap-4 lg:grid-cols-2">
-        <UploadCenter />
-        <RequestCallout onClick={() => setRequestOpen(true)} />
+      {/* ============== REQUEST A NEW REPORT ============== */}
+      <section className="mt-10 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-secondary/20 px-6 py-8 text-center">
+        <p className="text-[13px] text-muted-foreground">Don't see what you need?</p>
+        <Button size="sm" onClick={() => setRequestOpen(true)} className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]">
+          <Plus className="mr-1 h-3.5 w-3.5" />Request a New Report
+        </Button>
       </section>
 
       {/* ============== ALL REPORTS (filtered/search) ============== */}
