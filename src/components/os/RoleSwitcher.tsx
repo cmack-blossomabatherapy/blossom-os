@@ -3,12 +3,17 @@ import { ChevronDown, Shield, MapPin, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole, OS_STATES } from "@/contexts/OSRoleContext";
 import { OS_ROLES } from "@/lib/os/permissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 /** Demo control for switching the active OS role + state scope. */
 export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
   const { role, scope, activeState, setRole, setActiveState } = useOSRole();
+  const { isAdmin, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const current = OS_ROLES.find((r) => r.id === role)!;
+
+  // Only super admins can impersonate other roles.
+  if (loading || !isAdmin) return null;
 
   return (
     <div className="relative">

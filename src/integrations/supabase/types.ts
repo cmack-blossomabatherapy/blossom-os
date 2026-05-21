@@ -4960,15 +4960,19 @@ export type Database = {
           department: string | null
           display_name: string | null
           email: string | null
+          employment_type: string | null
+          hire_date: string | null
           id: string
           job_title: string | null
           must_change_password: boolean
           new_state_employee: boolean
           part_of_leadership: boolean
+          phone: string | null
           responsibilities: string | null
           state: string | null
           updated_at: string
           user_id: string
+          viventium_employee_id: string | null
           welcome_sent_at: string | null
           welcome_sent_by: string | null
         }
@@ -4981,15 +4985,19 @@ export type Database = {
           department?: string | null
           display_name?: string | null
           email?: string | null
+          employment_type?: string | null
+          hire_date?: string | null
           id?: string
           job_title?: string | null
           must_change_password?: boolean
           new_state_employee?: boolean
           part_of_leadership?: boolean
+          phone?: string | null
           responsibilities?: string | null
           state?: string | null
           updated_at?: string
           user_id: string
+          viventium_employee_id?: string | null
           welcome_sent_at?: string | null
           welcome_sent_by?: string | null
         }
@@ -5002,15 +5010,19 @@ export type Database = {
           department?: string | null
           display_name?: string | null
           email?: string | null
+          employment_type?: string | null
+          hire_date?: string | null
           id?: string
           job_title?: string | null
           must_change_password?: boolean
           new_state_employee?: boolean
           part_of_leadership?: boolean
+          phone?: string | null
           responsibilities?: string | null
           state?: string | null
           updated_at?: string
           user_id?: string
+          viventium_employee_id?: string | null
           welcome_sent_at?: string | null
           welcome_sent_by?: string | null
         }
