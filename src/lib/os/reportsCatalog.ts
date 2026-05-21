@@ -144,10 +144,10 @@ export const ROLE_AI_SUMMARY: Record<OSRole, RoleAISummary> = {
     { icon: AlertTriangle, text: "11 clients stuck in Staffing Needed > 5 days.", tone: "amber" },
     { icon: ShieldCheck, text: "Supervision compliance back above target.", tone: "emerald" },
   ]},
-  state_director:        { headline: "State performance solid. Charlotte staffing escalation requires attention.", insights: [
-    { icon: MapPin, text: "Your region: 14 active starts in next 30 days.", tone: "sky" },
-    { icon: AlertTriangle, text: "Charlotte: 1 BCBA short for projected starts.", tone: "rose" },
-    { icon: TrendingUp, text: "Conversion rate +6pt vs last month.", tone: "emerald" },
+  state_director:        { headline: "Operational intelligence — your state at a glance. Staffing needs your attention this week.", insights: [
+    { icon: MapPin, text: "Hours/active client trending up — operational efficiency improving.", tone: "emerald" },
+    { icon: AlertTriangle, text: "5 critical actions unresolved — staffing is the dominant theme.", tone: "rose" },
+    { icon: TrendingUp, text: "BCBA pipeline can cover next 30 days of projected starts.", tone: "violet" },
   ]},
   intake_coordinator:    { headline: "Best month on record for time-to-contact. Keep the momentum.", insights: [
     { icon: TrendingUp, text: "Contact rate 74% — up 6 points.", tone: "emerald" },
