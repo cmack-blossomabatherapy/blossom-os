@@ -9,7 +9,7 @@ import {
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
-  LineChart, PhoneCall, Gauge,
+  LineChart, PhoneCall, Gauge, Database,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
