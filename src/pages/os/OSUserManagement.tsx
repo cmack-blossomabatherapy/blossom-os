@@ -191,10 +191,13 @@ export default function OSUserManagement() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {isAdmin && (
+                    {isAdmin && !r.isWorkforce && (
                       <Button size="sm" variant="ghost" onClick={() => setEditing(r)} className="gap-1.5">
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
+                    )}
+                    {r.isWorkforce && (
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">Workforce roster</Badge>
                     )}
                   </td>
                 </tr>
