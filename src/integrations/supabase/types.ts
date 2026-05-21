@@ -4727,6 +4727,381 @@ export type Database = {
         }
         Relationships: []
       }
+      monday_auth_approvals_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_authorizations_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_clients_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_denials_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_import_runs: {
+        Row: {
+          board: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          rows_inserted: number
+          rows_updated: number
+          started_at: string
+          started_by: string | null
+          storage_path: string
+          subitems_inserted: number
+          updates_inserted: number
+        }
+        Insert: {
+          board: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_inserted?: number
+          rows_updated?: number
+          started_at?: string
+          started_by?: string | null
+          storage_path: string
+          subitems_inserted?: number
+          updates_inserted?: number
+        }
+        Update: {
+          board?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          rows_inserted?: number
+          rows_updated?: number
+          started_at?: string
+          started_by?: string | null
+          storage_path?: string
+          subitems_inserted?: number
+          updates_inserted?: number
+        }
+        Relationships: []
+      }
+      monday_leads_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_no_oon_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      monday_subitems_raw: {
+        Row: {
+          data: Json
+          due_date: string | null
+          id: string
+          imported_at: string
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          parent_board: string
+          parent_item_id: string | null
+          parent_item_name: string | null
+          source_file: string | null
+          status: string | null
+        }
+        Insert: {
+          data?: Json
+          due_date?: string | null
+          id?: string
+          imported_at?: string
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          parent_board: string
+          parent_item_id?: string | null
+          parent_item_name?: string | null
+          source_file?: string | null
+          status?: string | null
+        }
+        Update: {
+          data?: Json
+          due_date?: string | null
+          id?: string
+          imported_at?: string
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          parent_board?: string
+          parent_item_id?: string | null
+          parent_item_name?: string | null
+          source_file?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      monday_updates_raw: {
+        Row: {
+          author: string | null
+          body: string | null
+          id: string
+          imported_at: string
+          parent_board: string
+          parent_item_name: string | null
+          posted_at: string | null
+          source_file: string | null
+        }
+        Insert: {
+          author?: string | null
+          body?: string | null
+          id?: string
+          imported_at?: string
+          parent_board: string
+          parent_item_name?: string | null
+          posted_at?: string | null
+          source_file?: string | null
+        }
+        Update: {
+          author?: string | null
+          body?: string | null
+          id?: string
+          imported_at?: string
+          parent_board?: string
+          parent_item_name?: string | null
+          posted_at?: string | null
+          source_file?: string | null
+        }
+        Relationships: []
+      }
       onboarding_audit_log: {
         Row: {
           actor_id: string | null
@@ -6611,6 +6986,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      va_credentialing_raw: {
+        Row: {
+          data: Json
+          id: string
+          imported_at: string
+          monday_group: string | null
+          monday_item_id: string | null
+          name: string | null
+          owner: string | null
+          source_file: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          imported_at?: string
+          monday_group?: string | null
+          monday_item_id?: string | null
+          name?: string | null
+          owner?: string | null
+          source_file?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
