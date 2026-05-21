@@ -46,7 +46,7 @@ export default function ReportDetail() {
         <div className="os-card flex flex-col items-center justify-center py-20 text-center">
           <h2 className="text-[20px] font-semibold tracking-tight">Report not found</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">It may have been archived or isn't visible to your role.</p>
-          <Button className="mt-5" size="sm" onClick={() => navigate("/os/reports")}>Back to Reports</Button>
+          <Button className="mt-5" size="sm" onClick={() => navigate("/reports")}>Back to Reports</Button>
         </div>
       </OSShell>
     );
@@ -56,7 +56,7 @@ export default function ReportDetail() {
     <OSShell>
       {/* Breadcrumb / back */}
       <div className="mb-3">
-        <Link to="/os/reports" className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground hover:text-foreground">
+        <Link to="/reports" className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> All reports
         </Link>
       </div>
@@ -167,7 +167,7 @@ export default function ReportDetail() {
           <h3 className="text-[14px] font-semibold tracking-tight">Related reports</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {related.map(r => (
-              <Link key={r.id} to={`/os/reports/${r.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
+              <Link key={r.id} to={`/reports/${r.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{cat.name}</p>
                 <p className="mt-1 text-[13.5px] font-semibold tracking-tight">{r.title}</p>
                 <p className="mt-1 line-clamp-2 text-[11.5px] text-muted-foreground">{r.description}</p>
