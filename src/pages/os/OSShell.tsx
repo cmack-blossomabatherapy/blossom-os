@@ -175,7 +175,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     HOME_EXTRAS.forEach((e) => {
       // Calendar route is role-specific — rewrite "/calendar" to the viewer's role calendar.
       if (e.module === "calendar") {
-        items.push({ ...e, to: `/os/calendar/${role.replace(/_/g, "-")}` });
+        items.push({ ...e, to: `/calendar/${role.replace(/_/g, "-")}` });
       } else {
         items.push(e);
       }

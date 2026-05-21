@@ -167,7 +167,7 @@ export default function ReportDetail() {
           <h3 className="text-[14px] font-semibold tracking-tight">Related reports</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {related.map(r => (
-              <Link key={r.id} to={`/os/reports/${r.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
+              <Link key={r.id} to={`/reports/${r.id}`} className="group block rounded-2xl border border-border/60 bg-card p-3.5 transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.35)] hover:shadow-md">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{cat.name}</p>
                 <p className="mt-1 text-[13.5px] font-semibold tracking-tight">{r.title}</p>
                 <p className="mt-1 line-clamp-2 text-[11.5px] text-muted-foreground">{r.description}</p>
