@@ -44,7 +44,7 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    id: "staffing", label: "Staffing & Employees", items: [
+    id: "staffing", label: "Clinical Staff", items: [
       { to: "/os/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
       { to: "/os/recruiting", label: "Recruiting", icon: UserPlus, module: "recruiting" },
       { to: "/os/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
