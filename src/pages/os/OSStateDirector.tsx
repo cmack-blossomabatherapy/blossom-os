@@ -108,8 +108,13 @@ export default function OSStateDirector() {
   const { activeState } = useOSRole();
   const [code, setCode] = useState<CodeFilter>("all");
   const [windowKey, setWindowKey] = useState<WindowKey>("4w");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
 
-  const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey);
+  const customFromStr = customFrom ? format(customFrom, "yyyy-MM-dd") : undefined;
+  const customToStr = customTo ? format(customTo, "yyyy-MM-dd") : undefined;
+
+  const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey, customFromStr, customToStr);
 
   const filtered = useMemo(() => filterByCode(sessions, code), [sessions, code]);
   const series = useMemo(() => weeklySeries(filtered), [filtered]);
