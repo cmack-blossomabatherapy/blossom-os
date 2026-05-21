@@ -2,7 +2,7 @@ import {
   ArrowUpRight, ArrowDownRight, Sparkles, AlertTriangle, CalendarDays, ChevronRight,
   Users, Heart, FileCheck2, GraduationCap, Activity, Clock, BadgeCheck, Brain,
   Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, UserPlus, ClipboardCheck,
-  BookOpen, Inbox, ArrowRight, Phone, MessageSquare, Mail, Send, FileText,
+  BookOpen, Inbox, ArrowRight, Phone, Mail, Send, FileText,
   ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
   CalendarClock, FileWarning, FileSignature, Building2, Stamp, ShieldAlert, TrendingUp,
   Briefcase, UserCheck, Star, Target, Sparkle, Trophy,
@@ -128,7 +128,6 @@ const quickActions = [
   { label: "Add Candidate",       icon: UserPlus,       tone: "os-tone-rose"   },
   { label: "Schedule Interview",  icon: CalendarClock,  tone: "os-tone-sky"    },
   { label: "Send Offer",          icon: Send,           tone: "os-tone-violet" },
-  { label: "Send Follow-Up",      icon: MessageSquare,  tone: "os-tone-lilac"  },
   { label: "Schedule Orientation",icon: GraduationCap,  tone: "os-tone-mint"   },
   { label: "Verify Certification",icon: BadgeCheck,     tone: "os-tone-amber"  },
   { label: "View Reports",        icon: Activity,       tone: "os-tone-coral"  },
@@ -547,7 +546,6 @@ export default function OSRecruitingTeam() {
                 <Pill tone={prio as any}>{f.priority}</Pill>
                 <div className="ml-1 hidden items-center gap-1 md:flex">
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Text"><MessageSquare className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Snooze"><Pause className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
