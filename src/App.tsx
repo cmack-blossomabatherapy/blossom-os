@@ -172,6 +172,7 @@ import OSRBT from "./pages/os/OSRBT";
 import OSCalendar from "./pages/os/OSCalendar";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
+import OSComingSoon from "./pages/os/OSComingSoon";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
