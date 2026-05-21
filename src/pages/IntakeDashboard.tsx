@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Download, Eye, FileText,
-  Mail, MessageSquare, Phone, RefreshCw, Search, Send, ShieldCheck, UserPlus, Users, Zap,
+  Mail, Phone, RefreshCw, Search, Send, ShieldCheck, UserPlus, Users, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,7 +156,7 @@ export default function IntakeDashboard() {
   });
 
   const quickAction = (lead: Lead, action: string) => {
-    if (action === "Call" || action === "Text" || action === "Email" || action === "Mark Contacted") {
+    if (action === "Call" || action === "Email" || action === "Mark Contacted") {
       updateLead(lead.id, { lastContacted: new Date().toISOString(), status: lead.status === "New Lead" ? "In Contact" : lead.status, nextAction: action === "Mark Contacted" ? "Send intake form" : lead.nextAction });
     }
     if (action === "Send Form") updateLead(lead.id, { formStatus: "Sent", consentStatus: lead.consentStatus === "Not Sent" ? "Sent" : lead.consentStatus });
@@ -254,7 +254,7 @@ function LeadDetailSheet({ lead, allLeads, open, onClose, onAction }: { lead: Le
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent side="right" className="w-[560px] overflow-y-auto p-0 sm:max-w-[560px]">
-        <div className="p-6 pb-4"><SheetHeader><SheetTitle className="text-xl">{lead.parentName} / {lead.childName}</SheetTitle><SheetDescription>{lead.state} · {lead.source} · {lead.owner || "Unassigned"}</SheetDescription></SheetHeader><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={lead.status} variant={statusVariant(lead.status)} /><StatusBadge status={lead.priority} variant={lead.priority === "Hot" ? "destructive" : lead.priority === "Warm" ? "warning" : "muted"} />{alerts.map((alert) => <StatusBadge key={alert.label} status={alert.label} variant={alert.severity === "red" ? "destructive" : "warning"} />)}</div><div className="mt-4 grid grid-cols-4 gap-2">{["Call", "Text", "Email", "Send Form", "Mark Contacted", "Assign Owner", "Open Lead"].map((action) => <Button key={action} variant="outline" size="sm" className="h-auto flex-col gap-1 py-2 text-[10px]" onClick={() => onAction(lead, action)}>{action === "Call" ? <Phone className="h-3.5 w-3.5" /> : action === "Text" ? <MessageSquare className="h-3.5 w-3.5" /> : action === "Email" ? <Mail className="h-3.5 w-3.5" /> : action === "Send Form" ? <Send className="h-3.5 w-3.5" /> : action === "Assign Owner" ? <UserPlus className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}{action}</Button>)}</div></div>
+        <div className="p-6 pb-4"><SheetHeader><SheetTitle className="text-xl">{lead.parentName} / {lead.childName}</SheetTitle><SheetDescription>{lead.state} · {lead.source} · {lead.owner || "Unassigned"}</SheetDescription></SheetHeader><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={lead.status} variant={statusVariant(lead.status)} /><StatusBadge status={lead.priority} variant={lead.priority === "Hot" ? "destructive" : lead.priority === "Warm" ? "warning" : "muted"} />{alerts.map((alert) => <StatusBadge key={alert.label} status={alert.label} variant={alert.severity === "red" ? "destructive" : "warning"} />)}</div><div className="mt-4 grid grid-cols-3 gap-2">{["Call", "Email", "Send Form", "Mark Contacted", "Assign Owner", "Open Lead"].map((action) => <Button key={action} variant="outline" size="sm" className="h-auto flex-col gap-1 py-2 text-[10px]" onClick={() => onAction(lead, action)}>{action === "Call" ? <Phone className="h-3.5 w-3.5" /> : action === "Email" ? <Mail className="h-3.5 w-3.5" /> : action === "Send Form" ? <Send className="h-3.5 w-3.5" /> : action === "Assign Owner" ? <UserPlus className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}{action}</Button>)}</div></div>
         <Separator />
         <Tabs defaultValue="overview" className="p-4"><TabsList className="grid h-auto w-full grid-cols-4 gap-1 xl:grid-cols-7"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="contact">Contact</TabsTrigger><TabsTrigger value="forms">Forms</TabsTrigger><TabsTrigger value="vob">VOB</TabsTrigger><TabsTrigger value="tasks">Tasks</TabsTrigger><TabsTrigger value="docs">Docs</TabsTrigger><TabsTrigger value="timeline">Timeline</TabsTrigger></TabsList>
           <TabsContent value="overview" className="space-y-3 pt-3"><DetailGrid rows={[["Current status", lead.status], ["Next action", lead.nextAction], ["Days in stage", `${lead.daysInStage} days`], ["Blockers", alerts.map((a) => a.label).join(", ") || "None"]]} /></TabsContent>

@@ -1,5 +1,5 @@
 import {
-  Sparkles, ChevronRight, Clock, CalendarDays, MapPin, MessageSquare,
+  Sparkles, ChevronRight, Clock, CalendarDays, MapPin,
   CheckCircle2, AlertTriangle, GraduationCap, BookOpen, Radio,
   Heart, Smile, NotebookPen, Stethoscope, FileText, Phone, HelpCircle,
   Coffee, Sun, Award, Flame, TrendingUp, Bell, Baby, Activity, Trophy,
