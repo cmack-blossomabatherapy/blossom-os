@@ -382,7 +382,7 @@ const App = () => (
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/ai/assistant" element={<OSPlaceholder title="Ask Blossom AI" description="Global AI assistant for operational questions." icon={Bot} />} />
+                  <Route path="/ai/assistant" element={<OSAskBlossom />} />
                   <Route path="/ai/insights" element={<OSPlaceholder title="AI Insights" description="AI-generated operational recommendations." icon={Brain} />} />
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
