@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/lib/roles";
 import { ROLE_META } from "@/lib/roles";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,6 +32,7 @@ interface Row {
 
 const roleLabel = (r: AppRole) => ROLE_META.find((m) => m.key === r)?.label ?? r;
 const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People", "Support", "Legacy"] as const;
+const EMPLOYEE_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
 
 export default function OSUserManagement() {
   const { isAdmin } = useAuth();
@@ -283,7 +285,17 @@ function EditUserSheet({
                 <Input value={form.department ?? ""} onChange={(e) => setForm({ ...form, department: e.target.value })} />
               </Field>
               <Field label="State">
-                <Input value={form.state ?? ""} onChange={(e) => setForm({ ...form, state: e.target.value ?? "" })} placeholder="FL, GA, NC…" />
+                <Select
+                  value={form.state ?? ""}
+                  onValueChange={(v) => setForm({ ...form, state: v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYEE_STATES.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
               <Field label="Phone">
                 <Input value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
