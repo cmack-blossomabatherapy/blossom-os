@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { allWorkforceUsers } from "@/lib/workforce/mockStaff";
 
 interface Row {
   user_id: string;
@@ -28,6 +29,7 @@ interface Row {
   viventium_employee_id: string | null;
   active: boolean;
   roles: AppRole[];
+  isWorkforce?: boolean;
 }
 
 const roleLabel = (r: AppRole) => ROLE_META.find((m) => m.key === r)?.label ?? r;
@@ -83,9 +85,30 @@ export default function OSUserManagement() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => {
+    const workforceRows: Row[] = allWorkforceUsers().map((w) => ({
+      user_id: `workforce:${w.id}`,
+      display_name: w.name,
+      email: w.email,
+      state: w.state,
+      department: w.role === "BCBA" ? "Clinical · BCBA" : "Clinical · RBT",
+      job_title: w.role === "BCBA" ? "Board Certified Behavior Analyst" : "Registered Behavior Technician",
+      phone: null,
+      hire_date: null,
+      employment_type: "Full-time",
+      viventium_employee_id: null,
+      active: true,
+      roles: [w.role === "BCBA" ? "bcba" : "rbt"] as AppRole[],
+      isWorkforce: true,
+    }));
+    // Avoid duplicates with any DB rows that already share the same email
+    const existingEmails = new Set(rows.map((r) => (r.email ?? "").toLowerCase()).filter(Boolean));
+    const merged = [
+      ...rows,
+      ...workforceRows.filter((w) => !existingEmails.has((w.email ?? "").toLowerCase())),
+    ];
     const needle = q.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((r) =>
+    if (!needle) return merged;
+    return merged.filter((r) =>
       [r.display_name, r.email, r.state, r.department, r.viventium_employee_id, r.roles.join(" ")].join(" ").toLowerCase().includes(needle),
     );
   }, [rows, q]);
@@ -168,10 +191,13 @@ export default function OSUserManagement() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {isAdmin && (
+                    {isAdmin && !r.isWorkforce && (
                       <Button size="sm" variant="ghost" onClick={() => setEditing(r)} className="gap-1.5">
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
+                    )}
+                    {r.isWorkforce && (
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">Workforce roster</Badge>
                     )}
                   </td>
                 </tr>
