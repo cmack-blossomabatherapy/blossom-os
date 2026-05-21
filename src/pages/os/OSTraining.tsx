@@ -111,7 +111,7 @@ export default function OSTraining() {
                 Browse Departments
               </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => setTab("sop")}>
-                <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
+                <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
               </Button>
             </div>
           </header>
@@ -232,7 +232,7 @@ export default function OSTraining() {
                       tab === k ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {k === "sop" ? "SOP Library" : k === "required" ? "My Required" : "All"}
+                    {k === "sop" ? "Resource Library" : k === "required" ? "My Required" : "All"}
                   </button>
                 ))}
               </div>
@@ -297,7 +297,7 @@ export default function OSTraining() {
             <h3 className="text-[13px] font-semibold">Quick Access</h3>
             <div className="mt-3 grid grid-cols-1 gap-1.5 text-[12.5px]">
               {[
-                { label: "SOP Library", onClick: () => { setTab("sop"); document.getElementById("all-trainings")?.scrollIntoView({ behavior: "smooth" }); } },
+                { label: "Resource Library", onClick: () => { setTab("sop"); document.getElementById("all-trainings")?.scrollIntoView({ behavior: "smooth" }); } },
                 { label: "My Required Trainings", onClick: () => { setTab("required"); document.getElementById("all-trainings")?.scrollIntoView({ behavior: "smooth" }); } },
                 { label: "Department Trainings", onClick: () => document.getElementById("departments")?.scrollIntoView({ behavior: "smooth" }) },
                 { label: "Operational Guides", onClick: () => { setQuery("operational"); } },
