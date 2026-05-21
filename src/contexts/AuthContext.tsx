@@ -9,6 +9,7 @@ import {
 } from "@/lib/rememberSession";
 import { startOnboardingSync, stopOnboardingSync } from "@/lib/onboarding/sync";
 import { setOnboardingPath, getOnboardingState } from "@/lib/onboarding/storage";
+import { clearMfaVerified } from "@/lib/mfa";
 
 interface AuthContextValue {
   session: Session | null;
@@ -171,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     stopOnboardingSync();
     await supabase.auth.signOut();
     clearRememberPreference();
+    if (user?.id) clearMfaVerified(user.id);
     setRoles([]);
     setMustChangePassword(false);
     setPartOfLeadership(false);

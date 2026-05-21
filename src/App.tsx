@@ -124,6 +124,8 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import MfaSetup from "./pages/MfaSetup";
+import MfaVerify from "./pages/MfaVerify";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
@@ -281,6 +283,8 @@ const App = () => (
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/mfa/setup" element={<MfaSetup />} />
+                <Route path="/mfa/verify" element={<MfaVerify />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
