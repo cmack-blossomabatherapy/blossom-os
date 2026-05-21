@@ -13,7 +13,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
   scheduling: "Scheduling", cases: "Case Management",
   staff: "RBT / BCBA", recruiting: "Recruiting", credentialing: "Credentialing",
   employee_ops: "Employee Ops", evaluations: "Evaluations", training: "Training Academy",
-  reports: "Reports", kpi: "KPI Tracking", workflows: "Workflow Center", sop: "SOP Library",
+  reports: "Reports", kpi: "KPI Tracking", vob: "VOB Decision Center", workflows: "Workflow Center", sop: "SOP Library",
   marketing: "Marketing Ops", analytics_hub: "Analytics Hub",
   billing: "Billing", payroll: "Payroll", revenue: "Revenue Analytics", insurance: "Insurance Tracking",
   tech_requests: "Tech Requests", internal_requests: "Internal Requests",
