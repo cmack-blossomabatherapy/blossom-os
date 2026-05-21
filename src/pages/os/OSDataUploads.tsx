@@ -4,7 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Database, Upload, FileText, Trash2, Loader2, ShieldAlert } from "lucide-react";
+import { Database, Upload, FileText, Trash2, Loader2, ShieldAlert, Play, CheckCircle2, AlertCircle } from "lucide-react";
+
+const BOARD_MAP: Record<string, string> = {
+  monday_leads: "leads",
+  monday_clients: "clients",
+  monday_no_oon_benefits: "no_oon",
+  monday_authorizations: "authorizations",
+  monday_auth_approvals: "auth_approvals",
+  monday_denials: "denials",
+  cred_va: "va_credentialing",
+};
 
 type UploadRow = {
   id: string;
@@ -16,6 +26,20 @@ type UploadRow = {
   mime_type: string | null;
   storage_path: string;
   uploaded_at: string;
+};
+
+type ImportRun = {
+  id: string;
+  board: string;
+  storage_path: string;
+  rows_inserted: number;
+  rows_updated: number;
+  subitems_inserted: number;
+  updates_inserted: number;
+  error: string | null;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
 };
 
 type SourceDef = { key: string; label: string };
@@ -70,6 +94,8 @@ export default function OSDataUploads() {
   const [rows, setRows] = useState<UploadRow[]>([]);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
+  const [parsingId, setParsingId] = useState<string | null>(null);
+  const [runs, setRuns] = useState<ImportRun[]>([]);
 
   async function load() {
     setFetching(true);
@@ -79,6 +105,12 @@ export default function OSDataUploads() {
       .order("uploaded_at", { ascending: false });
     if (error) toast.error(error.message);
     else setRows((data ?? []) as UploadRow[]);
+    const { data: runData } = await supabase
+      .from("monday_import_runs")
+      .select("*")
+      .order("started_at", { ascending: false })
+      .limit(20);
+    setRuns((runData ?? []) as ImportRun[]);
     setFetching(false);
   }
 
@@ -139,6 +171,32 @@ export default function OSDataUploads() {
       return;
     }
     window.open(data.signedUrl, "_blank");
+  }
+
+  async function handleParse(row: UploadRow) {
+    const board = BOARD_MAP[row.source_key];
+    if (!board) {
+      toast.error(`No parser configured for ${row.source_key}`);
+      return;
+    }
+    setParsingId(row.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-monday-export", {
+        body: { board, storage_path: row.storage_path, user_id: user?.id },
+      });
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data.error || "Parse failed");
+      toast.success(
+        `Parsed: ${data.rows_inserted} new, ${data.rows_updated} updated` +
+          (data.subitems_inserted ? `, ${data.subitems_inserted} subitems` : "") +
+          (data.updates_inserted ? `, ${data.updates_inserted} comments` : "")
+      );
+      await load();
+    } catch (e: any) {
+      toast.error(e.message ?? "Parse failed");
+    } finally {
+      setParsingId(null);
+    }
   }
 
   if (loading) {
@@ -244,6 +302,20 @@ export default function OSDataUploads() {
                             <span className="text-muted-foreground">
                               {new Date(r.uploaded_at).toLocaleDateString()}
                             </span>
+                            {BOARD_MAP[r.source_key] && (
+                              <button
+                                onClick={() => handleParse(r)}
+                                disabled={parsingId === r.id}
+                                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 font-medium text-primary hover:bg-primary/20 disabled:opacity-50"
+                              >
+                                {parsingId === r.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Play className="h-3 w-3" />
+                                )}
+                                Parse
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDelete(r)}
                               className="text-muted-foreground hover:text-destructive"
@@ -261,6 +333,40 @@ export default function OSDataUploads() {
             </div>
           </section>
         ))}
+
+        {runs.length > 0 && (
+          <section className="rounded-2xl border border-border/60 bg-card">
+            <header className="border-b border-border/60 p-4">
+              <h2 className="text-base font-semibold">Recent imports</h2>
+              <p className="text-xs text-muted-foreground">Last 20 parser runs.</p>
+            </header>
+            <ul className="divide-y divide-border/60">
+              {runs.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 p-3 text-xs">
+                  {r.error ? (
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                  ) : r.finished_at ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  <span className="font-medium">{r.board}</span>
+                  <span className="flex-1 truncate text-muted-foreground">
+                    {r.error
+                      ? r.error
+                      : `+${r.rows_inserted} new · ~${r.rows_updated} updated · ${r.subitems_inserted} subitems · ${r.updates_inserted} comments`}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {r.duration_ms ? `${(r.duration_ms / 1000).toFixed(1)}s` : "…"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {new Date(r.started_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {fetching && (
           <p className="text-xs text-muted-foreground">Loading uploads…</p>
