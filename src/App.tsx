@@ -178,6 +178,7 @@ import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
+import OSTrainingDetail from "./pages/os/OSTrainingDetail";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
@@ -362,6 +363,7 @@ const App = () => (
                     { title: "Career growth ladders", description: "Visible competency milestones from new RBT through senior BCBA." },
                   ]} />} />
                   <Route path="/training" element={<OSTraining />} />
+                  <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
                   <Route path="/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
                   <Route path="/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
