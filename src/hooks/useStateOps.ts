@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { StateSession } from "@/lib/analytics/stateOps";
 
-export type WindowKey = "1w" | "2w" | "4w" | "custom";
+export type WindowKey = "1w" | "2w" | "4w" | "12w" | "custom";
 
 function windowSince(w: WindowKey, customFrom?: string): string {
   if (w === "custom" && customFrom) return customFrom;
   const d = new Date();
-  const weeks = w === "1w" ? 1 : w === "2w" ? 2 : 4;
+  const weeks = w === "1w" ? 1 : w === "2w" ? 2 : w === "12w" ? 12 : 4;
   d.setDate(d.getDate() - weeks * 7);
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);

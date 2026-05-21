@@ -103,6 +103,18 @@ export function weeklySeries(sessions: StateSession[]): WeekPoint[] {
   });
 }
 
+/**
+ * Map of "YYYY-MM-DD" (Monday of week) → unique active clients that week.
+ * Uses the same bucketing as `weeklySeries`, so it matches `quickStats().clientsThisWeek`.
+ */
+export function activeClientsByWeek(sessions: StateSession[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of weeklySeries(sessions)) {
+    out[p.weekKey] = p.clients;
+  }
+  return out;
+}
+
 export interface QuickStats {
   hoursThisWeek: number;
   hoursDelta: number;
