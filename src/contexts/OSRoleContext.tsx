@@ -5,6 +5,7 @@ import {
 } from "@/lib/os/permissions";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
+import { supabase } from "@/integrations/supabase/client";
 
 function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("admin")) return "super_admin";
@@ -25,7 +26,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
 }
 
 /** Mock list of states (would come from backend). */
-export const OS_STATES = ["FL", "GA", "NC", "TX", "VA"] as const;
+export const OS_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
 export type OSState = typeof OS_STATES[number];
 
 interface OSRoleContextValue {
@@ -48,7 +49,7 @@ const STORAGE_KEY = "os.demo.role";
 const STATE_KEY = "os.demo.state";
 
 export function OSRoleProvider({ children }: { children: ReactNode }) {
-  const { roles: appRoles } = useAuth();
+  const { roles: appRoles, user } = useAuth();
   const [roleOverride, setRoleState] = useState<OSRole | null>(() => {
     if (typeof window === "undefined") return null;
     return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || null;
@@ -56,10 +57,33 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   const derivedRole = mapAuthRoleToOS(appRoles) ?? "state_director";
   // Only super_admins can override their role via the demo switcher.
   const role: OSRole = derivedRole === "super_admin" && roleOverride ? roleOverride : derivedRole;
+  const isSuperAdmin = derivedRole === "super_admin";
+  const [profileState, setProfileState] = useState<OSState | null>(null);
   const [activeState, setActiveStateInternal] = useState<OSState>(() => {
     if (typeof window === "undefined") return "FL";
-    return (window.localStorage.getItem(STATE_KEY) as OSState) || "FL";
+    const stored = window.localStorage.getItem(STATE_KEY) as OSState | null;
+    return stored && (OS_STATES as readonly string[]).includes(stored) ? stored : "GA";
   });
+
+  // Load the signed-in user's profile state and seed/lock activeState for non-admins.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) { setProfileState(null); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("state")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const s = (data?.state ?? null) as string | null;
+      if (s && (OS_STATES as readonly string[]).includes(s)) {
+        setProfileState(s as OSState);
+        setActiveStateInternal(s as OSState);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   useEffect(() => {
     try {
@@ -70,12 +94,18 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   useEffect(() => { try { window.localStorage.setItem(STATE_KEY, activeState); } catch { /* ignore */ } }, [activeState]);
 
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
-  const setActiveState = useCallback((s: OSState) => setActiveStateInternal(s), []);
+  const setActiveState = useCallback((s: OSState) => {
+    // Non-super-admins are locked to their profile state.
+    if (!isSuperAdmin && profileState) return;
+    setActiveStateInternal(s);
+  }, [isSuperAdmin, profileState]);
+
+  const effectiveState: OSState = !isSuperAdmin && profileState ? profileState : activeState;
 
   const value = useMemo<OSRoleContextValue>(() => ({
     role,
     scope: scopeFor(role),
-    activeState,
+    activeState: effectiveState,
     assignedIds: ["c-101", "c-102", "c-103", "l-201", "l-202"],
     setRole,
     setActiveState,
@@ -83,7 +113,7 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     can: (m, a) => canAct(role, m, a),
     leadership: ROLE_PROFILES[role].leadership,
     platform: (cap) => hasPlatformCap(role, cap),
-  }), [role, activeState, setRole, setActiveState]);
+  }), [role, effectiveState, setRole, setActiveState]);
 
   return <OSRoleContext.Provider value={value}>{children}</OSRoleContext.Provider>;
 }
