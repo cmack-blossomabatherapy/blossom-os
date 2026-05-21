@@ -176,6 +176,8 @@ import OSComingSoon from "./pages/os/OSComingSoon";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSUserManagement from "./pages/os/OSUserManagement";
+import OSNotifications from "./pages/os/OSNotifications";
+import OSSettings from "./pages/os/OSSettings";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
@@ -393,6 +395,8 @@ const App = () => (
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
                   <Route path="/user-management" element={<OSUserManagement />} />
+                  <Route path="/notifications" element={<OSNotifications />} />
+                  <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
