@@ -8,6 +8,10 @@ import {
 } from "@/data/clients";
 import { canAdvanceToStage, canonicalPipelineStage } from "@/data/pipeline";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  groupAuthsByClient, mondayRowToClient,
+  type MondayAuthRow, type MondayClientRow,
+} from "@/lib/clients/mondayClientMapper";
 
 type Row<T> = T & Record<string, unknown>;
 
@@ -313,310 +317,191 @@ export function ClientsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
-    if (!user) { setClients(mockClients); setLoading(false); return; }
     setLoading(true);
-    const [c, t, d, tl, a, s, r] = await Promise.all([
-      supabase.from("clients").select("*").order("created_at", { ascending: false }),
-      supabase.from("client_tasks").select("*").order("position", { ascending: true }),
-      supabase.from("client_documents").select("*").order("created_at", { ascending: false }),
-      supabase.from("client_timeline").select("*").order("created_at", { ascending: false }),
-      supabase.from("client_authorizations").select("*").order("created_at", { ascending: true }),
-      supabase.from("client_schedule_slots").select("*").order("day", { ascending: true }),
-      supabase.from("client_reauth_cycles" as never).select("*").order("current_auth_expiration_date", { ascending: true }),
-    ]);
-    if (c.error || t.error || d.error || tl.error || a.error || s.error || r.error) {
-      console.error("Clients fetch error", { c: c.error, t: t.error, d: d.error, tl: tl.error, a: a.error, s: s.error, r: r.error });
-      setClients(mockClients);
-      setLoading(false);
-      return;
-    }
-    const dbClients = (c.data ?? []) as unknown as DbClient[];
-    if (dbClients.length === 0) {
-      setClients(mockClients);
-      setLoading(false);
-      return;
-    }
-    const tasks = (t.data ?? []) as unknown as DbTask[];
-    const docs = (d.data ?? []) as unknown as DbDocument[];
-    const timeline = (tl.data ?? []) as unknown as DbTimeline[];
-    const auths = (a.data ?? []) as unknown as DbAuth[];
-    const slots = (s.data ?? []) as unknown as DbSlot[];
-    const reauths = (r.data ?? []) as unknown as DbReauth[];
+    try {
+      // Page through monday_clients_raw and monday_authorizations_raw.
+      const fetchAll = async <T,>(table: "monday_clients_raw" | "monday_authorizations_raw"): Promise<T[]> => {
+        const all: T[] = [];
+        const pageSize = 1000;
+        let from = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data, error } = await supabase
+            .from(table)
+            .select("id, monday_item_id, monday_group, name, state, status, owner, data, imported_at, updated_at")
+            .order("imported_at", { ascending: false })
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          const rows = (data ?? []) as unknown as T[];
+          all.push(...rows);
+          if (rows.length < pageSize || all.length >= 8000) break;
+          from += pageSize;
+        }
+        return all;
+      };
 
-    const built = dbClients.map((row) =>
-      buildClient(
-        row,
-        tasks.filter((x) => x.client_id === row.id),
-        docs.filter((x) => x.client_id === row.id),
-        timeline.filter((x) => x.client_id === row.id),
-        auths.filter((x) => x.client_id === row.id),
-        slots.filter((x) => x.client_id === row.id),
-        reauths.filter((x) => x.client_id === row.id),
-      ),
-    );
-    setClients(built);
-    setLoading(false);
-  }, [user]);
+      const [clientRows, authRows] = await Promise.all([
+        fetchAll<MondayClientRow>("monday_clients_raw"),
+        fetchAll<MondayAuthRow>("monday_authorizations_raw"),
+      ]);
+
+      if (clientRows.length === 0) {
+        setClients(mockClients);
+        setLoading(false);
+        return;
+      }
+
+      const authByClient = groupAuthsByClient(clientRows, authRows);
+      const built = clientRows.map((row) =>
+        mondayRowToClient(row, authByClient.get(row.monday_item_id ?? row.id) ?? []),
+      );
+      setClients(built);
+    } catch (e) {
+      console.error("Clients fetch (Monday) error", e);
+      setClients(mockClients);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
     void refetch();
   }, [authLoading, refetch]);
 
-  // Realtime — refetch on any change to any client table
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel("clients-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "clients" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_tasks" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_documents" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_timeline" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_authorizations" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_schedule_slots" }, () => void refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "client_reauth_cycles" }, () => void refetch())
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [user, refetch]);
-
   /* ──────────────── Mutations ──────────────── */
 
   const getClient = useCallback((id: string) => clients.find((c) => c.id === id), [clients]);
 
-  const insertTimeline = async (clientId: string, description: string, type: ClientTimelineEvent["type"] = "note") => {
-    await supabase.from("client_timeline").insert({
-      client_id: clientId, event_type: type, description, user_name: "You", created_by: user?.id,
-    });
-  };
+  // ─── Local-state mutation helpers ───────────────────────────────────
+  // Monday is the source of truth — mutations apply optimistically to
+  // local state only. Re-importing the Monday board will refresh values.
 
-  const appendAutomationLog = async (clientId: string, message: string) => {
-    const c = clients.find((x) => x.id === clientId);
-    const next = [...(c?.automationLog ?? []), message];
-    await supabase.from("clients").update({ automation_log: next } as never).eq("id", clientId);
-  };
+  const applyPatch = (id: string, patch: Partial<Client>) =>
+    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+
+  const applyPatchMany = (ids: string[], patch: Partial<Client>) =>
+    setClients((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, ...patch } : c)));
+
+  const pushTimeline = (clientId: string, description: string, type: ClientTimelineEvent["type"] = "note") =>
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : {
+      ...c,
+      timeline: [{
+        id: `tl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type, description, timestamp: new Date().toISOString(), user: "You",
+      }, ...c.timeline],
+    }));
+
+  const pushAutomation = (clientId: string, message: string) =>
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : {
+      ...c, automationLog: [...c.automationLog, message],
+    }));
 
   const addClient = useCallback(async (client: Omit<Client, "id"> & { id?: string }) => {
-    if (!user) return null;
-    const insertPayload = {
-      ...clientPatchToDb(client as Partial<Client>),
-      vob_completed_at: new Date().toISOString(),
-      created_by: user.id,
-    };
-    const { data, error } = await supabase.from("clients").insert(insertPayload as never).select("*").single();
-    if (error || !data) { console.error(error); return null; }
-    const newId = (data as unknown as DbClient).id;
-
-    // Seed tasks / docs / timeline / auths / schedule
-    if (client.tasks?.length) {
-      await supabase.from("client_tasks").insert(
-        client.tasks.map((t, i) => ({
-          client_id: newId, title: t.title, completed: t.completed, due_date: t.dueDate ?? null, position: i,
-        })) as never,
-      );
-    }
-    if (client.documents?.length) {
-      await supabase.from("client_documents").insert(
-        client.documents.map((d) => ({ client_id: newId, name: d.name, type: d.type })) as never,
-      );
-    }
-    if (client.authorizations?.length) {
-      await supabase.from("client_authorizations").insert(
-        client.authorizations.map((a) => ({
-          client_id: newId, kind: a.type, status: a.status,
-          submitted_date: a.submittedDate ?? null, approved_date: a.approvedDate ?? null,
-          expiration_date: a.expirationDate ?? null, hours: a.hours ?? null, notes: a.notes ?? null,
-          approved_hours: a.approvedHours ?? null,
-          frequency: a.frequency ?? null,
-          service_type: a.serviceType ?? null,
-          authorization_period: a.authorizationPeriod ?? null,
-          payor: a.payor ?? client.payor,
-          state: a.state ?? client.state,
-          assigned_auth_coordinator: a.assignedAuthCoordinator ?? null,
-          qa_owner: a.qaOwner ?? null,
-          qa_status: a.qaStatus ?? "Not Started",
-          treatment_plan_received: a.treatmentPlanReceived ?? false,
-          treatment_plan_linked: a.treatmentPlanLinked ?? false,
-          required_docs_received: a.requiredDocsReceived ?? true,
-          approval_letter_received: a.approvalLetterReceived ?? false,
-          partial_approval: a.partialApproval ?? false,
-          missing_docs: a.missingDocs ?? [],
-          next_action: a.nextAction ?? "Submit Authorization",
-          blockers: a.blockers ?? [],
-          qa_notes: a.qaNotes ?? null,
-          escalation_owner: a.escalationOwner ?? null,
-          submission_history: a.submissionHistory ?? [],
-          reauth_source_id: a.reauthSourceId ?? null,
-          progress_report_status: a.progressReportStatus ?? "Not Started",
-        })) as never,
-      );
-    }
-    if (client.schedule?.length) {
-      await supabase.from("client_schedule_slots").insert(
-        client.schedule.map((s) => ({
-          client_id: newId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null, location: s.location ?? "Clinic", notes: s.notes ?? null,
-        })) as never,
-      );
-    }
-    if (client.timeline?.length) {
-      await supabase.from("client_timeline").insert(
-        client.timeline.map((t) => ({
-          client_id: newId, event_type: t.type, description: t.description, user_name: t.user ?? null, created_by: user.id,
-        })) as never,
-      );
-    } else {
-      await insertTimeline(newId, "Client created from lead", "system");
-    }
-    // Realtime will trigger refetch; return optimistic shape
-    return { ...(client as Client), id: newId };
-  }, [user, clients]);
+    const id = client.id ?? `local-${Date.now()}`;
+    const created: Client = { ...(client as Client), id };
+    setClients((prev) => [created, ...prev]);
+    return created;
+  }, []);
 
   const updateClient = useCallback(async (id: string, patch: Partial<Client>) => {
-    const dbPatch = clientPatchToDb(patch);
-    if (Object.keys(dbPatch).length === 0) return;
-    await supabase.from("clients").update(dbPatch as never).eq("id", id);
+    applyPatch(id, patch);
   }, []);
 
   const bulkUpdate = useCallback(async (ids: string[], patch: Partial<Client>) => {
-    const dbPatch = clientPatchToDb(patch);
-    if (Object.keys(dbPatch).length === 0 || !ids.length) return;
-    await supabase.from("clients").update(dbPatch as never).in("id", ids);
+    applyPatchMany(ids, patch);
   }, []);
 
   const moveStage = useCallback(async (ids: string[], stage: ClientStage) => {
-    if (!ids.length) return;
     for (const id of ids) {
       const c = clients.find((x) => x.id === id);
       if (c && !canAdvanceToStage(c.stage, stage)) {
         throw new Error(`Pipeline stages must advance in order. Move from ${canonicalPipelineStage(c.stage)} to the next stage before ${stage}.`);
       }
-      const nextLog = [...(c?.automationLog ?? []), `Stage moved to ${stage} (manual)`];
-      await supabase.from("clients").update({
-        stage, stage_entered_at: new Date().toISOString(), automation_log: nextLog,
-      } as never).eq("id", id);
-      await insertTimeline(id, `Moved to ${stage}`, "stage");
+      applyPatch(id, { stage, daysInStage: 0 });
+      pushAutomation(id, `Stage moved to ${stage} (manual)`);
+      pushTimeline(id, `Moved to ${stage}`, "stage");
     }
-  }, [clients, user]);
+  }, [clients]);
 
   const revertStage = useCallback(async (
-    clientId: string,
-    previousStage: ClientStage,
-    previousStageEnteredAt: string,
-    automationLogEntry: string,
+    clientId: string, previousStage: ClientStage, _previousStageEnteredAt: string, automationLogEntry: string,
   ) => {
-    const c = clients.find((x) => x.id === clientId);
-    if (!c) return;
-    // Strip the most recent occurrence of the original automation log entry
-    const log = [...(c.automationLog ?? [])];
-    const idx = log.lastIndexOf(automationLogEntry);
-    if (idx >= 0) log.splice(idx, 1);
-    log.push(`Stage move undone — restored to ${previousStage}`);
-    await supabase.from("clients").update({
-      stage: previousStage,
-      stage_entered_at: previousStageEnteredAt,
-      automation_log: log,
-    } as never).eq("id", clientId);
-    await insertTimeline(clientId, `Move undone — restored to ${previousStage}`, "stage");
-  }, [clients, user]);
+    setClients((prev) => prev.map((c) => {
+      if (c.id !== clientId) return c;
+      const log = [...c.automationLog];
+      const idx = log.lastIndexOf(automationLogEntry);
+      if (idx >= 0) log.splice(idx, 1);
+      log.push(`Stage move undone — restored to ${previousStage}`);
+      return { ...c, stage: previousStage, automationLog: log };
+    }));
+    pushTimeline(clientId, `Move undone — restored to ${previousStage}`, "stage");
+  }, []);
 
   const assignBcba = useCallback(async (ids: string[], bcba: string) => {
     for (const id of ids) {
-      const c = clients.find((x) => x.id === id);
-      const advance = canonicalPipelineStage(c?.stage ?? "") === "BCBA Assignment";
-      const blocked = Boolean(c?.paymentPlanRequired && !c.paymentPlanSigned);
-      const nextLog = [...(c?.automationLog ?? []), `BCBA assigned: ${bcba}`, ...(blocked ? ["Progression blocked: payment plan not signed"] : ["Moved to Pending Initial Authorization"] )];
-      await supabase.from("clients").update({
-        bcba,
-        ready_for_auth: !blocked,
-        blockers: blocked ? Array.from(new Set([...(c?.blockers ?? []), "Payment plan not signed"])) : (c?.blockers ?? []).filter((blocker) => blocker !== "No BCBA assigned"),
-        automation_log: nextLog,
-        ...(advance && !blocked ? { stage: "Pending Initial Authorization" as ClientStage, stage_entered_at: new Date().toISOString(), auth_status: "Not Submitted" as AuthStatus, next_action: "Submit Initial Auth" } : {}),
-      } as never).eq("id", id);
-      await insertTimeline(id, blocked ? `BCBA ${bcba} assigned — payment plan blocks auth handoff` : `BCBA ${bcba} assigned — moved to Pending Initial Authorization`, "staffing");
+      applyPatch(id, { bcba });
+      pushAutomation(id, `BCBA assigned: ${bcba}`);
+      pushTimeline(id, `${bcba} assigned as BCBA`, "staffing");
     }
-  }, [clients, user]);
+  }, []);
 
   const assignRbt = useCallback(async (ids: string[], rbt: string) => {
     for (const id of ids) {
-      const c = clients.find((x) => x.id === id);
-      const advance = ["Staffing Needed", "Matching in Progress", "Restaffing Needed", "RBT Assigned"].includes(canonicalPipelineStage(c?.stage ?? ""));
-      const nextLog = [...(c?.automationLog ?? []), `RBT assigned: ${rbt}`, ...(advance ? ["Moved to Pending Start Date"] : [])];
-      await supabase.from("clients").update({
-        rbt, staffing_status: "Assigned" as StaffingStatus, automation_log: nextLog, next_action: "Confirm schedule",
-        ...(advance ? { stage: "Pending Start Date" as ClientStage, stage_entered_at: new Date().toISOString() } : {}),
-      } as never).eq("id", id);
-      await insertTimeline(id, `${rbt} assigned as RBT`, "staffing");
+      applyPatch(id, { rbt, staffingStatus: "Assigned" });
+      pushAutomation(id, `RBT assigned: ${rbt}`);
+      pushTimeline(id, `${rbt} assigned as RBT`, "staffing");
     }
-  }, [clients, user]);
+  }, []);
 
   const setStartDate = useCallback(async (ids: string[], date: string) => {
     for (const id of ids) {
-      const c = clients.find((x) => x.id === id);
-      const nextLog = [...(c?.automationLog ?? []), `Start date set to ${date}`];
-      await supabase.from("clients").update({ start_date: date, automation_log: nextLog } as never).eq("id", id);
-      await insertTimeline(id, `Start date set to ${date}`, "schedule");
+      applyPatch(id, { startDate: date });
+      pushAutomation(id, `Start date set to ${date}`);
+      pushTimeline(id, `Start date set to ${date}`, "schedule");
     }
-  }, [clients, user]);
+  }, []);
 
   const toggleTask = useCallback(async (clientId: string, taskId: string) => {
-    const c = clients.find((x) => x.id === clientId);
-    const t = c?.tasks.find((x) => x.id === taskId);
-    if (!t) return;
-    await supabase.from("client_tasks").update({ completed: !t.completed } as never).eq("id", taskId);
-  }, [clients]);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : {
+      ...c, tasks: c.tasks.map((t) => t.id === taskId ? { ...t, completed: !t.completed } : t),
+    }));
+  }, []);
 
   const addTask = useCallback(async (clientId: string, task: ClientTask) => {
-    const c = clients.find((x) => x.id === clientId);
-    const position = (c?.tasks.length ?? 0);
-    await supabase.from("client_tasks").insert({
-      client_id: clientId, title: task.title, completed: task.completed,
-      due_date: task.dueDate ?? null, position,
-    } as never);
-  }, [clients]);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, tasks: [...c.tasks, task] }));
+  }, []);
 
-  const appendTimeline = useCallback(async (
-    clientId: string, description: string, type: ClientTimelineEvent["type"] = "note",
-  ) => {
-    await insertTimeline(clientId, description, type);
-  }, [user]);
+  const appendTimeline = useCallback(async (clientId: string, description: string, type: ClientTimelineEvent["type"] = "note") => {
+    pushTimeline(clientId, description, type);
+  }, []);
 
   const appendAutomation = useCallback(async (clientId: string, message: string) => {
-    await appendAutomationLog(clientId, message);
-  }, [clients]);
+    pushAutomation(clientId, message);
+  }, []);
 
   const deleteClients = useCallback(async (ids: string[]) => {
-    if (!ids.length) return;
-    await supabase.from("clients").delete().in("id", ids);
+    setClients((prev) => prev.filter((c) => !ids.includes(c.id)));
   }, []);
 
   const addDocument = useCallback(async (clientId: string, name: string, type: string) => {
-    await supabase.from("client_documents").insert({
-      client_id: clientId, name, type, uploaded_by: user?.id,
-    } as never);
-  }, [user]);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, documents: [...c.documents, { name, type }] }));
+  }, []);
 
   const removeDocument = useCallback(async (clientId: string, documentId: string) => {
-    await supabase.from("client_documents").delete().eq("id", documentId);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, documents: c.documents.filter((_, i) => String(i) !== documentId) }));
   }, []);
 
   const addScheduleSlot = useCallback(async (clientId: string, slot: ScheduleSlot) => {
-    await supabase.from("client_schedule_slots").insert({
-      client_id: clientId, day: slot.day, start_time: slot.start, end_time: slot.end, rbt: slot.rbt ?? null, location: slot.location ?? "Clinic", notes: slot.notes ?? null,
-    } as never);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: [...c.schedule.filter((s) => s.day !== slot.day), slot] }));
   }, []);
 
   const removeScheduleSlot = useCallback(async (clientId: string, day: ScheduleSlot["day"]) => {
-    await supabase.from("client_schedule_slots").delete().eq("client_id", clientId).eq("day", day);
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: c.schedule.filter((s) => s.day !== day) }));
   }, []);
 
   const setSchedule = useCallback(async (clientId: string, slots: ScheduleSlot[]) => {
-    await supabase.from("client_schedule_slots").delete().eq("client_id", clientId);
-    if (slots.length) {
-      await supabase.from("client_schedule_slots").insert(
-        slots.map((s) => ({
-          client_id: clientId, day: s.day, start_time: s.start, end_time: s.end, rbt: s.rbt ?? null, location: s.location ?? "Clinic", notes: s.notes ?? null,
-        })) as never,
-      );
-    }
+    setClients((prev) => prev.map((c) => c.id !== clientId ? c : { ...c, schedule: slots }));
   }, []);
 
   const value = useMemo<ClientsContextValue>(() => ({
