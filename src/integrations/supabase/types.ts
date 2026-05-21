@@ -1165,7 +1165,10 @@ export type Database = {
       }
       bcba_billable_sessions: {
         Row: {
+          amount_owed: number | null
+          amount_paid: number | null
           bcba_name: string | null
+          charges_total: number | null
           client_first: string | null
           client_full: string | null
           client_last: string | null
@@ -1174,16 +1177,25 @@ export type Database = {
           hours: number
           id: string
           import_id: string
+          is_billable: boolean | null
+          payor_name: string | null
+          payor_type: string | null
           procedure_code: string | null
           procedure_description: string | null
           provider_first: string | null
           provider_full: string | null
           provider_last: string | null
           raw_labels: string | null
+          service_location: string | null
           source_id: string | null
+          state: string | null
+          units: number | null
         }
         Insert: {
+          amount_owed?: number | null
+          amount_paid?: number | null
           bcba_name?: string | null
+          charges_total?: number | null
           client_first?: string | null
           client_full?: string | null
           client_last?: string | null
@@ -1192,16 +1204,25 @@ export type Database = {
           hours?: number
           id?: string
           import_id: string
+          is_billable?: boolean | null
+          payor_name?: string | null
+          payor_type?: string | null
           procedure_code?: string | null
           procedure_description?: string | null
           provider_first?: string | null
           provider_full?: string | null
           provider_last?: string | null
           raw_labels?: string | null
+          service_location?: string | null
           source_id?: string | null
+          state?: string | null
+          units?: number | null
         }
         Update: {
+          amount_owed?: number | null
+          amount_paid?: number | null
           bcba_name?: string | null
+          charges_total?: number | null
           client_first?: string | null
           client_full?: string | null
           client_last?: string | null
@@ -1210,13 +1231,19 @@ export type Database = {
           hours?: number
           id?: string
           import_id?: string
+          is_billable?: boolean | null
+          payor_name?: string | null
+          payor_type?: string | null
           procedure_code?: string | null
           procedure_description?: string | null
           provider_first?: string | null
           provider_full?: string | null
           provider_last?: string | null
           raw_labels?: string | null
+          service_location?: string | null
           source_id?: string | null
+          state?: string | null
+          units?: number | null
         }
         Relationships: [
           {
