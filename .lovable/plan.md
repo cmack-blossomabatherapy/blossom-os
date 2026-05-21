@@ -1,86 +1,105 @@
-# Reports Operating System — Redesign Plan
+# State Director Dashboard — Hours vs Clients Hero
 
-Transform `/os/reports` from a tabbed KPI dump into an Apple-style, AI-native **Reports Operating System**: a home page where users browse, favorite, upload, request, and open rich dashboards — filtered by role.
+## The one thing this dashboard answers
 
-This is a large redesign. To ship value fast and avoid a 30-file mega-PR, I'll deliver in 3 phases. **Phase 1 is the meaningful milestone** (you'll see the new experience). Phases 2–3 deepen it.
+> "Are we staffing efficiently this week, by code, vs where we were?"
 
----
+Everything else is supporting cast. The hero is a single time-series chart of **Service Hours vs Active Clients**, filterable by procedure code, with a 3-week moving average. Pulled directly from the Yosif transcript.
 
-## Phase 1 — Reports Home + Detail Shell + Request Modal (this PR)
+## Data
 
-**New page structure (replaces current `Reports.tsx` content inside OS shell):**
+We already have `bcba_billable_sessions` (34,121 rows, Jan–May 2026) and the new TXT (2,822 more rows, May 10–20). We import the new file and add billing/state columns so the dashboard can filter and slice properly. PHI (client names) is stored but **never rendered** — every row goes through a `redactClient()` helper.
+
+### Schema additions (additive, nullable)
+
+On `bcba_billable_sessions`:
+- `state` text — ServiceLocationStateProvince
+- `service_location` text — Home / Clinic / School / Telehealth
+- `payor_name` text, `payor_type` text (medicaid / commercial)
+- `units` numeric, `charges_total` numeric, `amount_paid` numeric, `amount_owed` numeric
+- `is_billable` boolean (false for admin/cancellation codes)
+
+The existing `import-bcba-sessions` edge function gets a small column-mapping extension. `source_id` unique index handles the May 10–18 overlap automatically.
+
+## The dashboard layout (top to bottom)
+
+### 1. Header strip
+- Greeting + state + date
+- Small health badge: `NC · Stable · 82` (the old ring, demoted)
+- Live data freshness chip
+
+### 2. HERO — Hours vs Clients (the chart Yosif wants)
+
+A single large chart, ~360px tall.
+
+- **Line A**: total billable service hours per week
+- **Line B**: active distinct clients per week
+- **3-week moving average overlay** on each line (subtle dashed)
+- Tooltip shows: week, hours, clients, hours/client
+
+Above the chart, one focused number:
 
 ```
-ReportsHome (/os/reports)
-├── Hero            ← title, AI ops summary, 4 CTAs (Upload, Saved View, Request, Ask AI)
-├── AI Insights strip ← 3 pulse cards (auth risk ↑, parent training ↑, QA backlog)
-├── Featured Dashboards ← 4 large cards w/ mini sparkline preview, KPI chips, owner, AI snippet
-├── Category Grid   ← 10 category cards (Operations, QA, Auth, Scheduling, Recruiting,
-│                     Financial, Clinical, Training, Leadership, State Analytics)
-├── Saved Views + Recent + Favorites ← 3-column row
-├── Upload Center card ← drag/drop zone (visual only Phase 1)
-└── Request a New Report card ← opens modal
+HOURS PER ACTIVE CLIENT
+  14.2 hrs ↑ +1.8 vs prior period
 ```
 
-**Role-aware visibility:**
-- New `src/lib/os/reportsCatalog.ts` defines all reports + categories with `visibleTo: OSRole[]`.
-- `useOSRole()` filters featured + categories + dashboards client-side.
-- Roles map per spec (QA → Supervision/PT 97156/QA Compliance; Auth → Utilization/Expiring/Denials; State Director → State Perf/Staffing/Recruiting/Auth Risk; BCBA → Caseload/Supervision/PT/Progress; Executive → Exec KPIs/Financials/Growth; Admin → all).
+This is the staffing efficiency metric — the single number Yosif uses to judge health (his Kate Saul vs Shana Roberts example).
 
-**Report Detail page** (`/os/reports/:reportId`):
-- Reuses the existing `ExecutiveView/IntakeView/...` blocks but wrapped in a new shell with:
-  hero header, filter bar, AI summary panel, KPI strip, charts (existing components), action center, related reports, save view / export buttons.
-- Existing report content (`executiveKpis`, funnels, etc. from `src/data/reports.ts`) is preserved and rendered inside the new shell — no data loss.
+Controls inline with the chart header:
+- **Code chips**: All · 97153 (Direct) · 97155 (Supervision) · 97151 (Assessment) · 97156 (Parent)
+- **Window chips**: 4w · 12w · 26w · YTD (default 12w)
 
-**Request a Report modal:**
-- All 10 fields from spec (title, dept, purpose, metrics, data sources multi-select, example upload, frequency, priority, viz pref, AI assist toggle).
-- Multi-step wizard (3 steps: Context → Data → Delivery).
-- Submission stored in localStorage (Phase 1) under `os.reportRequests`. Toast confirmation.
+### 3. Quick stats row (4 small tiles)
+- Hours this week
+- Active clients this week
+- Hours / client (with delta)
+- Supervision ratio (97155 hrs ÷ 97153 hrs) — directly answers his "is the BCBA actually maximizing?" question
 
-**New files:**
-- `src/lib/os/reportsCatalog.ts` — categories + reports definitions + role filter helper.
-- `src/pages/os/reports/ReportsHome.tsx`
-- `src/pages/os/reports/ReportDetail.tsx`
-- `src/components/os/reports/ReportsHero.tsx`
-- `src/components/os/reports/AIInsightsStrip.tsx`
-- `src/components/os/reports/FeaturedDashboardCard.tsx`
-- `src/components/os/reports/CategoryCard.tsx`
-- `src/components/os/reports/UploadCenterCard.tsx`
-- `src/components/os/reports/RequestReportCard.tsx`
-- `src/components/os/reports/RequestReportDialog.tsx`
-- `src/components/os/reports/SavedViewsPanel.tsx`
+### 4. BCBA Supervision Leaderboard (small, calm)
 
-**Routing:**
-- `src/App.tsx` (or OS router): `/os/reports` → `ReportsHome`, `/os/reports/:reportId` → `ReportDetail`. Existing `/reports` (non-OS) untouched.
+The Kate Saul / Shana Roberts comparison made visual. Top + bottom 5 BCBAs ranked by **supervision hours per direct hour** in the period. No client names anywhere.
 
-**Visual style:**
-- Soft white surfaces, subtle purple/blue gradient washes, glass cards (`bg-card/70 backdrop-blur border border-border/60`), generous spacing, lift-on-hover, AI pulse dot animation, skeleton shimmer for "loading" dashboards.
-- All colors via semantic tokens (no hardcoded hex in components).
+### 5. Attention Required
+Generated from data, not seeded:
+- `$X in sessions unbilled > 7 days`
+- `N patients without an assigned BCBA` (using existing label parser)
+- `N BCBAs above 35 billable hrs/wk`
+- `Cancellation/admin-time spike vs prior week`
 
----
+### 6. My Priorities
+Top 5 action items routed to the director (existing pattern, real data when available).
 
-## Phase 2 — Upload Center + Request Queue (next PR)
+## What gets removed from the current screen
 
-- Functional drag/drop in Upload Center, file preview, mock auto-detect ("Looks like a CentralReach Supervision export").
-- Upload history list.
-- `/os/reports/requests` — Super Admin queue (status pipeline, assign builder, comments).
-- Status badges + filter chips.
+- Big Health Ring as the hero → demoted to a small chip in the header
+- Generic "Operational Pulse" mock chart → replaced by the real Hours vs Clients chart
+- Team & Staffing tile grid → folded into the supervision leaderboard
+- Mock briefing paragraph → real one generated from this week's data
 
-## Phase 3 — Backend persistence + AI assist
+## What stays mock (call out, don't fake)
 
-- Lovable Cloud tables: `report_categories`, `reports`, `report_views`, `report_uploads`, `report_requests`, `report_request_comments`, `report_favorites` (RLS per spec).
-- Replace localStorage with Supabase queries.
-- Wire AI assist toggle to `google/gemini-2.5-flash` via Lovable AI gateway to suggest KPIs from uploaded sample.
-- Notifications hooks.
+- Leads / intake / recruiting / orientation tiles — not in this export. We mark them "Awaiting data source" rather than show fake numbers.
 
----
+## Files we touch
 
-## Technical notes
+- **Migration**: add columns to `bcba_billable_sessions`
+- **Edge function**: `supabase/functions/import-bcba-sessions/index.ts` — map new columns
+- **New**: `src/lib/phi/redact.ts` — single redaction helper
+- **New**: `src/lib/analytics/stateOps.ts` — pure aggregation functions (hours/clients series, supervision ratios, attention generators)
+- **New**: `src/hooks/useStateOps.ts` — fetches sessions for a state + window, memoizes aggregations
+- **Rewrite**: `src/pages/os/OSStateDirector.tsx` — new layout per above
+- **New**: `src/components/state-director/HoursVsClientsChart.tsx` — the hero chart
+- **New**: `src/components/state-director/SupervisionLeaderboard.tsx`
 
-- `OSShell` already handles the right utility rail / role context — no changes there.
-- Existing `src/data/reports.ts` mock data is reused for dashboard detail pages; no migration needed yet.
-- `RequestReportDialog` uses `react-hook-form` + `zod` (already in deps) for validation.
-- All new components are presentation-only in Phase 1 (no backend), keeping scope tight.
-- File count Phase 1: ~11 new + 2 edited (`App.tsx` route, possibly `OSShell` if a nested route is needed).
+## After the migration
 
-Approve to start Phase 1?
+User uploads the TXT once through the existing import flow (or we trigger the edge function with the file we already have at `/tmp/sessions.csv`). Dashboard then renders against real numbers for NC and every other state with data.
+
+## Out of scope (this pass)
+
+- Leads data source
+- Auth / scheduling joins
+- OT / ST service lines
+- Writeback to billing system
+- Dazos / PowerBI integration decisions (that's Corey + Chad's call)

@@ -106,7 +106,46 @@ function getRequiredColumnIndexes(header: string[]) {
   };
   const missing = Object.entries(cols).filter(([, value]) => value < 0).map(([key]) => key);
   if (missing.length) throw new Error(`CSV is missing required columns: ${missing.join(", ")}`);
-  return cols;
+  // Optional columns (billing / location) — null index = column not present
+  const optional = {
+    state: idx("ServiceLocationStateProvince"),
+    locDesc: idx("LocationDescription"),
+    payor: idx("PayorName"),
+    units: idx("UnitsOfService"),
+    charges: idx("ClientChargesTotal"),
+    paid: idx("AmountPaid"),
+    owed: idx("AmountOwed"),
+  };
+  return { ...cols, ...optional };
+}
+
+function classifyPayor(name: string | null): string | null {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  if (n.includes("medicaid") || n.includes("trillium") || n.includes("partners") || n.includes("vaya")) return "medicaid";
+  if (n.includes("tricare") || n.includes("champva")) return "tricare";
+  if (n.includes("cigna") || n.includes("aetna") || n.includes("bcbs") || n.includes("blue cross") || n.includes("united") || n.includes("anthem") || n.includes("humana")) return "commercial";
+  if (n.includes("private") || n.includes("self pay") || n.includes("self-pay")) return "private";
+  return "other";
+}
+
+function classifyBillable(code: string | null): boolean {
+  if (!code) return false;
+  const c = code.toLowerCase();
+  if (c.includes("admin") || c.includes("non-billable") || c.includes("cancellation")) return false;
+  return /^\d{5}/.test(code.trim());
+}
+
+function cleanPayor(raw: string | null): string | null {
+  if (!raw) return null;
+  // strip leading "P: " prefix and trailing parenthetical
+  return raw.replace(/^P:\s*/i, "").replace(/\s*\([^)]*\)\s*$/, "").trim() || null;
+}
+
+function num(v: string | null | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 function parseDate(s: string): string | null {
@@ -210,6 +249,9 @@ Deno.serve(async (req) => {
       if (voided === "true" || deleted === "true") return;
       const hours = parseFloat(r[c.hours] || "0") || 0;
       const labels = r[c.labels] || "";
+      const code = r[c.code] || null;
+      const payorRaw = c.payor >= 0 ? r[c.payor] || null : null;
+      const payor = cleanPayor(payorRaw);
       records.push({
         import_id: imp.id,
         source_id: r[c.id] || null,
@@ -219,10 +261,19 @@ Deno.serve(async (req) => {
         bcba_name: extractBcba(labels),
         provider_first: r[c.pf] || null,
         provider_last: r[c.pl] || null,
-        procedure_code: r[c.code] || null,
+        procedure_code: code,
         procedure_description: r[c.desc] || null,
         hours,
         raw_labels: labels,
+        state: c.state >= 0 ? (r[c.state] || null) : null,
+        service_location: c.locDesc >= 0 ? (r[c.locDesc] || null) : null,
+        payor_name: payor,
+        payor_type: classifyPayor(payor),
+        units: c.units >= 0 ? num(r[c.units]) : null,
+        charges_total: c.charges >= 0 ? num(r[c.charges]) : null,
+        amount_paid: c.paid >= 0 ? num(r[c.paid]) : null,
+        amount_owed: c.owed >= 0 ? num(r[c.owed]) : null,
+        is_billable: classifyBillable(code),
       });
       if (records.length >= batchSize) await flushRecords();
     });
