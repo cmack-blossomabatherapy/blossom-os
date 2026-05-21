@@ -254,6 +254,12 @@ function OSCommandCenterRouter() {
   return <OSStateDirector />;
 }
 
+function OsPrefixRedirect() {
+  const { pathname, search, hash } = useLocation();
+  const stripped = pathname.replace(/^\/os/, "") || "/";
+  return <Navigate to={`${stripped}${search}${hash}`} replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
