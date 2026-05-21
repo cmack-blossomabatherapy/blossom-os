@@ -406,8 +406,9 @@ const App = () => (
                   <Route path="/os/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
                 </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                  <Route path="/" element={<WelcomeHome />} />
-                  <Route path="/home-redirect" element={<RoleDashboardRedirect />} />
+                  <Route path="/" element={<Navigate to="/os" replace />} />
+                  <Route path="/home-redirect" element={<Navigate to="/os" replace />} />
+                  <Route path="/welcome" element={<WelcomeHome />} />
                   <Route path="/academy" element={<OperationsAcademy />} />
                   <Route path="/my-learning" element={<MyLearning />} />
                   <Route path="/catalog" element={<TrainingCatalog />} />
