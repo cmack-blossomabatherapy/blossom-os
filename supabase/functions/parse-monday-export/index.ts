@@ -87,8 +87,9 @@ async function processBoard(
     raw: false,
     dateNF: "yyyy-mm-dd",
   });
+  // Free the workbook ASAP
+  delete (wb.Sheets as any)[mainSheetName];
 
-  // State 0=board name (row 0), row 1 first group, row 2 header
   let currentGroup: string | null = null;
   let header: string[] = [];
   let inSubitems = false;
@@ -96,8 +97,50 @@ async function processBoard(
   let parentItemId: string | null = null;
   let subHeader: string[] = [];
 
-  const mainRows: any[] = [];
-  const subRows: any[] = [];
+  const table = TABLE[board];
+  let inserted = 0;
+  let updated = 0;
+  let subInserted = 0;
+  let mainBuf: any[] = [];
+  let subBuf: any[] = [];
+  const FLUSH = 300;
+
+  async function flushMain() {
+    if (!mainBuf.length) return;
+    const withId = mainBuf.filter((r) => r.monday_item_id);
+    const noId = mainBuf.filter((r) => !r.monday_item_id);
+    if (withId.length) {
+      const { error, count } = await supabase
+        .from(table)
+        .upsert(withId, { onConflict: "monday_item_id", count: "exact" });
+      if (error) throw new Error(`Upsert ${table}: ${error.message}`);
+      inserted += withId.length; // best-effort; upsert doesn't split counts
+    }
+    if (noId.length) {
+      const { error } = await supabase.from(table).insert(noId);
+      if (error) throw new Error(`Insert ${table}: ${error.message}`);
+      inserted += noId.length;
+    }
+    mainBuf = [];
+  }
+  async function flushSub() {
+    if (!subBuf.length) return;
+    const withId = subBuf.filter((r) => r.monday_item_id);
+    const noId = subBuf.filter((r) => !r.monday_item_id);
+    if (withId.length) {
+      const { error } = await supabase
+        .from("monday_subitems_raw")
+        .upsert(withId, { onConflict: "monday_item_id" });
+      if (error) throw new Error(`Subitems: ${error.message}`);
+      subInserted += withId.length;
+    }
+    if (noId.length) {
+      const { error } = await supabase.from("monday_subitems_raw").insert(noId);
+      if (error) throw new Error(`Subitems insert: ${error.message}`);
+      subInserted += noId.length;
+    }
+    subBuf = [];
+  }
 
   // Skip row 0 (board name)
   for (let i = 1; i < rows.length; i++) {
@@ -134,7 +177,7 @@ async function processBoard(
           const d = new Date(dueRaw);
           if (!isNaN(+d)) dueDate = d.toISOString().slice(0, 10);
         }
-        subRows.push({
+        subBuf.push({
           parent_board: board,
           parent_item_id: parentItemId,
           parent_item_name: parentItemName,
@@ -146,6 +189,7 @@ async function processBoard(
           data: rec,
           source_file: sourceFile,
         });
+        if (subBuf.length >= FLUSH) await flushSub();
         continue;
       }
     }
@@ -177,7 +221,7 @@ async function processBoard(
       null;
     parentItemId = itemId ? String(itemId) : null;
 
-    mainRows.push({
+    mainBuf.push({
       monday_item_id: parentItemId,
       monday_group: currentGroup,
       name: String(name),
@@ -193,67 +237,13 @@ async function processBoard(
       data: rec,
       source_file: sourceFile,
     });
+    if (mainBuf.length >= FLUSH) await flushMain();
   }
+  await flushMain();
+  await flushSub();
 
-  // Upsert main rows in chunks
-  const table = TABLE[board];
-  let inserted = 0;
-  let updated = 0;
-
-  // Pre-fetch existing monday_item_ids to compute insert vs update
-  const ids = mainRows.map((r) => r.monday_item_id).filter(Boolean);
-  const existing = new Set<string>();
-  if (ids.length) {
-    for (let i = 0; i < ids.length; i += 1000) {
-      const slice = ids.slice(i, i + 1000);
-      const { data } = await supabase
-        .from(table)
-        .select("monday_item_id")
-        .in("monday_item_id", slice);
-      data?.forEach((r: any) => existing.add(r.monday_item_id));
-    }
-  }
-
-  for (let i = 0; i < mainRows.length; i += 500) {
-    const chunk = mainRows.slice(i, i + 500);
-    // Split: rows with item_id => upsert; rows without => insert
-    const withId = chunk.filter((r) => r.monday_item_id);
-    const noId = chunk.filter((r) => !r.monday_item_id);
-    if (withId.length) {
-      const { error } = await supabase
-        .from(table)
-        .upsert(withId, { onConflict: "monday_item_id" });
-      if (error) throw new Error(`Upsert ${table}: ${error.message}`);
-      withId.forEach((r) =>
-        existing.has(r.monday_item_id) ? updated++ : inserted++
-      );
-    }
-    if (noId.length) {
-      const { error } = await supabase.from(table).insert(noId);
-      if (error) throw new Error(`Insert ${table}: ${error.message}`);
-      inserted += noId.length;
-    }
-  }
-
-  // Subitems
-  let subInserted = 0;
-  for (let i = 0; i < subRows.length; i += 500) {
-    const chunk = subRows.slice(i, i + 500);
-    const withId = chunk.filter((r) => r.monday_item_id);
-    const noId = chunk.filter((r) => !r.monday_item_id);
-    if (withId.length) {
-      const { error } = await supabase
-        .from("monday_subitems_raw")
-        .upsert(withId, { onConflict: "monday_item_id" });
-      if (error) throw new Error(`Subitems: ${error.message}`);
-      subInserted += withId.length;
-    }
-    if (noId.length) {
-      const { error } = await supabase.from("monday_subitems_raw").insert(noId);
-      if (error) throw new Error(`Subitems insert: ${error.message}`);
-      subInserted += noId.length;
-    }
-  }
+  // Free the big rows array
+  rows.length = 0;
 
   // Updates sheet
   let updInserted = 0;
