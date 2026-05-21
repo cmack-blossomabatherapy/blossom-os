@@ -18,22 +18,27 @@ export interface StateMondayPipeline {
 
 const ACTIVE_GROUPS = new Set(["Active"]);
 
-async function fetchGroups(table: string, state: string): Promise<GroupCount[]> {
-  // Page through up to a few thousand rows; group counts client-side because
-  // PostgREST doesn't expose aggregate counts via the JS client cleanly.
+type RawTable =
+  | "monday_clients_raw"
+  | "monday_leads_raw"
+  | "monday_authorizations_raw"
+  | "monday_auth_approvals_raw"
+  | "monday_denials_raw";
+
+async function fetchGroups(table: RawTable, state: string): Promise<GroupCount[]> {
   const all: { monday_group: string | null }[] = [];
   const pageSize = 1000;
   let from = 0;
   while (true) {
     const { data, error } = await supabase
-      // @ts-expect-error — dynamic table name
       .from(table)
       .select("monday_group")
       .eq("state", state)
       .range(from, from + pageSize - 1);
     if (error) throw error;
-    all.push(...((data ?? []) as { monday_group: string | null }[]));
-    if (!data || data.length < pageSize) break;
+    const rows = (data ?? []) as unknown as { monday_group: string | null }[];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
     from += pageSize;
   }
   const map = new Map<string, number>();
