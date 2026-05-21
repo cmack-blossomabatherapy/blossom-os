@@ -182,6 +182,7 @@ import OSTrainingDetail from "./pages/os/OSTrainingDetail";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
+import OSResourceLibrary from "./pages/os/OSResourceLibrary";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
@@ -374,12 +375,7 @@ const App = () => (
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
-                  <Route path="/sop" element={<OSComingSoon title="Resource Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
-                    { title: "Searchable knowledge base", description: "Full-text search across every SOP, policy, and playbook." },
-                    { title: "Versioning & approvals", description: "Track every revision with approver, change notes, and effective dates." },
-                    { title: "Role-based access", description: "Surface the right SOPs by role, department, and state automatically." },
-                    { title: "AI explain & summarize", description: "Ask Blossom AI to explain, summarize, or compare any SOP instantly." },
-                  ]} />} />
+                  <Route path="/sop" element={<OSResourceLibrary />} />
                   <Route path="/marketing" element={<OSPlaceholder title="Marketing Ops" description="Lead generation, campaigns, attribution." icon={Megaphone} />} />
                   <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
