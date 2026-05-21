@@ -289,7 +289,7 @@ export default function OSWorkforce() {
   }, [bcbas, rbts, needs]);
 
   return (
-    <OSShell title="BCBA / RBT" role="state_director">
+    <OSShell>
       <div className="relative min-h-[calc(100vh-4rem)] bg-gradient-to-b from-[hsl(220_50%_98%)] via-white to-[hsl(220_50%_98%)] pb-20">
         {/* ambient gradient */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(60%_60%_at_20%_0%,hsl(210_90%_94%)_0%,transparent_60%),radial-gradient(50%_50%_at_85%_0%,hsl(265_90%_96%)_0%,transparent_55%)]" />
