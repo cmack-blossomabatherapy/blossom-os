@@ -161,6 +161,8 @@ export default function OSWorkforce() {
   const [query, setQuery] = useState("");
   const [selectedBcba, setSelectedBcba] = useState<BCBA | null>(null);
   const [selectedRbt, setSelectedRbt] = useState<RBT | null>(null);
+  const [bcbaVisible, setBcbaVisible] = useState(5);
+  const [rbtVisible, setRbtVisible] = useState(5);
 
   const q = query.trim().toLowerCase();
   const filteredBcbas = q ? bcbas.filter(b => `${b.name} ${b.region}`.toLowerCase().includes(q)) : bcbas;
