@@ -41,12 +41,19 @@ const STATE_BASE: Record<string, { clients: number; bcbaPct: number; hires: numb
   MD: { clients: 14, bcbaPct: 0.14, hires: 0 },
 };
 
-function genWeek(state: string, weekIso: string, weekIndex: number): WeeklyScorecard["values"] {
+function genWeek(
+  state: string,
+  weekIso: string,
+  weekIndex: number,
+  realActiveClients?: number,
+): WeeklyScorecard["values"] {
   const base = STATE_BASE[state] ?? STATE_BASE.VA;
   const seed = (k: string) => hash(`${state}|${weekIso}|${k}`);
   const j = (k: string, range: number) => (seed(k) - 0.5) * 2 * range;
 
-  const active_clients     = Math.max(8, Math.round(base.clients + j("clients", 2) + weekIndex * 0.15));
+  const active_clients     = typeof realActiveClients === "number"
+    ? realActiveClients
+    : Math.max(8, Math.round(base.clients + j("clients", 2) + weekIndex * 0.15));
   const hours_53           = Math.round((active_clients * 14.4 + j("h53", 18)) * 10) / 10;
   const hours_51           = Math.max(0, Math.round(active_clients * 1.05 + j("h51", 6)));
   const hours_55           = Math.round((active_clients * 2.45 + j("h55", 8)) * 10) / 10;
@@ -80,13 +87,23 @@ const SAMPLE_NOTES: string[] = [
   "Auth approvals slowed mid-week, recovered by Friday.",
 ];
 
-export function generateScorecards(state: string, weeks = 12): WeeklyScorecard[] {
+export interface GenerateScorecardsOptions {
+  /** Map of week-of-Monday ISO date → real active client count, used to override the mock. */
+  activeClientsByWeek?: Record<string, number>;
+}
+
+export function generateScorecards(
+  state: string,
+  weeks = 12,
+  options: GenerateScorecardsOptions = {},
+): WeeklyScorecard[] {
   const out: WeeklyScorecard[] = [];
   const today = mondayOf(new Date());
   for (let i = weeks - 1; i >= 0; i--) {
     const d = new Date(today); d.setDate(d.getDate() - i * 7);
     const iso = fmtIso(d);
-    const values = genWeek(state, iso, weeks - i);
+    const realClients = options.activeClientsByWeek?.[iso];
+    const values = genWeek(state, iso, weeks - i, realClients);
     const noteSeed = hash(`${state}|${iso}|note`);
     out.push({
       weekOf: iso,
