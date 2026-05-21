@@ -106,7 +106,46 @@ function getRequiredColumnIndexes(header: string[]) {
   };
   const missing = Object.entries(cols).filter(([, value]) => value < 0).map(([key]) => key);
   if (missing.length) throw new Error(`CSV is missing required columns: ${missing.join(", ")}`);
-  return cols;
+  // Optional columns (billing / location) — null index = column not present
+  const optional = {
+    state: idx("ServiceLocationStateProvince"),
+    locDesc: idx("LocationDescription"),
+    payor: idx("PayorName"),
+    units: idx("UnitsOfService"),
+    charges: idx("ClientChargesTotal"),
+    paid: idx("AmountPaid"),
+    owed: idx("AmountOwed"),
+  };
+  return { ...cols, ...optional };
+}
+
+function classifyPayor(name: string | null): string | null {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  if (n.includes("medicaid") || n.includes("trillium") || n.includes("partners") || n.includes("vaya")) return "medicaid";
+  if (n.includes("tricare") || n.includes("champva")) return "tricare";
+  if (n.includes("cigna") || n.includes("aetna") || n.includes("bcbs") || n.includes("blue cross") || n.includes("united") || n.includes("anthem") || n.includes("humana")) return "commercial";
+  if (n.includes("private") || n.includes("self pay") || n.includes("self-pay")) return "private";
+  return "other";
+}
+
+function classifyBillable(code: string | null): boolean {
+  if (!code) return false;
+  const c = code.toLowerCase();
+  if (c.includes("admin") || c.includes("non-billable") || c.includes("cancellation")) return false;
+  return /^\d{5}/.test(code.trim());
+}
+
+function cleanPayor(raw: string | null): string | null {
+  if (!raw) return null;
+  // strip leading "P: " prefix and trailing parenthetical
+  return raw.replace(/^P:\s*/i, "").replace(/\s*\([^)]*\)\s*$/, "").trim() || null;
+}
+
+function num(v: string | null | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 function parseDate(s: string): string | null {
