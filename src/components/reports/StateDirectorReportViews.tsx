@@ -4,6 +4,18 @@ import { MetricCard } from "./MetricCard";
 import { BreakdownTable } from "./BreakdownTable";
 import { RiskAlertPanel } from "./RiskAlertPanel";
 import { HoursVsClientsChart } from "@/components/state-director/HoursVsClientsChart";
+import type { WeekPoint } from "@/lib/analytics/stateOps";
+const SD_DEMO_WEEKS: WeekPoint[] = [
+  { weekKey: "2025-W08", weekLabel: "Feb 17", hours: 1024, clients: 74, hoursMA: 1010, clientsMA: 73, hoursPerClient: 13.8 },
+  { weekKey: "2025-W09", weekLabel: "Feb 24", hours: 1098, clients: 76, hoursMA: 1058, clientsMA: 74, hoursPerClient: 14.4 },
+  { weekKey: "2025-W10", weekLabel: "Mar 03", hours: 1142, clients: 78, hoursMA: 1088, clientsMA: 76, hoursPerClient: 14.6 },
+  { weekKey: "2025-W11", weekLabel: "Mar 10", hours: 1188, clients: 79, hoursMA: 1142, clientsMA: 78, hoursPerClient: 15.0 },
+  { weekKey: "2025-W12", weekLabel: "Mar 17", hours: 1212, clients: 80, hoursMA: 1180, clientsMA: 79, hoursPerClient: 15.1 },
+  { weekKey: "2025-W13", weekLabel: "Mar 24", hours: 1234, clients: 81, hoursMA: 1211, clientsMA: 80, hoursPerClient: 15.2 },
+  { weekKey: "2025-W14", weekLabel: "Mar 31", hours: 1248, clients: 82, hoursMA: 1231, clientsMA: 81, hoursPerClient: 15.2 },
+  { weekKey: "2025-W15", weekLabel: "Apr 07", hours: 1264, clients: 82, hoursMA: 1248, clientsMA: 81, hoursPerClient: 15.4 },
+  { weekKey: "2025-W16", weekLabel: "Apr 14", hours: 1284, clients: 83, hoursMA: 1265, clientsMA: 82, hoursPerClient: 15.5 },
+];
 import { GrowthTrendChart } from "./GrowthTrendChart";
 import {
   sdStatePerformance, sdStaffing, sdStaffingByBcba, sdBcbaPerf, sdBcbaRows,
@@ -106,7 +118,7 @@ export function renderSdReport(id: string): React.ReactNode | null {
             <div className="rounded-2xl border border-border/60 bg-card p-4">
               <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Operational heartbeat</p>
               <p className="mt-0.5 text-[14px] font-semibold tracking-tight">Active Clients vs Total Service Hours</p>
-              <div className="mt-3"><HoursVsClientsChart /></div>
+              <div className="mt-3"><HoursVsClientsChart data={SD_DEMO_WEEKS} /></div>
             </div>
           }
         />
