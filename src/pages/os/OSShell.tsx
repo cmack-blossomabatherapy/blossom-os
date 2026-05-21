@@ -139,7 +139,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   }, [collapsed]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
   const { pathname } = useLocation();
