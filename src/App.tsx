@@ -180,6 +180,7 @@ import OSUserManagement from "./pages/os/OSUserManagement";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
+import OSWorkforce from "./pages/os/OSWorkforce";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
@@ -343,12 +344,7 @@ const App = () => (
                     { title: "Parent communication log", description: "Centralized record of every conversation, message, and follow-up." },
                     { title: "Outcomes tracking", description: "Goal progress, program changes, and discharge readiness over time." },
                   ]} />} />
-                  <Route path="/staff" element={<OSComingSoon title="Clinical Staff" tagline="Your BCBA and RBT workforce — credentials, capacity, performance, and assignments in one place." icon={UserCog} features={[
-                    { title: "Staff directory", description: "Searchable roster with role, region, certifications, and availability." },
-                    { title: "Credentials & compliance", description: "License, CEU, background, and BLS tracking with renewal alerts." },
-                    { title: "Capacity & utilization", description: "Hours assigned vs available, overtime risk, and burnout signals." },
-                    { title: "Performance scorecards", description: "Cancellations, parent feedback, session quality, and growth trajectory." },
-                  ]} />} />
+                  <Route path="/staff" element={<OSWorkforce />} />
                   <Route path="/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
                   <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
