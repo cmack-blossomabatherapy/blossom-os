@@ -101,12 +101,12 @@ export default function MfaVerify() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-sm">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2d8a9e]/10 text-[#2d8a9e]">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <div className="text-xs text-muted-foreground">
-              Signed in as <span className="font-medium text-foreground">{user?.email}</span>
+            <div className="text-xs text-slate-500">
+              Signed in as <span className="font-medium text-[#0c2340]">{user?.email}</span>
             </div>
           </div>
 
@@ -131,17 +131,18 @@ export default function MfaVerify() {
           <Button
             onClick={handleVerify}
             disabled={code.length !== 6 || verifying || !challengeId}
-            className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-all hover:shadow-lg"
+            className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+            style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
           >
             {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Verify
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-xs text-slate-500">
             Lost your phone? Ask an admin to reset your two-factor at{" "}
             <a
               href="mailto:hr@blossomabatherapy.com?subject=Reset%20my%20Blossom%202FA"
-              className="font-medium text-primary underline-offset-2 hover:underline"
+              className="font-medium text-[#2d8a9e] underline-offset-2 hover:underline"
             >
               hr@blossomabatherapy.com
             </a>
