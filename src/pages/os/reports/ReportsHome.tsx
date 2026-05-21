@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Sparkles, Upload, Plus, MessageCircleQuestion, Bookmark, Star, History,
+  Sparkles, Plus, Bookmark, Star, History,
   ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Pin,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
@@ -59,7 +59,7 @@ export default function ReportsHome() {
           </div>
           <h1 className="mt-3 text-[34px] font-semibold tracking-tight md:text-[40px]">Reports &amp; Analytics</h1>
           <p className="mt-1 max-w-2xl text-[14px] text-muted-foreground">
-            Operational intelligence for every department. Browse dashboards, save views, upload exports, or request something new.
+            Operational intelligence for every department. Browse dashboards across your role.
           </p>
 
           {/* AI summary */}
@@ -104,20 +104,7 @@ export default function ReportsHome() {
 
           {/* CTAs */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <Button size="sm" className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]" onClick={() => setRequestOpen(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" />Request New Report
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <Upload className="mr-1 h-3.5 w-3.5" />Upload Export
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <Bookmark className="mr-1 h-3.5 w-3.5" />Create Saved View
-            </Button>
-            <Button size="sm" variant="outline" className="border-white/80 bg-white/70 backdrop-blur">
-              <MessageCircleQuestion className="mr-1 h-3.5 w-3.5" />Ask Blossom AI
-            </Button>
-
-            <div className="relative ml-auto w-full max-w-xs">
+            <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
@@ -168,10 +155,12 @@ export default function ReportsHome() {
         </SidePanel>
       </section>
 
-      {/* ============== UPLOAD + REQUEST ============== */}
-      <section className="mt-10 grid gap-4 lg:grid-cols-2">
-        <UploadCenter />
-        <RequestCallout onClick={() => setRequestOpen(true)} />
+      {/* ============== REQUEST A NEW REPORT ============== */}
+      <section className="mt-10 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-secondary/20 px-6 py-8 text-center">
+        <p className="text-[13px] text-muted-foreground">Don't see what you need?</p>
+        <Button size="sm" onClick={() => setRequestOpen(true)} className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]">
+          <Plus className="mr-1 h-3.5 w-3.5" />Request a New Report
+        </Button>
       </section>
 
       {/* ============== ALL REPORTS (filtered/search) ============== */}
@@ -405,72 +394,5 @@ function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored
       <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{report.description}</p>
       <Sparkline points={report.sparkline || []} color={cat.accent} />
     </Link>
-  );
-}
-
-function UploadCenter() {
-  return (
-    <article className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-5">
-      <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-[hsl(215_100%_92%)] opacity-60 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(215_100%_95%)] text-[hsl(215_80%_50%)]">
-            <Upload className="h-3.5 w-3.5" />
-          </span>
-          <Badge variant="secondary" className="rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(215_80%_50%)]">Upload Center</Badge>
-        </div>
-        <h3 className="mt-3 text-[18px] font-semibold tracking-tight">Drop an export, get a dashboard</h3>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">CSV, TXT, or Excel from CentralReach, BCBA, Scheduling, Auth, or Billing exports. We'll auto-detect the report type.</p>
-
-        <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[hsl(215_80%_75%)] bg-[hsl(215_100%_98%)] px-4 py-8 text-center transition hover:bg-[hsl(215_100%_96%)]">
-          <Upload className="h-5 w-5 text-[hsl(215_80%_50%)]" />
-          <p className="text-[13px] font-medium">Drop files here or click to browse</p>
-          <p className="text-[11px] text-muted-foreground">Max 25MB · CSV, XLSX, TXT</p>
-          <input type="file" className="hidden" />
-        </label>
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {["CentralReach", "BCBA Report", "Scheduling", "Auth Export", "Billing"].map(t => (
-            <span key={t} className="rounded-full border border-border/60 bg-secondary/40 px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">{t}</span>
-          ))}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function RequestCallout({ onClick }: { onClick: () => void }) {
-  return (
-    <article className="relative overflow-hidden rounded-3xl border border-[hsl(265_70%_55%/0.25)] bg-gradient-to-br from-[hsl(265_100%_97%)] via-[hsl(285_100%_98%)] to-[hsl(225_100%_98%)] p-5">
-      <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[hsl(265_100%_88%)] opacity-50 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white text-[hsl(265_70%_55%)] shadow-sm">
-            <Sparkles className="h-3.5 w-3.5" />
-          </span>
-          <Badge variant="secondary" className="rounded-full bg-white/70 text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">Request a New Report</Badge>
-        </div>
-        <h3 className="mt-3 text-[18px] font-semibold tracking-tight">Need operational visibility into something new?</h3>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">Submit a report request and we'll AI-assist a draft layout. Systems &amp; Software will take it from there.</p>
-        <div className="mt-4 flex items-center gap-2">
-          <Button size="sm" onClick={onClick} className="bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)]">
-            <Plus className="mr-1 h-3.5 w-3.5" />Create Report Request
-          </Button>
-          <span className="text-[11px] text-muted-foreground">~3 min · AI assist included</span>
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          {[
-            { k: "Avg build", v: "5 days" },
-            { k: "Active builds", v: "4" },
-            { k: "Published / mo", v: "12" },
-          ].map(s => (
-            <div key={s.k} className="rounded-xl border border-white/70 bg-white/60 px-2 py-2 backdrop-blur">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{s.k}</p>
-              <p className="mt-0.5 text-[14px] font-semibold tabular-nums">{s.v}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </article>
   );
 }
