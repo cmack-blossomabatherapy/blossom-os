@@ -178,6 +178,7 @@ import OSTraining from "./pages/os/OSTraining";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
+import OSDataUploads from "./pages/os/OSDataUploads";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
@@ -397,6 +398,7 @@ const App = () => (
                   <Route path="/user-management" element={<OSUserManagement />} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
+                  <Route path="/admin/data-uploads" element={<OSDataUploads />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
                   {/* Marketing Team */}

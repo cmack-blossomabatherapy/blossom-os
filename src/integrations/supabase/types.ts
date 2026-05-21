@@ -2252,6 +2252,48 @@ export type Database = {
         }
         Relationships: []
       }
+      data_uploads: {
+        Row: {
+          file_name: string
+          file_size: number
+          id: string
+          mime_type: string | null
+          notes: string | null
+          source_key: string
+          source_label: string
+          source_system: string
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_size: number
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          source_key: string
+          source_label: string
+          source_system: string
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          source_key?: string
+          source_label?: string
+          source_system?: string
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       employee_bonuses: {
         Row: {
           amount: number
