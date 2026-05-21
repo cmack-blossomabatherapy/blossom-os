@@ -28,8 +28,8 @@ const CODE_OPTIONS: { key: CodeFilter; label: string; sub: string }[] = [
   { key: "97156", label: "97156", sub: "Parent" },
 ];
 const WINDOWS: { key: WindowKey; label: string }[] = [
-  { key: "4w", label: "4w" }, { key: "12w", label: "12w" },
-  { key: "26w", label: "26w" }, { key: "ytd", label: "YTD" },
+  { key: "1w", label: "1w" }, { key: "2w", label: "2w" },
+  { key: "4w", label: "4w" }, { key: "custom", label: "Custom" },
 ];
 
 /* ---------- small UI atoms ---------- */
