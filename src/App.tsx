@@ -398,7 +398,6 @@ const App = () => (
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
-                  <Route path="/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
                   {/* Marketing Team */}
                   <Route path="/marketing-dashboard" element={<OSMarketingDashboard />} />
