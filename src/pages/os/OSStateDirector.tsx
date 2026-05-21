@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
 import { useStateOps, type WindowKey } from "@/hooks/useStateOps";
+import { useStateMondayPipeline } from "@/hooks/useStateMondayPipeline";
 import {
   filterByCode, weeklySeries, quickStats, supervisionLeaderboard,
   attentionItems, rosterStats, type CodeFilter,
@@ -115,6 +116,7 @@ export default function OSStateDirector() {
   const customToStr = customTo ? format(customTo, "yyyy-MM-dd") : undefined;
 
   const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey, customFromStr, customToStr);
+  const pipeline = useStateMondayPipeline(activeState);
 
   const filtered = useMemo(() => filterByCode(sessions, code), [sessions, code]);
   const series = useMemo(() => weeklySeries(filtered), [filtered]);
@@ -271,10 +273,18 @@ export default function OSStateDirector() {
         {/* ============ QUICK STATS ============ */}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MetricTile label="Hours this week" value={stats.hoursThisWeek.toFixed(1)} delta={stats.hoursDelta} tone="good" hint="Billable + admin" />
-          <MetricTile label="Active patients" value={stats.clientsThisWeek} delta={stats.clientsDelta} tone="neutral" hint="Distinct, this week" />
+          <MetricTile
+            label="Active patients"
+            value={pipeline.loading ? "…" : pipeline.activeClients}
+            tone="neutral"
+            hint={`Monday "Active" · ${pipeline.totalClients} total in state`}
+          />
           <MetricTile label="Hours / patient" value={stats.hoursPerClient.toFixed(1)} delta={stats.hoursPerClientDelta} tone="good" hint="Staffing efficiency" />
           <MetricTile label="Supervision ratio" value={stats.supervisionRatio.toFixed(1)} suffix="%" delta={stats.supervisionDelta} tone="good" hint="97155 / 97153" />
         </section>
+
+        {/* ============ MONDAY PIPELINE SNAPSHOT ============ */}
+        <PipelineSnapshot pipeline={pipeline} stateName={stateName} />
 
         {/* ============ SUPERVISION LEADERBOARD ============ */}
         <section className="rounded-[24px] border border-white/70 bg-white/80 p-6 backdrop-blur shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_24px_60px_-40px_hsl(220_40%_30%/0.18)]">
@@ -382,5 +392,61 @@ export default function OSStateDirector() {
         </p>
       </div>
     </OSShell>
+  );
+}
+
+function PipelineSnapshot({ pipeline, stateName }: { pipeline: ReturnType<typeof useStateMondayPipeline>; stateName: string }) {
+  if (pipeline.loading) {
+    return (
+      <section className="rounded-[24px] border border-white/70 bg-white/70 p-6 text-[12px] text-muted-foreground">
+        Loading {stateName} pipeline from Monday…
+      </section>
+    );
+  }
+  const boards: { title: string; subtitle: string; rows: { group: string; count: number }[] }[] = [
+    { title: "Clients",        subtitle: `${pipeline.totalClients} total`,                                rows: pipeline.clients },
+    { title: "Leads",          subtitle: `${pipeline.leads.reduce((s,g)=>s+g.count,0)} total`,            rows: pipeline.leads },
+    { title: "Authorizations", subtitle: `${pipeline.authorizations.reduce((s,g)=>s+g.count,0)} total`,   rows: pipeline.authorizations },
+    { title: "Approvals",      subtitle: `${pipeline.approvals.reduce((s,g)=>s+g.count,0)} total`,        rows: pipeline.approvals },
+    { title: "Denials",        subtitle: `${pipeline.denials.reduce((s,g)=>s+g.count,0)} total`,          rows: pipeline.denials },
+  ];
+  return (
+    <section className="rounded-[24px] border border-white/70 bg-white/80 p-6 backdrop-blur shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_24px_60px_-40px_hsl(220_40%_30%/0.18)]">
+      <header className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h3 className="flex items-center gap-2 text-[17px] font-semibold tracking-tight">
+            <Database className="h-4 w-4 text-[hsl(265_70%_55%)]" />
+            {stateName} Pipeline · live from Monday
+          </h3>
+          <p className="text-[12px] text-muted-foreground">
+            1:1 with each board's kanban groups — these are the numbers your team manages every day.
+          </p>
+        </div>
+      </header>
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {boards.map((b) => (
+          <div key={b.title} className="rounded-2xl border border-foreground/10 bg-white/70 p-4">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[12.5px] font-semibold tracking-tight">{b.title}</p>
+              <p className="text-[11px] text-muted-foreground">{b.subtitle}</p>
+            </div>
+            {b.rows.length === 0 ? (
+              <p className="mt-3 text-[11.5px] text-muted-foreground">No rows for {stateName}.</p>
+            ) : (
+              <ul className="mt-2 divide-y divide-foreground/[0.06]">
+                {b.rows.slice(0, 8).map((r) => (
+                  <li key={r.group} className="flex items-center justify-between py-1.5 text-[12px]">
+                    <span className="truncate text-foreground/80">{r.group}</span>
+                    <span className="ml-2 shrink-0 rounded-full bg-foreground/[0.05] px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                      {r.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
