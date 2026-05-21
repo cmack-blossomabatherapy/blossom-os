@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import {
   Users, UsersRound, UserPlus, Clock4, ShieldCheck, DollarSign,
-  Plus, Filter, Download, Phone, MessageSquare, Mail, FileText, StickyNote,
+  Plus, Filter, Download, Phone, Mail, FileText, StickyNote,
   MoreHorizontal, ChevronDown, ChevronLeft, X, Sparkles, ArrowUpRight, ArrowDownRight,
   CalendarDays, ClipboardCheck, UserCog, BarChart3, Search, Grid2x2, List as ListIcon,
   CheckCircle2, AlertTriangle, Heart,
@@ -225,7 +225,6 @@ function ClientPanel({ c, onClose }: { c: Client; onClose: () => void }) {
   const usedPct = c.unitsApproved ? Math.round((c.unitsUsed / c.unitsApproved) * 100) : 0;
 
   const actions = [
-    { label: "Message", icon: MessageSquare, tone: "os-tone-sky" },
     { label: "Call",    icon: Phone,         tone: "os-tone-mint" },
     { label: "Email",   icon: Mail,          tone: "os-tone-rose" },
     { label: "Note",    icon: StickyNote,    tone: "os-tone-lilac" },
