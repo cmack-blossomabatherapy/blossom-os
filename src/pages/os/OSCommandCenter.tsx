@@ -384,7 +384,7 @@ export default function OSCommandCenter() {
               {greet}, {name}.
             </h1>
             <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-              Your operational workspace for {stateName}. <b className="text-foreground">{criticalCount}</b> critical {criticalCount === 1 ? "item" : "items"} · <b className="text-foreground">{highCount}</b> high-priority · {ACTION_GROUPS[0].tasks.length} due today.
+              {hasAnyData ? `This week · ${stats.hoursThisWeek.toFixed(0)} hours across ${stats.clientsThisWeek} active patients.` : "Your operational workspace — everything you need to run the state."}
             </p>
           </div>
           <div className="flex items-center gap-2">
