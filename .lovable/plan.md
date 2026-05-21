@@ -1,42 +1,47 @@
-## Goal
+# Fix "factor with the friendly name … already exists" on /mfa/setup
 
-Strip every interactive entry point that opens or sends a message/text across the app. Keep Call, Email, and Note actions everywhere. Keep activity-feed/timeline records that *display* past messages (those are history, not entry points).
+## Root cause
 
-## Files to edit
+`src/pages/MfaSetup.tsx` enrolls a new TOTP factor inside a `useEffect`. Two things combine to trigger the 422:
 
-### Command Center & shell
-- **`src/pages/os/OSCommandCenter.tsx`** — remove unused `MessageSquare` import.
-- **`src/pages/os/OSShell.tsx`** — remove unused `MessageSquare` import. Floating bottom nav has no Message entry; no other change.
+1. **Collisions on `friendly_name`.** It's generated as `` `Blossom OS · ${new Date().toLocaleDateString()}` ``, so every enroll the same day uses the exact same string. Supabase rejects a second enroll with that name (HTTP 422 — what you're seeing).
+2. **The "clean up pending factors first" step races.** The effect does `listFactors → unenroll pending → enroll`, but:
+   - In dev (StrictMode / HMR / Fast Refresh) the effect can fire twice; the cleanup `return` only flips a `cancelled` flag — it does **not** unenroll the factor the first run just created. The second run can list+unenroll before the first run's enroll response lands, then the first run's enroll resolves and lingers as an unverified factor.
+   - If the user navigates away and back (or the component re-mounts for any other reason), the same race re-creates the same-named factor.
 
-### Clients
-- **`src/pages/os/OSClients.tsx`** — remove the `{ label: "Message", icon: MessageSquare, … }` entry from the detail-panel actions array (line 228). Drop `MessageSquare` from the import line if it becomes unused.
-- **`src/pages/Clients.tsx`** — remove the "Text" quick-action button (line 325) and the "Log text" button inside the Communications tab (line 395). Keep Call/Email/Log call/Log email. Drop `MessageSquare` if unused after.
+Network log confirms it: first `POST /factors` succeeded at 04:53:23 with `friendly_name "Blossom OS · 5/21/2026"`. 26s later a second `POST /factors` with the identical name returned 422.
 
-### Role workspaces (each has a hero "quick actions" row + a tiny icon button row in the contact list)
-For each file below: remove the Message/Send Follow-Up/Send Text/Message Team/Message Staff/Message BCBA/Contact BCBA entry from the actions array, AND remove the `<button title="Text">…<MessageSquare/></button>` tile from the contact-list action cluster. Keep Call/Email/Note tiles. Drop `MessageSquare` from imports if unused after.
+## Plan
 
-- `src/pages/os/OSLeads.tsx` — drop "Send Text" (l.79) and "Text" (l.208).
-- `src/pages/os/OSIntakeCoordinator.tsx` — drop "Send Follow-Up" (l.131) and the inline Text button (l.549). Keep the `kind: "Text"` items in the activity feed (those are records of past attempts).
-- `src/pages/os/OSRecruitingTeam.tsx` — drop "Send Follow-Up" (l.131) and inline Text button (l.550).
-- `src/pages/os/OSSchedulingTeam.tsx` — drop "Message Staff" (l.130) and inline Text button (l.549).
-- `src/pages/os/OSAuthCoordinator.tsx` — drop "Contact BCBA" (l.130) and inline Text button (l.548).
-- `src/pages/os/OSBCBA.tsx` — drop "Message Team" (l.123).
-- `src/pages/os/OSRBT.tsx` — drop "Message BCBA" (l.88). Keep the chat-style notifications at l.64/79 (history, not entry points).
+Edit only `src/pages/MfaSetup.tsx`.
 
-### Lead & call detail panels
-- **`src/components/leads/LeadDetailPanel.tsx`** — remove the `{ icon: MessageSquare, label: "Text" }` quick-action (l.80).
-- **`src/components/calls/CallDetailPanel.tsx`** — remove the `<ActionBtn icon={MessageSquare} label="Text" />` button (l.73).
+1. **Reuse an existing unverified factor instead of re-enrolling.**
+   In the boot effect, after `listFactors()`:
+   - If exactly one unverified TOTP factor already exists, we cannot recover its QR/secret (Supabase only returns those at enroll time), so unenroll it and then enroll fresh.
+   - But do the unenroll **sequentially** and **await** it before calling `enroll`, so the next enroll can't race against a not-yet-deleted same-named factor.
 
-### Intake dashboard
-- **`src/pages/IntakeDashboard.tsx`** — remove "Text" from the inline action array (l.257) and from the `onAction` allowlist (l.159). Keep Call/Email/Send Form/Mark Contacted/Assign Owner/Open Lead.
+2. **Use a collision-proof `friendly_name`.**
+   Replace `toLocaleDateString()` with a full ISO timestamp plus a short random suffix, e.g.:
+   ```
+   `Blossom OS · ${new Date().toISOString().replace(/[:.]/g, "-")}-${Math.random().toString(36).slice(2, 6)}`
+   ```
+   This removes the friendly-name collision entirely, so even if a stray unverified factor survives a cleanup race, the next enroll still succeeds.
 
-## Preserved deliberately
-- All Call, Email, Note/Log note, Send Form, Mark Contacted actions.
-- Activity feeds / timelines / notification streams that show received messages or texts (`kind: "Text"` items, "left feedback on your note", etc.) — these are records, not entry points.
-- Internal training content references to "Microsoft Teams / communication standards" in `src/lib/onboarding/journey.ts` and `src/pages/onboarding/HowItWorks.tsx` (training material, not in-app messaging entry points).
-- The `MessageTemplate` type/mock in `src/data/settings.ts` (schema only; no UI surfacing it is in scope).
+3. **Guard against StrictMode double-invoke.**
+   Add a module-scoped `let enrollInFlight: Promise<…> | null = null` (or a `useRef`) so concurrent mounts await the same enroll promise instead of each firing their own `POST /factors`. Clear it in the cleanup once it resolves.
+
+4. **Handle the 422 defensively.**
+   If `enroll` still returns "already exists", run another `listFactors → unenroll all unverified` pass and retry once. After the retry, surface a friendlier error to `bootError` ("Couldn't reset your previous setup — sign out and try again") instead of the raw Supabase string.
+
+5. **Don't change `unenrollAllTotp` semantics or the rest of the verify flow.** The existing `handleSignOut` already calls `unenrollAllTotp()` when bailing out — leave it alone.
 
 ## Verification
-- Build passes (harness).
-- Grep `rg -n "MessageSquare|\"Text\"|\"Message\"|Send Follow-Up|Contact BCBA|Message (Team|Staff|BCBA)" src/pages src/components` shows only timeline/history occurrences and onboarding/training references.
-- Spot-check Command Center, Clients, Leads, Intake, RBT, BCBA, Auth Coordinator, Recruiting, Scheduling pages: no Message/Text buttons or cards remain.
+
+- Open `/mfa/setup`, refresh several times, navigate away and back. No 422 in network; a single fresh QR renders each time.
+- Trigger React StrictMode double-mount in dev: still only one successful `POST /factors` (or two with distinct friendly names, both succeeding).
+- Sign out mid-setup via the footer button → `unenrollAllTotp` clears the pending factor; next `/mfa/setup` boots cleanly.
+
+## Out of scope
+
+- No changes to `MfaVerify`, `MfaBrandShell`, `Auth.tsx`, or auth context.
+- No DB migrations; this is purely client-side.

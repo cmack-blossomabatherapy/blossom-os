@@ -9,6 +9,46 @@ import { Loader2, Copy, Check, LogOut } from "lucide-react";
 import { MfaBrandShell } from "@/components/auth/MfaBrandShell";
 import { markMfaVerified, unenrollAllTotp } from "@/lib/mfa";
 
+// Module-scoped guard so React StrictMode / HMR double-invokes don't fire
+// two concurrent POST /factors calls (which would collide on friendly_name).
+let enrollInFlight: Promise<{ id: string; qr: string; secret: string }> | null = null;
+
+async function cleanupPendingTotp() {
+  const { data: list } = await supabase.auth.mfa.listFactors();
+  const pending = (list?.totp ?? []).filter((f) => f.status !== "verified");
+  for (const f of pending) {
+    await supabase.auth.mfa.unenroll({ factorId: f.id });
+  }
+}
+
+function makeFriendlyName() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `Blossom OS · ${stamp}-${suffix}`;
+}
+
+async function startEnroll(): Promise<{ id: string; qr: string; secret: string }> {
+  await cleanupPendingTotp();
+  const tryEnroll = async () => {
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: makeFriendlyName(),
+    });
+    if (error) throw error;
+    return { id: data.id, qr: data.totp.qr_code, secret: data.totp.secret };
+  };
+  try {
+    return await tryEnroll();
+  } catch (e: any) {
+    const msg = String(e?.message ?? "");
+    if (/already exists/i.test(msg)) {
+      await cleanupPendingTotp();
+      return await tryEnroll();
+    }
+    throw e;
+  }
+}
+
 export default function MfaSetup() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -31,25 +71,26 @@ export default function MfaSetup() {
     let cancelled = false;
     (async () => {
       try {
-        // Clear any unverified factors from prior attempts so enroll succeeds.
-        const { data: list } = await supabase.auth.mfa.listFactors();
-        const pending = (list?.totp ?? []).filter((f) => f.status !== "verified");
-        await Promise.all(
-          pending.map((f) => supabase.auth.mfa.unenroll({ factorId: f.id })),
-        );
-
-        const { data, error } = await supabase.auth.mfa.enroll({
-          factorType: "totp",
-          friendlyName: `Blossom OS · ${new Date().toLocaleDateString()}`,
-        });
+        // Reuse any in-flight enroll so a double-mount doesn't double-POST.
+        if (!enrollInFlight) {
+          enrollInFlight = startEnroll().finally(() => {
+            // Allow a fresh attempt on next mount (e.g. after sign-out + back).
+            setTimeout(() => { enrollInFlight = null; }, 0);
+          });
+        }
+        const result = await enrollInFlight;
         if (cancelled) return;
-        if (error) throw error;
-        setFactorId(data.id);
-        setQrSvg(data.totp.qr_code);
-        setSecret(data.totp.secret);
+        setFactorId(result.id);
+        setQrSvg(result.qr);
+        setSecret(result.secret);
       } catch (e: any) {
         if (cancelled) return;
-        setBootError(e?.message ?? "Could not start authenticator setup.");
+        const msg = String(e?.message ?? "");
+        setBootError(
+          /already exists/i.test(msg)
+            ? "Couldn't reset your previous setup. Sign out below and try again."
+            : msg || "Could not start authenticator setup.",
+        );
       }
     })();
     return () => {
