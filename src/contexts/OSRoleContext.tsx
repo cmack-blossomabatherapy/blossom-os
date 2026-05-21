@@ -60,7 +60,7 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = derivedRole === "super_admin";
   const [profileState, setProfileState] = useState<OSState | null>(null);
   const [activeState, setActiveStateInternal] = useState<OSState>(() => {
-    if (typeof window === "undefined") return "FL";
+    if (typeof window === "undefined") return "GA";
     const stored = window.localStorage.getItem(STATE_KEY) as OSState | null;
     return stored && (OS_STATES as readonly string[]).includes(stored) ? stored : "GA";
   });
