@@ -173,5 +173,6 @@ export default function OSKpiScorecards() {
         <NotesPanel initial={active.note ? [{ id: "seed", note: active.note, author: "Meeting summary", createdAt: active.weekLabel }] : []} />
       </section>
     </OSShell>
+    </TooltipProvider>
   );
 }
