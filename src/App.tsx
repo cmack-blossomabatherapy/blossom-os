@@ -374,7 +374,7 @@ const App = () => (
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
-                  <Route path="/sop" element={<OSComingSoon title="SOP Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
+                  <Route path="/sop" element={<OSComingSoon title="Resource Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
                     { title: "Searchable knowledge base", description: "Full-text search across every SOP, policy, and playbook." },
                     { title: "Versioning & approvals", description: "Track every revision with approver, change notes, and effective dates." },
                     { title: "Role-based access", description: "Surface the right SOPs by role, department, and state automatically." },

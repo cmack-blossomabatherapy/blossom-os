@@ -76,7 +76,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
       { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
       { to: "/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
-      { to: "/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
+      { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
       { to: "/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
     ],
   },
