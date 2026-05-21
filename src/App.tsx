@@ -493,29 +493,16 @@ const App = () => (
                   <Route path="/finance-dashboard" element={<PermissionRoute permission="dashboard.view"><FinanceDashboard /></PermissionRoute>} />
                   <Route path="/recruiting-dashboard" element={<PermissionRoute permission="dashboard.view"><RecruitingDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
-                  <Route path="/leads" element={<Leads />} />
-                  <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/pipeline" element={<Pipeline />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/clients/:id" element={<ClientDetail />} />
-                  <Route path="/authorizations" element={<Authorizations />} />
-                  <Route path="/authorizations/:id" element={<AuthDetail />} />
-                  <Route path="/scheduling" element={<Scheduling />} />
                   <Route path="/staffing" element={<Staffing />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
-                  <Route path="/recruiting" element={<Recruiting />} />
-                  <Route path="/recruiting/:id" element={<CandidateDetail />} />
                   <Route path="/qa" element={<QA />} />
                   <Route path="/qa/:id" element={<QADetail />} />
-                  <Route path="/operations" element={<Operations />} />
-                  <Route path="/operations/clinics/:id" element={<ClinicDetail />} />
                   <Route path="/clinics" element={<Clinics />} />
                   <Route path="/phone-calls" element={<PhoneCalls />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />
-                  <Route path="/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><Reports /></PermissionRoute>} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
-                  <Route path="/training" element={<AcademyGate><TrainingHub /></AcademyGate>} />
                   <Route path="/training/academy" element={<AcademyHome />} />
                   <Route path="/training/academy/week/:weekId" element={<AcademyWeekDetail />} />
                   <Route path="/training/academy/leadership" element={<PermissionRoute permission="hr.training.view"><AcademyLeadership /></PermissionRoute>} />
@@ -531,8 +518,6 @@ const App = () => (
                   <Route path="/admin/training-assign" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingAssign /></PermissionRoute>} />
                   <Route path="/admin/track-assign" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAssign /></PermissionRoute>} />
                   <Route path="/admin/role-audit" element={<PermissionRoute allowedRoles={["admin"]}><RoleAuditLog /></PermissionRoute>} />
-                  <Route path="/settings" element={<PermissionRoute permission="settings.view"><SettingsPage /></PermissionRoute>} />
-                  <Route path="/hr" element={<PermissionRoute permission="hr.view"><HRDashboard /></PermissionRoute>} />
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
