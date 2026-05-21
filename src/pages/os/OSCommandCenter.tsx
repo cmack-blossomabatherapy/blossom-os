@@ -300,7 +300,7 @@ export default function OSCommandCenter() {
   const regions = REGIONS_BY_STATE[activeState] ?? REGIONS_BY_STATE.NC;
   const attention = useMemo(() => buildAttention(activeState), [activeState]);
 
-  const { sessions, hasAnyData } = useStateOps(activeState, "12w");
+  const { sessions, hasAnyData } = useStateOps(activeState, "4w");
   const series = useMemo(() => weeklySeries(sessions), [sessions]);
   const stats = useMemo(() => quickStats(sessions), [sessions]);
 

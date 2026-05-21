@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ArrowUpRight, ArrowDownRight, AlertTriangle, Flame, ArrowRight,
-  Sparkles, Activity, ShieldCheck, Wallet, CheckCircle2, Database,
+  Sparkles, Activity, ShieldCheck, Wallet, CheckCircle2, Database, CalendarIcon,
 } from "lucide-react";
+import { format } from "date-fns";
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
@@ -14,6 +15,9 @@ import {
 } from "@/lib/analytics/stateOps";
 import { HoursVsClientsChart } from "@/components/state-director/HoursVsClientsChart";
 import { SupervisionLeaderboard } from "@/components/state-director/SupervisionLeaderboard";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 const STATE_NAMES: Record<string, string> = {
   NC: "North Carolina", GA: "Georgia", VA: "Virginia", TN: "Tennessee",
@@ -28,8 +32,8 @@ const CODE_OPTIONS: { key: CodeFilter; label: string; sub: string }[] = [
   { key: "97156", label: "97156", sub: "Parent" },
 ];
 const WINDOWS: { key: WindowKey; label: string }[] = [
-  { key: "4w", label: "4w" }, { key: "12w", label: "12w" },
-  { key: "26w", label: "26w" }, { key: "ytd", label: "YTD" },
+  { key: "1w", label: "1w" }, { key: "2w", label: "2w" },
+  { key: "4w", label: "4w" }, { key: "custom", label: "Custom" },
 ];
 
 /* ---------- small UI atoms ---------- */
@@ -103,9 +107,14 @@ export default function OSStateDirector() {
   const { user } = useAuth();
   const { activeState } = useOSRole();
   const [code, setCode] = useState<CodeFilter>("all");
-  const [windowKey, setWindowKey] = useState<WindowKey>("12w");
+  const [windowKey, setWindowKey] = useState<WindowKey>("4w");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>(undefined);
+  const [customTo, setCustomTo] = useState<Date | undefined>(undefined);
 
-  const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey);
+  const customFromStr = customFrom ? format(customFrom, "yyyy-MM-dd") : undefined;
+  const customToStr = customTo ? format(customTo, "yyyy-MM-dd") : undefined;
+
+  const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey, customFromStr, customToStr);
 
   const filtered = useMemo(() => filterByCode(sessions, code), [sessions, code]);
   const series = useMemo(() => weeklySeries(filtered), [filtered]);
@@ -187,12 +196,57 @@ export default function OSStateDirector() {
               </div>
 
               {/* Window chips */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {WINDOWS.map((w) => (
                   <Chip key={w.key} active={windowKey === w.key} onClick={() => setWindowKey(w.key)}>
                     {w.label}
                   </Chip>
                 ))}
+                {windowKey === "custom" && (
+                  <div className="flex items-center gap-1.5">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className={cn(
+                          "h-8 rounded-full border px-3 text-[11.5px] font-semibold",
+                          !customFrom && "text-muted-foreground"
+                        )}>
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {customFrom ? format(customFrom, "MMM d") : "From"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={customFrom}
+                          onSelect={setCustomFrom}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <span className="text-[11px] text-muted-foreground">–</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className={cn(
+                          "h-8 rounded-full border px-3 text-[11.5px] font-semibold",
+                          !customTo && "text-muted-foreground"
+                        )}>
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {customTo ? format(customTo, "MMM d") : "To"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={customTo}
+                          onSelect={setCustomTo}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
               </div>
             </div>
 

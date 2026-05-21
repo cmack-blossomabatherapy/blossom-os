@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { StateSession } from "@/lib/analytics/stateOps";
 
-export type WindowKey = "4w" | "12w" | "26w" | "ytd";
+export type WindowKey = "1w" | "2w" | "4w" | "custom";
 
-function windowSince(w: WindowKey): string {
+function windowSince(w: WindowKey, customFrom?: string): string {
+  if (w === "custom" && customFrom) return customFrom;
   const d = new Date();
-  if (w === "ytd") {
-    d.setMonth(0, 1);
-  } else {
-    const weeks = w === "4w" ? 4 : w === "12w" ? 12 : 26;
-    d.setDate(d.getDate() - weeks * 7);
-  }
+  const weeks = w === "1w" ? 1 : w === "2w" ? 2 : 4;
+  d.setDate(d.getDate() - weeks * 7);
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
+}
+
+function windowUntil(w: WindowKey, customTo?: string): string | undefined {
+  if (w === "custom" && customTo) return customTo;
+  return undefined;
 }
 
 // Map payor-name patterns to a state code so legacy rows without `state`
@@ -38,7 +40,12 @@ interface Result {
   hasAnyData: boolean;
 }
 
-export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
+export function useStateOps(
+  stateCode: string,
+  windowKey: WindowKey,
+  customFrom?: string,
+  customTo?: string,
+): Result {
   const [sessions, setSessions] = useState<StateSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,17 +57,15 @@ export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
       setLoading(true);
       setError(null);
       try {
-        const since = windowSince(windowKey);
+        const since = windowSince(windowKey, customFrom);
+        const until = windowUntil(windowKey, customTo);
         const all: any[] = [];
         const pageSize = 1000;
         let from = 0;
         const normalizedState = stateCode.toUpperCase();
 
-        // Pull the selected state's sessions directly. State Directors are also
-        // state-scoped by RLS, so this avoids an empty dashboard if the import
-        // lookup is unavailable while still keeping the page locked to VA/GA/etc.
         while (true) {
-          const { data, error: qErr } = await supabase
+          let query = supabase
             .from("bcba_billable_sessions")
             .select(
               "id,date_of_service,bcba_name,provider_full,client_full,procedure_code,hours,state,service_location,payor_name,payor_type,units,charges_total,amount_paid,amount_owed,is_billable",
@@ -69,12 +74,13 @@ export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
             .gte("date_of_service", since)
             .order("date_of_service", { ascending: false })
             .range(from, from + pageSize - 1);
+          if (until) query = query.lte("date_of_service", until);
+          const { data, error: qErr } = await query;
           if (qErr) throw qErr;
           all.push(...(data ?? []));
           if (!data || data.length < pageSize) break;
           from += pageSize;
         }
-        // Defensive fallback for legacy rows/payor-inferred states.
         const filtered = all.filter((s) => {
           const st = (s.state || inferStateFromPayor(s.payor_name) || "").toUpperCase();
           return st === normalizedState;
@@ -92,7 +98,7 @@ export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
     return () => {
       cancelled = true;
     };
-  }, [stateCode, windowKey]);
+  }, [stateCode, windowKey, customFrom, customTo]);
 
   const hasAnyData = useMemo(() => sessions.length > 0, [sessions]);
 
