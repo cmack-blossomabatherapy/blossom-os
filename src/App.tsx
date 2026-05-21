@@ -170,7 +170,6 @@ import OSQATeam from "./pages/os/OSQATeam";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSRBT from "./pages/os/OSRBT";
 import OSCalendar from "./pages/os/OSCalendar";
-import OSNotifications from "./pages/os/OSNotifications";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
@@ -284,7 +283,6 @@ const App = () => (
                   <Route path="/os/command-center" element={<OSCommandCenterRouter />} />
                   <Route path="/os/calendar" element={<OSCalendar />} />
                   <Route path="/os/calendar/:roleSlug" element={<OSCalendar />} />
-                  <Route path="/os/notifications" element={<OSNotifications />} />
                   <Route path="/os/leads" element={<OSLeads />} />
                   <Route path="/os/intake" element={<OSPlaceholder title="Intake" description="Intake pipeline, forms, onboarding, VOB workflow." icon={ClipboardList} />} />
                   <Route path="/os/clients" element={<OSClients />} />
@@ -336,7 +334,6 @@ const App = () => (
                   <Route path="/os/marketing/reputation" element={<OSPlaceholder title="Reputation Management" description="Google reviews, review requests and monitoring, sentiment tracking, escalation alerts." icon={Star} />} />
                   <Route path="/os/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
                   <Route path="/os/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
-                  <Route path="/os/communications" element={<OSPlaceholder title="Communications" description="Department channels, announcements, marketing channels, state communication channels." icon={MessageSquare} />} />
                 </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<WelcomeHome />} />
