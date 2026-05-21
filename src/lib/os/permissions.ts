@@ -72,6 +72,7 @@ export type OSModule =
   | "insurance"
   | "reports"
   | "kpi"
+  | "vob"
   | "workflows"
   | "sop"
   | "marketing"
@@ -128,6 +129,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   insurance: "/insurance",
   reports: "/reports",
   kpi: "/kpi",
+  vob: "/vob-decision-center",
   workflows: "/workflows",
   sop: "/sop",
   marketing: "/marketing",
@@ -206,7 +208,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     modules: [
       "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "recruiting", "credentialing", "employee_ops", "evaluations", "training",
-      "reports", "kpi", "workflows", "sop", "marketing", "analytics_hub",
+      "reports", "kpi", "vob", "workflows", "sop", "marketing", "analytics_hub",
       "billing", "payroll", "revenue", "insurance",
       "ai_assistant", "ai_insights", "automation_center", "predictive_alerts", "ai_workflows",
       "hr", "state_management",
@@ -223,7 +225,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     modules: [
       "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "recruiting", "credentialing", "employee_ops", "evaluations", "training",
-      "reports", "kpi", "workflows", "sop", "marketing", "analytics_hub",
+      "reports", "kpi", "vob", "workflows", "sop", "marketing", "analytics_hub",
       "tech_requests", "internal_requests", "open_issues", "projects",
       "ai_assistant", "ai_insights", "automation_center", "predictive_alerts", "ai_workflows",
       "hr",
@@ -239,7 +241,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     modules: [
       "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "evaluations", "training",
-      "reports", "kpi", "sop", "analytics_hub",
+      "reports", "kpi", "vob", "sop", "analytics_hub",
       "ai_assistant", "ai_insights",
     ],
     scope: "state",
@@ -251,13 +253,13 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   intake_coordinator: {
-    modules: ["dashboard", "calendar", "leads", "intake", "clients", "authorizations", "sop", "training", "ai_assistant"],
+    modules: ["dashboard", "calendar", "leads", "intake", "vob", "clients", "authorizations", "sop", "training", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, leads: VIEW_EDIT, intake: VIEW_EDIT, clients: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
   authorization_coordinator: {
-    modules: ["dashboard", "calendar", "clients", "authorizations", "cases", "billing", "insurance", "sop", "ai_assistant"],
+    modules: ["dashboard", "calendar", "clients", "authorizations", "vob", "cases", "billing", "insurance", "sop", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, clients: VIEW_EDIT, cases: VIEW_EDIT, billing: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
@@ -281,7 +283,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   billing_finance: {
-    modules: ["dashboard", "billing", "payroll", "revenue", "insurance", "clients", "reports", "kpi", "ai_assistant"],
+    modules: ["dashboard", "billing", "payroll", "revenue", "insurance", "vob", "clients", "reports", "kpi", "ai_assistant"],
     scope: "company",
     actions: {
       dashboard: VIEW, billing: FULL, clients: VIEW, reports: ["view", "export"],
