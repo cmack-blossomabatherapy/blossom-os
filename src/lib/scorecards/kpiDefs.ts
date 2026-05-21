@@ -18,21 +18,21 @@ export interface KpiDef {
 }
 
 export const SD_KPIS: KpiDef[] = [
-  { key: "hours_51", label: "51 Hours", unit: "hours", higherIsBetter: true, hint: "Assessment hours" },
-  { key: "hours_53", label: "53 Hours", unit: "hours", higherIsBetter: true, hint: "Direct therapy hours" },
-  { key: "hours_55", label: "55 Hours", unit: "hours", higherIsBetter: true, hint: "Protocol modification" },
-  { key: "hours_56", label: "56 Hours", unit: "hours", higherIsBetter: true, hint: "Parent training" },
-  { key: "total_hours", label: "Total Hours", unit: "hours", higherIsBetter: true },
-  { key: "total_potential_hours", label: "Total Potential Hours", unit: "hours", higherIsBetter: true },
-  { key: "active_clients", label: "Active Clients", unit: "clients", higherIsBetter: true },
-  { key: "avg_client_hours", label: "Avg Client Hours", unit: "hours", higherIsBetter: true },
-  { key: "ccs_sent_out", label: "CC's Sent Out", unit: "count", higherIsBetter: true },
-  { key: "ongoing_ias", label: "Ongoing IAs", unit: "count", higherIsBetter: true },
-  { key: "restaffing_needed", label: "Restaffing Needed", unit: "count", higherIsBetter: false },
-  { key: "tx_auth_received", label: "TX Auth Received", unit: "count", higherIsBetter: true },
-  { key: "pct_bcba_hours", label: "% of BCBA Hours", unit: "percent", higherIsBetter: true },
-  { key: "bcbas_hired", label: "BCBAs Hired", unit: "count", higherIsBetter: true },
-  { key: "cases_started", label: "Cases Started That Week", unit: "count", higherIsBetter: true },
+  { key: "hours_51", label: "51 Hours", unit: "hours", higherIsBetter: true, hint: "Assessment hours", thresholds: { healthy: 20, watch: 10 } },
+  { key: "hours_53", label: "53 Hours", unit: "hours", higherIsBetter: true, hint: "Direct therapy hours", thresholds: { healthy: 800, watch: 600 } },
+  { key: "hours_55", label: "55 Hours", unit: "hours", higherIsBetter: true, hint: "Protocol modification", thresholds: { healthy: 50, watch: 25 } },
+  { key: "hours_56", label: "56 Hours", unit: "hours", higherIsBetter: true, hint: "Parent training", thresholds: { healthy: 100, watch: 50 } },
+  { key: "total_hours", label: "Total Hours", unit: "hours", higherIsBetter: true, thresholds: { healthy: 1000, watch: 750 } },
+  { key: "total_potential_hours", label: "Total Potential Hours", unit: "hours", higherIsBetter: true, thresholds: { healthy: 1200, watch: 900 } },
+  { key: "active_clients", label: "Active Clients", unit: "clients", higherIsBetter: true, thresholds: { healthy: 60, watch: 45 } },
+  { key: "avg_client_hours", label: "Avg Client Hours", unit: "hours", higherIsBetter: true, thresholds: { healthy: 15, watch: 10 } },
+  { key: "ccs_sent_out", label: "CC's Sent Out", unit: "count", higherIsBetter: true, thresholds: { healthy: 5, watch: 3 } },
+  { key: "ongoing_ias", label: "Ongoing IAs", unit: "count", higherIsBetter: true, thresholds: { healthy: 8, watch: 5 } },
+  { key: "restaffing_needed", label: "Restaffing Needed", unit: "count", higherIsBetter: false, thresholds: { healthy: 0, watch: 2 } },
+  { key: "tx_auth_received", label: "TX Auth Received", unit: "count", higherIsBetter: true, thresholds: { healthy: 4, watch: 2 } },
+  { key: "pct_bcba_hours", label: "% of BCBA Hours", unit: "percent", higherIsBetter: true, thresholds: { healthy: 12, watch: 8 } },
+  { key: "bcbas_hired", label: "BCBAs Hired", unit: "count", higherIsBetter: true, thresholds: { healthy: 6, watch: 4 } },
+  { key: "cases_started", label: "Cases Started That Week", unit: "count", higherIsBetter: true, thresholds: { healthy: 3, watch: 1 } },
 ];
 
 export function formatKpiValue(v: number | null | undefined, unit: KpiUnit): string {
