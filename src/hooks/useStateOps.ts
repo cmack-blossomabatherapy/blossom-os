@@ -54,26 +54,18 @@ export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
         const all: any[] = [];
         const pageSize = 1000;
         let from = 0;
-        // Page through active imports for the date window
-        const { data: importsList } = await supabase
-          .from("bcba_billable_imports")
-          .select("id")
-          .eq("is_active", true);
-        const importIds = (importsList ?? []).map((i: any) => i.id);
-        if (importIds.length === 0) {
-          if (!cancelled) {
-            setSessions([]);
-            setFetchedAt(Date.now());
-          }
-          return;
-        }
+        const normalizedState = stateCode.toUpperCase();
+
+        // Pull the selected state's sessions directly. State Directors are also
+        // state-scoped by RLS, so this avoids an empty dashboard if the import
+        // lookup is unavailable while still keeping the page locked to VA/GA/etc.
         while (true) {
           const { data, error: qErr } = await supabase
             .from("bcba_billable_sessions")
             .select(
               "id,date_of_service,bcba_name,provider_full,client_full,procedure_code,hours,state,service_location,payor_name,payor_type,units,charges_total,amount_paid,amount_owed,is_billable",
             )
-            .in("import_id", importIds)
+            .eq("state", normalizedState)
             .gte("date_of_service", since)
             .order("date_of_service", { ascending: false })
             .range(from, from + pageSize - 1);
@@ -82,10 +74,10 @@ export function useStateOps(stateCode: string, windowKey: WindowKey): Result {
           if (!data || data.length < pageSize) break;
           from += pageSize;
         }
-        // Filter by state — prefer the explicit column, fall back to payor inference
+        // Defensive fallback for legacy rows/payor-inferred states.
         const filtered = all.filter((s) => {
           const st = (s.state || inferStateFromPayor(s.payor_name) || "").toUpperCase();
-          return st === stateCode.toUpperCase();
+          return st === normalizedState;
         }) as StateSession[];
         if (!cancelled) {
           setSessions(filtered);
