@@ -461,7 +461,7 @@ export default function OSCommandCenter() {
                 >
                   <div className="flex items-start gap-3">
                     <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", t.pill)}>
-                      <Icon className="h-4.5 w-4.5" />
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -538,7 +538,7 @@ export default function OSCommandCenter() {
             <SectionHeader
               icon={Users}
               title="Staffing Control Center"
-              sub="Live staffing mission control across {stateName}"
+              sub={`Live staffing mission control across ${stateName}`}
               action={<button onClick={() => navigate("/scheduling")} className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold text-foreground/70 hover:text-foreground">Open <ChevronRight className="h-3 w-3" /></button>}
             />
             <div className="grid grid-cols-3 gap-3 px-5 pt-4">
