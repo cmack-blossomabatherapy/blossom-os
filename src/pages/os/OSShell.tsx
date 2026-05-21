@@ -46,6 +46,7 @@ const NAV_SECTIONS: NavSection[] = [
     id: "intake_clients", label: "Intake & Clients", items: [
       { to: "/leads", label: "Leads", icon: Users, module: "leads" },
       { to: "/intake", label: "Intake", icon: ClipboardList, module: "intake" },
+      { to: "/vob-decision-center", label: "VOB Decision Center", icon: ShieldCheck, module: "vob" },
       { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
       { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
       { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
