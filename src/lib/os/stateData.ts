@@ -70,7 +70,7 @@ export interface StateOpsData {
   };
 }
 
-export const STATE_DATA: Record<OSState, StateOpsData> = {
+export const STATE_DATA: Partial<Record<OSState, StateOpsData>> & Record<string, StateOpsData> = {
   NC: {
     code: "NC", name: "North Carolina", hubCity: "Charlotte",
     opsScore: 82, opsLabel: "Stable",
@@ -671,5 +671,5 @@ export const STATE_DATA: Record<OSState, StateOpsData> = {
 };
 
 export function getStateData(code: OSState): StateOpsData {
-  return STATE_DATA[code];
+  return STATE_DATA[code] ?? STATE_DATA.NC!;
 }
