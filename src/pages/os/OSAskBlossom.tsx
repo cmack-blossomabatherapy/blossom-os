@@ -1,0 +1,475 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  Sparkles, Send, Plus, Mic, Paperclip, History, Pin, BookOpen,
+  Brain, Workflow, ShieldCheck, ExternalLink, Loader2, Search,
+} from "lucide-react";
+import { OSShell } from "@/pages/os/OSShell";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { streamMockAnswer, mockInsightsFor } from "@/lib/ai/askBlossomAdapter";
+import { quickPromptsFor } from "@/lib/ai/quickPrompts";
+import { listKnowledgeByCategory, searchKnowledge } from "@/lib/ai/knowledgeBase";
+import { getAiScope } from "@/lib/ai/aiPermissions";
+import { logAiQuery } from "@/lib/ai/aiAudit";
+import type { AiMessage, AiConversation, AskBlossomResponse } from "@/lib/ai/types";
+
+type Tab = "chat" | "saved" | "knowledge" | "insights";
+
+const newId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+export default function OSAskBlossom() {
+  const { user } = useAuth();
+  const { role, activeState } = useOSRole();
+  const scope = useMemo(() => getAiScope(role), [role]);
+  const quickPrompts = useMemo(() => quickPromptsFor(role), [role]);
+  const insights = useMemo(() => mockInsightsFor(role, activeState), [role, activeState]);
+  const kbByCategory = useMemo(() => listKnowledgeByCategory(role), [role]);
+
+  const [tab, setTab] = useState<Tab>("chat");
+  const [convs, setConvs] = useState<AiConversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [kbSearch, setKbSearch] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [params, setParams] = useSearchParams();
+
+  const active = activeId ? convs.find((c) => c.id === activeId) ?? null : null;
+  const messages = active?.messages ?? [];
+
+  // Deep-link: ?q=...
+  useEffect(() => {
+    const q = params.get("q");
+    if (q && !streaming) {
+      setInput("");
+      void send(q);
+      const next = new URLSearchParams(params); next.delete("q");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages.length, streaming]);
+
+  function appendMessage(convId: string, msg: AiMessage) {
+    setConvs((list) => list.map((c) => c.id === convId
+      ? { ...c, messages: [...c.messages, msg], updatedAt: new Date().toISOString() }
+      : c));
+  }
+  function patchLastAssistant(convId: string, patch: Partial<AiMessage>) {
+    setConvs((list) => list.map((c) => {
+      if (c.id !== convId) return c;
+      const msgs = [...c.messages];
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === "assistant") { msgs[i] = { ...msgs[i], ...patch }; break; }
+      }
+      return { ...c, messages: msgs };
+    }));
+  }
+
+  async function send(prompt: string) {
+    const text = prompt.trim();
+    if (!text || streaming) return;
+    setInput("");
+
+    let convId = activeId;
+    if (!convId) {
+      const c: AiConversation = {
+        id: newId(),
+        title: text.length > 60 ? text.slice(0, 57) + "…" : text,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      };
+      setConvs((list) => [c, ...list]);
+      setActiveId(c.id);
+      convId = c.id;
+    }
+
+    const userMsg: AiMessage = { id: newId(), role: "user", content: text, createdAt: new Date().toISOString() };
+    const assistantMsg: AiMessage = { id: newId(), role: "assistant", content: "", createdAt: new Date().toISOString() };
+    appendMessage(convId, userMsg);
+    appendMessage(convId, assistantMsg);
+    setStreaming(true);
+
+    try {
+      const stream = streamMockAnswer(text, role, activeState);
+      let acc = "";
+      let result: AskBlossomResponse | undefined;
+      while (true) {
+        const next = await stream.next();
+        if (next.done) { result = next.value as AskBlossomResponse; break; }
+        acc += next.value;
+        patchLastAssistant(convId, { content: acc });
+      }
+      if (result) {
+        patchLastAssistant(convId, {
+          content: result.content,
+          sources: result.sources,
+          suggestedActions: result.suggestedActions,
+          recordsAccessed: result.recordsAccessed,
+        });
+        logAiQuery({
+          userId: user?.id ?? null,
+          role,
+          prompt: text,
+          recordsAccessed: result.recordsAccessed,
+          kbHits: result.sources.map((s) => s.id),
+        });
+      }
+    } catch (e) {
+      patchLastAssistant(convId, { content: "_Sorry — something went wrong._" });
+      toast.error(e instanceof Error ? e.message : "AI error");
+    } finally {
+      setStreaming(false);
+    }
+  }
+
+  const kbResults = kbSearch.trim()
+    ? searchKnowledge(kbSearch, role, 20)
+    : null;
+
+  return (
+    <OSShell>
+      <div className="os-rise space-y-4">
+        {/* Header */}
+        <div className="os-glass-panel px-5 py-4 md:px-6 md:py-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div>
+                <h1 className="text-[19px] font-semibold tracking-tight text-foreground">Ask Blossom AI</h1>
+                <p className="text-[12.5px] text-muted-foreground">The operational brain of Blossom — search, summarize, decide.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="rounded-full border-[hsl(265_70%_85%)] bg-[hsl(265_100%_98%)] text-[hsl(265_60%_45%)]">
+                <ShieldCheck className="mr-1 h-3 w-3" /> Scoped: {scope.label}
+              </Badge>
+              <Badge variant="outline" className="rounded-full">{activeState}</Badge>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {([
+              { id: "chat", label: "Conversation", icon: Sparkles },
+              { id: "saved", label: "Saved & Recent", icon: History },
+              { id: "knowledge", label: "Knowledge Base", icon: BookOpen },
+              { id: "insights", label: "AI Insights", icon: Brain },
+            ] as { id: Tab; label: string; icon: typeof Sparkles }[]).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all",
+                  tab === t.id
+                    ? "bg-foreground text-background shadow-sm"
+                    : "bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]",
+                )}
+              >
+                <t.icon className="h-3.5 w-3.5" />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        {tab === "chat" && (
+          <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+            {/* LEFT: conversations */}
+            <aside className="os-glass-panel hidden flex-col p-3 lg:flex lg:max-h-[calc(100vh-220px)]">
+              <Button
+                variant="default"
+                className="mb-3 w-full justify-start gap-2 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white hover:opacity-95"
+                onClick={() => { setActiveId(null); setInput(""); }}
+              >
+                <Plus className="h-4 w-4" /> New conversation
+              </Button>
+              <ScrollArea className="flex-1 -mx-1 px-1">
+                {convs.length === 0 ? (
+                  <p className="px-2 py-4 text-[12px] text-muted-foreground">No conversations yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {convs.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setActiveId(c.id)}
+                        className={cn(
+                          "w-full rounded-xl px-3 py-2 text-left text-[12.5px] transition-colors",
+                          activeId === c.id ? "bg-foreground/[0.07] text-foreground" : "hover:bg-foreground/[0.04] text-foreground/80",
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {c.pinned && <Pin className="h-3 w-3 text-[hsl(265_70%_55%)]" />}
+                          <p className="truncate font-medium">{c.title}</p>
+                        </div>
+                        <p className="text-[10.5px] text-muted-foreground">
+                          {new Date(c.updatedAt).toLocaleString()}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </aside>
+
+            {/* CENTER */}
+            <section className="os-glass-panel flex min-h-[60vh] flex-col">
+              {/* Command bar */}
+              <div className="border-b border-foreground/[0.06] p-3">
+                <form
+                  onSubmit={(e) => { e.preventDefault(); void send(input); }}
+                  className="flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2 shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.25)] focus-within:border-[hsl(265_70%_70%)] focus-within:shadow-[0_0_0_4px_hsl(265_85%_92%/0.7)]"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0 text-[hsl(265_70%_60%)]" />
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask anything about Blossom operations…"
+                    disabled={streaming}
+                    className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/70"
+                  />
+                  <button type="button" disabled className="opacity-40" title="Voice (coming soon)"><Mic className="h-4 w-4" /></button>
+                  <button type="button" disabled className="opacity-40" title="Attach (coming soon)"><Paperclip className="h-4 w-4" /></button>
+                  <Button type="submit" size="sm" disabled={streaming || !input.trim()} className="h-8 rounded-xl">
+                    {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                </form>
+              </div>
+
+              {/* Stream */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-5">
+                {messages.length === 0 ? (
+                  <EmptyState prompts={quickPrompts} onPick={(p) => void send(p)} />
+                ) : (
+                  <div className="space-y-5">
+                    {messages.map((m) => (
+                      <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                          "max-w-[88%] rounded-2xl px-4 py-3 text-[13.5px] leading-relaxed",
+                          m.role === "user"
+                            ? "bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-14px_hsl(265_85%_60%/0.5)]"
+                            : "bg-white/85 text-foreground ring-1 ring-foreground/[0.05]",
+                        )}>
+                          {m.role === "assistant" ? (
+                            <>
+                              {m.content ? (
+                                <div className="prose prose-sm max-w-none prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  <span className="text-[12px]">Thinking…</span>
+                                </div>
+                              )}
+                              {m.sources && m.sources.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-foreground/[0.06] pt-2.5">
+                                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Sources</span>
+                                  {m.sources.map((s) => (
+                                    <span key={s.id} className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-2 py-0.5 text-[10.5px] text-foreground/75">
+                                      <BookOpen className="h-2.5 w-2.5" />
+                                      {s.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {m.suggestedActions && m.suggestedActions.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                  {m.suggestedActions.map((a) => (
+                                    <Button
+                                      key={a.id}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 rounded-full px-3 text-[11.5px]"
+                                      onClick={() => {
+                                        if (a.to) window.location.assign(a.to);
+                                        else toast.message(a.label, { description: "Action will run once AI execution is enabled." });
+                                      }}
+                                    >
+                                      {a.label}
+                                      {a.to && <ExternalLink className="ml-1 h-3 w-3" />}
+                                    </Button>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{m.content}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* RIGHT: insights + actions */}
+            <aside className="os-glass-panel hidden flex-col p-4 lg:flex lg:max-h-[calc(100vh-220px)]">
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">AI Insights</h3>
+              <div className="space-y-2">
+                {insights.map((i) => (
+                  <div key={i.id} className="rounded-xl border border-foreground/[0.06] bg-white/80 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[12.5px] font-semibold text-foreground">{i.title}</p>
+                      <Badge variant="outline" className={cn(
+                        "rounded-full text-[10px]",
+                        i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
+                        i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
+                        i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+                      )}>{i.severity}</Badge>
+                    </div>
+                    <p className="mt-1 text-[11.5px] text-muted-foreground">{i.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <h3 className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Shortcuts</h3>
+              <div className="space-y-1">
+                {quickPrompts.slice(0, 5).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => void send(p.prompt)}
+                    className="w-full rounded-xl px-3 py-2 text-left text-[12px] text-foreground/80 transition-colors hover:bg-foreground/[0.04]"
+                  >
+                    <Workflow className="mr-1.5 inline h-3 w-3 text-[hsl(265_70%_60%)]" />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {tab === "saved" && (
+          <div className="os-glass-panel p-5">
+            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Recent conversations</h3>
+            {convs.length === 0 ? (
+              <p className="text-[12.5px] text-muted-foreground">Conversations you start will appear here.</p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {convs.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => { setActiveId(c.id); setTab("chat"); }}
+                    className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-3 text-left transition hover:border-[hsl(265_70%_80%)] hover:shadow-[0_8px_24px_-18px_hsl(265_60%_50%/0.3)]"
+                  >
+                    <p className="text-[13px] font-semibold text-foreground">{c.title}</p>
+                    <p className="text-[11px] text-muted-foreground">{c.messages.length} messages · {new Date(c.updatedAt).toLocaleString()}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "knowledge" && (
+          <div className="os-glass-panel p-5">
+            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-foreground/[0.08] bg-white/80 px-3 py-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={kbSearch}
+                onChange={(e) => setKbSearch(e.target.value)}
+                placeholder="Search SOPs, workflows, policies, directory…"
+                className="flex-1 bg-transparent text-[13px] outline-none"
+              />
+            </div>
+            {kbResults ? (
+              <div className="space-y-2">
+                {kbResults.length === 0 ? (
+                  <p className="text-[12.5px] text-muted-foreground">No results.</p>
+                ) : kbResults.map((e) => (
+                  <KbCard key={e.id} title={e.title} content={e.content} category={e.category} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {Object.entries(kbByCategory).map(([cat, items]) => (
+                  <div key={cat}>
+                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{cat}</h3>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {items.map((e) => <KbCard key={e.id} title={e.title} content={e.content} category={e.category} />)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "insights" && (
+          <div className="os-glass-panel p-5">
+            <h3 className="mb-3 text-[13px] font-semibold text-foreground">Proactive insights</h3>
+            <div className="grid gap-2 md:grid-cols-2">
+              {insights.map((i) => (
+                <div key={i.id} className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13.5px] font-semibold text-foreground">{i.title}</p>
+                    <Badge variant="outline" className={cn(
+                      "rounded-full text-[10px]",
+                      i.severity === "risk" && "border-rose-200 bg-rose-50 text-rose-600",
+                      i.severity === "watch" && "border-amber-200 bg-amber-50 text-amber-700",
+                      i.severity === "info" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+                    )}>{i.severity}</Badge>
+                  </div>
+                  <p className="mt-1 text-[12px] text-muted-foreground">{i.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </OSShell>
+  );
+}
+
+function EmptyState({ prompts, onPick }: { prompts: ReturnType<typeof quickPromptsFor>; onPick: (p: string) => void }) {
+  return (
+    <div className="mx-auto max-w-2xl py-8 text-center">
+      <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_18px_40px_-18px_hsl(265_85%_60%/0.6)]">
+        <Sparkles className="h-6 w-6" />
+      </span>
+      <h2 className="text-[18px] font-semibold tracking-tight text-foreground">What can I help with today?</h2>
+      <p className="mt-1 text-[13px] text-muted-foreground">Ask anything about training, SOPs, workflows, or your operational data.</p>
+      <div className="mt-6 grid gap-2 sm:grid-cols-2">
+        {prompts.slice(0, 8).map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onPick(p.prompt)}
+            className="group rounded-2xl border border-foreground/[0.06] bg-white/85 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-[hsl(265_70%_80%)] hover:shadow-[0_18px_36px_-22px_hsl(265_60%_50%/0.4)]"
+          >
+            <p className="text-[12.5px] font-semibold text-foreground">{p.label}</p>
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground line-clamp-2">{p.prompt}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KbCard({ title, content, category }: { title: string; content: string; category: string }) {
+  return (
+    <div className="rounded-2xl border border-foreground/[0.06] bg-white/80 p-3.5">
+      <div className="mb-1 flex items-center gap-2">
+        <BookOpen className="h-3.5 w-3.5 text-[hsl(265_70%_60%)]" />
+        <p className="text-[12.5px] font-semibold text-foreground">{title}</p>
+        <Badge variant="outline" className="ml-auto rounded-full text-[10px]">{category}</Badge>
+      </div>
+      <p className="text-[11.5px] text-muted-foreground line-clamp-3">{content}</p>
+    </div>
+  );
+}

@@ -180,6 +180,7 @@ import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
+import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
