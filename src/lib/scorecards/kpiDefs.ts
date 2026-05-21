@@ -49,7 +49,20 @@ export function pctChange(curr: number, prev: number): number | null {
   return ((curr - prev) / prev) * 100;
 }
 
-export function statusFor(def: KpiDef, change: number | null): KpiStatus {
+/** Determine health status using operational thresholds first, then % change fallback. */
+export function statusFor(def: KpiDef, value: number, change: number | null): KpiStatus {
+  if (def.thresholds) {
+    const { healthy, watch } = def.thresholds;
+    if (def.higherIsBetter) {
+      if (value >= healthy) return "healthy";
+      if (value >= watch) return "watch";
+      return "at_risk";
+    } else {
+      if (value <= healthy) return "healthy";
+      if (value <= watch) return "watch";
+      return "at_risk";
+    }
+  }
   if (change === null) return "healthy";
   const swing = def.higherIsBetter ? change : -change;
   if (swing >= -2) return "healthy";
