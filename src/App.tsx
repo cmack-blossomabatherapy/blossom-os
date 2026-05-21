@@ -173,6 +173,9 @@ import OSCalendar from "./pages/os/OSCalendar";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
+import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
+import OSTraining from "./pages/os/OSTraining";
+import OSUserManagement from "./pages/os/OSUserManagement";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
@@ -350,17 +353,13 @@ const App = () => (
                     { title: "Coaching plans", description: "Action items, follow-ups, and progress tracking after each review." },
                     { title: "Career growth ladders", description: "Visible competency milestones from new RBT through senior BCBA." },
                   ]} />} />
-                  <Route path="/os/training" element={<OSComingSoon title="Training Academy" tagline="A learning platform built for ABA — onboarding, ongoing CEUs, and role-based tracks." icon={GraduationCap} features={[
-                    { title: "Role-based learning paths", description: "Tailored curricula for RBT, BCBA, intake, billing, and leadership." },
-                    { title: "Course library", description: "Video, articles, quizzes, and interactive simulations — all CEU-tracked." },
-                    { title: "Compliance & certifications", description: "Auto-assigned annual trainings with completion tracking and reminders." },
-                    { title: "Manager dashboards", description: "See team progress, gaps, and overdue trainings at a glance." },
-                  ]} />} />
+                  <Route path="/os/training" element={<OSTraining />} />
                   <Route path="/os/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
                   <Route path="/os/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
                   <Route path="/os/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
                   <Route path="/os/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/os/reports" element={<ReportsHome />} />
+                  <Route path="/os/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/os/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/os/kpi" element={<OSComingSoon title="KPI Tracking" tagline="The KPIs that actually move the business — set, monitor, and act on them in real time." icon={Target} features={[
                     { title: "Company & state scorecards", description: "Roll up the metrics that matter at company, state, clinic, and team levels." },
@@ -387,7 +386,7 @@ const App = () => (
                   <Route path="/os/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
                   <Route path="/os/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/os/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
-                  <Route path="/os/user-management" element={<OSPlaceholder title="User Management" description="Users, roles, and permission assignments." icon={Users2} />} />
+                  <Route path="/os/user-management" element={<OSUserManagement />} />
                   <Route path="/os/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
                   <Route path="/os/permissions" element={<OSPermissions />} />
@@ -452,7 +451,7 @@ const App = () => (
                   <Route path="/blossom/departments/:id" element={<DepartmentDetail />} />
                   <Route path="/blossom/locations" element={<BlossomLocations />} />
                   <Route path="/blossom/locations/:id" element={<LocationDetail />} />
-                  <Route path="/blossom/users" element={<BlossomUsers />} />
+                  <Route path="/blossom/users" element={<Navigate to="/os/user-management" replace />} />
                   <Route path="/blossom/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><BlossomReports /></PermissionRoute>} />
                   <Route path="/intelligence" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><ExecutiveCommandCenter /></PermissionRoute>} />
                   <Route path="/intelligence/workforce" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><WorkforceIntelligence /></PermissionRoute>} />

@@ -3,6 +3,26 @@ import {
   OSRole, OSScope, OSModule, OSAction,
   ROLE_PROFILES, canAct, canSeeModule, canSeeLeadership, hasPlatformCap, scopeFor,
 } from "@/lib/os/permissions";
+import { useAuth } from "@/contexts/AuthContext";
+import type { AppRole } from "@/lib/roles";
+
+function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
+  if (appRoles.includes("admin")) return "super_admin";
+  if (appRoles.includes("state_director")) return "state_director";
+  if (appRoles.includes("exec")) return "executive_leadership";
+  if (appRoles.includes("ops_manager")) return "operations_leadership";
+  if (appRoles.includes("intake")) return "intake_coordinator";
+  if (appRoles.includes("auth_team")) return "authorization_coordinator";
+  if (appRoles.includes("scheduling")) return "scheduling_team";
+  if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
+  if (appRoles.includes("hr") || appRoles.includes("hr_admin") || appRoles.includes("hr_manager")) return "hr_team";
+  if (appRoles.includes("finance")) return "billing_finance";
+  if (appRoles.includes("qa")) return "qa_team";
+  if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
+  if (appRoles.includes("bcba")) return "bcba";
+  if (appRoles.includes("rbt")) return "rbt";
+  return null;
+}
 
 /** Mock list of states (would come from backend). */
 export const OS_STATES = ["FL", "GA", "NC", "TX", "VA"] as const;
@@ -28,16 +48,25 @@ const STORAGE_KEY = "os.demo.role";
 const STATE_KEY = "os.demo.state";
 
 export function OSRoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<OSRole>(() => {
-    if (typeof window === "undefined") return "super_admin";
-    return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || "super_admin";
+  const { roles: appRoles } = useAuth();
+  const [roleOverride, setRoleState] = useState<OSRole | null>(() => {
+    if (typeof window === "undefined") return null;
+    return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || null;
   });
+  const derivedRole = mapAuthRoleToOS(appRoles) ?? "state_director";
+  // Only super_admins can override their role via the demo switcher.
+  const role: OSRole = derivedRole === "super_admin" && roleOverride ? roleOverride : derivedRole;
   const [activeState, setActiveStateInternal] = useState<OSState>(() => {
     if (typeof window === "undefined") return "FL";
     return (window.localStorage.getItem(STATE_KEY) as OSState) || "FL";
   });
 
-  useEffect(() => { try { window.localStorage.setItem(STORAGE_KEY, role); } catch { /* ignore */ } }, [role]);
+  useEffect(() => {
+    try {
+      if (roleOverride) window.localStorage.setItem(STORAGE_KEY, roleOverride);
+      else window.localStorage.removeItem(STORAGE_KEY);
+    } catch { /* ignore */ }
+  }, [roleOverride]);
   useEffect(() => { try { window.localStorage.setItem(STATE_KEY, activeState); } catch { /* ignore */ } }, [activeState]);
 
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
