@@ -46,7 +46,7 @@ export default function ReportDetail() {
         <div className="os-card flex flex-col items-center justify-center py-20 text-center">
           <h2 className="text-[20px] font-semibold tracking-tight">Report not found</h2>
           <p className="mt-1 text-[13px] text-muted-foreground">It may have been archived or isn't visible to your role.</p>
-          <Button className="mt-5" size="sm" onClick={() => navigate("/os/reports")}>Back to Reports</Button>
+          <Button className="mt-5" size="sm" onClick={() => navigate("/reports")}>Back to Reports</Button>
         </div>
       </OSShell>
     );
@@ -56,7 +56,7 @@ export default function ReportDetail() {
     <OSShell>
       {/* Breadcrumb / back */}
       <div className="mb-3">
-        <Link to="/os/reports" className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground hover:text-foreground">
+        <Link to="/reports" className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> All reports
         </Link>
       </div>

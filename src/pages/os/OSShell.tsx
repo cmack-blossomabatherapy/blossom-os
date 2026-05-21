@@ -27,95 +27,95 @@ type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; modul
 type NavSection = { id: string; label: string; items: NavEntry[] };
 
 const HOME_EXTRAS: NavEntry[] = [
-  { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
-  { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
-  { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+  { to: "/command-center", label: "Command Center", icon: Radio, module: "command_center" },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
+  { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
 ];
 
 const NAV_SECTIONS: NavSection[] = [
   {
     id: "intake_clients", label: "Intake & Clients", items: [
-      { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
-      { to: "/os/intake", label: "Intake", icon: ClipboardList, module: "intake" },
-      { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
-      { to: "/os/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
-      { to: "/os/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
-      { to: "/os/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
+      { to: "/leads", label: "Leads", icon: Users, module: "leads" },
+      { to: "/intake", label: "Intake", icon: ClipboardList, module: "intake" },
+      { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
+      { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
+      { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
+      { to: "/cases", label: "Case Management", icon: FolderKanban, module: "cases" },
     ],
   },
   {
     id: "staffing", label: "Clinical Staff", items: [
-      { to: "/os/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
-      { to: "/os/recruiting", label: "Recruiting", icon: UserPlus, module: "recruiting" },
-      { to: "/os/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
-      { to: "/os/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
-      { to: "/os/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+      { to: "/staff", label: "RBT / BCBA", icon: UserCog, module: "staff" },
+      { to: "/recruiting", label: "Recruiting", icon: UserPlus, module: "recruiting" },
+      { to: "/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
+      { to: "/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
+      { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
     ],
   },
   {
     id: "operations", label: "Operations & Intelligence", items: [
-      { to: "/os/reports", label: "Reports", icon: BarChart3, module: "reports" },
-      { to: "/os/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
-      { to: "/os/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
-      { to: "/os/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
-      { to: "/os/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
+      { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+      { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
+      { to: "/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
+      { to: "/sop", label: "SOP Library", icon: BookOpen, module: "sop" },
+      { to: "/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
     ],
   },
   {
     id: "growth", label: "Growth & Marketing", items: [
-      { to: "/os/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "campaigns" },
-      { to: "/os/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "lead_sources" },
-      { to: "/os/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
-      { to: "/os/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "web_analytics" },
-      { to: "/os/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "call_tracking" },
+      { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "campaigns" },
+      { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "lead_sources" },
+      { to: "/marketing/seo", label: "SEO & Content", icon: Globe, module: "seo_content" },
+      { to: "/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "web_analytics" },
+      { to: "/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "call_tracking" },
     ],
   },
   {
     id: "relationships", label: "Relationships", items: [
-      { to: "/os/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
-      { to: "/os/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
-      { to: "/os/marketing/outreach", label: "Community Outreach", icon: Users2, module: "community_outreach" },
-      { to: "/os/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
+      { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
+      { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "recruiting_marketing" },
+      { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "community_outreach" },
+      { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "reputation" },
     ],
   },
   {
     id: "intelligence", label: "Intelligence & ROI", items: [
-      { to: "/os/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "attribution_roi" },
-      { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
-      { to: "/os/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
+      { to: "/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "attribution_roi" },
+      { to: "/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
+      { to: "/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
     ],
   },
   {
     id: "financial", label: "Financial Operations", items: [
-      { to: "/os/billing", label: "Billing", icon: DollarSign, module: "billing" },
-      { to: "/os/payroll", label: "Payroll", icon: Wallet, module: "payroll" },
-      { to: "/os/revenue", label: "Revenue Analytics", icon: TrendingUp, module: "revenue" },
-      { to: "/os/insurance", label: "Insurance Tracking", icon: ShieldAlert, module: "insurance" },
+      { to: "/billing", label: "Billing", icon: DollarSign, module: "billing" },
+      { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll" },
+      { to: "/revenue", label: "Revenue Analytics", icon: TrendingUp, module: "revenue" },
+      { to: "/insurance", label: "Insurance Tracking", icon: ShieldAlert, module: "insurance" },
     ],
   },
   {
     id: "internal", label: "Internal Operations", items: [
-      { to: "/os/tech-requests", label: "Tech Requests", icon: LifeBuoy, module: "tech_requests" },
-      { to: "/os/internal-requests", label: "Internal Requests", icon: Inbox, module: "internal_requests" },
-      { to: "/os/open-issues", label: "Open Issues", icon: AlertTriangle, module: "open_issues" },
+      { to: "/tech-requests", label: "Tech Requests", icon: LifeBuoy, module: "tech_requests" },
+      { to: "/internal-requests", label: "Internal Requests", icon: Inbox, module: "internal_requests" },
+      { to: "/open-issues", label: "Open Issues", icon: AlertTriangle, module: "open_issues" },
     ],
   },
   {
     id: "ai", label: "AI & Automations", items: [
-      { to: "/os/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
-      { to: "/os/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
-      { to: "/os/ai/automations", label: "Automation Center", icon: Zap, module: "automation_center" },
-      { to: "/os/ai/predictive", label: "Predictive Alerts", icon: Activity, module: "predictive_alerts" },
-      { to: "/os/ai/workflows", label: "AI Workflows", icon: Wand2, module: "ai_workflows" },
+      { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      { to: "/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
+      { to: "/ai/automations", label: "Automation Center", icon: Zap, module: "automation_center" },
+      { to: "/ai/predictive", label: "Predictive Alerts", icon: Activity, module: "predictive_alerts" },
+      { to: "/ai/workflows", label: "AI Workflows", icon: Wand2, module: "ai_workflows" },
     ],
   },
   {
     id: "system", label: "System", items: [
-      { to: "/os/hr", label: "HR Suite", icon: Building2, module: "hr" },
-      { to: "/os/user-management", label: "User Management", icon: Users2, module: "user_management" },
-      { to: "/os/state-management", label: "State Management", icon: MapPin, module: "state_management" },
-      { to: "/os/settings", label: "Settings", icon: Settings, module: "settings" },
-      { to: "/os/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
+      { to: "/hr", label: "HR Suite", icon: Building2, module: "hr" },
+      { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
+      { to: "/state-management", label: "State Management", icon: MapPin, module: "state_management" },
+      { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
+      { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
     ],
   },
 ];
@@ -165,7 +165,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     const items: NavEntry[] = [];
     if (role === "super_admin") {
       // Super admins see the generic dashboard plus quick access to every role dashboard.
-      items.push({ to: "/os", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
+      items.push({ to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
       ALL_ROLE_DASHBOARDS.forEach((d) => {
         items.push({ to: d.to, label: d.label, icon: Target, module: "dashboard" });
       });
@@ -173,7 +173,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
     }
     HOME_EXTRAS.forEach((e) => {
-      // Calendar route is role-specific — rewrite "/os/calendar" to the viewer's role calendar.
+      // Calendar route is role-specific — rewrite "/calendar" to the viewer's role calendar.
       if (e.module === "calendar") {
         items.push({ ...e, to: `/os/calendar/${role.replace(/_/g, "-")}` });
       } else {
@@ -211,11 +211,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
   const bottomNavCandidates: NavEntry[] = [
     { to: ROLE_HOME[role], label: "Home", icon: LayoutDashboard, module: "dashboard", end: true },
-    { to: "/os/leads", label: "Leads", icon: Users, module: "leads" },
-    { to: "/os/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
-    { to: "/os/clients", label: "Clients", icon: Heart, module: "clients" },
-    { to: "/os/cases", label: "Cases", icon: FolderKanban, module: "cases" },
-    { to: "/os/training", label: "Training", icon: GraduationCap, module: "training" },
+    { to: "/leads", label: "Leads", icon: Users, module: "leads" },
+    { to: "/scheduling", label: "Schedule", icon: CalendarDays, module: "scheduling" },
+    { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
+    { to: "/cases", label: "Cases", icon: FolderKanban, module: "cases" },
+    { to: "/training", label: "Training", icon: GraduationCap, module: "training" },
   ];
   const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
@@ -259,7 +259,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             <aside className="os-glass-panel absolute left-3 right-3 top-3 bottom-3 flex flex-col overflow-hidden">
               <div className="px-4 pt-5 pb-3 border-b border-foreground/[0.06]">
                 <div className="flex items-center justify-between">
-                  <NavLink to="/os" onClick={() => { setMobileOpen(false); setMobileSearch(""); }} className="flex items-center min-w-0">
+                  <NavLink to="/" onClick={() => { setMobileOpen(false); setMobileSearch(""); }} className="flex items-center min-w-0">
                     <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-10 w-auto object-contain" />
                   </NavLink>
                   <button onClick={() => { setMobileOpen(false); setMobileSearch(""); }} className="os-glass-icon h-9 w-9 rounded-xl">
@@ -322,7 +322,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           )}
         >
           <NavLink
-            to="/os"
+            to="/"
             className={cn(
               "relative flex items-center px-4 pt-5 pb-4 border-b border-foreground/[0.06] overflow-hidden",
               collapsed ? "justify-center" : "justify-start",

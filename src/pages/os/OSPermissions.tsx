@@ -39,7 +39,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
 
 export default function OSPermissions() {
   const { platform } = useOSRole();
-  if (!platform("managePermissions")) return <Navigate to="/os" replace />;
+  if (!platform("managePermissions")) return <Navigate to="/" replace />;
 
   return (
     <OSShell>
