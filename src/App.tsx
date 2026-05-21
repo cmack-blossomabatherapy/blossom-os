@@ -180,6 +180,7 @@ import OSUserManagement from "./pages/os/OSUserManagement";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
+import OSWorkforce from "./pages/os/OSWorkforce";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
