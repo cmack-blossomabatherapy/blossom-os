@@ -362,12 +362,7 @@ const App = () => (
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/:reportId" element={<ReportDetail />} />
-                  <Route path="/kpi" element={<OSComingSoon title="KPI Tracking" tagline="The KPIs that actually move the business — set, monitor, and act on them in real time." icon={Target} features={[
-                    { title: "Company & state scorecards", description: "Roll up the metrics that matter at company, state, clinic, and team levels." },
-                    { title: "Goals & targets", description: "Set monthly and quarterly targets with progress, pacing, and forecast." },
-                    { title: "Trend & cohort analysis", description: "Compare periods, regions, and service lines side-by-side." },
-                    { title: "Alerts on deviation", description: "Auto-notify owners when KPIs drift outside acceptable ranges." },
-                  ]} />} />
+                  <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
                   <Route path="/sop" element={<OSComingSoon title="SOP Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
                     { title: "Searchable knowledge base", description: "Full-text search across every SOP, policy, and playbook." },
