@@ -25,6 +25,7 @@ import {
   capacityByState, lifecycleKpis, riskAlerts,
 } from "@/data/reports";
 import { renderSdReport, SD_REPORT_IDS } from "@/components/reports/StateDirectorReportViews";
+import { SdFilterBar, loadLastFilters, summarizeFilters, type SdFilters } from "@/components/reports/SdFilterBar";
 
 export default function ReportDetail() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -34,6 +35,11 @@ export default function ReportDetail() {
   const cat = report ? REPORT_CATEGORIES.find(c => c.id === report.category)! : null;
   const [favs, setFavs] = useState<string[]>(() => readFavorites());
   const favored = report ? favs.includes(report.id) : false;
+  const isSd = !!report && SD_REPORT_IDS.has(report.id);
+  const [sdFilters, setSdFilters] = useState<SdFilters | null>(null);
+  useEffect(() => {
+    if (isSd && report) setSdFilters(loadLastFilters(report.id));
+  }, [isSd, report?.id]);
   const related = useMemo(() => {
     if (!report) return [];
     return visibleReportsForRole(role).filter(r => r.category === report.category && r.id !== report.id).slice(0, 3);
@@ -109,14 +115,23 @@ export default function ReportDetail() {
       </section>
 
       {/* FILTER BAR */}
-      <section className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2">
-        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Filters</span>
-        {["This month", "All states", "All payors", "All BCBAs"].map(c => (
-          <button key={c} className="rounded-full border border-border/60 bg-secondary/40 px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-secondary/60">{c}</button>
-        ))}
-        <span className="ml-auto text-[11px] text-muted-foreground">Showing live mock data · drilldowns enabled</span>
-      </section>
+      {isSd && sdFilters ? (
+        <>
+          <SdFilterBar reportId={report.id} filters={sdFilters} onChange={setSdFilters} />
+          <p className="mt-1 px-1 text-[11px] text-muted-foreground">
+            Active view · {summarizeFilters(sdFilters)} <span className="opacity-60">· drilldowns enabled</span>
+          </p>
+        </>
+      ) : (
+        <section className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card px-3 py-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Filters</span>
+          {["This month", "All states", "All payors", "All BCBAs"].map(c => (
+            <button key={c} className="rounded-full border border-border/60 bg-secondary/40 px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-secondary/60">{c}</button>
+          ))}
+          <span className="ml-auto text-[11px] text-muted-foreground">Showing live mock data · drilldowns enabled</span>
+        </section>
+      )}
 
       {/* CONTENT */}
       <div className="mt-6">
