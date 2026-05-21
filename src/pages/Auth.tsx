@@ -95,11 +95,6 @@ export default function Auth() {
         </div>
       </div>
 
-      {/* Subtle bento brand accent — bottom right */}
-      <div className="pointer-events-none absolute bottom-10 right-10 hidden gap-4 opacity-25 sm:flex">
-        <div className="h-12 w-12 rounded-2xl bg-[#5cbdb9]" />
-        <div className="h-12 w-12 rounded-2xl border-2 border-[#1a4a6e]" />
-      </div>
 
       <div className="relative flex min-h-screen w-full items-center justify-center p-6">
         <div className="w-full max-w-[440px] rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 animate-in fade-in slide-in-from-bottom-4 duration-700 sm:p-10">
