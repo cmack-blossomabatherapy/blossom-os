@@ -60,6 +60,37 @@ function isHeaderRow(row: any[]): boolean {
   return s === "name" || s === "name of patient" || s === "subitems";
 }
 
+function isBlankRow(row: any[]): boolean {
+  return !row || row.every((c) => c == null || String(c).trim() === "");
+}
+
+// Lookahead variant: a row is a group divider if first cell is non-empty AND
+// (a) all other cells empty, OR
+// (b) the next non-blank row is a repeated header row (Monday inserts
+//     per-group summary numbers on the group divider, so cells 2..N may be
+//     non-empty totals/counts — we still want to treat it as a group label).
+function detectGroupRow(rows: any[][], i: number): boolean {
+  const row = rows[i];
+  if (!row || row.length === 0) return false;
+  const first = row[0];
+  if (first == null || String(first).trim() === "") return false;
+  // Reject if it looks like a header
+  if (isHeaderRow(row)) return false;
+  // Strict form: only first cell populated
+  let onlyFirst = true;
+  for (let k = 1; k < row.length; k++) {
+    if (row[k] != null && String(row[k]).trim() !== "") { onlyFirst = false; break; }
+  }
+  if (onlyFirst) return true;
+  // Lookahead: skip blanks; if next non-blank row is a header, treat as group
+  for (let j = i + 1; j < Math.min(rows.length, i + 4); j++) {
+    if (isBlankRow(rows[j])) continue;
+    if (isHeaderRow(rows[j])) return true;
+    break;
+  }
+  return false;
+}
+
 function isSubitemHeader(row: any[]): boolean {
   const first = row?.[0];
   return first != null && String(first).trim().toLowerCase() === "subitems";
@@ -198,7 +229,7 @@ async function processBoard(
       header = row.map((c) => (c == null ? "" : String(c).trim()));
       continue;
     }
-    if (isGroupRow(row)) {
+    if (detectGroupRow(rows, i)) {
       currentGroup = String(row[0]).trim();
       continue;
     }
