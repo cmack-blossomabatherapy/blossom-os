@@ -34,8 +34,10 @@ export default function OSVobDecisionCenter() {
   const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
 
   const stateScoped: VobReview[] = useMemo(() => {
-    if (!activeState || activeState === "all") return VOB_REVIEWS;
-    return VOB_REVIEWS.filter(r => r.state === activeState);
+    if (!activeState) return VOB_REVIEWS;
+    const matched = VOB_REVIEWS.filter(r => r.state === activeState);
+    // Fall back to all reviews when the active state has no cases (keeps the workspace useful).
+    return matched.length > 0 ? matched : VOB_REVIEWS;
   }, [activeState]);
 
   const queue = useMemo(() => {
@@ -123,7 +125,7 @@ export default function OSVobDecisionCenter() {
                 placeholder="Search clients, payors, policies, states…"
                 className="w-72 bg-transparent text-[11.5px] outline-none placeholder:text-muted-foreground/70"
               />
-              {activeState && activeState !== "all" && (
+              {activeState && (
                 <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-[hsl(265_85%_96%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(265_70%_45%)]">
                   <MapPin className="h-2.5 w-2.5" /> {activeState}
                 </span>
