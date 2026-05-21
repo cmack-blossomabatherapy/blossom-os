@@ -65,8 +65,8 @@ export function KpiTile({ def, value, previous, change, series }: {
           prev {formatKpiValue(previous, def.unit)}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between">
-        <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", STATUS_BADGE[status])}>
+      <div className="mt-2 flex items-center">
+        <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide", STATUS_BADGE[status])}>
           {STATUS_LABEL[status]}
         </span>
       </div>
