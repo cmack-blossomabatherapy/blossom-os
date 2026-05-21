@@ -270,140 +270,140 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
-                  <Route path="/os" element={<OSDashboard />} />
-                  <Route path="/os/executive" element={<OSExecutive />} />
-                  <Route path="/os/operations" element={<OSOperations />} />
-                  <Route path="/os/state-director" element={<OSStateDirector />} />
-                  <Route path="/os/intake-coordinator" element={<OSIntakeCoordinator />} />
-                  <Route path="/os/auth-coordinator" element={<OSAuthCoordinator />} />
-                  <Route path="/os/scheduling-team" element={<OSSchedulingTeam />} />
-                  <Route path="/os/recruiting-team" element={<OSRecruitingTeam />} />
-                  <Route path="/os/hr-team" element={<OSHRTeam />} />
-                  <Route path="/os/billing-finance" element={<OSBillingFinance />} />
-                  <Route path="/os/qa-team" element={<OSQATeam />} />
-                  <Route path="/os/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
-                  <Route path="/os/bcba" element={<OSBCBA />} />
-                  <Route path="/os/rbt" element={<OSRBT />} />
-                  <Route path="/os/command-center" element={<OSComingSoon title="Command Center" tagline="A live operational nerve center that surfaces every signal across the company in one glance." icon={Radio} features={[
+                  <Route path="/" element={<OSDashboard />} />
+                  <Route path="/executive" element={<OSExecutive />} />
+                  <Route path="/operations" element={<OSOperations />} />
+                  <Route path="/state-director" element={<OSStateDirector />} />
+                  <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
+                  <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
+                  <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
+                  <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
+                  <Route path="/hr-team" element={<OSHRTeam />} />
+                  <Route path="/billing-finance" element={<OSBillingFinance />} />
+                  <Route path="/qa-team" element={<OSQATeam />} />
+                  <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
+                  <Route path="/bcba" element={<OSBCBA />} />
+                  <Route path="/rbt" element={<OSRBT />} />
+                  <Route path="/command-center" element={<OSComingSoon title="Command Center" tagline="A live operational nerve center that surfaces every signal across the company in one glance." icon={Radio} features={[
                     { title: "Real-time operational pulse", description: "Unified feed of staffing, scheduling, intake, billing and risk signals across every state." },
                     { title: "Cross-team escalations", description: "Auto-routed issues with owner, SLA timer, and one-click resolution." },
                     { title: "Today's priorities", description: "AI-ranked daily focus list per role with deep-links into the source record." },
                     { title: "Pulse metrics", description: "Live KPIs for utilization, cancellations, open coverage, and revenue at risk." },
                   ]} />} />
-                  <Route path="/os/calendar" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
+                  <Route path="/calendar" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
                     { title: "Multi-layer views", description: "Toggle session, staffing, intake, leadership, and internal calendars in one timeline." },
                     { title: "Drag & drop scheduling", description: "Reassign sessions, fill open coverage, and resolve conflicts inline." },
                     { title: "Smart filters", description: "Filter by state, clinic, BCBA, RBT, payer, service line, and authorization status." },
                     { title: "iCal & Google sync", description: "Two-way sync to personal calendars with role-based visibility." },
                   ]} />} />
-                  <Route path="/os/calendar/:roleSlug" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
+                  <Route path="/calendar/:roleSlug" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
                     { title: "Role-specific views", description: "Tailored calendar layout for each role's day-to-day workflow." },
                     { title: "Drag & drop scheduling", description: "Reassign sessions, fill open coverage, and resolve conflicts inline." },
                     { title: "Smart filters", description: "Filter by state, clinic, BCBA, RBT, payer, service line, and authorization status." },
                     { title: "iCal & Google sync", description: "Two-way sync to personal calendars with role-based visibility." },
                   ]} />} />
-                  <Route path="/os/leads" element={<OSComingSoon title="Leads" tagline="Every lead, every source, every touchpoint — fully attributed from first click to first session." icon={Users2} features={[
+                  <Route path="/leads" element={<OSComingSoon title="Leads" tagline="Every lead, every source, every touchpoint — fully attributed from first click to first session." icon={Users2} features={[
                     { title: "Unified lead inbox", description: "Web, Facebook, Google Ads, referrals, recruiting — all in one pipeline." },
                     { title: "Source attribution", description: "UTM, call tracking, and referral relationships captured automatically." },
                     { title: "Lifecycle stages", description: "New → Qualified → Intake → Active, with SLA timers and owner accountability." },
                     { title: "AI lead scoring", description: "Prioritize leads most likely to convert based on source, geo, and behavior." },
                   ]} />} />
-                  <Route path="/os/intake" element={<OSComingSoon title="Intake" tagline="The intake pipeline from first contact through verified benefits and signed paperwork." icon={ClipboardList} features={[
+                  <Route path="/intake" element={<OSComingSoon title="Intake" tagline="The intake pipeline from first contact through verified benefits and signed paperwork." icon={ClipboardList} features={[
                     { title: "Intake pipeline board", description: "Kanban view of every family by stage with bottleneck detection." },
                     { title: "Digital forms & e-sign", description: "Smart intake packets, parent portals, and e-signature collection." },
                     { title: "Verification of benefits", description: "VOB workflow with payer responses and out-of-pocket estimates." },
                     { title: "Auto-handoff to clinical", description: "Triggers assessment scheduling and BCBA assignment automatically." },
                   ]} />} />
-                  <Route path="/os/clients" element={<OSComingSoon title="Clients" tagline="A 360° client record connecting clinical, scheduling, billing, and family communication." icon={FolderKanban} features={[
+                  <Route path="/clients" element={<OSComingSoon title="Clients" tagline="A 360° client record connecting clinical, scheduling, billing, and family communication." icon={FolderKanban} features={[
                     { title: "Patient journey timeline", description: "Every touchpoint from lead to active care visualized chronologically." },
                     { title: "Authorizations & coverage", description: "Active auths, units used, expirations, and payer details at a glance." },
                     { title: "Care team & schedule", description: "Assigned BCBA/RBTs, weekly schedule, and session adherence." },
                     { title: "Family communication", description: "Logged calls, messages, parent portal activity, and satisfaction signals." },
                   ]} />} />
-                  <Route path="/os/authorizations" element={<OSComingSoon title="Authorizations" tagline="Never lose units or miss an expiration again." icon={FileCheck2} features={[
+                  <Route path="/authorizations" element={<OSComingSoon title="Authorizations" tagline="Never lose units or miss an expiration again." icon={FileCheck2} features={[
                     { title: "Auth lifecycle tracking", description: "Pending, active, expiring, and exhausted auths across every client and payer." },
                     { title: "Units used vs approved", description: "Real-time burn-down with projected exhaustion dates." },
                     { title: "Expiration alerts", description: "Configurable warnings 60/30/14/7 days before expiration." },
                     { title: "Re-auth workflow", description: "Pre-built tasks, owners, and document checklists for renewal cycles." },
                   ]} />} />
-                  <Route path="/os/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
+                  <Route path="/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
                     { title: "Smart conflict detection", description: "Prevents double-booking, credential mismatches, and travel-time issues." },
                     { title: "Open coverage board", description: "Visualize uncovered hours by client, region, and service line." },
                     { title: "Recurring patterns", description: "Set weekly templates with intelligent rollovers and holiday handling." },
                     { title: "Mobile session check-in", description: "RBT check-in/out with GPS, signatures, and instant timesheet sync." },
                   ]} />} />
-                  <Route path="/os/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
+                  <Route path="/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
                     { title: "Active case board", description: "Every active client with risk flags, staffing status, and parent satisfaction." },
                     { title: "Escalations & alerts", description: "Auto-escalate cases with cancellations, no-shows, or compliance issues." },
                     { title: "Parent communication log", description: "Centralized record of every conversation, message, and follow-up." },
                     { title: "Outcomes tracking", description: "Goal progress, program changes, and discharge readiness over time." },
                   ]} />} />
-                  <Route path="/os/staff" element={<OSComingSoon title="Clinical Staff" tagline="Your BCBA and RBT workforce — credentials, capacity, performance, and assignments in one place." icon={UserCog} features={[
+                  <Route path="/staff" element={<OSComingSoon title="Clinical Staff" tagline="Your BCBA and RBT workforce — credentials, capacity, performance, and assignments in one place." icon={UserCog} features={[
                     { title: "Staff directory", description: "Searchable roster with role, region, certifications, and availability." },
                     { title: "Credentials & compliance", description: "License, CEU, background, and BLS tracking with renewal alerts." },
                     { title: "Capacity & utilization", description: "Hours assigned vs available, overtime risk, and burnout signals." },
                     { title: "Performance scorecards", description: "Cancellations, parent feedback, session quality, and growth trajectory." },
                   ]} />} />
-                  <Route path="/os/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
-                  <Route path="/os/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
-                  <Route path="/os/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
-                  <Route path="/os/evaluations" element={<OSComingSoon title="Evaluations" tagline="A modern performance review system built for clinical and operational teams." icon={ClipboardCheck} features={[
+                  <Route path="/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
+                  <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
+                  <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
+                  <Route path="/evaluations" element={<OSComingSoon title="Evaluations" tagline="A modern performance review system built for clinical and operational teams." icon={ClipboardCheck} features={[
                     { title: "Structured review cycles", description: "Quarterly and annual review templates by role, with owner assignments." },
                     { title: "360° feedback", description: "Self, peer, and manager input rolled up into a single scorecard." },
                     { title: "Coaching plans", description: "Action items, follow-ups, and progress tracking after each review." },
                     { title: "Career growth ladders", description: "Visible competency milestones from new RBT through senior BCBA." },
                   ]} />} />
-                  <Route path="/os/training" element={<OSTraining />} />
-                  <Route path="/os/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
-                  <Route path="/os/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
-                  <Route path="/os/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
-                  <Route path="/os/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
-                  <Route path="/os/reports" element={<ReportsHome />} />
-                  <Route path="/os/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
-                  <Route path="/os/reports/:reportId" element={<ReportDetail />} />
-                  <Route path="/os/kpi" element={<OSComingSoon title="KPI Tracking" tagline="The KPIs that actually move the business — set, monitor, and act on them in real time." icon={Target} features={[
+                  <Route path="/training" element={<OSTraining />} />
+                  <Route path="/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
+                  <Route path="/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
+                  <Route path="/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
+                  <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
+                  <Route path="/reports" element={<ReportsHome />} />
+                  <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
+                  <Route path="/reports/:reportId" element={<ReportDetail />} />
+                  <Route path="/kpi" element={<OSComingSoon title="KPI Tracking" tagline="The KPIs that actually move the business — set, monitor, and act on them in real time." icon={Target} features={[
                     { title: "Company & state scorecards", description: "Roll up the metrics that matter at company, state, clinic, and team levels." },
                     { title: "Goals & targets", description: "Set monthly and quarterly targets with progress, pacing, and forecast." },
                     { title: "Trend & cohort analysis", description: "Compare periods, regions, and service lines side-by-side." },
                     { title: "Alerts on deviation", description: "Auto-notify owners when KPIs drift outside acceptable ranges." },
                   ]} />} />
-                  <Route path="/os/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
-                  <Route path="/os/sop" element={<OSComingSoon title="SOP Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
+                  <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
+                  <Route path="/sop" element={<OSComingSoon title="SOP Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
                     { title: "Searchable knowledge base", description: "Full-text search across every SOP, policy, and playbook." },
                     { title: "Versioning & approvals", description: "Track every revision with approver, change notes, and effective dates." },
                     { title: "Role-based access", description: "Surface the right SOPs by role, department, and state automatically." },
                     { title: "AI explain & summarize", description: "Ask Blossom AI to explain, summarize, or compare any SOP instantly." },
                   ]} />} />
-                  <Route path="/os/marketing" element={<OSPlaceholder title="Marketing Ops" description="Lead generation, campaigns, attribution." icon={Megaphone} />} />
-                  <Route path="/os/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
-                  <Route path="/os/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
-                  <Route path="/os/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
-                  <Route path="/os/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
-                  <Route path="/os/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/os/ai/assistant" element={<OSPlaceholder title="Ask Blossom AI" description="Global AI assistant for operational questions." icon={Bot} />} />
-                  <Route path="/os/ai/insights" element={<OSPlaceholder title="AI Insights" description="AI-generated operational recommendations." icon={Brain} />} />
-                  <Route path="/os/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
-                  <Route path="/os/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
-                  <Route path="/os/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
-                  <Route path="/os/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
-                  <Route path="/os/user-management" element={<OSUserManagement />} />
-                  <Route path="/os/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
-                  <Route path="/os/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
-                  <Route path="/os/permissions" element={<OSPermissions />} />
+                  <Route path="/marketing" element={<OSPlaceholder title="Marketing Ops" description="Lead generation, campaigns, attribution." icon={Megaphone} />} />
+                  <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
+                  <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
+                  <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
+                  <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
+                  <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
+                  <Route path="/ai/assistant" element={<OSPlaceholder title="Ask Blossom AI" description="Global AI assistant for operational questions." icon={Bot} />} />
+                  <Route path="/ai/insights" element={<OSPlaceholder title="AI Insights" description="AI-generated operational recommendations." icon={Brain} />} />
+                  <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
+                  <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
+                  <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
+                  <Route path="/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
+                  <Route path="/user-management" element={<OSUserManagement />} />
+                  <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
+                  <Route path="/settings" element={<OSPlaceholder title="Settings" description="Workspace, branding, integrations, notifications, security, billing." icon={SIcon} />} />
+                  <Route path="/permissions" element={<OSPermissions />} />
                   {/* Marketing Team */}
-                  <Route path="/os/marketing-dashboard" element={<OSMarketingDashboard />} />
-                  <Route path="/os/marketing/campaigns" element={<OSPlaceholder title="Campaign Center" description="Active and upcoming campaigns, performance, assets, ad spend, landing pages, and conversion metrics." icon={Megaphone} />} />
-                  <Route path="/os/marketing/lead-sources" element={<OSPlaceholder title="Lead Source Analytics" description="Where leads come from: website, Facebook, Google Ads, referrals, organic, recruiting — with source conversion rates." icon={TrendingUp} />} />
-                  <Route path="/os/marketing/seo" element={<OSPlaceholder title="SEO & Content" description="Blogs, SEO rankings, local SEO, state pages, content calendar, AI content ideas, keyword tracking, GEO/AEO." icon={Globe} />} />
-                  <Route path="/os/marketing/web-analytics" element={<OSPlaceholder title="Web Analytics" description="Traffic sources, landing pages, behavior paths, conversion points, geo trends, heatmaps, session recordings, and visitor identification — all UTM-tagged into the CRM." icon={TrendingUp} />} />
-                  <Route path="/os/marketing/call-tracking" element={<OSPlaceholder title="Call Tracking" description="Dynamic number insertion by campaign, source, and state. Call recordings, attribution, call-volume dashboards, qualified leads, and missed-call alerts." icon={Megaphone} />} />
-                  <Route path="/os/marketing/attribution" element={<OSPlaceholder title="Attribution & ROI" description="Cost per lead, qualified lead, assessment, and active client. ROAS, multi-touch attribution, channel/state/campaign profitability, and revenue by source." icon={BarChart3} />} />
-                  <Route path="/os/marketing/referrals" element={<OSPlaceholder title="Referrals" description="Referral partners, referral source tracking, partner performance, outreach pipeline, and referral-driven lead attribution." icon={HeartHandshake} />} />
-                  <Route path="/os/marketing/recruiting" element={<OSPlaceholder title="Recruiting Marketing" description="Recruiting campaigns, applicant sources, recruiting funnel analytics, employer-brand performance." icon={UserPlus} />} />
-                  <Route path="/os/marketing/state-growth" element={<OSPlaceholder title="State Growth Analytics" description="State-level growth: lead trends, staffing demand, recruiting trends, market saturation, conversion by state." icon={MapPin} />} />
-                  <Route path="/os/marketing/reputation" element={<OSPlaceholder title="Reputation Management" description="Google reviews, review requests and monitoring, sentiment tracking, escalation alerts." icon={Star} />} />
-                  <Route path="/os/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
-                  <Route path="/os/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
+                  <Route path="/marketing-dashboard" element={<OSMarketingDashboard />} />
+                  <Route path="/marketing/campaigns" element={<OSPlaceholder title="Campaign Center" description="Active and upcoming campaigns, performance, assets, ad spend, landing pages, and conversion metrics." icon={Megaphone} />} />
+                  <Route path="/marketing/lead-sources" element={<OSPlaceholder title="Lead Source Analytics" description="Where leads come from: website, Facebook, Google Ads, referrals, organic, recruiting — with source conversion rates." icon={TrendingUp} />} />
+                  <Route path="/marketing/seo" element={<OSPlaceholder title="SEO & Content" description="Blogs, SEO rankings, local SEO, state pages, content calendar, AI content ideas, keyword tracking, GEO/AEO." icon={Globe} />} />
+                  <Route path="/marketing/web-analytics" element={<OSPlaceholder title="Web Analytics" description="Traffic sources, landing pages, behavior paths, conversion points, geo trends, heatmaps, session recordings, and visitor identification — all UTM-tagged into the CRM." icon={TrendingUp} />} />
+                  <Route path="/marketing/call-tracking" element={<OSPlaceholder title="Call Tracking" description="Dynamic number insertion by campaign, source, and state. Call recordings, attribution, call-volume dashboards, qualified leads, and missed-call alerts." icon={Megaphone} />} />
+                  <Route path="/marketing/attribution" element={<OSPlaceholder title="Attribution & ROI" description="Cost per lead, qualified lead, assessment, and active client. ROAS, multi-touch attribution, channel/state/campaign profitability, and revenue by source." icon={BarChart3} />} />
+                  <Route path="/marketing/referrals" element={<OSPlaceholder title="Referrals" description="Referral partners, referral source tracking, partner performance, outreach pipeline, and referral-driven lead attribution." icon={HeartHandshake} />} />
+                  <Route path="/marketing/recruiting" element={<OSPlaceholder title="Recruiting Marketing" description="Recruiting campaigns, applicant sources, recruiting funnel analytics, employer-brand performance." icon={UserPlus} />} />
+                  <Route path="/marketing/state-growth" element={<OSPlaceholder title="State Growth Analytics" description="State-level growth: lead trends, staffing demand, recruiting trends, market saturation, conversion by state." icon={MapPin} />} />
+                  <Route path="/marketing/reputation" element={<OSPlaceholder title="Reputation Management" description="Google reviews, review requests and monitoring, sentiment tracking, escalation alerts." icon={Star} />} />
+                  <Route path="/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
+                  <Route path="/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
                 </Route>
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                   <Route path="/" element={<Navigate to="/os" replace />} />
