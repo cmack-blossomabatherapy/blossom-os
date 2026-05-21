@@ -42,7 +42,7 @@ export interface MeetingSeed { title: string; time: string; tone: string }
 export interface ApprovalSeed { what: string; who: string; due: string }
 
 export interface StateOpsData {
-  code: OSState; name: string; hubCity: string;
+  code: string; name: string; hubCity: string;
   opsScore: number; opsLabel: "Healthy" | "Stable" | "Watch" | "Critical";
   briefing: string;
   childrenServed: number; alerts: number; escalations: number;
