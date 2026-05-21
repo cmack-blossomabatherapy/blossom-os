@@ -4,11 +4,15 @@ import { Link } from "react-router-dom";
 import { resetOnboarding, setPreviewLocked } from "@/lib/onboarding/storage";
 import { PathSwitcher } from "@/components/onboarding/PathSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
+import { SecurityMfaCard } from "@/components/profile/SecurityMfaCard";
 
 export function SettingsSection({ ob }: { ob: any }) {
   const { signOut } = useAuth();
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <SecurityMfaCard />
+      </div>
       <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
         <div className="mb-3 flex items-center gap-2"><SettingsIcon className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold">Onboarding path</h2></div>
         <PathSwitcher path={ob.path} disabled={ob.isComplete && !ob.bypassReal} />
