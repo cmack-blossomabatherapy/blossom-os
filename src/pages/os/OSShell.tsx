@@ -574,6 +574,38 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           </button>
         </div>
       </nav>
+
+      {/* GLOBAL SEARCH PALETTE */}
+      <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
+        <CommandInput placeholder="Search pages, modules, dashboards…" />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          {sections.map((section, idx) => (
+            <div key={section.id}>
+              {idx > 0 && <CommandSeparator />}
+              <CommandGroup heading={section.label}>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <CommandItem
+                      key={`${section.id}-${item.to}-${item.label}`}
+                      value={`${section.label} ${item.label} ${item.to}`}
+                      onSelect={() => {
+                        setPaletteOpen(false);
+                        navigate(item.to);
+                      }}
+                    >
+                      <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="truncate">{item.label}</span>
+                      <span className="ml-auto truncate text-[10.5px] text-muted-foreground">{item.to}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </div>
+          ))}
+        </CommandList>
+      </CommandDialog>
     </div>
   );
 }
