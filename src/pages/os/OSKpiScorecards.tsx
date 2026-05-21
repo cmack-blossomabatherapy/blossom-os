@@ -115,6 +115,24 @@ export default function OSKpiScorecards() {
                 {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
                 {copied ? "Copied" : "Copy KPIs for Bloom"}
               </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-secondary/60 transition-colors">
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1.5">
+                    <p className="font-semibold">Paste into Bloom Growth</p>
+                    <ol className="list-decimal pl-3.5 text-xs space-y-0.5 text-muted-foreground">
+                      <li>Copy the KPIs using the button.</li>
+                      <li>Open your Bloom Growth scorecard.</li>
+                      <li>Paste each value into the matching metric field.</li>
+                      <li>Save your scorecard — done.</li>
+                    </ol>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
               <Button size="sm" variant="outline" onClick={exportAll} className="border-white/70 bg-white/70 backdrop-blur">
                 <Download className="mr-1 h-3.5 w-3.5" /> Export
               </Button>
