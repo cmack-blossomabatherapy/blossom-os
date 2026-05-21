@@ -1,105 +1,69 @@
-# State Director Dashboard — Hours vs Clients Hero
+## Goal
+The new `/os` is the only product. The old multi-dashboard app retires. Nothing important is lost — BCBA Performance moves into Reports, Training Tracks move into Training Academy, and all onboarding / training / employee data is preserved (employees are wiped but their schema/history tables stay so we can re-import cleanly).
 
-## The one thing this dashboard answers
+## 1. Make `/os` the home
 
-> "Are we staffing efficiently this week, by code, vs where we were?"
+- `/` now redirects to `/os` for every authenticated user. `WelcomeHome`, `Dashboard`, `RoleDashboardRedirect`, and all role-specific dashboard routes (`/leadership-dashboard`, `/intake-dashboard`, `/authorizations-dashboard`, `/scheduling-dashboard`, `/staffing-dashboard`, `/clinic-dashboard`, `/qa-dashboard`, `/finance-dashboard`, `/recruiting-dashboard`, `/bcba-performance-dashboard/*`, `/ceo-dashboard-v2/*`) become permanent redirects into `/os` (mostly `/os/state-director` or `/os/reports/bcba-performance`).
+- The legacy `AppLayout` sidebar is no longer shown at `/`. The old pages stay on disk but only as deep-link redirects (no nav entry). This keeps imports stable while removing them from the user experience.
+- `/os` itself routes to the role-correct landing page using `OSRoleContext`. For the State Director test user that means `/os/state-director`.
 
-Everything else is supporting cast. The hero is a single time-series chart of **Service Hours vs Active Clients**, filterable by procedure code, with a 3-week moving average. Pulled directly from the Yosif transcript.
+## 2. State Director OS — keep simple
 
-## Data
+Already rebuilt around Hours vs Active Clients. No layout change in this pass. We just confirm it is the landing for `state_director` role and ensure the OS shell hides any module the role does not need (Marketing, Enterprise, Intelligence, legacy HR admin tools, etc.) — those routes still exist but are filtered out of the OS sidebar for this role.
 
-We already have `bcba_billable_sessions` (34,121 rows, Jan–May 2026) and the new TXT (2,822 more rows, May 10–20). We import the new file and add billing/state columns so the dashboard can filter and slice properly. PHI (client names) is stored but **never rendered** — every row goes through a `redactClient()` helper.
+## 3. BCBA Performance → Reports
 
-### Schema additions (additive, nullable)
+- Move the existing `CeoDashboardV2` experience under `/os/reports/bcba-performance` and add a card for it on `/os/reports` (ReportsHome).
+- `/bcba-performance-dashboard` and the `/ceo-dashboard-v2` aliases redirect into the new path so links keep working.
+- No data changes — it reads the same `bcba_billable_sessions` table the State Director hero already uses.
 
-On `bcba_billable_sessions`:
-- `state` text — ServiceLocationStateProvince
-- `service_location` text — Home / Clinic / School / Telehealth
-- `payor_name` text, `payor_type` text (medicaid / commercial)
-- `units` numeric, `charges_total` numeric, `amount_paid` numeric, `amount_owed` numeric
-- `is_billable` boolean (false for admin/cancellation codes)
+## 4. Training Tracks → Training Academy
 
-The existing `import-bcba-sessions` edge function gets a small column-mapping extension. `source_id` unique index handles the May 10–18 overlap automatically.
+- Surface all existing tracks (currently shown in `/blossom/academy`, `TrackDetail`, `TrainingDepartment`, `TrainingCatalog`, `AcademyHome`, `AcademyEditor`) under one entry point `/os/training`.
+- `/os/training` becomes a real page (not "coming soon") that lists Tracks, Departments, and Catalog tabs and reuses the existing `OperationsAcademy`, `TrackDetail`, and `TrainingDepartment` components inside the OS shell. No DB changes — track tables, assignments, completions stay intact.
+- Old `/training/*`, `/blossom/academy/*`, `/hr/training*` URLs redirect into `/os/training/...` equivalents.
 
-## The dashboard layout (top to bottom)
+## 5. Onboarding & training data — preserve
 
-### 1. Header strip
-- Greeting + state + date
-- Small health badge: `NC · Stable · 82` (the old ring, demoted)
-- Live data freshness chip
+- Do not drop any tables. Onboarding progress, journey overrides, academy completions, track assignments, course progress, and all related history remain untouched.
+- Only the *employee roster* gets cleared (see next section). Historical rows that reference deleted employees are kept; we just won't display them until employees are re-imported with matching IDs.
 
-### 2. HERO — Hours vs Clients (the chart Yosif wants)
+## 6. Employee reset + User Management in OS
 
-A single large chart, ~360px tall.
+- New table is not needed; we wipe `public.employees` and any dependent staging tables we own (e.g. `employee_directory_overrides` if present). Auth users are NOT touched here except for creating the test State Director.
+- `/os/user-management` becomes a real, minimal page: a single table of users with columns Name / Email / Role / State / Status, plus an "Invite user" button and a row action to change role. That is the entire screen.
+- We remove the older `/blossom/users` from nav and redirect it to `/os/user-management`.
 
-- **Line A**: total billable service hours per week
-- **Line B**: active distinct clients per week
-- **3-week moving average overlay** on each line (subtle dashed)
-- Tooltip shows: week, hours, clients, hours/client
+## 7. Test State Director login
 
-Above the chart, one focused number:
+- Create auth user `teststatedirector@blossomabatherapy.com` / `Blossom@123`, email auto-confirmed (test seed only).
+- Insert a matching row in `profiles` and grant `state_director` in `user_roles` scoped to North Carolina (the state we've been using for the demo).
+- On login this user lands on `/os/state-director` automatically.
 
-```
-HOURS PER ACTIVE CLIENT
-  14.2 hrs ↑ +1.8 vs prior period
-```
+---
 
-This is the staffing efficiency metric — the single number Yosif uses to judge health (his Kate Saul vs Shana Roberts example).
+## Technical notes
 
-Controls inline with the chart header:
-- **Code chips**: All · 97153 (Direct) · 97155 (Supervision) · 97151 (Assessment) · 97156 (Parent)
-- **Window chips**: 4w · 12w · 26w · YTD (default 12w)
+### Routing (`src/App.tsx`)
+- Replace `<Route path="/" element={<WelcomeHome />} />` with `<Route path="/" element={<Navigate to="/os" replace />} />`.
+- Wrap every legacy dashboard route in a small `<Navigate>` (preserve query string) pointing into `/os`.
+- Add real routes:
+  - `/os/reports/bcba-performance` → `CeoDashboardV2` rendered inside `OSShell`.
+  - `/os/training`, `/os/training/tracks/:trackId`, `/os/training/department/:slug`, `/os/training/catalog` → reuse existing components inside `OSShell`.
+  - `/os/user-management` → new lightweight `OSUserManagement.tsx`.
+- Keep file imports for legacy pages so redirects compile; mark them for later deletion.
 
-### 3. Quick stats row (4 small tiles)
-- Hours this week
-- Active clients this week
-- Hours / client (with delta)
-- Supervision ratio (97155 hrs ÷ 97153 hrs) — directly answers his "is the BCBA actually maximizing?" question
+### OS shell / nav
+- `OSShell` sidebar already has placeholders for Reports, Training Academy, User Management — switch their hrefs to the real routes and remove the "coming soon" badge.
+- Filter sidebar items by role using `OSRoleContext`. For `state_director` show: Command Center (State Director), Reports, Training Academy, User Management, Settings.
 
-### 4. BCBA Supervision Leaderboard (small, calm)
+### Data migrations (one approval batch)
+1. `delete from public.employees;` (and any owned staging tables); leave history intact.
+2. Insert auth user via Supabase admin (handled in migration with `auth.users` + `auth.identities` seed pattern already used in this project), then insert profile + `user_roles` row.
+3. No schema changes.
 
-The Kate Saul / Shana Roberts comparison made visual. Top + bottom 5 BCBAs ranked by **supervision hours per direct hour** in the period. No client names anywhere.
-
-### 5. Attention Required
-Generated from data, not seeded:
-- `$X in sessions unbilled > 7 days`
-- `N patients without an assigned BCBA` (using existing label parser)
-- `N BCBAs above 35 billable hrs/wk`
-- `Cancellation/admin-time spike vs prior week`
-
-### 6. My Priorities
-Top 5 action items routed to the director (existing pattern, real data when available).
-
-## What gets removed from the current screen
-
-- Big Health Ring as the hero → demoted to a small chip in the header
-- Generic "Operational Pulse" mock chart → replaced by the real Hours vs Clients chart
-- Team & Staffing tile grid → folded into the supervision leaderboard
-- Mock briefing paragraph → real one generated from this week's data
-
-## What stays mock (call out, don't fake)
-
-- Leads / intake / recruiting / orientation tiles — not in this export. We mark them "Awaiting data source" rather than show fake numbers.
-
-## Files we touch
-
-- **Migration**: add columns to `bcba_billable_sessions`
-- **Edge function**: `supabase/functions/import-bcba-sessions/index.ts` — map new columns
-- **New**: `src/lib/phi/redact.ts` — single redaction helper
-- **New**: `src/lib/analytics/stateOps.ts` — pure aggregation functions (hours/clients series, supervision ratios, attention generators)
-- **New**: `src/hooks/useStateOps.ts` — fetches sessions for a state + window, memoizes aggregations
-- **Rewrite**: `src/pages/os/OSStateDirector.tsx` — new layout per above
-- **New**: `src/components/state-director/HoursVsClientsChart.tsx` — the hero chart
-- **New**: `src/components/state-director/SupervisionLeaderboard.tsx`
-
-## After the migration
-
-User uploads the TXT once through the existing import flow (or we trigger the edge function with the file we already have at `/tmp/sessions.csv`). Dashboard then renders against real numbers for NC and every other state with data.
-
-## Out of scope (this pass)
-
-- Leads data source
-- Auth / scheduling joins
-- OT / ST service lines
-- Writeback to billing system
-- Dazos / PowerBI integration decisions (that's Corey + Chad's call)
+### Out of scope
+- No changes to the State Director hero chart itself.
+- No PHI surfacing — `redactClient` stays in place.
+- No edits to `bcba_billable_sessions` shape; just consumed by both /os/state-director and /os/reports/bcba-performance.
+- Old `AppLayout`, `Dashboard.tsx`, `WelcomeHome.tsx`, and legacy dashboard files stay on disk this pass; we'll garbage-collect after a release of /os.
