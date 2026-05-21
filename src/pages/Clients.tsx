@@ -11,7 +11,6 @@ import {
   FileCheck2,
   FileText,
   Mail,
-  MessageSquare,
   Phone,
   Plus,
   Search,
@@ -322,7 +321,6 @@ export default function Clients() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => runQuickAction("Call", "communication")}><Phone className="h-4 w-4" /> Call</Button>
-                <Button variant="outline" size="sm" onClick={() => runQuickAction("Text", "communication")}><MessageSquare className="h-4 w-4" /> Text</Button>
                 <Button variant="outline" size="sm" onClick={() => runQuickAction("Email", "communication")}><Mail className="h-4 w-4" /> Email</Button>
                 <Button variant="outline" size="sm" onClick={() => runQuickAction("Note", "note")}><FileText className="h-4 w-4" /> Add Note</Button>
                 <Button variant="outline" size="sm" onClick={uploadDocument}><Upload className="h-4 w-4" /> Upload Document</Button>
@@ -392,7 +390,7 @@ export default function Clients() {
                 <TabsContent value="Active Services" className="mt-4"><RecordSection title="Active services"><InfoGrid rows={[ ["Service status", selectedClient.activeServiceStatus ?? "Not active"], ["Approved hours", `${selectedClient.approvedWeeklyHours ?? 0}/wk`], ["Scheduled hours", `${selectedClient.scheduledWeeklyHours ?? 0}/wk`], ["Delivered hours", `${selectedClient.deliveredWeeklyHours ?? 0}/wk`], ["Location", selectedClient.serviceLocation ?? "Not set"] ]} /></RecordSection></TabsContent>
                 <TabsContent value="Documents" className="mt-4"><RecordSection title="Documents"><div className="grid gap-2 md:grid-cols-2">{selectedClient.documents.map((doc) => <div key={`${doc.name}-${doc.type}`} className="flex items-center gap-3 rounded-md border border-border/60 p-3"><FileCheck2 className="h-4 w-4 text-primary" /><div><p className="text-sm font-medium text-foreground">{doc.name}</p><p className="text-xs text-muted-foreground">{doc.type}</p></div></div>)}</div></RecordSection></TabsContent>
                 <TabsContent value="Tasks" className="mt-4"><RecordSection title="Tasks"><div className="space-y-2">{selectedClient.tasks.map((task) => <button key={task.id} onClick={() => updateClient({ tasks: selectedClient.tasks.map((item) => item.id === task.id ? { ...item, completed: !item.completed } : item) }, `${task.completed ? "Reopened" : "Completed"} task: ${task.title}`, "task")} className="flex w-full items-center justify-between gap-3 rounded-md border border-border/60 p-3 text-left hover:bg-accent"><span className={cn("text-sm", task.completed ? "text-muted-foreground line-through" : "text-foreground")}>{task.title}</span><span className="text-xs text-muted-foreground">{task.dueDate ? formatDate(task.dueDate) : "No due date"}</span></button>)}</div></RecordSection></TabsContent>
-                <TabsContent value="Communications" className="mt-4"><RecordSection title="Communications"><div className="grid gap-3 md:grid-cols-3"><Button variant="outline" onClick={() => runQuickAction("Call", "communication")}><Phone className="h-4 w-4" /> Log call</Button><Button variant="outline" onClick={() => runQuickAction("Text", "communication")}><MessageSquare className="h-4 w-4" /> Log text</Button><Button variant="outline" onClick={() => runQuickAction("Email", "communication")}><Mail className="h-4 w-4" /> Log email</Button></div><div className="mt-4 space-y-2">{timeline.filter((event) => ["note", "communication"].includes(event.type)).slice(0, 8).map((event) => <TimelineRow key={event.id} event={event} />)}</div></RecordSection></TabsContent>
+                <TabsContent value="Communications" className="mt-4"><RecordSection title="Communications"><div className="grid gap-3 md:grid-cols-2"><Button variant="outline" onClick={() => runQuickAction("Call", "communication")}><Phone className="h-4 w-4" /> Log call</Button><Button variant="outline" onClick={() => runQuickAction("Email", "communication")}><Mail className="h-4 w-4" /> Log email</Button></div><div className="mt-4 space-y-2">{timeline.filter((event) => ["note", "communication"].includes(event.type)).slice(0, 8).map((event) => <TimelineRow key={event.id} event={event} />)}</div></RecordSection></TabsContent>
                 <TabsContent value="Timeline" className="mt-4"><RecordSection title="Full lifecycle timeline"><div className="space-y-2">{timeline.map((event) => <TimelineRow key={event.id} event={event} />)}</div></RecordSection></TabsContent>
               </Tabs>
             </section>
