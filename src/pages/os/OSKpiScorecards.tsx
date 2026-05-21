@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity, Info } from "lucide-react";
+import { Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,19 +8,14 @@ import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { SD_KPIS } from "@/lib/scorecards/kpiDefs";
 import { generateScorecards, seriesFor, type WeeklyScorecard } from "@/lib/scorecards/mockScorecards";
-import { formatForBloom, exportCsv } from "@/lib/scorecards/copyForBloom";
+import { exportCsv } from "@/lib/scorecards/copyForBloom";
 import { KpiTile } from "@/components/scorecards/KpiTile";
 import { HeartbeatChart } from "@/components/scorecards/HeartbeatChart";
 import { SecondaryCharts } from "@/components/scorecards/SecondaryCharts";
 import { WeeklyScorecardTable } from "@/components/scorecards/WeeklyScorecardTable";
 import { NotesPanel } from "@/components/scorecards/NotesPanel";
 import { AiInsightsPanel } from "@/components/scorecards/AiInsightsPanel";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const STATES = ["VA", "NC", "GA", "TN", "MD"];
 
@@ -39,24 +34,11 @@ export default function OSKpiScorecards() {
   const activeIdx = scorecards.findIndex(s => s.weekOf === activeWeek);
   const active = scorecards[activeIdx];
   const prev = activeIdx > 0 ? scorecards[activeIdx - 1] : undefined;
-  const [copied, setCopied] = useState(false);
 
   const statusTone =
     active.status === "healthy" ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70" :
     active.status === "watch"   ? "bg-amber-50 text-amber-700 ring-amber-200/70" :
                                   "bg-rose-50 text-rose-700 ring-rose-200/70";
-
-  async function copyForBloom() {
-    const text = formatForBloom(active.values);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success("KPIs copied — ready to paste into Bloom Growth");
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      toast.error("Copy failed — select and copy manually");
-    }
-  }
 
   function exportAll() {
     const csv = exportCsv(scorecards);
@@ -108,31 +90,6 @@ export default function OSKpiScorecards() {
 
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-1.5">
-              <Button size="sm" onClick={copyForBloom} className={cn(
-                "bg-[hsl(265_70%_55%)] hover:bg-[hsl(265_70%_50%)] transition-all",
-                copied && "bg-emerald-600 hover:bg-emerald-600"
-              )}>
-                {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
-                {copied ? "Copied" : "Copy KPIs for Bloom"}
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-secondary/60 transition-colors">
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <div className="space-y-1.5">
-                    <p className="font-semibold">Paste into Bloom Growth</p>
-                    <ol className="list-decimal pl-3.5 text-xs space-y-0.5 text-muted-foreground">
-                      <li>Copy the KPIs using the button.</li>
-                      <li>Open your Bloom Growth scorecard.</li>
-                      <li>Paste each value into the matching metric field.</li>
-                      <li>Save your scorecard — done.</li>
-                    </ol>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
               <Button size="sm" variant="outline" onClick={exportAll} className="border-white/70 bg-white/70 backdrop-blur">
                 <Download className="mr-1 h-3.5 w-3.5" /> Export
               </Button>
