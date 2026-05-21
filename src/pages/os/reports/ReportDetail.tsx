@@ -24,6 +24,7 @@ import {
   intakeCoordinatorPerf, authKpis, denialsByPayor, missingDocTrends, qaKpis, schedulingKpis,
   capacityByState, lifecycleKpis, riskAlerts,
 } from "@/data/reports";
+import { renderSdReport, SD_REPORT_IDS } from "@/components/reports/StateDirectorReportViews";
 
 export default function ReportDetail() {
   const { reportId } = useParams<{ reportId: string }>();
@@ -119,7 +120,7 @@ export default function ReportDetail() {
 
       {/* CONTENT */}
       <div className="mt-6">
-        <ReportContent view={report.detailView} />
+        <ReportContent view={report.detailView} reportId={report.id} />
       </div>
 
       {/* ACTION CENTER + RELATED + NOTES */}
@@ -181,7 +182,10 @@ export default function ReportDetail() {
 }
 
 /** Renders KPI + chart blocks for each detail view. Falls back to a clean empty preview. */
-function ReportContent({ view }: { view?: string }) {
+function ReportContent({ view, reportId }: { view?: string; reportId?: string }) {
+  if (reportId && SD_REPORT_IDS.has(reportId)) {
+    return <>{renderSdReport(reportId)}</>;
+  }
   if (view === "executive") {
     return (
       <div className="space-y-4">
