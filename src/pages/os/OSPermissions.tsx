@@ -8,7 +8,7 @@ import {
 import { Navigate } from "react-router-dom";
 
 const MODULE_LABELS: Record<OSModule, string> = {
-  dashboard: "Dashboard", command_center: "Command Center", calendar: "Calendar", notifications: "Notifications",
+  dashboard: "Dashboard", command_center: "Command Center", calendar: "Calendar",
   leads: "Leads", intake: "Intake", clients: "Clients", authorizations: "Authorizations",
   scheduling: "Scheduling", cases: "Case Management",
   staff: "RBT / BCBA", recruiting: "Recruiting", credentialing: "Credentialing",
@@ -35,7 +35,6 @@ const MODULE_LABELS: Record<OSModule, string> = {
   web_analytics: "Web Analytics",
   call_tracking: "Call Tracking",
   attribution_roi: "Attribution & ROI",
-  communications: "Communications",
 };
 
 export default function OSPermissions() {
