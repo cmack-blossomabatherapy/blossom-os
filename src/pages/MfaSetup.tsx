@@ -133,10 +133,13 @@ export default function MfaSetup() {
         <div className="space-y-6">
           <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-              <div
-                className="flex h-44 w-44 shrink-0 items-center justify-center rounded-xl bg-background p-2 ring-1 ring-border [&_svg]:h-full [&_svg]:w-full"
-                dangerouslySetInnerHTML={{ __html: qrSvg }}
-              />
+              <div className="flex h-44 w-44 shrink-0 items-center justify-center rounded-xl bg-white p-2 ring-1 ring-slate-200">
+                <img
+                  src={qrSvg}
+                  alt="Authenticator QR code"
+                  className="h-full w-full"
+                />
+              </div>
               <div className="flex-1 space-y-3 text-center sm:text-left">
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
