@@ -15,6 +15,12 @@ import { SecondaryCharts } from "@/components/scorecards/SecondaryCharts";
 import { WeeklyScorecardTable } from "@/components/scorecards/WeeklyScorecardTable";
 import { NotesPanel } from "@/components/scorecards/NotesPanel";
 import { AiInsightsPanel } from "@/components/scorecards/AiInsightsPanel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const STATES = ["VA", "NC", "GA", "TN", "MD"];
 
