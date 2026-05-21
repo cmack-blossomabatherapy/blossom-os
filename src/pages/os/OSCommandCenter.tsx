@@ -141,7 +141,6 @@ function buildAttention(state: string): AttentionItem[] {
       actions: [
         { label: "Open Scheduling", icon: CalendarDays },
         { label: "Escalate", icon: ShieldAlert },
-        { label: "Message Team", icon: MessageSquare },
       ],
     },
     {
@@ -164,7 +163,6 @@ function buildAttention(state: string): AttentionItem[] {
       impact: "QA + billing held",
       actions: [
         { label: "Open QA Queue", icon: ClipboardCheck },
-        { label: "Message BCBA", icon: MessageSquare },
         { label: "Escalate", icon: ShieldAlert },
       ],
     },
@@ -176,7 +174,6 @@ function buildAttention(state: string): AttentionItem[] {
       impact: "Pipeline pressure: 12 open client slots",
       actions: [
         { label: "Open Recruiting", icon: UserPlus },
-        { label: "Message Recruiter", icon: MessageSquare },
       ],
     },
     {
@@ -384,7 +381,7 @@ export default function OSCommandCenter() {
               {greet}, {name}.
             </h1>
             <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-              Your operational workspace for {stateName}. <b className="text-foreground">{criticalCount}</b> critical {criticalCount === 1 ? "item" : "items"} · <b className="text-foreground">{highCount}</b> high-priority · {ACTION_GROUPS[0].tasks.length} due today.
+              {hasAnyData ? `This week · ${stats.hoursThisWeek.toFixed(0)} hours across ${stats.clientsThisWeek} active patients.` : "Your operational workspace — everything you need to run the state."}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -407,15 +404,6 @@ export default function OSCommandCenter() {
             <div className="hidden items-center gap-1 rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 text-[10.5px] font-semibold text-foreground/60 sm:flex">
               <Command className="h-3 w-3" /> K
             </div>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <QuickAction icon={UserCog} label="Staff Client" />
-            <QuickAction icon={UserPlus} label="Add Candidate" />
-            <QuickAction icon={ShieldAlert} label="Create Escalation" />
-            <QuickAction icon={CalendarDays} label="Open Scheduling" onClick={() => navigate("/scheduling")} />
-            <QuickAction icon={MessageSquare} label="Message Team" />
-            <QuickAction icon={PlusCircle} label="Create Task" />
-            <QuickAction icon={FileText} label="Open Reports" onClick={() => navigate("/reports")} />
           </div>
         </Card>
 
@@ -597,7 +585,6 @@ export default function OSCommandCenter() {
                         <p className="text-[10.5px] text-muted-foreground">{b.region} · {b.caseload} clients · {b.supervisionPct}% supervision · {b.overduePRs} overdue PR</p>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <button title="Message" className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"><MessageSquare className="h-3 w-3" /></button>
                         <button title="Open caseload" className="grid h-7 w-7 place-items-center rounded-lg bg-foreground/[0.04] text-foreground/70 hover:bg-foreground/[0.08]"><Users className="h-3 w-3" /></button>
                       </div>
                     </div>
@@ -625,7 +612,6 @@ export default function OSCommandCenter() {
             <div className="flex flex-wrap gap-1.5 px-5 pb-5">
               <QuickAction icon={CalendarDays} label="Schedule Interview" />
               <QuickAction icon={UserCog} label="Review Candidate" />
-              <QuickAction icon={MessageSquare} label="Message Recruiter" />
             </div>
           </Card>
 
@@ -655,60 +641,30 @@ export default function OSCommandCenter() {
           </Card>
         </div>
 
-        {/* ============ FEED + COMMUNICATION ============ */}
-        <div className="grid gap-5 xl:grid-cols-5">
-          <Card className="xl:col-span-3">
-            <SectionHeader icon={Radio} title="Live Operations Feed" sub="Everything that moved in your state" />
-            <div className="px-5 pb-5 pt-4">
-              <div className="space-y-2">
-                {FEED.map((f) => (
-                  <div key={f.id} className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3">
-                    <div className={cn(
-                      "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-                      f.tone === "ok" && "bg-[hsl(150_70%_94%)] text-[hsl(155_55%_38%)]",
-                      f.tone === "warn" && "bg-[hsl(30_100%_94%)] text-[hsl(28_85%_42%)]",
-                      f.tone === "neutral" && "bg-foreground/[0.05] text-foreground/70",
-                    )}>
-                      <f.icon className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-semibold leading-snug">{f.text}</p>
-                      <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.meta}</p>
-                    </div>
+        {/* ============ FEED ============ */}
+        <Card>
+          <SectionHeader icon={Radio} title="Live Operations Feed" sub="Everything that moved in your state" />
+          <div className="px-5 pb-5 pt-4">
+            <div className="space-y-2">
+              {FEED.map((f) => (
+                <div key={f.id} className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3">
+                  <div className={cn(
+                    "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
+                    f.tone === "ok" && "bg-[hsl(150_70%_94%)] text-[hsl(155_55%_38%)]",
+                    f.tone === "warn" && "bg-[hsl(30_100%_94%)] text-[hsl(28_85%_42%)]",
+                    f.tone === "neutral" && "bg-foreground/[0.05] text-foreground/70",
+                  )}>
+                    <f.icon className="h-3.5 w-3.5" />
                   </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="xl:col-span-2">
-            <SectionHeader icon={MessageSquare} title="Communication" sub="State channels & mentions" />
-            <div className="space-y-2 px-5 pb-3 pt-4">
-              {MESSAGES.map((m) => (
-                <div key={m.id} className="rounded-xl border border-foreground/[0.06] bg-white/70 p-3 transition hover:shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[hsl(265_70%_50%)]">
-                      {m.channel.startsWith("#") ? <Hash className="h-3 w-3" /> : <MessageSquare className="h-3 w-3" />}
-                      <span className="truncate">{m.channel}</span>
-                    </div>
-                    <span className="shrink-0 text-[10.5px] text-muted-foreground">{m.time}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] font-semibold leading-snug">{f.text}</p>
+                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.meta}</p>
                   </div>
-                  <p className="mt-1 text-[12px] font-semibold leading-snug">{m.from}</p>
-                  <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{m.preview}</p>
-                  {m.mentions > 0 && (
-                    <div className="mt-1.5">
-                      <Pill tone="warn">@you · {m.mentions}</Pill>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-2 border-t border-foreground/[0.06] px-5 py-3">
-              <input placeholder="Reply or start a message…" className="flex-1 rounded-lg border border-foreground/[0.08] bg-white/70 px-3 py-1.5 text-[12px] placeholder:text-foreground/40 focus:outline-none" />
-              <button className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white"><Send className="h-3 w-3" /></button>
-            </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
 
         {/* ============ STATE SNAPSHOT ============ */}
         <Card>
@@ -748,7 +704,6 @@ export default function OSCommandCenter() {
             { icon: UserPlus, label: "Candidate" },
             { icon: ShieldAlert, label: "Escalate" },
             { icon: CalendarDays, label: "Schedule", onClick: () => navigate("/scheduling") },
-            { icon: MessageSquare, label: "Message" },
             { icon: PlusCircle, label: "Task" },
             { icon: FileText, label: "Reports", onClick: () => navigate("/reports") },
             { icon: Bot, label: "Ask AI" },
