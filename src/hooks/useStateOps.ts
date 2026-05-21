@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { StateSession } from "@/lib/analytics/stateOps";
 
-export type WindowKey = "4w" | "12w" | "26w" | "ytd";
+export type WindowKey = "1w" | "2w" | "4w" | "custom";
 
-function windowSince(w: WindowKey): string {
+function windowSince(w: WindowKey, customFrom?: string): string {
+  if (w === "custom" && customFrom) return customFrom;
   const d = new Date();
-  if (w === "ytd") {
-    d.setMonth(0, 1);
-  } else {
-    const weeks = w === "4w" ? 4 : w === "12w" ? 12 : 26;
-    d.setDate(d.getDate() - weeks * 7);
-  }
+  const weeks = w === "1w" ? 1 : w === "2w" ? 2 : 4;
+  d.setDate(d.getDate() - weeks * 7);
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
+}
+
+function windowUntil(w: WindowKey, customTo?: string): string | undefined {
+  if (w === "custom" && customTo) return customTo;
+  return undefined;
 }
 
 // Map payor-name patterns to a state code so legacy rows without `state`
