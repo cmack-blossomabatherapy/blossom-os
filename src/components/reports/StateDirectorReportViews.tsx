@@ -1,4 +1,5 @@
 import { Sparkles, ArrowRight, AlertTriangle, ShieldCheck, TrendingUp, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { MetricCard } from "./MetricCard";
 import { BreakdownTable } from "./BreakdownTable";
@@ -69,17 +70,19 @@ function AiInsightsCard({ insights }: { insights: SdAiInsight[] }) {
 }
 
 function ActionStrip({ actions }: { actions: SdReport["actions"] }) {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card p-3">
       <TrendingUp className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
       <span className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Take action</span>
       <div className="ml-auto flex flex-wrap gap-1.5">
         {actions.map((a, i) => (
-          <button key={i} className={cn(
+          <button key={i} onClick={() => a.href && navigate(a.href)} className={cn(
             "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold transition",
             a.tone === "primary"
               ? "bg-[hsl(265_70%_55%)] text-white hover:bg-[hsl(265_70%_50%)]"
-              : "border border-border/60 bg-secondary/40 text-foreground hover:bg-secondary/70"
+              : "border border-border/60 bg-secondary/40 text-foreground hover:bg-secondary/70",
+            a.href ? "cursor-pointer" : "cursor-default opacity-80"
           )}>{a.label} <ArrowRight className="h-3 w-3" /></button>
         ))}
       </div>
