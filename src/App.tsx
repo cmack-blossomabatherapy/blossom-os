@@ -178,6 +178,7 @@ import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
+import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
@@ -364,6 +365,7 @@ const App = () => (
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/kpi" element={<OSKpiScorecards />} />
+                  <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
                   <Route path="/sop" element={<OSComingSoon title="SOP Library" tagline="The single source of truth for how Blossom operates — searchable, versioned, and always current." icon={BookOpen} features={[
                     { title: "Searchable knowledge base", description: "Full-text search across every SOP, policy, and playbook." },
