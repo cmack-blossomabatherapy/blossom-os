@@ -6614,6 +6614,52 @@ export type Database = {
       }
     }
     Views: {
+      v_bcbas_real: {
+        Row: {
+          avg_weekly_hours: number | null
+          bcba_name: string | null
+          clients_served: number | null
+          first_service_date: string | null
+          last_service_date: string | null
+          state: string | null
+          total_charges: number | null
+          total_hours: number | null
+          total_paid: number | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
+      v_clients_real: {
+        Row: {
+          client_full: string | null
+          first_service_date: string | null
+          is_active: boolean | null
+          last_service_date: string | null
+          payor_name: string | null
+          payor_type: string | null
+          primary_bcba: string | null
+          service_location: string | null
+          state: string | null
+          total_charges: number | null
+          total_hours: number | null
+          total_owed: number | null
+          total_paid: number | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
+      v_data_quality_alerts: {
+        Row: {
+          alert_key: string | null
+          detail: string | null
+          earliest: string | null
+          latest: string | null
+          row_count: number | null
+          severity: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_employee_directory: {
         Row: {
           bio: string | null
@@ -6675,6 +6721,48 @@ export type Database = {
           },
         ]
       }
+      v_payor_mix: {
+        Row: {
+          charges: number | null
+          collected: number | null
+          hours: number | null
+          payor: string | null
+          payor_type: string | null
+          sessions: number | null
+          state: string | null
+        }
+        Relationships: []
+      }
+      v_state_kpis_monthly: {
+        Row: {
+          active_bcbas: number | null
+          active_clients: number | null
+          charges: number | null
+          collected: number | null
+          hours: number | null
+          month_start: string | null
+          outstanding: number | null
+          sessions: number | null
+          state: string | null
+        }
+        Relationships: []
+      }
+      v_state_kpis_weekly: {
+        Row: {
+          active_bcbas: number | null
+          active_clients: number | null
+          charges: number | null
+          collected: number | null
+          direct_sessions: number | null
+          hours: number | null
+          outstanding: number | null
+          sessions: number | null
+          state: string | null
+          supervision_sessions: number | null
+          week_start: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_rollback_onboarding: {
@@ -6691,6 +6779,8 @@ export type Database = {
         Returns: undefined
       }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      can_read_all_states: { Args: never; Returns: boolean }
+      current_user_state: { Args: never; Returns: string }
       derive_state_from_labels: { Args: { labels: string }; Returns: string }
       evaluate_hr_admin_assistant_graduation: {
         Args: { _enrollment_id: string }
