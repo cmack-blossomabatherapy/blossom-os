@@ -12,6 +12,9 @@ export interface KpiDef {
   higherIsBetter: boolean;
   /** Optional short description that appears on hover. */
   hint?: string;
+  /** Operational thresholds. For higherIsBetter: healthy >= healthy, watch >= watch, else at_risk.
+   *  For !higherIsBetter: healthy <= healthy, watch <= watch, else at_risk. */
+  thresholds?: { healthy: number; watch: number };
 }
 
 export const SD_KPIS: KpiDef[] = [
