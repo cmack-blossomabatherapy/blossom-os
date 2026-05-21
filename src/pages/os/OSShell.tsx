@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
   FolderKanban, DollarSign, BarChart3, GraduationCap, Building2, Settings,
-  Search, Bell, MessageSquare, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
+  Search, Bell, Sparkles, ChevronLeft, History, ChevronRight, ChevronDown,
   Menu, X, ShieldCheck, Home, Radio, BellRing, FileCheck2, Users2, BadgeCheck,
   Briefcase, ClipboardCheck, Wallet, TrendingUp, ShieldAlert, Activity, Target,
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
