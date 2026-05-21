@@ -85,6 +85,42 @@ export function buildBcbas(state: string): BCBA[] {
         { name: "I. Khan", hours: 18, risk: "ok" },
         { name: "B. Cole", hours: 19, risk: "watch" },
       ] },
+    { id: "b6", state, name: "Dr. Elena Torres, BCBA", region: r[1], caseload: 10, capacity: 12, hours: 32,
+      supervisionPct: 95, overduePR: 0, staffingGaps: 0, status: "Healthy",
+      authRisks: 0, trainingComplete: 100, onboarding: "complete",
+      clients: [
+        { name: "A. Patel", hours: 16, risk: "ok" },
+        { name: "C. Lee", hours: 14, risk: "ok" },
+      ] },
+    { id: "b7", state, name: "James Nakamura, BCBA", region: r[2], caseload: 12, capacity: 12, hours: 36,
+      supervisionPct: 82, overduePR: 1, staffingGaps: 1, status: "Near Capacity",
+      authRisks: 1, trainingComplete: 92, onboarding: "complete",
+      clients: [
+        { name: "M. Torres", hours: 18, risk: "watch" },
+        { name: "S. Green", hours: 14, risk: "ok" },
+      ] },
+    { id: "b8", state, name: "Amara Osei, BCBA", region: r[3], caseload: 8, capacity: 12, hours: 26,
+      supervisionPct: 70, overduePR: 0, staffingGaps: 0, status: "Needs Attention",
+      authRisks: 0, trainingComplete: 85, onboarding: "complete",
+      clients: [
+        { name: "J. Wright", hours: 12, risk: "ok" },
+        { name: "R. Johnson", hours: 10, risk: "ok" },
+      ] },
+    { id: "b9", state, name: "Dr. Rachel Kim, BCBA", region: r[0], caseload: 15, capacity: 12, hours: 40,
+      supervisionPct: 75, overduePR: 4, staffingGaps: 3, status: "Overloaded",
+      authRisks: 2, trainingComplete: 100, onboarding: "complete",
+      clients: [
+        { name: "L. Brown", hours: 20, risk: "risk" },
+        { name: "N. Davis", hours: 18, risk: "watch" },
+        { name: "O. Garcia", hours: 16, risk: "watch" },
+      ] },
+    { id: "b10", state, name: "Thomas Rivera, BCBA", region: r[1], caseload: 11, capacity: 12, hours: 34,
+      supervisionPct: 90, overduePR: 0, staffingGaps: 0, status: "Healthy",
+      authRisks: 0, trainingComplete: 100, onboarding: "complete",
+      clients: [
+        { name: "P. Martinez", hours: 16, risk: "ok" },
+        { name: "Q. Nguyen", hours: 14, risk: "ok" },
+      ] },
   ];
 }
 
