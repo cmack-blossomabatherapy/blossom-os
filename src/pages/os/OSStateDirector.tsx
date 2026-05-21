@@ -196,12 +196,57 @@ export default function OSStateDirector() {
               </div>
 
               {/* Window chips */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {WINDOWS.map((w) => (
                   <Chip key={w.key} active={windowKey === w.key} onClick={() => setWindowKey(w.key)}>
                     {w.label}
                   </Chip>
                 ))}
+                {windowKey === "custom" && (
+                  <div className="flex items-center gap-1.5">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className={cn(
+                          "h-8 rounded-full border px-3 text-[11.5px] font-semibold",
+                          !customFrom && "text-muted-foreground"
+                        )}>
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {customFrom ? format(customFrom, "MMM d") : "From"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={customFrom}
+                          onSelect={setCustomFrom}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <span className="text-[11px] text-muted-foreground">–</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className={cn(
+                          "h-8 rounded-full border px-3 text-[11.5px] font-semibold",
+                          !customTo && "text-muted-foreground"
+                        )}>
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {customTo ? format(customTo, "MMM d") : "To"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={customTo}
+                          onSelect={setCustomTo}
+                          initialFocus
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
               </div>
             </div>
 
