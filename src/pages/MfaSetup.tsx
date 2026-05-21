@@ -183,7 +183,8 @@ export default function MfaSetup() {
           <Button
             onClick={handleVerify}
             disabled={code.length !== 6 || verifying}
-            className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-all hover:shadow-lg"
+            className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+            style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
           >
             {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Verify & finish setup
