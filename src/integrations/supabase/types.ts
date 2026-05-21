@@ -4461,6 +4461,177 @@ export type Database = {
         }
         Relationships: []
       }
+      kpi_imports: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          row_count: number | null
+          scorecard_id: string | null
+          upload_type: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          row_count?: number | null
+          scorecard_id?: string | null
+          upload_type?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          row_count?: number | null
+          scorecard_id?: string | null
+          upload_type?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_imports_scorecard_id_fkey"
+            columns: ["scorecard_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_scorecards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string
+          scorecard_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note: string
+          scorecard_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          scorecard_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_notes_scorecard_id_fkey"
+            columns: ["scorecard_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_scorecards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_scorecards: {
+        Row: {
+          active_clients: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          role_type: string
+          state: string
+          status: string
+          summary: string | null
+          total_hours: number | null
+          total_potential_hours: number | null
+          updated_at: string
+          week_of: string
+        }
+        Insert: {
+          active_clients?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_type?: string
+          state: string
+          status?: string
+          summary?: string | null
+          total_hours?: number | null
+          total_potential_hours?: number | null
+          updated_at?: string
+          week_of: string
+        }
+        Update: {
+          active_clients?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role_type?: string
+          state?: string
+          status?: string
+          summary?: string | null
+          total_hours?: number | null
+          total_potential_hours?: number | null
+          updated_at?: string
+          week_of?: string
+        }
+        Relationships: []
+      }
+      kpi_values: {
+        Row: {
+          created_at: string
+          id: string
+          kpi_key: string
+          kpi_label: string
+          kpi_value: number | null
+          previous_value: number | null
+          scorecard_id: string
+          sort_order: number
+          status: string | null
+          trend: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpi_key: string
+          kpi_label: string
+          kpi_value?: number | null
+          previous_value?: number | null
+          scorecard_id: string
+          sort_order?: number
+          status?: string | null
+          trend?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpi_key?: string
+          kpi_label?: string
+          kpi_value?: number | null
+          previous_value?: number | null
+          scorecard_id?: string
+          sort_order?: number
+          status?: string | null
+          trend?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_values_scorecard_id_fkey"
+            columns: ["scorecard_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_scorecards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leadership_video_progress: {
         Row: {
           completed: boolean
@@ -6543,6 +6714,7 @@ export type Database = {
         Returns: boolean
       }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
+      kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }
       log_employee_timeline_event: {
         Args: {
           _description: string
