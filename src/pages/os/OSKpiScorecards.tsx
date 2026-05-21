@@ -84,6 +84,7 @@ export default function OSKpiScorecards() {
   }
 
   return (
+    <TooltipProvider>
     <OSShell>
       {/* HEADER */}
       <section className="os-rise relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[hsl(265_100%_98%)] via-white to-[hsl(220_100%_98%)] p-7 shadow-[0_30px_70px_-40px_hsl(265_60%_50%/0.4)]">
