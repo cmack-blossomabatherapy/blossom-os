@@ -151,11 +151,13 @@ export default function OSStateDirector() {
             <h1 className="mt-1 text-[28px] font-semibold tracking-tight md:text-[32px]">
               {greet}, {name}.
             </h1>
-            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-              {loading ? "Loading session data…" : hasAnyData
-                ? <>This week · <b className="text-foreground tabular-nums">{stats.hoursThisWeek}</b> hours across <b className="text-foreground tabular-nums">{stats.clientsThisWeek}</b> active patients · supervision ratio <b className="text-foreground tabular-nums">{stats.supervisionRatio.toFixed(1)}%</b>.</>
-                : "No session data is loaded for this state yet. Once imported, this page lights up automatically."}
-            </p>
+            {loading ? (
+              <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">Loading session data…</p>
+            ) : !hasAnyData ? (
+              <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+                No session data is loaded for this state yet. Once imported, this page lights up automatically.
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/10 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-foreground/70 backdrop-blur">
