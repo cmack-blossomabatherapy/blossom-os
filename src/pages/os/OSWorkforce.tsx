@@ -11,19 +11,13 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import {
+  STATE_NAMES, REGIONS_BY_STATE,
+  buildBcbas, buildRbts,
+  type BCBA, type RBT, type BCBAStatus, type RBTStatus,
+} from "@/lib/workforce/mockStaff";
 
 /* ----------------- design atoms ----------------- */
-
-const STATE_NAMES: Record<string, string> = {
-  NC: "North Carolina", GA: "Georgia", VA: "Virginia", TN: "Tennessee", MD: "Maryland",
-};
-const REGIONS_BY_STATE: Record<string, string[]> = {
-  NC: ["Charlotte", "Raleigh", "Greensboro", "Durham"],
-  GA: ["Atlanta", "Savannah", "Augusta", "Columbus"],
-  VA: ["Richmond", "Norfolk", "Arlington", "Roanoke"],
-  TN: ["Nashville", "Memphis", "Knoxville", "Chattanooga"],
-  MD: ["Baltimore", "Bethesda", "Annapolis", "Frederick"],
-};
 
 function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
@@ -112,27 +106,6 @@ function HeaderButton({ icon: Icon, label, primary }: { icon: React.ComponentTyp
 
 /* ----------------- data shapes ----------------- */
 
-type BCBAStatus = "Healthy" | "Near Capacity" | "Overloaded" | "Needs Attention";
-type RBTStatus = "Healthy" | "Underutilized" | "Needs Support" | "At Risk";
-
-type BCBA = {
-  id: string; name: string; region: string;
-  caseload: number; capacity: number;
-  hours: number; supervisionPct: number; overduePR: number;
-  staffingGaps: number; status: BCBAStatus;
-  clients: { name: string; hours: number; risk: "ok" | "watch" | "risk" }[];
-  authRisks: number; trainingComplete: number; onboarding: "complete" | "in-progress";
-};
-
-type RBT = {
-  id: string; name: string; region: string;
-  bcba: string; clients: number; scheduledHours: number; targetHours: number;
-  utilization: number; trainingComplete: number; supervisionDue: boolean;
-  status: RBTStatus;
-  upcoming: { day: string; client: string; hours: number }[];
-  attendanceConcerns: number; onboarding: "complete" | "in-progress";
-};
-
 function statusToBcbaTone(s: BCBAStatus): Tone {
   if (s === "Healthy") return "ok";
   if (s === "Near Capacity") return "warn";
@@ -148,88 +121,6 @@ function statusToRbtTone(s: RBTStatus): Tone {
 
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-}
-
-/* ----------------- mock data scoped by state ----------------- */
-
-function buildBcbas(state: string): BCBA[] {
-  const r = REGIONS_BY_STATE[state] ?? REGIONS_BY_STATE.NC;
-  return [
-    { id: "b1", name: "Dr. Maya Patel", region: r[0], caseload: 14, capacity: 12, hours: 38.5,
-      supervisionPct: 78, overduePR: 3, staffingGaps: 2, status: "Overloaded",
-      authRisks: 2, trainingComplete: 100, onboarding: "complete",
-      clients: [
-        { name: "J. Carter", hours: 18, risk: "risk" },
-        { name: "A. Mendez", hours: 22, risk: "watch" },
-        { name: "T. Nguyen", hours: 14, risk: "ok" },
-        { name: "S. Rivera", hours: 20, risk: "watch" },
-      ] },
-    { id: "b2", name: "Jordan Lee, BCBA", region: r[1], caseload: 11, capacity: 12, hours: 34,
-      supervisionPct: 92, overduePR: 0, staffingGaps: 0, status: "Healthy",
-      authRisks: 0, trainingComplete: 100, onboarding: "complete",
-      clients: [
-        { name: "M. Brooks", hours: 16, risk: "ok" },
-        { name: "E. Tran", hours: 18, risk: "ok" },
-        { name: "L. Kim", hours: 12, risk: "ok" },
-      ] },
-    { id: "b3", name: "Camila Ortiz, BCBA", region: r[2], caseload: 12, capacity: 12, hours: 36.2,
-      supervisionPct: 84, overduePR: 1, staffingGaps: 1, status: "Near Capacity",
-      authRisks: 1, trainingComplete: 90, onboarding: "complete",
-      clients: [
-        { name: "R. Patel", hours: 20, risk: "watch" },
-        { name: "D. Foster", hours: 16, risk: "ok" },
-      ] },
-    { id: "b4", name: "Marcus Hill, BCBA", region: r[3], caseload: 9, capacity: 12, hours: 28,
-      supervisionPct: 65, overduePR: 2, staffingGaps: 0, status: "Needs Attention",
-      authRisks: 0, trainingComplete: 80, onboarding: "complete",
-      clients: [
-        { name: "K. Wallace", hours: 14, risk: "watch" },
-        { name: "P. Singh", hours: 14, risk: "ok" },
-      ] },
-    { id: "b5", name: "Priya Shah, BCBA", region: r[0], caseload: 13, capacity: 12, hours: 37,
-      supervisionPct: 88, overduePR: 0, staffingGaps: 1, status: "Near Capacity",
-      authRisks: 1, trainingComplete: 100, onboarding: "complete",
-      clients: [
-        { name: "I. Khan", hours: 18, risk: "ok" },
-        { name: "B. Cole", hours: 19, risk: "watch" },
-      ] },
-  ];
-}
-
-function buildRbts(state: string): RBT[] {
-  const r = REGIONS_BY_STATE[state] ?? REGIONS_BY_STATE.NC;
-  return [
-    { id: "r1", name: "Ava Thompson", region: r[0], bcba: "Dr. Maya Patel",
-      clients: 3, scheduledHours: 32, targetHours: 32, utilization: 100,
-      trainingComplete: 100, supervisionDue: false, status: "Healthy",
-      upcoming: [{ day: "Mon", client: "J. Carter", hours: 4 }, { day: "Tue", client: "A. Mendez", hours: 3 }],
-      attendanceConcerns: 0, onboarding: "complete" },
-    { id: "r2", name: "Diego Ramirez", region: r[1], bcba: "Jordan Lee, BCBA",
-      clients: 2, scheduledHours: 18, targetHours: 30, utilization: 60,
-      trainingComplete: 100, supervisionDue: false, status: "Underutilized",
-      upcoming: [{ day: "Mon", client: "M. Brooks", hours: 3 }],
-      attendanceConcerns: 0, onboarding: "complete" },
-    { id: "r3", name: "Sara Bennett", region: r[2], bcba: "Camila Ortiz, BCBA",
-      clients: 3, scheduledHours: 28, targetHours: 32, utilization: 88,
-      trainingComplete: 85, supervisionDue: true, status: "Needs Support",
-      upcoming: [{ day: "Tue", client: "R. Patel", hours: 4 }, { day: "Wed", client: "D. Foster", hours: 3 }],
-      attendanceConcerns: 1, onboarding: "complete" },
-    { id: "r4", name: "Noah Kim", region: r[3], bcba: "Marcus Hill, BCBA",
-      clients: 2, scheduledHours: 12, targetHours: 30, utilization: 40,
-      trainingComplete: 70, supervisionDue: true, status: "At Risk",
-      upcoming: [{ day: "Thu", client: "K. Wallace", hours: 3 }],
-      attendanceConcerns: 2, onboarding: "in-progress" },
-    { id: "r5", name: "Hannah Foster", region: r[0], bcba: "Priya Shah, BCBA",
-      clients: 3, scheduledHours: 30, targetHours: 32, utilization: 94,
-      trainingComplete: 100, supervisionDue: false, status: "Healthy",
-      upcoming: [{ day: "Mon", client: "I. Khan", hours: 4 }],
-      attendanceConcerns: 0, onboarding: "complete" },
-    { id: "r6", name: "Liam Garcia", region: r[1], bcba: "Jordan Lee, BCBA",
-      clients: 1, scheduledHours: 10, targetHours: 25, utilization: 40,
-      trainingComplete: 95, supervisionDue: false, status: "Underutilized",
-      upcoming: [{ day: "Wed", client: "E. Tran", hours: 3 }],
-      attendanceConcerns: 0, onboarding: "complete" },
-  ];
 }
 
 function buildStaffingNeeds(state: string) {
