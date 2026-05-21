@@ -188,7 +188,11 @@ export default function OSKpiScorecards() {
       {/* TABLE + NOTES */}
       <section className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <WeeklyScorecardTable scorecards={scorecards} activeWeek={activeWeek} onSelectWeek={setActiveWeek} />
-        <NotesPanel initial={active.note ? [{ id: "seed", note: active.note, author: "Meeting summary", createdAt: active.weekLabel }] : []} />
+          <NotesPanel
+            storageKey={`blossom:scorecard-notes:${state}:${active.weekOf}`}
+            weekLabel={active.weekLabel}
+            initial={active.note ? [{ id: "seed", note: active.note, author: "Meeting summary", createdAt: active.weekLabel }] : []}
+          />
       </section>
     </OSShell>
     </TooltipProvider>
