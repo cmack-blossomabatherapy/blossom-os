@@ -85,7 +85,6 @@ const activity = [
 const quickActions = [
   { label: "Open Session",   icon: PlayCircle,    tone: "os-tone-violet" },
   { label: "Add Note",       icon: NotebookPen,   tone: "os-tone-sky"    },
-  { label: "Message BCBA",   icon: MessageSquare, tone: "os-tone-lilac"  },
   { label: "View Schedule",  icon: CalendarDays,  tone: "os-tone-amber"  },
   { label: "Request Help",   icon: LifeBuoy,      tone: "os-tone-rose"   },
   { label: "Open Training",  icon: GraduationCap, tone: "os-tone-mint"   },
@@ -573,39 +572,6 @@ export default function OSRBT() {
         </section>
       </div>
 
-      {/* COMMUNICATION HUB */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Communication Hub</h3>
-            <Pill tone="med">{messages.filter((m) => m.unread).length} new</Pill>
-          </div>
-          <button className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
-            Open inbox <ArrowRight className="h-3 w-3" />
-          </button>
-        </header>
-        <ul className="divide-y divide-foreground/[0.06]">
-          {messages.map((m, i) => (
-            <li key={i} className="group flex items-center gap-3 py-3">
-              <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", m.tone)}>
-                <m.icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[12.5px] font-semibold leading-tight">{m.who}</p>
-                  {m.unread && <span className="h-1.5 w-1.5 rounded-full bg-[hsl(265_85%_62%)]" />}
-                </div>
-                <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{m.what}</p>
-              </div>
-              <span className="text-[10.5px] text-muted-foreground">{m.when}</span>
-              <button className="ml-1 hidden h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08] md:grid" title="Reply">
-                <MessageSquare className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
     </OSShell>
   );
 }
