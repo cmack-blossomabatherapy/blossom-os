@@ -42,7 +42,7 @@ export interface MeetingSeed { title: string; time: string; tone: string }
 export interface ApprovalSeed { what: string; who: string; due: string }
 
 export interface StateOpsData {
-  code: OSState; name: string; hubCity: string;
+  code: string; name: string; hubCity: string;
   opsScore: number; opsLabel: "Healthy" | "Stable" | "Watch" | "Critical";
   briefing: string;
   childrenServed: number; alerts: number; escalations: number;
@@ -70,7 +70,7 @@ export interface StateOpsData {
   };
 }
 
-export const STATE_DATA: Record<OSState, StateOpsData> = {
+export const STATE_DATA: Partial<Record<OSState, StateOpsData>> & Record<string, StateOpsData> = {
   NC: {
     code: "NC", name: "North Carolina", hubCity: "Charlotte",
     opsScore: 82, opsLabel: "Stable",
@@ -671,5 +671,5 @@ export const STATE_DATA: Record<OSState, StateOpsData> = {
 };
 
 export function getStateData(code: OSState): StateOpsData {
-  return STATE_DATA[code];
+  return STATE_DATA[code] ?? STATE_DATA.NC!;
 }
