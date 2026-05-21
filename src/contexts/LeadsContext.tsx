@@ -1,8 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
-import { createIntakeTask, FINANCIAL_OWNER, INTAKE_COORDINATORS, Lead, LeadStatus, mockLeads, TimelineEvent } from "@/data/leads";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import { createIntakeTask, FINANCIAL_OWNER, INTAKE_COORDINATORS, Lead, LeadStatus, TimelineEvent } from "@/data/leads";
+import { supabase } from "@/integrations/supabase/client";
+import { mondayRowToLead, type MondayLeadRow } from "@/lib/leads/mondayMapper";
 
 interface LeadsContextValue {
   leads: Lead[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
   getLead: (id: string) => Lead | undefined;
   addLead: (lead: Lead) => void;
   updateLead: (id: string, patch: Partial<Lead>) => void;
@@ -135,7 +140,41 @@ const withIntakeAutomation = (lead: Lead, patch: Partial<Lead>): Lead => {
 };
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Page through monday_leads_raw — newest first, capped at ~5k rows.
+      const all: MondayLeadRow[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error: qErr } = await supabase
+          .from("monday_leads_raw")
+          .select("id, monday_item_id, monday_group, name, state, status, owner, data, imported_at, updated_at")
+          .order("imported_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (qErr) throw qErr;
+        const rows = (data ?? []) as unknown as MondayLeadRow[];
+        all.push(...rows);
+        if (rows.length < pageSize || all.length >= 5000) break;
+        from += pageSize;
+      }
+      setLeads(all.map(mondayRowToLead));
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load leads from Monday");
+      setLeads([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const getLead = useCallback((id: string) => leads.find((l) => l.id === id), [leads]);
 
@@ -212,8 +251,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ leads, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads }),
-    [leads, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads],
+    () => ({ leads, loading, error, refresh, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads }),
+    [leads, loading, error, refresh, getLead, addLead, updateLead, bulkUpdate, moveStage, revertStage, assignOwner, addTag, deleteLeads],
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;
