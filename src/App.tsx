@@ -405,9 +405,11 @@ const App = () => (
                   <Route path="/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
                   <Route path="/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
                 </Route>
+                {/* Legacy /os/* URLs redirect to root equivalents */}
+                <Route path="/os" element={<Navigate to="/" replace />} />
+                <Route path="/os/*" element={<OsPrefixRedirect />} />
                 <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                  <Route path="/" element={<Navigate to="/os" replace />} />
-                  <Route path="/home-redirect" element={<Navigate to="/os" replace />} />
+                  <Route path="/home-redirect" element={<Navigate to="/" replace />} />
                   <Route path="/welcome" element={<WelcomeHome />} />
                   <Route path="/academy" element={<OperationsAcademy />} />
                   <Route path="/my-learning" element={<MyLearning />} />
