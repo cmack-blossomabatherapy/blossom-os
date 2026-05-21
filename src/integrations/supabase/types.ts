@@ -6520,6 +6520,7 @@ export type Database = {
         Returns: undefined
       }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
+      derive_state_from_labels: { Args: { labels: string }; Returns: string }
       evaluate_hr_admin_assistant_graduation: {
         Args: { _enrollment_id: string }
         Returns: undefined
