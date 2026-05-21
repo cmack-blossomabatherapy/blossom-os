@@ -408,15 +408,6 @@ export default function OSCommandCenter() {
               <Command className="h-3 w-3" /> K
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <QuickAction icon={UserCog} label="Staff Client" />
-            <QuickAction icon={UserPlus} label="Add Candidate" />
-            <QuickAction icon={ShieldAlert} label="Create Escalation" />
-            <QuickAction icon={CalendarDays} label="Open Scheduling" onClick={() => navigate("/scheduling")} />
-            <QuickAction icon={MessageSquare} label="Message Team" />
-            <QuickAction icon={PlusCircle} label="Create Task" />
-            <QuickAction icon={FileText} label="Open Reports" onClick={() => navigate("/reports")} />
-          </div>
         </Card>
 
         {/* ============ OPERATIONAL PULSE ============ */}
