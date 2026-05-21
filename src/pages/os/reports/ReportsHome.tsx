@@ -396,7 +396,3 @@ function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored
     </Link>
   );
 }
-
-function UploadCenter() {
-  return null;
-}
