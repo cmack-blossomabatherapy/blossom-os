@@ -18,6 +18,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { RoleSwitcher } from "@/components/os/RoleSwitcher";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut } from "lucide-react";
 import type { OSModule } from "@/lib/os/permissions";
 import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
 import blossomLogo from "@/assets/blossom-logo-color.png";
@@ -421,7 +430,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(265_85%_65%)] px-1 text-[9px] font-bold text-white">3</span>
             </button>
-            <RoleSwitcher />
+          <RoleSwitcher />
             {rightRail && (
               <Tooltip delayDuration={120}>
                 <TooltipTrigger asChild>
@@ -438,16 +447,47 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 </TooltipContent>
               </Tooltip>
             )}
-            <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
-              <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
-                {displayName.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="hidden text-left lg:block">
-                <p className="text-[12.5px] font-semibold leading-tight capitalize">{displayName}</p>
-                <p className="text-[10.5px] capitalize text-muted-foreground leading-tight">{role.replace(/_/g, " ")}</p>
-              </div>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
+                  <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="hidden text-left lg:block">
+                    <p className="text-[12.5px] font-semibold leading-tight capitalize">{displayName}</p>
+                    <p className="text-[10.5px] capitalize text-muted-foreground leading-tight">{role.replace(/_/g, " ")}</p>
+                  </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="flex flex-col">
+                  <span className="text-sm font-semibold capitalize">{displayName}</span>
+                  <span className="text-xs font-normal capitalize text-muted-foreground">{role.replace(/_/g, " ")}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/notifications")}>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                  <span className="ml-auto text-[10px] text-muted-foreground">Soon</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/auth");
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </header>
 
           {/* CONTENT GRID */}
