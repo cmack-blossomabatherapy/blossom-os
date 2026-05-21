@@ -2,7 +2,17 @@ import { SD_KPIS, formatKpiValue } from "./kpiDefs";
 
 /** Format the latest scorecard as a paste-ready Bloom Growth block. */
 export function formatForBloom(values: Record<string, number>): string {
-  return SD_KPIS.map(def => `${def.label}: ${formatKpiValue(values[def.key], def.unit)}`).join("\n");
+  const lines = SD_KPIS.map(def => {
+    const val = formatKpiValue(values[def.key], def.unit);
+    return `${def.label.padEnd(24)} ${val}`;
+  });
+  return [
+    "BLOSSOM SCORECARD — WEEKLY KPIs",
+    "─".repeat(36),
+    ...lines,
+    "",
+    "Copy and paste each value into your Bloom Growth scorecard.",
+  ].join("\n");
 }
 
 /** CSV export — week column + every KPI as a column. */

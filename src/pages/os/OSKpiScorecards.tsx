@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity } from "lucide-react";
+import { Check, Copy, Download, Upload, ChevronLeft, ChevronRight, MapPin, Activity, Info } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,12 @@ import { SecondaryCharts } from "@/components/scorecards/SecondaryCharts";
 import { WeeklyScorecardTable } from "@/components/scorecards/WeeklyScorecardTable";
 import { NotesPanel } from "@/components/scorecards/NotesPanel";
 import { AiInsightsPanel } from "@/components/scorecards/AiInsightsPanel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const STATES = ["VA", "NC", "GA", "TN", "MD"];
 
@@ -78,6 +84,7 @@ export default function OSKpiScorecards() {
   }
 
   return (
+    <TooltipProvider>
     <OSShell>
       {/* HEADER */}
       <section className="os-rise relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[hsl(265_100%_98%)] via-white to-[hsl(220_100%_98%)] p-7 shadow-[0_30px_70px_-40px_hsl(265_60%_50%/0.4)]">
@@ -108,6 +115,24 @@ export default function OSKpiScorecards() {
                 {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
                 {copied ? "Copied" : "Copy KPIs for Bloom"}
               </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="rounded-full p-1.5 text-muted-foreground/70 hover:bg-secondary/60 transition-colors">
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-1.5">
+                    <p className="font-semibold">Paste into Bloom Growth</p>
+                    <ol className="list-decimal pl-3.5 text-xs space-y-0.5 text-muted-foreground">
+                      <li>Copy the KPIs using the button.</li>
+                      <li>Open your Bloom Growth scorecard.</li>
+                      <li>Paste each value into the matching metric field.</li>
+                      <li>Save your scorecard — done.</li>
+                    </ol>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
               <Button size="sm" variant="outline" onClick={exportAll} className="border-white/70 bg-white/70 backdrop-blur">
                 <Download className="mr-1 h-3.5 w-3.5" /> Export
               </Button>
@@ -166,5 +191,6 @@ export default function OSKpiScorecards() {
         <NotesPanel initial={active.note ? [{ id: "seed", note: active.note, author: "Meeting summary", createdAt: active.weekLabel }] : []} />
       </section>
     </OSShell>
+    </TooltipProvider>
   );
 }
