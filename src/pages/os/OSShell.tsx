@@ -30,7 +30,6 @@ const HOME_EXTRAS: NavEntry[] = [
   { to: "/os/command-center", label: "Command Center", icon: Radio, module: "command_center" },
   { to: "/os/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
   { to: "/os/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-  { to: "/os/notifications", label: "Notifications", icon: BellRing, module: "notifications" },
 ];
 
 const NAV_SECTIONS: NavSection[] = [
@@ -84,7 +83,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/os/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "attribution_roi" },
       { to: "/os/marketing/state-growth", label: "State Growth", icon: MapPin, module: "state_growth" },
       { to: "/os/marketing/reports", label: "Marketing Reports", icon: BarChart3, module: "marketing_reports" },
-      { to: "/os/communications", label: "Communications", icon: MessageSquare, module: "communications" },
     ],
   },
   {
@@ -422,10 +420,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             <button className="os-glass-icon relative">
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(265_85%_65%)] px-1 text-[9px] font-bold text-white">3</span>
-            </button>
-            <button className="os-glass-icon relative">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(330_85%_60%)] px-1 text-[9px] font-bold text-white">7</span>
             </button>
             <RoleSwitcher />
             {rightRail && (
