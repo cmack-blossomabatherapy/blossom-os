@@ -2,7 +2,7 @@ import {
   ArrowUpRight, ArrowDownRight, Sparkles, AlertTriangle, CalendarDays, ChevronRight,
   Users, Heart, FileCheck2, GraduationCap, Activity, Clock, BadgeCheck, Brain,
   Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, UserPlus, ClipboardCheck,
-  BookOpen, Inbox, ArrowRight, Phone, MessageSquare, Mail, Send, FileText,
+  BookOpen, Inbox, ArrowRight, Phone, Mail, Send, FileText,
   ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
   CalendarClock, FileWarning, FileSignature, Building2, Stamp, ShieldAlert, TrendingUp,
 } from "lucide-react";
@@ -127,7 +127,6 @@ const quickActions = [
   { label: "Submit Auth",            icon: Send,           tone: "os-tone-sky"    },
   { label: "Upload Treatment Plan",  icon: Upload,         tone: "os-tone-violet" },
   { label: "Request Progress Report",icon: FileText,       tone: "os-tone-lilac"  },
-  { label: "Contact BCBA",           icon: MessageSquare,  tone: "os-tone-mint"   },
   { label: "Add Note",               icon: StickyNote,     tone: "os-tone-amber"  },
   { label: "Escalate Issue",         icon: Flame,          tone: "os-tone-coral"  },
   { label: "Open SOP",               icon: BookOpen,       tone: "os-tone-violet" },
@@ -228,7 +227,7 @@ function KpiCard({ k }: { k: Kpi }) {
   );
 }
 
-const kindIcon: Record<string, React.ElementType> = { Submit: Send, BCBA: MessageSquare, QA: ClipboardCheck };
+const kindIcon: Record<string, React.ElementType> = { Submit: Send, BCBA: Inbox, QA: ClipboardCheck };
 const kindTone: Record<string, string> = { Submit: "os-tone-sky", BCBA: "os-tone-violet", QA: "os-tone-lilac" };
 
 /* ============ PAGE ============ */
@@ -545,7 +544,6 @@ export default function OSAuthCoordinator() {
                 <Pill tone={prio as any}>{f.priority}</Pill>
                 <div className="ml-1 hidden items-center gap-1 md:flex">
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Text"><MessageSquare className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Snooze"><Pause className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
@@ -618,9 +616,8 @@ export default function OSAuthCoordinator() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
+          <div className="mt-3 grid grid-cols-2 gap-1.5">
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Send className="mr-1 inline h-3 w-3" />Submit</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Ping BCBA</button>
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><FileWarning className="mr-1 inline h-3 w-3" />Appeal</button>
           </div>
         </section>

@@ -128,7 +128,6 @@ const quickActions = [
   { label: "Call Parent",       icon: Phone,          tone: "os-tone-sky"    },
   { label: "Send Intake Packet",icon: Send,           tone: "os-tone-violet" },
   { label: "Upload Insurance",  icon: Upload,         tone: "os-tone-lilac"  },
-  { label: "Send Follow-Up",    icon: MessageSquare,  tone: "os-tone-mint"   },
   { label: "Create Note",       icon: StickyNote,     tone: "os-tone-amber"  },
   { label: "Escalate Issue",    icon: Flame,          tone: "os-tone-coral"  },
   { label: "Open SOP",          icon: BookOpen,       tone: "os-tone-violet" },
@@ -546,7 +545,6 @@ export default function OSIntakeCoordinator() {
                 <Pill tone={prio as any}>{f.priority}</Pill>
                 <div className="ml-1 hidden items-center gap-1 md:flex">
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Text"><MessageSquare className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Snooze"><Pause className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
@@ -619,9 +617,8 @@ export default function OSIntakeCoordinator() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
+          <div className="mt-3 grid grid-cols-2 gap-1.5">
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Phone className="mr-1 inline h-3 w-3" />Call</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Text</button>
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Mail className="mr-1 inline h-3 w-3" />Email</button>
           </div>
         </section>

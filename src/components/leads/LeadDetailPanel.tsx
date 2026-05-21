@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
-  Phone, Mail, MessageSquare, FileText, ArrowRight, UserPlus,
+  Phone, Mail, MessageSquare as SmsGlyph, FileText, ArrowRight, UserPlus,
   CheckCircle2, Circle, Clock, Zap, FileIcon, Shield
 } from "lucide-react";
 
@@ -19,7 +19,7 @@ interface LeadDetailPanelProps {
 const timelineIcons: Record<string, React.ReactNode> = {
   call: <Phone className="h-3 w-3" />,
   email: <Mail className="h-3 w-3" />,
-  sms: <MessageSquare className="h-3 w-3" />,
+  sms: <SmsGlyph className="h-3 w-3" />,
   form: <FileText className="h-3 w-3" />,
   system: <Zap className="h-3 w-3" />,
   note: <FileText className="h-3 w-3" />,
@@ -77,7 +77,6 @@ export function LeadDetailPanel({ lead, open, onClose }: LeadDetailPanelProps) {
           <div className="grid grid-cols-4 gap-2">
             {[
               { icon: Phone, label: "Call" },
-              { icon: MessageSquare, label: "Text" },
               { icon: Mail, label: "Email" },
               { icon: FileText, label: "Send Form" },
               { icon: Shield, label: "Consent" },

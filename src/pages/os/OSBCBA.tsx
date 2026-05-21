@@ -2,7 +2,7 @@ import {
   ArrowUpRight, ArrowDownRight, Sparkles, AlertTriangle, ChevronRight,
   FileCheck2, GraduationCap, Activity, Clock, Brain,
   Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, ClipboardCheck,
-  BookOpen, Inbox, ArrowRight, MessageSquare, FileText,
+  BookOpen, Inbox, ArrowRight, FileText,
   ShieldCheck, RefreshCw, Upload, StickyNote, CalendarClock,
   FileSignature, TrendingUp, Heart, Users, UserCog,
   Target, Stethoscope, NotebookPen, Baby, LineChart, CalendarDays,
@@ -120,7 +120,6 @@ const quickActions = [
   { label: "Upload Treatment Plan",  icon: Upload,         tone: "os-tone-lilac"  },
   { label: "Schedule Supervision",   icon: Stethoscope,    tone: "os-tone-sky"    },
   { label: "Add Session Note",       icon: FileText,       tone: "os-tone-mint"   },
-  { label: "Message Team",           icon: MessageSquare,  tone: "os-tone-amber"  },
   { label: "Open SOP",               icon: BookOpen,       tone: "os-tone-violet" },
   { label: "View Reports",           icon: LineChart,      tone: "os-tone-coral"  },
 ];
@@ -553,7 +552,6 @@ export default function OSBCBA() {
                 <div className="ml-1 hidden items-center gap-1 md:flex">
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Note"><StickyNote className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Upload"><Upload className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Message"><MessageSquare className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
                   <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Quick complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
                 </div>
@@ -665,9 +663,8 @@ export default function OSBCBA() {
               </li>
             ))}
           </ul>
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
+          <div className="mt-3 grid grid-cols-2 gap-1.5">
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Stethoscope className="mr-1 inline h-3 w-3" />Schedule</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><MessageSquare className="mr-1 inline h-3 w-3" />Message</button>
             <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><GraduationCap className="mr-1 inline h-3 w-3" />Training</button>
           </div>
         </section>

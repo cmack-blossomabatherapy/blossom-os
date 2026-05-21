@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Users, UsersRound, TrendingUp, Clock, CalendarDays, Upload, Plus, Filter, Download,
-  Phone, MessageSquare, Mail, FileText, MoreHorizontal, ChevronDown, Sparkles,
+  Phone, Mail, FileText, MoreHorizontal, ChevronDown, Sparkles,
   ArrowUpRight, ArrowDownRight, ChevronLeft, X, StickyNote, ListChecks, Activity,
   Send, FilePlus2, BarChart3, FileSpreadsheet,
 } from "lucide-react";
@@ -76,7 +76,6 @@ const funnel = [
 const quickActions = [
   { label: "Add New Lead",      icon: Plus,         tone: "os-tone-violet" },
   { label: "Schedule Appt",     icon: CalendarDays, tone: "os-tone-sky" },
-  { label: "Send Text",         icon: MessageSquare,tone: "os-tone-mint" },
   { label: "Send Email",        icon: Mail,         tone: "os-tone-rose" },
   { label: "Create Intake",     icon: FilePlus2,    tone: "os-tone-amber" },
   { label: "Add Note",          icon: StickyNote,   tone: "os-tone-lilac" },
@@ -205,7 +204,6 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
   const actions = [
     { label: "Call",  icon: Phone, tone: "os-tone-mint" },
-    { label: "Text",  icon: MessageSquare, tone: "os-tone-sky" },
     { label: "Email", icon: Mail, tone: "os-tone-rose" },
     { label: "Notes", icon: StickyNote, tone: "os-tone-lilac" },
     { label: "More",  icon: MoreHorizontal, tone: "os-tone-violet" },

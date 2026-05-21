@@ -1,53 +1,42 @@
-# Add Required TOTP 2FA
+## Goal
 
-Use Lovable Cloud's built‑in TOTP MFA (authenticator app: Google Authenticator, Authy, 1Password, etc.). MFA will be **required for every user** — anyone without a verified TOTP factor is forced to enroll on next login, and anyone with one must pass a 6‑digit challenge before reaching the OS.
+Strip every interactive entry point that opens or sends a message/text across the app. Keep Call, Email, and Note actions everywhere. Keep activity-feed/timeline records that *display* past messages (those are history, not entry points).
 
-## User Experience
+## Files to edit
 
-1. **Sign in** with email + password as today.
-2. After the password step:
-  - **If the user already has a verified TOTP factor** → redirected to `/mfa/verify` to enter a 6‑digit code from their authenticator app.
-  - **If the user does not yet have a verified factor** → redirected to `/mfa/setup` to scan a QR code (or copy the secret), enter a verification code, and finish enrollment. They then continue into the app.
-3. Once verified the session reaches **AAL2** and the rest of the OS unlocks normally. Until then, every protected route bounces them back to `/mfa/verify` or `/mfa/setup`.
-4. From **Profile → Security**, a user can:
-  - View their enrolled authenticator (name + enrolled date).
-  - Re-enroll (admin only, in case they lose their device — for now this is a self‑serve "reset 2FA" that revokes the existing factor and forces re-enrollment on next login).
+### Command Center & shell
+- **`src/pages/os/OSCommandCenter.tsx`** — remove unused `MessageSquare` import.
+- **`src/pages/os/OSShell.tsx`** — remove unused `MessageSquare` import. Floating bottom nav has no Message entry; no other change.
 
-## Screens / Components
+### Clients
+- **`src/pages/os/OSClients.tsx`** — remove the `{ label: "Message", icon: MessageSquare, … }` entry from the detail-panel actions array (line 228). Drop `MessageSquare` from the import line if it becomes unused.
+- **`src/pages/Clients.tsx`** — remove the "Text" quick-action button (line 325) and the "Log text" button inside the Communications tab (line 395). Keep Call/Email/Log call/Log email. Drop `MessageSquare` if unused after.
 
-- `src/pages/MfaSetup.tsx` — QR code (rendered from the `otpauth://` URI Supabase returns), the secret string for manual entry, a 6‑digit input, "Verify & finish" button. Shown to anyone signed in without a verified factor.
-- `src/pages/MfaVerify.tsx` — 6‑digit input + "Verify" + "Sign out". Shown to anyone signed in whose current session has AAL1 but who has a verified factor.
-- `src/components/profile/SecurityMfaCard.tsx` — added to the existing `Profile` page: shows factor status and a "Reset authenticator" action.
-- Existing `src/pages/Auth.tsx` (login) stays the same — the routing layer drives the next step.
+### Role workspaces (each has a hero "quick actions" row + a tiny icon button row in the contact list)
+For each file below: remove the Message/Send Follow-Up/Send Text/Message Team/Message Staff/Message BCBA/Contact BCBA entry from the actions array, AND remove the `<button title="Text">…<MessageSquare/></button>` tile from the contact-list action cluster. Keep Call/Email/Note tiles. Drop `MessageSquare` from imports if unused after.
 
-## Routing & Enforcement (technical)
+- `src/pages/os/OSLeads.tsx` — drop "Send Text" (l.79) and "Text" (l.208).
+- `src/pages/os/OSIntakeCoordinator.tsx` — drop "Send Follow-Up" (l.131) and the inline Text button (l.549). Keep the `kind: "Text"` items in the activity feed (those are records of past attempts).
+- `src/pages/os/OSRecruitingTeam.tsx` — drop "Send Follow-Up" (l.131) and inline Text button (l.550).
+- `src/pages/os/OSSchedulingTeam.tsx` — drop "Message Staff" (l.130) and inline Text button (l.549).
+- `src/pages/os/OSAuthCoordinator.tsx` — drop "Contact BCBA" (l.130) and inline Text button (l.548).
+- `src/pages/os/OSBCBA.tsx` — drop "Message Team" (l.123).
+- `src/pages/os/OSRBT.tsx` — drop "Message BCBA" (l.88). Keep the chat-style notifications at l.64/79 (history, not entry points).
 
-- New routes in `src/App.tsx`: `/mfa/setup` and `/mfa/verify`, both wrapped in a lightweight `<RequireSession>` (signed in, no AAL2 gate).
-- Update `src/components/auth/ProtectedRoute.tsx`:
-  - After confirming `user`, call `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`.
-  - If `currentLevel === 'aal1' && nextLevel === 'aal2'` → `Navigate` to `/mfa/verify`.
-  - If `currentLevel === 'aal1' && nextLevel === 'aal1'` (no factor enrolled yet) → `Navigate` to `/mfa/setup`.
-  - Only `aal2` reaches the wrapped children.
-- `AuthContext` gets a small addition: `aalLevel` state + `refreshAal()` so screens can react after a successful challenge without a full reload.
+### Lead & call detail panels
+- **`src/components/leads/LeadDetailPanel.tsx`** — remove the `{ icon: MessageSquare, label: "Text" }` quick-action (l.80).
+- **`src/components/calls/CallDetailPanel.tsx`** — remove the `<ActionBtn icon={MessageSquare} label="Text" />` button (l.73).
 
-## TOTP Flow (Supabase APIs used)
+### Intake dashboard
+- **`src/pages/IntakeDashboard.tsx`** — remove "Text" from the inline action array (l.257) and from the `onAction` allowlist (l.159). Keep Call/Email/Send Form/Mark Contacted/Assign Owner/Open Lead.
 
-- Enroll: `supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Blossom OS' })` → returns `id`, `totp.qr_code` (SVG), `totp.secret`, `totp.uri`.
-- Verify enrollment: `supabase.auth.mfa.challenge({ factorId })` → `challengeId`, then `supabase.auth.mfa.verify({ factorId, challengeId, code })`. On success, session becomes AAL2.
-- Login challenge: `supabase.auth.mfa.challenge({ factorId })` + `verify(...)` after password sign-in.
-- Reset (Profile): `supabase.auth.mfa.unenroll({ factorId })` — next login forces re-enrollment.
+## Preserved deliberately
+- All Call, Email, Note/Log note, Send Form, Mark Contacted actions.
+- Activity feeds / timelines / notification streams that show received messages or texts (`kind: "Text"` items, "left feedback on your note", etc.) — these are records, not entry points.
+- Internal training content references to "Microsoft Teams / communication standards" in `src/lib/onboarding/journey.ts` and `src/pages/onboarding/HowItWorks.tsx` (training material, not in-app messaging entry points).
+- The `MessageTemplate` type/mock in `src/data/settings.ts` (schema only; no UI surfacing it is in scope).
 
-## Out of Scope (for this change)
-
-- SMS/email OTP, hardware keys, WebAuthn.
-- Admin "force unenroll another user" UI (would need an edge function with the service role). Current "reset" is self-serve only — call out so we can add the admin override next.
-- Recovery / backup codes (Supabase does not issue these natively; we can layer that later if needed).
-
-## Files Touched
-
-- **New**: `src/pages/MfaSetup.tsx`, `src/pages/MfaVerify.tsx`, `src/components/profile/SecurityMfaCard.tsx`, `src/lib/mfa.ts` (thin helpers + AAL types).
-- **Edited**: `src/contexts/AuthContext.tsx` (track AAL + factor presence), `src/components/auth/ProtectedRoute.tsx` (AAL2 gate), `src/App.tsx` (two new routes), `src/pages/Profile.tsx` (mount Security card).
-
-No database migrations or new secrets required — TOTP MFA is built into Lovable Cloud auth.
-
-I want the screens for this to be branded and beautiful like our site! Do it right the first time! Also make sure every login in going forward has to set up mfa. Make sure an authentication is good for 30 days only then they have to reauthenticate
+## Verification
+- Build passes (harness).
+- Grep `rg -n "MessageSquare|\"Text\"|\"Message\"|Send Follow-Up|Contact BCBA|Message (Team|Staff|BCBA)" src/pages src/components` shows only timeline/history occurrences and onboarding/training references.
+- Spot-check Command Center, Clients, Leads, Intake, RBT, BCBA, Auth Coordinator, Recruiting, Scheduling pages: no Message/Text buttons or cards remain.

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import {
-  X, Phone, MessageSquare, Mail, Link2, UserPlus, AlertTriangle,
+  X, Phone, Mail, Link2, UserPlus, AlertTriangle,
   PhoneIncoming, PhoneOutgoing, FileText, Clock, Send, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,6 @@ export function CallDetailPanel({ call, onClose }: Props) {
         <div className="px-4 py-3 border-b border-border/40">
           <div className="grid grid-cols-3 gap-1.5">
             <ActionBtn icon={Phone} label="Call back" />
-            <ActionBtn icon={MessageSquare} label="Text" />
             <ActionBtn icon={Mail} label="Email" />
           </div>
         </div>

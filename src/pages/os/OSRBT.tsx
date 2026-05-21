@@ -1,5 +1,5 @@
 import {
-  Sparkles, ChevronRight, Clock, CalendarDays, MapPin, MessageSquare,
+  Sparkles, ChevronRight, Clock, CalendarDays, MapPin,
   CheckCircle2, AlertTriangle, GraduationCap, BookOpen, Radio,
   Heart, Smile, NotebookPen, Stethoscope, FileText, Phone, HelpCircle,
   Coffee, Sun, Award, Flame, TrendingUp, Bell, Baby, Activity, Trophy,
@@ -60,13 +60,6 @@ const performance = [
   { label: "Supervision Hours",  value: "4.5h",hint: "of 5h goal",    spark: [1,2,2.5,3,3.5,4,4,4.25,4.5], tone: "warn" as Tone, icon: Stethoscope },
 ];
 
-const messages = [
-  { who: "Jennifer P. · BCBA",   what: "Great session notes on Liam — let's review at supervision.", when: "12m", tone: "os-tone-violet", icon: MessageSquare, unread: true },
-  { who: "Scheduling",           what: "Tomorrow's 1 PM session moved to 1:30 PM.",                    when: "1h",  tone: "os-tone-amber",  icon: CalendarDays,  unread: true },
-  { who: "Aria's parent",        what: "Quick update request after today's session — thank you!",     when: "2h",  tone: "os-tone-mint",   icon: Baby,          unread: false },
-  { who: "HR · Announcements",   what: "August team huddle Friday 4 PM — virtual.",                    when: "1d",  tone: "os-tone-sky",    icon: BellRing,      unread: false },
-];
-
 const aiInsights = [
   { icon: Smile,       tone: "os-tone-mint",   title: "You're having a great week",       body: "Session completion is above team average. Keep it up!",                       cta: "See trends" },
   { icon: Lightbulb,   tone: "os-tone-sky",    title: "Lighter afternoon today",          body: "Only 1 session after 3 PM — great time to finish notes from yesterday.",     cta: "Open notes" },
@@ -76,7 +69,7 @@ const aiInsights = [
 
 const activity = [
   { who: "You",            what: "completed session · Liam Carter",          when: "yesterday", tone: "os-tone-mint",   icon: CheckCircle2 },
-  { who: "Jennifer P.",    what: "left feedback on your last note",          when: "yesterday", tone: "os-tone-violet", icon: MessageSquare },
+  { who: "Jennifer P.",    what: "left feedback on your last note",          when: "yesterday", tone: "os-tone-violet", icon: NotebookPen },
   { who: "You",            what: "submitted Crisis De-escalation training",  when: "2d",        tone: "os-tone-sky",    icon: GraduationCap },
   { who: "Scheduling",     what: "added Wed 4 PM supervision overlap",       when: "2d",        tone: "os-tone-amber",  icon: CalendarDays },
   { who: "You",            what: "uploaded consent form · Mia Reynolds",     when: "3d",        tone: "os-tone-rose",   icon: FileText },
@@ -85,7 +78,6 @@ const activity = [
 const quickActions = [
   { label: "Open Session",   icon: PlayCircle,    tone: "os-tone-violet" },
   { label: "Add Note",       icon: NotebookPen,   tone: "os-tone-sky"    },
-  { label: "Message BCBA",   icon: MessageSquare, tone: "os-tone-lilac"  },
   { label: "View Schedule",  icon: CalendarDays,  tone: "os-tone-amber"  },
   { label: "Request Help",   icon: LifeBuoy,      tone: "os-tone-rose"   },
   { label: "Open Training",  icon: GraduationCap, tone: "os-tone-mint"   },
@@ -433,7 +425,7 @@ export default function OSRBT() {
               <Pill tone="med">Confirm</Pill>
             </li>
             <li className="flex items-center gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-xl os-tone-mint"><MessageSquare className="h-3.5 w-3.5" /></div>
+              <div className="grid h-8 w-8 place-items-center rounded-xl os-tone-mint"><NotebookPen className="h-3.5 w-3.5" /></div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[12px] font-semibold leading-tight">Feedback ready · Marcus L.</p>
                 <p className="text-[10.5px] text-muted-foreground">Last week's overlap notes</p>
@@ -573,39 +565,6 @@ export default function OSRBT() {
         </section>
       </div>
 
-      {/* COMMUNICATION HUB */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Communication Hub</h3>
-            <Pill tone="med">{messages.filter((m) => m.unread).length} new</Pill>
-          </div>
-          <button className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
-            Open inbox <ArrowRight className="h-3 w-3" />
-          </button>
-        </header>
-        <ul className="divide-y divide-foreground/[0.06]">
-          {messages.map((m, i) => (
-            <li key={i} className="group flex items-center gap-3 py-3">
-              <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", m.tone)}>
-                <m.icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[12.5px] font-semibold leading-tight">{m.who}</p>
-                  {m.unread && <span className="h-1.5 w-1.5 rounded-full bg-[hsl(265_85%_62%)]" />}
-                </div>
-                <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{m.what}</p>
-              </div>
-              <span className="text-[10.5px] text-muted-foreground">{m.when}</span>
-              <button className="ml-1 hidden h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08] md:grid" title="Reply">
-                <MessageSquare className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
     </OSShell>
   );
 }
