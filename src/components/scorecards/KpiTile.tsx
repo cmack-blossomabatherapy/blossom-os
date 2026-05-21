@@ -1,4 +1,6 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownRight, ArrowUpRight, Check, Copy, Minus } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Sparkline } from "./Sparkline";
 import { formatKpiValue, statusFor, type KpiDef, type KpiStatus } from "@/lib/scorecards/kpiDefs";
@@ -38,11 +40,36 @@ export function KpiTile({ def, value, previous, change, series }: {
     : negative ? "text-rose-600"
     : "text-muted-foreground";
 
+  const [copied, setCopied] = useState(false);
+  async function copyValue(e: React.MouseEvent) {
+    e.stopPropagation();
+    const text = formatKpiValue(value, def.unit);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success(`${def.label}: ${text} copied`);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Copy failed");
+    }
+  }
+
   return (
-    <div className={cn(
-      "group relative rounded-2xl border border-white/70 p-3.5 ring-1 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-30px_hsl(265_70%_55%/0.5)]",
-      STATUS_RING[status]
-    )}>
+    <button
+      type="button"
+      onClick={copyValue}
+      title="Click to copy value"
+      className={cn(
+        "group relative w-full text-left rounded-2xl border border-white/70 p-3.5 ring-1 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-30px_hsl(265_70%_55%/0.5)] cursor-pointer",
+        STATUS_RING[status]
+      )}
+    >
+      <span className={cn(
+        "absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-muted-foreground opacity-0 ring-1 ring-border/60 transition group-hover:opacity-100",
+        copied && "opacity-100 text-emerald-600"
+      )}>
+        {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      </span>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -70,6 +97,6 @@ export function KpiTile({ def, value, previous, change, series }: {
           {STATUS_LABEL[status]}
         </span>
       </div>
-    </div>
+    </button>
   );
 }
