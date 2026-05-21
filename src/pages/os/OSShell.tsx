@@ -150,6 +150,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   }, [collapsed]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
@@ -178,6 +179,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   };
   const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
   const showOldVersion = platform("accessOldVersion");
+
+  // Global ⌘K / Ctrl+K search shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Build the Home section dynamically based on the current role.
   const homeSection: NavSection = (() => {
