@@ -26,6 +26,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import { LogOut } from "lucide-react";
 import type { OSModule } from "@/lib/os/permissions";
 import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
