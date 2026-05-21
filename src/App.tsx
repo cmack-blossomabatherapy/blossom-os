@@ -160,6 +160,7 @@ import OSClients from "./pages/os/OSClients";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
 import OSStateDirector from "./pages/os/OSStateDirector";
+import OSCommandCenter from "./pages/os/OSCommandCenter";
 import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
 import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
@@ -293,12 +294,7 @@ const App = () => (
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/rbt" element={<OSRBT />} />
-                  <Route path="/command-center" element={<OSComingSoon title="Command Center" tagline="A live operational nerve center that surfaces every signal across the company in one glance." icon={Radio} features={[
-                    { title: "Real-time operational pulse", description: "Unified feed of staffing, scheduling, intake, billing and risk signals across every state." },
-                    { title: "Cross-team escalations", description: "Auto-routed issues with owner, SLA timer, and one-click resolution." },
-                    { title: "Today's priorities", description: "AI-ranked daily focus list per role with deep-links into the source record." },
-                    { title: "Pulse metrics", description: "Live KPIs for utilization, cancellations, open coverage, and revenue at risk." },
-                  ]} />} />
+                  <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/calendar" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
                     { title: "Multi-layer views", description: "Toggle session, staffing, intake, leadership, and internal calendars in one timeline." },
                     { title: "Drag & drop scheduling", description: "Reassign sessions, fill open coverage, and resolve conflicts inline." },
