@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { SD_KPIS } from "@/lib/scorecards/kpiDefs";
 import { generateScorecards, seriesFor, type WeeklyScorecard } from "@/lib/scorecards/mockScorecards";
+import { useStateOps } from "@/hooks/useStateOps";
+import { activeClientsByWeek } from "@/lib/analytics/stateOps";
 import { exportCsv } from "@/lib/scorecards/copyForBloom";
 import { KpiTile } from "@/components/scorecards/KpiTile";
 import { HeartbeatChart } from "@/components/scorecards/HeartbeatChart";
@@ -23,7 +25,12 @@ export default function OSKpiScorecards() {
   const { activeState } = useOSRole();
   const initialState = STATES.includes(activeState) ? activeState : "VA";
   const [state, setState] = useState<string>(initialState);
-  const scorecards = useMemo(() => generateScorecards(state, 12), [state]);
+  const { sessions } = useStateOps(state, "12w");
+  const realClients = useMemo(() => activeClientsByWeek(sessions), [sessions]);
+  const scorecards = useMemo(
+    () => generateScorecards(state, 12, { activeClientsByWeek: realClients }),
+    [state, realClients],
+  );
   const [activeWeek, setActiveWeek] = useState<string>(scorecards[scorecards.length - 1].weekOf);
 
   // Re-derive when state changes
