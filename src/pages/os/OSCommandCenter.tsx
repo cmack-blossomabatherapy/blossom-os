@@ -141,7 +141,6 @@ function buildAttention(state: string): AttentionItem[] {
       actions: [
         { label: "Open Scheduling", icon: CalendarDays },
         { label: "Escalate", icon: ShieldAlert },
-        { label: "Message Team", icon: MessageSquare },
       ],
     },
     {
@@ -164,7 +163,6 @@ function buildAttention(state: string): AttentionItem[] {
       impact: "QA + billing held",
       actions: [
         { label: "Open QA Queue", icon: ClipboardCheck },
-        { label: "Message BCBA", icon: MessageSquare },
         { label: "Escalate", icon: ShieldAlert },
       ],
     },
@@ -176,7 +174,6 @@ function buildAttention(state: string): AttentionItem[] {
       impact: "Pipeline pressure: 12 open client slots",
       actions: [
         { label: "Open Recruiting", icon: UserPlus },
-        { label: "Message Recruiter", icon: MessageSquare },
       ],
     },
     {
