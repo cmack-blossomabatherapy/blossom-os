@@ -249,6 +249,9 @@ Deno.serve(async (req) => {
       if (voided === "true" || deleted === "true") return;
       const hours = parseFloat(r[c.hours] || "0") || 0;
       const labels = r[c.labels] || "";
+      const code = r[c.code] || null;
+      const payorRaw = c.payor >= 0 ? r[c.payor] || null : null;
+      const payor = cleanPayor(payorRaw);
       records.push({
         import_id: imp.id,
         source_id: r[c.id] || null,
@@ -258,10 +261,19 @@ Deno.serve(async (req) => {
         bcba_name: extractBcba(labels),
         provider_first: r[c.pf] || null,
         provider_last: r[c.pl] || null,
-        procedure_code: r[c.code] || null,
+        procedure_code: code,
         procedure_description: r[c.desc] || null,
         hours,
         raw_labels: labels,
+        state: c.state >= 0 ? (r[c.state] || null) : null,
+        service_location: c.locDesc >= 0 ? (r[c.locDesc] || null) : null,
+        payor_name: payor,
+        payor_type: classifyPayor(payor),
+        units: c.units >= 0 ? num(r[c.units]) : null,
+        charges_total: c.charges >= 0 ? num(r[c.charges]) : null,
+        amount_paid: c.paid >= 0 ? num(r[c.paid]) : null,
+        amount_owed: c.owed >= 0 ? num(r[c.owed]) : null,
+        is_billable: classifyBillable(code),
       });
       if (records.length >= batchSize) await flushRecords();
     });
