@@ -451,7 +451,7 @@ const App = () => (
                   <Route path="/blossom/departments/:id" element={<DepartmentDetail />} />
                   <Route path="/blossom/locations" element={<BlossomLocations />} />
                   <Route path="/blossom/locations/:id" element={<LocationDetail />} />
-                  <Route path="/blossom/users" element={<BlossomUsers />} />
+                  <Route path="/blossom/users" element={<Navigate to="/os/user-management" replace />} />
                   <Route path="/blossom/reports" element={<PermissionRoute permission="reports.view" allowedRoles={ANALYTICS_ROLES}><BlossomReports /></PermissionRoute>} />
                   <Route path="/intelligence" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><ExecutiveCommandCenter /></PermissionRoute>} />
                   <Route path="/intelligence/workforce" element={<PermissionRoute allowedRoles={ANALYTICS_ROLES}><WorkforceIntelligence /></PermissionRoute>} />
