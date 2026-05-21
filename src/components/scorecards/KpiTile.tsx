@@ -13,11 +13,21 @@ const STATUS_DOT: Record<KpiStatus, string> = {
   watch:   "bg-amber-500",
   at_risk: "bg-rose-500",
 };
+const STATUS_LABEL: Record<KpiStatus, string> = {
+  healthy: "Healthy",
+  watch:   "Watch",
+  at_risk: "At Risk",
+};
+const STATUS_BADGE: Record<KpiStatus, string> = {
+  healthy: "bg-emerald-100 text-emerald-700",
+  watch:   "bg-amber-100 text-amber-700",
+  at_risk: "bg-rose-100 text-rose-700",
+};
 
 export function KpiTile({ def, value, previous, change, series }: {
   def: KpiDef; value: number; previous: number; change: number | null; series: number[];
 }) {
-  const status = statusFor(def, change);
+  const status = statusFor(def, value, change);
   const dir = change === null ? "flat" : change > 0.5 ? "up" : change < -0.5 ? "down" : "flat";
   const positive = change !== null && (def.higherIsBetter ? change > 0 : change < 0);
   const negative = change !== null && (def.higherIsBetter ? change < -0.5 : change > 0.5);
@@ -53,6 +63,11 @@ export function KpiTile({ def, value, previous, change, series }: {
         </span>
         <span className="text-muted-foreground">
           prev {formatKpiValue(previous, def.unit)}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center">
+        <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide", STATUS_BADGE[status])}>
+          {STATUS_LABEL[status]}
         </span>
       </div>
     </div>
