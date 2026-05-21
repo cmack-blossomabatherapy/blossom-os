@@ -103,7 +103,7 @@ export default function OSStateDirector() {
   const { user } = useAuth();
   const { activeState } = useOSRole();
   const [code, setCode] = useState<CodeFilter>("all");
-  const [windowKey, setWindowKey] = useState<WindowKey>("12w");
+  const [windowKey, setWindowKey] = useState<WindowKey>("4w");
 
   const { sessions, loading, hasAnyData, fetchedAt } = useStateOps(activeState, windowKey);
 
