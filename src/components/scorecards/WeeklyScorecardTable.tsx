@@ -85,8 +85,8 @@ export function WeeklyScorecardTable({
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-t border-border/60 bg-secondary/30 text-[10.5px] uppercase tracking-[0.1em] text-muted-foreground">
-              <th className="sticky left-0 z-10 bg-secondary/30 px-2 py-2 w-8" />
-              <th className="sticky left-0 z-10 bg-secondary/30 px-3 py-2 text-left font-semibold">Week of</th>
+              <th className="bg-secondary/30 px-2 py-2 w-8" />
+              <th className="bg-secondary/30 px-3 py-2 text-left font-semibold">Week of</th>
               {COLS.map(c => <th key={c.key} className="px-3 py-2 text-right font-semibold">{c.label}</th>)}
             </tr>
           </thead>
@@ -110,7 +110,7 @@ export function WeeklyScorecardTable({
                       className="h-3.5 w-3.5 cursor-pointer accent-[hsl(265_70%_55%)]"
                     />
                   </td>
-                  <td className={cn("sticky left-0 bg-card px-3 py-2 font-semibold", active && "bg-[hsl(265_70%_55%/0.07)] text-[hsl(265_70%_45%)]")}>
+                  <td className={cn("px-3 py-2 font-semibold", active && "text-[hsl(265_70%_45%)]")}>
                     {s.weekLabel}
                     <span className="ml-1.5 text-[10.5px] font-normal text-muted-foreground">{s.weekOf}</span>
                   </td>
@@ -128,7 +128,7 @@ export function WeeklyScorecardTable({
               return (
                 <tr className="border-t-2 border-[hsl(265_70%_55%/0.4)] bg-[hsl(265_70%_55%/0.05)] text-[11.5px]">
                   <td className="px-2 py-2" />
-                  <td className="sticky left-0 bg-[hsl(265_70%_55%/0.05)] px-3 py-2 font-semibold text-[hsl(265_70%_45%)]">
+                  <td className="px-3 py-2 font-semibold text-[hsl(265_70%_45%)]">
                     Δ {first.weekLabel} → {last.weekLabel}
                   </td>
                   {COLS.map(c => {
