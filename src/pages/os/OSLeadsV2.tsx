@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
