@@ -220,7 +220,7 @@ import {
   Wallet, TrendingUp, ShieldAlert, Target, Workflow, BookOpen, Megaphone, PieChart,
   LifeBuoy, Inbox, AlertTriangle, KanbanSquare, Bot, Brain, Zap, Wand2, Activity,
   Users2, MapPin, UserPlus, MessageSquare, Globe, Hash, Sparkles, Star, HeartHandshake,
-  ShieldCheck,
+  ShieldCheck, UserCheck, Eye, Calendar,
 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -345,6 +345,36 @@ const App = () => (
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
+                  <Route path="/bcba/clients" element={<OSComingSoon title="My Clients" tagline="A focused clinical view of your assigned caseload — designed for BCBA workflows, not generic client lists." icon={UserCheck} features={[
+                    { title: "Caseload at a glance", description: "Every assigned client with auth status, supervision freshness, and risk signals in one view." },
+                    { title: "Clinical timeline", description: "Sessions, assessments, supervision touches, and parent training visits on one timeline per client." },
+                    { title: "Quick clinical actions", description: "Open auth, log supervision, schedule parent training, or flag a concern in one tap." },
+                    { title: "Goals & progress", description: "Active programs, mastery progress, and goal updates surfaced where you actually work." },
+                  ]} />} />
+                  <Route path="/bcba/authorizations" element={<OSComingSoon title="My Authorizations" tagline="Authorization tracking scoped to your caseload — only what you need to act on, nothing else." icon={ShieldCheck} features={[
+                    { title: "Your auths only", description: "Filtered automatically to clients you supervise — no operations-wide noise." },
+                    { title: "PR & expiration alerts", description: "Upcoming progress reports and expiring auths surfaced with days remaining." },
+                    { title: "Hours utilization", description: "Authorized vs delivered hours per client, color-coded for risk." },
+                    { title: "One-click actions", description: "Start a PR, request reauth, or hand off to the auth team without leaving the page." },
+                  ]} />} />
+                  <Route path="/bcba/supervision" element={<OSComingSoon title="My Supervision" tagline="A calm supervision tracker built specifically for BCBA cadence and compliance — not a generic QA view." icon={Eye} features={[
+                    { title: "97155 cadence tracker", description: "See last touchpoint, days since, and required frequency per client at a glance." },
+                    { title: "Overdue alerts", description: "Clients past 21 days flagged with severity, sorted by urgency." },
+                    { title: "Supervision log", description: "Quick log entry with goal links and clinical notes saved to the client timeline." },
+                    { title: "Compliance summary", description: "Monthly cadence overview ready for audits and state director reviews." },
+                  ]} />} />
+                  <Route path="/bcba/parent-training" element={<OSComingSoon title="My Parent Training" tagline="97156 cadence and parent engagement tracking — designed for the BCBA family relationship." icon={HeartHandshake} features={[
+                    { title: "Family cadence", description: "Last 97156 session and days since, per family, with cadence targets." },
+                    { title: "Engagement signal", description: "Parent attendance, cancellation, and follow-through trends in one view." },
+                    { title: "Curriculum tracker", description: "Topics covered, planned next sessions, and family-specific goals." },
+                    { title: "Quick scheduling", description: "Propose a parent training slot directly from any client card." },
+                  ]} />} />
+                  <Route path="/bcba/scheduling" element={<OSComingSoon title="My Scheduling" tagline="A clinician-focused scheduling view — your sessions, your coverage, your gaps." icon={Calendar} features={[
+                    { title: "Personal calendar", description: "All your sessions, supervision blocks, and parent trainings in a calm clinical view." },
+                    { title: "Coverage gaps", description: "Clients with uncovered or at-risk hours surfaced before they become an issue." },
+                    { title: "Cancellation patterns", description: "Repeated cancels on your caseload flagged with severity and trend." },
+                    { title: "Quick rebook", description: "Propose make-ups or hand a gap to the staffing team in one tap." },
+                  ]} />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
