@@ -253,6 +253,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isSchedulingOnly =
     osRole === "scheduling_team" ||
     (roles.includes("scheduling") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // BCBA gets a curated clinical menu focused on their caseload.
+  const isBcbaOnly =
+    osRole === "bcba" ||
+    (roles.includes("bcba") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -300,6 +304,40 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
+  // BCBA curated sections.
+  const bcbaSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard", icon: LayoutDashboard, path: "/bcba", perm: "" },
+        { label: "BCBA Workspace", icon: Workflow, path: "/bcba/workspace", perm: "" },
+        { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+      ],
+    },
+    {
+      title: "Clients & Clinical",
+      items: [
+        { label: "Clients", icon: UserCheck, path: "/bcba/clients", perm: "" },
+        { label: "Authorizations", icon: ShieldCheck, path: "/bcba/authorizations", perm: "" },
+        { label: "Supervision", icon: ClipboardCheck, path: "/bcba/supervision", perm: "" },
+        { label: "Parent Training", icon: HeartHandshake, path: "/bcba/parent-training", perm: "" },
+        { label: "Scheduling", icon: Calendar, path: "/bcba/scheduling", perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/resource-library", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
   const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
@@ -308,6 +346,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       ]
     : isSchedulingOnly
     ? schedulingSections
+    : isBcbaOnly
+    ? bcbaSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
