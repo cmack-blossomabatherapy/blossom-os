@@ -64,6 +64,13 @@ export function LeadDetailDrawer({
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
   const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName);
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Fetch raw monday data blob for richer fields not on the Lead type.
   useEffect(() => {
     if (!lead) { setRaw(null); return; }
@@ -77,14 +84,6 @@ export function LeadDetailDrawer({
   }, [lead?.id]);
 
   if (!lead) return null;
-
-  // Close on Escape
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const str = (k: string) => {
     const v = raw?.[k];
