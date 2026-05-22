@@ -10,12 +10,12 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass,
+  MonitorCog, Compass, Settings2,
 } from "lucide-react";
 import {
-  trainings, getProgress, continueLearning, requiredDue,
+  useAcademy, getProgress, continueLearning, requiredDue,
   systemsTrainings, sharedTrainings, searchTrainings,
-  getJourneyForRole, getJourneyModules,
+  getJourneyForRole, getJourneyModules, ICONS,
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 
@@ -32,14 +32,16 @@ export default function OSTraining() {
   const navigate = useNavigate();
   const { role } = useOSRole();
   const [query, setQuery] = useState("");
+  const { trainings } = useAcademy(); // subscribe to store
 
-  const journey = useMemo(() => getJourneyForRole(role), [role]);
-  const journeyModules = useMemo(() => getJourneyModules(journey), [journey]);
-  const cont = useMemo(continueLearning, []);
-  const required = useMemo(requiredDue, []);
-  const systems = useMemo(systemsTrainings, []);
-  const shared = useMemo(sharedTrainings, []);
-  const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query]);
+  const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
+  const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
+  const cont = useMemo(continueLearning, [trainings]);
+  const required = useMemo(requiredDue, [trainings]);
+  const systems = useMemo(systemsTrainings, [trainings]);
+  const shared = useMemo(sharedTrainings, [trainings]);
+  const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query, trainings]);
+  const JourneyIcon = ICONS[journey.icon] ?? BookOpen;
 
   // Role mastery
   const mastery = useMemo(() => {
@@ -57,6 +59,7 @@ export default function OSTraining() {
 
   // Overall progress (all modules)
   const overall = useMemo(() => {
+    if (!trainings.length) return { avg: 0, requiredDone: 0, requiredTotal: 0, overdue: 0 };
     const all = trainings.map((t) => getProgress(t.id));
     const avg = Math.round(all.reduce((s, p) => s + p.progressPercent, 0) / all.length);
     return {
@@ -65,7 +68,7 @@ export default function OSTraining() {
       requiredTotal: trainings.filter((t) => t.required).length,
       overdue: all.filter((p) => p.status === "overdue").length,
     };
-  }, []);
+  }, [trainings]);
 
   const nextModule = mastery.nextId ? journeyModules.find((m) => m.id === mastery.nextId) : undefined;
 
