@@ -923,6 +923,7 @@ function AuthDrawer({
                         : "90-day warning — kick off reassessment workflow."}
                   </div>
                 )}
+                <ReauthCyclesTimeline cycles={c.reauthCycles ?? []} />
               </>
             ) : (
               <p className="text-sm text-muted-foreground">No expiration date on file yet.</p>
