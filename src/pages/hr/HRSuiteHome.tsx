@@ -268,6 +268,11 @@ export default function HRSuiteHome() {
               label="Open Training Academy"
               onClick={() => navigate("/training")}
             />
+            <QuickAction
+              icon={BookOpen}
+              label="Resource Management"
+              onClick={() => navigate("/hr/resource-management")}
+            />
           </div>
         </section>
 
