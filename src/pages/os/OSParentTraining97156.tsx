@@ -553,16 +553,16 @@ export default function OSParentTraining97156() {
           ) : (
             <div className="space-y-2">
               {filtered.map((it) => (
-                <TrackingCard key={it.auth.id} item={it} onOpen={() => setSelected(it)} />
+                <TrackingCard key={it.auth.id} item={it} onOpen={() => setSelectedId(it.auth.id)} onEscalate={(k) => escalate(it, k)} />
               ))}
             </div>
           )}
         </section>
       </div>
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelectedId(null)}>
         <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-xl">
-          {selected && <DetailDrawer item={selected} onClose={() => setSelected(null)} />}
+          {selected && <DetailDrawer item={selected} onEscalate={(k) => escalate(selected, k)} onClose={() => setSelectedId(null)} />}
         </SheetContent>
       </Sheet>
     </OSShell>
