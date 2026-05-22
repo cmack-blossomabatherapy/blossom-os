@@ -613,7 +613,9 @@ const MISSING_TILES: { key: string; label: string; icon: any; match: (l: Lead) =
   { key: "referral", label: "Referral", icon: UserCheck, match: (l) => l.source === "Referral" && !l.notes },
 ];
 
-function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+function MissingInfoCenter({
+  leads, onOpen, onFilter, active,
+}: { leads: Lead[]; onOpen: (id: string) => void; onFilter: (key: string) => void; active: string | null }) {
   const tiles = useMemo(() => MISSING_TILES.map((t) => ({
     ...t,
     items: leads.filter(t.match).slice(0, 50),
@@ -629,7 +631,13 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {tiles.map((t) => (
-          <div key={t.key} className="rounded-2xl border border-border/70 bg-card p-5">
+          <div
+            key={t.key}
+            className={cn(
+              "rounded-2xl border border-border/70 bg-card p-5",
+              active === t.key && "ring-2 ring-primary/40 border-primary/40",
+            )}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-muted">
                 <t.icon className="h-4 w-4 text-muted-foreground" />
@@ -638,7 +646,12 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
                 <p className="text-sm font-medium">{t.label}</p>
                 <p className="text-xs text-muted-foreground">{t.items.length} families</p>
               </div>
-              <span className="text-2xl font-semibold tabular-nums">{t.items.length}</span>
+              <button
+                onClick={() => onFilter(t.key)}
+                className="text-2xl font-semibold tabular-nums hover:text-primary"
+              >
+                {t.items.length}
+              </button>
             </div>
             <ul className="space-y-1">
               {t.items.slice(0, 3).map((l) => (
@@ -653,12 +666,14 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => toast(`Request ${t.label.toLowerCase()} — coming soon`)}
-              className="mt-3 w-full inline-flex items-center justify-center gap-1 h-8 rounded-xl text-xs text-primary hover:bg-primary/5 transition"
-            >
-              <Send className="h-3.5 w-3.5" /> Request Missing Info
-            </button>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => onFilter(t.key)}
+                className="flex-1 inline-flex items-center justify-center gap-1 h-8 rounded-xl text-xs hover:bg-muted transition"
+              >
+                View {t.items.length} <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -668,7 +683,9 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
 
 /* ─────────────────────── Service Readiness Pipeline ─────────────────────── */
 
-function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+function ServiceReadinessPipeline({
+  leads, onOpen, onFilter, active,
+}: { leads: Lead[]; onOpen: (id: string) => void; onFilter: (key: string) => void; active: string | null }) {
   const stages = useMemo(() => READINESS_STAGES.map((s) => {
     const items = leads.filter(s.match);
     const overdue = items.filter((l) => (l.daysInStage ?? 0) >= 7).length;
@@ -687,7 +704,14 @@ function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (i
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {stages.map((s, i) => (
-          <div key={s.key} className="flex-shrink-0 w-[220px] rounded-2xl border border-border/70 bg-card p-4">
+          <button
+            key={s.key}
+            onClick={() => onFilter(s.key)}
+            className={cn(
+              "text-left flex-shrink-0 w-[220px] rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300",
+              active === s.key && "ring-2 ring-primary/40 border-primary/40",
+            )}
+          >
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{String(i + 1).padStart(2, "0")}</p>
               <CircleDot className="h-3 w-3 text-muted-foreground/60" />
@@ -700,14 +724,11 @@ function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (i
               <div className="flex justify-between"><span>Avg days</span><span className="tabular-nums">{s.avg}</span></div>
             </div>
             {s.items.length > 0 && (
-              <button
-                onClick={() => onOpen(s.items[0].id)}
-                className="mt-3 w-full text-[11px] text-primary hover:underline inline-flex items-center gap-1"
-              >
-                Open first <ArrowUpRight className="h-3 w-3" />
-              </button>
+              <span className="mt-3 w-full text-[11px] text-primary inline-flex items-center gap-1">
+                View {s.items.length} <ArrowUpRight className="h-3 w-3" />
+              </span>
             )}
-          </div>
+          </button>
         ))}
       </div>
     </section>
