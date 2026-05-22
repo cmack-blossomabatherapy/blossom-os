@@ -217,7 +217,7 @@ export default function OSLeadsV2() {
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Track new family inquiries, intake progress, forms, insurance, and VOB readiness.
+                Manage family onboarding and service readiness progression.
               </p>
             </div>
           </div>
@@ -233,8 +233,11 @@ export default function OSLeadsV2() {
             <Button variant="outline" size="sm" asChild>
               <Link to="/admin/data-uploads"><Upload className="mr-1.5 h-4 w-4" /> Import</Link>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => { setView("followup"); toast("Showing follow-up queue"); }}>
+              <PhoneCall className="mr-1.5 h-4 w-4" /> Create Follow-Up
+            </Button>
             <Button size="sm" onClick={() => toast("Add Lead form coming soon")}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Lead
+              <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
             </Button>
           </div>
         </header>
