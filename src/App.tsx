@@ -172,7 +172,6 @@ import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSRBT from "./pages/os/OSRBT";
-import OSCalendar from "./pages/os/OSCalendar";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
@@ -305,18 +304,6 @@ const App = () => (
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
-                  <Route path="/calendar" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
-                    { title: "Multi-layer views", description: "Toggle session, staffing, intake, leadership, and internal calendars in one timeline." },
-                    { title: "Drag & drop scheduling", description: "Reassign sessions, fill open coverage, and resolve conflicts inline." },
-                    { title: "Smart filters", description: "Filter by state, clinic, BCBA, RBT, payer, service line, and authorization status." },
-                    { title: "iCal & Google sync", description: "Two-way sync to personal calendars with role-based visibility." },
-                  ]} />} />
-                  <Route path="/calendar/:roleSlug" element={<OSComingSoon title="Calendar" tagline="A unified calendar across clients, staff, sessions, leadership, and operations." icon={CIcon} features={[
-                    { title: "Role-specific views", description: "Tailored calendar layout for each role's day-to-day workflow." },
-                    { title: "Drag & drop scheduling", description: "Reassign sessions, fill open coverage, and resolve conflicts inline." },
-                    { title: "Smart filters", description: "Filter by state, clinic, BCBA, RBT, payer, service line, and authorization status." },
-                    { title: "iCal & Google sync", description: "Two-way sync to personal calendars with role-based visibility." },
-                  ]} />} />
                   <Route path="/leads" element={<OSComingSoon title="Leads" tagline="Every lead, every source, every touchpoint — fully attributed from first click to first session." icon={Users2} features={[
                     { title: "Unified lead inbox", description: "Web, Facebook, Google Ads, referrals, recruiting — all in one pipeline." },
                     { title: "Source attribution", description: "UTM, call tracking, and referral relationships captured automatically." },
