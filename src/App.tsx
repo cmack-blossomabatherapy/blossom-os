@@ -353,6 +353,7 @@ const App = () => (
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
+                  <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
                   <Route path="/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
                     { title: "Active case board", description: "Every active client with risk flags, staffing status, and parent satisfaction." },
                     { title: "Escalations & alerts", description: "Auto-escalate cases with cancellations, no-shows, or compliance issues." },
