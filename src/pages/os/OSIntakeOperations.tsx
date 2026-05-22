@@ -457,8 +457,12 @@ const QUEUES: { key: QueueKey; label: string; match: (l: Lead) => boolean }[] = 
   { key: "waiting_vob", label: "Waiting on VOB", match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
 ];
 
-function DailyFollowUps({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
-  const [active, setActive] = useState<QueueKey>("due_today");
+function DailyFollowUps({
+  leads, onOpen, initialQueue,
+}: { leads: Lead[]; onOpen: (id: string) => void; initialQueue?: QueueKey | null }) {
+  const [active, setActive] = useState<QueueKey>(initialQueue || "due_today");
+  useEffect(() => { if (initialQueue) setActive(initialQueue); }, [initialQueue]);
+  const modals = useIntakeModals();
   const counts = useMemo(() => {
     const c: Record<QueueKey, number> = {} as any;
     for (const q of QUEUES) c[q.key] = leads.filter(q.match).length;
