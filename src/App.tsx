@@ -207,6 +207,7 @@ import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import OSScheduling from "./pages/os/OSScheduling";
+import OSSchedulingResources from "./pages/os/OSSchedulingResources";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
 import {
