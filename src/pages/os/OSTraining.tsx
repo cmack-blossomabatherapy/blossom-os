@@ -10,12 +10,13 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass, Settings2,
+  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, CalendarCheck, GraduationCap, Zap,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
   systemsTrainings, sharedTrainings, searchTrainings,
   getJourneyForRole, getJourneyModules, ICONS,
+  recentlyAdded, requiredForDepartment,
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 
