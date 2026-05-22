@@ -144,7 +144,7 @@ export default function OSLeadsV2() {
 }
 
 function OSLeadsV2Inner() {
-  const { leads, loading, error, refresh } = useLeads();
+  const { leads, loading, error, refresh, bulkUpdate, moveStage, assignOwner } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -156,6 +156,7 @@ function OSLeadsV2Inner() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // Load profile state + display_name for scoping.
   useEffect(() => {
@@ -206,6 +207,32 @@ function OSLeadsV2Inner() {
 
   // Reset page on filter changes
   useEffect(() => { setPage(0); }, [query, filters, activeKpi, view, activeTab]);
+
+  // Drop selected ids that are no longer visible after filtering.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filtered.map((l) => l.id));
+      const next = new Set<string>();
+      prev.forEach((id) => { if (visible.has(id)) next.add(id); });
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filtered]);
+
+  const clearSelection = () => setSelectedIds(new Set());
+  const toggleOne = (id: string, checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  const togglePage = (ids: string[], checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) ids.forEach((id) => next.add(id));
+      else ids.forEach((id) => next.delete(id));
+      return next;
+    });
 
   // Counts per status tab (computed against scoped, not filtered, so badges stay stable).
   const tabCounts = useMemo(() => {
