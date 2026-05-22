@@ -134,6 +134,14 @@ const emptyFilters = (): FilterState => ({
 });
 
 export default function OSLeadsV2() {
+  return (
+    <IntakeModalsProvider>
+      <OSLeadsV2Inner />
+    </IntakeModalsProvider>
+  );
+}
+
+function OSLeadsV2Inner() {
   const { leads, loading, error, refresh } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
