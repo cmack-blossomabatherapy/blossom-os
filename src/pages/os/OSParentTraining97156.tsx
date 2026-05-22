@@ -5,6 +5,7 @@ import {
   FileSignature, ClipboardCheck, ChevronRight, AlertTriangle,
   CalendarClock, MessageSquare, Brain, ArrowUpRight, CheckCircle2,
   Activity, ListFilter, HeartHandshake, Gauge, PhoneCall,
+  History, Zap, Stethoscope, FolderInput,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
