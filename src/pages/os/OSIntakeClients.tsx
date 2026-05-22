@@ -406,6 +406,36 @@ export default function OSIntakeClients() {
         ) : (
           <>
             <Pulse clients={clients} setFilter={setFilter} active={filterPulse} />
+
+            {/* SOP-aligned client status tabs */}
+            <section>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Client Pipeline</h2>
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 border-b border-border/60">
+                {STAGE_TABS.map((t) => {
+                  const active = filterCstage === t.key;
+                  const count = stageCounts[t.key] ?? 0;
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => setFilter("cstage", t.key === "all" ? null : t.key)}
+                      className={cn(
+                        "flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-t-lg text-sm font-medium transition border-b-2 -mb-px",
+                        active
+                          ? "border-primary text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {t.label}
+                      <span className={cn(
+                        "tabular-nums text-[11px] rounded-full px-1.5 py-0.5",
+                        active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                      )}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             <NeedingAttention clients={visible} onOpen={setOpenId} onAction={setModal} />
 
             <div className="flex items-center gap-2">
@@ -606,9 +636,15 @@ function ClientsList({ clients, onOpen }: { clients: Client[]; onOpen: (id: stri
             {clients.map((c) => {
               const h = handoffStatus(c);
               const fu = needsIntakeFollowUp(c);
+              const a = agingDot(c);
               return (
                 <tr key={c.id} onClick={() => onOpen(c.id)} className="cursor-pointer hover:bg-muted/40 transition">
-                  <Td><span className="font-medium">{c.childName}</span></Td>
+                  <Td>
+                    <span className="inline-flex items-center gap-2">
+                      <span className={cn("h-2 w-2 rounded-full flex-shrink-0", a.tone)} title={a.label} aria-label={a.label} />
+                      <span className="font-medium">{c.childName}</span>
+                    </span>
+                  </Td>
                   <Td className="text-muted-foreground">{c.parentName || "—"}</Td>
                   <Td className="text-muted-foreground">{c.state || "—"}</Td>
                   <Td className="text-muted-foreground">{lifecycleStage(c)}</Td>
