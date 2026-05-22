@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
-  Loader2,
+  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -17,7 +17,9 @@ import { Button } from "@/components/ui/button";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import type { Lead } from "@/data/leads";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { INTAKE_COORDINATORS, type Lead, type LeadStatus } from "@/data/leads";
 import { toast } from "sonner";
 
 type ViewMode = "list" | "pipeline" | "followup";
@@ -142,7 +144,7 @@ export default function OSLeadsV2() {
 }
 
 function OSLeadsV2Inner() {
-  const { leads, loading, error, refresh } = useLeads();
+  const { leads, loading, error, refresh, bulkUpdate, moveStage, assignOwner } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -154,6 +156,7 @@ function OSLeadsV2Inner() {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
 
   // Load profile state + display_name for scoping.
   useEffect(() => {
@@ -204,6 +207,32 @@ function OSLeadsV2Inner() {
 
   // Reset page on filter changes
   useEffect(() => { setPage(0); }, [query, filters, activeKpi, view, activeTab]);
+
+  // Drop selected ids that are no longer visible after filtering.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filtered.map((l) => l.id));
+      const next = new Set<string>();
+      prev.forEach((id) => { if (visible.has(id)) next.add(id); });
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filtered]);
+
+  const clearSelection = () => setSelectedIds(new Set());
+  const toggleOne = (id: string, checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  const togglePage = (ids: string[], checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) ids.forEach((id) => next.add(id));
+      else ids.forEach((id) => next.delete(id));
+      return next;
+    });
 
   // Counts per status tab (computed against scoped, not filtered, so badges stay stable).
   const tabCounts = useMemo(() => {
@@ -426,7 +455,15 @@ function OSLeadsV2Inner() {
         ) : filtered.length === 0 ? (
           <EmptyState onReset={() => { setQuery(""); setFilters(emptyFilters()); setActiveKpi(null); }} />
         ) : view === "list" ? (
-          <ListView leads={filtered} onOpen={setOpenLeadId} page={page} setPage={setPage} />
+          <ListView
+            leads={filtered}
+            onOpen={setOpenLeadId}
+            page={page}
+            setPage={setPage}
+            selectedIds={selectedIds}
+            toggleOne={toggleOne}
+            togglePage={togglePage}
+          />
         ) : view === "pipeline" ? (
           <PipelineView leads={filtered} onOpen={setOpenLeadId} />
         ) : (
@@ -437,6 +474,28 @@ function OSLeadsV2Inner() {
       {openLeadId && (
         <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
       )}
+
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          ids={[...selectedIds]}
+          onClear={clearSelection}
+          onAssign={(owner) => {
+            assignOwner([...selectedIds], owner);
+            toast.success(`Assigned ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"} to ${owner}`);
+            clearSelection();
+          }}
+          onMove={(status) => {
+            moveStage([...selectedIds], status);
+            toast.success(`Moved ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"} → ${status}`);
+            clearSelection();
+          }}
+          onFollowUp={({ due, action }) => {
+            bulkUpdate([...selectedIds], { nextTaskDue: due, nextAction: action });
+            toast.success(`Follow-up scheduled for ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"}`);
+            clearSelection();
+          }}
+        />
+      )}
     </OSShell>
   );
 }
@@ -446,11 +505,23 @@ function OSLeadsV2Inner() {
 const PAGE_SIZE = 50;
 
 function ListView({
-  leads, onOpen, page, setPage,
-}: { leads: Lead[]; onOpen: (id: string) => void; page: number; setPage: (n: number) => void }) {
+  leads, onOpen, page, setPage, selectedIds, toggleOne, togglePage,
+}: {
+  leads: Lead[];
+  onOpen: (id: string) => void;
+  page: number;
+  setPage: (n: number) => void;
+  selectedIds: Set<string>;
+  toggleOne: (id: string, checked: boolean) => void;
+  togglePage: (ids: string[], checked: boolean) => void;
+}) {
   const start = page * PAGE_SIZE;
   const slice = leads.slice(start, start + PAGE_SIZE);
   const pages = Math.ceil(leads.length / PAGE_SIZE);
+  const pageIds = slice.map((l) => l.id);
+  const pageSelectedCount = pageIds.reduce((n, id) => n + (selectedIds.has(id) ? 1 : 0), 0);
+  const headerState: boolean | "indeterminate" =
+    pageSelectedCount === 0 ? false : pageSelectedCount === pageIds.length ? true : "indeterminate";
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
@@ -458,6 +529,13 @@ function ListView({
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
+              <th className="px-3 py-2.5 w-8">
+                <Checkbox
+                  checked={headerState}
+                  onCheckedChange={(v) => togglePage(pageIds, v === true)}
+                  aria-label="Select all on page"
+                />
+              </th>
               {["Patient", "Parent", "State", "Owner", "Status", "Last Contact", "Form", "Insurance", "VOB", "Next Action", ""].map((h) => (
                 <th key={h} className="text-left font-medium px-3 py-2.5 whitespace-nowrap">{h}</th>
               ))}
@@ -468,8 +546,18 @@ function ListView({
               <tr
                 key={l.id}
                 onClick={() => onOpen(l.id)}
-                className="hover:bg-muted/40 cursor-pointer group"
+                className={cn(
+                  "hover:bg-muted/40 cursor-pointer group",
+                  selectedIds.has(l.id) && "bg-primary/5",
+                )}
               >
+                <td className="px-3 py-2.5 w-8" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(l.id)}
+                    onCheckedChange={(v) => toggleOne(l.id, v === true)}
+                    aria-label={`Select ${l.childName}`}
+                  />
+                </td>
                 <td className="px-3 py-2.5 font-medium whitespace-nowrap">
                   {(() => {
                     const a = agingFor(l);
@@ -794,6 +882,166 @@ function AIRail() {
       <p className="px-1 text-[11px] text-muted-foreground leading-relaxed">
         Ask Blossom uses your role and state scope to keep responses focused on leads you own.
       </p>
+    </div>
+  );
+}
+
+/* ─────────────────────── Bulk Action Bar ─────────────────────── */
+
+const BULK_STATUS_OPTIONS: LeadStatus[] = [
+  "New Lead",
+  "In Contact",
+  "Sent Form",
+  "Form Received",
+  "Missing Information",
+  "Sent to VOB",
+  "VOB Completed",
+  "Can't Reach",
+  "Non-qualified Lead",
+];
+
+const FOLLOWUP_PRESETS: { label: string; days: number }[] = [
+  { label: "Tomorrow", days: 1 },
+  { label: "In 3 days", days: 3 },
+  { label: "Next week", days: 7 },
+];
+
+function BulkActionBar({
+  ids,
+  onClear,
+  onAssign,
+  onMove,
+  onFollowUp,
+}: {
+  ids: string[];
+  onClear: () => void;
+  onAssign: (owner: string) => void;
+  onMove: (status: LeadStatus) => void;
+  onFollowUp: (v: { due: string; action: string }) => void;
+}) {
+  const count = ids.length;
+  const [followUpDate, setFollowUpDate] = useState<string>(
+    () => new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
+  );
+  const [followUpNote, setFollowUpNote] = useState<string>("Follow up with family");
+
+  return (
+    <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-border/70 bg-card/95 backdrop-blur px-3 py-2 shadow-xl">
+        <div className="flex items-center gap-2 pr-2 border-r border-border/60">
+          <CheckSquare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium tabular-nums">
+            {count} selected
+          </span>
+        </div>
+
+        {/* Assign */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <UserPlus className="h-4 w-4" /> Assign
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-56 p-1">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-1.5 pb-1">
+              Assign to coordinator
+            </p>
+            {INTAKE_COORDINATORS.map((owner) => (
+              <button
+                key={owner}
+                onClick={() => onAssign(owner)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted"
+              >
+                {owner}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
+        {/* Move status */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <MoveRight className="h-4 w-4" /> Move status
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-56 p-1 max-h-72 overflow-y-auto">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-1.5 pb-1">
+              Move to status
+            </p>
+            {BULK_STATUS_OPTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => onMove(s)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted"
+              >
+                {s}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
+        {/* Send follow-up */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <CalendarClock className="h-4 w-4" /> Send follow-up
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-72 p-3 space-y-2.5">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Schedule follow-up
+            </p>
+            <div className="grid grid-cols-3 gap-1">
+              {FOLLOWUP_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() =>
+                    setFollowUpDate(
+                      new Date(Date.now() + p.days * 86_400_000).toISOString().slice(0, 10),
+                    )
+                  }
+                  className="text-xs rounded-lg border border-border/60 px-2 py-1 hover:bg-muted"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Due date</label>
+              <Input
+                type="date"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Next action</label>
+              <Input
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                placeholder="What needs to happen?"
+              />
+            </div>
+            <Button
+              size="sm"
+              className="w-full"
+              disabled={!followUpDate || !followUpNote.trim()}
+              onClick={() =>
+                onFollowUp({ due: followUpDate, action: followUpNote.trim() })
+              }
+            >
+              Schedule for {count} lead{count === 1 ? "" : "s"}
+            </Button>
+          </PopoverContent>
+        </Popover>
+
+        <div className="pl-1 border-l border-border/60">
+          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1.5">
+            <X className="h-4 w-4" /> Clear
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
