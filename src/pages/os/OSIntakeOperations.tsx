@@ -841,11 +841,11 @@ function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: s
   ];
 
   const prompts = [
-    "Summarize this family",
-    "Find stuck intake cases",
-    "Show missing documents",
-    "What's preventing readiness?",
-    "Draft follow-up message",
+    "Summarize today's intake priorities",
+    "Which families are stuck?",
+    "Find missing documents",
+    "Show overdue follow-ups",
+    "Draft parent follow-up",
   ];
 
   return (
@@ -864,13 +864,13 @@ function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: s
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Try</p>
         <div className="flex flex-wrap gap-1.5">
           {prompts.map((p) => (
-            <button
+            <Link
               key={p}
-              onClick={() => toast(`"${p}" — assistant coming soon`)}
+              to={`/ai/assistant?q=${encodeURIComponent(p)}`}
               className="text-[11px] px-2.5 h-7 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition"
             >
               {p}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
