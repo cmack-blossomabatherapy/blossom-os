@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Users, ShieldCheck, Briefcase, Wallet, MessageSquare, StickyNote,
   CheckCircle2, AlertTriangle, XCircle, HelpCircle, CreditCard, ShieldOff,
-  Send, Mail, Phone, FileText, ArrowRight,
+  Send, Mail, Phone, FileText, ArrowRight, Sparkles, ArrowRightCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,83 @@ const TONE_PILL: Record<Tone, string> = {
   crit: "bg-rose-50 text-rose-700 ring-rose-200/70",
 };
 const TONE_LABEL: Record<Tone, string> = { ok: "Healthy", warn: "Review", crit: "High Risk" };
+
+/**
+ * Decision Recommendation Engine.
+ * Surfaces the operationally-correct next step based on real benefit + payor signals.
+ * Kept rule-based and explainable — Intake should be able to read WHY.
+ */
+function recommendDecision(review: VobReview): {
+  decision: DecisionType;
+  label: string;
+  why: string;
+  tone: Tone;
+} {
+  const oonBlocked = review.innOon === "OON" && review.oonCoverage === "none";
+  const remainingDeductible = Math.max(0, review.deductible - review.deductibleMet);
+  const isMedicaid = /medicaid/i.test(review.payor);
+
+  if (oonBlocked) {
+    return {
+      decision: "no_oon",
+      label: "Cannot service — no OON benefits",
+      why: `${review.payor} is out-of-network with no OON coverage. Notify the family and close the case respectfully.`,
+      tone: "crit",
+    };
+  }
+  if (review.payorCategory === "red") {
+    return {
+      decision: "finance_review",
+      label: "Send to Finance review",
+      why: `${review.payor} has a poor reimbursement history in ${review.state}. Finance should confirm before we commit staffing.`,
+      tone: "crit",
+    };
+  }
+  if (review.status === "needs_info") {
+    return {
+      decision: "needs_info",
+      label: "Request missing information",
+      why: "Benefits or family-side info is incomplete. Send the missing-info request before deciding.",
+      tone: "warn",
+    };
+  }
+  if (remainingDeductible >= 5000 || review.coinsurance >= 30 || review.estFamilyResponsibility >= 4000) {
+    return {
+      decision: "approve_payment_plan",
+      label: "Approve with payment plan",
+      why: `Remaining deductible $${remainingDeductible.toLocaleString()} · coinsurance ${review.coinsurance}% · est. family responsibility $${review.estFamilyResponsibility.toLocaleString()}. Offer a payment plan before service start.`,
+      tone: "warn",
+    };
+  }
+  if (review.operationalRisk === "crit" || review.bcbaAvailability === "none" || review.rbtAvailability === "none") {
+    return {
+      decision: "finance_review",
+      label: "Operational review needed",
+      why: "Staffing or operational risk is too high in this market right now. Loop in State Director before approving.",
+      tone: "warn",
+    };
+  }
+  if (isMedicaid || (review.payorCategory === "green" && remainingDeductible < 2500)) {
+    return {
+      decision: "approve",
+      label: "Approve and move to Clients",
+      why: `${isMedicaid ? "Medicaid pathway is straightforward." : `${review.payor} is a strong payor in ${review.state}.`} Benefits look workable — move this family into Clients.`,
+      tone: "ok",
+    };
+  }
+  return {
+    decision: "approve",
+    label: "Likely approvable",
+    why: "Benefits look workable. Confirm staffing, then approve and hand off to Clients.",
+    tone: "ok",
+  };
+}
+
+const RECO_STYLES: Record<Tone, { wrap: string; chip: string; icon: string }> = {
+  ok:   { wrap: "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white", chip: "bg-emerald-600 text-white",  icon: "text-emerald-600" },
+  warn: { wrap: "border-amber-200 bg-gradient-to-br from-amber-50 to-white",     chip: "bg-amber-500 text-white",    icon: "text-amber-600"   },
+  crit: { wrap: "border-rose-200 bg-gradient-to-br from-rose-50 to-white",       chip: "bg-rose-600 text-white",     icon: "text-rose-600"    },
+};
 
 function Section({
   icon: Icon, title, subtitle, children, accent,
@@ -74,6 +151,8 @@ export function VobWorkspace({ review }: { review: VobReview }) {
   const [note, setNote] = useState("");
   const intel = intelFor(review.payor, review.state);
   const plan = paymentPlanStatus(review);
+  const reco = recommendDecision(review);
+  const recoStyle = RECO_STYLES[reco.tone];
 
   const insuranceTone: Tone =
     review.oonCoverage === "none" && review.innOon === "OON" ? "crit" :
@@ -94,7 +173,35 @@ export function VobWorkspace({ review }: { review: VobReview }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
+      {/* ============ 0. NEXT BEST ACTION ============ */}
+      <section className={cn(
+        "os-rise rounded-2xl border p-4 shadow-[0_18px_40px_-28px_hsl(220_60%_40%/0.25)]",
+        recoStyle.wrap,
+      )}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <span className={cn("grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm", recoStyle.icon)}>
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                What should happen next
+              </p>
+              <p className="mt-0.5 text-[15px] font-semibold tracking-tight">{reco.label}</p>
+              <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground max-w-2xl">{reco.why}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className={cn("shrink-0", recoStyle.chip, "hover:opacity-90")}
+            onClick={() => setDecision(reco.decision)}
+          >
+            Apply recommendation <ArrowRightCircle className="ml-1 h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </section>
+
       {/* ============ 1. CLIENT OVERVIEW ============ */}
       <Section icon={Users} title="Client overview" subtitle="Family, services, and intake context.">
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
@@ -304,6 +411,40 @@ export function VobWorkspace({ review }: { review: VobReview }) {
           ))}
         </ul>
       </Section>
+
+      {/* ============ STICKY ACTION BAR ============ */}
+      <div className="sticky bottom-3 z-20 mt-2 rounded-2xl border border-border/60 bg-card/95 p-2 shadow-[0_18px_40px_-20px_hsl(220_60%_30%/0.25)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Quick decisions
+          </span>
+          <Button size="sm" className="h-8 bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={() => setDecision("approve")}>
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("approve_payment_plan")}>
+            <CreditCard className="mr-1 h-3.5 w-3.5" /> Payment Plan
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("finance_review")}>
+            <Wallet className="mr-1 h-3.5 w-3.5" /> Finance Review
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("needs_info")}>
+            <HelpCircle className="mr-1 h-3.5 w-3.5" /> Missing Info
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-rose-200 text-rose-700 hover:bg-rose-50"
+            onClick={() => setDecision("no_oon")}>
+            <ShieldOff className="mr-1 h-3.5 w-3.5" /> Cannot Service
+          </Button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => toast.success("Moved to Clients", { description: review.parentName })}>
+              Move to Clients <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
