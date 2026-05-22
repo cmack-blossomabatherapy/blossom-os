@@ -259,6 +259,11 @@ export default function OSAuthorizations() {
             <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
               Manage authorization records, progression, expiration readiness, QA coordination, and payer workflows.
             </p>
+            <p className="text-[11px] text-muted-foreground/70 mt-1.5">
+              {live.loading ? "Loading from Monday import…"
+                : live.error ? `Live load failed: ${live.error}`
+                : `Live · ${live.totalRows.toLocaleString()} records from monday_authorizations_raw`}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => toast("Saved views — coming soon")}>
