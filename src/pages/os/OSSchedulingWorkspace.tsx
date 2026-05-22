@@ -9,7 +9,9 @@ import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { type Client } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
-import { getClientStaffingNeeds, suggestStaffingMatches, mockRBTProfiles } from "@/data/staffing";
+import { useCentralReachOps, type ProviderRosterEntry, type CoverageRiskRow } from "@/hooks/useCentralReachOps";
+
+const RBT_TARGET_HOURS = 32;
 
 /* ---------------- helpers ---------------- */
 
