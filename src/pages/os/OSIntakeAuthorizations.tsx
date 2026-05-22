@@ -1200,6 +1200,24 @@ function AuthDrawer({
             >
               <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => { void approveAuth(); }}
+              disabled={c.authStatus === "Approved"}
+            >
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-destructive/30 text-destructive hover:bg-destructive/10"
+              onClick={() => { void denyAuth(); }}
+              disabled={c.authStatus === "Denied"}
+            >
+              <X className="mr-1.5 h-3.5 w-3.5" /> Deny
+            </Button>
             <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
               <FileWarning className="mr-1.5 h-3.5 w-3.5" /> Request Info
             </Button>
