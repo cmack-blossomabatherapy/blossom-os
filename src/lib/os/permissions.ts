@@ -251,7 +251,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   intake_coordinator: {
-    modules: ["dashboard", "leads", "intake", "vob", "clients", "authorizations", "sop", "training", "ai_assistant"],
+    modules: ["dashboard", "intake", "leads", "vob", "clients", "authorizations", "sop", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, leads: VIEW_EDIT, intake: VIEW_EDIT, clients: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },

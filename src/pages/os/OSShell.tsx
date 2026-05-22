@@ -49,11 +49,14 @@ const HOME_EXTRAS: NavEntry[] = [
   { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
 ];
 
+const INTAKE_WORKSPACE_ITEM: NavEntry = {
+  to: "/intake", label: "Intake Workspace", icon: ClipboardList, module: "intake",
+};
+
 const NAV_SECTIONS: NavSection[] = [
   {
     id: "intake_clients", label: "Intake & Clients", items: [
       { to: "/leads", label: "Leads", icon: Users, module: "leads" },
-      { to: "/intake", label: "Intake", icon: ClipboardList, module: "intake" },
       { to: "/vob-decision-center", label: "VOB Decision Center", icon: ShieldCheck, module: "vob" },
       { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
       { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
@@ -205,6 +208,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     } else {
       items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
     }
+    // Intake Workspace lives in Home for everyone who can see intake.
+    items.push(INTAKE_WORKSPACE_ITEM);
     HOME_EXTRAS.forEach((e) => {
       items.push(e);
     });
