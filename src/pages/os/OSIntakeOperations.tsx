@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Send, ShieldCheck, ClipboardList, Sparkles, Phone, Mail,
   MessageSquare, StickyNote, AlertTriangle, ChevronRight, Loader2, RefreshCw,
   CalendarClock, FileWarning, FileCheck2, UserCheck, Users, Activity,
-  ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2,
+  ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2, X, Flag, BookOpen, Clock,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Lead } from "@/data/leads";
+import { IntakeModalsProvider, useIntakeModals } from "@/components/intake/IntakeModals";
 
 /* ─────────────────────── helpers ─────────────────────── */
 
@@ -58,12 +59,31 @@ export default function OSIntakeOperations({
   title = "Leads",
   subtitle = "Manage family onboarding and intake readiness from inquiry to operational handoff.",
 }: OSIntakeOperationsProps = {}) {
+  return (
+    <IntakeModalsProvider>
+      <OSIntakeOperationsInner title={title} subtitle={subtitle} />
+    </IntakeModalsProvider>
+  );
+}
+
+function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperationsProps>) {
   const { leads, loading, error, refresh, updateLead } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modals = useIntakeModals();
+
+  const filterKey = searchParams.get("filter");
+  const stageKey = searchParams.get("stage");
+  const blockerKey = searchParams.get("blocker");
+  const queueKey = searchParams.get("queue");
+  const aiQuery = searchParams.get("q");
+
+  // Apply the AI prompt deep-link by redirecting (handled by NavLink). Nothing to do here.
+  void aiQuery;
 
   useEffect(() => {
     if (!user?.id) return;
@@ -82,16 +102,71 @@ export default function OSIntakeOperations({
     [leads, profileState, displayName, roles],
   );
 
+  // URL-driven filter (KPI, pipeline stage, blocker, queue) applied on top of scope.
+  const filteredByUrl = useMemo(() => {
+    let out = scopedLeads;
+    if (filterKey) {
+      const fn = FILTER_PREDICATES[filterKey];
+      if (fn) out = out.filter(fn);
+    }
+    if (stageKey) {
+      const stage = READINESS_STAGES.find((s) => s.key === stageKey);
+      if (stage) out = out.filter(stage.match);
+    }
+    if (blockerKey) {
+      const tile = MISSING_TILES.find((t) => t.key === blockerKey);
+      if (tile) out = out.filter(tile.match);
+    }
+    if (queueKey) {
+      const q = QUEUES.find((qq) => qq.key === queueKey);
+      if (q) out = out.filter(q.match);
+    }
+    return out;
+  }, [scopedLeads, filterKey, stageKey, blockerKey, queueKey]);
+
+  const activeFilterChip = useMemo(() => {
+    if (filterKey && FILTER_LABELS[filterKey]) return FILTER_LABELS[filterKey];
+    if (stageKey) return READINESS_STAGES.find((s) => s.key === stageKey)?.label;
+    if (blockerKey) return MISSING_TILES.find((t) => t.key === blockerKey)?.label;
+    if (queueKey) return QUEUES.find((q) => q.key === queueKey)?.label;
+    return null;
+  }, [filterKey, stageKey, blockerKey, queueKey]);
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+  };
+
   const visibleLeads = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return scopedLeads;
-    return scopedLeads.filter((l) =>
+    if (!q) return filteredByUrl;
+    return filteredByUrl.filter((l) =>
       [l.childName, l.parentName, l.phone, l.email, l.primaryInsurance, l.state]
         .map((s) => String(s ?? "").toLowerCase())
         .join(" ")
         .includes(q),
     );
-  }, [scopedLeads, query]);
+  }, [filteredByUrl, query]);
+
+  const setFilter = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("filter", key);
+    setSearchParams(next, { replace: false });
+  };
+  const setStage = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("stage", key);
+    setSearchParams(next, { replace: false });
+  };
+  const setBlocker = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("blocker", key);
+    setSearchParams(next, { replace: false });
+  };
 
   return (
     <OSShell rightRail={<AskBlossomIntakeRail leads={visibleLeads} onOpen={setOpenLeadId} />}>
@@ -106,13 +181,19 @@ export default function OSIntakeOperations({
             <Button variant="ghost" size="sm" asChild>
               <Link to="/vob-decision-center"><ShieldCheck className="mr-1.5 h-4 w-4" /> Open VOB Center</Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("Send Intake Packet — pick a family first")}>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/sop?category=intake"><BookOpen className="mr-1.5 h-4 w-4" /> Open SOPs</Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "sendPacket" })}>
               <Send className="mr-1.5 h-4 w-4" /> Send Intake Packet
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("Follow-up created")}>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "followUp" })}>
               <CalendarClock className="mr-1.5 h-4 w-4" /> Create Follow-Up
             </Button>
-            <Button size="sm" onClick={() => toast("Add Inquiry — coming soon")}>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "note" })}>
+              <StickyNote className="mr-1.5 h-4 w-4" /> Add Note
+            </Button>
+            <Button size="sm" onClick={() => modals.open({ kind: "addLead" })}>
               <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
             </Button>
           </div>
@@ -129,6 +210,19 @@ export default function OSIntakeOperations({
           />
         </div>
 
+        {activeFilterChip && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Filtered by</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 h-7 font-medium">
+              {activeFilterChip}
+              <span className="text-primary/70 tabular-nums">· {filteredByUrl.length}</span>
+              <button onClick={clearFilters} className="ml-0.5 rounded-full hover:bg-primary/10" aria-label="Clear filter">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5" /> {error}
@@ -142,16 +236,16 @@ export default function OSIntakeOperations({
           </div>
         ) : (
           <>
-            <IntakePulse leads={visibleLeads} onRefresh={refresh} loading={loading} />
+            <IntakePulse leads={scopedLeads} onRefresh={refresh} loading={loading} onFilter={setFilter} active={filterKey} />
             <FamiliesNeedingAction
               leads={visibleLeads}
               onOpen={setOpenLeadId}
               onMarkPacketSent={(id) => { updateLead(id, { formStatus: "Sent" }); toast.success("Intake packet marked sent"); }}
             />
-            <DailyFollowUps leads={visibleLeads} onOpen={setOpenLeadId} />
+            <DailyFollowUps leads={scopedLeads} onOpen={setOpenLeadId} initialQueue={queueKey as QueueKey | null} />
             <AssessmentCoordination leads={visibleLeads} onOpen={setOpenLeadId} />
-            <MissingInfoCenter leads={visibleLeads} onOpen={setOpenLeadId} />
-            <ServiceReadinessPipeline leads={visibleLeads} onOpen={setOpenLeadId} />
+            <MissingInfoCenter leads={scopedLeads} onOpen={setOpenLeadId} onFilter={setBlocker} active={blockerKey} />
+            <ServiceReadinessPipeline leads={scopedLeads} onOpen={setOpenLeadId} onFilter={setStage} active={stageKey} />
             <RecentActivityFeed leads={visibleLeads} onOpen={setOpenLeadId} />
           </>
         )}
@@ -164,9 +258,33 @@ export default function OSIntakeOperations({
   );
 }
 
+/* ─────────────────────── KPI filter predicates ─────────────────────── */
+
+const FILTER_PREDICATES: Record<string, (l: Lead) => boolean> = {
+  new_inquiries: (l) => l.status === "New Lead",
+  awaiting_contact: (l) => getReadinessStatus(l) === "Awaiting Contact",
+  missing_info: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information",
+  vob_pending: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent",
+  assessment: (l) => l.status === "Getting DX" || l.status === "Needs DX",
+  ready: (l) => getReadinessStatus(l) === "Operationally Ready",
+};
+const FILTER_LABELS: Record<string, string> = {
+  new_inquiries: "New Inquiries",
+  awaiting_contact: "Awaiting Contact",
+  missing_info: "Missing Information",
+  vob_pending: "VOB Pending",
+  assessment: "Assessment Coordination",
+  ready: "Ready for Next Step",
+};
+
 /* ─────────────────────── Intake Pulse ─────────────────────── */
 
-function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: () => void; loading: boolean }) {
+function IntakePulse({
+  leads, onRefresh, loading, onFilter, active,
+}: {
+  leads: Lead[]; onRefresh: () => void; loading: boolean;
+  onFilter: (key: string) => void; active: string | null;
+}) {
   const pulse = useMemo(() => {
     const c = {
       new: 0, awaiting_contact: 0, missing_info: 0, vob_pending: 0,
@@ -185,12 +303,12 @@ function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: 
   }, [leads]);
 
   const pills = [
-    { label: "New Inquiries", value: pulse.new },
-    { label: "Awaiting Contact", value: pulse.awaiting_contact },
-    { label: "Missing Information", value: pulse.missing_info },
-    { label: "VOB Pending", value: pulse.vob_pending },
-    { label: "Assessment Coord.", value: pulse.assessment },
-    { label: "Ready for Next Step", value: pulse.ready, accent: true },
+    { key: "new_inquiries", label: "New Inquiries", value: pulse.new },
+    { key: "awaiting_contact", label: "Awaiting Contact", value: pulse.awaiting_contact },
+    { key: "missing_info", label: "Missing Information", value: pulse.missing_info },
+    { key: "vob_pending", label: "VOB Pending", value: pulse.vob_pending },
+    { key: "assessment", label: "Assessment Coord.", value: pulse.assessment },
+    { key: "ready", label: "Ready for Next Step", value: pulse.ready, accent: true },
   ];
 
   return (
@@ -203,18 +321,20 @@ function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: 
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {pills.map((p) => (
-          <div
+          <button
             key={p.label}
+            onClick={() => onFilter(p.key)}
             className={cn(
-              "rounded-2xl border border-border/70 bg-card p-4",
+              "text-left rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300",
               p.accent && "bg-primary/[0.04] border-primary/20",
+              active === p.key && "ring-2 ring-primary/40 border-primary/40",
             )}
           >
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
             <p className={cn("mt-1.5 text-2xl font-semibold tabular-nums", p.accent && "text-primary")}>
               {p.value.toLocaleString()}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </section>
@@ -226,6 +346,7 @@ function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: 
 function FamiliesNeedingAction({
   leads, onOpen, onMarkPacketSent,
 }: { leads: Lead[]; onOpen: (id: string) => void; onMarkPacketSent: (id: string) => void }) {
+  const modals = useIntakeModals();
   const actionable = useMemo(() => {
     return leads
       .map((l) => ({ lead: l, blocker: primaryBlocker(l), urgency: getUrgency(l) }))
@@ -287,10 +408,11 @@ function FamiliesNeedingAction({
 
               <div className="mt-4 flex flex-wrap items-center gap-1">
                 <QuickAction icon={Phone} label="Call" onClick={() => window.location.href = `tel:${lead.phone}`} disabled={!lead.phone} />
-                <QuickAction icon={MessageSquare} label="Text" onClick={() => toast("SMS coming soon")} />
-                <QuickAction icon={Mail} label="Email" onClick={() => lead.email && (window.location.href = `mailto:${lead.email}`)} disabled={!lead.email} />
+                <QuickAction icon={MessageSquare} label="Text" onClick={() => modals.open({ kind: "comm", channel: "text", lead })} />
+                <QuickAction icon={Mail} label="Email" onClick={() => modals.open({ kind: "comm", channel: "email", lead })} disabled={!lead.email} />
                 <QuickAction icon={Send} label="Packet" onClick={() => onMarkPacketSent(lead.id)} />
-                <QuickAction icon={StickyNote} label="Note" onClick={() => toast("Add note")} />
+                <QuickAction icon={StickyNote} label="Note" onClick={() => modals.open({ kind: "note", lead })} />
+                <QuickAction icon={Flag} label="Escalate" onClick={() => modals.open({ kind: "escalate", lead })} />
                 <button
                   onClick={() => onOpen(lead.id)}
                   className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
@@ -337,8 +459,12 @@ const QUEUES: { key: QueueKey; label: string; match: (l: Lead) => boolean }[] = 
   { key: "waiting_vob", label: "Waiting on VOB", match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
 ];
 
-function DailyFollowUps({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
-  const [active, setActive] = useState<QueueKey>("due_today");
+function DailyFollowUps({
+  leads, onOpen, initialQueue,
+}: { leads: Lead[]; onOpen: (id: string) => void; initialQueue?: QueueKey | null }) {
+  const [active, setActive] = useState<QueueKey>(initialQueue || "due_today");
+  useEffect(() => { if (initialQueue) setActive(initialQueue); }, [initialQueue]);
+  const modals = useIntakeModals();
   const counts = useMemo(() => {
     const c: Record<QueueKey, number> = {} as any;
     for (const q of QUEUES) c[q.key] = leads.filter(q.match).length;
@@ -397,9 +523,10 @@ function DailyFollowUps({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string)
                 </span>
                 <div className="hidden md:flex items-center gap-0.5">
                   <IconBtn icon={Phone} onClick={(e) => { e.stopPropagation(); if (l.phone) window.location.href = `tel:${l.phone}`; }} />
-                  <IconBtn icon={MessageSquare} onClick={(e) => { e.stopPropagation(); toast("SMS"); }} />
-                  <IconBtn icon={Mail} onClick={(e) => { e.stopPropagation(); if (l.email) window.location.href = `mailto:${l.email}`; }} />
-                  <IconBtn icon={StickyNote} onClick={(e) => { e.stopPropagation(); toast("Note"); }} />
+                  <IconBtn icon={MessageSquare} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "text", lead: l }); }} />
+                  <IconBtn icon={Mail} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "email", lead: l }); }} />
+                  <IconBtn icon={StickyNote} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "note", lead: l }); }} />
+                  <IconBtn icon={Clock} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "snooze", lead: l, followUpLabel: activeQueue.label }); }} />
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </li>
@@ -425,6 +552,7 @@ function IconBtn({ icon: Icon, onClick }: { icon: any; onClick: (e: React.MouseE
 /* ─────────────────────── Assessment Coordination ─────────────────────── */
 
 function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+  const modals = useIntakeModals();
   const columns = useMemo(() => {
     const dx = leads.filter((l) => l.status === "Needs DX" || l.status === "Getting DX");
     return [
@@ -471,6 +599,13 @@ function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id:
                 <li className="text-[11px] text-muted-foreground/70 px-2">None</li>
               )}
             </ul>
+            {col.items[0] && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                <button onClick={() => modals.open({ kind: "schedule", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Schedule</button>
+                <button onClick={() => modals.open({ kind: "assignBcba", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Assign BCBA</button>
+                <button onClick={() => modals.open({ kind: "comm", channel: "email", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Message</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -489,7 +624,9 @@ const MISSING_TILES: { key: string; label: string; icon: any; match: (l: Lead) =
   { key: "referral", label: "Referral", icon: UserCheck, match: (l) => l.source === "Referral" && !l.notes },
 ];
 
-function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+function MissingInfoCenter({
+  leads, onOpen, onFilter, active,
+}: { leads: Lead[]; onOpen: (id: string) => void; onFilter: (key: string) => void; active: string | null }) {
   const tiles = useMemo(() => MISSING_TILES.map((t) => ({
     ...t,
     items: leads.filter(t.match).slice(0, 50),
@@ -505,7 +642,13 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {tiles.map((t) => (
-          <div key={t.key} className="rounded-2xl border border-border/70 bg-card p-5">
+          <div
+            key={t.key}
+            className={cn(
+              "rounded-2xl border border-border/70 bg-card p-5",
+              active === t.key && "ring-2 ring-primary/40 border-primary/40",
+            )}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="grid place-items-center h-9 w-9 rounded-xl bg-muted">
                 <t.icon className="h-4 w-4 text-muted-foreground" />
@@ -514,7 +657,12 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
                 <p className="text-sm font-medium">{t.label}</p>
                 <p className="text-xs text-muted-foreground">{t.items.length} families</p>
               </div>
-              <span className="text-2xl font-semibold tabular-nums">{t.items.length}</span>
+              <button
+                onClick={() => onFilter(t.key)}
+                className="text-2xl font-semibold tabular-nums hover:text-primary"
+              >
+                {t.items.length}
+              </button>
             </div>
             <ul className="space-y-1">
               {t.items.slice(0, 3).map((l) => (
@@ -529,12 +677,14 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => toast(`Request ${t.label.toLowerCase()} — coming soon`)}
-              className="mt-3 w-full inline-flex items-center justify-center gap-1 h-8 rounded-xl text-xs text-primary hover:bg-primary/5 transition"
-            >
-              <Send className="h-3.5 w-3.5" /> Request Missing Info
-            </button>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => onFilter(t.key)}
+                className="flex-1 inline-flex items-center justify-center gap-1 h-8 rounded-xl text-xs hover:bg-muted transition"
+              >
+                View {t.items.length} <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -544,7 +694,9 @@ function MissingInfoCenter({ leads, onOpen }: { leads: Lead[]; onOpen: (id: stri
 
 /* ─────────────────────── Service Readiness Pipeline ─────────────────────── */
 
-function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+function ServiceReadinessPipeline({
+  leads, onOpen, onFilter, active,
+}: { leads: Lead[]; onOpen: (id: string) => void; onFilter: (key: string) => void; active: string | null }) {
   const stages = useMemo(() => READINESS_STAGES.map((s) => {
     const items = leads.filter(s.match);
     const overdue = items.filter((l) => (l.daysInStage ?? 0) >= 7).length;
@@ -563,7 +715,14 @@ function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (i
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {stages.map((s, i) => (
-          <div key={s.key} className="flex-shrink-0 w-[220px] rounded-2xl border border-border/70 bg-card p-4">
+          <button
+            key={s.key}
+            onClick={() => onFilter(s.key)}
+            className={cn(
+              "text-left flex-shrink-0 w-[220px] rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300",
+              active === s.key && "ring-2 ring-primary/40 border-primary/40",
+            )}
+          >
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{String(i + 1).padStart(2, "0")}</p>
               <CircleDot className="h-3 w-3 text-muted-foreground/60" />
@@ -576,14 +735,11 @@ function ServiceReadinessPipeline({ leads, onOpen }: { leads: Lead[]; onOpen: (i
               <div className="flex justify-between"><span>Avg days</span><span className="tabular-nums">{s.avg}</span></div>
             </div>
             {s.items.length > 0 && (
-              <button
-                onClick={() => onOpen(s.items[0].id)}
-                className="mt-3 w-full text-[11px] text-primary hover:underline inline-flex items-center gap-1"
-              >
-                Open first <ArrowUpRight className="h-3 w-3" />
-              </button>
+              <span className="mt-3 w-full text-[11px] text-primary inline-flex items-center gap-1">
+                View {s.items.length} <ArrowUpRight className="h-3 w-3" />
+              </span>
             )}
-          </div>
+          </button>
         ))}
       </div>
     </section>
@@ -685,11 +841,11 @@ function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: s
   ];
 
   const prompts = [
-    "Summarize this family",
-    "Find stuck intake cases",
-    "Show missing documents",
-    "What's preventing readiness?",
-    "Draft follow-up message",
+    "Summarize today's intake priorities",
+    "Which families are stuck?",
+    "Find missing documents",
+    "Show overdue follow-ups",
+    "Draft parent follow-up",
   ];
 
   return (
@@ -708,13 +864,13 @@ function AskBlossomIntakeRail({ leads, onOpen }: { leads: Lead[]; onOpen: (id: s
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Try</p>
         <div className="flex flex-wrap gap-1.5">
           {prompts.map((p) => (
-            <button
+            <Link
               key={p}
-              onClick={() => toast(`"${p}" — assistant coming soon`)}
+              to={`/ai/assistant?q=${encodeURIComponent(p)}`}
               className="text-[11px] px-2.5 h-7 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition"
             >
               {p}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
