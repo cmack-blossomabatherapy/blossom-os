@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
-import { mockClients, type Client } from "@/data/clients";
+import { type Client } from "@/data/clients";
+import { useClients } from "@/contexts/ClientsContext";
 
 /* ============================ helpers ============================ */
 
@@ -82,16 +83,17 @@ function nextActionOf(b: Bucket): { label: string; to: string } {
 /* ============================ page ============================ */
 
 export default function OSSchedulingTeam() {
+  const { clients } = useClients();
   const enriched = useMemo(() => {
-    return mockClients.map((c) => ({ c, b: bucketOf(c) })).filter((x) => x.b !== null) as { c: Client; b: Bucket }[];
-  }, []);
+    return clients.map((c) => ({ c, b: bucketOf(c) })).filter((x) => x.b !== null) as { c: Client; b: Bucket }[];
+  }, [clients]);
 
   const counts = useMemo(() => {
     const k = { needs_rbt: 0, pending_start: 0, ready_to_schedule: 0, coverage_risk: 0, active: 0, on_pause: 0 };
     for (const { b } of enriched) (k as any)[b]++;
-    for (const c of mockClients) if (c.activeServiceStatus === "Services on Pause") k.on_pause++;
+    for (const c of clients) if (c.activeServiceStatus === "Services on Pause") k.on_pause++;
     return k;
-  }, [enriched]);
+  }, [enriched, clients]);
 
   const priorities = useMemo(() => {
     const order: Bucket[] = ["needs_rbt", "pending_start", "ready_to_schedule", "coverage_risk"];
@@ -102,27 +104,27 @@ export default function OSSchedulingTeam() {
 
   const gaCount = enriched.filter((x) => x.c.state === "GA").length;
   const nonGaCount = enriched.length - gaCount;
-  const blockedNoAvailability = mockClients.filter((c) => c.blockers?.some((b) => /availability/i.test(b))).length;
-  const waitingBcba = mockClients.filter((c) => !c.bcba && c.authStatus === "Approved").length;
-  const conflictCount = mockClients.filter((c) => c.blockers?.some((b) => /conflict|overlap/i.test(b))).length;
-  const rbtsAvailable = 7; // operational placeholder — no RBT roster in mock yet
+  const blockedNoAvailability = clients.filter((c) => c.blockers?.some((b) => /availability/i.test(b))).length;
+  const waitingBcba = clients.filter((c) => !c.bcba && c.authStatus === "Approved").length;
+  const conflictCount = clients.filter((c) => c.blockers?.some((b) => /conflict|overlap/i.test(b))).length;
+  const rbtsAvailable = 7; // operational placeholder — no RBT roster in live data yet
 
   const upcomingStarts = useMemo(() => {
-    return mockClients
+    return clients
       .filter((c) => c.startDate && (daysFromNow(c.startDate) ?? -1) >= 0 && (daysFromNow(c.startDate) ?? 99) <= 21)
       .sort((a, b) => (daysFromNow(a.startDate!) ?? 0) - (daysFromNow(b.startDate!) ?? 0))
       .slice(0, 5);
-  }, []);
+  }, [clients]);
 
   const coverageIssues = useMemo(() => {
-    return mockClients
+    return clients
       .filter((c) => c.stage === "Active" && (
         c.activeServiceStatus === "Services on Pause" ||
         c.activeServiceStatus === "Flaked" ||
         (c.blockers && c.blockers.length > 0)
       ))
       .slice(0, 5);
-  }, []);
+  }, [clients]);
 
   return (
     <OSShell>
