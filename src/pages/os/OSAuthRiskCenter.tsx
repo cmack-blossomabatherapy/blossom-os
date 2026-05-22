@@ -730,7 +730,9 @@ function RiskDrawer({ riskId, all, onClose }: { riskId: string; all: RiskItem[];
         {/* Quick actions */}
         <div className="px-6 py-3 border-b border-border/60 flex flex-wrap gap-2">
           <Button size="sm" variant="outline" asChild>
-            <Link to="/authorizations"><ArrowUpRight className="mr-1.5 h-3.5 w-3.5" /> Open Auth</Link>
+            <Link to={`/authorizations?authId=${encodeURIComponent(a.id)}`}>
+              <ArrowUpRight className="mr-1.5 h-3.5 w-3.5" /> Open Auth
+            </Link>
           </Button>
           <Button size="sm" variant="outline" onClick={() => toast(`Escalated to ${sd}`)}>
             <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
