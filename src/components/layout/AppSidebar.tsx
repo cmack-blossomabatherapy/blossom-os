@@ -14,6 +14,7 @@ import blossomMark from "@/assets/blossom-logo.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 import { canAccessAdminHub } from "@/lib/adminAccess";
@@ -213,6 +214,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
+  const { role: osRole } = useOSRole();
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
   const DEFAULT_OPEN_SECTIONS = ["Dashboards", "Academy", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
@@ -246,7 +248,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
   const showOperations = !isExecOnly && roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
   // Scheduling Team gets a curated operational menu focused on staffing & scheduling.
-  const isSchedulingOnly = roles.includes("scheduling") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager");
+  // Match either the auth role or the demo OS role override (super admin impersonation).
+  const isSchedulingOnly =
+    osRole === "scheduling_team" ||
+    (roles.includes("scheduling") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
