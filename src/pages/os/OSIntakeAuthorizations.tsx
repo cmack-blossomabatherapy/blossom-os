@@ -262,6 +262,13 @@ type AuthModal =
   | { kind: "messageTeam"; client: Client; team?: string }
   | { kind: "requestInfo"; client: Client };
 
+const ESCALATION_LABELS: Record<string, string> = {
+  auth: "Authorization Team",
+  qa: "QA Team",
+  ops: "Operations Leadership",
+  state: "State Director",
+};
+
 function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: () => void }) {
   const { updateClient, appendTimeline, appendAutomation } = useClients();
   const [text, setText] = useState("");
