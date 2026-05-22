@@ -312,7 +312,13 @@ export default function OSAuthorizations() {
         <AuthRecords auths={visible} density={density} onOpen={setOpenId} />
       </div>
 
-      {openId && <AuthDrawer authId={openId} onClose={closeDrawer} />}
+      {openId && (
+        <AuthDrawer
+          auth={live.items.find((x) => x.id === openId) ?? null}
+          liveBcba={live.bcbaById.get(openId) ?? null}
+          onClose={closeDrawer}
+        />
+      )}
     </OSShell>
   );
 }
@@ -556,10 +562,10 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 }
 
 /* ------------------------------ drawer ------------------------------ */
-function AuthDrawer({ authId, onClose }: { authId: string; onClose: () => void }) {
-  const a = useMemo(() => mockAuths.find(x => x.id === authId), [authId]);
-  if (!a) return null;
-  const e = enrich(a);
+function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+  if (!auth) return null;
+  const a = auth;
+  const e = enrich(a, liveBcba);
 
   return (
     <div className="fixed inset-0 z-50 flex">
