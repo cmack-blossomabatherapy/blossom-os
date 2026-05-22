@@ -646,22 +646,9 @@ function AuthDrawer({ authId, onClose }: { authId: string; onClose: () => void }
           </DrawerSection>
 
           {/* 7 — Ask Blossom AI */}
+          {/* 7 — Ask Blossom AI */}
           <DrawerSection title="Ask Blossom AI" icon={Sparkles}>
-            <div className="space-y-2">
-              {[
-                "Summarize this authorization.",
-                "Why is this auth at risk?",
-                "What is blocking approval?",
-                "What should happen next?",
-                "What documentation is missing?",
-              ].map((p) => (
-                <button key={p} onClick={() => toast(`"${p}" — assistant coming soon`)}
-                  className="w-full text-left rounded-xl border border-border/60 bg-muted/40 hover:bg-muted px-3 py-2 text-xs text-foreground/80 transition flex items-center justify-between gap-2">
-                  <span>{p}</span>
-                  <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
+            <AskBlossomAuthPanel a={e} />
           </DrawerSection>
         </div>
       </aside>
