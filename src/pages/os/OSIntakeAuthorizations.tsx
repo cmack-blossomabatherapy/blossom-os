@@ -194,7 +194,11 @@ function hasMissingDocs(c: Client): boolean {
 }
 
 function isFlaked(c: Client): boolean {
-  return Boolean(c.blockers?.some((b) => /flake|no\s*show|unreachable/i.test(b)));
+  // Drive off the structured flag first; fall back to stage and legacy blocker text
+  // so older records without the flag still surface in the Flaked Client queue.
+  if (c.clientUnreachable) return true;
+  if (c.stage === "Flaked" || c.activeServiceStatus === "Flaked") return true;
+  return Boolean(c.blockers?.some((b) => /flake|no\s*show|unreachable|cannot reach|can't reach/i.test(b)));
 }
 
 const STATUS_TABS: { key: StatusTabKey; label: string; match: (c: Client) => boolean }[] = [
@@ -226,6 +230,17 @@ const STATUS_TABS: { key: StatusTabKey; label: string; match: (c: Client) => boo
 type NBA = { label: string; tone: "warn" | "info" | "ok"; why: string };
 function nextBestAction(c: Client): NBA {
   const d = daysUntilExpiration(c);
+  if (isFlaked(c)) {
+    const reason = c.clientUnreachableReason?.trim();
+    const since = c.clientUnreachableSince ? ` since ${c.clientUnreachableSince}` : "";
+    return {
+      label: "Re-engage family or close out",
+      tone: "warn",
+      why: reason
+        ? `Client marked unreachable${since} — ${reason}. Attempt re-engagement or move to discharge.`
+        : `Client marked unreachable${since} — attempt re-engagement or move to discharge.`,
+    };
+  }
   if (c.authStatus === "Denied") {
     return { label: "Review denial & resubmit", tone: "warn", why: "Payor returned a denial — review reason and prepare resubmission." };
   }
