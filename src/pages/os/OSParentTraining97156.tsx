@@ -78,6 +78,10 @@ interface PT97156Item {
   nextAction: string;
   lastActivity: string;
   smartFlags: { label: string; tone: Tone }[];
+  auditLog: AuditEntry[];
+  automationOverlay: string[];
+  escalatedTo?: string;
+  escalatedAt?: string;
 }
 
 /** Deterministic small hash for derived signals (keeps view stable
