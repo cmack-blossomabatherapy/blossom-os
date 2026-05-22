@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { scopeLeadsForUser } from "@/lib/leads/scoping";
 import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
+import { IntakeModalsProvider, useIntakeModals } from "@/components/intake/IntakeModals";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
