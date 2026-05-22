@@ -193,7 +193,7 @@ export default function OSTraining() {
               <div className="flex items-start justify-between gap-6">
                 <div className="flex min-w-0 items-start gap-4">
                   <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl", `os-tone-${journey.tone}`)}>
-                    <journey.icon className="h-5 w-5" />
+                    <JourneyIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
                     <h3 className="text-[18px] font-semibold tracking-tight">{journey.title}</h3>
