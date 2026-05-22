@@ -219,7 +219,11 @@ export default function OSAuthorizations() {
     }
   };
 
-  const enriched = useMemo(() => mockAuths.map(enrich), []);
+  const live = useLiveAuthorizations();
+  const enriched = useMemo(
+    () => live.items.map((a) => enrich(a, live.bcbaById.get(a.id))),
+    [live.items, live.bcbaById],
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
