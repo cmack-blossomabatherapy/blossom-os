@@ -303,9 +303,20 @@ function QueueCard({ client, bucket, active, onSelect }: { client: Client; bucke
   );
 }
 
-function ActiveWorkflow({ client }: { client: Client }) {
-  const need = useMemo(() => getClientStaffingNeeds([client])[0] ?? null, [client]);
-  const suggestions = useMemo(() => (need ? suggestStaffingMatches(need).slice(0, 4) : []), [need]);
+function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: ProviderRosterEntry[] }) {
+  // Real CR-derived suggestions: same-state RBTs with capacity remaining vs a 32h/wk soft cap.
+  const suggestions = useMemo(() => {
+    const inState = rbtRoster.filter((r) => !client.state || !r.state || r.state === client.state);
+    return inState
+      .map((r) => ({
+        rbt: r,
+        capacityRemaining: Math.max(0, Math.round(RBT_TARGET_HOURS - r.hoursLast7d)),
+        utilization: Math.min(100, Math.round((r.hoursLast7d / RBT_TARGET_HOURS) * 100)),
+      }))
+      .filter((s) => s.capacityRemaining > 0)
+      .sort((a, b) => b.capacityRemaining - a.capacityRemaining)
+      .slice(0, 4);
+  }, [rbtRoster, client.state]);
 
   const readiness = [
     { label: "Authorization approved", ok: client.authStatus === "Approved" },
@@ -362,30 +373,29 @@ function ActiveWorkflow({ client }: { client: Client }) {
           <span className="text-xs text-muted-foreground">{suggestions.length} candidates</span>
         </div>
         {suggestions.length === 0 ? (
-          <EmptyState label="No available RBT matches in this region right now." />
+          <EmptyState label={`No RBTs with remaining capacity${client.state ? ` in ${client.state}` : ""} based on the last 7 days.`} />
         ) : (
           <div className="space-y-2">
-            {suggestions.map((m, idx) => {
-              const rbt = mockRBTProfiles.find((r) => r.id === m.rbtId);
-              if (!rbt) return null;
-              const util = Math.round((rbt.assignedHours / Math.max(rbt.capacityHours, 1)) * 100);
+            {suggestions.map(({ rbt, capacityRemaining, utilization }, idx) => {
               return (
-                <div key={m.rbtId} className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div key={rbt.name} className="rounded-xl border border-border/60 bg-muted/30 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-foreground">{rbt.name}</p>
                         {idx === 0 && <span className="text-[10px] font-medium uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Top match</span>}
-                        <span className="text-[10px] text-muted-foreground">{m.score}% fit</span>
+                        <span className="text-[10px] text-muted-foreground">{capacityRemaining}h open</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {rbt.clinic} · {m.distanceMiles}mi · {rbt.experience} · {m.capacityRemaining}h open
+                        {rbt.state ?? "—"} · {rbt.hoursLast7d.toFixed(1)}h last 7d · {rbt.distinctClients} clients · {rbt.sessionsLast30d} sessions/30d
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
-                        {m.availabilityOverlap.map((slot) => (
-                          <span key={slot} className="text-[10px] capitalize bg-success/10 text-success px-1.5 py-0.5 rounded">{slot}</span>
-                        ))}
-                        <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/60">Util {util}%</span>
+                        <span className="text-[10px] text-success bg-success/10 px-1.5 py-0.5 rounded">Util {utilization}%</span>
+                        {rbt.lastSessionDate && (
+                          <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/60">
+                            Last seen {rbt.lastSessionDate}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
