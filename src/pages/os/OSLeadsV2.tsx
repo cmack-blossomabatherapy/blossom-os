@@ -885,3 +885,163 @@ function AIRail() {
     </div>
   );
 }
+
+/* ─────────────────────── Bulk Action Bar ─────────────────────── */
+
+const BULK_STATUS_OPTIONS: LeadStatus[] = [
+  "New Lead",
+  "In Contact",
+  "Sent Form",
+  "Form Received",
+  "Missing Information",
+  "Sent to VOB",
+  "VOB Completed",
+  "Can't Reach",
+  "Non-qualified Lead",
+];
+
+const FOLLOWUP_PRESETS: { label: string; days: number }[] = [
+  { label: "Tomorrow", days: 1 },
+  { label: "In 3 days", days: 3 },
+  { label: "Next week", days: 7 },
+];
+
+function BulkActionBar({
+  ids,
+  onClear,
+  onAssign,
+  onMove,
+  onFollowUp,
+}: {
+  ids: string[];
+  onClear: () => void;
+  onAssign: (owner: string) => void;
+  onMove: (status: LeadStatus) => void;
+  onFollowUp: (v: { due: string; action: string }) => void;
+}) {
+  const count = ids.length;
+  const [followUpDate, setFollowUpDate] = useState<string>(
+    () => new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
+  );
+  const [followUpNote, setFollowUpNote] = useState<string>("Follow up with family");
+
+  return (
+    <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-border/70 bg-card/95 backdrop-blur px-3 py-2 shadow-xl">
+        <div className="flex items-center gap-2 pr-2 border-r border-border/60">
+          <CheckSquare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium tabular-nums">
+            {count} selected
+          </span>
+        </div>
+
+        {/* Assign */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <UserPlus className="h-4 w-4" /> Assign
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-56 p-1">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-1.5 pb-1">
+              Assign to coordinator
+            </p>
+            {INTAKE_COORDINATORS.map((owner) => (
+              <button
+                key={owner}
+                onClick={() => onAssign(owner)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted"
+              >
+                {owner}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
+        {/* Move status */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <MoveRight className="h-4 w-4" /> Move status
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-56 p-1 max-h-72 overflow-y-auto">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground px-2 pt-1.5 pb-1">
+              Move to status
+            </p>
+            {BULK_STATUS_OPTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => onMove(s)}
+                className="w-full text-left text-sm rounded-lg px-2 py-1.5 hover:bg-muted"
+              >
+                {s}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
+        {/* Send follow-up */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <CalendarClock className="h-4 w-4" /> Send follow-up
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-72 p-3 space-y-2.5">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Schedule follow-up
+            </p>
+            <div className="grid grid-cols-3 gap-1">
+              {FOLLOWUP_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() =>
+                    setFollowUpDate(
+                      new Date(Date.now() + p.days * 86_400_000).toISOString().slice(0, 10),
+                    )
+                  }
+                  className="text-xs rounded-lg border border-border/60 px-2 py-1 hover:bg-muted"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Due date</label>
+              <Input
+                type="date"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Next action</label>
+              <Input
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                placeholder="What needs to happen?"
+              />
+            </div>
+            <Button
+              size="sm"
+              className="w-full"
+              disabled={!followUpDate || !followUpNote.trim()}
+              onClick={() =>
+                onFollowUp({ due: followUpDate, action: followUpNote.trim() })
+              }
+            >
+              Schedule for {count} lead{count === 1 ? "" : "s"}
+            </Button>
+          </PopoverContent>
+        </Popover>
+
+        <div className="pl-1 border-l border-border/60">
+          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1.5">
+            <X className="h-4 w-4" /> Clear
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
