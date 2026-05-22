@@ -192,6 +192,7 @@ import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSBCBAAuthorizations from "./pages/os/OSBCBAAuthorizations";
 import OSBCBASupervision from "./pages/os/OSBCBASupervision";
+import OSBCBAParentTraining from "./pages/os/OSBCBAParentTraining";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
@@ -352,12 +353,7 @@ const App = () => (
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
                   <Route path="/bcba/authorizations" element={<OSBCBAAuthorizations />} />
                   <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
-                  <Route path="/bcba/parent-training" element={<OSComingSoon title="My Parent Training" tagline="97156 cadence and parent engagement tracking — designed for the BCBA family relationship." icon={HeartHandshake} features={[
-                    { title: "Family cadence", description: "Last 97156 session and days since, per family, with cadence targets." },
-                    { title: "Engagement signal", description: "Parent attendance, cancellation, and follow-through trends in one view." },
-                    { title: "Curriculum tracker", description: "Topics covered, planned next sessions, and family-specific goals." },
-                    { title: "Quick scheduling", description: "Propose a parent training slot directly from any client card." },
-                  ]} />} />
+                  <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
                   <Route path="/bcba/scheduling" element={<OSComingSoon title="My Scheduling" tagline="A clinician-focused scheduling view — your sessions, your coverage, your gaps." icon={Calendar} features={[
                     { title: "Personal calendar", description: "All your sessions, supervision blocks, and parent trainings in a calm clinical view." },
                     { title: "Coverage gaps", description: "Clients with uncovered or at-risk hours surfaced before they become an issue." },
