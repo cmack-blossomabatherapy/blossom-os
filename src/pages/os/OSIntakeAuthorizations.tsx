@@ -363,6 +363,7 @@ export default function OSIntakeAuthorizations() {
   const filterHandoff = params.get("handoff");
   const filterVOB = params.get("vob");
   const filterStatus = params.get("status");
+  const filterTab = (params.get("tab") as StatusTabKey | null) ?? "all";
 
   // Show only clients that are in any auth lifecycle (skip "Not Started" with no payor)
   const inAuth = useMemo(
@@ -393,9 +394,13 @@ export default function OSIntakeAuthorizations() {
       if (filterPulse === "vob" && !(v === "Finance Review Needed" || v === "Missing Info")) return false;
       if (filterPulse === "ready" && a !== "Ready for Submission") return false;
       if (filterPulse === "approved" && a !== "Approved") return false;
+      if (filterTab && filterTab !== "all") {
+        const tab = STATUS_TABS.find((t) => t.key === filterTab);
+        if (tab && !tab.match(c)) return false;
+      }
       return true;
     });
-  }, [inAuth, query, filterPulse, filterStage, filterHandoff, filterVOB, filterStatus]);
+  }, [inAuth, query, filterPulse, filterStage, filterHandoff, filterVOB, filterStatus, filterTab]);
 
   const setFilter = (key: string, value: string | null) => {
     const p = new URLSearchParams(params);
