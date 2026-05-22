@@ -198,6 +198,8 @@ function deriveItem(a: Authorization): PT97156Item | null {
     opStatus, opTone, riskTone, bucket,
     signatureMissing, qaState: a.qaStatus, schedulingReady,
     nextAction, lastActivity: a.lastActivity, smartFlags,
+    auditLog: [],
+    automationOverlay: [],
   };
 }
 
