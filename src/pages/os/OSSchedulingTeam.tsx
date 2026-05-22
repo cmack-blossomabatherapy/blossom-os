@@ -162,7 +162,7 @@ export default function OSSchedulingTeam() {
           <Card className="lg:col-span-2">
             <CardHeader title="Today's Scheduling Priorities" subtitle="Ordered by what needs Scheduling first" />
             {priorities.length === 0 ? (
-              <Empty message="You're clear for now. No scheduling priorities." />
+              <Empty message="You're clear for now." />
             ) : (
               <ul className="divide-y divide-border/60">
                 {priorities.map(({ c, b }) => {
@@ -195,14 +195,18 @@ export default function OSSchedulingTeam() {
 
           <Card>
             <CardHeader title="Operational Signals" subtitle="What Scheduling should know right now" />
-            <ul className="space-y-1.5">
-              <SignalRow label="GA staffing items" value={gaCount} to="/scheduling-workspace?view=needs_rbt&state=GA" icon={MapPin} />
-              <SignalRow label="Non-GA staffing items" value={nonGaCount} to="/scheduling-workspace?view=needs_rbt" icon={MapPin} />
-              <SignalRow label="Waiting on BCBA confirmation" value={waitingBcba} to="/scheduling-workspace?view=pairing_pending" icon={Users} />
-              <SignalRow label="Blocked by missing availability" value={blockedNoAvailability} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
-              <SignalRow label="RBTs available for pairing" value={rbtsAvailable} to="/scheduling-workspace?view=needs_rbt" icon={UserPlus} />
-              <SignalRow label="Schedule conflicts to review" value={conflictCount} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
-            </ul>
+            {gaCount === 0 && nonGaCount === 0 && waitingBcba === 0 && blockedNoAvailability === 0 && conflictCount === 0 ? (
+              <Empty message="You're clear for now." />
+            ) : (
+              <ul className="space-y-1.5">
+                <SignalRow label="GA staffing items" value={gaCount} to="/scheduling-workspace?view=needs_rbt&state=GA" icon={MapPin} />
+                <SignalRow label="Non-GA staffing items" value={nonGaCount} to="/scheduling-workspace?view=needs_rbt" icon={MapPin} />
+                <SignalRow label="Waiting on BCBA confirmation" value={waitingBcba} to="/scheduling-workspace?view=pairing_pending" icon={Users} />
+                <SignalRow label="Blocked by missing availability" value={blockedNoAvailability} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
+                <SignalRow label="RBTs available for pairing" value={rbtsAvailable} to="/scheduling-workspace?view=needs_rbt" icon={UserPlus} />
+                <SignalRow label="Schedule conflicts to review" value={conflictCount} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
+              </ul>
+            )}
           </Card>
         </section>
 
@@ -211,13 +215,17 @@ export default function OSSchedulingTeam() {
           {/* Staffing Queue Snapshot */}
           <Card>
             <CardHeader title="Staffing Queue Snapshot" />
-            <div className="space-y-2.5">
-              <QueueBar label="Needs RBT"          count={counts.needs_rbt}         max={Math.max(counts.needs_rbt, counts.active, 1)} tone="warn" />
-              <QueueBar label="RBT Confirmed"      count={counts.ready_to_schedule} max={Math.max(counts.needs_rbt, counts.active, 1)} tone="info" />
-              <QueueBar label="Pending Start Date" count={counts.pending_start}     max={Math.max(counts.needs_rbt, counts.active, 1)} tone="info" />
-              <QueueBar label="Active"             count={counts.active}            max={Math.max(counts.needs_rbt, counts.active, 1)} tone="ok" />
-              <QueueBar label="On Pause"           count={counts.on_pause}          max={Math.max(counts.needs_rbt, counts.active, 1)} tone="muted" />
-            </div>
+            {counts.needs_rbt === 0 && counts.ready_to_schedule === 0 && counts.pending_start === 0 && counts.active === 0 && counts.on_pause === 0 ? (
+              <Empty message="No clients currently need RBT assignment." />
+            ) : (
+              <div className="space-y-2.5">
+                <QueueBar label="Needs RBT"          count={counts.needs_rbt}         max={Math.max(counts.needs_rbt, counts.active, 1)} tone="warn" />
+                <QueueBar label="RBT Confirmed"      count={counts.ready_to_schedule} max={Math.max(counts.needs_rbt, counts.active, 1)} tone="info" />
+                <QueueBar label="Pending Start Date" count={counts.pending_start}     max={Math.max(counts.needs_rbt, counts.active, 1)} tone="info" />
+                <QueueBar label="Active"             count={counts.active}            max={Math.max(counts.needs_rbt, counts.active, 1)} tone="ok" />
+                <QueueBar label="On Pause"           count={counts.on_pause}          max={Math.max(counts.needs_rbt, counts.active, 1)} tone="muted" />
+              </div>
+            )}
           </Card>
 
           {/* Upcoming Starts */}
