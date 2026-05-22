@@ -369,6 +369,7 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
                   const reason = text.trim();
                   await updateClient(active.client.id, {
                     blockers: Array.from(new Set([...(active.client.blockers ?? []), `Escalated to ${target}: ${reason}`])),
+                    lastActivity: new Date().toISOString(),
                   });
                   await appendTimeline(active.client.id, `Escalated to ${target}: ${reason}`, "system");
                   await appendAutomation(active.client.id, `Escalation → ${target}: ${reason.slice(0, 80)}`);
