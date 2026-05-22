@@ -68,6 +68,7 @@ const VIEW_TO_BUCKET: Record<string, WorkBucket> = {
 
 export default function OSSchedulingWorkspace() {
   const { clients } = useClients();
+  const cr = useCentralReachOps();
   const [params, setParams] = useSearchParams();
 
   // Initialize filters from URL so deep links pre-apply correctly.
@@ -127,7 +128,11 @@ export default function OSSchedulingWorkspace() {
     return k;
   }, [queue]);
 
-  const availableRbts = mockRBTProfiles.filter((r) => r.status === "Available").length;
+  // RBT availability is derived from CentralReach last-7d hours vs a 32h soft cap.
+  const availableRbts = useMemo(
+    () => cr.rbtRoster.filter((r) => r.hoursLast7d < RBT_TARGET_HOURS - 4).length,
+    [cr.rbtRoster],
+  );
 
   return (
     <OSShell>
@@ -157,9 +162,10 @@ export default function OSSchedulingWorkspace() {
           {/* Operational chips */}
           <div className="flex flex-wrap items-center gap-2">
             <Chip label="Needs RBT" value={counts.needs_rbt} tone="destructive" />
-            <Chip label="Coverage Risks" value={counts.coverage_risk} tone="warning" />
+            <Chip label="Uncovered (CR)" value={cr.counts.uncoveredClients} tone="destructive" loading={cr.loading} />
+            <Chip label="At Risk (CR)" value={cr.counts.atRiskClients} tone="warning" loading={cr.loading} />
             <Chip label="Pending Starts" value={counts.pending_start} tone="primary" />
-            <Chip label="Available RBTs" value={availableRbts} tone="success" />
+            <Chip label="RBTs w/ Capacity" value={availableRbts} tone="success" loading={cr.loading} />
           </div>
         </header>
 
@@ -227,14 +233,14 @@ export default function OSSchedulingWorkspace() {
                 <p className="mt-3 text-sm text-muted-foreground">Select a staffing case to begin scheduling work.</p>
               </div>
             ) : (
-              <ActiveWorkflow client={selected} />
+              <ActiveWorkflow client={selected} rbtRoster={cr.rbtRoster} />
             )}
           </section>
 
           {/* RIGHT — Operational context */}
           <aside className="lg:col-span-3 space-y-4">
-            <ContextPanel clients={clients} />
-            <AskBlossomPanel clients={clients} counts={counts} availableRbts={availableRbts} />
+            <ContextPanel coverageRisks={cr.coverageRisks} rbtRoster={cr.rbtRoster} loading={cr.loading} />
+            <AskBlossomPanel cr={cr} counts={counts} availableRbts={availableRbts} />
           </aside>
         </div>
       </div>
