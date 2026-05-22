@@ -513,6 +513,7 @@ const App = () => (
                   <Route path="/training/academy/leadership" element={<PermissionRoute permission="hr.training.view"><AcademyLeadership /></PermissionRoute>} />
                   <Route path="/training/academy/editor" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><AcademyEditor /></PermissionRoute>} />
                   <Route path="/training/hr-admin-assistant" element={<HRAdminAssistantDashboard />} />
+                  <Route path="/training/journeys/authorization-coordinator" element={<AuthorizationCoordinatorJourney />} />
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
