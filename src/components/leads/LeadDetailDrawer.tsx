@@ -64,6 +64,13 @@ export function LeadDetailDrawer({
   const [raw, setRaw] = useState<Record<string, unknown> | null>(null);
   const { updates, loading: updatesLoading } = useLeadUpdates(lead?.childName);
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Fetch raw monday data blob for richer fields not on the Lead type.
   useEffect(() => {
     if (!lead) { setRaw(null); return; }
@@ -106,14 +113,18 @@ export function LeadDetailDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-foreground/10 backdrop-blur-[2px] animate-fade-in"
+        className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-[2px] animate-fade-in"
         onClick={onClose}
+        aria-hidden="true"
       />
       {/* Drawer */}
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Lead details for ${lead.childName}`}
         className={cn(
           "fixed right-0 top-0 z-50 h-screen w-full max-w-[560px] flex flex-col",
-          "glass border-l border-border/60 shadow-[0_0_60px_-20px_oklch(0.2_0.02_260/0.25)]",
+          "bg-background border-l border-border shadow-2xl",
           "animate-in slide-in-from-right duration-300",
         )}
       >
