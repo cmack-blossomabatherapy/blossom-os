@@ -474,42 +474,63 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ContextPanel({ clients }: { clients: Client[] }) {
-  const coverageRisks = clients.filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0))).slice(0, 4);
-  const availableRbts = mockRBTProfiles.filter((r) => r.status === "Available").slice(0, 4);
+function ContextPanel({
+  coverageRisks,
+  rbtRoster,
+  loading,
+}: {
+  coverageRisks: CoverageRiskRow[];
+  rbtRoster: ProviderRosterEntry[];
+  loading: boolean;
+}) {
+  const topRisks = coverageRisks.slice(0, 5);
+  const openRbts = rbtRoster
+    .filter((r) => r.hoursLast7d < RBT_TARGET_HOURS - 4)
+    .sort((a, b) => a.hoursLast7d - b.hoursLast7d)
+    .slice(0, 5);
 
   return (
     <div className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] p-5 space-y-5">
-      <Section title="Coverage Risks" icon={AlertTriangle} tone="warning">
-        {coverageRisks.length === 0 ? <Quiet text="No active coverage risks." /> : coverageRisks.map((c) => (
-          <Link key={c.id} to={`/scheduling-workspace?clientId=${c.id}`} className="block rounded-lg hover:bg-muted/40 px-2 py-1.5 -mx-2 transition">
-            <p className="text-sm text-foreground truncate">{c.childName}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{c.blockers?.[0] ?? c.activeServiceStatus}</p>
-          </Link>
-        ))}
+      <Section title="Coverage Risks (CR)" icon={AlertTriangle} tone="warning">
+        {loading ? <Quiet text="Loading CentralReach signals…" /> :
+          topRisks.length === 0 ? <Quiet text="All clients have recent RBT coverage." /> :
+          topRisks.map((c) => (
+            <div key={c.clientName} className="rounded-lg hover:bg-muted/40 px-2 py-1.5 -mx-2 transition">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-foreground truncate">{c.clientName}</p>
+                <span className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0",
+                  c.level === "uncovered" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                )}>{c.level === "uncovered" ? "Uncovered" : "At risk"}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">{c.state ?? "—"} · {c.reason}</p>
+            </div>
+          ))
+        }
       </Section>
 
-      <Section title="Available RBTs" icon={Users} tone="success">
-        {availableRbts.length === 0 ? (
-          <Quiet text="No RBTs currently available for pairing." />
-        ) : (
-          availableRbts.map((r) => (
-            <div key={r.id} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
+      <Section title="RBTs with Capacity" icon={Users} tone="success">
+        {loading ? <Quiet text="Loading roster…" /> :
+          openRbts.length === 0 ? <Quiet text="All RBTs near or above 32h target this week." /> :
+          openRbts.map((r) => (
+            <div key={r.name} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
               <div className="min-w-0">
                 <p className="text-foreground truncate">{r.name}</p>
-                <p className="text-[11px] text-muted-foreground">{r.state} · {r.capacityHours - r.assignedHours}h open</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {r.state ?? "—"} · {r.hoursLast7d.toFixed(1)}h / {RBT_TARGET_HOURS}h · {r.distinctClients} clients
+                </p>
               </div>
             </div>
           ))
-        )}
+        }
       </Section>
 
       <Section title="Quick Actions" icon={ShieldCheck}>
         <div className="space-y-1.5">
           <QuickLink to="/scheduling" label="Open Scheduling" />
-          <QuickLink to="/clients" label="Open Clients" />
+          <QuickLink to="/scheduling/rbts" label="Open RBT Roster" />
+          <QuickLink to="/scheduling/bcbas" label="Open BCBA Roster" />
           <QuickLink to="/authorizations" label="Open Authorizations" />
-          <QuickLink to="/rbt" label="Open RBT Roster" />
         </div>
       </Section>
     </div>
@@ -517,37 +538,33 @@ function ContextPanel({ clients }: { clients: Client[] }) {
 }
 
 function AskBlossomPanel({
-  clients,
+  cr,
   counts,
   availableRbts,
 }: {
-  clients: Client[];
+  cr: ReturnType<typeof useCentralReachOps>;
   counts: Record<WorkBucket, number>;
   availableRbts: number;
 }) {
-  const topRiskClient = clients
-    .filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0)))
-    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
-  const oldestUnstaffed = clients
-    .filter((c) => !c.rbt && c.authStatus === "Approved")
-    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
+  const topUncovered = cr.coverageRisks.find((r) => r.level === "uncovered");
+  const overloaded = cr.rbtRoster.filter((r) => r.hoursLast7d > 35).length;
 
   const prompts: { label: string; q: string }[] = [
     {
-      label: `Summarize ${counts.needs_rbt} clients needing RBT pairing`,
-      q: `Summarize the ${counts.needs_rbt} approved clients waiting on RBT pairing and recommend next steps for Scheduling.`,
+      label: `Uncovered clients · ${cr.counts.uncoveredClients} (CR 14d+)`,
+      q: `List the ${cr.counts.uncoveredClients} clients with no 97153 (RBT direct) session in the last 14 days. Group by state and suggest next coordination step.`,
     },
     {
-      label: `Top coverage risks (${counts.coverage_risk})${topRiskClient ? ` · start with ${topRiskClient.childName}` : ""}`,
-      q: `List the ${counts.coverage_risk} active clients with coverage risk${topRiskClient ? `, starting with ${topRiskClient.childName}` : ""}, and suggest a Scheduling next action for each.`,
+      label: `Forming gaps · ${cr.counts.atRiskClients} at risk${topUncovered ? ` · start with ${topUncovered.clientName}` : ""}`,
+      q: `Which active clients have their last RBT session 7-13 days ago${topUncovered ? `, starting with ${topUncovered.clientName}` : ""}? Suggest a Scheduling next action for each.`,
     },
     {
-      label: `Approved but unstaffed${oldestUnstaffed ? ` · ${oldestUnstaffed.daysInStage}d oldest: ${oldestUnstaffed.childName}` : ""}`,
-      q: `Which approved clients are still unstaffed and how long have they been waiting? Prioritize by days in stage.`,
+      label: `Cancellation trend · ${cr.cancellationsLast7d} (7d) / ${cr.cancellationsLast30d} (30d)`,
+      q: `Summarize CentralReach client cancellations: ${cr.cancellationsLast7d} in last 7 days and ${cr.cancellationsLast30d} in last 30 days. Identify any states or clinics trending up.`,
     },
     {
-      label: `Match ${availableRbts} available RBTs to ${counts.needs_rbt} open cases`,
-      q: `Given ${availableRbts} RBTs marked Available and ${counts.needs_rbt} clients needing pairing, suggest the best Scheduling matches by state, availability, and capacity.`,
+      label: `Rebalance load · ${overloaded} overloaded · ${availableRbts} with capacity`,
+      q: `From CentralReach last 7 days, ${overloaded} RBTs are above 35h and ${availableRbts} are under ${RBT_TARGET_HOURS - 4}h. Recommend rebalancing pairs by state.`,
     },
     {
       label: `Confirm ${counts.pending_start} pending start dates`,
