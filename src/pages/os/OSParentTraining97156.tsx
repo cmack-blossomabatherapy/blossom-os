@@ -771,6 +771,25 @@ function DetailDrawer({
           </DrawerSection>
         )}
 
+        {/* Escalation actions */}
+        <DrawerSection icon={Zap} title="Escalate">
+          <p className="mb-2 text-[11.5px] text-foreground/55">
+            Updates the operational status, routes to the correct owner, and writes an audit log entry.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <EscalateButton icon={Stethoscope}    label="Needs PR"             tone="warn" onClick={() => onEscalate("PR")} />
+            <EscalateButton icon={ClipboardCheck} label="Needs QA"             tone="info" onClick={() => onEscalate("QA")} />
+            <EscalateButton icon={ShieldAlert}    label="Needs State Director" tone="crit" onClick={() => onEscalate("State Director")} />
+            <EscalateButton icon={FolderInput}    label="Missing Documentation" tone="warn" onClick={() => onEscalate("Missing Documentation")} />
+          </div>
+          {item.escalatedTo && (
+            <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-foreground/65">
+              <Zap className="h-3 w-3" /> Currently routed to {item.escalatedTo}
+              {item.escalatedAt && <span className="text-foreground/45"> · {new Date(item.escalatedAt).toLocaleString()}</span>}
+            </p>
+          )}
+        </DrawerSection>
+
         {/* 1 — Auth Summary */}
         <DrawerSection icon={FileText} title="Auth summary">
           <KV label="Auth type"        value={auth.authType} />
