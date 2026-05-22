@@ -858,10 +858,19 @@ function DetailDrawer({
 
         {/* 6 — Notes & Activity */}
         <DrawerSection icon={Activity} title="Notes & activity">
-          {auth.timeline.length === 0 ? (
+          {item.automationOverlay.length === 0 && auth.timeline.length === 0 ? (
             <p className="text-[12px] text-foreground/55">No activity recorded yet.</p>
           ) : (
             <ul className="space-y-2">
+              {item.automationOverlay.map((line, i) => (
+                <li key={`auto-${i}`} className="flex gap-2 text-[12px]">
+                  <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-[hsl(220_70%_55%)]" />
+                  <div className="min-w-0">
+                    <p className="text-foreground/85">{line}</p>
+                    <p className="text-[11px] text-foreground/55">Automation</p>
+                  </div>
+                </li>
+              ))}
               {auth.timeline.slice(0, 6).map((e) => (
                 <li key={e.id} className="flex gap-2 text-[12px]">
                   <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-foreground/30" />
@@ -871,6 +880,30 @@ function DetailDrawer({
                       {new Date(e.timestamp).toLocaleDateString()}{e.user ? ` · ${e.user}` : ""}
                     </p>
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DrawerSection>
+
+        {/* Audit log */}
+        <DrawerSection icon={History} title="Audit log">
+          {item.auditLog.length === 0 ? (
+            <p className="text-[12px] text-foreground/55">No escalations recorded for this 97156 auth.</p>
+          ) : (
+            <ul className="space-y-2">
+              {item.auditLog.map((e) => (
+                <li key={e.id} className="rounded-lg border border-border/60 bg-card p-2.5 text-[12px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-foreground">{e.action}</span>
+                    <span className="text-[10.5px] text-foreground/55">
+                      {new Date(e.at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-foreground/75">{e.note}</p>
+                  <p className="mt-1 text-[10.5px] text-foreground/55">
+                    {e.by} · {e.fromStatus} → {e.toStatus} · routed to {e.routedTo}
+                  </p>
                 </li>
               ))}
             </ul>
