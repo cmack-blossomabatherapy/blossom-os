@@ -207,6 +207,7 @@ import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
+import OSBCBAResources from "./pages/os/OSBCBAResources";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
@@ -356,6 +357,7 @@ const App = () => (
                   <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
                   <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
                   <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
+                  <Route path="/bcba/resources" element={<OSBCBAResources />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />

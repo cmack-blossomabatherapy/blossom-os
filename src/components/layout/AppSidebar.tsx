@@ -293,7 +293,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "Resources",
       items: [
-        { label: "Resource Library", icon: Library, path: "/resource-library", perm: "" },
+        { label: "Resource Library", icon: Library, path: "/bcba/resources", perm: "" },
       ],
     },
     {
