@@ -39,11 +39,14 @@ const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[]
   { key: "sent_vob",       label: "Sent to VOB",         match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
   { key: "vob_done",       label: "VOB Completed",       match: (l) => l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
   { key: "cant_reach",     label: "Can't Reach",         match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
-  { key: "cant_auth",      label: "Can't Submit Auth",   match: (l) => l.status === "Can Not Submit Auth" || (l as any).cantSubmitAuth === true },
-  { key: "nq",             label: "Nonqualified",        match: (l) => l.status === "Non-qualified Lead" || (l as any).nonqualified === true },
-  { key: "needs_dx",       label: "Needs DX",            match: (l) => l.status === "Needs DX" || l.status === "Getting DX" || (l as any).needsDx === true },
+  { key: "cant_auth",      label: "Can't Submit Auth",   match: (l) => l.status === "Can Not Submit Auth" },
+  { key: "nq",             label: "Nonqualified",        match: (l) =>
+      l.status === "Non-Qualified"
+      || l.status === "Non-qualified Lead"
+      || Boolean(l.notQualifiedReason && l.notQualifiedReason.trim()) },
+  { key: "needs_dx",       label: "Needs DX",            match: (l) => l.status === "Needs DX" || l.status === "Getting DX" },
   { key: "stuck",          label: "Stuck / Aging",       match: (l) => {
-      if (l.status === "Non-qualified Lead") return false;
+      if (l.status === "Non-qualified Lead" || l.status === "Non-Qualified") return false;
       const last = l.lastContacted ? new Date(l.lastContacted).getTime() : 0;
       const days = last ? Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000)) : 999;
       return days > 5;
