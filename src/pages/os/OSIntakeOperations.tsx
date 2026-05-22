@@ -59,12 +59,31 @@ export default function OSIntakeOperations({
   title = "Leads",
   subtitle = "Manage family onboarding and intake readiness from inquiry to operational handoff.",
 }: OSIntakeOperationsProps = {}) {
+  return (
+    <IntakeModalsProvider>
+      <OSIntakeOperationsInner title={title} subtitle={subtitle} />
+    </IntakeModalsProvider>
+  );
+}
+
+function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperationsProps>) {
   const { leads, loading, error, refresh, updateLead } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modals = useIntakeModals();
+
+  const filterKey = searchParams.get("filter");
+  const stageKey = searchParams.get("stage");
+  const blockerKey = searchParams.get("blocker");
+  const queueKey = searchParams.get("queue");
+  const aiQuery = searchParams.get("q");
+
+  // Apply the AI prompt deep-link by redirecting (handled by NavLink). Nothing to do here.
+  void aiQuery;
 
   useEffect(() => {
     if (!user?.id) return;
@@ -83,16 +102,71 @@ export default function OSIntakeOperations({
     [leads, profileState, displayName, roles],
   );
 
+  // URL-driven filter (KPI, pipeline stage, blocker, queue) applied on top of scope.
+  const filteredByUrl = useMemo(() => {
+    let out = scopedLeads;
+    if (filterKey) {
+      const fn = FILTER_PREDICATES[filterKey];
+      if (fn) out = out.filter(fn);
+    }
+    if (stageKey) {
+      const stage = READINESS_STAGES.find((s) => s.key === stageKey);
+      if (stage) out = out.filter(stage.match);
+    }
+    if (blockerKey) {
+      const tile = MISSING_TILES.find((t) => t.key === blockerKey);
+      if (tile) out = out.filter(tile.match);
+    }
+    if (queueKey) {
+      const q = QUEUES.find((qq) => qq.key === queueKey);
+      if (q) out = out.filter(q.match);
+    }
+    return out;
+  }, [scopedLeads, filterKey, stageKey, blockerKey, queueKey]);
+
+  const activeFilterChip = useMemo(() => {
+    if (filterKey && FILTER_LABELS[filterKey]) return FILTER_LABELS[filterKey];
+    if (stageKey) return READINESS_STAGES.find((s) => s.key === stageKey)?.label;
+    if (blockerKey) return MISSING_TILES.find((t) => t.key === blockerKey)?.label;
+    if (queueKey) return QUEUES.find((q) => q.key === queueKey)?.label;
+    return null;
+  }, [filterKey, stageKey, blockerKey, queueKey]);
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+  };
+
   const visibleLeads = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return scopedLeads;
-    return scopedLeads.filter((l) =>
+    if (!q) return filteredByUrl;
+    return filteredByUrl.filter((l) =>
       [l.childName, l.parentName, l.phone, l.email, l.primaryInsurance, l.state]
         .map((s) => String(s ?? "").toLowerCase())
         .join(" ")
         .includes(q),
     );
-  }, [scopedLeads, query]);
+  }, [filteredByUrl, query]);
+
+  const setFilter = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("filter", key);
+    setSearchParams(next, { replace: false });
+  };
+  const setStage = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("stage", key);
+    setSearchParams(next, { replace: false });
+  };
+  const setBlocker = (key: string) => {
+    const next = new URLSearchParams(searchParams);
+    ["filter", "stage", "blocker", "queue"].forEach((k) => next.delete(k));
+    next.set("blocker", key);
+    setSearchParams(next, { replace: false });
+  };
 
   return (
     <OSShell rightRail={<AskBlossomIntakeRail leads={visibleLeads} onOpen={setOpenLeadId} />}>
@@ -107,13 +181,19 @@ export default function OSIntakeOperations({
             <Button variant="ghost" size="sm" asChild>
               <Link to="/vob-decision-center"><ShieldCheck className="mr-1.5 h-4 w-4" /> Open VOB Center</Link>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("Send Intake Packet — pick a family first")}>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/sop?category=intake"><BookOpen className="mr-1.5 h-4 w-4" /> Open SOPs</Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "sendPacket" })}>
               <Send className="mr-1.5 h-4 w-4" /> Send Intake Packet
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => toast("Follow-up created")}>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "followUp" })}>
               <CalendarClock className="mr-1.5 h-4 w-4" /> Create Follow-Up
             </Button>
-            <Button size="sm" onClick={() => toast("Add Inquiry — coming soon")}>
+            <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "note" })}>
+              <StickyNote className="mr-1.5 h-4 w-4" /> Add Note
+            </Button>
+            <Button size="sm" onClick={() => modals.open({ kind: "addLead" })}>
               <Plus className="mr-1.5 h-4 w-4" /> Add Inquiry
             </Button>
           </div>
@@ -130,6 +210,19 @@ export default function OSIntakeOperations({
           />
         </div>
 
+        {activeFilterChip && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Filtered by</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-2.5 h-7 font-medium">
+              {activeFilterChip}
+              <span className="text-primary/70 tabular-nums">· {filteredByUrl.length}</span>
+              <button onClick={clearFilters} className="ml-0.5 rounded-full hover:bg-primary/10" aria-label="Clear filter">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5" /> {error}
@@ -143,16 +236,16 @@ export default function OSIntakeOperations({
           </div>
         ) : (
           <>
-            <IntakePulse leads={visibleLeads} onRefresh={refresh} loading={loading} />
+            <IntakePulse leads={scopedLeads} onRefresh={refresh} loading={loading} onFilter={setFilter} active={filterKey} />
             <FamiliesNeedingAction
               leads={visibleLeads}
               onOpen={setOpenLeadId}
               onMarkPacketSent={(id) => { updateLead(id, { formStatus: "Sent" }); toast.success("Intake packet marked sent"); }}
             />
-            <DailyFollowUps leads={visibleLeads} onOpen={setOpenLeadId} />
+            <DailyFollowUps leads={scopedLeads} onOpen={setOpenLeadId} initialQueue={queueKey as QueueKey | null} />
             <AssessmentCoordination leads={visibleLeads} onOpen={setOpenLeadId} />
-            <MissingInfoCenter leads={visibleLeads} onOpen={setOpenLeadId} />
-            <ServiceReadinessPipeline leads={visibleLeads} onOpen={setOpenLeadId} />
+            <MissingInfoCenter leads={scopedLeads} onOpen={setOpenLeadId} onFilter={setBlocker} active={blockerKey} />
+            <ServiceReadinessPipeline leads={scopedLeads} onOpen={setOpenLeadId} onFilter={setStage} active={stageKey} />
             <RecentActivityFeed leads={visibleLeads} onOpen={setOpenLeadId} />
           </>
         )}
@@ -164,6 +257,25 @@ export default function OSIntakeOperations({
     </OSShell>
   );
 }
+
+/* ─────────────────────── KPI filter predicates ─────────────────────── */
+
+const FILTER_PREDICATES: Record<string, (l: Lead) => boolean> = {
+  new_inquiries: (l) => l.status === "New Lead",
+  awaiting_contact: (l) => getReadinessStatus(l) === "Awaiting Contact",
+  missing_info: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information",
+  vob_pending: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent",
+  assessment: (l) => l.status === "Getting DX" || l.status === "Needs DX",
+  ready: (l) => getReadinessStatus(l) === "Operationally Ready",
+};
+const FILTER_LABELS: Record<string, string> = {
+  new_inquiries: "New Inquiries",
+  awaiting_contact: "Awaiting Contact",
+  missing_info: "Missing Information",
+  vob_pending: "VOB Pending",
+  assessment: "Assessment Coordination",
+  ready: "Ready for Next Step",
+};
 
 /* ─────────────────────── Intake Pulse ─────────────────────── */
 
