@@ -264,7 +264,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   scheduling_team: {
     modules: ["dashboard", "scheduling", "clients", "staff", "sop", "ai_assistant"],
-    scope: "state",
+    scope: "company",
     actions: { dashboard: VIEW, scheduling: FULL, clients: VIEW, staff: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },

@@ -14,7 +14,8 @@ import blossomMark from "@/assets/blossom-logo.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOSRole } from "@/contexts/OSRoleContext";
+// AppSidebar can render outside OSRoleProvider (legacy routes); tolerate missing context.
+import { useOSRoleSafe } from "@/contexts/OSRoleContext";
 import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 import { canAccessAdminHub } from "@/lib/adminAccess";
@@ -214,7 +215,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
-  const { role: osRole } = useOSRole();
+  const osRole = useOSRoleSafe()?.role ?? null;
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
   const DEFAULT_OPEN_SECTIONS = ["Dashboards", "Academy", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
