@@ -162,6 +162,7 @@ import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
+import OSIntakeWorkspace from "./pages/os/OSIntakeWorkspace";
 import OSClients from "./pages/os/OSClients";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
@@ -310,12 +311,7 @@ const App = () => (
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSIntakeOperations />} />
-                  <Route path="/intake" element={<OSComingSoon title="Intake" tagline="The intake pipeline from first contact through verified benefits and signed paperwork." icon={ClipboardList} features={[
-                    { title: "Intake pipeline board", description: "Kanban view of every family by stage with bottleneck detection." },
-                    { title: "Digital forms & e-sign", description: "Smart intake packets, parent portals, and e-signature collection." },
-                    { title: "Verification of benefits", description: "VOB workflow with payer responses and out-of-pocket estimates." },
-                    { title: "Auto-handoff to clinical", description: "Triggers assessment scheduling and BCBA assignment automatically." },
-                  ]} />} />
+                  <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<OSComingSoon title="Clients" tagline="A 360° client record connecting clinical, scheduling, billing, and family communication." icon={FolderKanban} features={[
                     { title: "Patient journey timeline", description: "Every touchpoint from lead to active care visualized chronologically." },
                     { title: "Authorizations & coverage", description: "Active auths, units used, expirations, and payer details at a glance." },
