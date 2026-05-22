@@ -230,6 +230,17 @@ const STATUS_TABS: { key: StatusTabKey; label: string; match: (c: Client) => boo
 type NBA = { label: string; tone: "warn" | "info" | "ok"; why: string };
 function nextBestAction(c: Client): NBA {
   const d = daysUntilExpiration(c);
+  if (isFlaked(c)) {
+    const reason = c.clientUnreachableReason?.trim();
+    const since = c.clientUnreachableSince ? ` since ${c.clientUnreachableSince}` : "";
+    return {
+      label: "Re-engage family or close out",
+      tone: "warn",
+      why: reason
+        ? `Client marked unreachable${since} — ${reason}. Attempt re-engagement or move to discharge.`
+        : `Client marked unreachable${since} — attempt re-engagement or move to discharge.`,
+    };
+  }
   if (c.authStatus === "Denied") {
     return { label: "Review denial & resubmit", tone: "warn", why: "Payor returned a denial — review reason and prepare resubmission." };
   }
