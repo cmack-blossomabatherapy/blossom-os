@@ -14,6 +14,9 @@ const LEADERSHIP_ROLES = new Set<string>([
   "operations_leadership",
   "intake_leadership",
   "intake_manager",
+  // Intake is a centralized department — coordinators see all leads org-wide.
+  "intake",
+  "intake_coordinator",
 ]);
 
 /** Apply role/state-based scoping to the loaded leads list. */
@@ -24,17 +27,6 @@ export function scopeLeadsForUser(leads: Lead[], scope: LeadScope): Lead[] {
   // State Director — only their assigned state.
   if (roles.includes("state_director") && scope.state) {
     return leads.filter((l) => (l.state || "").toUpperCase() === scope.state!.toUpperCase());
-  }
-
-  // Intake Coordinator — only leads they own (best-effort match on first name).
-  if (roles.includes("intake") || roles.includes("intake_coordinator")) {
-    const name = (scope.displayName || "").toLowerCase().trim();
-    if (!name) return leads;
-    const first = name.split(/\s+/)[0];
-    return leads.filter((l) => {
-      const owner = (l.owner || "").toLowerCase();
-      return owner.includes(first);
-    });
   }
 
   return leads;
