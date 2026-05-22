@@ -242,7 +242,18 @@ const SEED_TRAININGS: Training[] = [
 
 /** Only Intake is seeded with modules. Other roles get empty journeys ready to edit. */
 const SEED_JOURNEYS: RoleJourney[] = [
-  { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: ["phone-leads", "intake-workflow", "vob-basics", "client-setup", "family-communication"] },
+  { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: [
+    "intake-foundations",
+    "phone-leads",
+    "intake-workflow",
+    "insurance-basics",
+    "vob-basics",
+    "family-communication",
+    "assessment-coordination",
+    "service-readiness",
+    "intake-systems",
+    "operational-escalations",
+  ] },
   { id: "j-auth", role: "authorization_coordinator", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.", icon: "ShieldCheck", tone: "sky", moduleIds: [] },
   { id: "j-scheduling", role: "scheduling_team", title: "Scheduling Journey", tagline: "Build clean schedules that hold up.", icon: "CalendarClock", tone: "mint", moduleIds: [] },
   { id: "j-qa", role: "qa_team", title: "QA Journey", tagline: "Protect clinical quality with calm rigor.", icon: "CheckCircle2", tone: "violet", moduleIds: [] },
@@ -263,7 +274,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v2";
+const STORAGE_KEY = "blossom.training.academy.v3";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
@@ -393,7 +404,13 @@ export function reorderJourneyModule(journeyId: string, fromIndex: number, toInd
 
 /* ---------------- Mock progress ---------------- */
 
-export const trainingProgress: Record<string, TrainingProgress> = {};
+export const trainingProgress: Record<string, TrainingProgress> = {
+  "intake-foundations": { trainingId: "intake-foundations", status: "completed", progressPercent: 100 },
+  "phone-leads": { trainingId: "phone-leads", status: "completed", progressPercent: 100 },
+  "intake-workflow": { trainingId: "intake-workflow", status: "in_progress", progressPercent: 60 },
+  "insurance-basics": { trainingId: "insurance-basics", status: "in_progress", progressPercent: 25 },
+  "vob-basics": { trainingId: "vob-basics", status: "overdue", progressPercent: 10, dueDate: "2026-05-18" },
+};
 
 export function getProgress(id: string): TrainingProgress {
   return trainingProgress[id] ?? { trainingId: id, status: "not_started", progressPercent: 0 };
@@ -450,6 +467,21 @@ export function searchTrainings(q: string): Training[] {
   return state.trainings.filter((t) =>
     [t.title, t.description, t.type, t.department ?? "", t.owner ?? ""]
       .join(" ").toLowerCase().includes(term),
+  );
+}
+
+/** Recently published / updated modules — sorted by lastUpdated desc. */
+export function recentlyAdded(limit = 4): Training[] {
+  return [...state.trainings]
+    .filter((t) => !!t.lastUpdated)
+    .sort((a, b) => (b.lastUpdated ?? "").localeCompare(a.lastUpdated ?? ""))
+    .slice(0, limit);
+}
+
+/** Required modules scoped to a department (role-aware). */
+export function requiredForDepartment(department: string): Training[] {
+  return state.trainings.filter(
+    (t) => t.required && (t.department ?? "").toLowerCase() === department.toLowerCase(),
   );
 }
 
