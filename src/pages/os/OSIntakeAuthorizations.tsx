@@ -907,7 +907,7 @@ function AuthDrawer({
   onClose: () => void;
   onAction: (m: AuthModal) => void;
 }) {
-  const { getClient } = useClients();
+  const { getClient, updateClient, appendTimeline, appendAutomation } = useClients();
   const c = getClient(clientId);
   if (!c) return null;
   const lead = c.leadId ? leads.find((l) => l.id === c.leadId) : undefined;
@@ -923,6 +923,40 @@ function AuthDrawer({
     .map((a) => a.expirationDate)
     .filter(Boolean)
     .sort()[0] ?? c.nextReauthDate ?? null;
+
+  /**
+   * Real workflow transitions. Each one performs the state mutation, then
+   * writes both an audit-grade timeline event and an automation log line so
+   * the change is durable history — not just a toast.
+   */
+  const submitAuth = async () => {
+    if (c.authStatus === "Approved" || c.authStatus === "Submitted") {
+      toast.info(`Auth already ${c.authStatus.toLowerCase()}.`);
+      return;
+    }
+    await updateClient(c.id, {
+      authStatus: "Submitted",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Awaiting payor decision",
+    });
+    await appendTimeline(c.id, `Authorization submitted to ${c.payor || "payor"}`, "auth");
+    await appendAutomation(c.id, `Auth submitted (${c.payor || "payor"})`);
+    toast.success("Auth submitted & logged to client timeline");
+  };
+
+  const sendToQA = async () => {
+    if (c.qaStatus === "In Review" || c.qaStatus === "Complete") {
+      toast.info(`QA already ${c.qaStatus.toLowerCase()}.`);
+      return;
+    }
+    await updateClient(c.id, {
+      qaStatus: "In Review",
+      nextAction: "Awaiting QA review",
+    });
+    await appendTimeline(c.id, "Sent to QA for review", "qa");
+    await appendAutomation(c.id, "Routed to QA review");
+    toast.success("Sent to QA & logged to client timeline");
+  };
 
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
