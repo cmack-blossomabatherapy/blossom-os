@@ -10,12 +10,12 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass,
+  MonitorCog, Compass, Settings2,
 } from "lucide-react";
 import {
-  trainings, getProgress, continueLearning, requiredDue,
+  useAcademy, getProgress, continueLearning, requiredDue,
   systemsTrainings, sharedTrainings, searchTrainings,
-  getJourneyForRole, getJourneyModules,
+  getJourneyForRole, getJourneyModules, ICONS,
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 
@@ -32,14 +32,16 @@ export default function OSTraining() {
   const navigate = useNavigate();
   const { role } = useOSRole();
   const [query, setQuery] = useState("");
+  const { trainings } = useAcademy(); // subscribe to store
 
-  const journey = useMemo(() => getJourneyForRole(role), [role]);
-  const journeyModules = useMemo(() => getJourneyModules(journey), [journey]);
-  const cont = useMemo(continueLearning, []);
-  const required = useMemo(requiredDue, []);
-  const systems = useMemo(systemsTrainings, []);
-  const shared = useMemo(sharedTrainings, []);
-  const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query]);
+  const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
+  const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
+  const cont = useMemo(continueLearning, [trainings]);
+  const required = useMemo(requiredDue, [trainings]);
+  const systems = useMemo(systemsTrainings, [trainings]);
+  const shared = useMemo(sharedTrainings, [trainings]);
+  const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query, trainings]);
+  const JourneyIcon = ICONS[journey.icon] ?? BookOpen;
 
   // Role mastery
   const mastery = useMemo(() => {
@@ -57,6 +59,7 @@ export default function OSTraining() {
 
   // Overall progress (all modules)
   const overall = useMemo(() => {
+    if (!trainings.length) return { avg: 0, requiredDone: 0, requiredTotal: 0, overdue: 0 };
     const all = trainings.map((t) => getProgress(t.id));
     const avg = Math.round(all.reduce((s, p) => s + p.progressPercent, 0) / all.length);
     return {
@@ -65,7 +68,7 @@ export default function OSTraining() {
       requiredTotal: trainings.filter((t) => t.required).length,
       overdue: all.filter((p) => p.status === "overdue").length,
     };
-  }, []);
+  }, [trainings]);
 
   const nextModule = mastery.nextId ? journeyModules.find((m) => m.id === mastery.nextId) : undefined;
 
@@ -134,6 +137,9 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
                 <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
               </Button>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
+                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
+              </Button>
             </div>
           </header>
 
@@ -190,7 +196,7 @@ export default function OSTraining() {
               <div className="flex items-start justify-between gap-6">
                 <div className="flex min-w-0 items-start gap-4">
                   <span className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl", `os-tone-${journey.tone}`)}>
-                    <journey.icon className="h-5 w-5" />
+                    <JourneyIcon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
                     <h3 className="text-[18px] font-semibold tracking-tight">{journey.title}</h3>
@@ -212,6 +218,23 @@ export default function OSTraining() {
               </div>
 
               <div className="mt-5 space-y-1.5">
+                {journeyModules.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center">
+                    <BookOpen className="mx-auto h-6 w-6 text-muted-foreground/70" />
+                    <p className="mt-2 text-[13px] font-medium">No modules in this journey yet</p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      Open Manage Journeys to add and edit modules for this role.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 rounded-full"
+                      onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
+                    >
+                      <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
+                    </Button>
+                  </div>
+                )}
                 {journeyModules.map((m, idx) => {
                   const p = getProgress(m.id);
                   const done = p.status === "completed";
@@ -433,6 +456,11 @@ function SubGroup({
         <span className="text-[11px] text-muted-foreground">{items.length}</span>
       </div>
       <div className="mt-3 space-y-1">
+        {items.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-6 text-center text-[12px] text-muted-foreground">
+            No modules yet.
+          </p>
+        )}
         {items.map((t) => {
           const Icon = TYPE_ICON[t.type] ?? FileText;
           const p = getProgress(t.id);
