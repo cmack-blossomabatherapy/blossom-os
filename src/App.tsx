@@ -319,6 +319,11 @@ const App = () => (
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<OSClientsOperations />} />
+                  <Route path="/clients" element={<ClientsRouter />} />
+                  <Route path="/intake/clients" element={<OSIntakeClients />} />
+                  <Route path="/intake/leads" element={<OSLeadsV2 />} />
+                  <Route path="/intake/vob-decision" element={<OSPlaceholder title="VOB Decision Center" description="VOB review, payment plan decisions, and financial readiness for intake." icon={ShieldCheck} />} />
+                  <Route path="/intake/authorizations" element={<OSAuthorizations />} />
                   <Route path="/authorizations" element={<OSAuthorizations />} />
                   <Route path="/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
                     { title: "Smart conflict detection", description: "Prevents double-booking, credential mismatches, and travel-time issues." },
