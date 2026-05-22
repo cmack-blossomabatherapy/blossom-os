@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
+  useAcademy, getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
   trainingQuiz, type TrainingSection,
 } from "@/lib/training/academyData";
 
@@ -31,10 +31,11 @@ const SECTION_ICON: Record<TrainingSection["type"], typeof FileText> = {
 export default function OSTrainingDetail() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const training = useMemo(() => getTraining(id), [id]);
-  const sections = useMemo(() => getSectionsFor(id), [id]);
-  const checklist = useMemo(() => getChecklistFor(id), [id]);
-  const resources = useMemo(() => getResourcesFor(id), [id]);
+  const { trainings } = useAcademy();
+  const training = useMemo(() => getTraining(id), [id, trainings]);
+  const sections = useMemo(() => getSectionsFor(id), [id, trainings]);
+  const checklist = useMemo(() => getChecklistFor(id), [id, trainings]);
+  const resources = useMemo(() => getResourcesFor(id), [id, trainings]);
   const progress = useMemo(() => getProgress(id), [id]);
 
   // local-only progress controls (no backend yet)
