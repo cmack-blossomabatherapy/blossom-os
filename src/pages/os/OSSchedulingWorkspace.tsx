@@ -472,14 +472,18 @@ function ContextPanel({ clients }: { clients: Client[] }) {
       </Section>
 
       <Section title="Available RBTs" icon={Users} tone="success">
-        {availableRbts.map((r) => (
-          <div key={r.id} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
-            <div className="min-w-0">
-              <p className="text-foreground truncate">{r.name}</p>
-              <p className="text-[11px] text-muted-foreground">{r.state} · {r.capacityHours - r.assignedHours}h open</p>
+        {availableRbts.length === 0 ? (
+          <Quiet text="No RBTs currently available for pairing." />
+        ) : (
+          availableRbts.map((r) => (
+            <div key={r.id} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
+              <div className="min-w-0">
+                <p className="text-foreground truncate">{r.name}</p>
+                <p className="text-[11px] text-muted-foreground">{r.state} · {r.capacityHours - r.assignedHours}h open</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </Section>
 
       <Section title="Quick Actions" icon={ShieldCheck}>
