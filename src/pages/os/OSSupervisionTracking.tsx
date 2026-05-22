@@ -656,7 +656,7 @@ function DetailDrawer({ item, onClose }: { item: SupItem; onClose: () => void })
               {a}
             </button>
           ))}
-          <Link to="/authorizations" className="ml-auto inline-flex items-center gap-1 rounded-full bg-foreground px-3 py-1 text-[11px] font-medium text-background hover:bg-foreground/90">
+          <Link to={`/authorizations?authId=${encodeURIComponent(auth.id)}`} className="ml-auto inline-flex items-center gap-1 rounded-full bg-foreground px-3 py-1 text-[11px] font-medium text-background hover:bg-foreground/90">
             Open Authorization <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
