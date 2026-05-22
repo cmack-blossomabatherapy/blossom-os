@@ -10,12 +10,13 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass, Settings2,
+  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
   systemsTrainings, sharedTrainings, searchTrainings,
   getJourneyForRole, getJourneyModules, ICONS,
+  recentlyAdded, requiredForDepartment,
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 
@@ -28,6 +29,19 @@ const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   "Quick Guide": BookOpen,
 };
 
+/** Map a role to its primary department for required-module scoping. */
+const ROLE_DEPARTMENT: Record<string, string> = {
+  intake_coordinator: "intake",
+  authorization_coordinator: "authorizations",
+  scheduling_team: "scheduling",
+  qa_team: "qa",
+  recruiting_team: "recruiting",
+  bcba: "clinical",
+  rbt: "clinical",
+  hr_team: "hr",
+  billing_finance: "billing",
+};
+
 export default function OSTraining() {
   const navigate = useNavigate();
   const { role } = useOSRole();
@@ -37,9 +51,15 @@ export default function OSTraining() {
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
   const cont = useMemo(continueLearning, [trainings]);
+  const department = ROLE_DEPARTMENT[role];
+  const requiredRole = useMemo(
+    () => (department ? requiredForDepartment(department) : requiredDue()),
+    [department, trainings],
+  );
   const required = useMemo(requiredDue, [trainings]);
   const systems = useMemo(systemsTrainings, [trainings]);
   const shared = useMemo(sharedTrainings, [trainings]);
+  const recent = useMemo(() => recentlyAdded(4), [trainings]);
   const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query, trainings]);
   const JourneyIcon = ICONS[journey.icon] ?? BookOpen;
 
@@ -292,27 +312,124 @@ export default function OSTraining() {
             </div>
           </section>
 
+          {/* REQUIRED MODULES — role-scoped */}
+          {requiredRole.length > 0 && (
+            <section>
+              <SectionHeader
+                title="Required Modules"
+                subtitle={department ? `Required learning for your role.` : "Required learning."}
+              />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {requiredRole.map((t) => {
+                  const Icon = TYPE_ICON[t.type] ?? FileText;
+                  const p = getProgress(t.id);
+                  const done = p.status === "completed";
+                  return (
+                    <Link
+                      key={t.id}
+                      to={`/training/${t.id}`}
+                      className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-muted-foreground">
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px]",
+                            done
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : p.status === "overdue"
+                              ? "border-red-200 bg-red-50 text-red-600"
+                              : "border-amber-200 bg-amber-50 text-amber-700",
+                          )}
+                        >
+                          {done ? "Complete" : p.status === "overdue" ? "Overdue" : "Required"}
+                        </Badge>
+                      </div>
+                      <h3 className="mt-3 text-[14px] font-semibold leading-snug">{t.title}</h3>
+                      <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{t.description}</p>
+                      <div className="mt-3 space-y-1.5">
+                        <Progress value={p.progressPercent} className="h-1" />
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground inline-flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {t.estimatedMinutes} min
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-medium text-primary">
+                            {done ? "Review" : p.progressPercent > 0 ? "Continue" : "Start"}{" "}
+                            <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* QUICK ACCESS */}
           <section>
-            <SectionHeader title="Quick Access" />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            <SectionHeader title="Quick Access" subtitle="Jump straight into the tools and knowledge you need." />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {[
-                { label: "SOP Library", to: "/sop" },
-                { label: "My Journey", to: "#journey" },
-                { label: "Required Trainings", to: "#required" },
-                { label: "Systems", to: "#systems" },
-                { label: "Ask Blossom AI", to: "/ai/assistant" },
-              ].map((q) => (
-                <button
-                  key={q.label}
-                  onClick={() => q.to.startsWith("/") ? navigate(q.to) : undefined}
-                  className="rounded-xl border border-border/70 bg-card px-3 py-2.5 text-left text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted/40"
-                >
-                  {q.label}
-                </button>
-              ))}
+                { label: "SOP Library", icon: Library, to: "/sop" },
+                { label: "Resource Library", icon: BookMarked, to: "/resources" },
+                { label: "Intake Workspace", icon: Inbox, to: "/os/intake/workspace" },
+                { label: "Insurance Resources", icon: ShieldCheck, to: "/resources?category=insurance" },
+                { label: "Communication Templates", icon: MessageSquare, to: "/resources?category=templates" },
+                { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
+              ].map((q) => {
+                const Icon = q.icon;
+                return (
+                  <button
+                    key={q.label}
+                    onClick={() => navigate(q.to)}
+                    className="group flex items-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-left text-[12.5px] font-medium text-foreground transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/40"
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="truncate">{q.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </section>
+
+          {/* RECENTLY ADDED */}
+          {recent.length > 0 && (
+            <section>
+              <SectionHeader title="Recently Added" subtitle="New and updated learning across Blossom OS." />
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {recent.map((t) => {
+                  const Icon = TYPE_ICON[t.type] ?? FileText;
+                  return (
+                    <Link
+                      key={t.id}
+                      to={`/training/${t.id}`}
+                      className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2.5 transition-colors hover:bg-muted/40"
+                    >
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium">{t.title}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          Updated {t.lastUpdated} · {t.type} · {t.estimatedMinutes} min
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
+                        New
+                      </Badge>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
 
         {/* RIGHT SIDEBAR */}

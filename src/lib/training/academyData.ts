@@ -112,41 +112,148 @@ const SEED_TRAININGS: Training[] = [
   },
   {
     id: "vob-basics",
-    title: "VOB Basics",
+    title: "VOB Fundamentals",
     description: "Verify benefits accurately and route the file correctly the first time.",
     type: "SOP", estimatedMinutes: 20, required: true,
     category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-15",
     overview: "Insurance verification fundamentals.",
     sopMarkdown: "## VOB SOP\nUse Solum. Capture all fields. Flag exclusions.",
     checklist: [{ id: "c1", item: "Complete 3 VOBs with QA review", required: true }],
-    resources: [],
-  },
-  {
-    id: "client-setup",
-    title: "Client Setup",
-    description: "Create a new client cleanly in CentralReach.",
-    type: "Tango", estimatedMinutes: 14,
-    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-12",
-    overview: "How to set up a new client record in CR.",
-    tangoUrl: "",
-    checklist: [{ id: "c1", item: "Set up a sandbox client", required: false }],
-    resources: [],
+    resources: [{ id: "r1", type: "Link", title: "VOB Decision Guide", url: "/resources" }],
   },
   {
     id: "family-communication",
     title: "Family Communication",
     description: "Cadence, tone, and templates for parent communication.",
-    type: "Quick Guide", estimatedMinutes: 10,
+    type: "Quick Guide", estimatedMinutes: 10, required: true,
     category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-04",
     overview: "How we talk to families at every stage.",
-    checklist: [],
+    checklist: [{ id: "c1", item: "Send 3 templated updates", required: true }],
+    resources: [{ id: "r1", type: "Link", title: "Communication Templates", url: "/resources" }],
+  },
+  {
+    id: "intake-foundations",
+    title: "Intake Foundations",
+    description: "What Intake owns, who we serve, and how the role connects to the rest of operations.",
+    type: "Quick Guide", estimatedMinutes: 12, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-20",
+    overview: "Intake exists to turn inquiries into ready-to-serve families. Calm, clear, fast.",
+    sopMarkdown: "## Foundations\n- Intake is centralized (not state-scoped).\n- Goal: reduce time-to-service while keeping families informed.\n- Handoffs: Scheduling, BCBA, QA.",
+    checklist: [{ id: "c1", item: "Read the Intake charter", required: true }],
+    resources: [{ id: "r1", type: "Link", title: "Intake Workspace", url: "/os/intake/workspace" }],
+  },
+  {
+    id: "insurance-basics",
+    title: "Insurance Basics",
+    description: "Plans, payers, networks, and what each one means for an ABA family.",
+    type: "Quick Guide", estimatedMinutes: 15, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-18",
+    overview: "A practical insurance primer for intake — no jargon, just what you actually need.",
+    sopMarkdown: "## Cheat Sheet\n- Commercial vs Medicaid.\n- In-network vs out-of-network.\n- Common BCBS / Aetna / UHC quirks by state.",
+    checklist: [{ id: "c1", item: "Pass the insurance vocab quiz", required: true }],
+    resources: [{ id: "r1", type: "Link", title: "Insurance Cheat Sheet", url: "/resources" }],
+  },
+  {
+    id: "assessment-coordination",
+    title: "Assessment Coordination",
+    description: "Schedule assessments, assign BCBAs, and keep families informed.",
+    type: "Workflow", estimatedMinutes: 16, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-19",
+    overview: "Owning the path from VOB approved to assessment complete.",
+    sopMarkdown: "## Steps\n1. Confirm availability.\n2. Assign BCBA by state + caseload.\n3. Send pre-assessment packet.\n4. Confirm 24h before.",
+    checklist: [{ id: "c1", item: "Coordinate one full assessment", required: true }],
     resources: [],
+  },
+  {
+    id: "service-readiness",
+    title: "Service Readiness",
+    description: "What 'ready to serve' actually means and who signs off.",
+    type: "SOP", estimatedMinutes: 12, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-17",
+    overview: "Final-mile checklist before a family becomes active.",
+    sopMarkdown: "## Readiness Checklist\n- Auth in hand.\n- BCBA assigned.\n- Schedule pattern proposed.\n- Family briefed.",
+    checklist: [{ id: "c1", item: "Complete a readiness review", required: true }],
+    resources: [],
+  },
+  {
+    id: "intake-systems",
+    title: "Intake Systems Training",
+    description: "How Blossom OS Intake Workspace, CentralReach and Solum fit together.",
+    type: "Tango", estimatedMinutes: 18, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-21",
+    overview: "A click-by-click tour of every system you'll touch as an Intake Coordinator.",
+    tangoUrl: "",
+    checklist: [{ id: "c1", item: "Complete the Tango walkthrough", required: true }],
+    resources: [{ id: "r1", type: "Link", title: "Intake Workspace", url: "/os/intake/workspace" }],
+  },
+  {
+    id: "operational-escalations",
+    title: "Operational Escalations",
+    description: "When to escalate, who to escalate to, and how to write a clean escalation.",
+    type: "Quick Guide", estimatedMinutes: 8, required: true,
+    category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-16",
+    overview: "Escalations protect families and keep operations calm.",
+    sopMarkdown: "## Escalation Path\nIntake Lead → State Director → Ops Leadership.",
+    checklist: [{ id: "c1", item: "Write one practice escalation", required: false }],
+    resources: [],
+  },
+  {
+    id: "sys-centralreach",
+    title: "CentralReach Basics",
+    description: "The essentials every intake user needs to know in CR.",
+    type: "Tango", estimatedMinutes: 14,
+    category: "systems", department: "intake", owner: "Systems", lastUpdated: "2026-05-11",
+    overview: "Client creation, scheduling fields, and where notes live.",
+    checklist: [], resources: [],
+  },
+  {
+    id: "sys-outlook",
+    title: "Outlook Workflow",
+    description: "Inbox rules, templates, and shared mailboxes.",
+    type: "Quick Guide", estimatedMinutes: 8,
+    category: "systems", department: "intake", owner: "Systems", lastUpdated: "2026-05-09",
+    checklist: [], resources: [],
+  },
+  {
+    id: "sys-teams",
+    title: "Microsoft Teams",
+    description: "Channels, mentions, and how Intake collaborates async.",
+    type: "Quick Guide", estimatedMinutes: 6,
+    category: "systems", department: "intake", owner: "Systems", lastUpdated: "2026-05-06",
+    checklist: [], resources: [],
+  },
+  {
+    id: "shared-scheduling-overview",
+    title: "Scheduling Overview",
+    description: "How scheduling thinks so intake can hand off cleanly.",
+    type: "Quick Guide", estimatedMinutes: 10,
+    category: "shared", department: "scheduling", owner: "Scheduling", lastUpdated: "2026-05-13",
+    checklist: [], resources: [],
+  },
+  {
+    id: "shared-qa-basics",
+    title: "QA Basics",
+    description: "What QA looks at and how intake quality shows up downstream.",
+    type: "Quick Guide", estimatedMinutes: 10,
+    category: "shared", department: "qa", owner: "QA", lastUpdated: "2026-05-14",
+    checklist: [], resources: [],
   },
 ];
 
 /** Only Intake is seeded with modules. Other roles get empty journeys ready to edit. */
 const SEED_JOURNEYS: RoleJourney[] = [
-  { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: ["phone-leads", "intake-workflow", "vob-basics", "client-setup", "family-communication"] },
+  { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: [
+    "intake-foundations",
+    "phone-leads",
+    "intake-workflow",
+    "insurance-basics",
+    "vob-basics",
+    "family-communication",
+    "assessment-coordination",
+    "service-readiness",
+    "intake-systems",
+    "operational-escalations",
+  ] },
   { id: "j-auth", role: "authorization_coordinator", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.", icon: "ShieldCheck", tone: "sky", moduleIds: [] },
   { id: "j-scheduling", role: "scheduling_team", title: "Scheduling Journey", tagline: "Build clean schedules that hold up.", icon: "CalendarClock", tone: "mint", moduleIds: [] },
   { id: "j-qa", role: "qa_team", title: "QA Journey", tagline: "Protect clinical quality with calm rigor.", icon: "CheckCircle2", tone: "violet", moduleIds: [] },
@@ -167,7 +274,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v2";
+const STORAGE_KEY = "blossom.training.academy.v3";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
@@ -297,7 +404,13 @@ export function reorderJourneyModule(journeyId: string, fromIndex: number, toInd
 
 /* ---------------- Mock progress ---------------- */
 
-export const trainingProgress: Record<string, TrainingProgress> = {};
+export const trainingProgress: Record<string, TrainingProgress> = {
+  "intake-foundations": { trainingId: "intake-foundations", status: "completed", progressPercent: 100 },
+  "phone-leads": { trainingId: "phone-leads", status: "completed", progressPercent: 100 },
+  "intake-workflow": { trainingId: "intake-workflow", status: "in_progress", progressPercent: 60 },
+  "insurance-basics": { trainingId: "insurance-basics", status: "in_progress", progressPercent: 25 },
+  "vob-basics": { trainingId: "vob-basics", status: "overdue", progressPercent: 10, dueDate: "2026-05-18" },
+};
 
 export function getProgress(id: string): TrainingProgress {
   return trainingProgress[id] ?? { trainingId: id, status: "not_started", progressPercent: 0 };
@@ -354,6 +467,21 @@ export function searchTrainings(q: string): Training[] {
   return state.trainings.filter((t) =>
     [t.title, t.description, t.type, t.department ?? "", t.owner ?? ""]
       .join(" ").toLowerCase().includes(term),
+  );
+}
+
+/** Recently published / updated modules — sorted by lastUpdated desc. */
+export function recentlyAdded(limit = 4): Training[] {
+  return [...state.trainings]
+    .filter((t) => !!t.lastUpdated)
+    .sort((a, b) => (b.lastUpdated ?? "").localeCompare(a.lastUpdated ?? ""))
+    .slice(0, limit);
+}
+
+/** Required modules scoped to a department (role-aware). */
+export function requiredForDepartment(department: string): Training[] {
+  return state.trainings.filter(
+    (t) => t.required && (t.department ?? "").toLowerCase() === department.toLowerCase(),
   );
 }
 
