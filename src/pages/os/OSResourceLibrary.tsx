@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/sheet";
 import {
   Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Sparkles, Send,
-  X, Settings2, ExternalLink, GraduationCap, Filter,
+  X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
+  FileType2, MessageSquare, Cpu, PlayCircle, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
@@ -40,23 +41,32 @@ export default function OSResourceLibrary() {
   const [recentlyOpened, setRecentlyOpened] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
+  const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
 
   // Role-aware scope: everything else flows from this list.
   const scope = useMemo(() => visibleResources(role, activeState), [role, activeState]);
-  const pinned = useMemo(() => pinnedFor(scope), [scope]);
-  const recent = useMemo(() => recentFor(scope, 6), [scope]);
+  const filteredScope = useMemo(
+    () => (typeFilter ? scope.filter((r) => r.type === typeFilter) : scope),
+    [scope, typeFilter]
+  );
+  const pinned = useMemo(() => pinnedFor(filteredScope), [filteredScope]);
+  const recent = useMemo(() => recentFor(filteredScope, 6), [filteredScope]);
+  const quickLinks = useMemo(
+    () => scope.filter((r) => r.type === "Link" || r.type === "Tango").slice(0, 6),
+    [scope]
+  );
   const searchResults = useMemo(
-    () => (query ? searchResources(query, scope) : []),
-    [query, scope]
+    () => (query ? searchResources(query, filteredScope) : []),
+    [query, filteredScope]
   );
 
   const roleLabelText = roleLabel(role);
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
-    if (activeCategory) return resourcesByCategory(activeCategory, scope);
+    if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
-  }, [query, activeCategory, searchResults, scope]);
+  }, [query, activeCategory, searchResults, filteredScope]);
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
@@ -134,8 +144,39 @@ export default function OSResourceLibrary() {
             </div>
             <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
               <Filter className="h-3.5 w-3.5" />
-              <span>{scope.length} resources visible</span>
+              <span>{filteredScope.length} of {scope.length} resources</span>
             </div>
+          </div>
+
+          {/* TYPE QUICK FILTERS */}
+          <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto pb-1">
+            {[
+              { key: null, label: "All", icon: BookOpen },
+              { key: "SOP" as const, label: "SOPs", icon: FileText },
+              { key: "Workflow" as const, label: "Workflows", icon: Workflow },
+              { key: "Tango" as const, label: "Tango Walkthroughs", icon: PlayCircle },
+              { key: "Template" as const, label: "Templates", icon: FileType2 },
+              { key: "Checklist" as const, label: "Checklists", icon: FileText },
+              { key: "Link" as const, label: "Quick Links", icon: Link2 },
+            ].map((t) => {
+              const Icon = t.icon;
+              const active = typeFilter === t.key;
+              return (
+                <button
+                  key={t.label}
+                  onClick={() => setTypeFilter(t.key as Resource["type"] | null)}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-white/70 text-muted-foreground hover:text-foreground border-border/70 hover:bg-white",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </header>
 
@@ -143,6 +184,33 @@ export default function OSResourceLibrary() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           {/* CENTER COLUMN */}
           <div className="space-y-8 min-w-0">
+            {/* QUICK LINKS STRIP */}
+            {!query && !activeCategory && !typeFilter && quickLinks.length > 0 && (
+              <section>
+                <SectionHeader title="Quick links & walkthroughs" subtitle="Jump straight into the tools you use daily" icon={Link2} />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                  {quickLinks.map((r) => {
+                    const Icon = TYPE_ICON[r.type];
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => openResource(r)}
+                        className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_8px_24px_-12px_hsl(220_15%_30%/0.1)]"
+                      >
+                        <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TYPE_TONE[r.type])}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-[12.5px] font-medium text-foreground">{r.title}</div>
+                          <div className="truncate text-[10.5px] text-muted-foreground">{r.type}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* PINNED */}
             {pinned.length > 0 && !query && !activeCategory && (
               <section>
@@ -169,7 +237,7 @@ export default function OSResourceLibrary() {
                   icon={Star}
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {scope.slice(0, 9).map((r) => (
+                  {filteredScope.slice(0, 9).map((r) => (
                     <ResourceCard
                       key={r.id} r={r}
                       onOpen={openResource}
@@ -187,7 +255,7 @@ export default function OSResourceLibrary() {
                 <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                   {resourceCategories.map((c) => {
-                    const count = resourcesByCategory(c.id, scope).length;
+                    const count = resourcesByCategory(c.id, filteredScope).length;
                     if (count === 0) return null;
                     const Icon = c.icon;
                     const active = activeCategory === c.id;
@@ -340,7 +408,7 @@ export default function OSResourceLibrary() {
 
       {/* DETAIL DRAWER */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto bg-card">
           {selected && (
             <>
               <SheetHeader>
