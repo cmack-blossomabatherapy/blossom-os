@@ -146,7 +146,7 @@ function pipelineStage(c: Client): PipelineStage {
   if (h === "Missing Items") return "Missing Intake Info";
   if (a === "Approved") return "Approved";
   if (a === "Submitted") return "Submitted";
-  if (c.stage?.toLowerCase().includes("treatment plan") || (!c.assessmentDate && a !== "Approved" && a !== "Submitted")) {
+  if (c.stage?.toLowerCase().includes("treatment plan") || !c.assessmentDate) {
     return "Waiting on Treatment Plan";
   }
   if (h === "Needs Review") return "Needs Follow-Up";
