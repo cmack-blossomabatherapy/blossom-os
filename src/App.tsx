@@ -189,6 +189,7 @@ import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
+import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
