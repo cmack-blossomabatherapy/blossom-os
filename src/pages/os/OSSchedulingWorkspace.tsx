@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
-import { mockClients, type Client } from "@/data/clients";
+import { type Client } from "@/data/clients";
+import { useClients } from "@/contexts/ClientsContext";
 import { getClientStaffingNeeds, suggestStaffingMatches, mockRBTProfiles } from "@/data/staffing";
 
 /* ---------------- helpers ---------------- */
@@ -51,17 +52,18 @@ const BUCKET_ORDER: WorkBucket[] = ["needs_rbt", "pending_start", "ready_to_sche
 /* ---------------- page ---------------- */
 
 export default function OSSchedulingWorkspace() {
+  const { clients } = useClients();
   const [params, setParams] = useSearchParams();
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [bucketFilter, setBucketFilter] = useState<WorkBucket | "all">("all");
   const [query, setQuery] = useState("");
 
   const queue = useMemo(() => {
-    return mockClients
+    return clients
       .map((c) => ({ c, b: bucketOf(c) }))
       .filter((x): x is { c: Client; b: WorkBucket } => x.b !== null)
       .sort((a, b) => BUCKET_ORDER.indexOf(a.b) - BUCKET_ORDER.indexOf(b.b) || b.c.daysInStage - a.c.daysInStage);
-  }, []);
+  }, [clients]);
 
   const filtered = useMemo(() => {
     return queue.filter(({ c, b }) => {
@@ -73,7 +75,7 @@ export default function OSSchedulingWorkspace() {
   }, [queue, stateFilter, bucketFilter, query]);
 
   const selectedId = params.get("clientId") ?? filtered[0]?.c.id ?? null;
-  const selected = selectedId ? mockClients.find((c) => c.id === selectedId) ?? null : null;
+  const selected = selectedId ? clients.find((c) => c.id === selectedId) ?? null : null;
 
   const selectClient = (id: string) => {
     const next = new URLSearchParams(params);
@@ -81,7 +83,7 @@ export default function OSSchedulingWorkspace() {
     setParams(next, { replace: true });
   };
 
-  const states = Array.from(new Set(mockClients.map((c) => c.state))).sort();
+  const states = Array.from(new Set(clients.map((c) => c.state))).sort();
 
   const counts = useMemo(() => {
     const k: Record<WorkBucket, number> = { needs_rbt: 0, pairing_pending: 0, ready_to_schedule: 0, pending_start: 0, coverage_risk: 0 };
