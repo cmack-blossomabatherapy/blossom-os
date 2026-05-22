@@ -311,7 +311,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Dashboard", icon: LayoutDashboard, path: "/bcba", perm: "" },
         { label: "BCBA Workspace", icon: Workflow, path: "/bcba/workspace", perm: "" },
-        { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+        { label: "Training Academy", icon: GraduationCap, path: "/training/journeys/bcba", perm: "" },
       ],
     },
     {

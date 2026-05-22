@@ -53,6 +53,7 @@ import AcademyLeadership from "./pages/hr/academy/LeadershipDashboard";
 import AcademyEditor from "./pages/hr/academy/AcademyEditor";
 import HRAdminAssistantDashboard from "./pages/training/HRAdminAssistantDashboard";
 import AuthorizationCoordinatorJourney from "./pages/training/AuthorizationCoordinatorJourney";
+import BCBAJourney from "./pages/training/BCBAJourney";
 import TrackAnalytics from "./pages/hr/TrackAnalytics";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
@@ -554,6 +555,7 @@ const App = () => (
                   <Route path="/training/academy/editor" element={<PermissionRoute permission="hr.training.assign" allowedRoles={TRAINING_ADMIN_ROLES}><AcademyEditor /></PermissionRoute>} />
                   <Route path="/training/hr-admin-assistant" element={<HRAdminAssistantDashboard />} />
                   <Route path="/training/journeys/authorization-coordinator" element={<AuthorizationCoordinatorJourney />} />
+                  <Route path="/training/journeys/bcba" element={<BCBAJourney />} />
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
