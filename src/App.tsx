@@ -198,6 +198,7 @@ import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
+import { useOSRole } from "./contexts/OSRoleContext";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
   BarChart3, GraduationCap, Building2, Settings as SIcon,
