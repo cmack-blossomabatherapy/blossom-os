@@ -211,6 +211,14 @@ export interface Client {
   consentRequired?: boolean;
   consentComplete?: boolean;
   blockers: string[];
+  /**
+   * Structured flag indicating the family has flaked / gone unreachable.
+   * Drives the "Flaked Client" status tab and next-best-action engine.
+   * Prefer this flag over parsing free-text blockers.
+   */
+  clientUnreachable?: boolean;
+  clientUnreachableSince?: string | null;
+  clientUnreachableReason?: string | null;
   authorizations: AuthorizationRecord[];
   reauthCycles?: ReauthCycle[];
   schedule: ScheduleSlot[];
