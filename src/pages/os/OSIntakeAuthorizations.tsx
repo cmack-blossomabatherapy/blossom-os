@@ -5,6 +5,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
   StickyNote, Users, ListChecks, FileWarning, ExternalLink, Heart,
   ClipboardCheck, Send, PhoneCall, CalendarClock, Lightbulb,
+  Bell, FileText, ShieldAlert, Upload, CheckCheck,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useClients } from "@/contexts/ClientsContext";
@@ -18,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Client } from "@/data/clients";
+import type { Client, ReauthCycle } from "@/data/clients";
 
 /* ───────────────────────── helpers ───────────────────────── */
 
@@ -922,6 +923,7 @@ function AuthDrawer({
                         : "90-day warning — kick off reassessment workflow."}
                   </div>
                 )}
+                <ReauthCyclesTimeline cycles={c.reauthCycles ?? []} />
               </>
             ) : (
               <p className="text-sm text-muted-foreground">No expiration date on file yet.</p>
@@ -1140,5 +1142,193 @@ function InsightLine({ children, tone }: { children: ReactNode; tone: "warning" 
       tone === "destructive" && "border-destructive/20 bg-destructive/[0.06] text-destructive",
       tone === "muted" && "border-border bg-muted/50 text-muted-foreground",
     )}>{children}</div>
+  );
+}
+
+/* ─────────────────────── Reauth Cycles Timeline ─────────────────────── */
+
+type MilestoneTone = "done" | "due" | "overdue" | "pending";
+
+interface Milestone {
+  key: string;
+  label: string;
+  icon: typeof Bell;
+  date?: string | null;
+  doneDate?: string | null;
+}
+
+function milestoneTone(m: Milestone): MilestoneTone {
+  if (m.doneDate) return "done";
+  if (!m.date) return "pending";
+  const due = new Date(m.date).getTime();
+  if (Number.isNaN(due)) return "pending";
+  const now = Date.now();
+  if (due < now) return "overdue";
+  const inDays = (due - now) / 86_400_000;
+  if (inDays <= 14) return "due";
+  return "pending";
+}
+
+function buildMilestones(cycle: ReauthCycle): Milestone[] {
+  return [
+    {
+      key: "bcba9",
+      label: "BCBA 9-week notification",
+      icon: Bell,
+      date: cycle.bcba9WeekNotificationDate,
+      doneDate: cycle.bcba9WeekNotificationDate && new Date(cycle.bcba9WeekNotificationDate).getTime() < Date.now()
+        ? cycle.bcba9WeekNotificationDate
+        : null,
+    },
+    {
+      key: "bcba6",
+      label: "BCBA 6-week notification",
+      icon: Bell,
+      date: cycle.bcba6WeekNotificationDate,
+      doneDate: cycle.bcba6WeekNotificationDate && new Date(cycle.bcba6WeekNotificationDate).getTime() < Date.now()
+        ? cycle.bcba6WeekNotificationDate
+        : null,
+    },
+    {
+      key: "report",
+      label: "Progress report",
+      icon: FileText,
+      date: cycle.progressReportDueDate,
+      doneDate: cycle.progressReportReceivedDate,
+    },
+    {
+      key: "qa",
+      label: "QA review",
+      icon: ShieldAlert,
+      date: cycle.qaReviewStartedDate,
+      doneDate: cycle.qaCompletedDate,
+    },
+    {
+      key: "submission",
+      label: "Submission to payor",
+      icon: Upload,
+      date: cycle.reauthTriggerDate,
+      doneDate: cycle.submissionDate,
+    },
+    {
+      key: "approval",
+      label: "Payor approval",
+      icon: CheckCheck,
+      date: cycle.currentAuthExpirationDate,
+      doneDate: cycle.approvalDate,
+    },
+  ];
+}
+
+function fmtShort(d?: string | null): string {
+  if (!d) return "—";
+  const t = new Date(d);
+  if (Number.isNaN(t.getTime())) return "—";
+  return t.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function ReauthCyclesTimeline({ cycles }: { cycles: ReauthCycle[] }) {
+  if (!cycles.length) {
+    return (
+      <p className="mt-3 text-xs text-muted-foreground">
+        No reauth cycles tracked yet. Cycles will appear here once kicked off.
+      </p>
+    );
+  }
+  // Newest expiration first
+  const sorted = [...cycles].sort(
+    (a, b) => new Date(b.currentAuthExpirationDate).getTime() - new Date(a.currentAuthExpirationDate).getTime(),
+  );
+  return (
+    <div className="mt-4 space-y-4">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Reauth cycles</p>
+      {sorted.map((cycle) => {
+        const milestones = buildMilestones(cycle);
+        const done = milestones.filter((m) => m.doneDate).length;
+        const progressPct = Math.round((done / milestones.length) * 100);
+        return (
+          <div key={cycle.id} className="rounded-xl border border-border bg-card/60 p-3">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {cycle.payor} · expires {fmtShort(cycle.currentAuthExpirationDate)}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Status · {cycle.status} · QA · {cycle.qaStatus} · Submission · {cycle.submissionStatus}
+                </p>
+              </div>
+              <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">{done}/{milestones.length}</span>
+            </div>
+
+            <div className="h-1 w-full rounded-full bg-muted overflow-hidden mb-3" aria-hidden>
+              <div className="h-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+
+            <ol className="space-y-2">
+              {milestones.map((m, idx) => {
+                const tone = milestoneTone(m);
+                const Icon = m.icon;
+                return (
+                  <li key={m.key} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center shrink-0">
+                      <span className={cn(
+                        "h-6 w-6 rounded-full border flex items-center justify-center",
+                        tone === "done" && "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+                        tone === "due" && "bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400",
+                        tone === "overdue" && "bg-destructive/15 border-destructive/40 text-destructive",
+                        tone === "pending" && "bg-muted border-border text-muted-foreground",
+                      )}>
+                        <Icon className="h-3 w-3" />
+                      </span>
+                      {idx < milestones.length - 1 && (
+                        <span className={cn(
+                          "w-px flex-1 my-0.5 min-h-[12px]",
+                          tone === "done" ? "bg-emerald-500/40" : "bg-border",
+                        )} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 pb-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn(
+                          "text-sm",
+                          tone === "done" ? "text-foreground" : "text-foreground",
+                        )}>{m.label}</span>
+                        <span className={cn(
+                          "text-[11px] tabular-nums shrink-0",
+                          tone === "overdue" ? "text-destructive" : "text-muted-foreground",
+                        )}>
+                          {tone === "done"
+                            ? `Done ${fmtShort(m.doneDate)}`
+                            : tone === "overdue"
+                              ? `Overdue · ${fmtShort(m.date)}`
+                              : tone === "due"
+                                ? `Due ${fmtShort(m.date)}`
+                                : m.date ? `Target ${fmtShort(m.date)}` : "Not scheduled"}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {(cycle.blockers.length > 0 || cycle.alerts.length > 0) && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {cycle.blockers.map((b) => (
+                  <span key={`b-${b}`} className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/[0.06] px-2 py-0.5 text-[11px] text-destructive">
+                    <AlertTriangle className="h-3 w-3" /> {b}
+                  </span>
+                ))}
+                {cycle.alerts.map((a) => (
+                  <span key={`a-${a}`} className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/[0.06] px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-400">
+                    <Bell className="h-3 w-3" /> {a}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
