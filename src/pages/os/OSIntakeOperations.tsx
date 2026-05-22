@@ -552,6 +552,7 @@ function IconBtn({ icon: Icon, onClick }: { icon: any; onClick: (e: React.MouseE
 /* ─────────────────────── Assessment Coordination ─────────────────────── */
 
 function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+  const modals = useIntakeModals();
   const columns = useMemo(() => {
     const dx = leads.filter((l) => l.status === "Needs DX" || l.status === "Getting DX");
     return [
@@ -598,6 +599,13 @@ function AssessmentCoordination({ leads, onOpen }: { leads: Lead[]; onOpen: (id:
                 <li className="text-[11px] text-muted-foreground/70 px-2">None</li>
               )}
             </ul>
+            {col.items[0] && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                <button onClick={() => modals.open({ kind: "schedule", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Schedule</button>
+                <button onClick={() => modals.open({ kind: "assignBcba", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Assign BCBA</button>
+                <button onClick={() => modals.open({ kind: "comm", channel: "email", lead: col.items[0] })} className="text-[11px] px-2 h-6 rounded-full bg-muted hover:bg-muted/80">Message</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
