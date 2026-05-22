@@ -9,6 +9,8 @@ export interface ClientScope {
 const LEADERSHIP = new Set([
   "admin", "exec", "ops_manager", "operations_leadership",
   "intake_leadership", "intake_manager", "super_admin",
+  // Intake is centralized — coordinators see all clients org-wide for handoff visibility.
+  "intake", "intake_coordinator",
 ]);
 
 /** Apply role/state-based scoping to the clients list. */
@@ -26,13 +28,6 @@ export function scopeClientsForUser(clients: Client[], scope: ClientScope): Clie
   if (roles.includes("bcba") && scope.displayName) {
     const first = scope.displayName.toLowerCase().split(/\s+/)[0];
     return clients.filter((c) => (c.bcba || "").toLowerCase().includes(first));
-  }
-
-  // Intake — limited to clients they own as intake person.
-  if (roles.includes("intake") || roles.includes("intake_coordinator")) {
-    const first = (scope.displayName || "").toLowerCase().split(/\s+/)[0];
-    if (!first) return clients;
-    return clients.filter((c) => (c.intakeOwner || "").toLowerCase().includes(first));
   }
 
   return clients;
