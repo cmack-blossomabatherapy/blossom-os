@@ -168,6 +168,7 @@ import OSIntakeWorkspace from "./pages/os/OSIntakeWorkspace";
 import OSClients from "./pages/os/OSClients";
 import OSClientsOperations from "./pages/os/OSClientsOperations";
 import OSIntakeClients from "./pages/os/OSIntakeClients";
+import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
 import OSStateDirector from "./pages/os/OSStateDirector";
@@ -214,6 +215,11 @@ const queryClient = new QueryClient();
 function ClientsRouter() {
   const { role } = useOSRole();
   return role === "intake_coordinator" ? <OSIntakeClients /> : <OSClientsOperations />;
+}
+
+function AuthorizationsRouter() {
+  const { role } = useOSRole();
+  return role === "intake_coordinator" ? <OSIntakeAuthorizations /> : <OSAuthorizations />;
 }
 
 const OSOutlet = () => (
@@ -328,8 +334,8 @@ const App = () => (
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
                   <Route path="/intake/leads" element={<OSLeadsV2 />} />
                   <Route path="/intake/vob-decision" element={<OSPlaceholder title="VOB Decision Center" description="VOB review, payment plan decisions, and financial readiness for intake." icon={ShieldCheck} />} />
-                  <Route path="/intake/authorizations" element={<OSAuthorizations />} />
-                  <Route path="/authorizations" element={<OSAuthorizations />} />
+                  <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
+                  <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
                     { title: "Smart conflict detection", description: "Prevents double-booking, credential mismatches, and travel-time issues." },
                     { title: "Open coverage board", description: "Visualize uncovered hours by client, region, and service line." },
