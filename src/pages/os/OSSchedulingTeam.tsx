@@ -285,18 +285,33 @@ export default function OSSchedulingTeam() {
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {[
-                  "Which clients need staffing today?",
-                  "Show me clients approved but not scheduled.",
-                  "Which RBT pairings are incomplete?",
-                  "What are the biggest scheduling risks this week?",
-                  "Which clients are ready for a start date?",
-                ].map((q) => (
+                  {
+                    label: `Summarize ${counts.needs_rbt} clients needing staffing today`,
+                    q: `Summarize the ${counts.needs_rbt} clients currently needing RBT pairing and recommend Scheduling next steps.`,
+                  },
+                  {
+                    label: `${counts.ready_to_schedule} approved · not yet scheduled`,
+                    q: `List the ${counts.ready_to_schedule} approved clients still pending a built schedule. Prioritize by days waiting.`,
+                  },
+                  {
+                    label: `Incomplete RBT pairings (${waitingBcba} awaiting BCBA)`,
+                    q: `Which clients have incomplete pairings (missing RBT or BCBA)? Highlight ${waitingBcba} awaiting BCBA confirmation.`,
+                  },
+                  {
+                    label: `Top scheduling risks this week (${counts.coverage_risk})`,
+                    q: `What are the ${counts.coverage_risk} biggest active coverage risks this week and what should Scheduling do about each?`,
+                  },
+                  {
+                    label: `${counts.pending_start} pending start dates · confirm next`,
+                    q: `Which paired clients are ready for a start date and which should Scheduling confirm next?`,
+                  },
+                ].map(({ label, q }) => (
                   <Link
-                    key={q}
-                    to={`/ask-blossom?q=${encodeURIComponent(q)}`}
+                    key={label}
+                    to={`/ask-blossom?scope=scheduling&q=${encodeURIComponent(q)}`}
                     className="rounded-full border border-border/70 bg-card px-2.5 py-1 text-[11.5px] text-foreground/80 hover:bg-muted/40"
                   >
-                    {q}
+                    {label}
                   </Link>
                 ))}
               </div>
