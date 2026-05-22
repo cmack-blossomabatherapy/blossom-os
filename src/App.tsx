@@ -94,6 +94,7 @@ import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
 import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
 import IntakeDashboard from "./pages/IntakeDashboard";
 import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
+import OSAuthorizations from "./pages/os/OSAuthorizations";
 import SchedulingDashboard from "./pages/SchedulingDashboard";
 import StaffingDashboard from "./pages/StaffingDashboard";
 import ClinicDashboard from "./pages/ClinicDashboard";
