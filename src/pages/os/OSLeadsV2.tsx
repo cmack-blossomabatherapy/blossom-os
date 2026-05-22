@@ -505,11 +505,23 @@ function OSLeadsV2Inner() {
 const PAGE_SIZE = 50;
 
 function ListView({
-  leads, onOpen, page, setPage,
-}: { leads: Lead[]; onOpen: (id: string) => void; page: number; setPage: (n: number) => void }) {
+  leads, onOpen, page, setPage, selectedIds, toggleOne, togglePage,
+}: {
+  leads: Lead[];
+  onOpen: (id: string) => void;
+  page: number;
+  setPage: (n: number) => void;
+  selectedIds: Set<string>;
+  toggleOne: (id: string, checked: boolean) => void;
+  togglePage: (ids: string[], checked: boolean) => void;
+}) {
   const start = page * PAGE_SIZE;
   const slice = leads.slice(start, start + PAGE_SIZE);
   const pages = Math.ceil(leads.length / PAGE_SIZE);
+  const pageIds = slice.map((l) => l.id);
+  const pageSelectedCount = pageIds.reduce((n, id) => n + (selectedIds.has(id) ? 1 : 0), 0);
+  const headerState: boolean | "indeterminate" =
+    pageSelectedCount === 0 ? false : pageSelectedCount === pageIds.length ? true : "indeterminate";
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
@@ -517,6 +529,13 @@ function ListView({
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>
+              <th className="px-3 py-2.5 w-8">
+                <Checkbox
+                  checked={headerState}
+                  onCheckedChange={(v) => togglePage(pageIds, v === true)}
+                  aria-label="Select all on page"
+                />
+              </th>
               {["Patient", "Parent", "State", "Owner", "Status", "Last Contact", "Form", "Insurance", "VOB", "Next Action", ""].map((h) => (
                 <th key={h} className="text-left font-medium px-3 py-2.5 whitespace-nowrap">{h}</th>
               ))}
@@ -527,8 +546,18 @@ function ListView({
               <tr
                 key={l.id}
                 onClick={() => onOpen(l.id)}
-                className="hover:bg-muted/40 cursor-pointer group"
+                className={cn(
+                  "hover:bg-muted/40 cursor-pointer group",
+                  selectedIds.has(l.id) && "bg-primary/5",
+                )}
               >
+                <td className="px-3 py-2.5 w-8" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(l.id)}
+                    onCheckedChange={(v) => toggleOne(l.id, v === true)}
+                    aria-label={`Select ${l.childName}`}
+                  />
+                </td>
                 <td className="px-3 py-2.5 font-medium whitespace-nowrap">
                   {(() => {
                     const a = agingFor(l);
