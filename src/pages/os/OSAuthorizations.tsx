@@ -736,6 +736,188 @@ function KV({ label, value }: { label: string; value: string }) {
   );
 }
 
+/* ------------------------------ Ask Blossom — drawer panel ------------------------------ */
+type PromptKey = "blockers" | "next" | "missing" | "summary";
+
+const PROMPT_CATALOG: { key: PromptKey; label: string; icon: any }[] = [
+  { key: "blockers", label: "Summarize blockers and risks", icon: ShieldAlert },
+  { key: "next", label: "What are the next steps?", icon: ArrowUpRight },
+  { key: "missing", label: "What documentation is missing?", icon: FileWarning },
+  { key: "summary", label: "Give me a 30-second summary", icon: Sparkles },
+];
+
+function buildAnswer(a: EnrichedAuth, key: PromptKey): { headline: string; bullets: string[]; nextAction?: string } {
+  const exp = a.daysToExpire;
+  const isGA = a.state === "GA";
+  const sd = isGA ? "Shira / Rachel" : "Julianne";
+  const outreach = isGA ? "Rivky (GA)" : "Rikki (multi-state)";
+  const lastEvent = a.timeline[a.timeline.length - 1];
+  const missingDocs = [
+    !a.treatmentPlanReceived && "Treatment plan",
+    ...a.missingRequirements,
+    ...a.documents.filter(d => d.required && !d.received).map(d => d.name),
+  ].filter(Boolean) as string[];
+
+  if (key === "blockers") {
+    const bullets: string[] = [];
+    if (a.missingInfo || missingDocs.length) bullets.push(`Documentation gap — ${missingDocs.length} item${missingDocs.length === 1 ? "" : "s"} outstanding (${missingDocs.slice(0, 3).join(", ") || "see missing docs"}).`);
+    if (exp !== null && exp < 15) bullets.push(`Expiration risk — ${exp} day${exp === 1 ? "" : "s"} until expiration on ${a.expirationDate}.`);
+    else if (exp !== null && exp < 45) bullets.push(`Expiring soon — ${exp} days out, inside the 45-day window.`);
+    if (a.lastPRDays > 45) bullets.push(`PR overdue ${a.lastPRDays} days — escalation to ${sd} required.`);
+    else if (a.lastPRDays > 30) bullets.push(`PR aging at ${a.lastPRDays} days — ${outreach} should begin outreach.`);
+    if (a.stage === "In QA Review" && a.daysInStage >= 3) bullets.push(`Stuck in QA for ${a.daysInStage} days — ${a.qaOwner ?? "QA owner"} needs nudge.`);
+    if (a.stage === "Awaiting Submission" && a.daysInStage >= 2) bullets.push(`Awaiting submission for ${a.daysInStage} days — coordinator ${a.coordinator} to submit.`);
+    if (a.stage === "Denied") bullets.push(`Denied — payer review and appeal path required.`);
+    if (a.supervisionPct < 70) bullets.push(`Supervision at ${a.supervisionPct}% — below 70% threshold, BCBA ${a.bcba} follow-up needed.`);
+    if (bullets.length === 0) bullets.push("No active blockers detected. Record is operationally clear.");
+    return {
+      headline: `Risk: ${a.urgency.toUpperCase()} · ${bullets.length} blocker${bullets.length === 1 ? "" : "s"}`,
+      bullets,
+      nextAction: a.primaryBlocker ?? undefined,
+    };
+  }
+
+  if (key === "next") {
+    const steps: string[] = [];
+    if (!a.treatmentPlanReceived) steps.push(`Request treatment plan from ${a.bcba}.`);
+    if (missingDocs.length) steps.push(`Collect ${missingDocs.length} missing document${missingDocs.length === 1 ? "" : "s"} (${missingDocs.slice(0, 2).join(", ")}${missingDocs.length > 2 ? "…" : ""}).`);
+    if (a.lastPRDays > 45) steps.push(`Escalate to ${sd} — PR ${a.lastPRDays} days overdue.`);
+    else if (a.lastPRDays > 30) steps.push(`${outreach} begins parent outreach for PR.`);
+    if (a.stage === "In QA Review") steps.push(`Follow up with ${a.qaOwner ?? "QA"} on review completion.`);
+    if (a.stage === "Awaiting Submission" && !a.missingInfo && a.treatmentPlanReceived) steps.push(`Submit to ${a.payor} — record is ready.`);
+    if (exp !== null && exp < 30 && a.stage !== "Approved") steps.push(`Prioritize ${a.payor} submission — ${exp} days until expiration.`);
+    if (a.stage === "Denied") steps.push(`Open appeal workflow with ${a.payor}; loop in ${sd}.`);
+    if (steps.length === 0) steps.push(`Monitor; no operational action required this week.`);
+    return {
+      headline: `${steps.length} recommended step${steps.length === 1 ? "" : "s"}`,
+      bullets: steps,
+      nextAction: steps[0],
+    };
+  }
+
+  if (key === "missing") {
+    if (missingDocs.length === 0) {
+      return { headline: "All required documentation received.", bullets: ["Treatment plan: received.", "All required intake documents: received.", "No outstanding requirements logged."] };
+    }
+    const bullets = missingDocs.map((d) => {
+      if (d === "Treatment plan") return `${d} — owner: ${a.bcba} (BCBA).`;
+      if (a.missingRequirements.includes(d)) return `${d} — owner: ${a.coordinator} (Coordinator).`;
+      return `${d} — owner: Intake team (collect from family).`;
+    });
+    return {
+      headline: `${missingDocs.length} document${missingDocs.length === 1 ? "" : "s"} outstanding`,
+      bullets,
+      nextAction: `Request "${missingDocs[0]}" first.`,
+    };
+  }
+
+  // summary
+  const bullets = [
+    `${a.clientName} · ${a.authType} authorization with ${a.payor} (${a.state}).`,
+    `Stage: ${a.stage} for ${a.daysInStage} day${a.daysInStage === 1 ? "" : "s"}.`,
+    exp !== null ? `Expires ${a.expirationDate} (${exp}d).` : `No expiration on record.`,
+    `PR ${a.lastPRDays}d ago · Supervision ${a.supervisionPct}%.`,
+    lastEvent ? `Last activity: ${lastEvent.description} (${relTime(lastEvent.timestamp)}).` : `No timeline activity logged.`,
+    missingDocs.length ? `${missingDocs.length} missing doc${missingDocs.length === 1 ? "" : "s"}.` : `Documentation complete.`,
+  ];
+  return {
+    headline: `${a.urgency.toUpperCase()} risk · ${a.primaryBlocker ?? "No active blocker"}`,
+    bullets,
+  };
+}
+
+function AskBlossomAuthPanel({ a }: { a: EnrichedAuth }) {
+  const [active, setActive] = useState<PromptKey | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Reset when switching records
+  useEffect(() => { setActive(null); setLoading(false); }, [a.id]);
+
+  const answer = useMemo(() => (active ? buildAnswer(a, active) : null), [a, active]);
+
+  const run = (key: PromptKey) => {
+    setActive(key);
+    setLoading(true);
+    // Simulate brief assistant thinking for premium feel
+    window.setTimeout(() => setLoading(false), 320);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {PROMPT_CATALOG.map((p) => {
+          const isActive = active === p.key;
+          return (
+            <button
+              key={p.key}
+              onClick={() => run(p.key)}
+              className={cn(
+                "text-left rounded-xl border px-3 py-2 text-xs transition flex items-center justify-between gap-2",
+                isActive
+                  ? "border-primary/40 bg-primary/5 text-foreground"
+                  : "border-border/60 bg-muted/40 hover:bg-muted text-foreground/80",
+              )}
+            >
+              <span className="flex items-center gap-2">
+                <p.icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground")} />
+                {p.label}
+              </span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          );
+        })}
+      </div>
+
+      {active && (
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-card to-card p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="grid place-items-center h-6 w-6 rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-3 w-3" />
+            </div>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Blossom AI</p>
+            {loading && (
+              <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
+                analyzing record…
+              </span>
+            )}
+          </div>
+
+          {loading || !answer ? (
+            <div className="space-y-2">
+              <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+              <div className="h-2.5 w-full rounded bg-muted/70 animate-pulse" />
+              <div className="h-2.5 w-5/6 rounded bg-muted/70 animate-pulse" />
+              <div className="h-2.5 w-3/4 rounded bg-muted/70 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className="text-xs font-medium text-foreground mb-2">{answer.headline}</p>
+              <ul className="space-y-1.5">
+                {answer.bullets.map((b, i) => (
+                  <li key={i} className="text-xs text-foreground/85 flex gap-2 leading-relaxed">
+                    <span className="mt-1.5 h-1 w-1 rounded-full bg-primary/70 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+              {answer.nextAction && (
+                <div className="mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] px-2.5 py-2 text-[11px] text-foreground/80 flex items-start gap-2">
+                  <ArrowUpRight className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                  <span><span className="text-muted-foreground">Suggested next action — </span>{answer.nextAction}</span>
+                </div>
+              )}
+              <p className="mt-3 text-[10px] text-muted-foreground/70">
+                Derived from this record's timeline, stage, PR cadence, supervision %, and documentation status. AI assists — coordinator confirms.
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------ AI rail ------------------------------ */
 function AskBlossomAuthRail({ auths, onOpen }: { auths: EnrichedAuth[]; onOpen: (id: string) => void }) {
   const priorities = useMemo(() => auths
