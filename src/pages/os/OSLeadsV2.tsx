@@ -455,7 +455,15 @@ function OSLeadsV2Inner() {
         ) : filtered.length === 0 ? (
           <EmptyState onReset={() => { setQuery(""); setFilters(emptyFilters()); setActiveKpi(null); }} />
         ) : view === "list" ? (
-          <ListView leads={filtered} onOpen={setOpenLeadId} page={page} setPage={setPage} />
+          <ListView
+            leads={filtered}
+            onOpen={setOpenLeadId}
+            page={page}
+            setPage={setPage}
+            selectedIds={selectedIds}
+            toggleOne={toggleOne}
+            togglePage={togglePage}
+          />
         ) : view === "pipeline" ? (
           <PipelineView leads={filtered} onOpen={setOpenLeadId} />
         ) : (
@@ -465,6 +473,28 @@ function OSLeadsV2Inner() {
 
       {openLeadId && (
         <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
+      )}
+
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          ids={[...selectedIds]}
+          onClear={clearSelection}
+          onAssign={(owner) => {
+            assignOwner([...selectedIds], owner);
+            toast.success(`Assigned ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"} to ${owner}`);
+            clearSelection();
+          }}
+          onMove={(status) => {
+            moveStage([...selectedIds], status);
+            toast.success(`Moved ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"} → ${status}`);
+            clearSelection();
+          }}
+          onFollowUp={({ due, action }) => {
+            bulkUpdate([...selectedIds], { nextTaskDue: due, nextAction: action });
+            toast.success(`Follow-up scheduled for ${selectedIds.size} lead${selectedIds.size === 1 ? "" : "s"}`);
+            clearSelection();
+          }}
+        />
       )}
     </OSShell>
   );
