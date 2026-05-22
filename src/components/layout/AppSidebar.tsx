@@ -14,7 +14,8 @@ import blossomMark from "@/assets/blossom-logo.png";
 import logoWhite from "@/assets/blossom-logo-light.webp";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useOSRole } from "@/contexts/OSRoleContext";
+import { useContext } from "react";
+// Note: AppSidebar can render outside OSRoleProvider (legacy routes), so read context directly.
 import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 import { canAccessAdminHub } from "@/lib/adminAccess";
