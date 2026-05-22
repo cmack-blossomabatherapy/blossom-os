@@ -1,44 +1,217 @@
 /**
- * Training Academy - mock data layer.
- * Mirrors the future Supabase schema (training_departments, trainings,
- * training_sections, training_progress, training_checklists, training_resources)
- * so we can swap in real data later without page rewrites.
+ * Training Academy — role-journey data model.
+ *
+ * Reset and simplified:
+ *  - Modules instead of duplicated training cards
+ *  - Role Journeys map an OSRole to an ordered list of modules
+ *  - Small Systems + Shared (cross-department) catalogs
+ *  - SOP/Resource library lives in /sop; modules reference it
  */
 import {
-  Stethoscope, ClipboardList, ShieldCheck, CalendarClock, Users, Heart,
-  CheckCircle2, Wallet, Brain, MonitorCog, Crown, Workflow, type LucideIcon,
+  ClipboardList, ShieldCheck, CalendarClock, Users, Heart, CheckCircle2,
+  Wallet, Stethoscope, Crown, Workflow, type LucideIcon,
 } from "lucide-react";
 
-export type TrainingType =
-  | "SOP"
-  | "Workflow"
-  | "Tango"
-  | "Video"
-  | "Checklist"
-  | "Quick Guide"
-  | "Operational Overview";
-
-export type TrainingDifficulty = "Beginner" | "Intermediate" | "Advanced";
+export type TrainingType = "SOP" | "Workflow" | "Tango" | "Video" | "Checklist" | "Quick Guide";
 export type TrainingStatus = "not_started" | "in_progress" | "completed" | "overdue";
 
-export interface TrainingDepartment {
+export interface RoleJourney {
   id: string;
-  name: string;
-  description: string;
+  role: string; // matches OSRole keys
+  title: string;
+  tagline: string;
   icon: LucideIcon;
-  tone: "violet" | "lilac" | "sky" | "mint" | "peach" | "rose";
+  tone: "violet" | "sky" | "mint" | "rose" | "peach" | "lilac";
+  moduleIds: string[]; // ordered
 }
+
+export interface Training {
+  id: string;
+  title: string;
+  description: string;
+  type: TrainingType;
+  estimatedMinutes: number;
+  required?: boolean;
+  category: "role" | "systems" | "shared";
+  department?: string;
+  owner?: string;
+  lastUpdated?: string;
+  sopRef?: string;
+}
+
+export interface TrainingProgress {
+  trainingId: string;
+  status: TrainingStatus;
+  progressPercent: number;
+  dueDate?: string;
+}
+
+/* ---------------- Modules ---------------- */
+
+export const trainings: Training[] = [
+  // Intake
+  { id: "phone-leads", title: "Phone Calls & Leads", description: "End-to-end lead handling from first call through warm hand-off.", type: "Workflow", estimatedMinutes: 18, required: true, category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-10" },
+  { id: "intake-workflow", title: "Intake Workflow", description: "From qualified lead to active client — stages, ownership, timing.", type: "Workflow", estimatedMinutes: 22, required: true, category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-08" },
+  { id: "vob-basics", title: "VOB Basics", description: "Verify benefits accurately and route the file correctly the first time.", type: "SOP", estimatedMinutes: 20, required: true, category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-15" },
+  { id: "client-setup", title: "Client Setup", description: "Create a new client cleanly in CentralReach.", type: "Tango", estimatedMinutes: 14, category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-12" },
+  { id: "family-communication", title: "Family Communication", description: "Cadence, tone, and templates for parent communication.", type: "Quick Guide", estimatedMinutes: 10, category: "role", department: "intake", owner: "Intake Lead", lastUpdated: "2026-05-04" },
+
+  // Authorizations
+  { id: "auth-lifecycle", title: "Authorization Lifecycle", description: "Initial auth → treatment auth → reauth, with payor notes.", type: "Workflow", estimatedMinutes: 30, required: true, category: "role", department: "authorizations", owner: "Auth Coordinator", lastUpdated: "2026-05-04" },
+  { id: "reauth-process", title: "Reauthorization Process", description: "Reauth checklist, payor expectations, and avoiding gaps.", type: "SOP", estimatedMinutes: 22, required: true, category: "role", department: "authorizations", owner: "Auth Coordinator", lastUpdated: "2026-05-02" },
+  { id: "payor-notes", title: "Payor-Specific Notes", description: "Quick reference for our top payors.", type: "Quick Guide", estimatedMinutes: 12, category: "role", department: "authorizations", owner: "Auth Coordinator", lastUpdated: "2026-04-28" },
+
+  // Scheduling
+  { id: "scheduling-process", title: "Scheduling Process", description: "Weekly schedule build, conflict resolution, and capacity check.", type: "Workflow", estimatedMinutes: 25, required: true, category: "role", department: "scheduling", owner: "Scheduling Lead", lastUpdated: "2026-04-28" },
+  { id: "schedule-conflicts", title: "Resolving Conflicts", description: "Standard pattern for fixing schedule conflicts without escalation.", type: "SOP", estimatedMinutes: 14, category: "role", department: "scheduling", owner: "Scheduling Lead", lastUpdated: "2026-05-03" },
+  { id: "weekly-forecast", title: "Weekly Capacity Forecast", description: "Look ahead 1–2 weeks to spot staffing gaps early.", type: "Quick Guide", estimatedMinutes: 10, category: "role", department: "scheduling", owner: "Scheduling Lead", lastUpdated: "2026-05-05" },
+
+  // QA
+  { id: "qa-audit", title: "QA Audit Workflow", description: "Audit session notes and document findings cleanly.", type: "Workflow", estimatedMinutes: 28, required: true, category: "role", department: "qa", owner: "QA Lead", lastUpdated: "2026-05-06" },
+  { id: "doc-quality", title: "Documentation Quality", description: "What clean documentation looks like and common misses.", type: "SOP", estimatedMinutes: 18, category: "role", department: "qa", owner: "QA Lead", lastUpdated: "2026-05-02" },
+  { id: "supervision-review", title: "Supervision Review", description: "Auditing BCBA supervision hours and notes.", type: "Workflow", estimatedMinutes: 22, category: "role", department: "qa", owner: "QA Lead", lastUpdated: "2026-04-30" },
+
+  // Recruiting
+  { id: "recruiting-pipeline", title: "Recruiting Pipeline", description: "Sourcing, screening, and BCBA/RBT pipeline cadence.", type: "Workflow", estimatedMinutes: 24, required: true, category: "role", department: "recruiting", owner: "Recruiting Lead", lastUpdated: "2026-05-12" },
+  { id: "screening", title: "Candidate Screening", description: "Phone screen flow and red flags to watch for.", type: "SOP", estimatedMinutes: 16, category: "role", department: "recruiting", owner: "Recruiting Lead", lastUpdated: "2026-05-04" },
+  { id: "onboarding-handoff", title: "Onboarding Hand-off", description: "Clean hand-off from Recruiting → HR.", type: "Checklist", estimatedMinutes: 8, category: "role", department: "recruiting", owner: "Recruiting Lead", lastUpdated: "2026-04-30" },
+
+  // BCBA
+  { id: "bcba-pr", title: "BCBA Performance Review", description: "PR cadence, expectations, and documentation.", type: "SOP", estimatedMinutes: 20, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-01" },
+  { id: "bcba-supervision", title: "Supervision Standards", description: "Cadence, structure, and documentation for supervision.", type: "Workflow", estimatedMinutes: 24, required: true, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-09" },
+  { id: "treatment-plans", title: "Treatment Plans", description: "Writing clean, defensible treatment plans.", type: "SOP", estimatedMinutes: 28, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-11" },
+
+  // RBT
+  { id: "rbt-first-week", title: "RBT First Week", description: "What to expect — day by day.", type: "Checklist", estimatedMinutes: 12, required: true, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-18" },
+  { id: "session-notes", title: "Session Notes", description: "Writing complete, on-time session notes.", type: "SOP", estimatedMinutes: 14, required: true, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-10" },
+  { id: "supervision-prep", title: "Preparing for Supervision", description: "How to come prepared every time.", type: "Quick Guide", estimatedMinutes: 8, category: "role", department: "clinical", owner: "Clinical Director", lastUpdated: "2026-05-06" },
+
+  // State Director / Leadership
+  { id: "state-rhythm", title: "State Operations Rhythm", description: "The weekly + monthly cadence that keeps a state on track.", type: "Workflow", estimatedMinutes: 28, required: true, category: "role", department: "leadership", owner: "Executive Team", lastUpdated: "2026-05-11" },
+  { id: "staffing-management", title: "Staffing Management", description: "How State Directors lead staffing across clinics.", type: "Workflow", estimatedMinutes: 24, category: "role", department: "leadership", owner: "Executive Team", lastUpdated: "2026-05-09" },
+  { id: "kpi-review", title: "KPI Review", description: "Reading the KPI scorecards and acting on them.", type: "Quick Guide", estimatedMinutes: 12, category: "role", department: "leadership", owner: "Executive Team", lastUpdated: "2026-05-14" },
+  { id: "escalations", title: "Operational Escalations", description: "When and how to escalate — clean and fast.", type: "SOP", estimatedMinutes: 14, category: "role", department: "leadership", owner: "Executive Team", lastUpdated: "2026-05-07" },
+
+  // HR
+  { id: "hr-onboarding", title: "Employee Onboarding", description: "Standard onboarding flow inside Viventium + Blossom OS.", type: "Workflow", estimatedMinutes: 22, required: true, category: "role", department: "hr", owner: "HR Team", lastUpdated: "2026-05-12" },
+  { id: "evaluations", title: "Evaluations", description: "Quarterly and annual evaluation cadence.", type: "SOP", estimatedMinutes: 18, category: "role", department: "hr", owner: "HR Team", lastUpdated: "2026-05-08" },
+  { id: "hr-compliance", title: "Compliance Basics", description: "Day-to-day HR compliance must-knows.", type: "Quick Guide", estimatedMinutes: 12, category: "role", department: "hr", owner: "HR Team", lastUpdated: "2026-04-30" },
+
+  // Billing & Finance
+  { id: "claims", title: "Claims Submission", description: "Standard process for clean claims and corrections.", type: "SOP", estimatedMinutes: 22, required: true, category: "role", department: "billing", owner: "Billing Lead", lastUpdated: "2026-04-30" },
+  { id: "payment-plans", title: "Payment Plans", description: "Setting up family payment plans cleanly.", type: "Workflow", estimatedMinutes: 18, category: "role", department: "billing", owner: "Billing Lead", lastUpdated: "2026-05-02" },
+  { id: "ar-followup", title: "AR Follow-up", description: "How we work AR every week.", type: "SOP", estimatedMinutes: 16, category: "role", department: "billing", owner: "Billing Lead", lastUpdated: "2026-05-04" },
+
+  // Systems
+  { id: "sys-centralreach", title: "CentralReach Essentials", description: "Scheduling, notes, and billing basics inside CR.", type: "Tango", estimatedMinutes: 30, category: "systems", department: "systems", owner: "Systems Admin", lastUpdated: "2026-04-20" },
+  { id: "sys-viventium", title: "Viventium Payroll", description: "Time entry, approvals, and pay-period close.", type: "Quick Guide", estimatedMinutes: 15, category: "systems", department: "systems", owner: "Payroll", lastUpdated: "2026-04-15" },
+  { id: "sys-solum", title: "Solum for VOBs", description: "Run VOBs cleanly inside Solum.", type: "Tango", estimatedMinutes: 16, category: "systems", department: "systems", owner: "Intake Lead", lastUpdated: "2026-05-01" },
+  { id: "sys-outlook", title: "Outlook & Calendar", description: "Email + calendar setup for Blossom workflows.", type: "Quick Guide", estimatedMinutes: 10, category: "systems", department: "systems", owner: "Systems Admin", lastUpdated: "2026-04-22" },
+  { id: "sys-bloom", title: "Bloom Growth Rhythm", description: "Quarterly planning + weekly L10 cadence.", type: "Workflow", estimatedMinutes: 28, category: "systems", department: "systems", owner: "Executive Team", lastUpdated: "2026-05-14" },
+  { id: "sys-teams", title: "Microsoft Teams Basics", description: "Channels, meetings, and Blossom Teams etiquette.", type: "Quick Guide", estimatedMinutes: 8, category: "systems", department: "systems", owner: "Systems Admin", lastUpdated: "2026-04-18" },
+
+  // Shared / Cross-department
+  { id: "shared-hipaa", title: "HIPAA Foundations", description: "PHI handling, breach response, and everyday compliance.", type: "Video", estimatedMinutes: 25, required: true, category: "shared", department: "shared", owner: "Compliance", lastUpdated: "2026-03-12" },
+  { id: "shared-new-hire", title: "New Hire: Your First Week", description: "What to do day by day during your first week.", type: "Checklist", estimatedMinutes: 12, required: true, category: "shared", department: "shared", owner: "HR Team", lastUpdated: "2026-05-18" },
+  { id: "shared-leadership", title: "Leadership Foundations", description: "How leaders lead at Blossom.", type: "Workflow", estimatedMinutes: 22, category: "shared", department: "shared", owner: "Executive Team", lastUpdated: "2026-05-10" },
+];
+
+/* ---------------- Role Journeys ---------------- */
+
+export const ROLE_JOURNEYS: RoleJourney[] = [
+  { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: ClipboardList, tone: "lilac", moduleIds: ["phone-leads", "intake-workflow", "vob-basics", "client-setup", "family-communication"] },
+  { id: "j-auth", role: "authorization_coordinator", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.", icon: ShieldCheck, tone: "sky", moduleIds: ["auth-lifecycle", "reauth-process", "payor-notes"] },
+  { id: "j-scheduling", role: "scheduling_team", title: "Scheduling Journey", tagline: "Build clean schedules that hold up.", icon: CalendarClock, tone: "mint", moduleIds: ["scheduling-process", "schedule-conflicts", "weekly-forecast"] },
+  { id: "j-qa", role: "qa_team", title: "QA Journey", tagline: "Protect clinical quality with calm rigor.", icon: CheckCircle2, tone: "violet", moduleIds: ["qa-audit", "doc-quality", "supervision-review"] },
+  { id: "j-recruiting", role: "recruiting_team", title: "Recruiting Journey", tagline: "A predictable pipeline of great clinicians.", icon: Users, tone: "peach", moduleIds: ["recruiting-pipeline", "screening", "onboarding-handoff"] },
+  { id: "j-bcba", role: "bcba", title: "BCBA Journey", tagline: "Clinical excellence and clean supervision.", icon: Stethoscope, tone: "sky", moduleIds: ["bcba-supervision", "treatment-plans", "bcba-pr"] },
+  { id: "j-rbt", role: "rbt", title: "RBT Journey", tagline: "Show up prepared, document on time.", icon: Stethoscope, tone: "mint", moduleIds: ["rbt-first-week", "session-notes", "supervision-prep"] },
+  { id: "j-state", role: "state_director", title: "State Director Journey", tagline: "Run a state with calm, operational rhythm.", icon: Crown, tone: "violet", moduleIds: ["state-rhythm", "staffing-management", "kpi-review", "escalations"] },
+  { id: "j-hr", role: "hr_team", title: "HR Journey", tagline: "Take care of the people who take care of clients.", icon: Heart, tone: "rose", moduleIds: ["hr-onboarding", "evaluations", "hr-compliance"] },
+  { id: "j-billing", role: "billing_finance", title: "Billing & Finance Journey", tagline: "Keep revenue clean and predictable.", icon: Wallet, tone: "lilac", moduleIds: ["claims", "payment-plans", "ar-followup"] },
+  { id: "j-exec", role: "executive_leadership", title: "Executive Leadership Journey", tagline: "Lead Blossom with rhythm and clarity.", icon: Crown, tone: "violet", moduleIds: ["state-rhythm", "kpi-review", "escalations", "sys-bloom"] },
+  { id: "j-ops", role: "operations_leadership", title: "Operations Leadership Journey", tagline: "Keep all states pulling the same direction.", icon: Workflow, tone: "violet", moduleIds: ["state-rhythm", "kpi-review", "staffing-management", "escalations"] },
+];
+
+/* ---------------- Mock progress ---------------- */
+
+export const trainingProgress: Record<string, TrainingProgress> = {
+  "phone-leads": { trainingId: "phone-leads", status: "in_progress", progressPercent: 60 },
+  "vob-basics": { trainingId: "vob-basics", status: "in_progress", progressPercent: 35 },
+  "sys-centralreach": { trainingId: "sys-centralreach", status: "completed", progressPercent: 100 },
+  "shared-hipaa": { trainingId: "shared-hipaa", status: "completed", progressPercent: 100 },
+  "shared-new-hire": { trainingId: "shared-new-hire", status: "overdue", progressPercent: 20, dueDate: "2026-05-15" },
+  "qa-audit": { trainingId: "qa-audit", status: "in_progress", progressPercent: 45 },
+};
+
+export function getProgress(id: string): TrainingProgress {
+  return trainingProgress[id] ?? { trainingId: id, status: "not_started", progressPercent: 0 };
+}
+
+/* ---------------- Lookups ---------------- */
+
+export function getTraining(id: string): Training | undefined {
+  return trainings.find((t) => t.id === id);
+}
+
+export function getJourneyForRole(role: string): RoleJourney {
+  const direct = ROLE_JOURNEYS.find((j) => j.role === role);
+  if (direct) return direct;
+  if (role === "super_admin") return ROLE_JOURNEYS.find((j) => j.role === "executive_leadership")!;
+  return ROLE_JOURNEYS.find((j) => j.role === "operations_leadership")!;
+}
+
+export function getJourneyModules(j: RoleJourney): Training[] {
+  return j.moduleIds.map((id) => getTraining(id)).filter(Boolean) as Training[];
+}
+
+export function continueLearning(): { training: Training; progress: TrainingProgress }[] {
+  return Object.values(trainingProgress)
+    .filter((p) => p.status === "in_progress" || p.status === "overdue")
+    .map((p) => ({ training: getTraining(p.trainingId)!, progress: p }))
+    .filter((x) => x.training)
+    .sort((a, b) => {
+      const aOver = a.progress.status === "overdue" ? 0 : 1;
+      const bOver = b.progress.status === "overdue" ? 0 : 1;
+      return aOver - bOver;
+    });
+}
+
+export function requiredDue(): Training[] {
+  return trainings.filter((t) => t.required && getProgress(t.id).status !== "completed");
+}
+
+export function systemsTrainings(): Training[] {
+  return trainings.filter((t) => t.category === "systems");
+}
+
+export function sharedTrainings(): Training[] {
+  return trainings.filter((t) => t.category === "shared");
+}
+
+export function searchTrainings(q: string): Training[] {
+  const term = q.trim().toLowerCase();
+  if (!term) return [];
+  return trainings.filter((t) =>
+    [t.title, t.description, t.type, t.department ?? "", t.owner ?? ""]
+      .join(" ").toLowerCase().includes(term),
+  );
+}
+
+/* ---------------- Detail-page compatibility ---------------- *
+ * OSTrainingDetail.tsx uses the section/checklist/resource/quiz API.
+ * We keep generic fallbacks so every module opens cleanly.
+ */
+
+export type TrainingSectionType = "Overview" | "SOP" | "Walkthrough" | "Checklist" | "Quiz" | "Resources";
 
 export interface TrainingSection {
   id: string;
   trainingId: string;
-  type: "Overview" | "SOP" | "Walkthrough" | "Checklist" | "Quiz" | "Resources";
+  type: TrainingSectionType;
   title: string;
-  /** Rich-text/markdown body (mock). */
   content?: string;
-  /** For walkthrough sections: a Tango embed URL. */
   tangoUrl?: string;
-  /** For video sections. */
   videoUrl?: string;
 }
 
@@ -65,415 +238,33 @@ export interface TrainingQuizQuestion {
   answerIndex: number;
 }
 
-export interface Training {
-  id: string;
-  title: string;
-  description: string;
-  department: string;
-  type: TrainingType;
-  difficulty: TrainingDifficulty;
-  estimatedMinutes: number;
-  required: boolean;
-  featured?: boolean;
-  lastUpdated: string;
-  owner: string;
-  system?: string;
-  tags: string[];
-}
-
-export interface TrainingProgress {
-  trainingId: string;
-  status: TrainingStatus;
-  progressPercent: number;
-  startedAt?: string;
-  completedAt?: string;
-  lastViewedAt?: string;
-  dueDate?: string;
-}
-
-/* ---------------- Departments ---------------- */
-
-export const trainingDepartments: TrainingDepartment[] = [
-  { id: "operations", name: "Operations", description: "Daily operational rhythm and cross-functional flow.", icon: Workflow, tone: "violet" },
-  { id: "intake", name: "Intake", description: "Lead handling, family communication, and onboarding.", icon: ClipboardList, tone: "lilac" },
-  { id: "authorizations", name: "Authorizations", description: "Initial auths, reauths, and payor workflows.", icon: ShieldCheck, tone: "sky" },
-  { id: "scheduling", name: "Scheduling", description: "Schedule build, conflicts, and weekly forecasting.", icon: CalendarClock, tone: "mint" },
-  { id: "recruiting", name: "Recruiting", description: "Sourcing, screening, and pipeline cadence.", icon: Users, tone: "peach" },
-  { id: "hr", name: "HR", description: "People ops, compliance, and employee lifecycle.", icon: Heart, tone: "rose" },
-  { id: "qa", name: "QA", description: "Documentation review and clinical quality.", icon: CheckCircle2, tone: "violet" },
-  { id: "billing", name: "Billing & Finance", description: "Claims, AR, and revenue operations.", icon: Wallet, tone: "lilac" },
-  { id: "clinical", name: "Clinical", description: "BCBA / RBT clinical operations and supervision.", icon: Stethoscope, tone: "sky" },
-  { id: "systems", name: "Systems & Software", description: "CentralReach, Monday, Viventium, Solum, Bloom Growth.", icon: MonitorCog, tone: "mint" },
-  { id: "leadership", name: "Leadership", description: "State Directors, Clinic Directors, and executives.", icon: Crown, tone: "peach" },
-];
-
-/* ---------------- Trainings ---------------- */
-
-export const trainings: Training[] = [
-  {
-    id: "t-phone-leads",
-    title: "Phone Calls & Leads Workflow",
-    description: "End-to-end lead handling from first call through warm hand-off to Intake.",
-    department: "intake",
-    type: "Workflow",
-    difficulty: "Beginner",
-    estimatedMinutes: 18,
-    required: true,
-    featured: true,
-    lastUpdated: "2026-05-10",
-    owner: "Intake Lead",
-    tags: ["leads", "phones", "intake"],
-  },
-  {
-    id: "t-auth-lifecycle",
-    title: "Authorization Lifecycle",
-    description: "Initial auth → treatment auth → reauth, with payor-specific notes.",
-    department: "authorizations",
-    type: "Operational Overview",
-    difficulty: "Intermediate",
-    estimatedMinutes: 35,
-    required: true,
-    featured: true,
-    lastUpdated: "2026-05-04",
-    owner: "Auth Coordinator",
-    tags: ["auths", "reauth", "payors"],
-  },
-  {
-    id: "t-vob-decision",
-    title: "VOB Decision Center",
-    description: "Verify benefits accurately and route the file the right way the first time.",
-    department: "intake",
-    type: "SOP",
-    difficulty: "Intermediate",
-    estimatedMinutes: 22,
-    required: true,
-    featured: true,
-    lastUpdated: "2026-05-15",
-    owner: "Intake Lead",
-    tags: ["vob", "insurance"],
-  },
-  {
-    id: "t-scheduling-process",
-    title: "Scheduling Process",
-    description: "Weekly schedule build, conflict resolution, and capacity check.",
-    department: "scheduling",
-    type: "Workflow",
-    difficulty: "Beginner",
-    estimatedMinutes: 25,
-    required: true,
-    featured: true,
-    lastUpdated: "2026-04-28",
-    owner: "Scheduling Lead",
-    tags: ["schedule", "centralreach"],
-  },
-  {
-    id: "t-bcba-pr",
-    title: "BCBA PR Process",
-    description: "Performance review cadence, expectations, and documentation.",
-    department: "clinical",
-    type: "SOP",
-    difficulty: "Intermediate",
-    estimatedMinutes: 20,
-    required: false,
-    featured: true,
-    lastUpdated: "2026-05-01",
-    owner: "Clinical Director",
-    tags: ["bcba", "performance"],
-  },
-  {
-    id: "t-recruiting-pipeline",
-    title: "Recruiting Pipeline",
-    description: "Sourcing, screening, and BCBA/RBT pipeline cadence.",
-    department: "recruiting",
-    type: "Operational Overview",
-    difficulty: "Beginner",
-    estimatedMinutes: 28,
-    required: true,
-    featured: true,
-    lastUpdated: "2026-05-12",
-    owner: "Recruiting Lead",
-    tags: ["recruiting", "pipeline"],
-  },
-  {
-    id: "t-cr-essentials",
-    title: "CentralReach Essentials",
-    description: "Navigate CR like a pro — scheduling, notes, billing basics.",
-    department: "systems",
-    type: "Tango",
-    difficulty: "Beginner",
-    estimatedMinutes: 30,
-    required: true,
-    lastUpdated: "2026-04-20",
-    owner: "Systems Admin",
-    system: "CentralReach",
-    tags: ["centralreach", "system"],
-  },
-  {
-    id: "t-monday-ops",
-    title: "Monday.com for Operations",
-    description: "Boards, automations, and how ops uses Monday daily.",
-    department: "systems",
-    type: "Tango",
-    difficulty: "Beginner",
-    estimatedMinutes: 22,
-    required: false,
-    lastUpdated: "2026-05-08",
-    owner: "Systems Admin",
-    system: "Monday.com",
-    tags: ["monday", "system"],
-  },
-  {
-    id: "t-viventium",
-    title: "Viventium Payroll Basics",
-    description: "Time entry, approvals, and pay-period close.",
-    department: "systems",
-    type: "Quick Guide",
-    difficulty: "Beginner",
-    estimatedMinutes: 15,
-    required: false,
-    lastUpdated: "2026-04-15",
-    owner: "Payroll",
-    system: "Viventium",
-    tags: ["payroll", "viventium"],
-  },
-  {
-    id: "t-bloom-growth",
-    title: "Bloom Growth Rhythm",
-    description: "Quarterly planning + weekly L10 cadence inside Bloom Growth.",
-    department: "leadership",
-    type: "Operational Overview",
-    difficulty: "Intermediate",
-    estimatedMinutes: 40,
-    required: false,
-    lastUpdated: "2026-05-14",
-    owner: "Executive Team",
-    system: "Bloom Growth",
-    tags: ["leadership", "bloom growth"],
-  },
-  {
-    id: "t-qa-audit",
-    title: "QA Audit Workflow",
-    description: "How to audit session notes and document findings cleanly.",
-    department: "qa",
-    type: "Workflow",
-    difficulty: "Intermediate",
-    estimatedMinutes: 32,
-    required: true,
-    lastUpdated: "2026-05-06",
-    owner: "QA Lead",
-    tags: ["qa", "audit", "documentation"],
-  },
-  {
-    id: "t-billing-claims",
-    title: "Claims Submission SOP",
-    description: "Standard process for clean claim submissions and corrections.",
-    department: "billing",
-    type: "SOP",
-    difficulty: "Intermediate",
-    estimatedMinutes: 26,
-    required: true,
-    lastUpdated: "2026-04-30",
-    owner: "Billing Lead",
-    tags: ["billing", "claims"],
-  },
-  {
-    id: "t-hipaa",
-    title: "HIPAA Foundations",
-    description: "PHI handling, breach response, and everyday compliance.",
-    department: "operations",
-    type: "Video",
-    difficulty: "Beginner",
-    estimatedMinutes: 25,
-    required: true,
-    lastUpdated: "2026-03-12",
-    owner: "Compliance",
-    tags: ["hipaa", "compliance"],
-  },
-  {
-    id: "t-onboarding",
-    title: "New Hire: Your First Week",
-    description: "What to do day-by-day during your first week at Blossom.",
-    department: "hr",
-    type: "Checklist",
-    difficulty: "Beginner",
-    estimatedMinutes: 12,
-    required: true,
-    lastUpdated: "2026-05-18",
-    owner: "HR Team",
-    tags: ["onboarding", "new hire"],
-  },
-  {
-    id: "t-state-director",
-    title: "State Director Operating Rhythm",
-    description: "Weekly clinic check-ins, KPI review, and escalation paths.",
-    department: "leadership",
-    type: "Operational Overview",
-    difficulty: "Advanced",
-    estimatedMinutes: 45,
-    required: false,
-    lastUpdated: "2026-05-11",
-    owner: "Executive Team",
-    tags: ["leadership", "state director"],
-  },
-];
-
-/* ---------------- Mock Progress ---------------- */
-
-export const trainingProgress: Record<string, TrainingProgress> = {
-  "t-phone-leads": { trainingId: "t-phone-leads", status: "in_progress", progressPercent: 60, startedAt: "2026-05-12", lastViewedAt: "2026-05-19" },
-  "t-vob-decision": { trainingId: "t-vob-decision", status: "in_progress", progressPercent: 35, startedAt: "2026-05-15", lastViewedAt: "2026-05-18" },
-  "t-cr-essentials": { trainingId: "t-cr-essentials", status: "completed", progressPercent: 100, startedAt: "2026-04-22", completedAt: "2026-04-23", lastViewedAt: "2026-04-23" },
-  "t-hipaa": { trainingId: "t-hipaa", status: "completed", progressPercent: 100, completedAt: "2026-03-15" },
-  "t-onboarding": { trainingId: "t-onboarding", status: "overdue", progressPercent: 20, startedAt: "2026-05-01", dueDate: "2026-05-15", lastViewedAt: "2026-05-10" },
-  "t-qa-audit": { trainingId: "t-qa-audit", status: "in_progress", progressPercent: 45, startedAt: "2026-05-10", lastViewedAt: "2026-05-17" },
-};
-
-export function getProgress(id: string): TrainingProgress {
-  return (
-    trainingProgress[id] ?? {
-      trainingId: id,
-      status: "not_started",
-      progressPercent: 0,
-    }
-  );
-}
-
-/* ---------------- Sections / Checklists / Resources ---------------- */
-
-export const trainingSections: TrainingSection[] = [
-  {
-    id: "s-phone-1", trainingId: "t-phone-leads", type: "Overview", title: "Why this matters",
-    content:
-      "Every great client relationship starts with a phone call. This training walks through how Blossom handles inbound leads, the tools you'll use, and the standards we hold ourselves to.",
-  },
-  {
-    id: "s-phone-2", trainingId: "t-phone-leads", type: "SOP", title: "Standard Operating Procedure",
-    content:
-      "## Phone & Lead SOP\n\n1. Answer within 3 rings.\n2. Use the Blossom greeting script.\n3. Capture caller info into the Lead form.\n4. Identify intent — new client / existing family / partner.\n5. Hand off to the right teammate inside 10 minutes.",
-  },
-  {
-    id: "s-phone-3", trainingId: "t-phone-leads", type: "Walkthrough", title: "Tango walkthrough",
-    content: "Open the Tango walkthrough to follow the live click-by-click.",
-    tangoUrl: "https://app.tango.us/app/workflow/lead-intake-demo",
-  },
-  { id: "s-phone-4", trainingId: "t-phone-leads", type: "Checklist", title: "On-call checklist" },
-  { id: "s-phone-5", trainingId: "t-phone-leads", type: "Resources", title: "Resources & templates" },
-];
-
-export const trainingChecklists: TrainingChecklistItem[] = [
-  { id: "ck-1", trainingId: "t-phone-leads", item: "Open CentralReach lead view", required: true },
-  { id: "ck-2", trainingId: "t-phone-leads", item: "Capture caller name + best callback", required: true },
-  { id: "ck-3", trainingId: "t-phone-leads", item: "Verify insurance basics", required: true },
-  { id: "ck-4", trainingId: "t-phone-leads", item: "Send intake packet", required: true },
-  { id: "ck-5", trainingId: "t-phone-leads", item: "Update lead status in Monday", required: false },
-  { id: "ck-6", trainingId: "t-phone-leads", item: "Notify intake coordinator", required: true },
-];
-
-export const trainingResources: TrainingResource[] = [
-  { id: "r-1", trainingId: "t-phone-leads", type: "Tango", title: "Live walkthrough — Lead Intake", url: "#" },
-  { id: "r-2", trainingId: "t-phone-leads", type: "PDF", title: "Greeting script (one-pager)", url: "#" },
-  { id: "r-3", trainingId: "t-phone-leads", type: "Template", title: "Intake packet template", url: "#" },
-  { id: "r-4", trainingId: "t-phone-leads", type: "Link", title: "CentralReach lead view", url: "#" },
-];
-
-export const trainingQuiz: TrainingQuizQuestion[] = [
-  {
-    id: "q-1",
-    question: "Within how many rings should you answer an inbound lead call?",
-    kind: "multiple_choice",
-    options: ["1", "3", "5", "It depends"],
-    answerIndex: 1,
-  },
-  {
-    id: "q-2",
-    question: "You should always send the intake packet before verifying insurance.",
-    kind: "true_false",
-    options: ["True", "False"],
-    answerIndex: 1,
-  },
-];
-
-/* ---------------- Helpers ---------------- */
-
-export function getTraining(id: string): Training | undefined {
-  return trainings.find((t) => t.id === id);
-}
-
 export function getSectionsFor(id: string): TrainingSection[] {
-  const list = trainingSections.filter((s) => s.trainingId === id);
-  if (list.length) return list;
-  // Generic fallback so every training opens cleanly
   return [
-    { id: `${id}-ov`, trainingId: id, type: "Overview", title: "Overview", content: "Overview content for this training is being finalized. Use the SOP and Walkthrough sections to start." },
-    { id: `${id}-sop`, trainingId: id, type: "SOP", title: "Standard Operating Procedure", content: "## SOP\nThe written SOP for this training will appear here." },
-    { id: `${id}-wt`, trainingId: id, type: "Walkthrough", title: "Walkthrough", content: "Embedded Tango walkthrough coming soon.", tangoUrl: "#" },
+    { id: `${id}-ov`, trainingId: id, type: "Overview", title: "Overview", content: "Why this module matters and how it connects to your role." },
+    { id: `${id}-sop`, trainingId: id, type: "SOP", title: "Standard Operating Procedure", content: "## SOP\nThe written SOP for this module lives in the Resource Library and is linked here." },
+    { id: `${id}-wt`, trainingId: id, type: "Walkthrough", title: "Tango Walkthrough", content: "Click-by-click walkthrough.", tangoUrl: "#" },
+    { id: `${id}-ck`, trainingId: id, type: "Checklist", title: "Checklist" },
     { id: `${id}-rs`, trainingId: id, type: "Resources", title: "Resources" },
   ];
 }
 
 export function getChecklistFor(id: string): TrainingChecklistItem[] {
-  return trainingChecklists.filter((c) => c.trainingId === id);
+  return [
+    { id: `${id}-c1`, trainingId: id, item: "Read the SOP top to bottom", required: true },
+    { id: `${id}-c2`, trainingId: id, item: "Watch the Tango walkthrough", required: true },
+    { id: `${id}-c3`, trainingId: id, item: "Try the workflow once (sandbox or shadow a teammate)", required: true },
+  ];
 }
 
 export function getResourcesFor(id: string): TrainingResource[] {
-  return trainingResources.filter((r) => r.trainingId === id);
+  return [
+    { id: `${id}-r1`, trainingId: id, type: "Tango", title: "Live walkthrough", url: "#" },
+    { id: `${id}-r2`, trainingId: id, type: "PDF", title: "One-pager", url: "#" },
+    { id: `${id}-r3`, trainingId: id, type: "Link", title: "Resource Library entry", url: "/sop" },
+  ];
 }
 
-export function getDepartment(id: string): TrainingDepartment | undefined {
-  return trainingDepartments.find((d) => d.id === id);
-}
-
-export function trainingsByDepartment(id: string): Training[] {
-  return trainings.filter((t) => t.department === id);
-}
-
-export function continueLearning(): { training: Training; progress: TrainingProgress }[] {
-  return Object.values(trainingProgress)
-    .filter((p) => p.status === "in_progress" || p.status === "overdue")
-    .map((p) => ({ training: getTraining(p.trainingId)!, progress: p }))
-    .filter((x) => x.training)
-    .sort((a, b) => (a.progress.status === "overdue" ? -1 : 1));
-}
-
-export function featuredTrainings(): Training[] {
-  return trainings.filter((t) => t.featured);
-}
-
-export function recentlyAdded(limit = 6): Training[] {
-  return [...trainings].sort((a, b) => (a.lastUpdated < b.lastUpdated ? 1 : -1)).slice(0, limit);
-}
-
-export function searchTrainings(q: string): Training[] {
-  const term = q.trim().toLowerCase();
-  if (!term) return [];
-  return trainings.filter((t) =>
-    [t.title, t.description, t.department, t.type, t.owner, t.system ?? "", ...(t.tags ?? [])]
-      .join(" ")
-      .toLowerCase()
-      .includes(term),
-  );
-}
-
-/* Role → preferred departments (visibility hint, not a hard filter). */
-export function preferredDepartmentsFor(role: string): string[] {
-  switch (role) {
-    case "intake_coordinator": return ["intake", "authorizations", "operations"];
-    case "authorization_coordinator": return ["authorizations", "intake", "operations"];
-    case "scheduling_team": return ["scheduling", "operations", "systems"];
-    case "recruiting_team": return ["recruiting", "hr", "operations"];
-    case "hr_team": return ["hr", "recruiting", "operations"];
-    case "qa_team": return ["qa", "clinical", "operations"];
-    case "billing_finance": return ["billing", "operations", "systems"];
-    case "bcba":
-    case "rbt": return ["clinical", "qa", "scheduling"];
-    case "state_director":
-    case "executive_leadership":
-    case "operations_leadership": return ["leadership", "operations", "qa"];
-    default: return ["operations", "intake", "systems"];
-  }
-}
-
-/* SOP-only library view. */
-export function sopLibrary(): Training[] {
-  return trainings.filter((t) => t.type === "SOP" || t.type === "Workflow" || t.type === "Operational Overview");
-}
+export const trainingQuiz: TrainingQuizQuestion[] = [
+  { id: "q-1", question: "What's the first step in this workflow?", kind: "multiple_choice", options: ["Send the form", "Call the family", "Open CentralReach", "Notify the team"], answerIndex: 2 },
+  { id: "q-2", question: "You should escalate before trying the standard SOP.", kind: "true_false", options: ["True", "False"], answerIndex: 1 },
+];
