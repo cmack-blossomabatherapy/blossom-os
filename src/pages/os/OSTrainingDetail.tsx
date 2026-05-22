@@ -80,8 +80,6 @@ export default function OSTrainingDetail() {
                 )}
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{training.estimatedMinutes} min</span>
                 <span>·</span>
-                <span>{training.difficulty}</span>
-                <span>·</span>
                 <span>Owner: {training.owner}</span>
                 <span>·</span>
                 <span>Updated {training.lastUpdated}</span>
