@@ -124,7 +124,7 @@ function deriveItem(a: Authorization): SupItem | null {
   // Escalation stage tracks the 9-week / 6-week operational windows.
   let escStage: EscStage = "Not Yet Due";
   let escTone: Tone = "neutral";
-  if (prStatus === "Completed" || prStatus === "Ready for Auth Submission") {
+  if (prStatus === "Ready for Auth Submission") {
     escStage = "Ready for Submission"; escTone = "ok";
   } else if (prStatus === "QA Reviewing" || prStatus === "Sent to QA") {
     escStage = "QA Review"; escTone = "info";
