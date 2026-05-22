@@ -227,7 +227,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "staffing_scheduling", label: "Staffing & Scheduling", items: [
-        { to: "/staffing-queue", label: "Staffing Queue", icon: UserPlus, module: "scheduling" },
+        { to: "/staffing", label: "Staffing Queue", icon: UserPlus, module: "scheduling" },
         { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
         { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
         { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
