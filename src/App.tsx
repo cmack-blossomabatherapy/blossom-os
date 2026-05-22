@@ -187,6 +187,7 @@ import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSBCBA from "./pages/os/OSBCBA";
+import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
@@ -343,6 +344,7 @@ const App = () => (
                   <Route path="/qa-team" element={<OSQATeam />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
+                  <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
