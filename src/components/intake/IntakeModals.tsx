@@ -14,7 +14,7 @@ type ModalKind =
   | { kind: "note"; lead?: Lead }
   | { kind: "escalate"; lead?: Lead }
   | { kind: "snooze"; lead?: Lead; followUpLabel?: string }
-  | { kind: "comm"; lead?: Lead; channel: "text" | "email" }
+  | { kind: "comm"; lead?: Lead; channel: "text" | "email" | "call" }
   | { kind: "schedule"; lead?: Lead }
   | { kind: "assignBcba"; lead?: Lead }
   | { kind: "addLead" }
