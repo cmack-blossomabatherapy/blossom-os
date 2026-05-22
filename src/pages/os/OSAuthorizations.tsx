@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, Plus, Sparkles, AlertTriangle, ChevronRight, ClipboardCheck,
@@ -191,7 +191,16 @@ export default function OSAuthorizations() {
     if (filters.coordinator) arr = arr.filter(a => a.coordinator === filters.coordinator);
     if (q) arr = arr.filter(a => [a.clientName, a.id, a.bcba, a.payor, a.stage, a.requestType, a.state, a.coordinator]
       .map(s => String(s ?? "").toLowerCase()).join(" ").includes(q));
-    return arr;
+    // Stable, deterministic sort: urgency desc → days-to-expire asc (nulls last) → id asc
+    const urgencyRank = { high: 0, medium: 1, low: 2 } as const;
+    return [...arr].sort((x, y) => {
+      const u = urgencyRank[x.urgency] - urgencyRank[y.urgency];
+      if (u !== 0) return u;
+      const dx = x.daysToExpire ?? Number.POSITIVE_INFINITY;
+      const dy = y.daysToExpire ?? Number.POSITIVE_INFINITY;
+      if (dx !== dy) return dx - dy;
+      return x.id.localeCompare(y.id);
+    });
   }, [enriched, view, filters, query]);
 
   const states = useMemo(() => Array.from(new Set(enriched.map(a => a.state))).sort(), [enriched]);
