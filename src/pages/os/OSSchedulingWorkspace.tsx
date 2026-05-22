@@ -197,7 +197,7 @@ export default function OSSchedulingWorkspace() {
 
           {/* RIGHT — Operational context */}
           <aside className="lg:col-span-3 space-y-4">
-            <ContextPanel />
+            <ContextPanel clients={clients} />
             <AskBlossomPanel />
           </aside>
         </div>
@@ -422,8 +422,8 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ContextPanel() {
-  const coverageRisks = mockClients.filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0))).slice(0, 4);
+function ContextPanel({ clients }: { clients: Client[] }) {
+  const coverageRisks = clients.filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0))).slice(0, 4);
   const availableRbts = mockRBTProfiles.filter((r) => r.status === "Available").slice(0, 4);
 
   return (
