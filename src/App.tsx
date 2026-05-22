@@ -347,12 +347,7 @@ const App = () => (
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
-                  <Route path="/bcba/clients" element={<OSComingSoon title="My Clients" tagline="A focused clinical view of your assigned caseload — designed for BCBA workflows, not generic client lists." icon={UserCheck} features={[
-                    { title: "Caseload at a glance", description: "Every assigned client with auth status, supervision freshness, and risk signals in one view." },
-                    { title: "Clinical timeline", description: "Sessions, assessments, supervision touches, and parent training visits on one timeline per client." },
-                    { title: "Quick clinical actions", description: "Open auth, log supervision, schedule parent training, or flag a concern in one tap." },
-                    { title: "Goals & progress", description: "Active programs, mastery progress, and goal updates surfaced where you actually work." },
-                  ]} />} />
+                  <Route path="/bcba/clients" element={<OSBCBAClients />} />
                   <Route path="/bcba/authorizations" element={<OSComingSoon title="My Authorizations" tagline="Authorization tracking scoped to your caseload — only what you need to act on, nothing else." icon={ShieldCheck} features={[
                     { title: "Your auths only", description: "Filtered automatically to clients you supervise — no operations-wide noise." },
                     { title: "PR & expiration alerts", description: "Upcoming progress reports and expiring auths surfaced with days remaining." },
