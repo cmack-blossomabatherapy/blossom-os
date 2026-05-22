@@ -598,13 +598,22 @@ function SummaryCard({
   );
 }
 
-function TrackingCard({ item, onOpen }: { item: PT97156Item; onOpen: () => void }) {
+function TrackingCard({
+  item, onOpen, onEscalate,
+}: {
+  item: PT97156Item;
+  onOpen: () => void;
+  onEscalate: (kind: EscalationKind) => void;
+}) {
   const { auth, days, bcba, utilStatus, utilTone, participation, participationTone,
           opStatus, opTone, riskTone, nextAction, lastActivity } = item;
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="group relative w-full overflow-hidden rounded-2xl border border-border/70 bg-card p-4 text-left transition hover:border-foreground/20 hover:shadow-sm"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-border/70 bg-card p-4 text-left transition hover:border-foreground/20 hover:shadow-sm"
     >
       <span className={cn("absolute inset-y-0 left-0 w-0.5", toneBar[riskTone])} />
       <div className="grid gap-3 md:grid-cols-[1.1fr_1.4fr_1fr] md:items-center">
@@ -659,6 +668,46 @@ function TrackingCard({ item, onOpen }: { item: PT97156Item; onOpen: () => void 
           <ChevronRight className="h-4 w-4 flex-none text-foreground/30 transition group-hover:translate-x-0.5 group-hover:text-foreground/60" />
         </div>
       </div>
+
+      {/* Row-level escalation actions */}
+      <div
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-foreground/45">
+          Escalate
+        </span>
+        <EscalateButton icon={Stethoscope} label="Needs PR"             tone="warn" onClick={() => onEscalate("PR")} />
+        <EscalateButton icon={ClipboardCheck} label="Needs QA"           tone="info" onClick={() => onEscalate("QA")} />
+        <EscalateButton icon={ShieldAlert} label="Needs State Director"  tone="crit" onClick={() => onEscalate("State Director")} />
+        <EscalateButton icon={FolderInput} label="Missing Documentation" tone="warn" onClick={() => onEscalate("Missing Documentation")} />
+        {item.escalatedTo && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-foreground/55">
+            <Zap className="h-3 w-3" /> Routed to {item.escalatedTo}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EscalateButton({
+  icon: Icon, label, tone, onClick,
+}: {
+  icon: React.ElementType; label: string; tone: Tone; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-2 py-0.5 text-[11px] font-medium text-foreground/75 transition hover:border-foreground/25 hover:bg-muted/40",
+      )}
+    >
+      <span className={cn("inline-flex h-3.5 w-3.5 items-center justify-center rounded-full", toneChip[tone])}>
+        <Icon className="h-2.5 w-2.5" />
+      </span>
+      {label}
     </button>
   );
 }
