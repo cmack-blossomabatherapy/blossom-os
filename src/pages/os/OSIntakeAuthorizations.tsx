@@ -284,7 +284,14 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
             <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Note for the authorization handoff…" rows={5} />
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button disabled={!text.trim()} onClick={() => submit("Note added")}>Save note</Button>
+              <Button
+                disabled={!text.trim()}
+                onClick={async () => {
+                  await appendTimeline(active.client.id, text.trim(), "note");
+                  await appendAutomation(active.client.id, `Note added: ${text.trim().slice(0, 80)}`);
+                  finish("Note saved to client timeline");
+                }}
+              >Save note</Button>
             </DialogFooter>
           </>
         )}
@@ -297,7 +304,19 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button disabled={!text || !text2.trim()} onClick={() => submit("Follow-up created")}>Create</Button>
+              <Button
+                disabled={!text || !text2.trim()}
+                onClick={async () => {
+                  await updateClient(active.client.id, {
+                    nextAction: text2.trim(),
+                    nextTaskDue: text,
+                    nextReauthDate: active.client.nextReauthDate ?? text,
+                  });
+                  await appendTimeline(active.client.id, `Reassessment follow-up scheduled for ${text}: ${text2.trim()}`, "stage");
+                  await appendAutomation(active.client.id, `Reassessment scheduled (${text})`);
+                  finish("Reassessment follow-up scheduled");
+                }}
+              >Create</Button>
             </DialogFooter>
           </>
         )}
@@ -321,7 +340,19 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button disabled={!sel || !text.trim()} onClick={() => submit("Escalation sent")}>Escalate</Button>
+              <Button
+                disabled={!sel || !text.trim()}
+                onClick={async () => {
+                  const target = ESCALATION_LABELS[sel] ?? sel;
+                  const reason = text.trim();
+                  await updateClient(active.client.id, {
+                    blockers: Array.from(new Set([...(active.client.blockers ?? []), `Escalated to ${target}: ${reason}`])),
+                  });
+                  await appendTimeline(active.client.id, `Escalated to ${target}: ${reason}`, "alert");
+                  await appendAutomation(active.client.id, `Escalation → ${target}: ${reason.slice(0, 80)}`);
+                  finish(`Escalation routed to ${target}`);
+                }}
+              >Escalate</Button>
             </DialogFooter>
           </>
         )}
@@ -331,7 +362,15 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
             <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Short operational message…" rows={4} />
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button disabled={!text.trim()} onClick={() => submit("Message sent")}>Send</Button>
+              <Button
+                disabled={!text.trim()}
+                onClick={async () => {
+                  const team = active.team ?? "team";
+                  await appendTimeline(active.client.id, `Message to ${team}: ${text.trim()}`, "note");
+                  await appendAutomation(active.client.id, `Message → ${team}: ${text.trim().slice(0, 80)}`);
+                  finish(`Message logged for ${team}`);
+                }}
+              >Send</Button>
             </DialogFooter>
           </>
         )}
@@ -344,7 +383,25 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
-              <Button disabled={!text.trim()} onClick={() => submit("Request sent to family — placeholder")}>Send request</Button>
+              <Button
+                disabled={!text.trim()}
+                onClick={async () => {
+                  const missing = text.trim();
+                  const note = text2.trim();
+                  await updateClient(active.client.id, {
+                    missingDocs: Array.from(new Set([...(active.client.missingDocs ?? []), missing])),
+                    blockers: Array.from(new Set([...(active.client.blockers ?? []), `Missing: ${missing}`])),
+                    nextAction: `Awaiting "${missing}" from family`,
+                  });
+                  await appendTimeline(
+                    active.client.id,
+                    `Requested missing info: ${missing}${note ? ` — ${note}` : ""}`,
+                    "alert",
+                  );
+                  await appendAutomation(active.client.id, `Info requested from family: ${missing}`);
+                  finish("Request logged & family marked as awaiting info");
+                }}
+              >Send request</Button>
             </DialogFooter>
           </>
         )}
