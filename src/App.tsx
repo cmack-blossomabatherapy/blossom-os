@@ -177,6 +177,7 @@ import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
 import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
 import OSAuthWorkspace from "./pages/os/OSAuthWorkspace";
 import OSSupervisionTracking from "./pages/os/OSSupervisionTracking";
+import OSParentTraining97156 from "./pages/os/OSParentTraining97156";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSHRTeam from "./pages/os/OSHRTeam";
@@ -322,6 +323,7 @@ const App = () => (
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
                   <Route path="/auth-workspace" element={<OSAuthWorkspace />} />
                   <Route path="/supervision-tracking" element={<OSSupervisionTracking />} />
+                  <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
                   <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
