@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Sparkles, AlertTriangle, ChevronRight, ClipboardCheck,
   MessageSquare, StickyNote, Download, X, Wand2, FileWarning, Send,
@@ -174,12 +174,48 @@ type Filters = {
 };
 
 /* ------------------------------ page ------------------------------ */
+const STAGE_TO_VIEW: Record<string, ViewId> = {
+  awaiting: "awaiting", submitted: "submitted", approved: "approved",
+  expiring: "expiring", qa: "qa", denied: "denied", missing: "missing",
+  pr: "needs_pr", high_risk: "high_risk", mine: "mine", recent: "recent",
+};
+function paramToView(params: URLSearchParams): ViewId | null {
+  const v = params.get("view");
+  if (v && (v as ViewId)) return v as ViewId;
+  const s = params.get("stage");
+  if (s && STAGE_TO_VIEW[s]) return STAGE_TO_VIEW[s];
+  return null;
+}
+
 export default function OSAuthorizations() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<ViewId>("all");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [view, setView] = useState<ViewId>(() => paramToView(searchParams) || "all");
+  const [openId, setOpenId] = useState<string | null>(() => searchParams.get("authId"));
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
-  const [filters, setFilters] = useState<Filters>({ state: null, payor: null, coordinator: null });
+  const [filters, setFilters] = useState<Filters>({
+    state: searchParams.get("state"),
+    payor: searchParams.get("payor"),
+    coordinator: searchParams.get("coordinator"),
+  });
+
+  // React to deep-link changes coming from other pages (Risk Center, Supervision, etc.)
+  useEffect(() => {
+    const id = searchParams.get("authId");
+    if (id) setOpenId(id);
+    const v = paramToView(searchParams);
+    if (v) setView(v);
+  }, [searchParams]);
+
+  // Keep the URL clean when the drawer closes so back-nav stays sensible.
+  const closeDrawer = () => {
+    setOpenId(null);
+    if (searchParams.get("authId")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("authId");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const enriched = useMemo(() => mockAuths.map(enrich), []);
 
@@ -270,7 +306,7 @@ export default function OSAuthorizations() {
         <AuthRecords auths={visible} density={density} onOpen={setOpenId} />
       </div>
 
-      {openId && <AuthDrawer authId={openId} onClose={() => setOpenId(null)} />}
+      {openId && <AuthDrawer authId={openId} onClose={closeDrawer} />}
     </OSShell>
   );
 }
