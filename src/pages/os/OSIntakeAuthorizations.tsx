@@ -973,6 +973,36 @@ function AuthDrawer({
     toast.success("Sent to QA & logged to client timeline");
   };
 
+  const approveAuth = async () => {
+    if (c.authStatus === "Approved") {
+      toast.info("Authorization already approved.");
+      return;
+    }
+    await updateClient(c.id, {
+      authStatus: "Approved",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Ready for staffing handoff",
+    });
+    await appendTimeline(c.id, `Authorization approved by ${c.payor || "payor"}`, "auth");
+    await appendAutomation(c.id, `Auth approved (${c.payor || "payor"})`);
+    toast.success("Auth approved & logged to client timeline");
+  };
+
+  const denyAuth = async () => {
+    if (c.authStatus === "Denied") {
+      toast.info("Authorization already denied.");
+      return;
+    }
+    await updateClient(c.id, {
+      authStatus: "Denied",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Review denial & prepare resubmission",
+    });
+    await appendTimeline(c.id, `Authorization denied by ${c.payor || "payor"}`, "auth");
+    await appendAutomation(c.id, `Auth denied (${c.payor || "payor"})`);
+    toast.success("Auth denied & logged to client timeline");
+  };
+
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col bg-card">
@@ -1169,6 +1199,24 @@ function AuthDrawer({
               disabled={c.qaStatus === "In Review" || c.qaStatus === "Complete"}
             >
               <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => { void approveAuth(); }}
+              disabled={c.authStatus === "Approved"}
+            >
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-destructive/30 text-destructive hover:bg-destructive/10"
+              onClick={() => { void denyAuth(); }}
+              disabled={c.authStatus === "Denied"}
+            >
+              <X className="mr-1.5 h-3.5 w-3.5" /> Deny
             </Button>
             <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
               <FileWarning className="mr-1.5 h-3.5 w-3.5" /> Request Info
