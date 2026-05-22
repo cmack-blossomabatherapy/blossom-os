@@ -723,7 +723,13 @@ function Pill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
 
 /* ───── drawer ───── */
 
-function DetailDrawer({ item, onClose }: { item: PT97156Item; onClose: () => void }) {
+function DetailDrawer({
+  item, onClose, onEscalate,
+}: {
+  item: PT97156Item;
+  onClose: () => void;
+  onEscalate: (kind: EscalationKind) => void;
+}) {
   const { auth, days, bcba, utilStatus, utilTone, participation, participationTone,
           opStatus, opTone, signatureMissing, qaState, smartFlags, nextAction } = item;
 
