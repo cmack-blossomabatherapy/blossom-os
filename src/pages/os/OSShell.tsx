@@ -216,9 +216,41 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     return { id: "home", label: "Home", items };
   })();
 
-  const sections = [homeSection, ...NAV_SECTIONS]
-    .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
-    .filter((s) => s.items.length > 0);
+  // Scheduling Team gets a curated, focused operational menu.
+  const SCHEDULING_TEAM_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/scheduling-team", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/scheduling-workspace", label: "Scheduling Workspace", icon: Workflow, module: "scheduling" },
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "staffing_scheduling", label: "Staffing & Scheduling", items: [
+        { to: "/staffing-queue", label: "Staffing Queue", icon: UserPlus, module: "scheduling" },
+        { to: "/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
+        { to: "/clients", label: "Clients", icon: Heart, module: "clients" },
+        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
+        { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
+  const sections = role === "scheduling_team"
+    ? SCHEDULING_TEAM_SECTIONS
+    : [homeSection, ...NAV_SECTIONS]
+        .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
+        .filter((s) => s.items.length > 0);
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
