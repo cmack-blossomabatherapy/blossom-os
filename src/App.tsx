@@ -191,6 +191,7 @@ import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSBCBAAuthorizations from "./pages/os/OSBCBAAuthorizations";
+import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
@@ -350,12 +351,7 @@ const App = () => (
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
                   <Route path="/bcba/authorizations" element={<OSBCBAAuthorizations />} />
-                  <Route path="/bcba/supervision" element={<OSComingSoon title="My Supervision" tagline="A calm supervision tracker built specifically for BCBA cadence and compliance — not a generic QA view." icon={Eye} features={[
-                    { title: "97155 cadence tracker", description: "See last touchpoint, days since, and required frequency per client at a glance." },
-                    { title: "Overdue alerts", description: "Clients past 21 days flagged with severity, sorted by urgency." },
-                    { title: "Supervision log", description: "Quick log entry with goal links and clinical notes saved to the client timeline." },
-                    { title: "Compliance summary", description: "Monthly cadence overview ready for audits and state director reviews." },
-                  ]} />} />
+                  <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
                   <Route path="/bcba/parent-training" element={<OSComingSoon title="My Parent Training" tagline="97156 cadence and parent engagement tracking — designed for the BCBA family relationship." icon={HeartHandshake} features={[
                     { title: "Family cadence", description: "Last 97156 session and days since, per family, with cadence targets." },
                     { title: "Engagement signal", description: "Parent attendance, cancellation, and follow-through trends in one view." },
