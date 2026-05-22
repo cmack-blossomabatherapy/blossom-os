@@ -446,6 +446,12 @@ export default function OSIntakeAuthorizations() {
           />
         </div>
 
+        <StatusTabs
+          clients={inAuth}
+          active={filterTab}
+          onChange={(k) => setFilter("tab", k === "all" ? null : k)}
+        />
+
         {hasFilters && (
           <div className="flex flex-wrap items-center gap-2 -mt-3">
             <span className="text-xs text-muted-foreground">Filters:</span>
