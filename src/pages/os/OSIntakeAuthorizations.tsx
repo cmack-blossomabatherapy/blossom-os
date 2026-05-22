@@ -4,7 +4,7 @@ import {
   Search, Sparkles, Download, ShieldCheck, Activity,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
   StickyNote, Users, ListChecks, FileWarning, ExternalLink, Heart,
-  ClipboardCheck, Send, PhoneCall,
+  ClipboardCheck, Send, PhoneCall, CalendarClock, Lightbulb,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useClients } from "@/contexts/ClientsContext";
@@ -165,6 +165,93 @@ function nextAction(c: Client): string {
   return "Review with auth team";
 }
 
+/* ──────── SOP-aligned status tabs ──────── */
+
+type StatusTabKey =
+  | "all" | "awaiting" | "submitted" | "approved" | "denied"
+  | "expiring" | "qa" | "missing" | "flaked" | "priority";
+
+function daysUntilExpiration(c: Client): number | null {
+  const dates = [
+    ...(c.authorizations ?? []).map((a) => a.expirationDate).filter(Boolean) as string[],
+    c.nextReauthDate ?? null,
+  ].filter(Boolean) as string[];
+  if (dates.length === 0) return null;
+  const soonest = dates
+    .map((d) => new Date(d).getTime())
+    .filter((t) => !Number.isNaN(t))
+    .sort((a, b) => a - b)[0];
+  if (!soonest) return null;
+  return Math.ceil((soonest - Date.now()) / 86_400_000);
+}
+
+function hasMissingDocs(c: Client): boolean {
+  return Boolean(
+    c.blockers?.some((b) => /missing|consent|insurance|doc|referral|diagnosis/i.test(b)) ||
+    c.authorizations?.some((a) => (a.missingDocs?.length ?? 0) > 0),
+  );
+}
+
+function isFlaked(c: Client): boolean {
+  return Boolean(c.blockers?.some((b) => /flake|no\s*show|unreachable/i.test(b)));
+}
+
+const STATUS_TABS: { key: StatusTabKey; label: string; match: (c: Client) => boolean }[] = [
+  { key: "all", label: "All", match: () => true },
+  { key: "awaiting", label: "Awaiting Submission", match: (c) => simpleAuth(c) === "Ready for Submission" || c.authStatus === "Not Submitted" },
+  { key: "submitted", label: "Submitted", match: (c) => c.authStatus === "Submitted" },
+  { key: "approved", label: "Approved", match: (c) => c.authStatus === "Approved" },
+  { key: "denied", label: "Denied", match: (c) => c.authStatus === "Denied" },
+  { key: "expiring", label: "Expiring Soon", match: (c) => {
+    const d = daysUntilExpiration(c);
+    return c.authStatus === "Expiring Soon" || (d !== null && d <= 90 && d >= 0);
+  } },
+  { key: "qa", label: "In QA Review", match: (c) => c.qaStatus === "In Review" || c.authorizations?.some((a) => a.qaStatus === "In Review") === true },
+  { key: "missing", label: "Missing Information", match: hasMissingDocs },
+  { key: "flaked", label: "Flaked Client", match: isFlaked },
+  { key: "priority", label: "High Priority", match: (c) => {
+    const d = daysUntilExpiration(c);
+    return (
+      c.authStatus === "Denied" ||
+      (d !== null && d <= 30 && d >= 0) ||
+      (c.daysInStage ?? 0) >= 14 ||
+      Boolean(authBlocker(c))
+    );
+  } },
+];
+
+/* ──────── Next-best-action engine ──────── */
+
+type NBA = { label: string; tone: "warn" | "info" | "ok"; why: string };
+function nextBestAction(c: Client): NBA {
+  const d = daysUntilExpiration(c);
+  if (c.authStatus === "Denied") {
+    return { label: "Review denial & resubmit", tone: "warn", why: "Payor returned a denial — review reason and prepare resubmission." };
+  }
+  if (hasMissingDocs(c)) {
+    return { label: "Request missing information", tone: "warn", why: "Required intake documents are missing — request from family or BCBA." };
+  }
+  if (c.qaStatus === "In Review") {
+    return { label: "Resolve QA review", tone: "warn", why: "Authorization is in QA — clear any QA flags before submission." };
+  }
+  if (c.authStatus === "Not Submitted" && simpleAuth(c) === "Ready for Submission") {
+    return { label: "Submit authorization", tone: "info", why: "Packet is intake-complete and ready for the auth team to submit." };
+  }
+  if (d !== null && d <= 30 && d >= 0) {
+    return { label: "Start reassessment now", tone: "warn", why: `Authorization expires in ${d} day${d === 1 ? "" : "s"} — reassessment overdue.` };
+  }
+  if (d !== null && d <= 90 && d >= 0) {
+    return { label: "Start reassessment workflow", tone: "info", why: `Authorization expires in ${d} days — kick off reassessment with BCBA.` };
+  }
+  if (c.authStatus === "Submitted") {
+    return { label: "Follow up with payor", tone: "info", why: "Authorization is awaiting payor response — confirm receipt if 5+ days old." };
+  }
+  if (c.authStatus === "Approved") {
+    return { label: "Operationally healthy", tone: "ok", why: "Authorization is current — no action required from intake." };
+  }
+  return { label: "Review with auth team", tone: "info", why: "Confirm next operational step for this authorization." };
+}
+
 /* ───────────────────────── modals ───────────────────────── */
 
 type AuthModal =
@@ -276,6 +363,7 @@ export default function OSIntakeAuthorizations() {
   const filterHandoff = params.get("handoff");
   const filterVOB = params.get("vob");
   const filterStatus = params.get("status");
+  const filterTab = (params.get("tab") as StatusTabKey | null) ?? "all";
 
   // Show only clients that are in any auth lifecycle (skip "Not Started" with no payor)
   const inAuth = useMemo(
@@ -306,9 +394,13 @@ export default function OSIntakeAuthorizations() {
       if (filterPulse === "vob" && !(v === "Finance Review Needed" || v === "Missing Info")) return false;
       if (filterPulse === "ready" && a !== "Ready for Submission") return false;
       if (filterPulse === "approved" && a !== "Approved") return false;
+      if (filterTab && filterTab !== "all") {
+        const tab = STATUS_TABS.find((t) => t.key === filterTab);
+        if (tab && !tab.match(c)) return false;
+      }
       return true;
     });
-  }, [inAuth, query, filterPulse, filterStage, filterHandoff, filterVOB, filterStatus]);
+  }, [inAuth, query, filterPulse, filterStage, filterHandoff, filterVOB, filterStatus, filterTab]);
 
   const setFilter = (key: string, value: string | null) => {
     const p = new URLSearchParams(params);
@@ -353,6 +445,12 @@ export default function OSIntakeAuthorizations() {
             className="h-11 w-full rounded-xl bg-muted/60 border border-border pl-10 pr-4 text-sm placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring focus:border-transparent transition outline-none"
           />
         </div>
+
+        <StatusTabs
+          clients={inAuth}
+          active={filterTab}
+          onChange={(k) => setFilter("tab", k === "all" ? null : k)}
+        />
 
         {hasFilters && (
           <div className="flex flex-wrap items-center gap-2 -mt-3">
@@ -412,6 +510,41 @@ function FilterChip({ children, onClear }: { children: ReactNode; onClear: () =>
       {children}
       <button onClick={onClear} className="hover:text-primary/70"><X className="h-3 w-3" /></button>
     </span>
+  );
+}
+
+function StatusTabs({
+  clients, active, onChange,
+}: { clients: Client[]; active: StatusTabKey; onChange: (k: StatusTabKey) => void }) {
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const tab of STATUS_TABS) map[tab.key] = clients.filter(tab.match).length;
+    return map;
+  }, [clients]);
+  return (
+    <div className="-mx-1 flex gap-1.5 overflow-x-auto pb-1">
+      {STATUS_TABS.map((t) => {
+        const isActive = active === t.key;
+        return (
+          <button
+            key={t.key}
+            onClick={() => onChange(t.key)}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+              isActive
+                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                : "bg-card text-muted-foreground hover:text-foreground border-border/70 hover:bg-muted/60",
+            )}
+          >
+            <span>{t.label}</span>
+            <span className={cn(
+              "tabular-nums rounded-full px-1.5 py-px text-[10px]",
+              isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground/70",
+            )}>{counts[t.key] ?? 0}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -715,11 +848,17 @@ function AuthDrawer({
   const vob = simpleVOB(c);
   const blocker = authBlocker(c);
   const missing = handoff.filter((i) => !i.ok);
+  const nba = nextBestAction(c);
+  const expDays = daysUntilExpiration(c);
+  const earliestExp = (c.authorizations ?? [])
+    .map((a) => a.expirationDate)
+    .filter(Boolean)
+    .sort()[0] ?? c.nextReauthDate ?? null;
 
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto p-0">
-        <div className="px-6 pt-6 pb-4 border-b border-border">
+      <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col bg-card">
+        <div className="px-6 pt-6 pb-4 border-b border-border shrink-0">
           <SheetHeader>
             <SheetTitle className="text-xl">{c.childName}</SheetTitle>
           </SheetHeader>
@@ -737,7 +876,58 @@ function AuthDrawer({
           </div>
         </div>
 
-        <div className="px-6 py-5 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className={cn(
+            "rounded-2xl border p-4",
+            nba.tone === "warn" && "border-amber-500/30 bg-amber-500/[0.06]",
+            nba.tone === "info" && "border-primary/30 bg-primary/[0.05]",
+            nba.tone === "ok" && "border-emerald-500/30 bg-emerald-500/[0.05]",
+          )}>
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                nba.tone === "warn" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                nba.tone === "info" && "bg-primary/15 text-primary",
+                nba.tone === "ok" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+              )}>
+                <Lightbulb className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">What should happen next</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{nba.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{nba.why}</p>
+              </div>
+            </div>
+          </div>
+
+          <Section title="Expiration & Reassessment" icon={CalendarClock}>
+            {earliestExp ? (
+              <>
+                <KV k="Earliest expiration" v={new Date(earliestExp).toLocaleDateString()} />
+                <KV k="Time remaining" v={expDays !== null ? `${expDays}d` : "—"} />
+                <KV k="Next reassessment date" v={c.nextReauthDate ? new Date(c.nextReauthDate).toLocaleDateString() : "—"} />
+                {expDays !== null && expDays <= 90 && (
+                  <div className={cn(
+                    "mt-2 rounded-lg border px-3 py-2 text-xs",
+                    expDays <= 30
+                      ? "border-destructive/30 bg-destructive/[0.06] text-destructive"
+                      : expDays <= 60
+                        ? "border-amber-500/30 bg-amber-500/[0.06] text-amber-700 dark:text-amber-400"
+                        : "border-primary/20 bg-primary/[0.05] text-primary",
+                  )}>
+                    {expDays <= 30
+                      ? "Overdue risk — reassessment should already be in motion."
+                      : expDays <= 60
+                        ? "60-day warning — confirm BCBA progress report is on track."
+                        : "90-day warning — kick off reassessment workflow."}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No expiration date on file yet.</p>
+            )}
+          </Section>
+
           <Section title="Client Overview">
             <KV k="Patient" v={c.childName} />
             <KV k="Parent/Guardian" v={c.parentName || "—"} />
@@ -842,6 +1032,26 @@ function AuthDrawer({
               )}
             </div>
           </Section>
+        </div>
+
+        <div className="border-t border-border bg-card/95 backdrop-blur px-4 py-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button size="sm" onClick={() => onAction({ kind: "messageTeam", client: c, team: "Authorization" })}>
+              <Send className="mr-1.5 h-3.5 w-3.5" /> Submit Auth
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "messageTeam", client: c, team: "QA" })}>
+              <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
+              <FileWarning className="mr-1.5 h-3.5 w-3.5" /> Request Info
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "followUp", client: c })}>
+              <CalendarClock className="mr-1.5 h-3.5 w-3.5" /> Start Reassessment
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onAction({ kind: "note", client: c })}>
+              <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
