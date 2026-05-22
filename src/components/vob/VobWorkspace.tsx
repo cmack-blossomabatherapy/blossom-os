@@ -411,6 +411,40 @@ export function VobWorkspace({ review }: { review: VobReview }) {
           ))}
         </ul>
       </Section>
+
+      {/* ============ STICKY ACTION BAR ============ */}
+      <div className="sticky bottom-3 z-20 mt-2 rounded-2xl border border-border/60 bg-card/95 p-2 shadow-[0_18px_40px_-20px_hsl(220_60%_30%/0.25)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Quick decisions
+          </span>
+          <Button size="sm" className="h-8 bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={() => setDecision("approve")}>
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("approve_payment_plan")}>
+            <CreditCard className="mr-1 h-3.5 w-3.5" /> Payment Plan
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("finance_review")}>
+            <Wallet className="mr-1 h-3.5 w-3.5" /> Finance Review
+          </Button>
+          <Button size="sm" variant="outline" className="h-8"
+            onClick={() => setDecision("needs_info")}>
+            <HelpCircle className="mr-1 h-3.5 w-3.5" /> Missing Info
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 border-rose-200 text-rose-700 hover:bg-rose-50"
+            onClick={() => setDecision("no_oon")}>
+            <ShieldOff className="mr-1 h-3.5 w-3.5" /> Cannot Service
+          </Button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => toast.success("Moved to Clients", { description: review.parentName })}>
+              Move to Clients <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
