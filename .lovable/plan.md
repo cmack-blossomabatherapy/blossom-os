@@ -1,148 +1,100 @@
+## Goal
 
-# Leads Page (Blossom OS)
+Rebuild `/leads` so it stops feeling like a CRM pipeline and starts behaving like a **Family Intake Operations** workspace. The North Star is **Service Readiness**: every section answers "what is preventing this family from becoming ready for services, and what should Intake do next?"
 
-Goal: Replace the `/leads` "coming soon" route with a calm, operational Leads workspace built on the real Monday Leads export already in Lovable Cloud — 4,739 lead records and 33,506 update/comment rows previously uploaded via Admin → Data Uploads → Monday.com → Leads.
+## Scope
 
-No new uploader. No giant spreadsheet clone. Familiar to a Monday user, but cleaner.
+- Replace the page rendered at `/leads` (currently `OSLeadsV2`) with a new `OSIntakeOperations` page.
+- Reuse the existing data layer: `monday_leads_raw` → `mondayMapper.ts` → `LeadsContext`, plus `monday_updates_raw` for activity. No schema changes.
+- All new UI lives in `src/components/leads/intake/`. The old `OSLeadsV2` + its components stay in the repo (unrouted) so we can fall back if needed, then deleted in a follow-up pass.
+- Mock-only Ask Blossom AI rail (no edge function this round).
 
----
+## Page structure
 
-## 1. Data — use what's already there
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│ Header: "Leads" + subtitle + search + [Add Inquiry][Follow-Up]      │
+│         [Send Intake Packet][Open VOB Center]                       │
+├──────────────────────────────────────────────┬──────────────────────┤
+│ Intake Pulse (6 calm KPI pills)              │                      │
+│                                              │  Ask Blossom AI      │
+│ § Families Needing Action  (hero section)    │  • prompt chips      │
+│   action cards, urgency, quick actions       │  • insights          │
+│                                              │  • daily priorities  │
+│ § Daily Follow-Ups (tabbed queues)           │                      │
+│                                              │                      │
+│ § Assessment Coordination                    │                      │
+│                                              │                      │
+│ § Missing Information Center                 │                      │
+│                                              │                      │
+│ § Service Readiness Pipeline (12 stages)     │                      │
+│                                              │                      │
+│ § Recent Activity (from monday_updates_raw)  │                      │
+└──────────────────────────────────────────────┴──────────────────────┘
+```
 
-Tables already populated from the uploader + parse-monday-export edge function:
+Right rail is 320px, sticky. Main column scrolls. Mobile: rail collapses into a bottom sheet, sections stack, follow-ups float to top.
 
-- `monday_leads_raw` — one row per Monday lead. Columns: `monday_item_id`, `monday_group`, `name`, `state`, `status`, `owner`, `data` (jsonb with all 60+ Monday fields), `imported_at`, `updated_at`.
-- `monday_updates_raw` — one row per Monday comment/update. Columns: `parent_board`, `parent_item_name`, `author`, `posted_at`, `body`.
-- `monday_subitems_raw` — Monday subitems (sparse, 137 rows).
+## Sections in detail
 
-Existing helpers we will reuse:
-- `src/lib/leads/mondayMapper.ts` — `mondayRowToLead(row)` already maps `monday_leads_raw` → the canonical `Lead` type, including status, owner, state, form/VOB statuses, insurance, missing info, last contact, origination date, etc.
-- `src/contexts/LeadsContext.tsx` — already loads from `monday_leads_raw` and exposes `leads`, `loading`, `refresh`, `updateLead`, etc.
+**Intake Pulse (KPI strip)** — 6 pills only: New Inquiries, Awaiting Contact, Missing Information, VOB Pending, Assessment Coordination Needed, Ready for Next Step. Derived from existing `Lead` fields (`status`, `formReviewStatus`, `vobStatus`, plus a derived `readinessStatus`). One muted accent, no charts.
 
-Comments link: `monday_updates_raw.parent_item_name` matches `monday_leads_raw.name` (the export doesn't carry Item ID on updates). We'll join by normalized name. A small helper `useLeadUpdates(leadName)` will fetch matching updates ordered by `posted_at desc`.
+**Families Needing Action (hero)** — Large operational cards grouped by blocker reason (Packet not completed, Missing insurance card, Parent unavailable, Assessment not scheduled, VOB pending, Consent missing, Financial review, Stopped responding). Each card: parent name, patient, state, stage, IC owner, blocker, urgency dot, days waiting. Inline quick actions: Call, Text, Email, Send Packet, Add Note, Open, Escalate. Open → detail drawer.
 
-No schema changes required. (If we later want first-class write-back, we can introduce `lead_notes` / `lead_activity` tables — out of scope for v1.)
+**Daily Follow-Ups** — Segmented tabs: Due Today / Overdue / Waiting on Family / Missing Docs / Assessment Coord / Final Attempts / Waiting on VOB. Compact row cards with Call/Text/Email/Note/Snooze/Escalate.
 
----
+**Assessment Coordination** — New mini-board with columns: Needs Assessment, Scheduled, Clinician Assigned, Awaiting Family Availability, Completed. Derived from status + tasks; click → drawer's Assessment tab.
 
-## 2. Route & navigation
+**Missing Information Center** — Visual blocker grid: Insurance card, Intake form, Consent, Diagnosis, Availability, Referral. Each tile shows count + top 3 families + "Request Missing Info" action.
 
-- `src/App.tsx`: replace the `/leads` `<OSComingSoon …>` route with a `<PermissionRoute permission="leads.view"><OSLeadsV2 /></PermissionRoute>`.
-- Sidebar entry already exists in `OSShell` under Intake — points at `/leads`.
-- Keep the old `pages/Leads.tsx` and `pages/os/OSLeads.tsx` files in place (untouched) so existing demo routes don't break. New page lives at `src/pages/os/OSLeadsV2.tsx`.
+**Service Readiness Pipeline** — Horizontal scroller, 12 stages: New Inquiry → Initial Contact → Packet Sent → Forms Received → Missing Info → Insurance Verified → Sent to VOB → Financially Cleared → Assessment Coordination → Ready for Client Setup → Ready for Authorization → Ready for Staffing. Each stage card: count, overdue, waiting, avg days in stage. Cards open a filtered family list in the drawer.
 
----
+**Recent Activity** — Feed pulled from `monday_updates_raw` joined to leads by `parent_item_name`. Icons per type (contact, packet sent, insurance uploaded, VOB received, assessment scheduled, note).
 
-## 3. Page structure (`src/pages/os/OSLeadsV2.tsx`)
+**Ask Blossom AI rail** — Prompt chips ("Summarize this family", "Find stuck intake cases", "Show missing documents", "What's preventing readiness?", "Draft follow-up"), 3 mocked insight cards, daily priorities list (top 5 families to call today, computed client-side from urgency + days waiting).
 
-Single `OSShell`-wrapped page. Layout: main column + 320px right rail (AI). On <1280px the rail collapses behind an "AI" button.
+## Lead Detail Drawer
 
-### a. Header
-- Title "Leads", subtitle "Track new family inquiries, intake progress, forms, insurance, and VOB readiness."
-- Right-aligned: `Filters`, `Export CSV`, `Import` (opens link to `/admin/data-uploads`), `+ Add Lead` (primary).
-- Below: full-width search input with leading icon — "Search patient, parent, phone, email, insurance…". Debounced filter across `name`, parent name, phone, email, primary insurance.
+Refactor the existing `LeadDetailDrawer` into a tabbed intake-focused layout: Family Info · Intake Status · Forms & Docs · Insurance · VOB · Assessment Coordination · Communication · Activity · Internal Notes · Operational Readiness. Footer actions: Call, Text, Email, Add Note, Send Forms, Move Stage, Escalate, Open VOB.
 
-### b. KPI strip (8 quiet pill cards, single row, horizontal scroll on small)
-Each pill = label + count, computed live from the loaded leads. Click = applies the matching filter.
-- New Leads (status = New Lead)
-- Needs Contact (no last_contact_date or > 2 days)
-- Form Sent
-- Form Completed
-- Missing Info
-- Sent to VOB
-- VOB Completed
-- Cannot Reach
+## Readiness model
 
-### c. View switcher
-Segmented control: **List · Pipeline · Follow-Up**. Default = List.
+Add a derived helper `getReadinessStatus(lead)` returning one of: `Awaiting Contact | Waiting on Family | Waiting on Internal Review | Financial Review Needed | Assessment Coordination | Operationally Ready | Cannot Proceed`. Pure function over existing `Lead` fields — no DB writes. Used by KPI pulse, action cards, pipeline counts, and the drawer's Operational Readiness panel.
 
-### d. List view (default)
-Clean table, only operationally relevant columns:
-`Patient · Parent · State · Intake Person · Status · Last Contact · Call Attempt · Form Status · Primary Insurance · VOB Status · Missing Info · Next Action`
+## Role scoping
 
-Row hover reveals quick actions: Open · Call · Email · Add Note · Send Form · Escalate.
-Click row → opens detail drawer.
-Pagination: 50 / page (server-side, ordered by `updated_at desc`).
+Reuse existing `useUserRole` / lead scoping. Intake Coordinators see only `lead.owner === currentUser`; Intake Leadership + Operations Leadership + Super Admin see all; State Directors see only their state; RBT/BCBA hidden via `PermissionRoute permission="leads.view"`.
 
-### e. Pipeline view
-Horizontal kanban (overflow-x) with these columns (mapping uses `mondayMapper` enum):
-New Lead → Contact Attempted → Connected → Form Sent → Form Received → Missing Information → Sent to VOB → VOB Completed → Ready for Client Setup → Cannot Reach → Non Qualified.
+## Files
 
-Each card shows: patient, state badge, intake person, last contact, next action. Click → drawer. v1 is read-only drag (no persistence yet — leads source is still Monday export).
+```text
+src/pages/os/OSIntakeOperations.tsx        (new — replaces OSLeadsV2 at /leads)
 
-### f. Follow-Up view
-Action queues rendered as horizontally scrollable column groups:
-Due Today · Overdue · Attempt 1 · Attempt 2 · Attempt 3 · Attempt 4 · Final Attempt · Cannot Reach · Waiting on Parent.
+src/components/leads/intake/
+  IntakeHeader.tsx
+  IntakePulse.tsx                    (6 KPI pills)
+  FamiliesNeedingAction.tsx          (hero blocker cards)
+  DailyFollowUps.tsx                 (tabbed queues)
+  AssessmentCoordination.tsx         (mini board)
+  MissingInfoCenter.tsx              (blocker tiles)
+  ServiceReadinessPipeline.tsx       (12-stage scroller)
+  RecentActivityFeed.tsx             (from monday_updates_raw)
+  AskBlossomIntakeRail.tsx           (mock AI)
+  IntakeDetailDrawer.tsx             (refactor of LeadDetailDrawer)
 
-Heuristics derived from `Last Contact Date`, `Reg Call Log`, `E/T Call Log`, `Can't Reach Date`, `Status` fields in the JSON blob.
+src/lib/leads/readiness.ts           (getReadinessStatus, blocker derivation, pipeline stages)
+src/lib/leads/intakeQueues.ts        (queue builders for follow-ups + action cards)
 
-### g. Lead Detail Drawer (right side, ~520px, glass over content)
-Tabs across top: **Overview · Insurance / VOB · Documents · Activity · Actions**.
+src/App.tsx                          (swap OSLeadsV2 → OSIntakeOperations on /leads)
+```
 
-- **Overview** — patient name/DOB/age/gender, parent name + cell + home phone + email, address + zip, state, lead type, source, UTM source, intake person, status, last contact, next action, origination date, call logs.
-- **Insurance / VOB** — primary, secondary, insurance ID, insurance type, VOB status, payment plan needed, DX, missing info, non-qualified reason.
-- **Documents** — chips for: insurance card front/back, intake packet, consent form, VOB. Pulled from the JSON keys "Primary Insurance Card - Front/Back", "Secondary Insurance Card - …", "Intake Packet", "Consent Form Link", "VOB".
-- **Activity** — comment feed from `monday_updates_raw` joined by name, newest first; each item shows author, relative time, body (sanitized).
-- **Actions** — buttons: Add Note · Send Intake Packet · Send Consent Forms · Request Missing Info · Move to VOB · Mark Cannot Reach · Mark Non Qualified · Create Task. All wired to `useLeads().updateLead(...)` and a `sonner` toast. (Writes update the local `Lead` cache; underlying `monday_leads_raw` remains read-only for v1.)
+## Design tokens
 
-### h. AI rail (right)
-Compact glass card "Ask Blossom". Pre-canned prompts as ghost buttons:
-- Summarize this lead
-- Find missing information
-- Show leads needing follow-up
-- Which leads are stuck?
-- Draft parent follow-up
+White / `bg-background`, hairline `border-border`, `rounded-2xl` cards, soft `shadow-sm`, hover-lift. Single primary accent for CTAs; muted chips for status; red/amber/green only for true urgency (overdue days). Glass treatment on rail + drawer. No gradients on cards.
 
-For v1 these dispatch to a stub `askBlossom(prompt, context)` that opens the existing global AI panel pre-filled — no new backend call.
+## Out of scope (v1)
 
----
-
-## 4. Filters
-
-Filter popover (triggered by header `Filters` button) with multi-select chips:
-State · Intake Person · Status · Form Status · VOB Status · Insurance · Lead Type · Source · Missing Info (Yes/No) · Date Range (origination).
-
-Active filters render as removable chips below the KPI row.
-
----
-
-## 5. Role-based visibility (`src/lib/os/permissions.ts`)
-
-Reuse the existing permission system. The route already gates on `leads.view`. Inside the page we also filter the loaded `leads` array:
-
-- **RBT** → no access (no `leads.view`).
-- **Intake Coordinator** → only rows where `lead.owner === currentUser.displayName`.
-- **Intake Leadership / Operations Leadership / Super Admin** → all rows.
-- **State Director** → only rows where `lead.state === currentUser.state` (uses existing `profiles.state`).
-
-These restrictions apply to KPI counts, all views, and the drawer.
-
----
-
-## 6. New files
-
-- `src/pages/os/OSLeadsV2.tsx` — page shell, view switcher, KPI strip, search, filters, AI rail.
-- `src/components/leads/LeadsListView.tsx`
-- `src/components/leads/LeadsPipelineView.tsx`
-- `src/components/leads/LeadsFollowUpView.tsx`
-- `src/components/leads/LeadDetailDrawer.tsx`
-- `src/components/leads/LeadFiltersPopover.tsx`
-- `src/hooks/useLeadUpdates.ts` — fetches `monday_updates_raw` by `parent_item_name`.
-- `src/lib/leads/scoping.ts` — `scopeLeadsForUser(leads, user, roles)`.
-
-## 7. Files changed
-
-- `src/App.tsx` — swap `/leads` route to `OSLeadsV2`.
-- (Light) `src/contexts/LeadsContext.tsx` — only if a small selector helper is needed; no breaking changes.
-
-## 8. Design adherence (Blossom OS)
-- White/`bg-background` page, hairline borders, `rounded-2xl` cards, glass drawer + AI rail.
-- One primary CTA per view (`Add Lead`).
-- Accent (primary pink) used only on primary CTA, active view chip, focus rings.
-- No `shadow-lg`, no marketing tropes, no rainbow status colors — status chips are muted with one accent and red/amber/green only for true urgency.
-- Empty states: "No leads match these filters." with a single ghost reset action.
-
-## 9. Out of scope (call out to user, not built in v1)
-- Writing changes back to Monday/Lovable Cloud as a new "leads" table. Edits today live in the in-memory `LeadsContext` cache and reset on reload. We can add a `lead_overrides` table in a follow-up if you want persistence before CentralReach becomes source of truth.
-- Real Ask-Blossom calls — the rail prefills prompts only.
-- Drag-and-drop persistence in Pipeline view.
+- Writing changes back to Lovable Cloud (in-memory only, same as current).
+- Real Ask Blossom AI calls.
+- Drag-and-drop on the pipeline.
+- Deleting `OSLeadsV2.tsx` and the old leads components (kept temporarily for safety).
