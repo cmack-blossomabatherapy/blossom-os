@@ -206,6 +206,7 @@ import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
+import OSScheduling from "./pages/os/OSScheduling";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
 import {
@@ -350,12 +351,7 @@ const App = () => (
                   <Route path="/intake/vob-decision" element={<OSPlaceholder title="VOB Decision Center" description="VOB review, payment plan decisions, and financial readiness for intake." icon={ShieldCheck} />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
-                  <Route path="/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
-                    { title: "Smart conflict detection", description: "Prevents double-booking, credential mismatches, and travel-time issues." },
-                    { title: "Open coverage board", description: "Visualize uncovered hours by client, region, and service line." },
-                    { title: "Recurring patterns", description: "Set weekly templates with intelligent rollovers and holiday handling." },
-                    { title: "Mobile session check-in", description: "RBT check-in/out with GPS, signatures, and instant timesheet sync." },
-                  ]} />} />
+                  <Route path="/scheduling" element={<OSScheduling />} />
                   <Route path="/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
                     { title: "Active case board", description: "Every active client with risk flags, staffing status, and parent satisfaction." },
                     { title: "Escalations & alerts", description: "Auto-escalate cases with cancellations, no-shows, or compliance issues." },
