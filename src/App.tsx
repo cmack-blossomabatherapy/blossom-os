@@ -205,6 +205,7 @@ import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
+import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
 import {
@@ -331,6 +332,7 @@ const App = () => (
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
                   <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
                   <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
+                  <Route path="/staffing" element={<OSStaffingQueue />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
