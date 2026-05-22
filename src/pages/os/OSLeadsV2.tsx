@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
-  Loader2,
+  Loader2, UserPlus, MoveRight, CalendarClock, CheckSquare,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -17,7 +17,9 @@ import { Button } from "@/components/ui/button";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import type { Lead } from "@/data/leads";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { INTAKE_COORDINATORS, type Lead, type LeadStatus } from "@/data/leads";
 import { toast } from "sonner";
 
 type ViewMode = "list" | "pipeline" | "followup";
