@@ -245,6 +245,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   // dashboard. They do NOT see the legacy Operations/HR/Enterprise groups.
   const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
   const showOperations = !isExecOnly && roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
+  // Scheduling Team gets a curated operational menu focused on staffing & scheduling.
+  const isSchedulingOnly = roles.includes("scheduling") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager");
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -258,12 +260,48 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ],
   };
 
+  // Scheduling Team curated sections.
+  const schedulingSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard", icon: LayoutDashboard, path: "/scheduling-team", perm: "" },
+        { label: "Scheduling Workspace", icon: Workflow, path: "/scheduling-workspace", perm: "" },
+        { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+      ],
+    },
+    {
+      title: "Staffing & Scheduling",
+      items: [
+        { label: "Staffing Queue", icon: UserPlus, path: "/staffing", perm: "" },
+        { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "" },
+        { label: "Clients", icon: UserCheck, path: "/clients", perm: "" },
+        { label: "BCBA / RBT", icon: UsersRound, path: "/bcba", perm: "" },
+        { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/resource-library", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
   const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
         ...academySections,
         ...(showAdmin ? adminSections : []),
       ]
+    : isSchedulingOnly
+    ? schedulingSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
