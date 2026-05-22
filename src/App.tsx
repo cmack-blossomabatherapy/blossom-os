@@ -211,6 +211,11 @@ import {
 
 const queryClient = new QueryClient();
 
+function ClientsRouter() {
+  const { role } = useOSRole();
+  return role === "intake_coordinator" ? <OSIntakeClients /> : <OSClientsOperations />;
+}
+
 const OSOutlet = () => (
   <OSRoleProvider>
     <Outlet />
