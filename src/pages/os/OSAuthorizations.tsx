@@ -652,7 +652,6 @@ function AuthDrawer({ authId, onClose }: { authId: string; onClose: () => void }
           </DrawerSection>
 
           {/* 7 — Ask Blossom AI */}
-          {/* 7 — Ask Blossom AI */}
           <DrawerSection title="Ask Blossom AI" icon={Sparkles}>
             <AskBlossomAuthPanel a={e} />
           </DrawerSection>
