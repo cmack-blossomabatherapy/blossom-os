@@ -4,7 +4,7 @@ import {
   Search, Sparkles, Download, ShieldCheck, Activity,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
   StickyNote, Users, ListChecks, FileWarning, ExternalLink, Heart,
-  ClipboardCheck, Send, PhoneCall,
+  ClipboardCheck, Send, PhoneCall, CalendarClock, Lightbulb,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useClients } from "@/contexts/ClientsContext";
