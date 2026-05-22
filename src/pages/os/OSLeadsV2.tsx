@@ -524,23 +524,51 @@ function ListView({
 }
 
 function RowQuickActions({ lead }: { lead: Lead }) {
+  const { open } = useIntakeModals();
   const stop = (e: React.MouseEvent) => { e.stopPropagation(); };
-  const Btn = ({ icon: Icon, label, href, onClick }: any) => (
-    <a
-      href={href}
-      onClick={(e) => { stop(e); onClick?.(); }}
-      className="inline-grid place-items-center size-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-      title={label}
-    >
-      <Icon className="h-3.5 w-3.5" />
-    </a>
-  );
+  const Btn = ({ icon: Icon, label, href, onClick }: any) => {
+    const className =
+      "inline-grid place-items-center size-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground";
+    if (href) {
+      return (
+        <a href={href} onClick={stop} className={className} title={label}>
+          <Icon className="h-3.5 w-3.5" />
+        </a>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={(e) => { stop(e); onClick?.(); }}
+        className={className}
+        title={label}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </button>
+    );
+  };
   return (
     <div className="inline-flex items-center gap-0.5">
-      <Btn icon={PhoneCall} label="Call" href={lead.phone ? `tel:${lead.phone.replace(/\D/g, "")}` : undefined} />
-      <Btn icon={Mail} label="Email" href={lead.email ? `mailto:${lead.email}` : undefined} />
-      <Btn icon={Send} label="Send form" onClick={() => toast("Send form action")} />
-      <Btn icon={StickyNote} label="Note" onClick={() => toast("Add note")} />
+      <Btn
+        icon={PhoneCall}
+        label="Log call"
+        onClick={() => open({ kind: "comm", lead, channel: "call" })}
+      />
+      <Btn
+        icon={Mail}
+        label="Email"
+        onClick={() => open({ kind: "comm", lead, channel: "email" })}
+      />
+      <Btn
+        icon={Send}
+        label="Send form"
+        onClick={() => open({ kind: "sendPacket", lead })}
+      />
+      <Btn
+        icon={StickyNote}
+        label="Add note"
+        onClick={() => open({ kind: "note", lead })}
+      />
     </div>
   );
 }
