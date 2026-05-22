@@ -207,6 +207,7 @@ import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import OSScheduling from "./pages/os/OSScheduling";
+import OSSchedulingResources from "./pages/os/OSSchedulingResources";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
 import {
@@ -352,6 +353,7 @@ const App = () => (
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
+                  <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
                   <Route path="/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
                     { title: "Active case board", description: "Every active client with risk flags, staffing status, and parent satisfaction." },
                     { title: "Escalations & alerts", description: "Auto-escalate cases with cancellations, no-shows, or compliance issues." },

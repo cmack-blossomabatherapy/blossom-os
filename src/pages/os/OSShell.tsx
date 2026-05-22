@@ -236,7 +236,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+        { to: "/scheduling/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
     {
