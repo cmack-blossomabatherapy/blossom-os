@@ -54,7 +54,6 @@ export type OSScope = "company" | "state" | "assigned";
 export type OSModule =
   | "dashboard"
   | "command_center"
-  | "calendar"
   | "leads"
   | "clients"
   | "staff"
