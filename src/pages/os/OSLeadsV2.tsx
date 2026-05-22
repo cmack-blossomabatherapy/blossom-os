@@ -21,27 +21,39 @@ import { toast } from "sonner";
 
 type ViewMode = "list" | "pipeline" | "followup";
 
+/**
+ * Operational Readiness Pipeline — 14 stages.
+ * Mirrors the spec; falls back to status/vob/form fields where the underlying mock data
+ * doesn't yet carry a dedicated status. Empty stages are still useful scaffolding.
+ */
 const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean }[] = [
-  { key: "new",        label: "New Lead",            match: (l) => l.status === "New Lead" },
-  { key: "contact",    label: "Contact Attempted",   match: (l) => l.status === "In Contact" },
-  { key: "form_sent",  label: "Form Sent",           match: (l) => l.status === "Sent Form" },
-  { key: "form_recv",  label: "Form Received",       match: (l) => l.status === "Form Received" },
-  { key: "missing",    label: "Missing Information", match: (l) => l.status === "Missing Information" },
-  { key: "vob_sent",   label: "Sent to VOB",         match: (l) => l.status === "Sent to VOB" },
-  { key: "vob_done",   label: "VOB Completed",       match: (l) => l.status === "VOB Completed" },
-  { key: "cant_reach", label: "Cannot Reach",        match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
-  { key: "nq",         label: "Non Qualified",       match: (l) => l.status === "Non-Qualified" },
+  { key: "new_inquiry",     label: "New Inquiry",            match: (l) => l.status === "New Lead" },
+  { key: "initial_contact", label: "Initial Contact",        match: (l) => l.status === "In Contact" },
+  { key: "packet_sent",     label: "Intake Packet Sent",     match: (l) => l.status === "Sent Form" || l.formStatus === "Sent" },
+  { key: "forms_received",  label: "Forms Received",         match: (l) => l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
+  { key: "missing_info",    label: "Missing Information",    match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "ins_verified",    label: "Insurance Verified",     match: (l) => l.vobStatus === "Received" },
+  { key: "sent_vob",        label: "Sent to VOB",            match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
+  { key: "fin_cleared",     label: "Financially Cleared",    match: (l) => l.vobStatus === "Approved" || l.vobStatus === "Completed" || l.status === "VOB Completed" },
+  { key: "assessment",      label: "Assessment Coordination", match: (l) => (l as any).assessmentCoordination === true },
+  { key: "ready_setup",     label: "Ready for Client Setup", match: (l) => (l as any).readiness === "Ready for Setup" },
+  { key: "ready_auth",      label: "Ready for Authorization", match: (l) => (l as any).readiness === "Ready for Auth" },
+  { key: "ready_staffing",  label: "Ready for Staffing",     match: (l) => (l as any).readiness === "Ready for Staffing" },
+  { key: "cant_reach",      label: "Cannot Reach",           match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+  { key: "nq",              label: "Non Qualified",          match: (l) => l.status === "Non-Qualified" },
 ];
 
+/**
+ * Operational Intake Pulse — the 6 cards from the spec.
+ * Kept lightweight and clickable; each filters the active view.
+ */
 const KPI_DEFS = [
-  { key: "new",        label: "New",            test: (l: Lead) => l.status === "New Lead" },
-  { key: "needs",      label: "Needs Contact",  test: (l: Lead) => !l.lastContacted || l.daysInStage > 2 },
-  { key: "form_sent",  label: "Form Sent",      test: (l: Lead) => l.formStatus === "Sent" || l.status === "Sent Form" },
-  { key: "form_done",  label: "Form Completed", test: (l: Lead) => l.formStatus === "Complete" || l.formStatus === "Completed" || l.status === "Form Received" },
-  { key: "missing",    label: "Missing Info",   test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
-  { key: "vob_sent",   label: "Sent to VOB",    test: (l: Lead) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
-  { key: "vob_done",   label: "VOB Completed",  test: (l: Lead) => l.status === "VOB Completed" || l.vobStatus === "Completed" || l.vobStatus === "Approved" || l.vobStatus === "Received" },
-  { key: "cant_reach", label: "Cannot Reach",   test: (l: Lead) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+  { key: "new_inquiries",   label: "New Inquiries",          test: (l: Lead) => l.status === "New Lead" },
+  { key: "awaiting_contact",label: "Awaiting Contact",       test: (l: Lead) => !l.lastContacted || (l.status === "New Lead" && l.daysInStage > 0) },
+  { key: "missing_info",    label: "Missing Information",    test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "vob_pending",     label: "VOB Pending",            test: (l: Lead) => l.status === "Sent to VOB" || l.vobStatus === "Sent" || l.vobStatus === "Received" },
+  { key: "assessment",      label: "Assessment Coordination", test: (l: Lead) => (l as any).assessmentCoordination === true || l.nextAction?.toLowerCase().includes("assessment") },
+  { key: "ready_next",      label: "Ready for Next Step",    test: (l: Lead) => l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
 ];
 
 function StateBadge({ state }: { state: string }) {
