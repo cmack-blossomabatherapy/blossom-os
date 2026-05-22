@@ -105,7 +105,7 @@ export default function ReportsHome() {
           {/* CTAs */}
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
           </div>

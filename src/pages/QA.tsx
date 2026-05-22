@@ -566,7 +566,7 @@ export default function QA() {
 
       <section className="rounded-lg border border-border/60 bg-card p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative min-w-[280px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search client, QA owner, BCBA, RBT, payor, next action…" className="pl-9" /></div>
+          <div className="relative min-w-[280px] flex-1"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search client, QA owner, BCBA, RBT, payor, next action…" className="pl-9" /></div>
           <SingleSelectFilterDrawer
             entityLabel="QA cases"
             values={filters}

@@ -380,7 +380,7 @@ export default function SopIntelligence() {
           <CardContent className="p-3 md:p-5">
             <form onSubmit={onSubmit} className="flex flex-col md:flex-row gap-2 md:gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}

@@ -401,7 +401,7 @@ export function TeamAdminPanel() {
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       <div className="p-3 border-b border-border/40 flex items-center gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute z-10 left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search by name, email, title, or role…"
             value={query}

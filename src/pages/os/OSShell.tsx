@@ -301,7 +301,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                   </button>
                 </div>
                 <div className="relative mt-4">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" strokeWidth={2.25} />
+                  <Search className="pointer-events-none absolute z-10 left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" strokeWidth={2.25} />
                   <input
                     value={mobileSearch}
                     onChange={(e) => setMobileSearch(e.target.value)}

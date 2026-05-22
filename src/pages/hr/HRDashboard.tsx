@@ -348,7 +348,7 @@ export default function HRDashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees…" className="h-9 w-[260px] pl-9" />
             </div>
             <Button variant="outline" size="sm" className="h-9" onClick={() => setFiltersOpen((v) => !v)}>

@@ -469,7 +469,7 @@ export default function Scheduling() {
             <Button variant="outline" className="gap-2" onClick={() => setViewMode("grid")}><Grid3X3 className="h-4 w-4" />Schedule Builder</Button>
           </div>
           <div className="relative min-w-0 xl:w-[380px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search client, BCBA, RBT, scheduler…" className="pl-9" />
           </div>
         </div>

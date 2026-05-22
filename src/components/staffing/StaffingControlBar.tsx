@@ -37,7 +37,7 @@ export function StaffingControlBar({
     <div className="space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[260px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search RBT, BCBA, or client..."
             value={searchQuery}

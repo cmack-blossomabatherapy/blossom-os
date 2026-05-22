@@ -346,7 +346,7 @@ export default function TrackAssign() {
                   <CardDescription>{filteredEmployees.length} of {eligibleEmployees.length} {mode === "training" && currentTrack && (currentTrack as TrainingTrack).role_targets?.length ? "eligible employees" : "employees"}</CardDescription>
                 </div>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Search className="absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-[260px]" />
                 </div>
               </div>

@@ -80,7 +80,7 @@ export default function EmployeeDirectory() {
       <GlassPanel bodyClassName="p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:flex-1 sm:min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, title, code, email…" className="pl-9 h-9" />
           </div>
           <Select value={stateFilter} onValueChange={setStateFilter}>
