@@ -513,6 +513,41 @@ function FilterChip({ children, onClear }: { children: ReactNode; onClear: () =>
   );
 }
 
+function StatusTabs({
+  clients, active, onChange,
+}: { clients: Client[]; active: StatusTabKey; onChange: (k: StatusTabKey) => void }) {
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const tab of STATUS_TABS) map[tab.key] = clients.filter(tab.match).length;
+    return map;
+  }, [clients]);
+  return (
+    <div className="-mx-1 flex gap-1.5 overflow-x-auto pb-1">
+      {STATUS_TABS.map((t) => {
+        const isActive = active === t.key;
+        return (
+          <button
+            key={t.key}
+            onClick={() => onChange(t.key)}
+            className={cn(
+              "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+              isActive
+                ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                : "bg-card text-muted-foreground hover:text-foreground border-border/70 hover:bg-muted/60",
+            )}
+          >
+            <span>{t.label}</span>
+            <span className={cn(
+              "tabular-nums rounded-full px-1.5 py-px text-[10px]",
+              isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground/70",
+            )}>{counts[t.key] ?? 0}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ViewToggle({ value, onChange }: { value: "list" | "pipeline"; onChange: (v: "list" | "pipeline") => void }) {
   return (
     <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
