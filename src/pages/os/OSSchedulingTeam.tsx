@@ -169,7 +169,7 @@ export default function OSSchedulingTeam() {
                       <BucketDot bucket={b} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <Link to={`/clients/${c.id}`} className="truncate text-[14px] font-medium tracking-tight text-foreground hover:underline">
+                          <Link to="/clients" className="truncate text-[14px] font-medium tracking-tight text-foreground hover:underline">
                             {c.childName}
                           </Link>
                           <span className="text-[11px] text-muted-foreground">· {c.state}</span>
@@ -227,7 +227,7 @@ export default function OSSchedulingTeam() {
                 {upcomingStarts.map((c) => (
                   <li key={c.id} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Link to={`/clients/${c.id}`} className="truncate text-[13px] font-medium text-foreground hover:underline">
+                      <Link to="/clients" className="truncate text-[13px] font-medium text-foreground hover:underline">
                         {c.childName}
                       </Link>
                       <span className="rounded-full bg-card border border-border/70 px-2 py-0.5 text-[10.5px] text-foreground/70">
@@ -253,7 +253,7 @@ export default function OSSchedulingTeam() {
                 {coverageIssues.map((c) => (
                   <li key={c.id} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Link to={`/clients/${c.id}`} className="truncate text-[13px] font-medium text-foreground hover:underline">
+                      <Link to="/clients" className="truncate text-[13px] font-medium text-foreground hover:underline">
                         {c.childName}
                       </Link>
                       <span className="rounded-full bg-card border border-border/70 px-2 py-0.5 text-[10.5px] text-foreground/70">
