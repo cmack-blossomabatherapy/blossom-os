@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useBcbaCaseload } from "@/hooks/useBcbaCaseload";
 
 type ResourceType = "SOP" | "Workflow" | "Guide" | "Template" | "Checklist" | "Recording" | "FAQ";
 
@@ -225,6 +226,9 @@ export default function OSBCBAResources() {
   const [activeCat, setActiveCat] = useState<string>("foundations");
   const [open, setOpen] = useState<Resource | null>(null);
 
+  // Caseload-aware: derive operational signals from REAL data and recommend resources.
+  const c = useBcbaCaseload();
+
   const q = query.trim().toLowerCase();
   const isSearching = q.length > 0;
 
@@ -242,6 +246,39 @@ export default function OSBCBAResources() {
 
   const pinned = useMemo(() => allResources.filter((r) => r.pinned).slice(0, 6), [allResources]);
   const recent = useMemo(() => allResources.slice(0, 5), [allResources]);
+
+  // Recommend resources based on real caseload risks (auths, supervision, cancellations, PT gaps).
+  const recommended = useMemo(() => {
+    const buckets: { id: string; reason: string; resourceId: string }[] = [];
+    const prSoon = c.authAlerts.filter((a) => a.sev === "crit" || a.sev === "warn").length;
+    const supBehind = c.supervisionAlerts.length;
+    const cancels = c.cancellationAlerts.length;
+    const ptGaps = c.ptAlerts.length;
+    const coverage = c.coverageAlerts.length;
+
+    if (prSoon > 0) {
+      buckets.push({ id: "rec-pr", resourceId: "p2", reason: `${prSoon} authorization${prSoon === 1 ? "" : "s"} needs attention — review the PR timeline.` });
+      buckets.push({ id: "rec-pr-esc", resourceId: "p7", reason: "Use the PR escalation pathway if you can't close the loop." });
+    }
+    if (supBehind > 0) {
+      buckets.push({ id: "rec-sup", resourceId: "s1", reason: `${supBehind} client${supBehind === 1 ? "" : "s"} past supervision cadence.` });
+      buckets.push({ id: "rec-97155", resourceId: "s2", reason: "Refresh on 97155 cadence and how it counts." });
+    }
+    if (cancels > 0 || coverage > 0) {
+      buckets.push({ id: "rec-sched", resourceId: "sc2", reason: `${cancels + coverage} client${cancels + coverage === 1 ? "" : "s"} with cancellation or coverage risk.` });
+    }
+    if (ptGaps > 0) {
+      buckets.push({ id: "rec-pt", resourceId: "pt2", reason: `${ptGaps} caregiver${ptGaps === 1 ? "" : "s"} overdue for 97156.` });
+    }
+
+    return buckets
+      .map((b) => {
+        const r = allResources.find((x) => x.id === b.resourceId);
+        return r ? { reason: b.reason, resource: r as Resource & { _catLabel: string } } : null;
+      })
+      .filter((x): x is { reason: string; resource: Resource & { _catLabel: string } } => !!x)
+      .slice(0, 4);
+  }, [c.authAlerts, c.supervisionAlerts, c.cancellationAlerts, c.ptAlerts, c.coverageAlerts, allResources]);
 
   const current = CATEGORIES.find((c) => c.id === activeCat)!;
   const totalCount = allResources.length;
@@ -320,6 +357,38 @@ export default function OSBCBAResources() {
           </section>
         ) : (
           <>
+            {/* Recommended from real caseload signals */}
+            {recommended.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" />
+                  <h2 className="text-xl font-medium tracking-tight">Recommended right now</h2>
+                  <span className="text-xs text-muted-foreground">· based on your caseload</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {recommended.map(({ resource, reason }) => (
+                    <button
+                      key={resource.id + reason}
+                      onClick={() => setOpen(resource)}
+                      className="group text-left rounded-2xl bg-card border border-border/70 p-5 transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_28px_-16px_oklch(0.2_0.02_260/0.18)]"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn("text-[11px] font-medium px-2 py-0.5 rounded-full", typeChip[resource.type])}>{resource.type}</span>
+                        <span className="text-[11px] text-muted-foreground">{resource._catLabel}</span>
+                      </div>
+                      <div className="mt-3 space-y-1.5">
+                        <div className="text-[15px] font-medium leading-snug tracking-tight">{resource.title}</div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{reason}</p>
+                      </div>
+                      <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary">
+                        Open resource <ChevronRight className="size-3.5" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Pinned + Continue */}
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
