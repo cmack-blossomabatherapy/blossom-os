@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Send, ShieldCheck, ClipboardList, Sparkles, Phone, Mail,
   MessageSquare, StickyNote, AlertTriangle, ChevronRight, Loader2, RefreshCw,
   CalendarClock, FileWarning, FileCheck2, UserCheck, Users, Activity,
-  ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2,
+  ArrowUpRight, CircleDot, BellRing, ListTodo, Wand2, X, Flag, BookOpen, Clock,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useLeads } from "@/contexts/LeadsContext";
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { Lead } from "@/data/leads";
+import { IntakeModalsProvider, useIntakeModals } from "@/components/intake/IntakeModals";
 
 /* ─────────────────────── helpers ─────────────────────── */
 
