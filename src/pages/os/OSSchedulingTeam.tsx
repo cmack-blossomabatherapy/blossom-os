@@ -8,6 +8,7 @@ import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { type Client } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
+import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 
 /* ============================ helpers ============================ */
 
@@ -85,6 +86,10 @@ function nextActionOf(b: Bucket, clientId?: string): { label: string; to: string
 
 export default function OSSchedulingTeam() {
   const { clients } = useClients();
+  // Real operational signals derived from CentralReach billable sessions
+  // (Admin → Data Uploads → CR BCBA Billable Sessions). Single source of
+  // truth for RBT roster, coverage risk, pairings, cancellations.
+  const cr = useCentralReachOps();
   const enriched = useMemo(() => {
     return clients.map((c) => ({ c, b: bucketOf(c) })).filter((x) => x.b !== null) as { c: Client; b: Bucket }[];
   }, [clients]);
@@ -108,7 +113,8 @@ export default function OSSchedulingTeam() {
   const blockedNoAvailability = clients.filter((c) => c.blockers?.some((b) => /availability/i.test(b))).length;
   const waitingBcba = clients.filter((c) => !c.bcba && c.authStatus === "Approved").length;
   const conflictCount = clients.filter((c) => c.blockers?.some((b) => /conflict|overlap/i.test(b))).length;
-  const rbtsAvailable = 7; // operational placeholder — no RBT roster in live data yet
+  // Real RBT roster from CR (active providers on 97153 in last 60d)
+  const rbtsAvailable = cr.counts.rbtCount;
 
   const upcomingStarts = useMemo(() => {
     return clients
@@ -117,15 +123,10 @@ export default function OSSchedulingTeam() {
       .slice(0, 5);
   }, [clients]);
 
-  const coverageIssues = useMemo(() => {
-    return clients
-      .filter((c) => c.stage === "Active" && (
-        c.activeServiceStatus === "Services on Pause" ||
-        c.activeServiceStatus === "Flaked" ||
-        (c.blockers && c.blockers.length > 0)
-      ))
-      .slice(0, 5);
-  }, [clients]);
+  // Coverage issues from real session activity (no RBT session in 7+ days
+  // OR ≥3 cancellations in last 30 days). Falls back to client-record
+  // signals only when CR is empty / still loading.
+  const coverageIssues = useMemo(() => cr.coverageRisks.slice(0, 5), [cr.coverageRisks]);
 
   return (
     <OSShell>
@@ -256,23 +257,42 @@ export default function OSSchedulingTeam() {
 
           {/* Cancellations & Coverage */}
           <Card>
-            <CardHeader title="Cancellations & Coverage" subtitle="Recent operational issues" />
-            {coverageIssues.length === 0 ? (
-              <Empty message="No active scheduling risks found." />
+            <CardHeader
+              title="Cancellations & Coverage"
+              subtitle={
+                cr.loading
+                  ? "Loading from CentralReach…"
+                  : `Live · ${cr.counts.uncoveredClients} uncovered · ${cr.counts.atRiskClients} at risk · ${cr.cancellationsLast7d} cancels (7d)`
+              }
+            />
+            {cr.loading ? (
+              <Empty message="Reading session data…" />
+            ) : coverageIssues.length === 0 ? (
+              <Empty message="All sessions are currently covered." />
             ) : (
               <ul className="space-y-2.5">
-                {coverageIssues.map((c) => (
-                  <li key={c.id} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
+                {coverageIssues.map((risk) => (
+                  <li key={risk.clientName} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Link to={`/scheduling-workspace?view=coverage_risk&clientId=${encodeURIComponent(c.id)}`} className="truncate text-[13px] font-medium text-foreground hover:underline">
-                        {c.childName}
+                      <Link
+                        to={`/scheduling-workspace?view=coverage_risk&clientName=${encodeURIComponent(risk.clientName)}`}
+                        className="truncate text-[13px] font-medium text-foreground hover:underline"
+                      >
+                        {risk.clientName}
                       </Link>
-                      <span className="rounded-full bg-card border border-border/70 px-2 py-0.5 text-[10.5px] text-foreground/70">
-                        {c.activeServiceStatus ?? "—"}
+                      <span
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-[10.5px]",
+                          risk.level === "uncovered"
+                            ? "border-destructive/30 bg-destructive/10 text-destructive"
+                            : "border-warning/30 bg-warning/10 text-warning",
+                        )}
+                      >
+                        {risk.level === "uncovered" ? "Uncovered" : "At risk"}
                       </span>
                     </div>
                     <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
-                      {c.blockers?.[0] ?? "Coverage gap"} · RBT {c.rbt ?? "—"}
+                      {risk.reason} · RBT {risk.rbtName ?? "—"} · {risk.state ?? "—"}
                     </p>
                   </li>
                 ))}
