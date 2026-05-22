@@ -313,7 +313,8 @@ const App = () => (
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
-                  <Route path="/leads" element={<OSIntakeOperations />} />
+                  <Route path="/leads" element={<OSLeadsV2 />} />
+                  <Route path="/leads/operations" element={<OSIntakeOperations />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<OSClientsOperations />} />
                   <Route path="/authorizations" element={<OSAuthorizations />} />
