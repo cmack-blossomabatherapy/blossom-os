@@ -164,6 +164,7 @@ import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
 import OSIntakeWorkspace from "./pages/os/OSIntakeWorkspace";
 import OSClients from "./pages/os/OSClients";
+import OSClientsOperations from "./pages/os/OSClientsOperations";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
 import OSStateDirector from "./pages/os/OSStateDirector";
@@ -312,12 +313,7 @@ const App = () => (
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSIntakeOperations />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
-                  <Route path="/clients" element={<OSComingSoon title="Clients" tagline="A 360° client record connecting clinical, scheduling, billing, and family communication." icon={FolderKanban} features={[
-                    { title: "Patient journey timeline", description: "Every touchpoint from lead to active care visualized chronologically." },
-                    { title: "Authorizations & coverage", description: "Active auths, units used, expirations, and payer details at a glance." },
-                    { title: "Care team & schedule", description: "Assigned BCBA/RBTs, weekly schedule, and session adherence." },
-                    { title: "Family communication", description: "Logged calls, messages, parent portal activity, and satisfaction signals." },
-                  ]} />} />
+                  <Route path="/clients" element={<OSClientsOperations />} />
                   <Route path="/authorizations" element={<OSComingSoon title="Authorizations" tagline="Never lose units or miss an expiration again." icon={FileCheck2} features={[
                     { title: "Auth lifecycle tracking", description: "Pending, active, expiring, and exhausted auths across every client and payer." },
                     { title: "Units used vs approved", description: "Real-time burn-down with projected exhaustion dates." },
