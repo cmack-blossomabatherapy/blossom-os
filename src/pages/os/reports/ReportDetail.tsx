@@ -25,6 +25,7 @@ import {
   capacityByState, lifecycleKpis, riskAlerts,
 } from "@/data/reports";
 import { renderSdReport, SD_REPORT_IDS } from "@/components/reports/StateDirectorReportViews";
+import { renderAuthReport, AUTH_REPORT_IDS } from "@/components/reports/AuthorizationReportViews";
 import { SdFilterBar, loadLastFilters, summarizeFilters, type SdFilters } from "@/components/reports/SdFilterBar";
 
 export default function ReportDetail() {
@@ -200,6 +201,9 @@ export default function ReportDetail() {
 function ReportContent({ view, reportId }: { view?: string; reportId?: string }) {
   if (reportId && SD_REPORT_IDS.has(reportId)) {
     return <>{renderSdReport(reportId)}</>;
+  }
+  if (reportId && AUTH_REPORT_IDS.has(reportId)) {
+    return <>{renderAuthReport(reportId)}</>;
   }
   if (view === "executive") {
     return (
