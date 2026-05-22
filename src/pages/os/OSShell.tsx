@@ -46,7 +46,6 @@ type NavSection = { id: string; label: string; items: NavEntry[] };
 
 const HOME_EXTRAS: NavEntry[] = [
   { to: "/command-center", label: "Command Center", icon: Radio, module: "command_center" },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays, module: "calendar" },
   { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
 ];
 
@@ -206,12 +205,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
     }
     HOME_EXTRAS.forEach((e) => {
-      // Calendar route is role-specific — rewrite "/calendar" to the viewer's role calendar.
-      if (e.module === "calendar") {
-        items.push({ ...e, to: `/calendar/${role.replace(/_/g, "-")}` });
-      } else {
-        items.push(e);
-      }
+      items.push(e);
     });
     return { id: "home", label: "Home", items };
   })();
@@ -268,15 +262,15 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       onClick={onClick}
       className={({ isActive }) =>
         cn(
-          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
+          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
           collapsed && "justify-center px-0",
           isActive
             ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]"
-            : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground",
+            : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
         )
       }
     >
-      <item.icon className="h-[16px] w-[16px] shrink-0" />
+      <item.icon className="h-[16px] w-[16px] shrink-0" style={{ color: "currentColor" }} />
       {!collapsed && <span className="truncate">{item.label}</span>}
     </NavLink>
     );
