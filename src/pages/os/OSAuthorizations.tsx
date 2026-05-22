@@ -14,12 +14,14 @@ import {
   mockAuths, type Authorization, type AuthStage,
   daysUntil, getAuthAlert,
 } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
 function supervisionPct(a: Authorization) { return 55 + (hash(a.id) % 45); }
 function lastPRDays(a: Authorization) { return hash(a.id + "pr") % 95; }
-function bcbaName(a: Authorization) {
+function bcbaName(a: Authorization, liveBcba?: string | null) {
+  if (liveBcba) return liveBcba;
   return ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Rivera", "Dr. Wright"][hash(a.id + "b") % 5];
 }
 function requestType(a: Authorization): "Initial" | "Treatment Auth" | "Reassessment" | "Parent Training 97156" {
@@ -48,7 +50,7 @@ type EnrichedAuth = Authorization & {
   requestType: ReturnType<typeof requestType>;
 };
 
-function enrich(a: Authorization): EnrichedAuth {
+function enrich(a: Authorization, liveBcba?: string | null): EnrichedAuth {
   const days = daysUntil(a.expirationDate);
   const alert = getAuthAlert(a);
   const sup = supervisionPct(a);
@@ -68,7 +70,7 @@ function enrich(a: Authorization): EnrichedAuth {
   else if (days !== null && days < 45) blocker = "Expiring soon";
 
   return {
-    ...a, bcba: bcbaName(a), supervisionPct: sup, lastPRDays: pr,
+    ...a, bcba: bcbaName(a, liveBcba), supervisionPct: sup, lastPRDays: pr,
     daysToExpire: days, alert, urgency, primaryBlocker: blocker,
     requestType: requestType(a),
   };
