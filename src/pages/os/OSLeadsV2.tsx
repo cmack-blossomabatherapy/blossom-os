@@ -204,17 +204,33 @@ export default function OSLeadsV2() {
 function OSLeadsV2Inner() {
   const { leads, loading, error, refresh, bulkUpdate, moveStage, assignOwner } = useLeads();
   const { user, roles } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
-  const [view, setView] = useState<ViewMode>("list");
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<FilterState>(emptyFilters());
-  const [activeKpi, setActiveKpi] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  // Hydrate UI state from URL on first render so deep-links work.
+  const [view, setView] = useState<ViewMode>(() => {
+    const v = searchParams.get("view") as ViewMode | null;
+    return v && VIEW_MODES.includes(v) ? v : "list";
+  });
+  const [query, setQuery] = useState<string>(() => searchParams.get("q") ?? "");
+  const [filters, setFilters] = useState<FilterState>(() => filtersFromParams(searchParams));
+  const [activeKpi, setActiveKpi] = useState<string | null>(() => searchParams.get("kpi"));
+  const [activeTab, setActiveTab] = useState<string>(() => searchParams.get("tab") || "all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+
+  // Mirror state → URL. Uses replace so filter tweaks don't pollute history.
+  useEffect(() => {
+    const next = applyStateToParams(searchParams, {
+      view, tab: activeTab, kpi: activeKpi, query, filters,
+    });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, activeTab, activeKpi, query, filters]);
 
   // Load profile state + display_name for scoping.
   useEffect(() => {
