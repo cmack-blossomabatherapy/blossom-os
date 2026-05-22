@@ -973,6 +973,36 @@ function AuthDrawer({
     toast.success("Sent to QA & logged to client timeline");
   };
 
+  const approveAuth = async () => {
+    if (c.authStatus === "Approved") {
+      toast.info("Authorization already approved.");
+      return;
+    }
+    await updateClient(c.id, {
+      authStatus: "Approved",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Ready for staffing handoff",
+    });
+    await appendTimeline(c.id, `Authorization approved by ${c.payor || "payor"}`, "auth");
+    await appendAutomation(c.id, `Auth approved (${c.payor || "payor"})`);
+    toast.success("Auth approved & logged to client timeline");
+  };
+
+  const denyAuth = async () => {
+    if (c.authStatus === "Denied") {
+      toast.info("Authorization already denied.");
+      return;
+    }
+    await updateClient(c.id, {
+      authStatus: "Denied",
+      lastActivity: new Date().toISOString(),
+      nextAction: "Review denial & prepare resubmission",
+    });
+    await appendTimeline(c.id, `Authorization denied by ${c.payor || "payor"}`, "auth");
+    await appendAutomation(c.id, `Auth denied (${c.payor || "payor"})`);
+    toast.success("Auth denied & logged to client timeline");
+  };
+
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col bg-card">
