@@ -137,6 +137,9 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
                 <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
               </Button>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
+                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
+              </Button>
             </div>
           </header>
 
@@ -215,6 +218,23 @@ export default function OSTraining() {
               </div>
 
               <div className="mt-5 space-y-1.5">
+                {journeyModules.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center">
+                    <BookOpen className="mx-auto h-6 w-6 text-muted-foreground/70" />
+                    <p className="mt-2 text-[13px] font-medium">No modules in this journey yet</p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      Open Manage Journeys to add and edit modules for this role.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-3 rounded-full"
+                      onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
+                    >
+                      <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
+                    </Button>
+                  </div>
+                )}
                 {journeyModules.map((m, idx) => {
                   const p = getProgress(m.id);
                   const done = p.status === "completed";
