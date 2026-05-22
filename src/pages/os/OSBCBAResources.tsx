@@ -227,6 +227,18 @@ export default function OSBCBAResources() {
   const [activeCat, setActiveCat] = useState<string>("foundations");
   const [open, setOpen] = useState<Resource | null>(null);
 
+  // Ask Blossom AI guidance per resource (cached in-session).
+  type AiGuidance = {
+    summary: string;
+    when_to_use: string;
+    checklist: string[];
+    watch_outs: string[];
+  };
+  const [aiState, setAiState] = useState<{ loading: boolean; error: string | null; data: AiGuidance | null }>({
+    loading: false, error: null, data: null,
+  });
+  const aiCacheRef = useRef<Map<string, AiGuidance>>(new Map());
+
   // Caseload-aware: derive operational signals from REAL data and recommend resources.
   const c = useBcbaCaseload();
 
