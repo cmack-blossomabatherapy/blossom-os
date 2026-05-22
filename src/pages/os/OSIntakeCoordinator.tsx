@@ -1,685 +1,700 @@
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { formatDistanceToNowStrict } from "date-fns";
 import {
-  ArrowUpRight, ArrowDownRight, Sparkles, AlertTriangle, CalendarDays, ChevronRight,
-  Users, Heart, FileCheck2, GraduationCap, Activity, Clock, BadgeCheck, Brain,
-  Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, UserPlus, ClipboardCheck,
-  BookOpen, Inbox, ArrowRight, Phone, MessageSquare, Mail, Send, FileText,
-  ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
+  Phone, MessageSquare, Mail, StickyNote, ChevronRight, ExternalLink,
+  Search, Plus, Send, Inbox, AlertTriangle, Hourglass, FileX2,
+  UserPlus, CheckCircle2, PhoneOff, Sparkles, ArrowRight, AlertCircle,
+  Activity, RefreshCw, Loader2, ClipboardList, FileText, ShieldCheck, FilePlus2,
 } from "lucide-react";
-import {
-  AreaChart, Area, ResponsiveContainer, RadialBarChart, RadialBar,
-} from "recharts";
 import { OSShell } from "./OSShell";
-import { useAuth } from "@/contexts/AuthContext";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { useLeads } from "@/contexts/LeadsContext";
+import {
+  calculateKpis, getInlineAlert, type Lead, type LeadStatus,
+} from "@/data/leads";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-
-/* ============ types ============ */
-
-type Tone = "ok" | "warn" | "crit";
-
-type Kpi = {
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-  status: Tone;
-  hint: string;
-  spark: number[];
-  icon: React.ElementType;
-};
-
-/* ============ MOCK DATA ============ */
-
-const kpis: Kpi[] = [
-  { label: "New Leads Today",         value: "9",   delta: "+3",   up: true,  status: "ok",   hint: "vs yesterday",       spark: [3,4,5,5,6,7,8,9,9],         icon: UserPlus },
-  { label: "Awaiting Contact",        value: "14",  delta: "+5",   up: false, status: "warn", hint: "8 over 24h",         spark: [6,8,9,10,11,12,13,14,14],   icon: Inbox },
-  { label: "Avg Response Time",       value: "16m", delta: "-8m",  up: true,  status: "ok",   hint: "Target ≤ 20m",       spark: [28,26,24,22,20,19,18,17,16],icon: Clock },
-  { label: "Forms Sent",              value: "22",  delta: "+6",   up: true,  status: "ok",   hint: "This week",          spark: [10,12,14,16,18,20,21,22,22],icon: Send },
-  { label: "Forms Completed",         value: "14",  delta: "64%",  up: true,  status: "ok",   hint: "Of forms sent",      spark: [6,7,9,10,11,12,13,14,14],   icon: FileCheck2 },
-  { label: "VOB Pending",             value: "7",   delta: "+2",   up: false, status: "warn", hint: "2 over 3 days",      spark: [3,3,4,5,5,6,7,7,7],         icon: Hourglass },
-  { label: "VOB Completed",           value: "11",  delta: "+4",   up: true,  status: "ok",   hint: "This week",          spark: [4,5,6,7,8,9,10,11,11],      icon: BadgeCheck },
-  { label: "Intake Conversion",       value: "58%", delta: "+6%",  up: true,  status: "ok",   hint: "Lead → Setup",       spark: [48,50,52,53,54,55,56,57,58],icon: Activity },
-  { label: "Leads Stuck in Workflow", value: "6",   delta: "+1",   up: false, status: "warn", hint: "Form Sent stage",    spark: [3,3,4,4,5,5,6,6,6],         icon: AlertTriangle },
-  { label: "Follow-Ups Due",          value: "12",  delta: "-3",   up: true,  status: "ok",   hint: "5 due in next hour", spark: [18,17,16,15,14,13,13,12,12],icon: Phone },
-  { label: "Parent Response Rate",    value: "71%", delta: "+4%",  up: true,  status: "ok",   hint: "Within 48h",         spark: [62,64,66,67,68,69,70,70,71],icon: Smile },
-  { label: "Ready for Next Step",     value: "5",   delta: "+2",   up: true,  status: "ok",   hint: "Awaiting handoff",   spark: [1,2,2,3,3,4,4,5,5],         icon: CheckCircle2 },
-];
-
-const stages = [
-  { name: "New Lead",            count: 9,  stalled: 0, avg: "0.5h",  tone: "os-tone-violet" },
-  { name: "Contact Attempted",   count: 14, stalled: 4, avg: "1d",    tone: "os-tone-sky" },
-  { name: "Connected",           count: 11, stalled: 1, avg: "0.7d",  tone: "os-tone-mint" },
-  { name: "Form Sent",           count: 22, stalled: 6, avg: "2.4d",  tone: "os-tone-lilac" },
-  { name: "Form Received",       count: 14, stalled: 1, avg: "1.1d",  tone: "os-tone-rose" },
-  { name: "Missing Information", count: 5,  stalled: 3, avg: "3.2d",  tone: "os-tone-coral" },
-  { name: "Sent to VOB",         count: 7,  stalled: 2, avg: "2.0d",  tone: "os-tone-amber" },
-  { name: "VOB Completed",       count: 11, stalled: 0, avg: "0.6d",  tone: "os-tone-mint" },
-  { name: "Pending Auth",        count: 8,  stalled: 1, avg: "3.8d",  tone: "os-tone-amber" },
-  { name: "Ready for Setup",     count: 5,  stalled: 0, avg: "0.4d",  tone: "os-tone-violet" },
-];
-
-const leads = [
-  { parent: "Erin Walker",     child: "Ava (5)",     insurance: "BCBS NC", owner: "Michelle", stage: "Form Sent",           since: "3d ago",  urgency: "crit" as Tone },
-  { parent: "Devon Pierce",    child: "Liam (4)",    insurance: "Aetna",   owner: "Michelle", stage: "Contact Attempted",   since: "1d ago",  urgency: "warn" as Tone },
-  { parent: "Priya Sharma",    child: "Reya (6)",    insurance: "Cigna",   owner: "Michelle", stage: "Sent to VOB",         since: "2d ago",  urgency: "warn" as Tone },
-  { parent: "Jordan Hayes",    child: "Mason (3)",   insurance: "UHC",     owner: "Michelle", stage: "Missing Information", since: "4d ago",  urgency: "crit" as Tone },
-  { parent: "Camila Ortiz",    child: "Sofia (5)",   insurance: "BCBS NC", owner: "Michelle", stage: "Connected",           since: "5h ago",  urgency: "ok"   as Tone },
-  { parent: "Tariq Davis",     child: "Noah (4)",    insurance: "Aetna",   owner: "Michelle", stage: "VOB Completed",       since: "1d ago",  urgency: "ok"   as Tone },
-];
-
-const followups = [
-  { kind: "Call",  parent: "Erin Walker",   time: "9:30 AM",  stage: "Form Sent",           priority: "High",   last: "Voicemail · 2d" },
-  { kind: "Text",  parent: "Devon Pierce",  time: "10:15 AM", stage: "Contact Attempted",   priority: "High",   last: "No reply · 1d" },
-  { kind: "Email", parent: "Priya Sharma",  time: "11:00 AM", stage: "Sent to VOB",         priority: "Medium", last: "Sent · 2d" },
-  { kind: "Call",  parent: "Jordan Hayes",  time: "1:00 PM",  stage: "Missing Information", priority: "High",   last: "Final attempt" },
-  { kind: "Text",  parent: "Maya Bennett",  time: "2:30 PM",  stage: "Form Sent",           priority: "Medium", last: "Viewed · 1d" },
-  { kind: "Call",  parent: "Anya Brooks",   time: "3:45 PM",  stage: "Pending Auth",        priority: "Medium", last: "Note · 1d" },
-];
-
-const forms = [
-  { name: "Erin Walker · Intake Packet",   status: "Viewed",    pct: 60, days: 3, tone: "warn" as Tone },
-  { name: "Devon Pierce · Insurance Card", status: "Sent",      pct: 20, days: 2, tone: "warn" as Tone },
-  { name: "Priya Sharma · VOB",            status: "Awaiting Solum", pct: 40, days: 2, tone: "warn" as Tone },
-  { name: "Camila Ortiz · Intake Packet",  status: "Completed", pct: 100,days: 0, tone: "ok"   as Tone },
-  { name: "Tariq Davis · Payment Plan",    status: "Flagged",   pct: 70, days: 1, tone: "crit" as Tone },
-];
-
-const comms = [
-  { who: "Erin Walker",   what: "Returned call · 2m",        when: "12m", tone: "os-tone-mint",   icon: Phone },
-  { who: "Devon Pierce",  what: "Read your text",            when: "35m", tone: "os-tone-sky",    icon: MessageSquare },
-  { who: "Priya Sharma",  what: "Replied to email",          when: "1h",  tone: "os-tone-violet", icon: Mail },
-  { who: "Jordan Hayes",  what: "Missed call · voicemail",   when: "2h",  tone: "os-tone-coral",  icon: Phone },
-  { who: "Maya Bennett",  what: "Opened intake form link",   when: "3h",  tone: "os-tone-lilac",  icon: FileText },
-  { who: "Anya Brooks",   what: "Sent insurance card photo", when: "4h",  tone: "os-tone-rose",   icon: Upload },
-];
-
-const bottlenecks = [
-  { severity: "crit", title: "Jordan Hayes — Missing Information for 4 days",  stage: "Missing Information", owner: "Michelle", action: "Final attempt call" },
-  { severity: "crit", title: "Erin Walker — Form Sent stalled 3 days",         stage: "Form Sent",           owner: "Michelle", action: "Send SMS reminder" },
-  { severity: "warn", title: "Priya Sharma — VOB awaiting Solum response",     stage: "Sent to VOB",         owner: "VOB Team", action: "Ping VOB team" },
-  { severity: "warn", title: "Devon Pierce — unreachable after 3 attempts",    stage: "Contact Attempted",   owner: "Michelle", action: "Escalate to lead" },
-  { severity: "warn", title: "Tariq Davis — payment plan flag",                stage: "Form Received",       owner: "Billing",  action: "Loop in billing" },
-  { severity: "warn", title: "Maya Bennett — insurance card missing",          stage: "Form Sent",           owner: "Michelle", action: "Request photo upload" },
-];
-
-const training = [
-  { name: "New Intake Workflow SOP",   pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
-  { name: "Phone Call Workflow",       pct: 60,  kind: "Training", tone: "os-tone-amber"  },
-  { name: "Tango Walkthrough · Forms", pct: 35,  kind: "Walkthru", tone: "os-tone-violet" },
-  { name: "VOB Updates · May",         pct: 80,  kind: "SOP",      tone: "os-tone-sky"    },
-];
-
-const aiInsights = [
-  { icon: AlertCircle,  tone: "os-tone-coral", title: "Conversion at risk",         body: "Lead conversion likely to decline — 5 leads have waited > 24h for first contact.", cta: "View leads" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "3 leads may need escalation",body: "Jordan, Erin, and Devon are approaching final-attempt thresholds.",               cta: "Open queue" },
-  { icon: Brain,        tone: "os-tone-sky",   title: "Aetna converts higher",      body: "Aetna families are converting 12% above your state average this month.",          cta: "See trend" },
-  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Form timing",                body: "Forms sent after 5 PM have 22% lower completion. Send earlier when possible.",     cta: "Apply tip" },
-  { icon: Activity,     tone: "os-tone-mint",  title: "Workflow optimization",      body: "Auto-text reminder 24h after Form Sent could recover ~4 stalled leads/week.",      cta: "Enable rule" },
-];
-
-const calls = [
-  { title: "Intake call · Erin Walker",   time: "9:30 – 9:45 AM",   tone: "os-tone-sky" },
-  { title: "Family welcome · Camila O.",  time: "10:30 – 10:45",    tone: "os-tone-violet" },
-  { title: "1:1 — Intake Lead",           time: "1:00 – 1:30 PM",   tone: "os-tone-rose" },
-  { title: "Final attempt · Jordan H.",   time: "3:45 – 4:00 PM",   tone: "os-tone-amber" },
-];
-
-const quickActions = [
-  { label: "Add Lead",          icon: UserPlus,       tone: "os-tone-rose"   },
-  { label: "Call Parent",       icon: Phone,          tone: "os-tone-sky"    },
-  { label: "Send Intake Packet",icon: Send,           tone: "os-tone-violet" },
-  { label: "Upload Insurance",  icon: Upload,         tone: "os-tone-lilac"  },
-  { label: "Create Note",       icon: StickyNote,     tone: "os-tone-amber"  },
-  { label: "Escalate Issue",    icon: Flame,          tone: "os-tone-coral"  },
-  { label: "Open SOP",          icon: BookOpen,       tone: "os-tone-violet" },
-];
-
-const activity = [
-  { who: "Maya B.",       what: "submitted intake form",              when: "4m",  tone: "os-tone-violet", icon: FileCheck2 },
-  { who: "VOB Team",      what: "completed VOB for Tariq D.",         when: "18m", tone: "os-tone-mint",   icon: BadgeCheck },
-  { who: "Camila O.",     what: "uploaded insurance card",            when: "32m", tone: "os-tone-sky",    icon: Upload },
-  { who: "System",        what: "moved Anya B. to Pending Auth",      when: "55m", tone: "os-tone-amber",  icon: ArrowRight },
-  { who: "Erin W.",       what: "opened intake packet link",          when: "1h",  tone: "os-tone-lilac",  icon: FileText },
-  { who: "System",        what: "new lead received · BCBS NC",        when: "2h",  tone: "os-tone-rose",   icon: UserPlus },
-];
+import { toast } from "sonner";
 
 /* ============ helpers ============ */
 
-const toneText = (t: Tone) => t === "ok" ? "text-[hsl(155_55%_38%)]" : t === "warn" ? "text-[hsl(30_85%_45%)]" : "text-[hsl(355_72%_52%)]";
-const toneBg   = (t: Tone) => t === "ok" ? "bg-[hsl(150_70%_92%)]" : t === "warn" ? "bg-[hsl(40_100%_92%)]" : "bg-[hsl(355_100%_95%)]";
-const toneStrokeHsl = (t: Tone) => t === "ok" ? "hsl(155 55% 45%)" : t === "warn" ? "hsl(35 90% 55%)" : "hsl(355 75% 58%)";
-const toneGlow = (t: Tone) =>
-  t === "ok"   ? "shadow-[0_0_0_1px_hsl(155_60%_60%/0.22),0_18px_44px_-22px_hsl(155_60%_45%/0.35)]" :
-  t === "warn" ? "shadow-[0_0_0_1px_hsl(35_90%_65%/0.28),0_18px_44px_-22px_hsl(35_85%_55%/0.4)]"   :
-                 "shadow-[0_0_0_1px_hsl(355_75%_70%/0.30),0_18px_44px_-22px_hsl(355_72%_55%/0.45)]";
-const toneLabel = (t: Tone) => t === "ok" ? "Healthy" : t === "warn" ? "Watch" : "Urgent";
+const fmtAgo = (iso?: string | null) => {
+  if (!iso) return "—";
+  try { return `${formatDistanceToNowStrict(new Date(iso))} ago`; } catch { return "—"; }
+};
 
-function Pill({ tone = "default", children }: { tone?: "default" | "high" | "med" | "low" | "ok" | "warn" | "crit"; children: React.ReactNode }) {
-  const map: Record<string, string> = {
-    default: "bg-foreground/[0.05] text-foreground/70",
-    high:    "bg-[hsl(355_100%_95%)] text-[hsl(355_70%_50%)]",
-    med:     "bg-[hsl(30_100%_94%)]  text-[hsl(30_80%_45%)]",
-    low:     "bg-[hsl(210_100%_95%)] text-[hsl(215_70%_50%)]",
-    ok:      "bg-[hsl(150_70%_92%)]  text-[hsl(155_55%_32%)]",
-    warn:    "bg-[hsl(40_100%_92%)]  text-[hsl(30_80%_42%)]",
-    crit:    "bg-[hsl(355_100%_94%)] text-[hsl(355_70%_48%)]",
-  };
-  return <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-tight", map[tone])}>{children}</span>;
-}
+const initials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
 
-function Dot({ tone }: { tone: Tone }) {
-  const c = tone === "ok" ? "bg-[hsl(155_60%_50%)] shadow-[0_0_0_4px_hsl(155_60%_50%/0.18)]"
-        : tone === "warn" ? "bg-[hsl(35_90%_55%)]  shadow-[0_0_0_4px_hsl(35_90%_55%/0.18)]"
-        :                   "bg-[hsl(355_75%_58%)] shadow-[0_0_0_4px_hsl(355_75%_58%/0.18)]";
-  return <span className={cn("inline-block h-2 w-2 rounded-full", c)} />;
-}
+const STAGES: { id: LeadStatus; label: string; short?: string }[] = [
+  { id: "New Lead", label: "New Lead" },
+  { id: "In Contact", label: "Contacted" },
+  { id: "Sent Form", label: "Form Sent" },
+  { id: "Form Received", label: "Form Received" },
+  { id: "Missing Information", label: "Missing Info" },
+  { id: "Sent to VOB", label: "Sent to VOB" },
+  { id: "VOB Completed", label: "VOB Completed" },
+  { id: "Can't Reach", label: "Can't Reach" },
+];
 
-function Spark({ data, tone }: { data: number[]; tone: Tone }) {
-  const stroke = toneStrokeHsl(tone);
-  const points = data.map((v, i) => ({ i, v }));
+const URGENCY_ROW = (lead: Lead): "crit" | "warn" | "ok" => {
+  const alert = getInlineAlert(lead);
+  if (alert?.type === "red") return "crit";
+  if (alert?.type === "yellow") return "warn";
+  if (!lead.lastContacted && lead.status === "New Lead") return "warn";
+  return "ok";
+};
+
+const URGENCY_TONE: Record<"crit" | "warn" | "ok", string> = {
+  crit: "border-red-200/70 bg-red-50/40 dark:border-red-900/40 dark:bg-red-950/20",
+  warn: "border-amber-200/70 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20",
+  ok:   "border-border/60 bg-card",
+};
+
+const URGENCY_DOT: Record<"crit" | "warn" | "ok", string> = {
+  crit: "bg-red-500", warn: "bg-amber-500", ok: "bg-emerald-500",
+};
+
+/* ============ page ============ */
+
+export default function OSIntakeCoordinator() {
+  const navigate = useNavigate();
+  const { role, scope, activeState } = useOSRole();
+  const { leads, loading, error, refresh } = useLeads();
+  const [query, setQuery] = useState("");
+
+  // Role scoping — state directors only see their state.
+  const scoped = useMemo(() => {
+    let pool = leads;
+    if (scope === "state" && activeState) {
+      pool = pool.filter((l) => (l.state || "").toUpperCase() === activeState);
+    }
+    return pool;
+  }, [leads, scope, activeState]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return scoped;
+    return scoped.filter((l) =>
+      [l.parentName, l.childName, l.phone, l.email, l.insurance, l.owner, l.status]
+        .join(" ").toLowerCase().includes(q),
+    );
+  }, [scoped, query]);
+
+  const kpis = useMemo(() => calculateKpis(filtered), [filtered]);
+
+  // Operational buckets
+  const attention = useMemo(() => {
+    return filtered
+      .filter((l) => URGENCY_ROW(l) !== "ok")
+      .sort((a, b) => {
+        const av = URGENCY_ROW(a) === "crit" ? 0 : 1;
+        const bv = URGENCY_ROW(b) === "crit" ? 0 : 1;
+        if (av !== bv) return av - bv;
+        return (b.daysInStage ?? 0) - (a.daysInStage ?? 0);
+      })
+      .slice(0, 8);
+  }, [filtered]);
+
+  const followups = useMemo(() => {
+    const dueToday = filtered.filter((l) => !l.lastContacted && l.status === "New Lead").slice(0, 30);
+    const overdue = filtered.filter((l) =>
+      ["Sent Form", "Missing Information"].includes(l.status) && (l.daysInStage ?? 0) >= 3,
+    ).slice(0, 30);
+    const waitingParent = filtered.filter((l) =>
+      ["Sent Form", "Missing Information", "Sent Packet - Can't Reach"].includes(l.status),
+    ).slice(0, 30);
+    const waitingVob = filtered.filter((l) => l.status === "Sent to VOB").slice(0, 30);
+    const finalAttempts = filtered.filter((l) =>
+      ["Can't Reach", "Sent Packet - Can't Reach"].includes(l.status),
+    ).slice(0, 30);
+    return { dueToday, overdue, waitingParent, waitingVob, finalAttempts };
+  }, [filtered]);
+
+  // Pipeline snapshot
+  const pipeline = useMemo(() => {
+    return STAGES.map((s) => {
+      const items = filtered.filter((l) => l.status === s.id);
+      const stalled = items.filter((l) => (l.daysInStage ?? 0) >= 3).length;
+      return { ...s, count: items.length, stalled };
+    });
+  }, [filtered]);
+
+  // Daily priorities (concise list)
+  const priorities = useMemo(() => {
+    const items: { count: number; label: string; tone: "crit" | "warn" | "ok"; to: string }[] = [
+      { count: kpis.notContacted, label: "Leads not yet contacted", tone: kpis.notContacted > 0 ? "crit" : "ok", to: "/leads" },
+      { count: kpis.missingInfo,  label: "Missing information",     tone: kpis.missingInfo > 0 ? "crit" : "ok", to: "/leads" },
+      { count: kpis.sentVob,      label: "VOBs pending response",   tone: kpis.sentVob > 0 ? "warn" : "ok", to: "/leads" },
+      { count: kpis.sentForm,     label: "Forms awaiting parents",  tone: kpis.sentForm > 0 ? "warn" : "ok", to: "/leads" },
+      { count: kpis.vobCompleted, label: "Ready to move to Clients", tone: kpis.vobCompleted > 0 ? "warn" : "ok", to: "/leads" },
+      { count: kpis.cantReach,    label: "Final-attempt outreach",   tone: kpis.cantReach > 0 ? "warn" : "ok", to: "/leads" },
+    ];
+    return items.filter((i) => i.count > 0).slice(0, 6);
+  }, [kpis]);
+
+  // Recent activity from timeline + automation
+  const activity = useMemo(() => {
+    const events: { id: string; who: string; what: string; when: string; tone: string }[] = [];
+    for (const l of filtered) {
+      const ev = l.timeline?.[0];
+      if (ev) events.push({
+        id: `${l.id}-${ev.id}`,
+        who: l.parentName || l.childName || "—",
+        what: ev.description,
+        when: ev.timestamp,
+        tone: "os-tone-sky",
+      });
+    }
+    return events
+      .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
+      .slice(0, 8);
+  }, [filtered]);
+
+  /* ============ render ============ */
+
   return (
-    <ResponsiveContainer width="100%" height={36}>
-      <AreaChart data={points} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={`intk-${tone}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity={0.32} />
-            <stop offset="100%" stopColor={stroke} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.75} fill={`url(#intk-${tone})`} dot={false} />
-      </AreaChart>
-    </ResponsiveContainer>
+    <OSShell rightRail={
+      <RightRail
+        priorities={priorities}
+        kpis={kpis}
+        attentionCount={attention.length}
+      />
+    }>
+      <div className="min-w-0 space-y-8">
+        <Header
+          loading={loading}
+          query={query}
+          onQuery={setQuery}
+          onRefresh={refresh}
+          onAddLead={() => navigate("/leads")}
+          onOpenQueue={() => navigate("/leads")}
+        />
+
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+            Could not load Monday intake board: {error}
+          </div>
+        )}
+
+        <KpiRow kpis={kpis} loading={loading && leads.length === 0} />
+
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_1fr]">
+          <AttentionSection items={attention} loading={loading && leads.length === 0} />
+          <FollowupsSection buckets={followups} loading={loading && leads.length === 0} />
+        </section>
+
+        <PipelineSection pipeline={pipeline} total={filtered.length} />
+
+        <ActivitySection activity={activity} loading={loading && leads.length === 0} />
+      </div>
+    </OSShell>
   );
 }
 
-function KpiCard({ k }: { k: Kpi }) {
-  const Icon = k.icon;
+/* ============ header ============ */
+
+function Header({
+  loading, query, onQuery, onRefresh, onAddLead, onOpenQueue,
+}: {
+  loading: boolean;
+  query: string;
+  onQuery: (v: string) => void;
+  onRefresh: () => void;
+  onAddLead: () => void;
+  onOpenQueue: () => void;
+}) {
   return (
-    <div className={cn(
-      "os-rise group relative overflow-hidden rounded-3xl border border-white/70 bg-white/75 p-4 backdrop-blur transition hover:-translate-y-0.5",
-      toneGlow(k.status),
-    )}>
-      <div className={cn(
-        "pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl opacity-70",
-        k.status === "ok" ? "bg-[hsl(155_70%_70%/0.30)]" : k.status === "warn" ? "bg-[hsl(35_95%_70%/0.32)]" : "bg-[hsl(355_85%_75%/0.38)]"
-      )} />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className={cn("grid h-8 w-8 place-items-center rounded-xl", toneBg(k.status), toneText(k.status))}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground leading-tight">{k.label}</p>
+    <header>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            Intake · Operations Workspace
+          </p>
+          <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
+            Intake Dashboard
+          </h1>
+          <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
+            Manage leads, forms, VOB handoffs, and intake workflow progress.
+          </p>
         </div>
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold tracking-wide", toneBg(k.status), toneText(k.status))}>
-          <span className={cn("h-1 w-1 rounded-full",
-            k.status === "ok" ? "bg-[hsl(155_60%_45%)]" : k.status === "warn" ? "bg-[hsl(35_90%_50%)]" : "bg-[hsl(355_75%_55%)]")} />
-          {toneLabel(k.status)}
-        </span>
+        <div className="hidden gap-2 md:flex">
+          <Button size="sm" variant="outline" className="rounded-full" onClick={onRefresh}>
+            {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
+            Refresh
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-full" onClick={() => toast.message("Coming soon: send intake packet")}>
+            <Send className="mr-1.5 h-3.5 w-3.5" /> Send Intake Packet
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-full" onClick={() => toast.message("Coming soon: create follow-up")}>
+            <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> Follow-Up
+          </Button>
+          <Button size="sm" className="rounded-full" onClick={onAddLead}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Lead
+          </Button>
+        </div>
       </div>
-      <p className="relative mt-2.5 text-[26px] font-semibold tracking-tight leading-none tabular-nums">{k.value}</p>
-      <div className="relative mt-1 flex items-center justify-between text-[10.5px]">
-        <span className="text-muted-foreground">{k.hint}</span>
-        <span className={cn("inline-flex items-center gap-0.5 font-semibold", k.up ? "os-trend-up" : "os-trend-down")}>
-          {k.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {k.delta}
-        </span>
+
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <div className="relative max-w-xl flex-1">
+          <Search className="pointer-events-none absolute z-10 left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search families, leads, insurance, phone numbers…"
+            className="os-glass-input h-11 rounded-2xl pl-11 text-[13.5px]"
+          />
+        </div>
+        <Button size="sm" variant="ghost" className="rounded-full" onClick={onOpenQueue}>
+          Open Intake Queue <ChevronRight className="ml-1 h-3.5 w-3.5" />
+        </Button>
       </div>
-      <div className="relative mt-2 -mx-1"><Spark data={k.spark} tone={k.status} /></div>
+    </header>
+  );
+}
+
+/* ============ KPI row ============ */
+
+function KpiRow({ kpis, loading }: { kpis: ReturnType<typeof calculateKpis>; loading: boolean }) {
+  const cards = [
+    { label: "New Leads",          value: kpis.newToday,     icon: UserPlus,       tone: "ok" as const, to: "/leads" },
+    { label: "Follow-Ups Due",     value: kpis.notContacted, icon: Phone,          tone: kpis.notContacted > 0 ? "warn" as const : "ok" as const, to: "/leads" },
+    { label: "Forms Missing",      value: kpis.missingInfo,  icon: FileX2,         tone: kpis.missingInfo > 0 ? "crit" as const : "ok" as const, to: "/leads" },
+    { label: "VOB Pending",        value: kpis.sentVob,      icon: Hourglass,      tone: kpis.sentVob > 0 ? "warn" as const : "ok" as const, to: "/leads" },
+    { label: "Ready for Setup",    value: kpis.vobCompleted, icon: CheckCircle2,   tone: kpis.vobCompleted > 0 ? "warn" as const : "ok" as const, to: "/leads" },
+    { label: "Cannot Reach",       value: kpis.cantReach,    icon: PhoneOff,       tone: kpis.cantReach > 0 ? "warn" as const : "ok" as const, to: "/leads" },
+  ];
+  return (
+    <section className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+      {cards.map((c) => {
+        const Icon = c.icon;
+        return (
+          <Link
+            key={c.label}
+            to={c.to}
+            className="group rounded-2xl border border-border/70 bg-card p-3.5 transition-all hover:-translate-y-0.5 hover:border-border"
+          >
+            <div className="flex items-center justify-between">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-muted text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+              <span className={cn("h-1.5 w-1.5 rounded-full",
+                c.tone === "crit" ? "bg-red-500" : c.tone === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
+            </div>
+            <p className="mt-2 text-[22px] font-semibold tabular-nums tracking-tight">
+              {loading ? "—" : c.value}
+            </p>
+            <p className="text-[11.5px] text-muted-foreground">{c.label}</p>
+          </Link>
+        );
+      })}
+    </section>
+  );
+}
+
+/* ============ attention required ============ */
+
+function AttentionSection({ items, loading }: { items: Lead[]; loading: boolean }) {
+  return (
+    <section>
+      <SectionHeader
+        title="Attention Required"
+        subtitle="Leads that need action right now."
+        right={<Badge variant="outline" className="rounded-full text-[10.5px]">{items.length}</Badge>}
+      />
+      {loading ? (
+        <SkeletonRow count={3} h="h-[88px]" />
+      ) : items.length === 0 ? (
+        <EmptyState icon={CheckCircle2} title="You're all caught up." subtitle="No leads currently require attention." />
+      ) : (
+        <div className="space-y-2.5">
+          {items.map((lead) => <AttentionCard key={lead.id} lead={lead} />)}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AttentionCard({ lead }: { lead: Lead }) {
+  const urgency = URGENCY_ROW(lead);
+  const alert = getInlineAlert(lead);
+  return (
+    <Link
+      to={`/leads/${lead.id}`}
+      className={cn("group block rounded-2xl border p-4 transition-all hover:-translate-y-0.5", URGENCY_TONE[urgency])}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted text-[11px] font-semibold text-muted-foreground">
+            {initials(lead.parentName || lead.childName || "—")}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-[14px] font-semibold">
+                {lead.parentName || lead.childName || "Unknown family"}
+              </p>
+              <span className={cn("h-1.5 w-1.5 rounded-full", URGENCY_DOT[urgency])} />
+              <span className="text-[11.5px] text-muted-foreground">{lead.status}</span>
+            </div>
+            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+              {[lead.childName && `Child · ${lead.childName}`, lead.insurance || "No insurance on file", lead.state]
+                .filter(Boolean).join(" · ")}
+            </p>
+            {alert && (
+              <p className={cn("mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-medium",
+                alert.type === "red" ? "text-red-600" : "text-amber-700")}>
+                <AlertCircle className="h-3 w-3" /> {alert.message}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="hidden shrink-0 text-right md:block">
+          <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Owner</p>
+          <p className="text-[12px] font-medium">{lead.owner || "Unassigned"}</p>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            {lead.daysInStage ?? 0}d in stage
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-3">
+        <p className="text-[12px] text-foreground/80">
+          <span className="text-muted-foreground">Next · </span>{lead.nextAction}
+        </p>
+        <div className="flex items-center gap-1">
+          <QuickAction icon={Phone}        label="Call"    onClick={(e) => { stop(e); toast.message(`Call ${lead.phone || "—"}`); }} />
+          <QuickAction icon={MessageSquare} label="Text"   onClick={(e) => { stop(e); toast.message(`Text ${lead.phone || "—"}`); }} />
+          <QuickAction icon={Mail}         label="Email"   onClick={(e) => { stop(e); toast.message(`Email ${lead.email || "—"}`); }} />
+          <QuickAction icon={StickyNote}   label="Note"    onClick={(e) => { stop(e); toast.message("Add a note"); }} />
+          <span className="ml-1 inline-flex items-center text-[11.5px] font-medium text-primary">
+            Open <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function stop(e: React.MouseEvent) { e.preventDefault(); e.stopPropagation(); }
+
+function QuickAction({ icon: Icon, label, onClick }: {
+  icon: React.ElementType; label: string; onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+/* ============ follow-ups ============ */
+
+function FollowupsSection({
+  buckets, loading,
+}: {
+  buckets: { dueToday: Lead[]; overdue: Lead[]; waitingParent: Lead[]; waitingVob: Lead[]; finalAttempts: Lead[] };
+  loading: boolean;
+}) {
+  const tabs: { id: keyof typeof buckets; label: string }[] = [
+    { id: "dueToday", label: "Due Today" },
+    { id: "overdue", label: "Overdue" },
+    { id: "waitingParent", label: "Waiting on Parent" },
+    { id: "waitingVob", label: "Waiting on VOB" },
+    { id: "finalAttempts", label: "Final Attempts" },
+  ];
+  return (
+    <section>
+      <SectionHeader title="My Follow-Ups" subtitle="Your operational inbox." />
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <Tabs defaultValue="dueToday" className="w-full">
+          <TabsList className="flex w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+            {tabs.map((t) => (
+              <TabsTrigger
+                key={t.id}
+                value={t.id}
+                className="rounded-full border border-transparent px-3 py-1 text-[12px] data-[state=active]:border-border/60 data-[state=active]:bg-muted/40 data-[state=active]:text-foreground"
+              >
+                {t.label} <span className="ml-1.5 text-muted-foreground">{buckets[t.id].length}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {tabs.map((t) => (
+            <TabsContent key={t.id} value={t.id} className="mt-3">
+              {loading ? (
+                <SkeletonRow count={3} h="h-[56px]" />
+              ) : buckets[t.id].length === 0 ? (
+                <EmptyState icon={Inbox} title="Nothing here." subtitle="Inbox zero for this bucket." compact />
+              ) : (
+                <div className="space-y-1">
+                  {buckets[t.id].slice(0, 8).map((l) => <FollowupRow key={l.id} lead={l} />)}
+                </div>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    </section>
+  );
+}
+
+function FollowupRow({ lead }: { lead: Lead }) {
+  const urgency = URGENCY_ROW(lead);
+  return (
+    <Link
+      to={`/leads/${lead.id}`}
+      className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/40"
+    >
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", URGENCY_DOT[urgency])} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium">{lead.parentName || lead.childName || "—"}</p>
+        <p className="truncate text-[11px] text-muted-foreground">
+          {lead.status} · {lead.insurance || "No insurance"} · last contact {fmtAgo(lead.lastContacted ?? lead.createdAt)}
+        </p>
+      </div>
+      <span className="hidden shrink-0 text-[10.5px] text-muted-foreground sm:inline">{lead.owner || "Unassigned"}</span>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  );
+}
+
+/* ============ pipeline snapshot ============ */
+
+function PipelineSection({ pipeline, total }: { pipeline: { id: LeadStatus; label: string; count: number; stalled: number }[]; total: number }) {
+  const max = Math.max(1, ...pipeline.map((s) => s.count));
+  return (
+    <section>
+      <SectionHeader
+        title="Pipeline Snapshot"
+        subtitle={`${total.toLocaleString()} leads in your view.`}
+        right={
+          <Link to="/leads" className="text-[11.5px] font-medium text-primary hover:underline">
+            Open pipeline <ChevronRight className="inline h-3 w-3" />
+          </Link>
+        }
+      />
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+          {pipeline.map((s) => (
+            <Link
+              key={s.id}
+              to={`/leads?status=${encodeURIComponent(s.id)}`}
+              className="group rounded-xl border border-border/60 px-3 py-2.5 transition-all hover:-translate-y-0.5 hover:border-border"
+            >
+              <p className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">{s.label}</p>
+              <div className="mt-1 flex items-baseline justify-between">
+                <p className="text-[18px] font-semibold tabular-nums">{s.count}</p>
+                {s.stalled > 0 && (
+                  <span className="text-[10.5px] font-medium text-amber-600">{s.stalled} stuck</span>
+                )}
+              </div>
+              <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary/70" style={{ width: `${(s.count / max) * 100}%` }} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============ activity ============ */
+
+function ActivitySection({ activity, loading }: { activity: { id: string; who: string; what: string; when: string; tone: string }[]; loading: boolean }) {
+  return (
+    <section>
+      <SectionHeader title="Recent Activity" subtitle="Live operational feed." />
+      <div className="rounded-2xl border border-border/70 bg-card p-2">
+        {loading ? (
+          <SkeletonRow count={3} h="h-[44px]" />
+        ) : activity.length === 0 ? (
+          <EmptyState icon={Activity} title="No recent activity yet." subtitle="Updates from Monday will appear here." compact />
+        ) : (
+          <ul className="divide-y divide-border/40">
+            {activity.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 px-3 py-2.5">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-muted text-muted-foreground">
+                  <Activity className="h-3.5 w-3.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px]">
+                    <span className="font-medium">{a.who}</span>
+                    <span className="text-muted-foreground"> · {a.what}</span>
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] text-muted-foreground">{fmtAgo(a.when)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ============ right rail ============ */
+
+function RightRail({
+  priorities, kpis, attentionCount,
+}: {
+  priorities: { count: number; label: string; tone: "crit" | "warn" | "ok"; to: string }[];
+  kpis: ReturnType<typeof calculateKpis>;
+  attentionCount: number;
+}) {
+  const aiInsights = [
+    kpis.notContacted > 0 && {
+      icon: AlertCircle, tone: "text-red-500" as const,
+      title: `${kpis.notContacted} lead${kpis.notContacted === 1 ? "" : "s"} awaiting first contact`,
+      body: "Prioritize these before end of day to protect conversion.",
+    },
+    kpis.sentVob > 0 && {
+      icon: Hourglass, tone: "text-amber-500" as const,
+      title: `${kpis.sentVob} VOB${kpis.sentVob === 1 ? "" : "s"} pending`,
+      body: "Consider pinging the VOB team on anything over 3 days old.",
+    },
+    kpis.vobCompleted > 0 && {
+      icon: CheckCircle2, tone: "text-emerald-500" as const,
+      title: `${kpis.vobCompleted} ready to move to Clients`,
+      body: "Handoff to client setup to keep the pipeline flowing.",
+    },
+    attentionCount === 0 && {
+      icon: Sparkles, tone: "text-primary" as const,
+      title: "All clear",
+      body: "No urgent follow-ups detected in your view.",
+    },
+  ].filter(Boolean) as { icon: React.ElementType; tone: string; title: string; body: string }[];
+
+  const prompts = [
+    "Which leads are stuck?",
+    "Summarize today's priorities",
+    "Find missing forms",
+    "Show overdue follow-ups",
+    "Summarize VOB risks",
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+          <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">Ask Blossom AI</h3>
+        </div>
+        <div className="mt-3 space-y-1">
+          {prompts.map((p) => (
+            <Link
+              key={p}
+              to={`/ai/assistant?q=${encodeURIComponent(p)}`}
+              className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px] hover:bg-muted/50"
+            >
+              <span>{p}</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            </Link>
+          ))}
+        </div>
+        {aiInsights.length > 0 && (
+          <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
+            {aiInsights.slice(0, 3).map((i, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <i.icon className={cn("mt-0.5 h-3.5 w-3.5", i.tone)} />
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium">{i.title}</p>
+                  <p className="text-[11px] text-muted-foreground">{i.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">Today's Priorities</h3>
+        {priorities.length === 0 ? (
+          <p className="mt-3 text-[12px] text-muted-foreground">Nothing urgent — enjoy the calm.</p>
+        ) : (
+          <ul className="mt-3 space-y-1">
+            {priorities.map((p) => (
+              <li key={p.label}>
+                <Link to={p.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px] hover:bg-muted/50">
+                  <span className="flex items-center gap-2">
+                    <span className={cn("h-1.5 w-1.5 rounded-full",
+                      p.tone === "crit" ? "bg-red-500" : p.tone === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
+                    <span className="font-medium tabular-nums">{p.count}</span>
+                    <span className="text-muted-foreground">{p.label}</span>
+                  </span>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <h3 className="text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions</h3>
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
+          <QuickLink to="/leads" icon={ClipboardList} label="Intake Queue" />
+          <QuickLink to="/vob"   icon={ShieldCheck}   label="VOB Center" />
+          <QuickLink to="/sop"   icon={FileText}      label="SOPs" />
+          <QuickLink to="/ai/assistant" icon={Sparkles} label="Ask AI" />
+        </div>
+      </div>
     </div>
   );
 }
 
-const kindIcon: Record<string, React.ElementType> = { Call: Phone, Text: MessageSquare, Email: Mail };
-const kindTone: Record<string, string> = { Call: "os-tone-sky", Text: "os-tone-violet", Email: "os-tone-lilac" };
-
-/* ============ PAGE ============ */
-
-export default function OSIntakeCoordinator() {
-  const { user } = useAuth();
-  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Michelle").split(" ")[0];
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const score = 88;
-
+function QuickLink({ to, icon: Icon, label }: { to: string; icon: React.ElementType; label: string }) {
   return (
-    <OSShell
-      rightRail={
-        <>
-          {/* AI INTAKE INSIGHTS */}
-          <section className="os-card relative overflow-hidden">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.28)] to-transparent blur-2xl" />
-            <header className="mb-3 flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
-                <Brain className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <h3 className="text-[14px] font-semibold tracking-tight">AI Intake Insights</h3>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Predictive · Supportive</p>
-              </div>
-            </header>
-            <ul className="space-y-3">
-              {aiInsights.map((i) => (
-                <li key={i.title} className="group rounded-2xl border border-white/70 bg-white/70 p-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_hsl(265_60%_50%/0.25)]">
-                  <div className="flex items-start gap-2.5">
-                    <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", i.tone)}>
-                      <i.icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-semibold leading-tight">{i.title}</p>
-                      <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{i.body}</p>
-                      <button className="mt-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
-                        {i.cta} <ChevronRight className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* INTAKE SCORE */}
-          <section className="os-card relative overflow-hidden">
-            <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(155_70%_70%/0.25)] to-transparent blur-2xl" />
-            <header className="mb-2">
-              <h3 className="text-[14px] font-semibold tracking-tight">Your Intake Score</h3>
-              <p className="text-[10.5px] text-muted-foreground">Response · Conversion · Cleanliness</p>
-            </header>
-            <div className="relative grid place-items-center py-2">
-              <div className="relative h-[140px] w-[140px]">
-                <ResponsiveContainer>
-                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={[{ v: score }]} startAngle={90} endAngle={-270}>
-                    <RadialBar dataKey="v" cornerRadius={10} fill="hsl(265 85% 62%)" background={{ fill: "hsl(240 10% 94%)" }} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <div className="text-center">
-                    <p className="text-[28px] font-semibold leading-none tracking-tight">{score}</p>
-                    <p className="mt-1 text-[9.5px] uppercase tracking-wider text-muted-foreground">Strong</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-1 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Resp 92</div>
-              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Conv 84</div>
-              <div className="rounded-lg bg-[hsl(265_100%_95%)] py-1.5 font-semibold text-[hsl(265_70%_50%)]">Clean 88</div>
-            </div>
-          </section>
-
-          {/* TODAY */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold tracking-tight">Today</h3>
-              <span className="text-[11px] text-muted-foreground">{today}</span>
-            </header>
-            <ul className="space-y-3">
-              {calls.map((m) => (
-                <li key={m.title} className="flex items-center gap-3">
-                  <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", m.tone)}>
-                    <Phone className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-medium leading-tight">{m.title}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{m.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* TRAINING & SOP */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight">Training & SOPs</h3>
-              </div>
-              <Pill tone="med">4</Pill>
-            </header>
-            <ul className="space-y-2.5">
-              {training.map((t) => (
-                <li key={t.name} className="rounded-xl border border-white/70 bg-white/70 p-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("grid h-7 w-7 place-items-center rounded-xl", t.tone)}>
-                      <BookOpen className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12px] font-semibold leading-tight">{t.name}</p>
-                      <p className="text-[10.5px] text-muted-foreground">{t.kind}</p>
-                    </div>
-                    <span className="tabular-nums text-[11px] font-semibold">{t.pct}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)]" style={{ width: `${t.pct}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* LIVE ACTIVITY */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Radio className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight">Recent Activity</h3>
-              </div>
-              <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[hsl(155_55%_38%)]">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[hsl(155_60%_50%)]" /> Live
-              </span>
-            </header>
-            <ul className="space-y-3">
-              {activity.map((a, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <div className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-xl", a.tone)}>
-                    <a.icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] leading-tight">
-                      <span className="font-semibold">{a.who}</span>{" "}
-                      <span className="text-muted-foreground">{a.what}</span>
-                    </p>
-                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{a.when} ago</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
-      }
+    <Link
+      to={to}
+      className="flex items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5 text-[11.5px] font-medium text-foreground/90 transition-colors hover:bg-muted/40"
     >
-      {/* HERO */}
-      <header className="os-rise relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white via-[hsl(265_100%_99%)] to-[hsl(210_100%_98%)] p-6 shadow-[0_24px_60px_-30px_hsl(265_60%_50%/0.25)]">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.35)] to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -left-20 -bottom-24 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(210_85%_75%/0.3)] to-transparent blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <Headphones className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Intake Coordinator · Mission Control
-            </div>
-            <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
-              {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
-            </h1>
-            <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening in Intake today.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <UserPlus className="h-3 w-3" /> 9 new leads
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <Phone className="h-3 w-3" /> 12 follow-ups due
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
-                <FileText className="h-3 w-3" /> 8 forms pending
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <ShieldCheck className="h-3 w-3" /> Avg response 16m
-              </span>
-            </div>
-          </div>
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="truncate">{label}</span>
+    </Link>
+  );
+}
 
-          {/* AI Intake Briefing */}
-          <div className="relative w-full max-w-md shrink-0 rounded-2xl border border-white/80 bg-white/70 p-4 shadow-[0_14px_36px_-20px_hsl(265_60%_50%/0.35)] backdrop-blur">
-            <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">Intake AI Briefing</p>
-                <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 2 min ago</p>
-              </div>
-            </div>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              <span className="font-semibold text-[hsl(355_70%_52%)]">5 leads</span> are awaiting follow-up today.
-              Two <span className="font-semibold">VOBs</span> have not been returned within expected timeframe.
-            </p>
-            <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open Intake Insights <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      </header>
+/* ============ utilities ============ */
 
-      {/* KPI GRID */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">Daily Intake KPIs</h2>
-            <Pill tone="default">{kpis.length} metrics</Pill>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">Today</button>
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">7d</button>
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">30d</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {kpis.map((k) => <KpiCard key={k.label} k={k} />)}
-        </div>
-      </section>
-
-      {/* LEAD PIPELINE */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Lead Pipeline</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Every stage from new lead to client setup</p>
-          </div>
-          <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">Open kanban</button>
-        </header>
-        <div className="-mx-1 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-3 px-1">
-            {stages.map((s) => (
-              <div key={s.name} className="w-[170px] shrink-0 rounded-2xl border border-white/70 bg-white/70 p-3">
-                <div className="flex items-center gap-2">
-                  <div className={cn("grid h-7 w-7 place-items-center rounded-xl", s.tone)}>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="truncate text-[11.5px] font-semibold leading-tight">{s.name}</p>
-                </div>
-                <p className="mt-2 text-[22px] font-semibold tabular-nums leading-none">{s.count}</p>
-                <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>Avg {s.avg}</span>
-                  {s.stalled > 0 ? <Pill tone="warn">{s.stalled} stalled</Pill> : <Pill tone="ok">on track</Pill>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* recent lead cards */}
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {leads.map((l) => (
-            <button key={l.parent} className="group flex items-start gap-3 rounded-2xl border border-white/70 bg-white/70 p-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-[hsl(210_85%_75%/0.18)] text-[hsl(265_70%_45%)] font-semibold">
-                {l.parent.split(" ").map((n) => n[0]).join("")}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[13px] font-semibold leading-tight">{l.parent}</p>
-                  <Dot tone={l.urgency} />
-                </div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{l.child} · {l.insurance}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <Pill tone="default">{l.stage}</Pill>
-                  <span className="text-[10.5px] text-muted-foreground">{l.since}</span>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 self-center text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* FOLLOW-UPS & TASKS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Follow-Ups & Tasks</h3>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {["All", "Calls", "Texts", "Emails", "Final Attempts", "Missing Info", "Escalations"].map((t, i) => (
-              <button key={t} className={cn(
-                "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
-                i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
-              )}>{t}</button>
-            ))}
-          </div>
-        </header>
-        <ul className="divide-y divide-foreground/[0.06]">
-          {followups.map((f) => {
-            const Icon = kindIcon[f.kind] ?? Phone;
-            const prio = f.priority === "High" ? "high" : f.priority === "Medium" ? "med" : "low";
-            return (
-              <li key={f.parent + f.time} className="group flex items-center gap-3 py-3">
-                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", kindTone[f.kind] ?? "os-tone-sky")}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-semibold leading-tight">{f.parent}</p>
-                  <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.stage} · Last: {f.last} · {f.time}</p>
-                </div>
-                <Pill tone={prio as any}>{f.priority}</Pill>
-                <div className="ml-1 hidden items-center gap-1 md:flex">
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Snooze"><Pause className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {/* FORMS & VOB + COMMS */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <section className="os-card lg:col-span-2">
-          <header className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Forms & VOB Tracking</h3>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Pill tone="warn">3 stalled</Pill>
-              <Pill tone="crit">1 flagged</Pill>
-            </div>
-          </header>
-          <ul className="space-y-2.5">
-            {forms.map((f) => (
-              <li key={f.name} className={cn(
-                "rounded-2xl border border-white/70 bg-white/70 p-3.5",
-                f.tone === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
-                f.tone === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneBg(f.tone), toneText(f.tone))}>
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] font-semibold leading-tight">{f.name}</p>
-                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.status}{f.days > 0 ? ` · ${f.days}d open` : ""}</p>
-                  </div>
-                  <Pill tone={f.tone}>{toneLabel(f.tone)}</Pill>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                  <div className="h-full rounded-full" style={{ width: `${f.pct}%`, background: `linear-gradient(90deg, ${toneStrokeHsl(f.tone)}, hsl(265 85% 72%))` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="os-card">
-          <header className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Communication Hub</h3>
-            </div>
-            <Pill tone="ok">71% reply</Pill>
-          </header>
-          <ul className="space-y-3">
-            {comms.map((c, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", c.tone)}>
-                  <c.icon className="h-3.5 w-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] leading-tight">
-                    <span className="font-semibold">{c.who}</span>{" "}
-                    <span className="text-muted-foreground">{c.what}</span>
-                  </p>
-                  <p className="mt-0.5 text-[10.5px] text-muted-foreground">{c.when} ago</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 grid grid-cols-2 gap-1.5">
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Phone className="mr-1 inline h-3 w-3" />Call</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Mail className="mr-1 inline h-3 w-3" />Email</button>
-          </div>
-        </section>
+function SectionHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <div>
+        <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-[12px] text-muted-foreground">{subtitle}</p>}
       </div>
+      {right}
+    </div>
+  );
+}
 
-      {/* INTAKE BOTTLENECKS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Intake Bottlenecks</h3>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Pill tone="crit">2 critical</Pill>
-            <Pill tone="warn">4 watch</Pill>
-          </div>
-        </header>
-        <ul className="space-y-2">
-          {bottlenecks.map((b) => (
-            <li key={b.title} className={cn(
-              "flex items-center gap-3 rounded-2xl border border-white/70 bg-white/70 p-3.5",
-              b.severity === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
-              b.severity === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
-            )}>
-              <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl",
-                b.severity === "crit" ? "bg-[hsl(355_100%_95%)] text-[hsl(355_70%_50%)]" : "bg-[hsl(40_100%_92%)] text-[hsl(30_80%_45%)]")}>
-                {b.severity === "crit" ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-semibold leading-tight">{b.title}</p>
-                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{b.stage} · Owner {b.owner}</p>
-              </div>
-              <div className="hidden items-center gap-1.5 text-[10.5px] text-muted-foreground md:flex">
-                <span>Next:</span>
-                <span className="font-semibold text-foreground">{b.action}</span>
-              </div>
-              <button className="ml-1 inline-flex items-center gap-1 rounded-lg bg-foreground/[0.05] px-2.5 py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]">
-                Take action <ArrowRight className="h-3 w-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+function EmptyState({ icon: Icon, title, subtitle, compact }: { icon: React.ElementType; title: string; subtitle?: string; compact?: boolean }) {
+  return (
+    <div className={cn(
+      "rounded-2xl border border-dashed border-border/60 bg-muted/20 text-center",
+      compact ? "px-4 py-6" : "px-4 py-10",
+    )}>
+      <Icon className="mx-auto h-5 w-5 text-muted-foreground/70" />
+      <p className="mt-2 text-[13px] font-medium">{title}</p>
+      {subtitle && <p className="mt-0.5 text-[12px] text-muted-foreground">{subtitle}</p>}
+    </div>
+  );
+}
 
-      {/* QUICK ACTIONS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
-          <span className="text-[11px] text-muted-foreground">⌘K to search anything</span>
-        </header>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          {quickActions.map((a) => (
-            <button key={a.label} className="group flex flex-col items-start gap-2 rounded-2xl border border-white/70 bg-white/70 p-3 text-left transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-20px_hsl(265_60%_50%/0.28)]">
-              <div className={cn("grid h-9 w-9 place-items-center rounded-xl", a.tone)}>
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className="text-[11.5px] font-semibold leading-tight tracking-tight">{a.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-    </OSShell>
+function SkeletonRow({ count = 3, h = "h-[60px]" }: { count?: number; h?: string }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className={cn("animate-pulse rounded-xl bg-muted/40", h)} />
+      ))}
+    </div>
   );
 }
