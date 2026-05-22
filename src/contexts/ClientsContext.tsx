@@ -183,6 +183,14 @@ const buildClient = (
   consentRequired: ((c as Row<DbClient>).consent_required as boolean | undefined) ?? true,
   consentComplete: Boolean((c as Row<DbClient>).consent_complete),
   blockers: c.blockers ?? [],
+  // Structured flake/unreachable flag. Falls back to legacy blocker text or stage so
+  // existing seeded data still surfaces under the Flaked Client queue.
+  clientUnreachable:
+    ((c as Row<DbClient>).client_unreachable as boolean | undefined) ??
+    (c.stage === "Flaked" ||
+      (c.blockers ?? []).some((b) => /flake|no\s*show|unreachable|cannot reach|can't reach/i.test(b))),
+  clientUnreachableSince: ((c as Row<DbClient>).client_unreachable_since as string | null | undefined) ?? null,
+  clientUnreachableReason: ((c as Row<DbClient>).client_unreachable_reason as string | null | undefined) ?? null,
   authorizations: auths.map((a) => ({
     id: a.id,
     type: a.kind, status: a.status,
