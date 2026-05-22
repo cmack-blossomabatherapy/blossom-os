@@ -22,6 +22,42 @@ import { toast } from "sonner";
 type ViewMode = "list" | "pipeline" | "followup";
 
 /**
+ * SOP-aligned intake status tabs. Each tab filters the active leads dataset.
+ * "All" + "Stuck/Aging" are operational meta-views; the rest mirror Blossom's
+ * canonical intake stages.
+ */
+const STATUS_TABS: { key: string; label: string; match: (l: Lead) => boolean }[] = [
+  { key: "all",            label: "All Leads",           match: () => true },
+  { key: "new",            label: "New Lead",            match: (l) => l.status === "New Lead" },
+  { key: "in_contact",     label: "In Contact",          match: (l) => l.status === "In Contact" },
+  { key: "sent_form",      label: "Sent Form",           match: (l) => l.status === "Sent Form" || l.formStatus === "Sent" },
+  { key: "form_received",  label: "Form Received",       match: (l) => l.status === "Form Received" || l.formStatus === "Completed" || l.formStatus === "Complete" },
+  { key: "missing",        label: "Missing Info",        match: (l) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "sent_vob",       label: "Sent to VOB",         match: (l) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
+  { key: "vob_done",       label: "VOB Completed",       match: (l) => l.status === "VOB Completed" || l.vobStatus === "Approved" || l.vobStatus === "Completed" },
+  { key: "cant_reach",     label: "Can't Reach",         match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+  { key: "cant_auth",      label: "Can't Submit Auth",   match: (l) => l.status === "Can't Submit Auth" || (l as any).cantSubmitAuth === true },
+  { key: "nq",             label: "Nonqualified",        match: (l) => l.status === "Non-Qualified" || l.status === "Nonqualified" },
+  { key: "needs_dx",       label: "Needs DX",            match: (l) => l.status === "Needs DX" || (l as any).needsDx === true },
+  { key: "stuck",          label: "Stuck / Aging",       match: (l) => {
+      if (l.status === "Non-Qualified" || l.status === "Nonqualified") return false;
+      const last = l.lastContacted ? new Date(l.lastContacted).getTime() : 0;
+      const days = last ? Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000)) : 999;
+      return days > 5;
+    } },
+];
+
+/** Aging dot — soft healthcare-style status indicator. */
+function agingFor(l: Lead): { tone: string; label: string; days: number } {
+  const last = l.lastContacted ? new Date(l.lastContacted).getTime() : 0;
+  const days = last ? Math.floor((Date.now() - last) / (24 * 60 * 60 * 1000)) : 999;
+  if (!last) return { tone: "bg-rose-500", label: "Never contacted", days };
+  if (days <= 2) return { tone: "bg-emerald-500", label: `${days}d ago`, days };
+  if (days <= 5) return { tone: "bg-amber-500", label: `${days}d ago`, days };
+  return { tone: "bg-rose-500", label: `${days}d ago`, days };
+}
+
+/**
  * Operational Readiness Pipeline — 14 stages.
  * Mirrors the spec; falls back to status/vob/form fields where the underlying mock data
  * doesn't yet carry a dedicated status. Empty stages are still useful scaffolding.
@@ -106,6 +142,7 @@ export default function OSLeadsV2() {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<FilterState>(emptyFilters());
   const [activeKpi, setActiveKpi] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
@@ -148,12 +185,24 @@ export default function OSLeadsV2() {
         const k = KPI_DEFS.find((kk) => kk.key === activeKpi);
         if (k && !k.test(l)) return false;
       }
+      if (activeTab && activeTab !== "all") {
+        const t = STATUS_TABS.find((tt) => tt.key === activeTab);
+        if (t && !t.match(l)) return false;
+      }
       return true;
     });
-  }, [scopedLeads, query, filters, activeKpi]);
+  }, [scopedLeads, query, filters, activeKpi, activeTab]);
 
   // Reset page on filter changes
-  useEffect(() => { setPage(0); }, [query, filters, activeKpi, view]);
+  useEffect(() => { setPage(0); }, [query, filters, activeKpi, view, activeTab]);
+
+  // Counts per status tab (computed against scoped, not filtered, so badges stay stable).
+  const tabCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const t of STATUS_TABS) c[t.key] = 0;
+    for (const l of scopedLeads) for (const t of STATUS_TABS) if (t.match(l)) c[t.key]++;
+    return c;
+  }, [scopedLeads]);
 
   const kpiCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -296,6 +345,34 @@ export default function OSLeadsV2() {
             </button>
           </div>
         )}
+
+        {/* SOP status tabs */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 border-b border-border/60">
+          {STATUS_TABS.map((t) => {
+            const active = activeTab === t.key;
+            const count = tabCounts[t.key] ?? 0;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={cn(
+                  "flex-shrink-0 inline-flex items-center gap-1.5 px-3 h-9 rounded-t-lg text-sm font-medium transition border-b-2 -mb-px",
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+                <span className={cn(
+                  "tabular-nums text-[11px] rounded-full px-1.5 py-0.5",
+                  active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* View toggle + meta */}
         <div className="flex items-center justify-between">
