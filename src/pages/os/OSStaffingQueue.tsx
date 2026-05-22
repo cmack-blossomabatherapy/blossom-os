@@ -471,6 +471,44 @@ function FilterSelect({
   options: { value: string; label: string }[];
 }) {
   return (
+    <_FilterSelectImpl value={value} onChange={onChange} options={options} />
+  );
+}
+
+function LiveChip({
+  label, value, tone, hint, loading,
+}: {
+  label: string; value: number;
+  tone: "destructive" | "warning" | "success" | "muted";
+  hint?: string; loading?: boolean;
+}) {
+  const dot = {
+    destructive: "bg-destructive",
+    warning: "bg-warning",
+    success: "bg-success",
+    muted: "bg-muted-foreground",
+  }[tone];
+  return (
+    <span
+      title={hint}
+      className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card px-2.5 py-1 text-[11.5px] text-foreground/80"
+    >
+      <span className={cn("size-1.5 rounded-full", dot)} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="tabular-nums font-medium text-foreground">
+        {loading ? "…" : value}
+      </span>
+    </span>
+  );
+}
+
+function _FilterSelectImpl({
+  value, onChange, options,
+}: {
+  value: string; onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
