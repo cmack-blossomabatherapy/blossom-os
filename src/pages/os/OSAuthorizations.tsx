@@ -344,7 +344,39 @@ function DensityBtn({ icon: Icon, active, onClick }: { icon: any; active: boolea
 }
 
 /* ------------------------------ records list ------------------------------ */
+const PAGE_SIZE = 25;
+
 function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; density: "comfortable" | "compact"; onOpen: (id: string) => void }) {
+  const [count, setCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Build a stable signature of the current filtered+sorted result so we reset
+  // pagination whenever the underlying result set changes (filters, view, search).
+  const signature = useMemo(
+    () => auths.slice(0, 8).map(a => a.id).join("|") + "::" + auths.length,
+    [auths],
+  );
+
+  // Reset to first page whenever the result set identity changes.
+  useEffect(() => { setCount(PAGE_SIZE); }, [signature]);
+
+  const shown = auths.slice(0, count);
+  const hasMore = count < auths.length;
+
+  // Infinite scroll via IntersectionObserver — load next page as sentinel enters viewport.
+  useEffect(() => {
+    if (!hasMore) return;
+    const node = sentinelRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) {
+        setCount(c => Math.min(c + PAGE_SIZE, auths.length));
+      }
+    }, { rootMargin: "400px 0px" });
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasMore, auths.length, signature]);
+
   if (auths.length === 0) {
     return (
       <div className="rounded-2xl border border-border/70 bg-card p-16 text-center">
@@ -357,13 +389,31 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-muted-foreground tabular-nums">{auths.length} record{auths.length === 1 ? "" : "s"}</span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          Showing {shown.length} of {auths.length} record{auths.length === 1 ? "" : "s"}
+        </span>
       </div>
       <div className={cn("rounded-2xl border border-border/70 bg-card overflow-hidden divide-y divide-border/50")}>
-        {auths.map((a) => (
+        {shown.map((a) => (
           <AuthRow key={a.id} a={a} density={density} onOpen={() => onOpen(a.id)} />
         ))}
       </div>
+      {hasMore ? (
+        <div ref={sentinelRef} className="flex items-center justify-center py-4">
+          <button
+            onClick={() => setCount(c => Math.min(c + PAGE_SIZE, auths.length))}
+            className="text-xs text-muted-foreground hover:text-foreground transition rounded-full border border-border/70 bg-card px-3 py-1.5"
+          >
+            Loading more… (show {Math.min(PAGE_SIZE, auths.length - count)} more)
+          </button>
+        </div>
+      ) : (
+        auths.length > PAGE_SIZE && (
+          <div className="text-center text-[11px] text-muted-foreground/70 py-3">
+            End of results
+          </div>
+        )
+      )}
     </div>
   );
 }
