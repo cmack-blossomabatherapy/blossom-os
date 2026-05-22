@@ -305,15 +305,77 @@ const VIEWS: { key: ViewKey; label: string }[] = [
 /* ───── page ───── */
 
 export default function OSParentTraining97156() {
-  const items = useMemo<PT97156Item[]>(
-    () => mockAuths.map(deriveItem).filter((x): x is PT97156Item => x !== null),
-    [],
-  );
+  const [overlay, setOverlay] = useState<Record<string, EscalationOverlay>>({});
+
+  const items = useMemo<PT97156Item[]>(() => {
+    const base = mockAuths
+      .map(deriveItem)
+      .filter((x): x is PT97156Item => x !== null);
+    return base.map((it) => {
+      const o = overlay[it.auth.id];
+      if (!o) return it;
+      return {
+        ...it,
+        opStatus: o.opStatus,
+        opTone: o.opTone,
+        // Escalations bias the risk tone upward.
+        riskTone: o.opTone === "crit" ? "crit" : it.riskTone === "ok" ? "info" : it.riskTone,
+        nextAction:
+          o.opStatus === "PR Needed" ? `Awaiting PR from ${it.bcba}` :
+          o.opStatus === "QA Review Needed" ? `Awaiting QA pickup (${it.auth.qaOwner ?? "QA"})` :
+          o.opStatus === "Continuation Risk" ? `Awaiting ${o.routedTo}` :
+          o.opStatus === "Documentation Missing" ? `Collect docs · owner ${o.routedTo}` :
+          it.nextAction,
+        lastActivity: o.escalatedAt
+          ? `Escalated ${new Date(o.escalatedAt).toLocaleDateString()}`
+          : it.lastActivity,
+        auditLog: o.auditLog,
+        automationOverlay: o.automationLog,
+        escalatedTo: o.routedTo,
+        escalatedAt: o.escalatedAt,
+      };
+    });
+  }, [overlay]);
 
   const [view, setView] = useState<ViewKey>("all");
   const [bucket, setBucket] = useState<Bucket | "all">("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<PT97156Item | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = useMemo(
+    () => items.find((i) => i.auth.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+
+  const escalate = (item: PT97156Item, kind: EscalationKind) => {
+    const plan = escalationPlan(kind, item);
+    const now = new Date().toISOString();
+    setOverlay((prev) => {
+      const existing = prev[item.auth.id];
+      const fromStatus = existing?.opStatus ?? item.opStatus;
+      const entry: AuditEntry = {
+        id: `audit-${item.auth.id}-${Date.now()}`,
+        at: now,
+        by: CURRENT_USER,
+        action: kind,
+        routedTo: plan.routedTo,
+        fromStatus,
+        toStatus: plan.toStatus,
+        note: plan.note,
+      };
+      const automation = `[${new Date(now).toLocaleString()}] ${plan.automation}`;
+      return {
+        ...prev,
+        [item.auth.id]: {
+          opStatus: plan.toStatus,
+          opTone: plan.toTone,
+          routedTo: plan.routedTo,
+          escalatedAt: now,
+          auditLog: [entry, ...(existing?.auditLog ?? [])],
+          automationLog: [automation, ...(existing?.automationLog ?? [])],
+        },
+      };
+    });
+  };
 
   const filtered = useMemo(() => {
     return items.filter((it) => {
