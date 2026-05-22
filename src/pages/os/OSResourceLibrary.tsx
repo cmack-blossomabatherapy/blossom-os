@@ -237,7 +237,7 @@ export default function OSResourceLibrary() {
                   icon={Star}
                 />
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {scope.slice(0, 9).map((r) => (
+                  {filteredScope.slice(0, 9).map((r) => (
                     <ResourceCard
                       key={r.id} r={r}
                       onOpen={openResource}
@@ -255,7 +255,7 @@ export default function OSResourceLibrary() {
                 <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                   {resourceCategories.map((c) => {
-                    const count = resourcesByCategory(c.id, scope).length;
+                    const count = resourcesByCategory(c.id, filteredScope).length;
                     if (count === 0) return null;
                     const Icon = c.icon;
                     const active = activeCategory === c.id;
@@ -408,7 +408,7 @@ export default function OSResourceLibrary() {
 
       {/* DETAIL DRAWER */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto bg-card">
           {selected && (
             <>
               <SheetHeader>
