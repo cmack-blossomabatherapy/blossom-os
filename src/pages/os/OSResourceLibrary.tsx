@@ -4,26 +4,21 @@ import { OSShell } from "./OSShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Search, Plus, Upload, FolderPlus, BookOpen, Star, ArrowRight, Pin,
-  Download, Share2, Link2, ChevronRight, Sparkles, Send, Eye, X,
+  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Sparkles, Send,
+  X, Settings2, ExternalLink, GraduationCap, Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
-  resources, resourceCategories, categoryById, resourcesByCategory,
-  featuredResources, recentResources, pinnedResources, searchResources,
-  formatRelative, quickLinks, aiSamplePrompts, TYPE_ICON, TYPE_TONE,
-  type Resource,
+  resourceCategories, categoryById, resourcesByCategory,
+  visibleResources, pinnedFor, recentFor, searchResources,
+  formatRelative, aiSamplePrompts, TYPE_ICON, TYPE_TONE, roleLabel,
+  type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
-import { toast } from "@/hooks/use-toast";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -33,543 +28,457 @@ const TONE_BG: Record<string, string> = {
   rose:    "bg-[hsl(345_80%_96%)] text-[hsl(345_70%_48%)]",
   emerald: "bg-[hsl(150_55%_94%)] text-[hsl(150_55%_32%)]",
   slate:   "bg-slate-100 text-slate-700",
+  indigo:  "bg-[hsl(235_70%_96%)] text-[hsl(235_70%_50%)]",
 };
 
 export default function OSResourceLibrary() {
-  const { role } = useOSRole();
+  const { role, activeState } = useOSRole();
   const canManage = role === "super_admin" || role === "hr_team";
 
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [recentlyOpened, setRecentlyOpened] = useState<string[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [aiInput, setAiInput] = useState("");
 
-  const featured = useMemo(featuredResources, []);
-  const recent = useMemo(() => recentResources(6), []);
-  const pinned = useMemo(pinnedResources, []);
-  const searchResults = useMemo(() => (query ? searchResources(query) : []), [query]);
-
-  const recentlyOpenedItems = useMemo(
-    () => recentlyOpened.map((id) => resources.find((r) => r.id === id)).filter(Boolean) as Resource[],
-    [recentlyOpened]
+  // Role-aware scope: everything else flows from this list.
+  const scope = useMemo(() => visibleResources(role, activeState), [role, activeState]);
+  const pinned = useMemo(() => pinnedFor(scope), [scope]);
+  const recent = useMemo(() => recentFor(scope, 6), [scope]);
+  const searchResults = useMemo(
+    () => (query ? searchResources(query, scope) : []),
+    [query, scope]
   );
+
+  const roleLabelText = roleLabel(role);
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
-    if (activeCategory) return resourcesByCategory(activeCategory as any);
+    if (activeCategory) return resourcesByCategory(activeCategory, scope);
     return [];
-  }, [query, activeCategory, searchResults]);
+  }, [query, activeCategory, searchResults, scope]);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  };
 
   const openResource = (r: Resource) => {
     setSelected(r);
     setRecentlyOpened((prev) => [r.id, ...prev.filter((x) => x !== r.id)].slice(0, 6));
   };
 
+  const recentlyOpenedItems = useMemo(
+    () => recentlyOpened.map((id) => scope.find((r) => r.id === id)).filter(Boolean) as Resource[],
+    [recentlyOpened, scope]
+  );
+
   return (
     <OSShell>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
-        <div>
-          {/* Hero */}
-          <header className="os-rise os-glass-panel rounded-3xl p-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[hsl(265_70%_55%)]">
-              Blossom OS · Resource Library
-            </p>
-            <h1 className="mt-2 text-[28px] font-semibold tracking-tight md:text-[34px]">
-              Resource Library
-            </h1>
-            <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
-              Access SOPs, templates, workflows, forms, and operational resources across Blossom.
-            </p>
+      <div className="mx-auto max-w-[1400px] space-y-8 px-1">
+        {/* HERO */}
+        <header className="rounded-3xl border border-border/60 bg-gradient-to-br from-[hsl(265_70%_98%)] via-white to-[hsl(215_85%_98%)] p-8 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_12px_36px_-16px_hsl(220_15%_30%/0.08)]">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Resource Library · {roleLabelText}
+              </p>
+              <h1 className="mt-2 text-[30px] font-semibold tracking-tight text-foreground md:text-[34px]">
+                Operational knowledge, organized for you.
+              </h1>
+              <p className="mt-2 max-w-2xl text-[14px] text-muted-foreground">
+                Access operational guides, SOPs, templates, workflows, and company resources —
+                personalized to your role.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link to="/sop"><BookOpen className="mr-2 h-4 w-4" />SOP Library</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/training"><GraduationCap className="mr-2 h-4 w-4" />Training Academy</Link>
+              </Button>
+              {canManage && (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link to="/hr/resource-management"><Settings2 className="mr-2 h-4 w-4" />Manage</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/hr/resource-management"><Plus className="mr-2 h-4 w-4" />Add Resource</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
 
-            <div className="relative mt-5 max-w-2xl">
-              <Search className="pointer-events-none absolute z-10 left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setActiveCategory(null); }}
-                placeholder="Search resources, SOPs, templates, forms…"
-                className="os-glass-input h-12 rounded-2xl pl-11 text-sm"
+                placeholder="Search SOPs, guides, templates, workflows…"
+                className="h-11 rounded-xl border-border/70 bg-white/80 pl-9 text-[14px] backdrop-blur"
               />
-              {query && searchResults.length > 0 && (
-                <div className="absolute z-30 mt-2 max-h-80 w-full overflow-auto rounded-2xl border border-border/60 bg-card shadow-xl">
-                  {searchResults.slice(0, 8).map((r) => {
-                    const Icon = TYPE_ICON[r.type];
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" />
+              <span>{scope.length} resources visible</span>
+            </div>
+          </div>
+        </header>
+
+        {/* MAIN GRID */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* CENTER COLUMN */}
+          <div className="space-y-8 min-w-0">
+            {/* PINNED */}
+            {pinned.length > 0 && !query && !activeCategory && (
+              <section>
+                <SectionHeader title="Pinned for you" subtitle="Quick access to your most-used resources" icon={Pin} />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {pinned.map((r) => (
+                    <ResourceCard
+                      key={r.id} r={r}
+                      onOpen={openResource}
+                      onFavorite={toggleFavorite}
+                      isFavorite={favorites.has(r.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ROLE RESOURCES */}
+            {!query && !activeCategory && (
+              <section>
+                <SectionHeader
+                  title={`Resources for ${roleLabelText}s`}
+                  subtitle="Hand-picked resources assigned to your role"
+                  icon={Star}
+                />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {scope.slice(0, 9).map((r) => (
+                    <ResourceCard
+                      key={r.id} r={r}
+                      onOpen={openResource}
+                      onFavorite={toggleFavorite}
+                      isFavorite={favorites.has(r.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* CATEGORIES */}
+            {!query && (
+              <section>
+                <SectionHeader title="Browse by category" subtitle="Organized operational knowledge" icon={BookOpen} />
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                  {resourceCategories.map((c) => {
+                    const count = resourcesByCategory(c.id, scope).length;
+                    if (count === 0) return null;
+                    const Icon = c.icon;
+                    const active = activeCategory === c.id;
                     return (
                       <button
-                        key={r.id}
-                        onClick={() => openResource(r)}
-                        className="flex w-full items-center justify-between gap-3 border-b border-border/40 px-4 py-3 text-left last:border-b-0 hover:bg-muted/40"
+                        key={c.id}
+                        onClick={() => setActiveCategory(active ? null : c.id)}
+                        className={cn(
+                          "group flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all",
+                          "hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_hsl(220_15%_30%/0.12)]",
+                          active
+                            ? "border-primary/40 bg-primary/5"
+                            : "border-border/60 bg-card"
+                        )}
                       >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className={cn("rounded-lg p-1.5", TYPE_TONE[r.type])}>
-                            <Icon className="h-3.5 w-3.5" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{r.title}</p>
-                            <p className="truncate text-[11px] text-muted-foreground">
-                              {r.type} · {categoryById(r.category).name}
-                            </p>
-                          </div>
+                        <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", TONE_BG[c.tone])}>
+                          <Icon className="h-4 w-4" />
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <div className="truncate text-[13.5px] font-semibold text-foreground">{c.name}</div>
+                          <div className="mt-0.5 text-[11.5px] text-muted-foreground">{count} resource{count===1?"":"s"}</div>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
-              )}
-            </div>
+              </section>
+            )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {canManage && (
-                <>
-                  <Button size="sm" className="rounded-full" onClick={() => setUploadOpen(true)}>
-                    <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Resource
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setUploadOpen(true)}>
-                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload File
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => toast({ title: "Folder created", description: "Mock folder added to this library." })}>
-                    <FolderPlus className="mr-1.5 h-3.5 w-3.5" /> Create Folder
-                  </Button>
-                </>
-              )}
-              <Button asChild size="sm" variant="outline" className="rounded-full">
-                <Link to="/training"><BookOpen className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library</Link>
-              </Button>
-            </div>
-          </header>
-
-          {/* Featured */}
-          {!query && !activeCategory && (
-            <section className="mt-8 os-rise">
-              <SectionHeader title="Featured Resources" subtitle="Hand-picked essentials for everyday operations." />
-              <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
-                {featured.map((r) => (
-                  <FeaturedCard key={r.id} r={r} onOpen={() => openResource(r)} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Categories */}
-          {!query && (
-            <section className="mt-10 os-rise">
-              <SectionHeader
-                title="Categories"
-                subtitle="Browse resources by area."
-                action={activeCategory ? (
-                  <Button size="sm" variant="ghost" className="h-8 rounded-full" onClick={() => setActiveCategory(null)}>
-                    <X className="mr-1 h-3.5 w-3.5" /> Clear
-                  </Button>
-                ) : undefined}
-              />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {resourceCategories.map((c) => {
-                  const count = resourcesByCategory(c.id).length;
-                  const Icon = c.icon;
-                  const active = activeCategory === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => setActiveCategory(active ? null : c.id)}
-                      className={cn(
-                        "os-card group flex flex-col rounded-2xl p-5 text-left transition",
-                        active && "ring-2 ring-[hsl(265_70%_55%)]/40"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className={cn("rounded-xl p-2", TONE_BG[c.tone])}>
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0">
-                          <h3 className="text-[14px] font-semibold leading-tight">{c.name}</h3>
-                          <p className="truncate text-[11.5px] text-muted-foreground">{count} resources</p>
-                        </div>
-                      </div>
-                      <p className="mt-3 line-clamp-2 text-[12.5px] text-muted-foreground">{c.description}</p>
-                      <div className="mt-3 flex items-center justify-end text-[11px] font-medium text-primary">
-                        Open <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* Category / Search Results list */}
-          {visibleList.length > 0 && (
-            <section className="mt-10 os-rise">
-              <SectionHeader
-                title={query ? `Results for "${query}"` : categoryById(activeCategory as any).name}
-                subtitle={`${visibleList.length} resource${visibleList.length === 1 ? "" : "s"}`}
-              />
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {visibleList.map((r) => (
-                  <ResourceCard key={r.id} r={r} fav={favorites.has(r.id)} onFav={() => toggleFavorite(r.id)} onOpen={() => openResource(r)} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Recent */}
-          {!query && !activeCategory && (
-            <section className="mt-10 os-rise">
-              <SectionHeader title="Recently Updated" subtitle="Latest changes across the library." />
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {recent.map((r) => (
-                  <ResourceCard key={r.id} r={r} fav={favorites.has(r.id)} onFav={() => toggleFavorite(r.id)} onOpen={() => openResource(r)} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Pinned */}
-          {!query && !activeCategory && pinned.length > 0 && (
-            <section className="mt-10 os-rise">
-              <SectionHeader title="Pinned Resources" subtitle="Your team's most-used essentials." />
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {pinned.map((r) => (
-                  <ResourceCard key={r.id} r={r} fav={favorites.has(r.id)} onFav={() => toggleFavorite(r.id)} onOpen={() => openResource(r)} pinned />
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Right Sidebar */}
-        <aside className="space-y-6">
-          {/* Quick Links */}
-          <div className="os-glass-panel rounded-3xl p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Quick Links</h3>
-            <div className="mt-3 space-y-1">
-              {quickLinks.map((q) => (
-                <Link
-                  key={q.label}
-                  to={q.to}
-                  className="flex items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-muted/50"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{q.label}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{q.description}</p>
+            {/* CATEGORY / SEARCH RESULTS */}
+            {(query || activeCategory) && (
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-[15px] font-semibold text-foreground">
+                      {query ? `Results for "${query}"` : categoryById(activeCategory!).name}
+                    </h2>
+                    <p className="text-[12.5px] text-muted-foreground">
+                      {visibleList.length} resource{visibleList.length === 1 ? "" : "s"}
+                    </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          </div>
+                  {(query || activeCategory) && (
+                    <Button variant="ghost" size="sm" onClick={() => { setQuery(""); setActiveCategory(null); }}>
+                      <X className="mr-1 h-3.5 w-3.5" /> Clear
+                    </Button>
+                  )}
+                </div>
+                {visibleList.length === 0 ? (
+                  <EmptyState query={query} />
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {visibleList.map((r) => (
+                      <ResourceCard
+                        key={r.id} r={r}
+                        onOpen={openResource}
+                        onFavorite={toggleFavorite}
+                        isFavorite={favorites.has(r.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
-          {/* Recently Opened */}
-          <div className="os-glass-panel rounded-3xl p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Recently Opened</h3>
-            {recentlyOpenedItems.length === 0 ? (
-              <p className="mt-3 text-[12.5px] text-muted-foreground">Resources you open will appear here.</p>
-            ) : (
-              <div className="mt-3 space-y-1">
-                {recentlyOpenedItems.map((r) => {
-                  const Icon = TYPE_ICON[r.type];
-                  return (
+            {/* RECENT */}
+            {!query && !activeCategory && recent.length > 0 && (
+              <section>
+                <SectionHeader title="Recently updated" subtitle="What's new in your library" icon={ArrowRight} />
+                <div className="space-y-2">
+                  {recent.map((r) => (
                     <button
                       key={r.id}
                       onClick={() => openResource(r)}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted/50"
+                      className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_8px_24px_-12px_hsl(220_15%_30%/0.1)]"
                     >
-                      <span className={cn("rounded-lg p-1.5", TYPE_TONE[r.type])}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium">{r.title}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">{formatRelative(r.updatedAt)}</p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <TypeChip type={r.type} />
+                        <div className="min-w-0">
+                          <div className="truncate text-[13.5px] font-medium text-foreground">{r.title}</div>
+                          <div className="text-[11.5px] text-muted-foreground">
+                            {categoryById(r.category).name} · Updated {formatRelative(r.updatedAt)}
+                          </div>
+                        </div>
                       </div>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          {/* AI Assistant */}
-          <div className="os-glass-panel rounded-3xl p-5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl bg-[hsl(265_70%_96%)] p-1.5 text-[hsl(265_70%_45%)]">
-                <Sparkles className="h-4 w-4" />
-              </span>
-              <h3 className="text-[13px] font-semibold">Ask Blossom AI</h3>
+          {/* AI SIDEBAR */}
+          <aside className="space-y-4">
+            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-[hsl(265_70%_98%)] to-white p-5 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-12px_hsl(220_15%_30%/0.08)]">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[hsl(265_70%_94%)] text-[hsl(265_70%_45%)]">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-[13.5px] font-semibold text-foreground">Ask Blossom AI</div>
+                  <div className="text-[11.5px] text-muted-foreground">Find any resource instantly</div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {aiSamplePrompts.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setQuery(p.replace(/[.?]$/, ""))}
+                    className="block w-full rounded-lg border border-border/60 bg-white/70 px-3 py-2 text-left text-[12.5px] text-foreground transition-colors hover:bg-white"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Input placeholder="Ask anything…" className="h-9 rounded-lg border-border/70 bg-white text-[13px]" />
+                <Button size="icon" className="h-9 w-9 rounded-lg"><Send className="h-4 w-4" /></Button>
+              </div>
             </div>
-            <p className="mt-2 text-[12.5px] text-muted-foreground">Find resources, SOPs, and answers instantly.</p>
-            <div className="relative mt-3">
-              <Input
-                value={aiInput}
-                onChange={(e) => setAiInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && aiInput.trim()) { setQuery(aiInput); setAiInput(""); } }}
-                placeholder="Ask anything…"
-                className="os-glass-input h-10 rounded-xl pr-10 text-sm"
-              />
-              <button
-                onClick={() => { if (aiInput.trim()) { setQuery(aiInput); setAiInput(""); } }}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground hover:text-foreground"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
+
+            {recentlyOpenedItems.length > 0 && (
+              <div className="rounded-2xl border border-border/60 bg-card p-5">
+                <div className="text-[13.5px] font-semibold text-foreground">Recently viewed</div>
+                <div className="mt-3 space-y-2">
+                  {recentlyOpenedItems.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => openResource(r)}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-muted/50"
+                    >
+                      <TypeChip type={r.type} sm />
+                      <span className="truncate">{r.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-border/60 bg-card p-5">
+              <div className="text-[13.5px] font-semibold text-foreground">Need something else?</div>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">
+                Request a resource or suggest an SOP update.
+              </p>
+              <Button variant="outline" size="sm" className="mt-3 w-full">Request resource</Button>
             </div>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {aiSamplePrompts.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setQuery(p.replace(/[.?]$/, ""))}
-                  className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted/50"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
 
-      {/* Resource Detail Drawer */}
+      {/* DETAIL DRAWER */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          {selected && <ResourceDetail r={selected} fav={favorites.has(selected.id)} onFav={() => toggleFavorite(selected.id)} />}
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {selected && (
+            <>
+              <SheetHeader>
+                <div className="flex items-start gap-3">
+                  <TypeChip type={selected.type} />
+                  <div className="min-w-0 flex-1">
+                    <SheetTitle className="text-[18px]">{selected.title}</SheetTitle>
+                    <SheetDescription className="mt-1 text-[13px]">
+                      {categoryById(selected.category).name} · Updated {formatRelative(selected.updatedAt)}
+                    </SheetDescription>
+                  </div>
+                </div>
+              </SheetHeader>
+              <div className="mt-6 space-y-5">
+                <p className="text-[13.5px] text-foreground">{selected.description}</p>
+
+                <MetaRow label="Type" value={selected.type} />
+                <MetaRow label="Status" value={selected.status} />
+                <MetaRow label="Uploaded by" value={selected.uploadedBy} />
+                <MetaRow label="Departments" value={selected.departments.join(", ") || "All"} />
+                <MetaRow label="States" value={selected.states.join(", ") || "All states"} />
+                <MetaRow label="Roles" value={selected.roles.length ? selected.roles.map(roleLabel).join(", ") : "All roles"} />
+
+                {selected.tags.length > 0 && (
+                  <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Tags</div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {selected.tags.map((t) => (
+                        <Badge key={t} variant="secondary" className="rounded-full text-[11px] font-normal">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button asChild>
+                    <a href={selected.url || selected.fileUrl || "#"} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" /> Open resource
+                    </a>
+                  </Button>
+                  <Button variant="outline" onClick={() => toggleFavorite(selected.id)}>
+                    <Star className={cn("mr-2 h-4 w-4", favorites.has(selected.id) && "fill-current text-amber-500")} />
+                    {favorites.has(selected.id) ? "Favorited" : "Favorite"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </SheetContent>
       </Sheet>
-
-      {/* Upload Modal */}
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Resource</DialogTitle>
-            <DialogDescription>Upload a file, paste a link, or add a Tango walkthrough.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-[12px] font-medium">Title</label>
-              <Input placeholder="e.g. Insurance Cheat Sheet" className="mt-1" />
-            </div>
-            <div>
-              <label className="text-[12px] font-medium">Description</label>
-              <Textarea placeholder="Short description for your team…" className="mt-1" rows={3} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[12px] font-medium">Category</label>
-                <Input placeholder="SOPs, Forms…" className="mt-1" />
-              </div>
-              <div>
-                <label className="text-[12px] font-medium">Department</label>
-                <Input placeholder="Intake, HR…" className="mt-1" />
-              </div>
-            </div>
-            <div>
-              <label className="text-[12px] font-medium">Tags</label>
-              <Input placeholder="comma, separated, tags" className="mt-1" />
-            </div>
-            <div>
-              <label className="text-[12px] font-medium">External link or Tango URL</label>
-              <Input placeholder="https://…" className="mt-1" />
-            </div>
-            <div className="rounded-xl border border-dashed border-border/60 p-4 text-center text-[12.5px] text-muted-foreground">
-              Drop file here or click to upload
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
-            <Button onClick={() => { setUploadOpen(false); toast({ title: "Resource added", description: "Your resource is now visible to the team." }); }}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </OSShell>
   );
 }
 
-function SectionHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+function SectionHeader({ title, subtitle, icon: Icon }: { title: string; subtitle?: string; icon: any }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3">
+    <div className="mb-3 flex items-end justify-between">
       <div>
-        <h2 className="text-[18px] font-semibold tracking-tight">{title}</h2>
-        {subtitle && <p className="text-[12.5px] text-muted-foreground">{subtitle}</p>}
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
+        </div>
+        {subtitle && <p className="mt-0.5 text-[12.5px] text-muted-foreground">{subtitle}</p>}
       </div>
-      {action}
     </div>
-  );
-}
-
-function FeaturedCard({ r, onOpen }: { r: Resource; onOpen: () => void }) {
-  const Icon = TYPE_ICON[r.type];
-  const cat = categoryById(r.category);
-  return (
-    <button
-      onClick={onOpen}
-      className="os-card group min-w-[280px] max-w-[300px] flex-shrink-0 snap-start rounded-2xl p-5 text-left"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <span className={cn("rounded-xl p-2", TYPE_TONE[r.type])}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <Badge variant="outline" className="text-[10px]">{cat.name}</Badge>
-      </div>
-      <h3 className="mt-3 text-[14.5px] font-semibold leading-tight">{r.title}</h3>
-      <p className="mt-1 line-clamp-2 text-[12.5px] text-muted-foreground">{r.description}</p>
-      <div className="mt-4 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>Updated {formatRelative(r.updatedAt)}</span>
-        <span className="font-medium text-primary inline-flex items-center gap-1">
-          Open <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </div>
-    </button>
   );
 }
 
 function ResourceCard({
-  r, fav, onFav, onOpen, pinned,
-}: { r: Resource; fav: boolean; onFav: () => void; onOpen: () => void; pinned?: boolean }) {
-  const Icon = TYPE_ICON[r.type];
+  r, onOpen, onFavorite, isFavorite,
+}: {
+  r: Resource;
+  onOpen: (r: Resource) => void;
+  onFavorite: (id: string) => void;
+  isFavorite: boolean;
+}) {
   const cat = categoryById(r.category);
   return (
-    <div className="os-card group flex flex-col rounded-2xl p-5">
+    <div className="group relative flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset] transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_10px_28px_-14px_hsl(220_15%_30%/0.14)]">
       <div className="flex items-start justify-between gap-2">
-        <span className={cn("rounded-xl p-2", TYPE_TONE[r.type])}>
-          <Icon className="h-4 w-4" />
-        </span>
-        <div className="flex items-center gap-1">
-          {pinned && <Pin className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />}
-          <button
-            onClick={onFav}
-            className={cn(
-              "rounded-full p-1.5 transition",
-              fav ? "text-amber-500" : "text-muted-foreground hover:text-foreground"
-            )}
-            aria-label="Favorite"
-          >
-            <Star className={cn("h-4 w-4", fav && "fill-current")} />
-          </button>
-        </div>
+        <TypeChip type={r.type} />
+        <button
+          onClick={(e) => { e.stopPropagation(); onFavorite(r.id); }}
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-amber-500"
+          aria-label="Favorite"
+        >
+          <Star className={cn("h-4 w-4", isFavorite && "fill-current text-amber-500")} />
+        </button>
       </div>
-      <button onClick={onOpen} className="mt-3 text-left">
-        <h3 className="text-[14.5px] font-semibold leading-tight">{r.title}</h3>
+      <button onClick={() => onOpen(r)} className="text-left">
+        <div className="line-clamp-1 text-[14px] font-semibold text-foreground">{r.title}</div>
         <p className="mt-1 line-clamp-2 text-[12.5px] text-muted-foreground">{r.description}</p>
       </button>
-      <div className="mt-3 flex flex-wrap gap-1">
-        <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
-        <Badge variant="outline" className="text-[10px]">{cat.name}</Badge>
-        {r.tags.slice(0, 2).map((t) => (
-          <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">#{t}</span>
-        ))}
-      </div>
-      <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3 text-[11px] text-muted-foreground">
-        <span>By {r.uploadedBy} · {formatRelative(r.updatedAt)}</span>
-        <button onClick={onOpen} className="font-medium text-primary inline-flex items-center gap-1">
-          Open <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-        </button>
+      <div className="mt-auto flex items-center justify-between pt-1">
+        <div className="text-[11.5px] text-muted-foreground">
+          {cat.name} · {formatRelative(r.updatedAt)}
+        </div>
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-[12px]" onClick={() => onOpen(r)}>
+          Open <ArrowRight className="ml-1 h-3.5 w-3.5" />
+        </Button>
       </div>
     </div>
   );
 }
 
-function ResourceDetail({ r, fav, onFav }: { r: Resource; fav: boolean; onFav: () => void }) {
-  const Icon = TYPE_ICON[r.type];
-  const cat = categoryById(r.category);
-  const related = resources.filter((x) => x.category === r.category && x.id !== r.id).slice(0, 4);
+function TypeChip({ type, sm }: { type: Resource["type"]; sm?: boolean }) {
+  const Icon = TYPE_ICON[type];
   return (
-    <>
-      <SheetHeader>
-        <div className="flex items-center gap-3">
-          <span className={cn("rounded-xl p-2", TYPE_TONE[r.type])}>
-            <Icon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <SheetTitle className="text-left text-[18px]">{r.title}</SheetTitle>
-            <SheetDescription className="text-left text-[12px]">{cat.name} · {r.type}</SheetDescription>
-          </div>
-        </div>
-      </SheetHeader>
-
-      <div className="mt-5 space-y-5">
-        <p className="text-[13.5px] text-muted-foreground">{r.description}</p>
-
-        <div className="grid grid-cols-2 gap-3 text-[12px]">
-          <Meta label="Department" value={r.department ?? "—"} />
-          <Meta label="Uploaded by" value={r.uploadedBy} />
-          <Meta label="Created" value={formatRelative(r.createdAt)} />
-          <Meta label="Updated" value={formatRelative(r.updatedAt)} />
-        </div>
-
-        {r.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {r.tags.map((t) => (
-              <span key={t} className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">#{t}</span>
-            ))}
-          </div>
-        )}
-
-        {/* Preview */}
-        <div className="rounded-2xl border border-border/60 bg-muted/30 p-6 text-center">
-          <Eye className="mx-auto h-6 w-6 text-muted-foreground" />
-          <p className="mt-2 text-[12.5px] text-muted-foreground">Preview not available in mock. Open to view.</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" className="rounded-full">
-            <BookOpen className="mr-1.5 h-3.5 w-3.5" /> Open
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-full">
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Download
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-full" onClick={() => { navigator.clipboard?.writeText(window.location.href); toast({ title: "Link copied" }); }}>
-            <Link2 className="mr-1.5 h-3.5 w-3.5" /> Copy Link
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-full">
-            <Share2 className="mr-1.5 h-3.5 w-3.5" /> Share
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-full" onClick={onFav}>
-            <Star className={cn("mr-1.5 h-3.5 w-3.5", fav && "fill-current text-amber-500")} />
-            {fav ? "Favorited" : "Favorite"}
-          </Button>
-        </div>
-
-        {related.length > 0 && (
-          <div>
-            <h4 className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Related</h4>
-            <div className="space-y-1">
-              {related.map((x) => {
-                const RI = TYPE_ICON[x.type];
-                return (
-                  <div key={x.id} className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-sm hover:bg-muted/50">
-                    <span className={cn("rounded-lg p-1.5", TYPE_TONE[x.type])}>
-                      <RI className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium">{x.title}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">{x.type} · {formatRelative(x.updatedAt)}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
+    <div
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md font-medium",
+        TYPE_TONE[type],
+        sm ? "h-5 px-1.5 text-[10.5px]" : "h-6 px-2 text-[11px]"
+      )}
+    >
+      <Icon className={sm ? "h-3 w-3" : "h-3.5 w-3.5"} />
+      {type}
+    </div>
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/40 p-3">
-      <p className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-[13px] font-medium">{value}</p>
+    <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-2 text-[12.5px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function EmptyState({ query }: { query: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border/60 bg-card/60 p-10 text-center">
+      <BookOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+      <div className="mt-3 text-[14px] font-medium text-foreground">No resources found</div>
+      <p className="mt-1 text-[12.5px] text-muted-foreground">
+        {query ? `Nothing matched "${query}" in your library.` : "This category is empty for your role."}
+      </p>
     </div>
   );
 }
