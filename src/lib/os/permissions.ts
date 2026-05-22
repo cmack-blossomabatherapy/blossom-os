@@ -110,7 +110,6 @@ export type OSModule =
 export const MODULE_ROUTES: Record<OSModule, string> = {
   dashboard: "/",
   command_center: "/command-center",
-  calendar: "/calendar",
   leads: "/leads",
   clients: "/clients",
   staff: "/staff",
