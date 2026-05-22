@@ -138,6 +138,61 @@ const emptyFilters = (): FilterState => ({
   missingOnly: false,
 });
 
+/**
+ * Map of URL search-param keys → FilterState set fields. Kept tiny so the
+ * resulting URL stays human-readable (e.g. ?tab=missing&owner=Sarah+M.).
+ */
+const FILTER_SET_KEYS = {
+  state: "states",
+  owner: "owners",
+  status: "statuses",
+  form: "formStatuses",
+  vob: "vobStatuses",
+  insurance: "insurances",
+} as const;
+
+const VIEW_MODES: ReadonlyArray<ViewMode> = ["list", "pipeline", "followup"];
+
+function parseCsv(v: string | null): string[] {
+  if (!v) return [];
+  return v.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function filtersFromParams(params: URLSearchParams): FilterState {
+  const f = emptyFilters();
+  (Object.entries(FILTER_SET_KEYS) as [keyof typeof FILTER_SET_KEYS, keyof FilterState][])
+    .forEach(([param, field]) => {
+      const vals = parseCsv(params.get(param));
+      if (vals.length) (f[field] as Set<string>) = new Set(vals);
+    });
+  if (params.get("missing") === "1") f.missingOnly = true;
+  return f;
+}
+
+function applyStateToParams(params: URLSearchParams, opts: {
+  view: ViewMode;
+  tab: string;
+  kpi: string | null;
+  query: string;
+  filters: FilterState;
+}) {
+  const next = new URLSearchParams(params);
+  const setOrDelete = (key: string, value: string) => {
+    if (value) next.set(key, value); else next.delete(key);
+  };
+  setOrDelete("view", opts.view === "list" ? "" : opts.view);
+  setOrDelete("tab", opts.tab && opts.tab !== "all" ? opts.tab : "");
+  setOrDelete("kpi", opts.kpi ?? "");
+  setOrDelete("q", opts.query.trim());
+  (Object.entries(FILTER_SET_KEYS) as [keyof typeof FILTER_SET_KEYS, keyof FilterState][])
+    .forEach(([param, field]) => {
+      const set = opts.filters[field] as Set<string>;
+      setOrDelete(param, set.size ? [...set].join(",") : "");
+    });
+  setOrDelete("missing", opts.filters.missingOnly ? "1" : "");
+  return next;
+}
+
 export default function OSLeadsV2() {
   return (
     <IntakeModalsProvider>
