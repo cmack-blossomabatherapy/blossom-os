@@ -9,6 +9,7 @@
  import { cn } from "@/lib/utils";
  import { useClients } from "@/contexts/ClientsContext";
  import { type Client, type ScheduleSlot } from "@/data/clients";
+ import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
 
  /* ---------------- helpers ---------------- */
 
@@ -59,8 +60,15 @@
    return "pending";
  }
 
- function buildSessions(clients: Client[]): SessionItem[] {
+ function buildSessions(
+   clients: Client[],
+   pairingsByClient: Map<string, ClientPairing>,
+ ): SessionItem[] {
    const out: SessionItem[] = [];
+   // Map weekday index (0-6, Sun-Sat) → label used by this page
+   const DOW_TO_DAY: Record<number, Day | null> = {
+     0: null, 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat",
+   };
    for (const c of clients) {
      for (let i = 0; i < c.schedule.length; i++) {
        const s = c.schedule[i];
@@ -76,22 +84,48 @@
          status: statusForClient(c, s),
        });
      }
-     // Surface coverage-risk clients with no scheduled sessions as a synthetic uncovered card.
-     if (c.schedule.length === 0 && (
-       c.stage === "Pending Start Date" ||
-       c.stage === "Active" ||
-       (c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined && c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8)
-     )) {
-       out.push({
-         id: `${c.id}-none`,
-         client: c,
-         day: "Mon",
-         start: "—",
-         end: "—",
-         rbt: c.rbt ?? undefined,
-         bcba: c.bcba ?? undefined,
-         status: c.rbt ? "pending" : "uncovered",
-       });
+     // No explicit schedule slot on the client record? Fall back to the
+     // real recurring pattern derived from CentralReach session history
+     // (last 4 weeks). Each weekday with any RBT hours becomes one slot.
+     if (c.schedule.length === 0) {
+       const pairing = pairingsByClient.get(c.childName);
+       const activeDays = pairing?.weeklyPattern.filter((d) => d.hours > 0) ?? [];
+       if (activeDays.length > 0) {
+         for (const d of activeDays) {
+           const dayIdx = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(d.day);
+           const dayLabel = DOW_TO_DAY[dayIdx];
+           if (!dayLabel) continue;
+           const avgHoursPerSession = Math.max(1, Math.round((d.hours / 4) * 10) / 10);
+           const status: SessionStatus =
+             pairing!.cancellationsLast30d >= 3 ? "coverage_needed" : "confirmed";
+           out.push({
+             id: `${c.id}-cr-${d.day}`,
+             client: c,
+             day: dayLabel,
+             start: "Recurring",
+             end: `~${avgHoursPerSession}h`,
+             rbt: pairing!.rbtName ?? undefined,
+             bcba: pairing!.bcbaName ?? c.bcba ?? undefined,
+             status,
+           });
+         }
+       } else if (
+         c.stage === "Pending Start Date" ||
+         (c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined &&
+           c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8)
+       ) {
+         // Pending start with no CR history yet — show as uncovered card.
+         out.push({
+           id: `${c.id}-none`,
+           client: c,
+           day: "Mon",
+           start: "—",
+           end: "—",
+           rbt: c.rbt ?? undefined,
+           bcba: c.bcba ?? undefined,
+           status: c.rbt ? "pending" : "uncovered",
+         });
+       }
      }
    }
    return out;
@@ -101,6 +135,7 @@
 
  export default function OSScheduling() {
    const { clients } = useClients();
+   const cr = useCentralReachOps();
    const [params, setParams] = useSearchParams();
 
    const [stateFilter, setStateFilter] = useState<string>(params.get("state") ?? "all");
@@ -109,7 +144,10 @@
    );
    const [query, setQuery] = useState(params.get("q") ?? "");
 
-   const allSessions = useMemo(() => buildSessions(clients), [clients]);
+   const allSessions = useMemo(
+     () => buildSessions(clients, cr.pairingsByClient),
+     [clients, cr.pairingsByClient],
+   );
 
    const filtered = useMemo(() => {
      return allSessions.filter((s) => {
