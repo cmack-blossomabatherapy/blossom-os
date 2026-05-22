@@ -193,6 +193,7 @@ import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSBCBAAuthorizations from "./pages/os/OSBCBAAuthorizations";
 import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSBCBAParentTraining from "./pages/os/OSBCBAParentTraining";
+import OSBCBAScheduling from "./pages/os/OSBCBAScheduling";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
