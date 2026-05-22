@@ -185,7 +185,7 @@ function WorkspaceInner() {
 
   return (
     <OSShell>
-      <div className="flex flex-col h-[calc(100vh-4rem)] min-h-0">
+      <div className="flex flex-col min-h-[calc(100vh-8rem)] -mx-4 md:-mx-6 lg:-mx-8 -my-5 bg-background border border-border rounded-2xl overflow-hidden shadow-sm">
         {/* Header */}
         <header className="px-6 pt-6 pb-4 border-b border-border bg-background">
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -249,7 +249,7 @@ function WorkspaceInner() {
         </header>
 
         {/* Split layout */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr]">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] max-h-[calc(100vh-10rem)]">
           {/* LEFT: Lead queue */}
           <aside className={cn(
             "border-r border-border bg-muted/30 overflow-y-auto",
