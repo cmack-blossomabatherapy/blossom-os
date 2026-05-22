@@ -203,6 +203,85 @@ type ViewKey =
   | "qa_ready" | "docs" | "continuation" | "mine"
   | "ga" | "mid_atl" | "md";
 
+/* ───── escalation model ───── */
+
+type EscalationKind = "PR" | "QA" | "State Director" | "Missing Documentation";
+
+interface AuditEntry {
+  id: string;
+  at: string;            // ISO timestamp
+  by: string;            // actor (current coordinator)
+  action: EscalationKind;
+  routedTo: string;      // owner the escalation was routed to
+  fromStatus: OpStatus;
+  toStatus: OpStatus;
+  note: string;
+}
+
+interface EscalationOverlay {
+  opStatus: OpStatus;
+  opTone: Tone;
+  routedTo: string;
+  escalatedAt: string;
+  auditLog: AuditEntry[];
+  automationLog: string[];   // appended automation events
+}
+
+const CURRENT_USER = "Priya K.";
+
+function stateDirectorFor(state: string): string {
+  if (state === "GA") return "Shira (GA State Director)";
+  if (state === "NC") return "Erin (NC State Director)";
+  if (state === "TN") return "Marcus (TN State Director)";
+  if (state === "VA") return "Dana (VA State Director)";
+  if (state === "MD") return "Julianne (MD State Director)";
+  return "State Director";
+}
+
+/** Build the operational consequence of an escalation. */
+function escalationPlan(kind: EscalationKind, item: PT97156Item): {
+  toStatus: OpStatus;
+  toTone: Tone;
+  routedTo: string;
+  note: string;
+  automation: string;
+} {
+  switch (kind) {
+    case "PR":
+      return {
+        toStatus: "PR Needed",
+        toTone: "warn",
+        routedTo: item.bcba,
+        note: `Progress report requested from ${item.bcba} for 97156 continuation.`,
+        automation: `Routed to ${item.bcba} — PR request opened.`,
+      };
+    case "QA":
+      return {
+        toStatus: "QA Review Needed",
+        toTone: "info",
+        routedTo: item.auth.qaOwner ?? "QA Team",
+        note: `Sent to QA for 97156 continuation review.`,
+        automation: `Routed to ${item.auth.qaOwner ?? "QA Team"} — added to QA queue.`,
+      };
+    case "State Director":
+      return {
+        toStatus: "Continuation Risk",
+        toTone: "crit",
+        routedTo: stateDirectorFor(item.auth.state),
+        note: `Escalated to ${stateDirectorFor(item.auth.state)} — continuation at risk.`,
+        automation: `Escalation notice sent to ${stateDirectorFor(item.auth.state)}.`,
+      };
+    case "Missing Documentation":
+      return {
+        toStatus: "Documentation Missing",
+        toTone: "warn",
+        routedTo: item.auth.coordinator,
+        note: `Marked missing documentation — outreach assigned to ${item.auth.coordinator}.`,
+        automation: `Document request task created for ${item.auth.coordinator}.`,
+      };
+  }
+}
+
 const VIEWS: { key: ViewKey; label: string }[] = [
   { key: "all",            label: "All 97156" },
   { key: "expiring",       label: "Expiring Soon" },
