@@ -49,7 +49,15 @@ function urgencyDot(u: "low" | "medium" | "high") {
 
 /* ─────────────────────── page ─────────────────────── */
 
-export default function OSIntakeOperations() {
+interface OSIntakeOperationsProps {
+  title?: string;
+  subtitle?: string;
+}
+
+export default function OSIntakeOperations({
+  title = "Leads",
+  subtitle = "Manage family onboarding and intake readiness from inquiry to operational handoff.",
+}: OSIntakeOperationsProps = {}) {
   const { leads, loading, error, refresh, updateLead } = useLeads();
   const { user, roles } = useAuth();
   const [profileState, setProfileState] = useState<string | null>(null);
@@ -91,10 +99,8 @@ export default function OSIntakeOperations() {
         {/* Header */}
         <header className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Leads</h1>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-xl">
-              Manage family onboarding and intake readiness from inquiry to operational handoff.
-            </p>
+            <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-xl">{subtitle}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="ghost" size="sm" asChild>
