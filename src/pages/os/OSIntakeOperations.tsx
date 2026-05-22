@@ -346,6 +346,7 @@ function IntakePulse({
 function FamiliesNeedingAction({
   leads, onOpen, onMarkPacketSent,
 }: { leads: Lead[]; onOpen: (id: string) => void; onMarkPacketSent: (id: string) => void }) {
+  const modals = useIntakeModals();
   const actionable = useMemo(() => {
     return leads
       .map((l) => ({ lead: l, blocker: primaryBlocker(l), urgency: getUrgency(l) }))
@@ -407,10 +408,11 @@ function FamiliesNeedingAction({
 
               <div className="mt-4 flex flex-wrap items-center gap-1">
                 <QuickAction icon={Phone} label="Call" onClick={() => window.location.href = `tel:${lead.phone}`} disabled={!lead.phone} />
-                <QuickAction icon={MessageSquare} label="Text" onClick={() => toast("SMS coming soon")} />
-                <QuickAction icon={Mail} label="Email" onClick={() => lead.email && (window.location.href = `mailto:${lead.email}`)} disabled={!lead.email} />
+                <QuickAction icon={MessageSquare} label="Text" onClick={() => modals.open({ kind: "comm", channel: "text", lead })} />
+                <QuickAction icon={Mail} label="Email" onClick={() => modals.open({ kind: "comm", channel: "email", lead })} disabled={!lead.email} />
                 <QuickAction icon={Send} label="Packet" onClick={() => onMarkPacketSent(lead.id)} />
-                <QuickAction icon={StickyNote} label="Note" onClick={() => toast("Add note")} />
+                <QuickAction icon={StickyNote} label="Note" onClick={() => modals.open({ kind: "note", lead })} />
+                <QuickAction icon={Flag} label="Escalate" onClick={() => modals.open({ kind: "escalate", lead })} />
                 <button
                   onClick={() => onOpen(lead.id)}
                   className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
