@@ -94,6 +94,7 @@ import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
 import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
 import IntakeDashboard from "./pages/IntakeDashboard";
 import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
+import OSAuthorizations from "./pages/os/OSAuthorizations";
 import SchedulingDashboard from "./pages/SchedulingDashboard";
 import StaffingDashboard from "./pages/StaffingDashboard";
 import ClinicDashboard from "./pages/ClinicDashboard";
@@ -314,12 +315,7 @@ const App = () => (
                   <Route path="/leads" element={<OSIntakeOperations />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<OSClientsOperations />} />
-                  <Route path="/authorizations" element={<OSComingSoon title="Authorizations" tagline="Never lose units or miss an expiration again." icon={FileCheck2} features={[
-                    { title: "Auth lifecycle tracking", description: "Pending, active, expiring, and exhausted auths across every client and payer." },
-                    { title: "Units used vs approved", description: "Real-time burn-down with projected exhaustion dates." },
-                    { title: "Expiration alerts", description: "Configurable warnings 60/30/14/7 days before expiration." },
-                    { title: "Re-auth workflow", description: "Pre-built tasks, owners, and document checklists for renewal cycles." },
-                  ]} />} />
+                  <Route path="/authorizations" element={<OSAuthorizations />} />
                   <Route path="/scheduling" element={<OSComingSoon title="Scheduling" tagline="Modern, drag-and-drop scheduling that respects clinical, payer, and staffing constraints." icon={CIcon} features={[
                     { title: "Smart conflict detection", description: "Prevents double-booking, credential mismatches, and travel-time issues." },
                     { title: "Open coverage board", description: "Visualize uncovered hours by client, region, and service line." },
