@@ -224,13 +224,25 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
   /* ─────────── COMM (text / email preview) ─────────── */
   if (active.kind === "comm") {
     const isEmail = active.channel === "email";
+    const isCall = active.channel === "call";
+    const channelLabel = isCall ? "call" : isEmail ? "email" : "text";
+    const dialogTitle = isCall
+      ? "Log call"
+      : isEmail
+      ? "Draft email"
+      : "Draft text message";
+    const toField = isCall
+      ? resolvedLead?.phone || "—"
+      : isEmail
+      ? resolvedLead?.email || "—"
+      : resolvedLead?.phone || "—";
     return (
       <Dialog open onOpenChange={(o) => !o && close()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isEmail ? "Draft email" : "Draft text message"}</DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              To: {isEmail ? resolvedLead?.email || "—" : resolvedLead?.phone || "—"} · {leadLabel(resolvedLead)}
+              {isCall ? "With" : "To"}: {toField} · {leadLabel(resolvedLead)}
             </DialogDescription>
           </DialogHeader>
           {isEmail && (
@@ -240,13 +252,19 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
             </div>
           )}
           <div>
-            <Label className="text-xs">Message</Label>
+            <Label className="text-xs">{isCall ? "Call notes" : "Message"}</Label>
             <Textarea
               autoFocus
               rows={6}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={isEmail ? "Hi, just checking in…" : "Hi! Just checking in on your intake forms."}
+              placeholder={
+                isCall
+                  ? "Summary of the call, outcome, next step…"
+                  : isEmail
+                  ? "Hi, just checking in…"
+                  : "Hi! Just checking in on your intake forms."
+              }
             />
           </div>
           <DialogFooter>
@@ -258,15 +276,21 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
                 updateLead(resolvedLead.id, {
                   lastContacted: new Date().toISOString(),
                   automationLog: [
-                    `${isEmail ? "Email" : "SMS"} drafted: ${text.trim().slice(0, 80)}`,
+                    `${
+                      isCall ? "Call logged" : isEmail ? "Email drafted" : "SMS drafted"
+                    }: ${text.trim().slice(0, 80)}`,
                     ...resolvedLead.automationLog,
                   ],
                 });
-                toast.success(`${isEmail ? "Email" : "SMS"} logged (preview only)`);
+                toast.success(
+                  isCall
+                    ? "Call logged"
+                    : `${isEmail ? "Email" : "SMS"} logged (preview only)`
+                );
                 close();
               }}
             >
-              Log {isEmail ? "email" : "text"}
+              Log {channelLabel}
             </Button>
           </DialogFooter>
         </DialogContent>
