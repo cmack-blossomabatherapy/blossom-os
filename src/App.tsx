@@ -191,6 +191,7 @@ import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSBCBAAuthorizations from "./pages/os/OSBCBAAuthorizations";
+import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
