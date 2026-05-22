@@ -268,7 +268,7 @@ export default function AuthorizationsDashboard() {
             <Select value={payorFilter} onValueChange={setPayorFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{payors.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Payors" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{owners.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Coordinators" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[ALL, "Awaiting Submission", "Submitted", "Approved", "Denied", "Missing Documentation", "Expiring Soon"].map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Statuses" : item}</SelectItem>)}</SelectContent></Select>
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients, payors, owners..." className="pl-9" /></div>
+            <div className="relative"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients, payors, owners..." className="pl-9" /></div>
           </div>
         </div>
       </header>

@@ -158,7 +158,7 @@ export default function FinanceDashboard() {
             <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}><SelectTrigger><SelectValue placeholder="Client type" /></SelectTrigger><SelectContent>{clientTypes.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Client Types" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={financialFilter} onValueChange={setFinancialFilter}><SelectTrigger><SelectValue placeholder="Financial status" /></SelectTrigger><SelectContent>{financialStatuses.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Financial" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={billingFilter} onValueChange={setBillingFilter}><SelectTrigger><SelectValue placeholder="Billing status" /></SelectTrigger><SelectContent>{billingStatuses.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Billing" : item}</SelectItem>)}</SelectContent></Select>
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients…" className="pl-9" /></div>
+            <div className="relative"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients…" className="pl-9" /></div>
           </div>
         </div>
       </header>

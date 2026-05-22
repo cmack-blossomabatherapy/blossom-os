@@ -133,7 +133,7 @@ export default function HRAssistant() {
         {/* History panel */}
         <GlassPanel bodyClassName="p-3 flex flex-col">
           <div className="relative mb-2">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search chats…" className="pl-9 h-9" />
           </div>
           <ScrollArea className="max-h-[60vh]">

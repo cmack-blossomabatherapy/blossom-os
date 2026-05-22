@@ -33,7 +33,7 @@ export function AutomationControlBar({
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[240px] max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute z-10 left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search name, trigger, action…"
             value={searchQuery}

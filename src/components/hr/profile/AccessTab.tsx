@@ -322,7 +322,7 @@ export function AccessTab({ employee }: { employee: Employee }) {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Search accounts</label>
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Search className="absolute z-10 left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   value={accountQuery}
                   onChange={(e) => setAccountQuery(e.target.value)}

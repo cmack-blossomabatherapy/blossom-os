@@ -406,7 +406,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               </Button>
             </div>
             <div className="relative mt-4">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="pointer-events-none absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={mobileNavQuery}
                 onChange={(e) => setMobileNavQuery(e.target.value)}

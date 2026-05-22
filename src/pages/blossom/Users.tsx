@@ -32,7 +32,7 @@ export default function BlossomUsers() {
       <Card className="p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search name, role, department…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
           </div>
           <span className="text-xs text-muted-foreground">{filtered.length} users</span>

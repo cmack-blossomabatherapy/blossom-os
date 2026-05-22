@@ -184,7 +184,7 @@ export default function IntakeDashboard() {
             <Select value={stateFilter} onValueChange={setStateFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{states.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All States" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{owners.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Intake Owners" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{sources.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Lead Sources" : item}</SelectItem>)}</SelectContent></Select>
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search leads, owners, phones..." className="pl-9" /></div>
+            <div className="relative"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search leads, owners, phones..." className="pl-9" /></div>
           </div>
         </div>
       </header>

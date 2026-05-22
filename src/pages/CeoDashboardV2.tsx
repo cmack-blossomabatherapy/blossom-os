@@ -634,7 +634,7 @@ export default function CeoDashboardV2() {
         {/* CONTROL BAR */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -931,7 +931,7 @@ export default function CeoDashboardV2() {
                 </TabsList>
                 {(detailTab === "patients" || detailTab === "rbts") && (
                   <div className="relative mt-3">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={detailSearch}
                       onChange={(e) => setDetailSearch(e.target.value)}

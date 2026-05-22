@@ -296,7 +296,7 @@ export default function Recruiting() {
       <div className="rounded-xl border border-border/60 bg-card p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative min-w-[280px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search candidate, region, recruiter, status, or next action..." className="pl-9 h-9" />
           </div>
           {viewModes.map((mode) => (

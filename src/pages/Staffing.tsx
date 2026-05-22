@@ -558,7 +558,7 @@ export default function Staffing() {
       <div className="space-y-4">
         <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="relative min-w-[280px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client, RBT, BCBA, owner, clinic..." className="pl-9" /></div>
+            <div className="relative min-w-[280px] flex-1"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search client, RBT, BCBA, owner, clinic..." className="pl-9" /></div>
             {[['state', states], ['clinic', clinics], ['owner', owners], ['status', statusOptions], ['urgency', urgencyOptions], ['rbt', rbtNames], ['bcba', ['All', ...bcbaNames]], ['region', regions], ['availability', ['All', 'Morning', 'Afternoon', 'Evening']], ['compliance', ['All', 'Ready', 'Needs Review', 'Incomplete']]].map(([key, values]) => (
               <Select key={key as string} value={filters[key as keyof typeof filters]} onValueChange={(value) => setFilters((f) => ({ ...f, [key as string]: value }))}>
                 <SelectTrigger className="h-9 w-[150px]"><SelectValue placeholder={String(key)} /></SelectTrigger>

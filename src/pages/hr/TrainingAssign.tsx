@@ -237,7 +237,7 @@ export default function TrainingAssign() {
                 </SelectContent>
               </Select>
               <div className="relative flex-1 min-w-[180px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Search className="absolute z-10 left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-full md:w-[240px]" />
               </div>
             </div>

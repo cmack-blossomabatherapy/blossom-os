@@ -42,7 +42,7 @@ export function ClientControlBar({
     <div className="space-y-3 sticky top-0 z-30 bg-background/85 backdrop-blur-xl pt-1 pb-3 -mx-1 px-1 border-b border-border/40">
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="absolute z-10 left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             placeholder="Search by client, parent, ID, BCBA, RBT..."
             className="pl-8 h-9 text-sm"

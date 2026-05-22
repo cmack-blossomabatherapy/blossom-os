@@ -261,7 +261,7 @@ export default function SchedulingDashboard() {
             <Select value={rbtFilter} onValueChange={setRbtFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{rbts.map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All RBTs" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[ALL, ...stages].map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Scheduling Statuses" : item}</SelectItem>)}</SelectContent></Select>
             <Select value={startRange} onValueChange={setStartRange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[ALL, "This Week", "Next 30 Days", "Missing"].map((item) => <SelectItem key={item} value={item}>{item === ALL ? "All Start Dates" : item}</SelectItem>)}</SelectContent></Select>
-            <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients, staff, clinics..." className="pl-9" /></div>
+            <div className="relative"><Search className="absolute z-10 left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients, staff, clinics..." className="pl-9" /></div>
           </div>
         </div>
       </header>
