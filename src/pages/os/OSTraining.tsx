@@ -456,6 +456,11 @@ function SubGroup({
         <span className="text-[11px] text-muted-foreground">{items.length}</span>
       </div>
       <div className="mt-3 space-y-1">
+        {items.length === 0 && (
+          <p className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-6 text-center text-[12px] text-muted-foreground">
+            No modules yet.
+          </p>
+        )}
         {items.map((t) => {
           const Icon = TYPE_ICON[t.type] ?? FileText;
           const p = getProgress(t.id);
