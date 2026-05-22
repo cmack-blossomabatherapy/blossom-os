@@ -164,6 +164,7 @@ import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
 import OSIntakeWorkspace from "./pages/os/OSIntakeWorkspace";
 import OSClients from "./pages/os/OSClients";
+import OSClientsOperations from "./pages/os/OSClientsOperations";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
 import OSStateDirector from "./pages/os/OSStateDirector";
