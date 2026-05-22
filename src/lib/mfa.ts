@@ -58,10 +58,6 @@ export type MfaStatus =
 export async function resolveMfaStatus(userId: string | undefined): Promise<MfaStatus> {
   if (!userId) return { state: "no_session" };
 
-  const { data: aalData, error: aalErr } =
-    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalErr) return { state: "needs_challenge" };
-
   const { data: factorsData } = await supabase.auth.mfa.listFactors();
   const verifiedTotp = (factorsData?.totp ?? []).filter(
     (f) => f.status === "verified",
@@ -69,11 +65,19 @@ export async function resolveMfaStatus(userId: string | undefined): Promise<MfaS
 
   if (verifiedTotp.length === 0) return { state: "needs_enroll" };
 
-  if (aalData?.currentLevel !== "aal2") return { state: "needs_challenge" };
+  // Trust this device for 30 days based on the local stamp, regardless of
+  // session AAL. A fresh email+password sign-in always starts at aal1, so
+  // gating on aal2 would force a TOTP challenge on every sign-in.
+  if (isMfaStampValid(userId)) return { state: "ok" };
 
-  if (!isMfaStampValid(userId)) return { state: "needs_refresh" };
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData?.currentLevel === "aal2") {
+    // Already verified in this session — slide the 30-day window forward.
+    markMfaVerified(userId);
+    return { state: "ok" };
+  }
 
-  return { state: "ok" };
+  return { state: "needs_challenge" };
 }
 
 /** Unenroll every TOTP factor (verified or pending). */
