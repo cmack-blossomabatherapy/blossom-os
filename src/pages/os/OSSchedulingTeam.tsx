@@ -142,18 +142,18 @@ export default function OSSchedulingTeam() {
           <KpiCard
             icon={CalendarClock} label="Pending Start Date" value={counts.pending_start}
             hint="Paired · start not confirmed"
-            to="/clients?stage=pending_start"
+            to="/scheduling-workspace?view=pending_start"
           />
           <KpiCard
             icon={ShieldAlert} label="Coverage Risks" value={counts.coverage_risk}
             hint="Paused · flaked · below target"
-            to="/scheduling-workspace?view=risks"
+            to="/scheduling-workspace?view=coverage_risk"
             tone="warn"
           />
           <KpiCard
             icon={CheckCircle2} label="Ready to Schedule" value={counts.ready_to_schedule}
             hint="Cleared · awaiting schedule build"
-            to="/scheduling?view=ready"
+            to="/scheduling-workspace?view=ready_to_schedule"
           />
         </section>
 
@@ -198,10 +198,10 @@ export default function OSSchedulingTeam() {
             <ul className="space-y-1.5">
               <SignalRow label="GA staffing items" value={gaCount} to="/scheduling-workspace?view=needs_rbt&state=GA" icon={MapPin} />
               <SignalRow label="Non-GA staffing items" value={nonGaCount} to="/scheduling-workspace?view=needs_rbt" icon={MapPin} />
-              <SignalRow label="Waiting on BCBA confirmation" value={waitingBcba} to="/bcba" icon={Users} />
-              <SignalRow label="Blocked by missing availability" value={blockedNoAvailability} to="/scheduling-workspace?view=availability" icon={AlertTriangle} />
-              <SignalRow label="RBTs available for pairing" value={rbtsAvailable} to="/rbt" icon={UserPlus} />
-              <SignalRow label="Schedule conflicts to review" value={conflictCount} to="/scheduling-workspace?view=conflicts" icon={AlertTriangle} />
+              <SignalRow label="Waiting on BCBA confirmation" value={waitingBcba} to="/scheduling-workspace?view=pairing_pending" icon={Users} />
+              <SignalRow label="Blocked by missing availability" value={blockedNoAvailability} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
+              <SignalRow label="RBTs available for pairing" value={rbtsAvailable} to="/scheduling-workspace?view=needs_rbt" icon={UserPlus} />
+              <SignalRow label="Schedule conflicts to review" value={conflictCount} to="/scheduling-workspace?view=coverage_risk" icon={AlertTriangle} />
             </ul>
           </Card>
         </section>
@@ -230,7 +230,7 @@ export default function OSSchedulingTeam() {
                 {upcomingStarts.map((c) => (
                   <li key={c.id} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Link to="/clients" className="truncate text-[13px] font-medium text-foreground hover:underline">
+                      <Link to={`/scheduling-workspace?view=pending_start&clientId=${encodeURIComponent(c.id)}`} className="truncate text-[13px] font-medium text-foreground hover:underline">
                         {c.childName}
                       </Link>
                       <span className="rounded-full bg-card border border-border/70 px-2 py-0.5 text-[10.5px] text-foreground/70">
@@ -256,7 +256,7 @@ export default function OSSchedulingTeam() {
                 {coverageIssues.map((c) => (
                   <li key={c.id} className="rounded-xl border border-border/60 bg-muted/40 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Link to="/clients" className="truncate text-[13px] font-medium text-foreground hover:underline">
+                      <Link to={`/scheduling-workspace?view=coverage_risk&clientId=${encodeURIComponent(c.id)}`} className="truncate text-[13px] font-medium text-foreground hover:underline">
                         {c.childName}
                       </Link>
                       <span className="rounded-full bg-card border border-border/70 px-2 py-0.5 text-[10.5px] text-foreground/70">
