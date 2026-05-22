@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/sheet";
 import {
   Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Sparkles, Send,
-  X, Settings2, ExternalLink, GraduationCap, Filter,
+  X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
+  FileType2, MessageSquare, Cpu, PlayCircle, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
@@ -40,23 +41,32 @@ export default function OSResourceLibrary() {
   const [recentlyOpened, setRecentlyOpened] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
+  const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
 
   // Role-aware scope: everything else flows from this list.
   const scope = useMemo(() => visibleResources(role, activeState), [role, activeState]);
-  const pinned = useMemo(() => pinnedFor(scope), [scope]);
-  const recent = useMemo(() => recentFor(scope, 6), [scope]);
+  const filteredScope = useMemo(
+    () => (typeFilter ? scope.filter((r) => r.type === typeFilter) : scope),
+    [scope, typeFilter]
+  );
+  const pinned = useMemo(() => pinnedFor(filteredScope), [filteredScope]);
+  const recent = useMemo(() => recentFor(filteredScope, 6), [filteredScope]);
+  const quickLinks = useMemo(
+    () => scope.filter((r) => r.type === "Link" || r.type === "Tango").slice(0, 6),
+    [scope]
+  );
   const searchResults = useMemo(
-    () => (query ? searchResources(query, scope) : []),
-    [query, scope]
+    () => (query ? searchResources(query, filteredScope) : []),
+    [query, filteredScope]
   );
 
   const roleLabelText = roleLabel(role);
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
-    if (activeCategory) return resourcesByCategory(activeCategory, scope);
+    if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
-  }, [query, activeCategory, searchResults, scope]);
+  }, [query, activeCategory, searchResults, filteredScope]);
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
