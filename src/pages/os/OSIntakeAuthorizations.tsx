@@ -369,6 +369,7 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
                   const reason = text.trim();
                   await updateClient(active.client.id, {
                     blockers: Array.from(new Set([...(active.client.blockers ?? []), `Escalated to ${target}: ${reason}`])),
+                    lastActivity: new Date().toISOString(),
                   });
                   await appendTimeline(active.client.id, `Escalated to ${target}: ${reason}`, "system");
                   await appendAutomation(active.client.id, `Escalation → ${target}: ${reason.slice(0, 80)}`);
@@ -1217,6 +1218,14 @@ function AuthDrawer({
               disabled={c.authStatus === "Denied"}
             >
               <X className="mr-1.5 h-3.5 w-3.5" /> Deny
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+              onClick={() => onAction({ kind: "escalate", client: c })}
+            >
+              <AlertTriangle className="mr-1.5 h-3.5 w-3.5" /> Escalate
             </Button>
             <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
               <FileWarning className="mr-1.5 h-3.5 w-3.5" /> Request Info
