@@ -70,13 +70,14 @@ function blockerOf(c: Client, b: Bucket): string {
   return "—";
 }
 
-function nextActionOf(b: Bucket): { label: string; to: string } {
+function nextActionOf(b: Bucket, clientId?: string): { label: string; to: string } {
+  const cid = clientId ? `&clientId=${encodeURIComponent(clientId)}` : "";
   switch (b) {
-    case "needs_rbt":         return { label: "Assign RBT",         to: "/scheduling-workspace?view=needs_rbt" };
-    case "pending_start":     return { label: "Confirm Start Date", to: "/clients?stage=pending_start" };
-    case "ready_to_schedule": return { label: "Build Schedule",     to: "/scheduling?view=ready" };
-    case "coverage_risk":     return { label: "Resolve Risk",       to: "/scheduling-workspace?view=risks" };
-    default:                  return { label: "Open Client",         to: "/clients" };
+    case "needs_rbt":         return { label: "Assign RBT",         to: `/scheduling-workspace?view=needs_rbt${cid}` };
+    case "pending_start":     return { label: "Confirm Start Date", to: `/scheduling-workspace?view=pending_start${cid}` };
+    case "ready_to_schedule": return { label: "Build Schedule",     to: `/scheduling-workspace?view=ready_to_schedule${cid}` };
+    case "coverage_risk":     return { label: "Resolve Risk",       to: `/scheduling-workspace?view=coverage_risk${cid}` };
+    default:                  return { label: "Open Client",         to: `/scheduling-workspace${clientId ? `?clientId=${encodeURIComponent(clientId)}` : ""}` };
   }
 }
 
@@ -165,13 +166,13 @@ export default function OSSchedulingTeam() {
             ) : (
               <ul className="divide-y divide-border/60">
                 {priorities.map(({ c, b }) => {
-                  const action = nextActionOf(b);
+                  const action = nextActionOf(b, c.id);
                   return (
                     <li key={c.id} className="flex items-center gap-3 py-3">
                       <BucketDot bucket={b} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <Link to="/clients" className="truncate text-[14px] font-medium tracking-tight text-foreground hover:underline">
+                          <Link to={action.to} className="truncate text-[14px] font-medium tracking-tight text-foreground hover:underline">
                             {c.childName}
                           </Link>
                           <span className="text-[11px] text-muted-foreground">· {c.state}</span>
