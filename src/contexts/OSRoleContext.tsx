@@ -123,3 +123,8 @@ export function useOSRole() {
   if (!ctx) throw new Error("useOSRole must be used within <OSRoleProvider>");
   return ctx;
 }
+
+/** Returns the OS role context or null if not within an OSRoleProvider. */
+export function useOSRoleSafe() {
+  return useContext(OSRoleContext);
+}
