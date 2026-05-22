@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
   PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
@@ -138,6 +138,61 @@ const emptyFilters = (): FilterState => ({
   missingOnly: false,
 });
 
+/**
+ * Map of URL search-param keys → FilterState set fields. Kept tiny so the
+ * resulting URL stays human-readable (e.g. ?tab=missing&owner=Sarah+M.).
+ */
+const FILTER_SET_KEYS = {
+  state: "states",
+  owner: "owners",
+  status: "statuses",
+  form: "formStatuses",
+  vob: "vobStatuses",
+  insurance: "insurances",
+} as const;
+
+const VIEW_MODES: ReadonlyArray<ViewMode> = ["list", "pipeline", "followup"];
+
+function parseCsv(v: string | null): string[] {
+  if (!v) return [];
+  return v.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function filtersFromParams(params: URLSearchParams): FilterState {
+  const f = emptyFilters();
+  (Object.entries(FILTER_SET_KEYS) as [keyof typeof FILTER_SET_KEYS, keyof FilterState][])
+    .forEach(([param, field]) => {
+      const vals = parseCsv(params.get(param));
+      if (vals.length) (f[field] as Set<string>) = new Set(vals);
+    });
+  if (params.get("missing") === "1") f.missingOnly = true;
+  return f;
+}
+
+function applyStateToParams(params: URLSearchParams, opts: {
+  view: ViewMode;
+  tab: string;
+  kpi: string | null;
+  query: string;
+  filters: FilterState;
+}) {
+  const next = new URLSearchParams(params);
+  const setOrDelete = (key: string, value: string) => {
+    if (value) next.set(key, value); else next.delete(key);
+  };
+  setOrDelete("view", opts.view === "list" ? "" : opts.view);
+  setOrDelete("tab", opts.tab && opts.tab !== "all" ? opts.tab : "");
+  setOrDelete("kpi", opts.kpi ?? "");
+  setOrDelete("q", opts.query.trim());
+  (Object.entries(FILTER_SET_KEYS) as [keyof typeof FILTER_SET_KEYS, keyof FilterState][])
+    .forEach(([param, field]) => {
+      const set = opts.filters[field] as Set<string>;
+      setOrDelete(param, set.size ? [...set].join(",") : "");
+    });
+  setOrDelete("missing", opts.filters.missingOnly ? "1" : "");
+  return next;
+}
+
 export default function OSLeadsV2() {
   return (
     <IntakeModalsProvider>
@@ -149,17 +204,33 @@ export default function OSLeadsV2() {
 function OSLeadsV2Inner() {
   const { leads, loading, error, refresh, bulkUpdate, moveStage, assignOwner } = useLeads();
   const { user, roles } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profileState, setProfileState] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
-  const [view, setView] = useState<ViewMode>("list");
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<FilterState>(emptyFilters());
-  const [activeKpi, setActiveKpi] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("all");
+  // Hydrate UI state from URL on first render so deep-links work.
+  const [view, setView] = useState<ViewMode>(() => {
+    const v = searchParams.get("view") as ViewMode | null;
+    return v && VIEW_MODES.includes(v) ? v : "list";
+  });
+  const [query, setQuery] = useState<string>(() => searchParams.get("q") ?? "");
+  const [filters, setFilters] = useState<FilterState>(() => filtersFromParams(searchParams));
+  const [activeKpi, setActiveKpi] = useState<string | null>(() => searchParams.get("kpi"));
+  const [activeTab, setActiveTab] = useState<string>(() => searchParams.get("tab") || "all");
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+
+  // Mirror state → URL. Uses replace so filter tweaks don't pollute history.
+  useEffect(() => {
+    const next = applyStateToParams(searchParams, {
+      view, tab: activeTab, kpi: activeKpi, query, filters,
+    });
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, activeTab, activeKpi, query, filters]);
 
   // Load profile state + display_name for scoping.
   useEffect(() => {
