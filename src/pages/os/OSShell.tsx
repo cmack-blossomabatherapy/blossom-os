@@ -470,9 +470,10 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                 <button
                   onClick={() => navigate("/ai/assistant")}
                   aria-label="Ask Blossom AI"
-                  className="os-glass-icon relative inline-flex items-center justify-center bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-white hover:opacity-90"
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_8px_20px_-8px_hsl(265_70%_50%/0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_hsl(265_70%_50%/0.55)]"
+                  style={{ background: "linear-gradient(135deg, hsl(265 85% 62%), hsl(285 85% 68%))" }}
                 >
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" strokeWidth={2.25} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Ask Blossom AI</TooltipContent>
