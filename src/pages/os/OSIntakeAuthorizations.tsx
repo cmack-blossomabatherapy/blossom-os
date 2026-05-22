@@ -1140,10 +1140,19 @@ function AuthDrawer({
 
         <div className="border-t border-border bg-card/95 backdrop-blur px-4 py-3 shrink-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Button size="sm" onClick={() => onAction({ kind: "messageTeam", client: c, team: "Authorization" })}>
+            <Button
+              size="sm"
+              onClick={() => { void submitAuth(); }}
+              disabled={c.authStatus === "Approved" || c.authStatus === "Submitted"}
+            >
               <Send className="mr-1.5 h-3.5 w-3.5" /> Submit Auth
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "messageTeam", client: c, team: "QA" })}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { void sendToQA(); }}
+              disabled={c.qaStatus === "In Review" || c.qaStatus === "Complete"}
+            >
               <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
             </Button>
             <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
