@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { OSShell } from "./OSShell";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -45,6 +47,16 @@ const ROLE_DEPARTMENT: Record<string, string> = {
 export default function OSTraining() {
   const navigate = useNavigate();
   const { role } = useOSRole();
+  const { user } = useAuth();
+  const [displayName, setDisplayName] = useState<string>("");
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setDisplayName((data?.display_name as string) ?? ""));
+  }, [user?.id]);
+  const firstName = (displayName || user?.email?.split("@")[0] || "there").split(" ")[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const [query, setQuery] = useState("");
   const { trainings } = useAcademy(); // subscribe to store
 
@@ -98,12 +110,21 @@ export default function OSTraining() {
         <div className="min-w-0 space-y-12">
           {/* HERO */}
           <header>
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Training Academy
-            </p>
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              <span>Training Academy</span>
+              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+              <span className="capitalize">{role.replace(/_/g, " ")}</span>
+            </div>
             <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
-              Operational learning built around your role.
+              {greeting}, <span className="capitalize">{firstName}</span>.
             </h1>
+            <p className="mt-1 text-[14px] text-muted-foreground">
+              {overall.avg >= 80
+                ? "You're nearly there — finish your remaining modules to complete your role journey."
+                : overall.avg > 0
+                ? `You're ${overall.avg}% through your training. Let's keep moving.`
+                : "Welcome to the Intake Academy. Start with your role journey below."}
+            </p>
 
             <div className="relative mt-5 max-w-xl">
               <Search className="pointer-events-none absolute z-10 left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
