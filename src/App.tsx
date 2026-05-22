@@ -41,6 +41,8 @@ import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import HRDashboard from "./pages/hr/HRDashboard";
+import HRSuiteHome from "./pages/hr/HRSuiteHome";
+import TrainingManagementCenter from "./pages/hr/TrainingManagementCenter";
 import TrainingHub from "./pages/TrainingHub";
 import TrainingDepartment from "./pages/TrainingDepartment";
 import TrainingCourse from "./pages/TrainingCourse";
@@ -374,7 +376,8 @@ const App = () => (
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
-                  <Route path="/hr" element={<OSPlaceholder title="HR Suite" description="Employee overview, onboarding progress, recruiting pipeline, evaluations, compliance tracking." icon={Building2} />} />
+                  <Route path="/hr" element={<HRSuiteHome />} />
+                  <Route path="/hr/training-center" element={<TrainingManagementCenter />} />
                   <Route path="/user-management" element={<OSUserManagement />} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
