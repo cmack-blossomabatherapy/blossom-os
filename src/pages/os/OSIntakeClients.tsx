@@ -766,6 +766,8 @@ function ClientDrawer({
   const lead = c.leadId ? leads.find((l) => l.id === c.leadId) : undefined;
   const handoff = handoffChecklist(c);
   const handoffState = handoffStatus(c);
+  const nba = nextBestAction(c);
+  const nbaStyle = NBA_STYLES[nba.tone];
 
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -788,6 +790,34 @@ function ClientDrawer({
         </div>
 
         <div className="px-6 py-5 space-y-6">
+          {/* Next-Best-Action banner */}
+          <section className={cn(
+            "rounded-2xl border p-4 shadow-[0_18px_40px_-28px_hsl(220_60%_40%/0.25)]",
+            nbaStyle.wrap,
+          )}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <span className={cn("grid h-9 w-9 place-items-center rounded-xl bg-white shadow-sm", nbaStyle.icon)}>
+                  <Sparkles className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    What should happen next
+                  </p>
+                  <p className="mt-0.5 text-[15px] font-semibold tracking-tight">{nba.label}</p>
+                  <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">{nba.why}</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className={cn("shrink-0", nbaStyle.chip)}
+                onClick={() => onAction({ kind: "followUp", client: c })}
+              >
+                Take action <ArrowRightCircle className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </section>
+
           <Section title="Client Overview">
             <KV k="Patient" v={c.childName} />
             <KV k="Parent/Guardian" v={c.parentName || "—"} />
