@@ -165,6 +165,93 @@ function nextAction(c: Client): string {
   return "Review with auth team";
 }
 
+/* ──────── SOP-aligned status tabs ──────── */
+
+type StatusTabKey =
+  | "all" | "awaiting" | "submitted" | "approved" | "denied"
+  | "expiring" | "qa" | "missing" | "flaked" | "priority";
+
+function daysUntilExpiration(c: Client): number | null {
+  const dates = [
+    ...(c.authorizations ?? []).map((a) => a.expirationDate).filter(Boolean) as string[],
+    c.nextReauthDate ?? null,
+  ].filter(Boolean) as string[];
+  if (dates.length === 0) return null;
+  const soonest = dates
+    .map((d) => new Date(d).getTime())
+    .filter((t) => !Number.isNaN(t))
+    .sort((a, b) => a - b)[0];
+  if (!soonest) return null;
+  return Math.ceil((soonest - Date.now()) / 86_400_000);
+}
+
+function hasMissingDocs(c: Client): boolean {
+  return Boolean(
+    c.blockers?.some((b) => /missing|consent|insurance|doc|referral|diagnosis/i.test(b)) ||
+    c.authorizations?.some((a) => (a.missingDocs?.length ?? 0) > 0),
+  );
+}
+
+function isFlaked(c: Client): boolean {
+  return Boolean(c.blockers?.some((b) => /flake|no\s*show|unreachable/i.test(b)));
+}
+
+const STATUS_TABS: { key: StatusTabKey; label: string; match: (c: Client) => boolean }[] = [
+  { key: "all", label: "All", match: () => true },
+  { key: "awaiting", label: "Awaiting Submission", match: (c) => simpleAuth(c) === "Ready for Submission" || c.authStatus === "Not Submitted" },
+  { key: "submitted", label: "Submitted", match: (c) => c.authStatus === "Submitted" },
+  { key: "approved", label: "Approved", match: (c) => c.authStatus === "Approved" },
+  { key: "denied", label: "Denied", match: (c) => c.authStatus === "Denied" },
+  { key: "expiring", label: "Expiring Soon", match: (c) => {
+    const d = daysUntilExpiration(c);
+    return c.authStatus === "Expiring Soon" || (d !== null && d <= 90 && d >= 0);
+  } },
+  { key: "qa", label: "In QA Review", match: (c) => c.qaStatus === "In Review" || c.authorizations?.some((a) => a.qaStatus === "In Review") === true },
+  { key: "missing", label: "Missing Information", match: hasMissingDocs },
+  { key: "flaked", label: "Flaked Client", match: isFlaked },
+  { key: "priority", label: "High Priority", match: (c) => {
+    const d = daysUntilExpiration(c);
+    return (
+      c.authStatus === "Denied" ||
+      (d !== null && d <= 30 && d >= 0) ||
+      (c.daysInStage ?? 0) >= 14 ||
+      Boolean(authBlocker(c))
+    );
+  } },
+];
+
+/* ──────── Next-best-action engine ──────── */
+
+type NBA = { label: string; tone: "warn" | "info" | "ok"; why: string };
+function nextBestAction(c: Client): NBA {
+  const d = daysUntilExpiration(c);
+  if (c.authStatus === "Denied") {
+    return { label: "Review denial & resubmit", tone: "warn", why: "Payor returned a denial — review reason and prepare resubmission." };
+  }
+  if (hasMissingDocs(c)) {
+    return { label: "Request missing information", tone: "warn", why: "Required intake documents are missing — request from family or BCBA." };
+  }
+  if (c.qaStatus === "In Review") {
+    return { label: "Resolve QA review", tone: "warn", why: "Authorization is in QA — clear any QA flags before submission." };
+  }
+  if (c.authStatus === "Not Submitted" && simpleAuth(c) === "Ready for Submission") {
+    return { label: "Submit authorization", tone: "info", why: "Packet is intake-complete and ready for the auth team to submit." };
+  }
+  if (d !== null && d <= 30 && d >= 0) {
+    return { label: "Start reassessment now", tone: "warn", why: `Authorization expires in ${d} day${d === 1 ? "" : "s"} — reassessment overdue.` };
+  }
+  if (d !== null && d <= 90 && d >= 0) {
+    return { label: "Start reassessment workflow", tone: "info", why: `Authorization expires in ${d} days — kick off reassessment with BCBA.` };
+  }
+  if (c.authStatus === "Submitted") {
+    return { label: "Follow up with payor", tone: "info", why: "Authorization is awaiting payor response — confirm receipt if 5+ days old." };
+  }
+  if (c.authStatus === "Approved") {
+    return { label: "Operationally healthy", tone: "ok", why: "Authorization is current — no action required from intake." };
+  }
+  return { label: "Review with auth team", tone: "info", why: "Confirm next operational step for this authorization." };
+}
+
 /* ───────────────────────── modals ───────────────────────── */
 
 type AuthModal =
