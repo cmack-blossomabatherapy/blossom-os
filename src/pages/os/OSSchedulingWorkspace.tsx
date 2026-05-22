@@ -250,7 +250,7 @@ export default function OSSchedulingWorkspace() {
 
 /* ---------------- subcomponents ---------------- */
 
-function Chip({ label, value, tone }: { label: string; value: number; tone: "destructive" | "warning" | "success" | "primary" }) {
+function Chip({ label, value, tone, loading }: { label: string; value: number; tone: "destructive" | "warning" | "success" | "primary"; loading?: boolean }) {
   const toneClass = {
     destructive: "text-destructive",
     warning: "text-warning",
@@ -259,7 +259,7 @@ function Chip({ label, value, tone }: { label: string; value: number; tone: "des
   }[tone];
   return (
     <div className="inline-flex items-center gap-2 h-9 px-3 rounded-full bg-card border border-border/70 text-sm">
-      <span className={cn("font-semibold tabular-nums", toneClass)}>{value}</span>
+      <span className={cn("font-semibold tabular-nums", toneClass)}>{loading ? "…" : value}</span>
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
