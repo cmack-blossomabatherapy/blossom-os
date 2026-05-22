@@ -8,7 +8,7 @@ import {
 import { Navigate } from "react-router-dom";
 
 const MODULE_LABELS: Record<OSModule, string> = {
-  dashboard: "Dashboard", command_center: "Command Center", calendar: "Calendar",
+  dashboard: "Dashboard", command_center: "Command Center",
   leads: "Leads", intake: "Intake", clients: "Clients", authorizations: "Authorizations",
   scheduling: "Scheduling", cases: "Case Management",
   staff: "RBT / BCBA", recruiting: "Recruiting", credentialing: "Credentialing",
