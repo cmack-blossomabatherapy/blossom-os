@@ -46,9 +46,11 @@ const PROMPTS: Partial<Record<OSRole, QuickPrompt[]>> = {
     ...SHARED,
   ],
   scheduling_team: [
-    { id: "st-need", label: "Clients Needing Staffing", prompt: "Which clients still need staffing this week?", category: "operations" },
-    { id: "st-overloaded", label: "Overloaded RBTs", prompt: "Which RBTs are overloaded?", category: "operations" },
-    { id: "st-risks", label: "Scheduling Risks", prompt: "Show me today's scheduling risks.", category: "operations" },
+    { id: "st-uncov", label: "Uncovered Clients (14d+)", prompt: "List clients with no 97153 (RBT direct) session in the last 14 days, grouped by state. Recommend next coordination step for each.", category: "operations" },
+    { id: "st-atrisk", label: "Coverage Forming Gaps", prompt: "Which active clients have their last RBT session 7-13 days ago? Flag any with 3+ cancellations in the last 30 days.", category: "operations" },
+    { id: "st-load", label: "RBT Load Last 7 Days", prompt: "Show RBTs sorted by hours last 7 days. Flag anyone above 35h (overloaded) or under 10h (under-utilized) so we can rebalance.", category: "operations" },
+    { id: "st-cancel", label: "Cancellation Trend", prompt: "Summarize client cancellations in the last 7 and 30 days from CentralReach. Identify any clinics or states trending up.", category: "operations" },
+    { id: "st-bcba", label: "BCBA Caseload Spread", prompt: "Show BCBAs by distinct active clients in the last 30 days. Flag anyone over 12 clients or with no recent 97155.", category: "operations" },
     ...SHARED,
   ],
   recruiting_team: [

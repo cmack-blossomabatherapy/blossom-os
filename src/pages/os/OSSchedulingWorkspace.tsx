@@ -9,7 +9,9 @@ import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { type Client } from "@/data/clients";
 import { useClients } from "@/contexts/ClientsContext";
-import { getClientStaffingNeeds, suggestStaffingMatches, mockRBTProfiles } from "@/data/staffing";
+import { useCentralReachOps, type ProviderRosterEntry, type CoverageRiskRow } from "@/hooks/useCentralReachOps";
+
+const RBT_TARGET_HOURS = 32;
 
 /* ---------------- helpers ---------------- */
 
@@ -66,6 +68,7 @@ const VIEW_TO_BUCKET: Record<string, WorkBucket> = {
 
 export default function OSSchedulingWorkspace() {
   const { clients } = useClients();
+  const cr = useCentralReachOps();
   const [params, setParams] = useSearchParams();
 
   // Initialize filters from URL so deep links pre-apply correctly.
@@ -125,7 +128,11 @@ export default function OSSchedulingWorkspace() {
     return k;
   }, [queue]);
 
-  const availableRbts = mockRBTProfiles.filter((r) => r.status === "Available").length;
+  // RBT availability is derived from CentralReach last-7d hours vs a 32h soft cap.
+  const availableRbts = useMemo(
+    () => cr.rbtRoster.filter((r) => r.hoursLast7d < RBT_TARGET_HOURS - 4).length,
+    [cr.rbtRoster],
+  );
 
   return (
     <OSShell>
@@ -155,9 +162,10 @@ export default function OSSchedulingWorkspace() {
           {/* Operational chips */}
           <div className="flex flex-wrap items-center gap-2">
             <Chip label="Needs RBT" value={counts.needs_rbt} tone="destructive" />
-            <Chip label="Coverage Risks" value={counts.coverage_risk} tone="warning" />
+            <Chip label="Uncovered (CR)" value={cr.counts.uncoveredClients} tone="destructive" loading={cr.loading} />
+            <Chip label="At Risk (CR)" value={cr.counts.atRiskClients} tone="warning" loading={cr.loading} />
             <Chip label="Pending Starts" value={counts.pending_start} tone="primary" />
-            <Chip label="Available RBTs" value={availableRbts} tone="success" />
+            <Chip label="RBTs w/ Capacity" value={availableRbts} tone="success" loading={cr.loading} />
           </div>
         </header>
 
@@ -225,14 +233,14 @@ export default function OSSchedulingWorkspace() {
                 <p className="mt-3 text-sm text-muted-foreground">Select a staffing case to begin scheduling work.</p>
               </div>
             ) : (
-              <ActiveWorkflow client={selected} />
+              <ActiveWorkflow client={selected} rbtRoster={cr.rbtRoster} />
             )}
           </section>
 
           {/* RIGHT — Operational context */}
           <aside className="lg:col-span-3 space-y-4">
-            <ContextPanel clients={clients} />
-            <AskBlossomPanel clients={clients} counts={counts} availableRbts={availableRbts} />
+            <ContextPanel coverageRisks={cr.coverageRisks} rbtRoster={cr.rbtRoster} loading={cr.loading} />
+            <AskBlossomPanel cr={cr} counts={counts} availableRbts={availableRbts} />
           </aside>
         </div>
       </div>
@@ -242,7 +250,7 @@ export default function OSSchedulingWorkspace() {
 
 /* ---------------- subcomponents ---------------- */
 
-function Chip({ label, value, tone }: { label: string; value: number; tone: "destructive" | "warning" | "success" | "primary" }) {
+function Chip({ label, value, tone, loading }: { label: string; value: number; tone: "destructive" | "warning" | "success" | "primary"; loading?: boolean }) {
   const toneClass = {
     destructive: "text-destructive",
     warning: "text-warning",
@@ -251,7 +259,7 @@ function Chip({ label, value, tone }: { label: string; value: number; tone: "des
   }[tone];
   return (
     <div className="inline-flex items-center gap-2 h-9 px-3 rounded-full bg-card border border-border/70 text-sm">
-      <span className={cn("font-semibold tabular-nums", toneClass)}>{value}</span>
+      <span className={cn("font-semibold tabular-nums", toneClass)}>{loading ? "…" : value}</span>
       <span className="text-muted-foreground">{label}</span>
     </div>
   );
@@ -295,9 +303,20 @@ function QueueCard({ client, bucket, active, onSelect }: { client: Client; bucke
   );
 }
 
-function ActiveWorkflow({ client }: { client: Client }) {
-  const need = useMemo(() => getClientStaffingNeeds([client])[0] ?? null, [client]);
-  const suggestions = useMemo(() => (need ? suggestStaffingMatches(need).slice(0, 4) : []), [need]);
+function ActiveWorkflow({ client, rbtRoster }: { client: Client; rbtRoster: ProviderRosterEntry[] }) {
+  // Real CR-derived suggestions: same-state RBTs with capacity remaining vs a 32h/wk soft cap.
+  const suggestions = useMemo(() => {
+    const inState = rbtRoster.filter((r) => !client.state || !r.state || r.state === client.state);
+    return inState
+      .map((r) => ({
+        rbt: r,
+        capacityRemaining: Math.max(0, Math.round(RBT_TARGET_HOURS - r.hoursLast7d)),
+        utilization: Math.min(100, Math.round((r.hoursLast7d / RBT_TARGET_HOURS) * 100)),
+      }))
+      .filter((s) => s.capacityRemaining > 0)
+      .sort((a, b) => b.capacityRemaining - a.capacityRemaining)
+      .slice(0, 4);
+  }, [rbtRoster, client.state]);
 
   const readiness = [
     { label: "Authorization approved", ok: client.authStatus === "Approved" },
@@ -354,30 +373,29 @@ function ActiveWorkflow({ client }: { client: Client }) {
           <span className="text-xs text-muted-foreground">{suggestions.length} candidates</span>
         </div>
         {suggestions.length === 0 ? (
-          <EmptyState label="No available RBT matches in this region right now." />
+          <EmptyState label={`No RBTs with remaining capacity${client.state ? ` in ${client.state}` : ""} based on the last 7 days.`} />
         ) : (
           <div className="space-y-2">
-            {suggestions.map((m, idx) => {
-              const rbt = mockRBTProfiles.find((r) => r.id === m.rbtId);
-              if (!rbt) return null;
-              const util = Math.round((rbt.assignedHours / Math.max(rbt.capacityHours, 1)) * 100);
+            {suggestions.map(({ rbt, capacityRemaining, utilization }, idx) => {
               return (
-                <div key={m.rbtId} className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div key={rbt.name} className="rounded-xl border border-border/60 bg-muted/30 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-foreground">{rbt.name}</p>
                         {idx === 0 && <span className="text-[10px] font-medium uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Top match</span>}
-                        <span className="text-[10px] text-muted-foreground">{m.score}% fit</span>
+                        <span className="text-[10px] text-muted-foreground">{capacityRemaining}h open</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {rbt.clinic} · {m.distanceMiles}mi · {rbt.experience} · {m.capacityRemaining}h open
+                        {rbt.state ?? "—"} · {rbt.hoursLast7d.toFixed(1)}h last 7d · {rbt.distinctClients} clients · {rbt.sessionsLast30d} sessions/30d
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
-                        {m.availabilityOverlap.map((slot) => (
-                          <span key={slot} className="text-[10px] capitalize bg-success/10 text-success px-1.5 py-0.5 rounded">{slot}</span>
-                        ))}
-                        <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/60">Util {util}%</span>
+                        <span className="text-[10px] text-success bg-success/10 px-1.5 py-0.5 rounded">Util {utilization}%</span>
+                        {rbt.lastSessionDate && (
+                          <span className="text-[10px] text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/60">
+                            Last seen {rbt.lastSessionDate}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -456,42 +474,63 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ContextPanel({ clients }: { clients: Client[] }) {
-  const coverageRisks = clients.filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0))).slice(0, 4);
-  const availableRbts = mockRBTProfiles.filter((r) => r.status === "Available").slice(0, 4);
+function ContextPanel({
+  coverageRisks,
+  rbtRoster,
+  loading,
+}: {
+  coverageRisks: CoverageRiskRow[];
+  rbtRoster: ProviderRosterEntry[];
+  loading: boolean;
+}) {
+  const topRisks = coverageRisks.slice(0, 5);
+  const openRbts = rbtRoster
+    .filter((r) => r.hoursLast7d < RBT_TARGET_HOURS - 4)
+    .sort((a, b) => a.hoursLast7d - b.hoursLast7d)
+    .slice(0, 5);
 
   return (
     <div className="rounded-2xl bg-card border border-border/70 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)] p-5 space-y-5">
-      <Section title="Coverage Risks" icon={AlertTriangle} tone="warning">
-        {coverageRisks.length === 0 ? <Quiet text="No active coverage risks." /> : coverageRisks.map((c) => (
-          <Link key={c.id} to={`/scheduling-workspace?clientId=${c.id}`} className="block rounded-lg hover:bg-muted/40 px-2 py-1.5 -mx-2 transition">
-            <p className="text-sm text-foreground truncate">{c.childName}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{c.blockers?.[0] ?? c.activeServiceStatus}</p>
-          </Link>
-        ))}
+      <Section title="Coverage Risks (CR)" icon={AlertTriangle} tone="warning">
+        {loading ? <Quiet text="Loading CentralReach signals…" /> :
+          topRisks.length === 0 ? <Quiet text="All clients have recent RBT coverage." /> :
+          topRisks.map((c) => (
+            <div key={c.clientName} className="rounded-lg hover:bg-muted/40 px-2 py-1.5 -mx-2 transition">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-foreground truncate">{c.clientName}</p>
+                <span className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0",
+                  c.level === "uncovered" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning",
+                )}>{c.level === "uncovered" ? "Uncovered" : "At risk"}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">{c.state ?? "—"} · {c.reason}</p>
+            </div>
+          ))
+        }
       </Section>
 
-      <Section title="Available RBTs" icon={Users} tone="success">
-        {availableRbts.length === 0 ? (
-          <Quiet text="No RBTs currently available for pairing." />
-        ) : (
-          availableRbts.map((r) => (
-            <div key={r.id} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
+      <Section title="RBTs with Capacity" icon={Users} tone="success">
+        {loading ? <Quiet text="Loading roster…" /> :
+          openRbts.length === 0 ? <Quiet text="All RBTs near or above 32h target this week." /> :
+          openRbts.map((r) => (
+            <div key={r.name} className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-muted/40 transition">
               <div className="min-w-0">
                 <p className="text-foreground truncate">{r.name}</p>
-                <p className="text-[11px] text-muted-foreground">{r.state} · {r.capacityHours - r.assignedHours}h open</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {r.state ?? "—"} · {r.hoursLast7d.toFixed(1)}h / {RBT_TARGET_HOURS}h · {r.distinctClients} clients
+                </p>
               </div>
             </div>
           ))
-        )}
+        }
       </Section>
 
       <Section title="Quick Actions" icon={ShieldCheck}>
         <div className="space-y-1.5">
           <QuickLink to="/scheduling" label="Open Scheduling" />
-          <QuickLink to="/clients" label="Open Clients" />
+          <QuickLink to="/scheduling/rbts" label="Open RBT Roster" />
+          <QuickLink to="/scheduling/bcbas" label="Open BCBA Roster" />
           <QuickLink to="/authorizations" label="Open Authorizations" />
-          <QuickLink to="/rbt" label="Open RBT Roster" />
         </div>
       </Section>
     </div>
@@ -499,37 +538,33 @@ function ContextPanel({ clients }: { clients: Client[] }) {
 }
 
 function AskBlossomPanel({
-  clients,
+  cr,
   counts,
   availableRbts,
 }: {
-  clients: Client[];
+  cr: ReturnType<typeof useCentralReachOps>;
   counts: Record<WorkBucket, number>;
   availableRbts: number;
 }) {
-  const topRiskClient = clients
-    .filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0)))
-    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
-  const oldestUnstaffed = clients
-    .filter((c) => !c.rbt && c.authStatus === "Approved")
-    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
+  const topUncovered = cr.coverageRisks.find((r) => r.level === "uncovered");
+  const overloaded = cr.rbtRoster.filter((r) => r.hoursLast7d > 35).length;
 
   const prompts: { label: string; q: string }[] = [
     {
-      label: `Summarize ${counts.needs_rbt} clients needing RBT pairing`,
-      q: `Summarize the ${counts.needs_rbt} approved clients waiting on RBT pairing and recommend next steps for Scheduling.`,
+      label: `Uncovered clients · ${cr.counts.uncoveredClients} (CR 14d+)`,
+      q: `List the ${cr.counts.uncoveredClients} clients with no 97153 (RBT direct) session in the last 14 days. Group by state and suggest next coordination step.`,
     },
     {
-      label: `Top coverage risks (${counts.coverage_risk})${topRiskClient ? ` · start with ${topRiskClient.childName}` : ""}`,
-      q: `List the ${counts.coverage_risk} active clients with coverage risk${topRiskClient ? `, starting with ${topRiskClient.childName}` : ""}, and suggest a Scheduling next action for each.`,
+      label: `Forming gaps · ${cr.counts.atRiskClients} at risk${topUncovered ? ` · start with ${topUncovered.clientName}` : ""}`,
+      q: `Which active clients have their last RBT session 7-13 days ago${topUncovered ? `, starting with ${topUncovered.clientName}` : ""}? Suggest a Scheduling next action for each.`,
     },
     {
-      label: `Approved but unstaffed${oldestUnstaffed ? ` · ${oldestUnstaffed.daysInStage}d oldest: ${oldestUnstaffed.childName}` : ""}`,
-      q: `Which approved clients are still unstaffed and how long have they been waiting? Prioritize by days in stage.`,
+      label: `Cancellation trend · ${cr.cancellationsLast7d} (7d) / ${cr.cancellationsLast30d} (30d)`,
+      q: `Summarize CentralReach client cancellations: ${cr.cancellationsLast7d} in last 7 days and ${cr.cancellationsLast30d} in last 30 days. Identify any states or clinics trending up.`,
     },
     {
-      label: `Match ${availableRbts} available RBTs to ${counts.needs_rbt} open cases`,
-      q: `Given ${availableRbts} RBTs marked Available and ${counts.needs_rbt} clients needing pairing, suggest the best Scheduling matches by state, availability, and capacity.`,
+      label: `Rebalance load · ${overloaded} overloaded · ${availableRbts} with capacity`,
+      q: `From CentralReach last 7 days, ${overloaded} RBTs are above 35h and ${availableRbts} are under ${RBT_TARGET_HOURS - 4}h. Recommend rebalancing pairs by state.`,
     },
     {
       label: `Confirm ${counts.pending_start} pending start dates`,
