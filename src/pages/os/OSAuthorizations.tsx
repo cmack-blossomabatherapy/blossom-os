@@ -14,12 +14,14 @@ import {
   mockAuths, type Authorization, type AuthStage,
   daysUntil, getAuthAlert,
 } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 
 /* ------------------------------ helpers ------------------------------ */
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
 function supervisionPct(a: Authorization) { return 55 + (hash(a.id) % 45); }
 function lastPRDays(a: Authorization) { return hash(a.id + "pr") % 95; }
-function bcbaName(a: Authorization) {
+function bcbaName(a: Authorization, liveBcba?: string | null) {
+  if (liveBcba) return liveBcba;
   return ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Rivera", "Dr. Wright"][hash(a.id + "b") % 5];
 }
 function requestType(a: Authorization): "Initial" | "Treatment Auth" | "Reassessment" | "Parent Training 97156" {
@@ -48,7 +50,7 @@ type EnrichedAuth = Authorization & {
   requestType: ReturnType<typeof requestType>;
 };
 
-function enrich(a: Authorization): EnrichedAuth {
+function enrich(a: Authorization, liveBcba?: string | null): EnrichedAuth {
   const days = daysUntil(a.expirationDate);
   const alert = getAuthAlert(a);
   const sup = supervisionPct(a);
@@ -68,7 +70,7 @@ function enrich(a: Authorization): EnrichedAuth {
   else if (days !== null && days < 45) blocker = "Expiring soon";
 
   return {
-    ...a, bcba: bcbaName(a), supervisionPct: sup, lastPRDays: pr,
+    ...a, bcba: bcbaName(a, liveBcba), supervisionPct: sup, lastPRDays: pr,
     daysToExpire: days, alert, urgency, primaryBlocker: blocker,
     requestType: requestType(a),
   };
@@ -217,7 +219,11 @@ export default function OSAuthorizations() {
     }
   };
 
-  const enriched = useMemo(() => mockAuths.map(enrich), []);
+  const live = useLiveAuthorizations();
+  const enriched = useMemo(
+    () => live.items.map((a) => enrich(a, live.bcbaById.get(a.id))),
+    [live.items, live.bcbaById],
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -252,6 +258,11 @@ export default function OSAuthorizations() {
             <h1 className="text-3xl font-semibold tracking-tight">Authorizations</h1>
             <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
               Manage authorization records, progression, expiration readiness, QA coordination, and payer workflows.
+            </p>
+            <p className="text-[11px] text-muted-foreground/70 mt-1.5">
+              {live.loading ? "Loading from Monday import…"
+                : live.error ? `Live load failed: ${live.error}`
+                : `Live · ${live.totalRows.toLocaleString()} records from monday_authorizations_raw`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -306,7 +317,13 @@ export default function OSAuthorizations() {
         <AuthRecords auths={visible} density={density} onOpen={setOpenId} />
       </div>
 
-      {openId && <AuthDrawer authId={openId} onClose={closeDrawer} />}
+      {openId && (
+        <AuthDrawer
+          auth={live.items.find((x) => x.id === openId) ?? null}
+          liveBcba={live.bcbaById.get(openId) ?? null}
+          onClose={closeDrawer}
+        />
+      )}
     </OSShell>
   );
 }
@@ -550,10 +567,10 @@ function IconAction({ icon: Icon, title, onClick }: { icon: any; title: string; 
 }
 
 /* ------------------------------ drawer ------------------------------ */
-function AuthDrawer({ authId, onClose }: { authId: string; onClose: () => void }) {
-  const a = useMemo(() => mockAuths.find(x => x.id === authId), [authId]);
-  if (!a) return null;
-  const e = enrich(a);
+function AuthDrawer({ auth, liveBcba, onClose }: { auth: Authorization | null; liveBcba: string | null; onClose: () => void }) {
+  if (!auth) return null;
+  const a = auth;
+  const e = enrich(a, liveBcba);
 
   return (
     <div className="fixed inset-0 z-50 flex">
