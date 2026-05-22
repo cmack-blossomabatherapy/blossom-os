@@ -14,6 +14,7 @@ import {
   getClientStaffingNeeds, suggestStaffingMatches, mockRBTProfiles,
   type StaffingClientNeed,
 } from "@/data/staffing";
+import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 
 /* ---------------- priority + helpers ---------------- */
 
@@ -74,6 +75,10 @@ const LOCATION_ICON: Record<string, typeof Home> = {
 
 export default function OSStaffingQueue() {
   const { clients } = useClients();
+  // Live CentralReach signals (last 60 days of billable sessions).
+  // Used to surface real RBT roster size, coverage risks, cancellations
+  // — none of which live on the static Client record.
+  const cr = useCentralReachOps();
   const [params, setParams] = useSearchParams();
 
   const initialPriority = (params.get("priority") as Priority | null) ?? "all";
@@ -247,6 +252,77 @@ export default function OSStaffingQueue() {
               active={priorityFilter === "critical"}
               onClick={() => { setPriorityFilter(priorityFilter === "critical" ? "all" : "critical"); sync({ priority: priorityFilter === "critical" ? undefined : "critical" }); }}
             />
+          </div>
+
+          {/* ---------- Live operational signals from CentralReach ---------- */}
+          <div className="rounded-2xl border border-border/70 bg-muted/40 p-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="size-4 text-foreground/70 flex-none" />
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-medium tracking-tight text-foreground">
+                    Live Coverage Signals
+                  </h3>
+                  <p className="text-[11.5px] text-muted-foreground">
+                    {cr.loading
+                      ? "Reading CentralReach session data…"
+                      : cr.error
+                      ? `Couldn't read session data: ${cr.error}`
+                      : `${cr.totalSessions.toLocaleString()} sessions since ${cr.windowStart} · ${cr.counts.rbtCount} active RBTs · ${cr.counts.bcbaCount} active BCBAs`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <LiveChip
+                  label="Uncovered" value={cr.counts.uncoveredClients} tone="destructive"
+                  hint="No RBT session 14+ days" loading={cr.loading}
+                />
+                <LiveChip
+                  label="At risk" value={cr.counts.atRiskClients} tone="warning"
+                  hint="7–13 days since last session, or ≥3 cancels/30d" loading={cr.loading}
+                />
+                <LiveChip
+                  label="Cancels (7d)" value={cr.cancellationsLast7d} tone="warning"
+                  hint="Client cancellations logged in CR" loading={cr.loading}
+                />
+                <LiveChip
+                  label="Covered" value={cr.counts.coveredClients} tone="success"
+                  hint="Active RBT coverage in last 7d" loading={cr.loading}
+                />
+              </div>
+            </div>
+
+            {!cr.loading && cr.coverageRisks.length > 0 && (
+              <ul className="mt-3 divide-y divide-border/60">
+                {cr.coverageRisks.slice(0, 5).map((risk) => (
+                  <li key={risk.clientName} className="flex items-center gap-3 py-2">
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full flex-none",
+                      risk.level === "uncovered" ? "bg-destructive" : "bg-warning",
+                    )} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate text-[13px] font-medium text-foreground">
+                          {risk.clientName}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">· {risk.state ?? "—"}</span>
+                        <span className={cn(
+                          "rounded-full border px-2 py-0.5 text-[10.5px]",
+                          risk.level === "uncovered"
+                            ? "border-destructive/30 bg-destructive/10 text-destructive"
+                            : "border-warning/30 bg-warning/10 text-warning",
+                        )}>
+                          {risk.level === "uncovered" ? "Uncovered" : "At risk"}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+                        {risk.reason} · RBT {risk.rbtName ?? "—"} · BCBA {risk.bcbaName ?? "—"}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </header>
 
