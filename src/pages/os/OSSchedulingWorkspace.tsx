@@ -460,24 +460,60 @@ function ContextPanel({ clients }: { clients: Client[] }) {
   );
 }
 
-function AskBlossomPanel() {
-  const prompts = [
-    "Which clients are highest staffing risk?",
-    "Which RBTs are underutilized?",
-    "Which approved clients are still unstaffed?",
-    "Show scheduling conflicts this week.",
+function AskBlossomPanel({
+  clients,
+  counts,
+  availableRbts,
+}: {
+  clients: Client[];
+  counts: Record<WorkBucket, number>;
+  availableRbts: number;
+}) {
+  const topRiskClient = clients
+    .filter((c) => c.stage === "Active" && (c.activeServiceStatus === "Services on Pause" || c.activeServiceStatus === "Flaked" || (c.blockers && c.blockers.length > 0)))
+    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
+  const oldestUnstaffed = clients
+    .filter((c) => !c.rbt && c.authStatus === "Approved")
+    .sort((a, b) => (b.daysInStage ?? 0) - (a.daysInStage ?? 0))[0];
+
+  const prompts: { label: string; q: string }[] = [
+    {
+      label: `Summarize ${counts.needs_rbt} clients needing RBT pairing`,
+      q: `Summarize the ${counts.needs_rbt} approved clients waiting on RBT pairing and recommend next steps for Scheduling.`,
+    },
+    {
+      label: `Top coverage risks (${counts.coverage_risk})${topRiskClient ? ` · start with ${topRiskClient.childName}` : ""}`,
+      q: `List the ${counts.coverage_risk} active clients with coverage risk${topRiskClient ? `, starting with ${topRiskClient.childName}` : ""}, and suggest a Scheduling next action for each.`,
+    },
+    {
+      label: `Approved but unstaffed${oldestUnstaffed ? ` · ${oldestUnstaffed.daysInStage}d oldest: ${oldestUnstaffed.childName}` : ""}`,
+      q: `Which approved clients are still unstaffed and how long have they been waiting? Prioritize by days in stage.`,
+    },
+    {
+      label: `Match ${availableRbts} available RBTs to ${counts.needs_rbt} open cases`,
+      q: `Given ${availableRbts} RBTs marked Available and ${counts.needs_rbt} clients needing pairing, suggest the best Scheduling matches by state, availability, and capacity.`,
+    },
+    {
+      label: `Confirm ${counts.pending_start} pending start dates`,
+      q: `Which paired clients still need a confirmed start date? Group by state and flag any waiting more than 7 days.`,
+    },
   ];
+
   return (
     <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 to-transparent backdrop-blur-sm p-5">
       <h3 className="text-sm font-semibold tracking-tight text-foreground inline-flex items-center gap-2">
         <Sparkles className="size-4 text-primary" /> Ask Blossom AI
       </h3>
-      <p className="mt-1 text-[11px] text-muted-foreground">Operational staffing intelligence.</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">Scoped to Scheduling · live operational data.</p>
       <div className="mt-3 space-y-1.5">
         {prompts.map((p) => (
-          <button key={p} className="w-full text-left text-xs text-foreground rounded-lg bg-card border border-border/60 px-2.5 py-2 hover:border-primary/40 hover:bg-primary/5 transition">
-            {p}
-          </button>
+          <Link
+            key={p.label}
+            to={`/ask-blossom?scope=scheduling&q=${encodeURIComponent(p.q)}`}
+            className="block w-full text-left text-xs text-foreground rounded-lg bg-card border border-border/60 px-2.5 py-2 hover:border-primary/40 hover:bg-primary/5 transition"
+          >
+            {p.label}
+          </Link>
         ))}
       </div>
     </div>
