@@ -352,10 +352,16 @@ function AuthRecords({ auths, density, onOpen }: { auths: EnrichedAuth[]; densit
 
   // Build a stable signature of the current filtered+sorted result so we reset
   // pagination whenever the underlying result set changes (filters, view, search).
-  const signature = useMemo(
-    () => auths.slice(0, 8).map(a => a.id).join("|") + "::" + auths.length,
-    [auths],
-  );
+  // Combines length + head + tail ids so any change to filters/sort/search that
+  // alters the result set forces a reset back to page 1, even when the visible
+  // top of the list happens to overlap.
+  const signature = useMemo(() => {
+    const n = auths.length;
+    if (n === 0) return "empty";
+    const head = auths.slice(0, 4).map(a => a.id).join("|");
+    const tail = auths.slice(-4).map(a => a.id).join("|");
+    return `${n}::${head}::${tail}`;
+  }, [auths]);
 
   // Reset to first page whenever the result set identity changes.
   useEffect(() => { setCount(PAGE_SIZE); }, [signature]);
