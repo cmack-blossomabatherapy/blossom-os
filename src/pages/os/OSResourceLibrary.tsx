@@ -144,8 +144,39 @@ export default function OSResourceLibrary() {
             </div>
             <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
               <Filter className="h-3.5 w-3.5" />
-              <span>{scope.length} resources visible</span>
+              <span>{filteredScope.length} of {scope.length} resources</span>
             </div>
+          </div>
+
+          {/* TYPE QUICK FILTERS */}
+          <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto pb-1">
+            {[
+              { key: null, label: "All", icon: BookOpen },
+              { key: "SOP" as const, label: "SOPs", icon: FileText },
+              { key: "Workflow" as const, label: "Workflows", icon: Workflow },
+              { key: "Tango" as const, label: "Tango Walkthroughs", icon: PlayCircle },
+              { key: "Template" as const, label: "Templates", icon: FileType2 },
+              { key: "Checklist" as const, label: "Checklists", icon: FileText },
+              { key: "Link" as const, label: "Quick Links", icon: Link2 },
+            ].map((t) => {
+              const Icon = t.icon;
+              const active = typeFilter === t.key;
+              return (
+                <button
+                  key={t.label}
+                  onClick={() => setTypeFilter(t.key as Resource["type"] | null)}
+                  className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition",
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-white/70 text-muted-foreground hover:text-foreground border-border/70 hover:bg-white",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </header>
 
@@ -153,6 +184,33 @@ export default function OSResourceLibrary() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           {/* CENTER COLUMN */}
           <div className="space-y-8 min-w-0">
+            {/* QUICK LINKS STRIP */}
+            {!query && !activeCategory && !typeFilter && quickLinks.length > 0 && (
+              <section>
+                <SectionHeader title="Quick links & walkthroughs" subtitle="Jump straight into the tools you use daily" icon={Link2} />
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+                  {quickLinks.map((r) => {
+                    const Icon = TYPE_ICON[r.type];
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => openResource(r)}
+                        className="flex items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_8px_24px_-12px_hsl(220_15%_30%/0.1)]"
+                      >
+                        <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TYPE_TONE[r.type])}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-[12.5px] font-medium text-foreground">{r.title}</div>
+                          <div className="truncate text-[10.5px] text-muted-foreground">{r.type}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* PINNED */}
             {pinned.length > 0 && !query && !activeCategory && (
               <section>
