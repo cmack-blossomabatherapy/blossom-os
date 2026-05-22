@@ -461,7 +461,21 @@ function ListView({
                 onClick={() => onOpen(l.id)}
                 className="hover:bg-muted/40 cursor-pointer group"
               >
-                <td className="px-3 py-2.5 font-medium whitespace-nowrap">{l.childName}</td>
+                <td className="px-3 py-2.5 font-medium whitespace-nowrap">
+                  {(() => {
+                    const a = agingFor(l);
+                    return (
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className={cn("h-2 w-2 rounded-full flex-shrink-0", a.tone)}
+                          title={a.label}
+                          aria-label={`Last contact: ${a.label}`}
+                        />
+                        {l.childName}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.parentName || "—"}</td>
                 <td className="px-3 py-2.5"><StateBadge state={l.state} /></td>
                 <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.owner}</td>
@@ -728,7 +742,7 @@ function AIRail() {
         <Sparkles className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold tracking-tight">Ask Blossom</h3>
       </div>
-      <div className="glass rounded-2xl p-3 space-y-1.5">
+      <div className="rounded-2xl border border-border/60 bg-card p-3 space-y-1.5 shadow-sm">
         {AI_PROMPTS.map((p) => (
           <button
             key={p}
