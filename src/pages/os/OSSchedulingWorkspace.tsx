@@ -198,7 +198,7 @@ export default function OSSchedulingWorkspace() {
           {/* RIGHT — Operational context */}
           <aside className="lg:col-span-3 space-y-4">
             <ContextPanel clients={clients} />
-            <AskBlossomPanel />
+            <AskBlossomPanel clients={clients} counts={counts} availableRbts={availableRbts} />
           </aside>
         </div>
       </div>
