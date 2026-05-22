@@ -4,7 +4,7 @@ import {
   Search, Plus, Sparkles, Download, ShieldCheck, Activity,
   AlertTriangle, CheckCircle2, Clock, ChevronRight, X, MessageSquare,
   StickyNote, ArrowUpRight, Users, ListChecks, PhoneCall, FileWarning,
-  ExternalLink, Heart, ClipboardCheck,
+  ExternalLink, Heart, ClipboardCheck, ArrowRightCircle,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { useClients } from "@/contexts/ClientsContext";
@@ -127,6 +127,68 @@ function needsIntakeFollowUp(c: Client): { needs: boolean; reason?: string } {
   return { needs: false };
 }
 
+/**
+ * SOP-aligned client stage tabs. Matches Blossom's canonical operational stages.
+ * Each tab filters by the underlying ClientStage values (some stages map multiple
+ * synonymous strings produced by Monday/CR imports).
+ */
+const STAGE_TABS: { key: string; label: string; match: (c: Client) => boolean }[] = [
+  { key: "all",                    label: "All Clients",          match: () => true },
+  { key: "BCBA Assignment",        label: "BCBA Assignment",      match: (c) => c.stage === "BCBA Assignment" || (c.stage === "Converted to Client" && !c.bcba) },
+  { key: "Pending Initial Auth",   label: "Pending Initial Auth", match: (c) => c.stage === "Pending Initial Auth" || c.stage === "Pending Initial Authorization" || c.stage === "Initial Auth – Awaiting Submission" || c.stage === "Initial Auth – Submitted" },
+  { key: "Waiting on Consent",     label: "Waiting on Consent",   match: (c) => c.stage === "Waiting on Consent" || c.stage === "Waiting on Consent Forms" },
+  { key: "Schedule Assessment",    label: "Schedule Assessment",  match: (c) => c.stage === "Schedule Assessment" },
+  { key: "Assessment Scheduled",   label: "Assessment Scheduled", match: (c) => c.stage === "Assessment Scheduled" || c.stage === "Assessment Completed" },
+  { key: "In QA",                  label: "In QA",                match: (c) => c.stage === "In QA" || c.stage === "QA Review" || c.stage === "QA Issues / Fix Required" },
+  { key: "Pending Treatment Auth", label: "Pending Treatment Auth", match: (c) => c.stage === "Pending Treatment Auth" || c.stage === "Treatment Auth – Awaiting Submission" || c.stage === "Treatment Auth – Submitted" },
+  { key: "Staffing Needed",        label: "Staffing Needed",      match: (c) => c.stage === "Staffing Needed" },
+  { key: "Pending Start Date",     label: "Pending Start Date",   match: (c) => c.stage === "Pending Start Date" },
+  { key: "Active",                 label: "Active",               match: (c) => c.stage === "Active" || c.activeServiceStatus === "Active" },
+  { key: "Services on Pause",      label: "On Pause",             match: (c) => c.stage === "Services on Pause" || c.activeServiceStatus === "Services on Pause" },
+  { key: "Flaked",                 label: "Flaked",               match: (c) => c.stage === "Flaked" || c.activeServiceStatus === "Flaked" },
+  { key: "Discharged",             label: "Discharged",           match: (c) => c.stage === "Discharged" || c.activeServiceStatus === "Discharged" },
+];
+
+function agingDot(c: Client): { tone: string; label: string } {
+  const d = c.daysInStage ?? 0;
+  if (d <= 3) return { tone: "bg-emerald-500", label: `${d}d in stage` };
+  if (d <= 7) return { tone: "bg-amber-500",   label: `${d}d in stage` };
+  return { tone: "bg-rose-500",   label: `${d}d in stage` };
+}
+
+/**
+ * Next-Best-Action — explainable, SOP-aligned recommendation per client.
+ * Drives the "What should happen next?" banner in the drawer.
+ */
+function nextBestAction(c: Client): { label: string; why: string; tone: "ok" | "warn" | "crit" } {
+  const stage = c.stage;
+  if ((stage === "BCBA Assignment" || stage === "Converted to Client") && !c.bcba)
+    return { label: "Assign a BCBA", why: "No BCBA is on this case yet. Pick the right BCBA for the family's state and availability.", tone: "warn" };
+  if ((stage === "Waiting on Consent" || stage === "Waiting on Consent Forms") && !c.consentComplete)
+    return { label: "Follow up on consent forms", why: "Consent isn't complete. Resend the consent packet and confirm receipt with the parent.", tone: "warn" };
+  if (stage === "Schedule Assessment")
+    return { label: "Schedule the assessment", why: "Assessment isn't on the calendar yet. Coordinate with the BCBA and the family.", tone: "warn" };
+  if (stage === "In QA" || stage === "QA Issues / Fix Required")
+    return { label: "Resolve QA items", why: "Treatment plan is in QA. Address open QA notes before the auth submission.", tone: "warn" };
+  if (stage === "Pending Initial Auth" || stage === "Pending Initial Authorization" || stage === "Pending Treatment Auth" || stage === "Treatment Auth – Awaiting Submission")
+    return { label: "Monitor authorization", why: "Authorization is in flight. Confirm submission status and chase the payor if it ages out.", tone: "warn" };
+  if (stage === "Staffing Needed" || (!c.rbt && c.bcba && stage !== "Active"))
+    return { label: "Send to Staffing", why: "BCBA is in place but RBT staffing isn't. Hand this off to the Staffing team.", tone: "warn" };
+  if (stage === "Pending Start Date" && !c.startDate)
+    return { label: "Confirm start date", why: "Family is ready but no start date is locked. Coordinate scheduling and lock the date.", tone: "warn" };
+  if (stage === "Active" || c.activeServiceStatus === "Active")
+    return { label: "On services — monitor", why: "Family is in active care. Watch for auth expirations and staffing changes.", tone: "ok" };
+  if (handoffStatus(c) === "Missing Items")
+    return { label: "Resolve handoff issues", why: "Intake handoff has missing items. Clean these up before pushing to the next team.", tone: "crit" };
+  return { label: "Review and move forward", why: "No blocking issues detected. Confirm the next operational owner.", tone: "ok" };
+}
+
+const NBA_STYLES: Record<"ok" | "warn" | "crit", { wrap: string; chip: string; icon: string }> = {
+  ok:   { wrap: "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white", chip: "bg-emerald-600 text-white hover:bg-emerald-700", icon: "text-emerald-600" },
+  warn: { wrap: "border-amber-200 bg-gradient-to-br from-amber-50 to-white",     chip: "bg-amber-500 text-white hover:bg-amber-600",   icon: "text-amber-600" },
+  crit: { wrap: "border-rose-200 bg-gradient-to-br from-rose-50 to-white",       chip: "bg-rose-600 text-white hover:bg-rose-700",     icon: "text-rose-600" },
+};
+
 /* ───────────────────────── modals ───────────────────────── */
 
 type ClientModal =
@@ -239,6 +301,7 @@ export default function OSIntakeClients() {
   const filterStaffing = params.get("staffing");
   const filterPulse = params.get("pulse");
   const filterStage = params.get("stage");
+  const filterCstage = params.get("cstage") ?? "all";
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -254,6 +317,10 @@ export default function OSIntakeClients() {
       if (filterAuth === "pending" && simpleAuth(c) !== "Pending" && simpleAuth(c) !== "Submitted") return false;
       if (filterStaffing === "waiting" && simpleStaffing(c) !== "Waiting on Staffing") return false;
       if (filterStage && lifecycleStage(c) !== filterStage) return false;
+      if (filterCstage && filterCstage !== "all") {
+        const t = STAGE_TABS.find((s) => s.key === filterCstage);
+        if (t && !t.match(c)) return false;
+      }
       if (filterPulse === "new" && (c.daysInStage ?? 0) > 7) return false;
       if (filterPulse === "active" && simpleScheduling(c) !== "Active") return false;
       if (filterPulse === "followup" && !needsIntakeFollowUp(c).needs) return false;
@@ -262,7 +329,14 @@ export default function OSIntakeClients() {
       if (filterPulse === "handoff" && handoffStatus(c) === "Complete") return false;
       return true;
     });
-  }, [clients, query, filterHandoff, filterAuth, filterStaffing, filterPulse, filterStage]);
+  }, [clients, query, filterHandoff, filterAuth, filterStaffing, filterPulse, filterStage, filterCstage]);
+
+  const stageCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const t of STAGE_TABS) c[t.key] = 0;
+    for (const cl of clients) for (const t of STAGE_TABS) if (t.match(cl)) c[t.key]++;
+    return c;
+  }, [clients]);
 
   const setFilter = (key: string, value: string | null) => {
     const p = new URLSearchParams(params);
