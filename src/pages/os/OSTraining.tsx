@@ -29,6 +29,19 @@ const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   "Quick Guide": BookOpen,
 };
 
+/** Map a role to its primary department for required-module scoping. */
+const ROLE_DEPARTMENT: Record<string, string> = {
+  intake_coordinator: "intake",
+  authorization_coordinator: "authorizations",
+  scheduling_team: "scheduling",
+  qa_team: "qa",
+  recruiting_team: "recruiting",
+  bcba: "clinical",
+  rbt: "clinical",
+  hr_team: "hr",
+  billing_finance: "billing",
+};
+
 export default function OSTraining() {
   const navigate = useNavigate();
   const { role } = useOSRole();
@@ -38,9 +51,15 @@ export default function OSTraining() {
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
   const cont = useMemo(continueLearning, [trainings]);
+  const department = ROLE_DEPARTMENT[role];
+  const requiredRole = useMemo(
+    () => (department ? requiredForDepartment(department) : requiredDue()),
+    [department, trainings],
+  );
   const required = useMemo(requiredDue, [trainings]);
   const systems = useMemo(systemsTrainings, [trainings]);
   const shared = useMemo(sharedTrainings, [trainings]);
+  const recent = useMemo(() => recentlyAdded(4), [trainings]);
   const searchResults = useMemo(() => (query ? searchTrainings(query) : []), [query, trainings]);
   const JourneyIcon = ICONS[journey.icon] ?? BookOpen;
 
