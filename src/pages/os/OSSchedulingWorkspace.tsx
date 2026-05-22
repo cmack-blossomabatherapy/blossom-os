@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Filter, MapPin, Clock, UserPlus, AlertTriangle, ShieldCheck,
@@ -49,14 +49,48 @@ function bucketOf(c: Client): WorkBucket | null {
 
 const BUCKET_ORDER: WorkBucket[] = ["needs_rbt", "pending_start", "ready_to_schedule", "pairing_pending", "coverage_risk"];
 
+// Map external ?view= aliases (used by dashboards/links) to internal buckets.
+const VIEW_TO_BUCKET: Record<string, WorkBucket> = {
+  needs_rbt: "needs_rbt",
+  pairing_pending: "pairing_pending",
+  ready_to_schedule: "ready_to_schedule",
+  ready: "ready_to_schedule",
+  pending_start: "pending_start",
+  coverage_risk: "coverage_risk",
+  risks: "coverage_risk",
+  availability: "coverage_risk",
+  conflicts: "coverage_risk",
+};
+
 /* ---------------- page ---------------- */
 
 export default function OSSchedulingWorkspace() {
   const { clients } = useClients();
   const [params, setParams] = useSearchParams();
-  const [stateFilter, setStateFilter] = useState<string>("all");
-  const [bucketFilter, setBucketFilter] = useState<WorkBucket | "all">("all");
-  const [query, setQuery] = useState("");
+
+  // Initialize filters from URL so deep links pre-apply correctly.
+  const initialBucket = (() => {
+    const v = params.get("bucket") ?? params.get("view");
+    if (!v) return "all" as const;
+    return (VIEW_TO_BUCKET[v] ?? "all") as WorkBucket | "all";
+  })();
+  const initialState = params.get("state") ?? "all";
+  const initialQuery = params.get("q") ?? "";
+
+  const [stateFilter, setStateFilter] = useState<string>(initialState);
+  const [bucketFilter, setBucketFilter] = useState<WorkBucket | "all">(initialBucket);
+  const [query, setQuery] = useState(initialQuery);
+
+  // Sync filter changes back to URL (preserves clientId / scope).
+  useEffect(() => {
+    const next = new URLSearchParams(params);
+    if (bucketFilter === "all") { next.delete("bucket"); next.delete("view"); }
+    else { next.set("bucket", bucketFilter); next.delete("view"); }
+    if (stateFilter === "all") next.delete("state"); else next.set("state", stateFilter);
+    if (!query) next.delete("q"); else next.set("q", query);
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucketFilter, stateFilter, query]);
 
   const queue = useMemo(() => {
     return clients
