@@ -110,7 +110,7 @@ export default function MfaVerify() {
             </div>
           </div>
 
-          <div className="flex justify-center sm:justify-start">
+          <div className="flex justify-center">
             <InputOTP
               maxLength={6}
               value={code}
