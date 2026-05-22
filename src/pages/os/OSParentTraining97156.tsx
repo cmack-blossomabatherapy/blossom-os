@@ -5,6 +5,7 @@ import {
   FileSignature, ClipboardCheck, ChevronRight, AlertTriangle,
   CalendarClock, MessageSquare, Brain, ArrowUpRight, CheckCircle2,
   Activity, ListFilter, HeartHandshake, Gauge, PhoneCall,
+  History, Zap, Stethoscope, FolderInput,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -77,6 +78,10 @@ interface PT97156Item {
   nextAction: string;
   lastActivity: string;
   smartFlags: { label: string; tone: Tone }[];
+  auditLog: AuditEntry[];
+  automationOverlay: string[];
+  escalatedTo?: string;
+  escalatedAt?: string;
 }
 
 /** Deterministic small hash for derived signals (keeps view stable
@@ -193,6 +198,8 @@ function deriveItem(a: Authorization): PT97156Item | null {
     opStatus, opTone, riskTone, bucket,
     signatureMissing, qaState: a.qaStatus, schedulingReady,
     nextAction, lastActivity: a.lastActivity, smartFlags,
+    auditLog: [],
+    automationOverlay: [],
   };
 }
 
@@ -201,6 +208,85 @@ type ViewKey =
   | "all" | "expiring" | "util_risk" | "participation"
   | "qa_ready" | "docs" | "continuation" | "mine"
   | "ga" | "mid_atl" | "md";
+
+/* ───── escalation model ───── */
+
+type EscalationKind = "PR" | "QA" | "State Director" | "Missing Documentation";
+
+interface AuditEntry {
+  id: string;
+  at: string;            // ISO timestamp
+  by: string;            // actor (current coordinator)
+  action: EscalationKind;
+  routedTo: string;      // owner the escalation was routed to
+  fromStatus: OpStatus;
+  toStatus: OpStatus;
+  note: string;
+}
+
+interface EscalationOverlay {
+  opStatus: OpStatus;
+  opTone: Tone;
+  routedTo: string;
+  escalatedAt: string;
+  auditLog: AuditEntry[];
+  automationLog: string[];   // appended automation events
+}
+
+const CURRENT_USER = "Priya K.";
+
+function stateDirectorFor(state: string): string {
+  if (state === "GA") return "Shira (GA State Director)";
+  if (state === "NC") return "Erin (NC State Director)";
+  if (state === "TN") return "Marcus (TN State Director)";
+  if (state === "VA") return "Dana (VA State Director)";
+  if (state === "MD") return "Julianne (MD State Director)";
+  return "State Director";
+}
+
+/** Build the operational consequence of an escalation. */
+function escalationPlan(kind: EscalationKind, item: PT97156Item): {
+  toStatus: OpStatus;
+  toTone: Tone;
+  routedTo: string;
+  note: string;
+  automation: string;
+} {
+  switch (kind) {
+    case "PR":
+      return {
+        toStatus: "PR Needed",
+        toTone: "warn",
+        routedTo: item.bcba,
+        note: `Progress report requested from ${item.bcba} for 97156 continuation.`,
+        automation: `Routed to ${item.bcba} — PR request opened.`,
+      };
+    case "QA":
+      return {
+        toStatus: "QA Review Needed",
+        toTone: "info",
+        routedTo: item.auth.qaOwner ?? "QA Team",
+        note: `Sent to QA for 97156 continuation review.`,
+        automation: `Routed to ${item.auth.qaOwner ?? "QA Team"} — added to QA queue.`,
+      };
+    case "State Director":
+      return {
+        toStatus: "Continuation Risk",
+        toTone: "crit",
+        routedTo: stateDirectorFor(item.auth.state),
+        note: `Escalated to ${stateDirectorFor(item.auth.state)} — continuation at risk.`,
+        automation: `Escalation notice sent to ${stateDirectorFor(item.auth.state)}.`,
+      };
+    case "Missing Documentation":
+      return {
+        toStatus: "Documentation Missing",
+        toTone: "warn",
+        routedTo: item.auth.coordinator,
+        note: `Marked missing documentation — outreach assigned to ${item.auth.coordinator}.`,
+        automation: `Document request task created for ${item.auth.coordinator}.`,
+      };
+  }
+}
 
 const VIEWS: { key: ViewKey; label: string }[] = [
   { key: "all",            label: "All 97156" },
@@ -219,15 +305,77 @@ const VIEWS: { key: ViewKey; label: string }[] = [
 /* ───── page ───── */
 
 export default function OSParentTraining97156() {
-  const items = useMemo<PT97156Item[]>(
-    () => mockAuths.map(deriveItem).filter((x): x is PT97156Item => x !== null),
-    [],
-  );
+  const [overlay, setOverlay] = useState<Record<string, EscalationOverlay>>({});
+
+  const items = useMemo<PT97156Item[]>(() => {
+    const base = mockAuths
+      .map(deriveItem)
+      .filter((x): x is PT97156Item => x !== null);
+    return base.map((it) => {
+      const o = overlay[it.auth.id];
+      if (!o) return it;
+      return {
+        ...it,
+        opStatus: o.opStatus,
+        opTone: o.opTone,
+        // Escalations bias the risk tone upward.
+        riskTone: o.opTone === "crit" ? "crit" : it.riskTone === "ok" ? "info" : it.riskTone,
+        nextAction:
+          o.opStatus === "PR Needed" ? `Awaiting PR from ${it.bcba}` :
+          o.opStatus === "QA Review Needed" ? `Awaiting QA pickup (${it.auth.qaOwner ?? "QA"})` :
+          o.opStatus === "Continuation Risk" ? `Awaiting ${o.routedTo}` :
+          o.opStatus === "Documentation Missing" ? `Collect docs · owner ${o.routedTo}` :
+          it.nextAction,
+        lastActivity: o.escalatedAt
+          ? `Escalated ${new Date(o.escalatedAt).toLocaleDateString()}`
+          : it.lastActivity,
+        auditLog: o.auditLog,
+        automationOverlay: o.automationLog,
+        escalatedTo: o.routedTo,
+        escalatedAt: o.escalatedAt,
+      };
+    });
+  }, [overlay]);
 
   const [view, setView] = useState<ViewKey>("all");
   const [bucket, setBucket] = useState<Bucket | "all">("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<PT97156Item | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = useMemo(
+    () => items.find((i) => i.auth.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+
+  const escalate = (item: PT97156Item, kind: EscalationKind) => {
+    const plan = escalationPlan(kind, item);
+    const now = new Date().toISOString();
+    setOverlay((prev) => {
+      const existing = prev[item.auth.id];
+      const fromStatus = existing?.opStatus ?? item.opStatus;
+      const entry: AuditEntry = {
+        id: `audit-${item.auth.id}-${Date.now()}`,
+        at: now,
+        by: CURRENT_USER,
+        action: kind,
+        routedTo: plan.routedTo,
+        fromStatus,
+        toStatus: plan.toStatus,
+        note: plan.note,
+      };
+      const automation = `[${new Date(now).toLocaleString()}] ${plan.automation}`;
+      return {
+        ...prev,
+        [item.auth.id]: {
+          opStatus: plan.toStatus,
+          opTone: plan.toTone,
+          routedTo: plan.routedTo,
+          escalatedAt: now,
+          auditLog: [entry, ...(existing?.auditLog ?? [])],
+          automationLog: [automation, ...(existing?.automationLog ?? [])],
+        },
+      };
+    });
+  };
 
   const filtered = useMemo(() => {
     return items.filter((it) => {
@@ -405,16 +553,16 @@ export default function OSParentTraining97156() {
           ) : (
             <div className="space-y-2">
               {filtered.map((it) => (
-                <TrackingCard key={it.auth.id} item={it} onOpen={() => setSelected(it)} />
+                <TrackingCard key={it.auth.id} item={it} onOpen={() => setSelectedId(it.auth.id)} onEscalate={(k) => escalate(it, k)} />
               ))}
             </div>
           )}
         </section>
       </div>
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelectedId(null)}>
         <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-xl">
-          {selected && <DetailDrawer item={selected} onClose={() => setSelected(null)} />}
+          {selected && <DetailDrawer item={selected} onEscalate={(k) => escalate(selected, k)} onClose={() => setSelectedId(null)} />}
         </SheetContent>
       </Sheet>
     </OSShell>
@@ -450,13 +598,22 @@ function SummaryCard({
   );
 }
 
-function TrackingCard({ item, onOpen }: { item: PT97156Item; onOpen: () => void }) {
+function TrackingCard({
+  item, onOpen, onEscalate,
+}: {
+  item: PT97156Item;
+  onOpen: () => void;
+  onEscalate: (kind: EscalationKind) => void;
+}) {
   const { auth, days, bcba, utilStatus, utilTone, participation, participationTone,
           opStatus, opTone, riskTone, nextAction, lastActivity } = item;
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="group relative w-full overflow-hidden rounded-2xl border border-border/70 bg-card p-4 text-left transition hover:border-foreground/20 hover:shadow-sm"
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
+      className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-border/70 bg-card p-4 text-left transition hover:border-foreground/20 hover:shadow-sm"
     >
       <span className={cn("absolute inset-y-0 left-0 w-0.5", toneBar[riskTone])} />
       <div className="grid gap-3 md:grid-cols-[1.1fr_1.4fr_1fr] md:items-center">
@@ -511,6 +668,46 @@ function TrackingCard({ item, onOpen }: { item: PT97156Item; onOpen: () => void 
           <ChevronRight className="h-4 w-4 flex-none text-foreground/30 transition group-hover:translate-x-0.5 group-hover:text-foreground/60" />
         </div>
       </div>
+
+      {/* Row-level escalation actions */}
+      <div
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-foreground/45">
+          Escalate
+        </span>
+        <EscalateButton icon={Stethoscope} label="Needs PR"             tone="warn" onClick={() => onEscalate("PR")} />
+        <EscalateButton icon={ClipboardCheck} label="Needs QA"           tone="info" onClick={() => onEscalate("QA")} />
+        <EscalateButton icon={ShieldAlert} label="Needs State Director"  tone="crit" onClick={() => onEscalate("State Director")} />
+        <EscalateButton icon={FolderInput} label="Missing Documentation" tone="warn" onClick={() => onEscalate("Missing Documentation")} />
+        {item.escalatedTo && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[10.5px] text-foreground/55">
+            <Zap className="h-3 w-3" /> Routed to {item.escalatedTo}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EscalateButton({
+  icon: Icon, label, tone, onClick,
+}: {
+  icon: React.ElementType; label: string; tone: Tone; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-2 py-0.5 text-[11px] font-medium text-foreground/75 transition hover:border-foreground/25 hover:bg-muted/40",
+      )}
+    >
+      <span className={cn("inline-flex h-3.5 w-3.5 items-center justify-center rounded-full", toneChip[tone])}>
+        <Icon className="h-2.5 w-2.5" />
+      </span>
+      {label}
     </button>
   );
 }
@@ -526,7 +723,13 @@ function Pill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
 
 /* ───── drawer ───── */
 
-function DetailDrawer({ item, onClose }: { item: PT97156Item; onClose: () => void }) {
+function DetailDrawer({
+  item, onClose, onEscalate,
+}: {
+  item: PT97156Item;
+  onClose: () => void;
+  onEscalate: (kind: EscalationKind) => void;
+}) {
   const { auth, days, bcba, utilStatus, utilTone, participation, participationTone,
           opStatus, opTone, signatureMissing, qaState, smartFlags, nextAction } = item;
 
@@ -567,6 +770,25 @@ function DetailDrawer({ item, onClose }: { item: PT97156Item; onClose: () => voi
             </div>
           </DrawerSection>
         )}
+
+        {/* Escalation actions */}
+        <DrawerSection icon={Zap} title="Escalate">
+          <p className="mb-2 text-[11.5px] text-foreground/55">
+            Updates the operational status, routes to the correct owner, and writes an audit log entry.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <EscalateButton icon={Stethoscope}    label="Needs PR"             tone="warn" onClick={() => onEscalate("PR")} />
+            <EscalateButton icon={ClipboardCheck} label="Needs QA"             tone="info" onClick={() => onEscalate("QA")} />
+            <EscalateButton icon={ShieldAlert}    label="Needs State Director" tone="crit" onClick={() => onEscalate("State Director")} />
+            <EscalateButton icon={FolderInput}    label="Missing Documentation" tone="warn" onClick={() => onEscalate("Missing Documentation")} />
+          </div>
+          {item.escalatedTo && (
+            <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-foreground/65">
+              <Zap className="h-3 w-3" /> Currently routed to {item.escalatedTo}
+              {item.escalatedAt && <span className="text-foreground/45"> · {new Date(item.escalatedAt).toLocaleString()}</span>}
+            </p>
+          )}
+        </DrawerSection>
 
         {/* 1 — Auth Summary */}
         <DrawerSection icon={FileText} title="Auth summary">
@@ -636,10 +858,19 @@ function DetailDrawer({ item, onClose }: { item: PT97156Item; onClose: () => voi
 
         {/* 6 — Notes & Activity */}
         <DrawerSection icon={Activity} title="Notes & activity">
-          {auth.timeline.length === 0 ? (
+          {item.automationOverlay.length === 0 && auth.timeline.length === 0 ? (
             <p className="text-[12px] text-foreground/55">No activity recorded yet.</p>
           ) : (
             <ul className="space-y-2">
+              {item.automationOverlay.map((line, i) => (
+                <li key={`auto-${i}`} className="flex gap-2 text-[12px]">
+                  <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-[hsl(220_70%_55%)]" />
+                  <div className="min-w-0">
+                    <p className="text-foreground/85">{line}</p>
+                    <p className="text-[11px] text-foreground/55">Automation</p>
+                  </div>
+                </li>
+              ))}
               {auth.timeline.slice(0, 6).map((e) => (
                 <li key={e.id} className="flex gap-2 text-[12px]">
                   <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-foreground/30" />
@@ -649,6 +880,30 @@ function DetailDrawer({ item, onClose }: { item: PT97156Item; onClose: () => voi
                       {new Date(e.timestamp).toLocaleDateString()}{e.user ? ` · ${e.user}` : ""}
                     </p>
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DrawerSection>
+
+        {/* Audit log */}
+        <DrawerSection icon={History} title="Audit log">
+          {item.auditLog.length === 0 ? (
+            <p className="text-[12px] text-foreground/55">No escalations recorded for this 97156 auth.</p>
+          ) : (
+            <ul className="space-y-2">
+              {item.auditLog.map((e) => (
+                <li key={e.id} className="rounded-lg border border-border/60 bg-card p-2.5 text-[12px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-foreground">{e.action}</span>
+                    <span className="text-[10.5px] text-foreground/55">
+                      {new Date(e.at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-foreground/75">{e.note}</p>
+                  <p className="mt-1 text-[10.5px] text-foreground/55">
+                    {e.by} · {e.fromStatus} → {e.toStatus} · routed to {e.routedTo}
+                  </p>
                 </li>
               ))}
             </ul>
