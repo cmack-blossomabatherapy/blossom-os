@@ -54,7 +54,6 @@ export type OSScope = "company" | "state" | "assigned";
 export type OSModule =
   | "dashboard"
   | "command_center"
-  | "calendar"
   | "leads"
   | "clients"
   | "staff"
@@ -111,7 +110,6 @@ export type OSModule =
 export const MODULE_ROUTES: Record<OSModule, string> = {
   dashboard: "/",
   command_center: "/command-center",
-  calendar: "/calendar",
   leads: "/leads",
   clients: "/clients",
   staff: "/staff",
@@ -206,7 +204,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   executive_leadership: {
     modules: [
-      "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
+      "dashboard", "command_center", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "recruiting", "credentialing", "employee_ops", "evaluations", "training",
       "reports", "kpi", "vob", "workflows", "sop", "marketing", "analytics_hub",
       "billing", "payroll", "revenue", "insurance",
@@ -223,7 +221,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   operations_leadership: {
     modules: [
-      "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
+      "dashboard", "command_center", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "recruiting", "credentialing", "employee_ops", "evaluations", "training",
       "reports", "kpi", "vob", "workflows", "sop", "marketing", "analytics_hub",
       "tech_requests", "internal_requests", "open_issues", "projects",
@@ -239,7 +237,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   state_director: {
     modules: [
-      "dashboard", "command_center", "calendar", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
+      "dashboard", "command_center", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
       "staff", "evaluations", "training",
       "reports", "kpi", "vob", "sop", "analytics_hub",
       "ai_assistant", "ai_insights",
@@ -253,31 +251,31 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   intake_coordinator: {
-    modules: ["dashboard", "calendar", "leads", "intake", "vob", "clients", "authorizations", "sop", "training", "ai_assistant"],
+    modules: ["dashboard", "leads", "intake", "vob", "clients", "authorizations", "sop", "training", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, leads: VIEW_EDIT, intake: VIEW_EDIT, clients: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
   authorization_coordinator: {
-    modules: ["dashboard", "calendar", "clients", "authorizations", "vob", "cases", "billing", "insurance", "sop", "ai_assistant"],
+    modules: ["dashboard", "clients", "authorizations", "vob", "cases", "billing", "insurance", "sop", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, clients: VIEW_EDIT, cases: VIEW_EDIT, billing: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
   scheduling_team: {
-    modules: ["dashboard", "calendar", "scheduling", "clients", "staff", "sop", "ai_assistant"],
+    modules: ["dashboard", "scheduling", "clients", "staff", "sop", "ai_assistant"],
     scope: "state",
     actions: { dashboard: VIEW, scheduling: FULL, clients: VIEW, staff: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
   recruiting_team: {
-    modules: ["dashboard", "calendar", "recruiting", "staff", "credentialing", "employee_ops", "training", "hr", "ai_assistant"],
+    modules: ["dashboard", "recruiting", "staff", "credentialing", "employee_ops", "training", "hr", "ai_assistant"],
     scope: "company",
     actions: { dashboard: VIEW, staff: VIEW_EDIT.concat("assign") as OSAction[], hr: VIEW_EDIT },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   hr_team: {
-    modules: ["dashboard", "calendar", "hr", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "ai_assistant"],
+    modules: ["dashboard", "hr", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "ai_assistant"],
     scope: "company",
     actions: { dashboard: VIEW, hr: FULL, staff: VIEW_EDIT, training: VIEW_EDIT },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
@@ -291,32 +289,32 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: true, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   qa_team: {
-    modules: ["dashboard", "calendar", "clients", "cases", "authorizations", "staff", "evaluations", "reports", "sop", "ai_assistant"],
+    modules: ["dashboard", "clients", "cases", "authorizations", "staff", "evaluations", "reports", "sop", "ai_assistant"],
     scope: "company",
     actions: { dashboard: VIEW, clients: VIEW, cases: VIEW_EDIT.concat("approve") as OSAction[], staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
   payroll_coordinator: {
-    modules: ["dashboard", "calendar", "payroll", "billing", "staff", "employee_ops", "reports", "sop", "ai_assistant"],
+    modules: ["dashboard", "payroll", "billing", "staff", "employee_ops", "reports", "sop", "ai_assistant"],
     scope: "company",
     actions: { dashboard: VIEW, payroll: FULL, staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   bcba: {
-    modules: ["dashboard", "calendar", "clients", "scheduling", "cases", "evaluations", "training", "sop", "ai_assistant"],
+    modules: ["dashboard", "clients", "scheduling", "cases", "evaluations", "training", "sop", "ai_assistant"],
     scope: "assigned",
     actions: { dashboard: VIEW, clients: VIEW_EDIT, scheduling: VIEW, cases: VIEW_EDIT, training: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   rbt: {
-    modules: ["dashboard", "calendar", "clients", "scheduling", "training", "sop"],
+    modules: ["dashboard", "clients", "scheduling", "training", "sop"],
     scope: "assigned",
     actions: { dashboard: VIEW, clients: VIEW, scheduling: VIEW, training: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   marketing_team: {
     modules: [
-      "dashboard", "calendar", "training",
+      "dashboard", "training",
       "marketing_dashboard",
       // Growth Engine
       "campaigns", "lead_sources", "seo_content", "web_analytics", "call_tracking",
