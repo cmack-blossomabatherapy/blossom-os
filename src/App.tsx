@@ -383,6 +383,7 @@ const App = () => (
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
                   <Route path="/sop" element={<OSResourceLibrary />} />
                   <Route path="/resource-library" element={<OSResourceLibrary />} />
+                  <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
                   <Route path="/marketing" element={<OSPlaceholder title="Marketing Ops" description="Lead generation, campaigns, attribution." icon={Megaphone} />} />
                   <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
