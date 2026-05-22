@@ -1,0 +1,946 @@
+import { useMemo, useState } from "react";
+import {
+  Search, Bell, Sparkles, Plus, ChevronRight, X, Inbox, CalendarClock,
+  FileText, ClipboardCheck, FileWarning, ShieldAlert, AlertTriangle,
+  CheckCircle2, Send, FileSignature, Flame, Brain, MapPin, ListFilter,
+  Stamp, ArrowUpRight, BadgeCheck, BookOpen, Activity, UserCog, MessageSquare,
+  Star, Eye, Users, Workflow, RefreshCw,
+} from "lucide-react";
+import { OSShell } from "./OSShell";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+
+/* ─────────── tone palette (calm, restrained) ─────────── */
+
+type Tone = "ok" | "info" | "warn" | "crit" | "neutral";
+
+const toneChip: Record<Tone, string> = {
+  ok:      "bg-[hsl(150_60%_94%)] text-[hsl(155_50%_32%)]",
+  info:    "bg-[hsl(220_80%_96%)] text-[hsl(220_60%_42%)]",
+  warn:    "bg-[hsl(38_100%_94%)] text-[hsl(30_75%_40%)]",
+  crit:    "bg-[hsl(355_90%_96%)] text-[hsl(355_65%_48%)]",
+  neutral: "bg-foreground/[0.05] text-foreground/65",
+};
+const toneDot: Record<Tone, string> = {
+  ok:      "bg-[hsl(155_55%_48%)]",
+  info:    "bg-[hsl(220_70%_55%)]",
+  warn:    "bg-[hsl(35_85%_52%)]",
+  crit:    "bg-[hsl(355_70%_55%)]",
+  neutral: "bg-foreground/30",
+};
+const toneAccentBar: Record<Tone, string> = {
+  ok:      "bg-[hsl(155_55%_48%)]",
+  info:    "bg-[hsl(220_70%_55%)]",
+  warn:    "bg-[hsl(35_85%_52%)]",
+  crit:    "bg-[hsl(355_70%_55%)]",
+  neutral: "bg-foreground/15",
+};
+
+/* ─────────── queue model ─────────── */
+
+type QueueKey =
+  | "all" | "attention" | "due_today" | "expiring" | "awaiting" | "pr" | "qa_ready"
+  | "missing" | "denied" | "recent"
+  | "initial" | "treatment" | "reassessment" | "pt97156" | "secondary" | "multipayor"
+  | "esc_sd" | "esc_bcba" | "esc_qa" | "parent_sig" | "high_risk"
+  | "ga" | "nc" | "tn" | "va" | "md"
+  | "mine" | "unassigned" | "viewed" | "following";
+
+type QueueGroup = { title: string; items: { key: QueueKey; label: string; count: number; tone?: Tone }[] };
+
+const QUEUE_GROUPS: QueueGroup[] = [
+  {
+    title: "Today",
+    items: [
+      { key: "attention",  label: "Needs Attention",       count: 9, tone: "crit" },
+      { key: "due_today",  label: "Due Today",             count: 6, tone: "warn" },
+      { key: "expiring",   label: "Expiring Soon",         count: 6, tone: "crit" },
+      { key: "awaiting",   label: "Awaiting Submission",   count: 7, tone: "info" },
+      { key: "pr",         label: "PR Follow-Up",          count: 8, tone: "warn" },
+      { key: "qa_ready",   label: "QA Ready",              count: 3, tone: "ok" },
+      { key: "missing",    label: "Missing Documentation", count: 4, tone: "warn" },
+      { key: "denied",     label: "Denials",               count: 3, tone: "warn" },
+      { key: "recent",     label: "Recently Updated",      count: 12 },
+    ],
+  },
+  {
+    title: "Workflow",
+    items: [
+      { key: "initial",      label: "Initial Authorizations", count: 5 },
+      { key: "treatment",    label: "Treatment Authorizations", count: 18 },
+      { key: "reassessment", label: "Reassessments",         count: 7 },
+      { key: "pt97156",      label: "Parent Training 97156",  count: 4 },
+      { key: "secondary",    label: "Secondary Insurance",    count: 3 },
+      { key: "multipayor",   label: "Multi-Payor Cases",      count: 2 },
+    ],
+  },
+  {
+    title: "Escalations",
+    items: [
+      { key: "esc_sd",     label: "Needs State Director",  count: 2, tone: "crit" },
+      { key: "esc_bcba",   label: "Needs BCBA",            count: 3, tone: "warn" },
+      { key: "esc_qa",     label: "Needs QA",              count: 2, tone: "warn" },
+      { key: "parent_sig", label: "Parent Signature Needed", count: 2, tone: "warn" },
+      { key: "high_risk",  label: "High Operational Risk", count: 4, tone: "crit" },
+    ],
+  },
+  {
+    title: "States",
+    items: [
+      { key: "ga", label: "Georgia",        count: 14 },
+      { key: "nc", label: "North Carolina", count: 11 },
+      { key: "tn", label: "Tennessee",      count: 6 },
+      { key: "va", label: "Virginia",       count: 5 },
+      { key: "md", label: "Maryland",       count: 3 },
+    ],
+  },
+  {
+    title: "My Work",
+    items: [
+      { key: "mine",       label: "Assigned to Me",   count: 18 },
+      { key: "unassigned", label: "Unassigned",       count: 2, tone: "warn" },
+      { key: "viewed",     label: "Recently Viewed",  count: 5 },
+      { key: "following",  label: "Following",        count: 3 },
+    ],
+  },
+];
+
+/* ─────────── authorization model ─────────── */
+
+type AuthState = "awaiting" | "expiring" | "denied" | "missing" | "qa" | "approved";
+type AuthCard = {
+  id: string;
+  client: string;
+  state: "GA" | "NC" | "TN" | "VA" | "MD";
+  payer: string;
+  authType: "Initial Auth" | "Treatment Auth" | "Reassessment" | "Parent Training 97156";
+  requestType: string;
+  coordinator: string;
+  bcba: string;
+  status: string;
+  stateTone: AuthState;
+  risk: Tone;
+  expiresInDays: number | null;
+  prStatus: { label: string; tone: Tone };
+  qaStatus: { label: string; tone: Tone };
+  missingDocs: string[];
+  parentSig: "Signed" | "Pending" | "Not required";
+  treatmentPlan: { label: string; tone: Tone };
+  lastActivity: string;
+  queues: QueueKey[];
+};
+
+const AUTHS: AuthCard[] = [
+  {
+    id: "AUTH-1042", client: "Ava Walker", state: "NC", payer: "BCBS NC",
+    authType: "Treatment Auth", requestType: "6-month renewal",
+    coordinator: "Rivky", bcba: "Dr. Patel",
+    status: "Expiring Soon", stateTone: "expiring", risk: "crit",
+    expiresInDays: 6,
+    prStatus:     { label: "PR overdue (12d)",   tone: "crit" },
+    qaStatus:     { label: "Not started",        tone: "neutral" },
+    missingDocs: ["Progress report"],
+    parentSig: "Signed",
+    treatmentPlan: { label: "Pending PR",        tone: "warn" },
+    lastActivity: "BCBA pinged · 2h",
+    queues: ["all","attention","expiring","pr","high_risk","esc_bcba","treatment","nc","mine","recent"],
+  },
+  {
+    id: "AUTH-1051", client: "Liam Pierce", state: "GA", payer: "Aetna",
+    authType: "Reassessment", requestType: "60-day pre-expiration",
+    coordinator: "Rivky", bcba: "Dr. Nguyen",
+    status: "Awaiting Submission", stateTone: "awaiting", risk: "warn",
+    expiresInDays: 24,
+    prStatus:     { label: "PR received",        tone: "ok" },
+    qaStatus:     { label: "QA ready to submit", tone: "ok" },
+    missingDocs: [],
+    parentSig: "Signed",
+    treatmentPlan: { label: "Reviewed",          tone: "ok" },
+    lastActivity: "QA approved · 35m",
+    queues: ["all","attention","due_today","awaiting","qa_ready","reassessment","ga","mine","recent"],
+  },
+  {
+    id: "AUTH-1063", client: "Reya Sharma", state: "VA", payer: "Cigna VA",
+    authType: "Treatment Auth", requestType: "6-month renewal",
+    coordinator: "Julianne", bcba: "Dr. Patel",
+    status: "In QA Review", stateTone: "qa", risk: "info",
+    expiresInDays: 41,
+    prStatus:     { label: "PR in QA review",    tone: "info" },
+    qaStatus:     { label: "QA reviewing",       tone: "info" },
+    missingDocs: [],
+    parentSig: "Signed",
+    treatmentPlan: { label: "With QA",           tone: "info" },
+    lastActivity: "Sent to QA · 1d",
+    queues: ["all","treatment","va","recent","esc_qa"],
+  },
+  {
+    id: "AUTH-1078", client: "Mason Hayes", state: "NC", payer: "UHC",
+    authType: "Treatment Auth", requestType: "6-month renewal",
+    coordinator: "Rivky", bcba: "Dr. Cole",
+    status: "Missing Documentation", stateTone: "missing", risk: "crit",
+    expiresInDays: 18,
+    prStatus:     { label: "Awaiting BCBA",      tone: "warn" },
+    qaStatus:     { label: "Blocked",            tone: "crit" },
+    missingDocs: ["Treatment plan", "Parent signature"],
+    parentSig: "Pending",
+    treatmentPlan: { label: "Not received",      tone: "crit" },
+    lastActivity: "Parent emailed · 4h",
+    queues: ["all","attention","missing","high_risk","parent_sig","treatment","nc","mine","recent","esc_bcba"],
+  },
+  {
+    id: "AUTH-1085", client: "Sofia Ortiz", state: "NC", payer: "BCBS NC",
+    authType: "Reassessment", requestType: "90-day pre-expiration",
+    coordinator: "Julianne", bcba: "Dr. Nguyen",
+    status: "QA Approved", stateTone: "qa", risk: "info",
+    expiresInDays: 55,
+    prStatus:     { label: "PR received",        tone: "ok" },
+    qaStatus:     { label: "QA approved",        tone: "ok" },
+    missingDocs: [],
+    parentSig: "Pending",
+    treatmentPlan: { label: "Reviewed",          tone: "ok" },
+    lastActivity: "QA approved · 2h",
+    queues: ["all","qa_ready","reassessment","nc","parent_sig","recent"],
+  },
+  {
+    id: "AUTH-1093", client: "Noah Davis", state: "VA", payer: "Cigna VA",
+    authType: "Treatment Auth", requestType: "Appeal · medical necessity",
+    coordinator: "Rivky", bcba: "Dr. Cole",
+    status: "Denied", stateTone: "denied", risk: "warn",
+    expiresInDays: null,
+    prStatus:     { label: "PR on file",         tone: "ok" },
+    qaStatus:     { label: "Complete",           tone: "ok" },
+    missingDocs: [],
+    parentSig: "Signed",
+    treatmentPlan: { label: "Updated for appeal", tone: "info" },
+    lastActivity: "Denial received · 3h",
+    queues: ["all","attention","denied","treatment","va","mine","recent"],
+  },
+  {
+    id: "AUTH-1101", client: "Ezra Klein", state: "GA", payer: "Aetna",
+    authType: "Initial Auth", requestType: "New start",
+    coordinator: "Rivky", bcba: "Dr. Patel",
+    status: "Awaiting Submission", stateTone: "awaiting", risk: "info",
+    expiresInDays: null,
+    prStatus:     { label: "Not required",       tone: "neutral" },
+    qaStatus:     { label: "Complete",           tone: "ok" },
+    missingDocs: [],
+    parentSig: "Signed",
+    treatmentPlan: { label: "Approved",          tone: "ok" },
+    lastActivity: "Plan finalized · 1d",
+    queues: ["all","due_today","awaiting","initial","ga","mine","recent"],
+  },
+  {
+    id: "AUTH-1119", client: "Maya Lopez", state: "TN", payer: "BCBS TN",
+    authType: "Parent Training 97156", requestType: "Quarterly",
+    coordinator: "Julianne", bcba: "Dr. Cole",
+    status: "Awaiting Submission", stateTone: "awaiting", risk: "info",
+    expiresInDays: null,
+    prStatus:     { label: "PR received",        tone: "ok" },
+    qaStatus:     { label: "Complete",           tone: "ok" },
+    missingDocs: [],
+    parentSig: "Signed",
+    treatmentPlan: { label: "Reviewed",          tone: "ok" },
+    lastActivity: "Ready · 30m",
+    queues: ["all","awaiting","pt97156","tn","recent"],
+  },
+];
+
+/* ─────────── small ui atoms ─────────── */
+
+function CountPill({ tone = "neutral", children }: { tone?: Tone; children: React.ReactNode }) {
+  return (
+    <span className={cn("inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums", toneChip[tone])}>
+      {children}
+    </span>
+  );
+}
+
+function StatusChip({ tone, children }: { tone: Tone; children: React.ReactNode }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", toneChip[tone])}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", toneDot[tone])} />
+      {children}
+    </span>
+  );
+}
+
+/* ─────────── page ─────────── */
+
+export default function OSAuthWorkspace() {
+  const [activeQueue, setActiveQueue] = useState<QueueKey>("attention");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+
+  const activeMeta = useMemo(() => {
+    for (const g of QUEUE_GROUPS) {
+      const found = g.items.find((i) => i.key === activeQueue);
+      if (found) return { group: g.title, ...found };
+    }
+    return { group: "Today", key: activeQueue, label: "All", count: AUTHS.length };
+  }, [activeQueue]);
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return AUTHS.filter((a) => {
+      if (activeQueue !== "all" && !a.queues.includes(activeQueue)) return false;
+      if (!q) return true;
+      return [a.client, a.payer, a.id, a.bcba, a.coordinator, a.state, a.authType]
+        .some((s) => s.toLowerCase().includes(q));
+    });
+  }, [activeQueue, search]);
+
+  const openAuth = visible.find((a) => a.id === openId) ?? null;
+
+  const toggleSel = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  return (
+    <OSShell
+      rightRail={<RightContextPanel queueLabel={activeMeta.label} />}
+    >
+      {/* HEADER */}
+      <header className="os-rise flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
+            <Stamp className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Authorization Workspace
+          </div>
+          <h1 className="mt-2 text-[24px] font-semibold tracking-tight md:text-[28px]">Authorization Workspace</h1>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            Manage authorization progression, PR coordination, expiration readiness, and operational blockers.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search client, payer, auth ID…"
+              className="h-9 w-[260px] rounded-xl border border-white/70 bg-white/70 pl-8 pr-3 text-[12.5px] backdrop-blur transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[hsl(265_70%_55%/0.4)]"
+            />
+          </div>
+          <button className="grid h-9 w-9 place-items-center rounded-xl border border-white/70 bg-white/70 text-muted-foreground transition hover:text-foreground" aria-label="Notifications">
+            <Bell className="h-4 w-4" />
+          </button>
+          <button className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/70 bg-white/70 px-3 text-[12.5px] font-semibold text-foreground/85 transition hover:text-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" /> Ask Blossom AI
+          </button>
+          <button className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-[hsl(265_85%_62%)] to-[hsl(285_85%_68%)] px-3 text-[12.5px] font-semibold text-white shadow-[0_10px_24px_-14px_hsl(265_85%_55%/0.5)] transition hover:opacity-95">
+            <Plus className="h-3.5 w-3.5" /> New Authorization
+          </button>
+        </div>
+      </header>
+
+      {/* THREE-ZONE LAYOUT */}
+      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+        {/* LEFT — operational queues */}
+        <aside className="os-card max-h-[calc(100vh-220px)] overflow-y-auto p-3 lg:sticky lg:top-4">
+          <nav className="space-y-4">
+            {QUEUE_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {group.title}
+                </p>
+                <ul className="space-y-0.5">
+                  {group.items.map((q) => {
+                    const active = activeQueue === q.key;
+                    return (
+                      <li key={q.key}>
+                        <button
+                          onClick={() => { setActiveQueue(q.key); setSelected(new Set()); }}
+                          className={cn(
+                            "group flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left transition",
+                            active
+                              ? "bg-gradient-to-r from-[hsl(265_100%_96%)] to-[hsl(220_100%_97%)] text-foreground shadow-[inset_0_0_0_1px_hsl(265_85%_85%/0.7)]"
+                              : "text-foreground/75 hover:bg-foreground/[0.04] hover:text-foreground"
+                          )}
+                        >
+                          <span className={cn("flex items-center gap-2 text-[12.5px] font-medium", active && "font-semibold")}>
+                            {q.tone && <span className={cn("h-1.5 w-1.5 rounded-full", toneDot[q.tone])} />}
+                            <span className="truncate">{q.label}</span>
+                          </span>
+                          <CountPill tone={active ? "info" : (q.tone ?? "neutral")}>{q.count}</CountPill>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* CENTER — active work queue */}
+        <section className="min-w-0 space-y-3">
+          {/* Queue header + toolbar */}
+          <div className="os-card flex flex-wrap items-center justify-between gap-3 p-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{activeMeta.group}</p>
+              <h2 className="text-[16px] font-semibold tracking-tight">{activeMeta.label}</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <FilterChip icon={MapPin}        label="State" />
+              <FilterChip icon={AlertTriangle} label="Risk" />
+              <FilterChip icon={CalendarClock} label="Expiring" />
+              <FilterChip icon={FileText}      label="PR" />
+              <FilterChip icon={ClipboardCheck}label="QA" />
+              <FilterChip icon={UserCog}       label="Assigned" />
+              <button className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground" aria-label="More filters">
+                <ListFilter className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Selection toolbar (appears only when items selected) */}
+          {selected.size > 0 && (
+            <div className="os-card flex flex-wrap items-center justify-between gap-2 border border-[hsl(265_85%_85%/0.7)] bg-gradient-to-r from-[hsl(265_100%_98%)] to-[hsl(220_100%_98%)] p-3">
+              <div className="text-[12.5px] font-semibold">
+                {selected.size} selected
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <BulkAction icon={UserCog}        label="Assign" />
+                <BulkAction icon={MessageSquare}  label="Follow-Up" />
+                <BulkAction icon={Flame}          label="Escalate" />
+                <BulkAction icon={FileWarning}    label="Request Docs" />
+                <BulkAction icon={ClipboardCheck} label="Send to QA" />
+                <BulkAction icon={Workflow}       label="Change Status" />
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-foreground/[0.05] hover:text-foreground"
+                  aria-label="Clear selection"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Work cards */}
+          {visible.length === 0 ? (
+            <EmptyState queue={activeMeta.label} />
+          ) : (
+            <ul className="space-y-3">
+              {visible.map((a) => (
+                <AuthWorkCard
+                  key={a.id}
+                  auth={a}
+                  selected={selected.has(a.id)}
+                  onToggleSelect={() => toggleSel(a.id)}
+                  onOpen={() => setOpenId(a.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {/* DETAIL DRAWER */}
+      <Sheet open={!!openAuth} onOpenChange={(o) => !o && setOpenId(null)}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-xl">
+          {openAuth && <AuthDetailDrawer auth={openAuth} />}
+        </SheetContent>
+      </Sheet>
+    </OSShell>
+  );
+}
+
+/* ─────────── center: work card ─────────── */
+
+function AuthWorkCard({
+  auth, selected, onToggleSelect, onOpen,
+}: { auth: AuthCard; selected: boolean; onToggleSelect: () => void; onOpen: () => void }) {
+  const stateToToneKey: Record<AuthState, Tone> = {
+    awaiting: "info", expiring: "crit", denied: "warn",
+    missing: "warn", qa: "info", approved: "ok",
+  };
+  const accent = stateToToneKey[auth.stateTone];
+
+  return (
+    <li className={cn(
+      "os-rise group relative overflow-hidden rounded-2xl border bg-white/75 backdrop-blur transition",
+      selected
+        ? "border-[hsl(265_85%_75%)] shadow-[0_0_0_1px_hsl(265_85%_85%/0.8),0_16px_36px_-22px_hsl(265_60%_50%/0.3)]"
+        : "border-white/70 shadow-[0_1px_0_hsl(0_0%_100%/0.7)_inset,0_10px_28px_-18px_hsl(220_50%_30%/0.16)] hover:-translate-y-0.5 hover:shadow-[0_1px_0_hsl(0_0%_100%/0.7)_inset,0_18px_38px_-22px_hsl(220_50%_30%/0.22)]"
+    )}>
+      {/* left accent rail */}
+      <span className={cn("absolute inset-y-0 left-0 w-[3px]", toneAccentBar[accent])} />
+
+      <div className="p-4 pl-5">
+        {/* TOP */}
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 h-3.5 w-3.5 rounded border-foreground/30 text-[hsl(265_85%_60%)] focus:ring-[hsl(265_85%_60%/0.4)]"
+            aria-label={`Select ${auth.client}`}
+          />
+
+          <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-[14.5px] font-semibold tracking-tight">{auth.client}</h3>
+              <span className="text-[11px] text-muted-foreground">{auth.id}</span>
+              <StatusChip tone={accent}>{auth.status}</StatusChip>
+              {auth.risk === "crit" && <StatusChip tone="crit">High risk</StatusChip>}
+            </div>
+            <p className="mt-1 truncate text-[11.5px] text-muted-foreground">
+              {auth.state} · {auth.payer} · {auth.authType} · {auth.requestType}
+            </p>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              Coordinator <span className="text-foreground/80">{auth.coordinator}</span> · BCBA <span className="text-foreground/80">{auth.bcba}</span>
+            </p>
+          </button>
+
+          {auth.expiresInDays !== null && (
+            <div className="hidden shrink-0 text-right sm:block">
+              <p className={cn("text-[18px] font-semibold tabular-nums leading-none", auth.expiresInDays <= 14 ? "text-[hsl(355_65%_48%)]" : auth.expiresInDays <= 30 ? "text-[hsl(30_75%_40%)]" : "text-foreground/80")}>
+                {auth.expiresInDays}d
+              </p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">to expire</p>
+            </div>
+          )}
+        </div>
+
+        {/* MIDDLE */}
+        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11.5px] sm:grid-cols-4">
+          <MetaRow label="PR" tone={auth.prStatus.tone}>{auth.prStatus.label}</MetaRow>
+          <MetaRow label="QA" tone={auth.qaStatus.tone}>{auth.qaStatus.label}</MetaRow>
+          <MetaRow label="Plan" tone={auth.treatmentPlan.tone}>{auth.treatmentPlan.label}</MetaRow>
+          <MetaRow label="Signature" tone={auth.parentSig === "Signed" ? "ok" : auth.parentSig === "Pending" ? "warn" : "neutral"}>
+            {auth.parentSig}
+          </MetaRow>
+        </div>
+
+        {auth.missingDocs.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Missing</span>
+            {auth.missingDocs.map((d) => (
+              <span key={d} className={cn("rounded-full px-2 py-0.5 text-[10.5px] font-semibold", toneChip.warn)}>{d}</span>
+            ))}
+          </div>
+        )}
+
+        {/* BOTTOM — actions */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-foreground/[0.06] pt-3">
+          <p className="text-[10.5px] text-muted-foreground">{auth.lastActivity}</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <CardAction icon={Eye}             label="Open" onClick={onOpen} primary />
+            <PrimaryActionFor auth={auth} onOpen={onOpen} />
+            <CardAction icon={Flame}           label="Escalate" />
+            <CardAction icon={MessageSquare}   label="Note" />
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function MetaRow({ label, tone, children }: { label: string; tone: Tone; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 flex items-center gap-1.5">
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", toneDot[tone])} />
+      <span className="truncate">
+        <span className="text-muted-foreground">{label} · </span>
+        <span className="text-foreground/85">{children}</span>
+      </span>
+    </div>
+  );
+}
+
+function PrimaryActionFor({ auth, onOpen }: { auth: AuthCard; onOpen: () => void }) {
+  switch (auth.stateTone) {
+    case "awaiting":  return <CardAction icon={Send}            label="Submit" />;
+    case "expiring":  return <CardAction icon={FileText}        label="Request PR" />;
+    case "denied":    return <CardAction icon={ShieldAlert}     label="Review Denial" />;
+    case "missing":   return <CardAction icon={FileWarning}     label="Resolve Docs" onClick={onOpen} />;
+    case "qa":        return <CardAction icon={ClipboardCheck}  label="Send to QA" />;
+    case "approved":  return <CardAction icon={CheckCircle2}    label="Mark Reviewed" />;
+  }
+}
+
+function CardAction({
+  icon: Icon, label, onClick, primary,
+}: { icon: React.ElementType; label: string; onClick?: () => void; primary?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] font-semibold transition",
+        primary
+          ? "bg-foreground text-background hover:opacity-90"
+          : "border border-white/70 bg-white/70 text-foreground/80 hover:text-foreground"
+      )}
+    >
+      <Icon className="h-3 w-3" /> {label}
+    </button>
+  );
+}
+
+function FilterChip({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+  return (
+    <button className="inline-flex h-7 items-center gap-1 rounded-full border border-white/70 bg-white/70 px-2.5 text-[11px] font-medium text-foreground/75 transition hover:text-foreground">
+      <Icon className="h-3 w-3" /> {label}
+    </button>
+  );
+}
+
+function BulkAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+  return (
+    <button className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/70 bg-white/80 px-2 text-[11.5px] font-semibold text-foreground/80 transition hover:text-foreground">
+      <Icon className="h-3 w-3" /> {label}
+    </button>
+  );
+}
+
+function EmptyState({ queue }: { queue: string }) {
+  return (
+    <div className="os-card flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+      <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[hsl(150_60%_94%)] text-[hsl(155_50%_32%)]">
+        <CheckCircle2 className="h-5 w-5" />
+      </div>
+      <p className="text-[14px] font-semibold tracking-tight">All clear in “{queue}”</p>
+      <p className="text-[12.5px] text-muted-foreground">No authorization work needs attention here right now.</p>
+    </div>
+  );
+}
+
+/* ─────────── right context panel ─────────── */
+
+function RightContextPanel({ queueLabel }: { queueLabel: string }) {
+  return (
+    <>
+      {/* Operational Summary */}
+      <section className="os-card">
+        <header className="mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Today</p>
+          <h3 className="text-[14px] font-semibold tracking-tight">Operational Summary</h3>
+        </header>
+        <dl className="grid grid-cols-2 gap-2 text-[12px]">
+          <SummaryCell label="Worked today" value="11" tone="info" />
+          <SummaryCell label="Overdue"      value="6"  tone="crit" />
+          <SummaryCell label="Ready to submit" value="4" tone="ok" />
+          <SummaryCell label="PR escalations"  value="2" tone="warn" />
+        </dl>
+      </section>
+
+      {/* Workflow Guidance */}
+      <section className="os-card">
+        <header className="mb-2 flex items-center gap-2">
+          <Activity className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+          <h3 className="text-[14px] font-semibold tracking-tight">Workflow Guidance</h3>
+        </header>
+        <p className="text-[11px] text-muted-foreground">Context for <span className="text-foreground/80 font-medium">{queueLabel}</span></p>
+        <ul className="mt-2.5 space-y-1.5 text-[12px]">
+          {[
+            "3 auths need PR follow-up before expiration.",
+            "2 cases require State Director escalation (≤6 weeks).",
+            "1 reassessment is waiting on treatment plan from QA.",
+          ].map((g) => (
+            <li key={g} className="flex items-start gap-2 rounded-xl border border-white/60 bg-white/60 px-2.5 py-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(35_85%_52%)]" />
+              <span className="text-foreground/85">{g}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Ask Blossom AI */}
+      <section className="os-card relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.22)] to-transparent blur-2xl" />
+        <header className="mb-3 flex items-center gap-2">
+          <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
+            <Brain className="h-3.5 w-3.5" />
+          </div>
+          <div>
+            <h3 className="text-[14px] font-semibold tracking-tight">Ask Blossom AI</h3>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Auth operations</p>
+          </div>
+        </header>
+        <div className="rounded-xl border border-white/70 bg-white/70 p-2">
+          <input
+            placeholder="Ask about an auth, PR risk, or blocker…"
+            className="h-8 w-full rounded-lg bg-transparent px-2 text-[12px] placeholder:text-muted-foreground/70 focus:outline-none"
+          />
+        </div>
+        <ul className="mt-2 space-y-1">
+          {[
+            "Why is this auth at risk?",
+            "What's blocking submission?",
+            "Summarize today's PR escalations.",
+            "What should I work on first?",
+          ].map((p) => (
+            <li key={p}>
+              <button className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] text-foreground/75 transition hover:bg-foreground/[0.04] hover:text-foreground">
+                <span className="truncate">{p}</span>
+                <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* SOP / Workflow Reference */}
+      <section className="os-card">
+        <header className="mb-2 flex items-center gap-2">
+          <BookOpen className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+          <h3 className="text-[14px] font-semibold tracking-tight">SOP & Workflows</h3>
+        </header>
+        <ul className="space-y-1.5">
+          {[
+            "PR Escalation Process",
+            "Missing Documentation Process",
+            "QA Submission Process",
+            "Reassessment Timing Logic",
+          ].map((s) => (
+            <li key={s}>
+              <a className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12px] text-foreground/85 transition hover:bg-white/80" href="/training">
+                <span className="truncate">{s}</span>
+                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Recent Activity */}
+      <section className="os-card">
+        <header className="mb-2 flex items-center gap-2">
+          <RefreshCw className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+          <h3 className="text-[14px] font-semibold tracking-tight">Recent Activity</h3>
+        </header>
+        <ul className="space-y-2.5">
+          {[
+            { who: "BCBS NC",    what: "approved auth · Walker",        when: "12m" },
+            { who: "Dr. Nguyen", what: "uploaded PR · Pierce",          when: "35m" },
+            { who: "QA",         what: "reviewed plan · Ortiz",          when: "2h" },
+            { who: "Cigna VA",   what: "denied auth · Davis",            when: "3h" },
+            { who: "Parent",     what: "signed consent · Hayes",         when: "4h" },
+          ].map((a, i) => (
+            <li key={i} className="flex items-start gap-2 text-[12px]">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(220_70%_55%)]" />
+              <p className="min-w-0">
+                <span className="font-semibold">{a.who}</span>{" "}
+                <span className="text-muted-foreground">{a.what}</span>
+                <span className="ml-1 text-[10.5px] text-muted-foreground">· {a.when}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+function SummaryCell({ label, value, tone }: { label: string; value: string; tone: Tone }) {
+  return (
+    <div className="rounded-xl border border-white/60 bg-white/60 px-2.5 py-2">
+      <p className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
+        <span className={cn("h-1.5 w-1.5 rounded-full", toneDot[tone])} /> {label}
+      </p>
+      <p className="mt-1 text-[18px] font-semibold tabular-nums leading-none">{value}</p>
+    </div>
+  );
+}
+
+/* ─────────── detail drawer ─────────── */
+
+function AuthDetailDrawer({ auth }: { auth: AuthCard }) {
+  const stateToToneKey: Record<AuthState, Tone> = {
+    awaiting: "info", expiring: "crit", denied: "warn",
+    missing: "warn", qa: "info", approved: "ok",
+  };
+  const tone = stateToToneKey[auth.stateTone];
+
+  return (
+    <div className="flex h-full flex-col bg-gradient-to-b from-[hsl(220_100%_99%)] via-white to-[hsl(265_100%_99%)]">
+      {/* header */}
+      <div className="border-b border-foreground/[0.06] p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{auth.id}</p>
+        <div className="mt-1 flex items-center gap-2">
+          <h2 className="truncate text-[20px] font-semibold tracking-tight">{auth.client}</h2>
+          <StatusChip tone={tone}>{auth.status}</StatusChip>
+        </div>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          {auth.state} · {auth.payer} · {auth.authType} · {auth.requestType}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <DrawerAction icon={Send}            label="Submit" primary />
+          <DrawerAction icon={FileText}        label="Request PR" />
+          <DrawerAction icon={ClipboardCheck}  label="Send to QA" />
+          <DrawerAction icon={Flame}           label="Escalate" />
+          <DrawerAction icon={MessageSquare}   label="Note" />
+          <DrawerAction icon={Star}            label="Follow" />
+        </div>
+      </div>
+
+      {/* sections */}
+      <div className="flex-1 space-y-4 overflow-y-auto p-5">
+        {/* Summary */}
+        <DrawerSection title="Authorization Summary">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[12.5px]">
+            <KV label="Payer">{auth.payer}</KV>
+            <KV label="Auth type">{auth.authType}</KV>
+            <KV label="Request">{auth.requestType}</KV>
+            <KV label="Expires in">{auth.expiresInDays !== null ? `${auth.expiresInDays} days` : "—"}</KV>
+            <KV label="Coordinator">{auth.coordinator}</KV>
+            <KV label="BCBA">{auth.bcba}</KV>
+            <KV label="State Director">{auth.state === "GA" ? "Shira" : "Julianne"}</KV>
+            <KV label="QA Reviewer">Rachel</KV>
+          </div>
+        </DrawerSection>
+
+        {/* Timeline */}
+        <DrawerSection title="Timeline">
+          <ol className="space-y-2">
+            {[
+              { t: "3d", text: "Authorization created", dot: "info" as Tone },
+              { t: "2d", text: "PR requested from BCBA", dot: "warn" as Tone },
+              { t: "1d", text: "Escalated to State Director", dot: "crit" as Tone },
+              { t: "4h", text: "Parent contacted for signature", dot: "warn" as Tone },
+              { t: "2h", text: "Last update from coordinator", dot: "info" as Tone },
+            ].map((e, i) => (
+              <li key={i} className="flex items-start gap-2 text-[12.5px]">
+                <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", toneDot[e.dot])} />
+                <span className="text-foreground/85">{e.text}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">{e.t} ago</span>
+              </li>
+            ))}
+          </ol>
+        </DrawerSection>
+
+        {/* Missing Documentation */}
+        <DrawerSection title="Missing Documentation">
+          {auth.missingDocs.length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">All required documents on file.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {auth.missingDocs.map((d) => (
+                <li key={d} className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-[12.5px]">
+                  <span className="flex items-center gap-2">
+                    <FileWarning className="h-3.5 w-3.5 text-[hsl(30_75%_40%)]" />
+                    <span className="font-medium">{d}</span>
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Owner: {d === "Parent signature" ? "Parent" : "BCBA"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DrawerSection>
+
+        {/* PR Tracking */}
+        <DrawerSection title="Progress Report Tracking">
+          <ul className="space-y-1.5 text-[12.5px]">
+            <RowKv label="PR requested">10 days ago</RowKv>
+            <RowKv label="PR due">In 4 days</RowKv>
+            <RowKv label="BCBA contacted">3 pings · last 4h</RowKv>
+            <RowKv label="State Director">{auth.state === "GA" ? "Shira & Rachel looped in (6w mark)" : "Julianne escalated (6w mark)"}</RowKv>
+            <RowKv label="Parent signature">{auth.parentSig}</RowKv>
+            <RowKv label="QA review">{auth.qaStatus.label}</RowKv>
+          </ul>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {auth.state === "GA"
+              ? "GA workflow: Rivky reaches out at 9w · Shira & Rachel looped in at 6w."
+              : "Multi-state workflow: weekly notifications begin at 9w (cc Julianne) · State Director escalated at 6w. SD exits once PR received unless parent signature support needed."}
+          </p>
+        </DrawerSection>
+
+        {/* QA */}
+        <DrawerSection title="QA Coordination">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
+            <KV label="Treatment plan">{auth.treatmentPlan.label}</KV>
+            <KV label="QA reviewer">Rachel</KV>
+            <KV label="QA status">{auth.qaStatus.label}</KV>
+            <KV label="Ready to submit">{auth.qaStatus.tone === "ok" ? "Yes" : "No"}</KV>
+          </div>
+        </DrawerSection>
+
+        {/* Notes */}
+        <DrawerSection title="Notes & Activity">
+          <textarea
+            placeholder="Add an internal note…"
+            className="h-20 w-full resize-none rounded-xl border border-white/70 bg-white/70 p-2.5 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-[hsl(265_85%_60%/0.4)]"
+          />
+          <ul className="mt-2 space-y-1.5 text-[12px]">
+            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
+              <p className="text-foreground/85">Pinged Dr. Cole again about treatment plan; ETA tomorrow.</p>
+              <p className="mt-0.5 text-[10.5px] text-muted-foreground">Rivky · 2h</p>
+            </li>
+            <li className="rounded-xl border border-white/60 bg-white/60 px-3 py-2">
+              <p className="text-foreground/85">Parent acknowledged signature request via email.</p>
+              <p className="mt-0.5 text-[10.5px] text-muted-foreground">System · 4h</p>
+            </li>
+          </ul>
+        </DrawerSection>
+
+        {/* AI */}
+        <DrawerSection title="Ask Blossom AI about this authorization">
+          <ul className="space-y-1">
+            {[
+              "Why is this auth at risk?",
+              "What is blocking submission?",
+              "Summarize this auth.",
+              "What should happen next?",
+              "What escalation steps are needed?",
+            ].map((p) => (
+              <li key={p}>
+                <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/60 bg-white/60 px-3 py-2 text-left text-[12px] text-foreground/85 transition hover:bg-white/80">
+                  <span className="truncate">{p}</span>
+                  <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </DrawerSection>
+      </div>
+    </div>
+  );
+}
+
+function DrawerSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-white/70 bg-white/70 p-4">
+      <h4 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</h4>
+      {children}
+    </section>
+  );
+}
+
+function KV({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="truncate text-foreground/90">{children}</p>
+    </div>
+  );
+}
+
+function RowKv({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/60 px-3 py-1.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground/90">{children}</span>
+    </li>
+  );
+}
+
+function DrawerAction({ icon: Icon, label, primary }: { icon: React.ElementType; label: string; primary?: boolean }) {
+  return (
+    <button
+      className={cn(
+        "inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-[12px] font-semibold transition",
+        primary
+          ? "bg-foreground text-background hover:opacity-90"
+          : "border border-white/70 bg-white/70 text-foreground/80 hover:text-foreground"
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </button>
+  );
+}
