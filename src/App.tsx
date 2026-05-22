@@ -175,6 +175,7 @@ import OSStateDirector from "./pages/os/OSStateDirector";
 import OSCommandCenter from "./pages/os/OSCommandCenter";
 import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
 import OSAuthCoordinator from "./pages/os/OSAuthCoordinator";
+import OSAuthWorkspace from "./pages/os/OSAuthWorkspace";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSHRTeam from "./pages/os/OSHRTeam";
@@ -318,6 +319,7 @@ const App = () => (
                   <Route path="/state-director" element={<OSStateDirector />} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />
+                  <Route path="/auth-workspace" element={<OSAuthWorkspace />} />
                   <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
