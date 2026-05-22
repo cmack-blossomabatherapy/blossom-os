@@ -206,6 +206,7 @@ import {
   Wallet, TrendingUp, ShieldAlert, Target, Workflow, BookOpen, Megaphone, PieChart,
   LifeBuoy, Inbox, AlertTriangle, KanbanSquare, Bot, Brain, Zap, Wand2, Activity,
   Users2, MapPin, UserPlus, MessageSquare, Globe, Hash, Sparkles, Star, HeartHandshake,
+  ShieldCheck,
 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -318,7 +319,6 @@ const App = () => (
                   <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
-                  <Route path="/clients" element={<OSClientsOperations />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
                   <Route path="/intake/leads" element={<OSLeadsV2 />} />
