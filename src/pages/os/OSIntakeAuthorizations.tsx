@@ -848,11 +848,17 @@ function AuthDrawer({
   const vob = simpleVOB(c);
   const blocker = authBlocker(c);
   const missing = handoff.filter((i) => !i.ok);
+  const nba = nextBestAction(c);
+  const expDays = daysUntilExpiration(c);
+  const earliestExp = (c.authorizations ?? [])
+    .map((a) => a.expirationDate)
+    .filter(Boolean)
+    .sort()[0] ?? c.nextReauthDate ?? null;
 
   return (
     <Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto p-0">
-        <div className="px-6 pt-6 pb-4 border-b border-border">
+      <SheetContent side="right" className="w-full sm:max-w-xl p-0 flex flex-col bg-card">
+        <div className="px-6 pt-6 pb-4 border-b border-border shrink-0">
           <SheetHeader>
             <SheetTitle className="text-xl">{c.childName}</SheetTitle>
           </SheetHeader>
@@ -870,7 +876,58 @@ function AuthDrawer({
           </div>
         </div>
 
-        <div className="px-6 py-5 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className={cn(
+            "rounded-2xl border p-4",
+            nba.tone === "warn" && "border-amber-500/30 bg-amber-500/[0.06]",
+            nba.tone === "info" && "border-primary/30 bg-primary/[0.05]",
+            nba.tone === "ok" && "border-emerald-500/30 bg-emerald-500/[0.05]",
+          )}>
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                nba.tone === "warn" && "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                nba.tone === "info" && "bg-primary/15 text-primary",
+                nba.tone === "ok" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+              )}>
+                <Lightbulb className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">What should happen next</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{nba.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{nba.why}</p>
+              </div>
+            </div>
+          </div>
+
+          <Section title="Expiration & Reassessment" icon={CalendarClock}>
+            {earliestExp ? (
+              <>
+                <KV k="Earliest expiration" v={new Date(earliestExp).toLocaleDateString()} />
+                <KV k="Time remaining" v={expDays !== null ? `${expDays}d` : "—"} />
+                <KV k="Next reassessment date" v={c.nextReauthDate ? new Date(c.nextReauthDate).toLocaleDateString() : "—"} />
+                {expDays !== null && expDays <= 90 && (
+                  <div className={cn(
+                    "mt-2 rounded-lg border px-3 py-2 text-xs",
+                    expDays <= 30
+                      ? "border-destructive/30 bg-destructive/[0.06] text-destructive"
+                      : expDays <= 60
+                        ? "border-amber-500/30 bg-amber-500/[0.06] text-amber-700 dark:text-amber-400"
+                        : "border-primary/20 bg-primary/[0.05] text-primary",
+                  )}>
+                    {expDays <= 30
+                      ? "Overdue risk — reassessment should already be in motion."
+                      : expDays <= 60
+                        ? "60-day warning — confirm BCBA progress report is on track."
+                        : "90-day warning — kick off reassessment workflow."}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No expiration date on file yet.</p>
+            )}
+          </Section>
+
           <Section title="Client Overview">
             <KV k="Patient" v={c.childName} />
             <KV k="Parent/Guardian" v={c.parentName || "—"} />
@@ -975,6 +1032,26 @@ function AuthDrawer({
               )}
             </div>
           </Section>
+        </div>
+
+        <div className="border-t border-border bg-card/95 backdrop-blur px-4 py-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button size="sm" onClick={() => onAction({ kind: "messageTeam", client: c, team: "Authorization" })}>
+              <Send className="mr-1.5 h-3.5 w-3.5" /> Submit Auth
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "messageTeam", client: c, team: "QA" })}>
+              <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" /> Send to QA
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "requestInfo", client: c })}>
+              <FileWarning className="mr-1.5 h-3.5 w-3.5" /> Request Info
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onAction({ kind: "followUp", client: c })}>
+              <CalendarClock className="mr-1.5 h-3.5 w-3.5" /> Start Reassessment
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onAction({ kind: "note", client: c })}>
+              <StickyNote className="mr-1.5 h-3.5 w-3.5" /> Note
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
