@@ -355,7 +355,7 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
                   await updateClient(active.client.id, {
                     blockers: Array.from(new Set([...(active.client.blockers ?? []), `Escalated to ${target}: ${reason}`])),
                   });
-                  await appendTimeline(active.client.id, `Escalated to ${target}: ${reason}`, "alert");
+                  await appendTimeline(active.client.id, `Escalated to ${target}: ${reason}`, "system");
                   await appendAutomation(active.client.id, `Escalation → ${target}: ${reason.slice(0, 80)}`);
                   finish(`Escalation routed to ${target}`);
                 }}
@@ -396,14 +396,13 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
                   const missing = text.trim();
                   const note = text2.trim();
                   await updateClient(active.client.id, {
-                    missingDocs: Array.from(new Set([...(active.client.missingDocs ?? []), missing])),
                     blockers: Array.from(new Set([...(active.client.blockers ?? []), `Missing: ${missing}`])),
                     nextAction: `Awaiting "${missing}" from family`,
                   });
                   await appendTimeline(
                     active.client.id,
                     `Requested missing info: ${missing}${note ? ` — ${note}` : ""}`,
-                    "alert",
+                    "system",
                   );
                   await appendAutomation(active.client.id, `Info requested from family: ${missing}`);
                   finish("Request logged & family marked as awaiting info");
