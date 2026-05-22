@@ -279,7 +279,12 @@ const FILTER_LABELS: Record<string, string> = {
 
 /* ─────────────────────── Intake Pulse ─────────────────────── */
 
-function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: () => void; loading: boolean }) {
+function IntakePulse({
+  leads, onRefresh, loading, onFilter, active,
+}: {
+  leads: Lead[]; onRefresh: () => void; loading: boolean;
+  onFilter: (key: string) => void; active: string | null;
+}) {
   const pulse = useMemo(() => {
     const c = {
       new: 0, awaiting_contact: 0, missing_info: 0, vob_pending: 0,
@@ -298,12 +303,12 @@ function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: 
   }, [leads]);
 
   const pills = [
-    { label: "New Inquiries", value: pulse.new },
-    { label: "Awaiting Contact", value: pulse.awaiting_contact },
-    { label: "Missing Information", value: pulse.missing_info },
-    { label: "VOB Pending", value: pulse.vob_pending },
-    { label: "Assessment Coord.", value: pulse.assessment },
-    { label: "Ready for Next Step", value: pulse.ready, accent: true },
+    { key: "new_inquiries", label: "New Inquiries", value: pulse.new },
+    { key: "awaiting_contact", label: "Awaiting Contact", value: pulse.awaiting_contact },
+    { key: "missing_info", label: "Missing Information", value: pulse.missing_info },
+    { key: "vob_pending", label: "VOB Pending", value: pulse.vob_pending },
+    { key: "assessment", label: "Assessment Coord.", value: pulse.assessment },
+    { key: "ready", label: "Ready for Next Step", value: pulse.ready, accent: true },
   ];
 
   return (
@@ -316,18 +321,20 @@ function IntakePulse({ leads, onRefresh, loading }: { leads: Lead[]; onRefresh: 
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {pills.map((p) => (
-          <div
+          <button
             key={p.label}
+            onClick={() => onFilter(p.key)}
             className={cn(
-              "rounded-2xl border border-border/70 bg-card p-4",
+              "text-left rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300",
               p.accent && "bg-primary/[0.04] border-primary/20",
+              active === p.key && "ring-2 ring-primary/40 border-primary/40",
             )}
           >
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{p.label}</p>
             <p className={cn("mt-1.5 text-2xl font-semibold tabular-nums", p.accent && "text-primary")}>
               {p.value.toLocaleString()}
             </p>
-          </div>
+          </button>
         ))}
       </div>
     </section>
