@@ -181,6 +181,7 @@ import OSAuthRiskCenter from "./pages/os/OSAuthRiskCenter";
 import OSSupervisionTracking from "./pages/os/OSSupervisionTracking";
 import OSParentTraining97156 from "./pages/os/OSParentTraining97156";
 import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
+import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
@@ -329,6 +330,7 @@ const App = () => (
                   <Route path="/supervision-tracking" element={<OSSupervisionTracking />} />
                   <Route path="/parent-training-97156" element={<OSParentTraining97156 />} />
                   <Route path="/scheduling-team" element={<OSSchedulingTeam />} />
+                  <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
