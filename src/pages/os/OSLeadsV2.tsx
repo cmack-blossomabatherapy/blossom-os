@@ -1,0 +1,656 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Search, Plus, Upload, Download, Filter, Sparkles, X, AlertCircle,
+  PhoneCall, Mail, Send, StickyNote, ChevronRight, Users, RefreshCw,
+  Loader2,
+} from "lucide-react";
+import { OSShell } from "./OSShell";
+import { useLeads } from "@/contexts/LeadsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { scopeLeadsForUser } from "@/lib/leads/scoping";
+import { LeadDetailDrawer } from "@/components/leads/LeadDetailDrawer";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import type { Lead } from "@/data/leads";
+import { toast } from "sonner";
+
+type ViewMode = "list" | "pipeline" | "followup";
+
+const PIPELINE_STAGES: { key: string; label: string; match: (l: Lead) => boolean }[] = [
+  { key: "new",        label: "New Lead",            match: (l) => l.status === "New Lead" },
+  { key: "contact",    label: "Contact Attempted",   match: (l) => l.status === "In Contact" },
+  { key: "form_sent",  label: "Form Sent",           match: (l) => l.status === "Sent Form" },
+  { key: "form_recv",  label: "Form Received",       match: (l) => l.status === "Form Received" },
+  { key: "missing",    label: "Missing Information", match: (l) => l.status === "Missing Information" },
+  { key: "vob_sent",   label: "Sent to VOB",         match: (l) => l.status === "Sent to VOB" },
+  { key: "vob_done",   label: "VOB Completed",       match: (l) => l.status === "VOB Completed" },
+  { key: "cant_reach", label: "Cannot Reach",        match: (l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+  { key: "nq",         label: "Non Qualified",       match: (l) => l.status === "Non-Qualified" },
+];
+
+const KPI_DEFS = [
+  { key: "new",        label: "New",            test: (l: Lead) => l.status === "New Lead" },
+  { key: "needs",      label: "Needs Contact",  test: (l: Lead) => !l.lastContacted || l.daysInStage > 2 },
+  { key: "form_sent",  label: "Form Sent",      test: (l: Lead) => l.formStatus === "Sent" || l.status === "Sent Form" },
+  { key: "form_done",  label: "Form Completed", test: (l: Lead) => l.formStatus === "Complete" || l.formStatus === "Completed" || l.status === "Form Received" },
+  { key: "missing",    label: "Missing Info",   test: (l: Lead) => l.status === "Missing Information" || l.formReviewStatus === "Missing Information" },
+  { key: "vob_sent",   label: "Sent to VOB",    test: (l: Lead) => l.status === "Sent to VOB" || l.vobStatus === "Sent" },
+  { key: "vob_done",   label: "VOB Completed",  test: (l: Lead) => l.status === "VOB Completed" || l.vobStatus === "Completed" || l.vobStatus === "Approved" || l.vobStatus === "Received" },
+  { key: "cant_reach", label: "Cannot Reach",   test: (l: Lead) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach" },
+];
+
+function StateBadge({ state }: { state: string }) {
+  if (!state) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-foreground font-medium tabular-nums">
+      {state}
+    </span>
+  );
+}
+
+function StatusChip({ status }: { status: string }) {
+  const tone =
+    status === "VOB Completed" || status === "Form Received" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" :
+    status === "Missing Information" ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" :
+    status === "Can't Reach" || status === "Non-Qualified" || status === "Sent Packet - Can't Reach" ? "bg-destructive/10 text-destructive" :
+    "bg-muted text-foreground";
+  return <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap", tone)}>{status}</span>;
+}
+
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+interface FilterState {
+  states: Set<string>;
+  owners: Set<string>;
+  statuses: Set<string>;
+  formStatuses: Set<string>;
+  vobStatuses: Set<string>;
+  insurances: Set<string>;
+  missingOnly: boolean;
+}
+const emptyFilters = (): FilterState => ({
+  states: new Set(), owners: new Set(), statuses: new Set(),
+  formStatuses: new Set(), vobStatuses: new Set(), insurances: new Set(),
+  missingOnly: false,
+});
+
+export default function OSLeadsV2() {
+  const { leads, loading, error, refresh } = useLeads();
+  const { user, roles } = useAuth();
+  const [profileState, setProfileState] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  const [view, setView] = useState<ViewMode>("list");
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<FilterState>(emptyFilters());
+  const [activeKpi, setActiveKpi] = useState<string | null>(null);
+  const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+
+  // Load profile state + display_name for scoping.
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles")
+      .select("state, display_name")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setProfileState((data?.state as string) ?? null);
+        setDisplayName((data?.display_name as string) ?? null);
+      });
+  }, [user?.id]);
+
+  // Apply role scoping.
+  const scopedLeads = useMemo(
+    () => scopeLeadsForUser(leads, { state: profileState, displayName, roles: roles as string[] }),
+    [leads, profileState, displayName, roles],
+  );
+
+  // Apply search + filters + active KPI.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return scopedLeads.filter((l) => {
+      if (q) {
+        const hay = [l.childName, l.parentName, l.phone, l.email, l.primaryInsurance, l.owner, l.state]
+          .map((s) => String(s ?? "").toLowerCase()).join(" ");
+        if (!hay.includes(q)) return false;
+      }
+      if (filters.states.size && !filters.states.has(l.state)) return false;
+      if (filters.owners.size && !filters.owners.has(l.owner)) return false;
+      if (filters.statuses.size && !filters.statuses.has(l.status)) return false;
+      if (filters.formStatuses.size && !filters.formStatuses.has(l.formStatus)) return false;
+      if (filters.vobStatuses.size && !filters.vobStatuses.has(l.vobStatus)) return false;
+      if (filters.insurances.size && !filters.insurances.has(l.primaryInsurance || "—")) return false;
+      if (filters.missingOnly && l.status !== "Missing Information" && l.formReviewStatus !== "Missing Information") return false;
+      if (activeKpi) {
+        const k = KPI_DEFS.find((kk) => kk.key === activeKpi);
+        if (k && !k.test(l)) return false;
+      }
+      return true;
+    });
+  }, [scopedLeads, query, filters, activeKpi]);
+
+  // Reset page on filter changes
+  useEffect(() => { setPage(0); }, [query, filters, activeKpi, view]);
+
+  const kpiCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const k of KPI_DEFS) c[k.key] = 0;
+    for (const l of scopedLeads) for (const k of KPI_DEFS) if (k.test(l)) c[k.key]++;
+    return c;
+  }, [scopedLeads]);
+
+  const activeFilterChips = useMemo(() => {
+    const chips: { label: string; clear: () => void }[] = [];
+    const toChip = (label: string, set: Set<string>, key: keyof FilterState) =>
+      [...set].forEach((v) => chips.push({
+        label: `${label}: ${v}`,
+        clear: () => setFilters((f) => {
+          const next = new Set(f[key] as Set<string>); next.delete(v);
+          return { ...f, [key]: next };
+        }),
+      }));
+    toChip("State", filters.states, "states");
+    toChip("Owner", filters.owners, "owners");
+    toChip("Status", filters.statuses, "statuses");
+    toChip("Form", filters.formStatuses, "formStatuses");
+    toChip("VOB", filters.vobStatuses, "vobStatuses");
+    toChip("Insurance", filters.insurances, "insurances");
+    if (filters.missingOnly) chips.push({ label: "Missing info only", clear: () => setFilters((f) => ({ ...f, missingOnly: false })) });
+    if (activeKpi) {
+      const k = KPI_DEFS.find((kk) => kk.key === activeKpi);
+      if (k) chips.push({ label: k.label, clear: () => setActiveKpi(null) });
+    }
+    return chips;
+  }, [filters, activeKpi]);
+
+  const exportCsv = () => {
+    const cols = ["childName", "parentName", "state", "owner", "status", "lastContacted", "formStatus", "primaryInsurance", "vobStatus", "phone", "email"];
+    const header = cols.join(",");
+    const rows = filtered.map((l) =>
+      cols.map((c) => {
+        const v = (l as any)[c];
+        const s = v == null ? "" : String(v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? `"${s}"` : s;
+      }).join(","),
+    );
+    const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `leads-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} leads`);
+  };
+
+  return (
+    <OSShell rightRail={<AIRail />}>
+      <div className="space-y-6">
+        {/* Header */}
+        <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Track new family inquiries, intake progress, forms, insurance, and VOB readiness.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <FiltersButton
+              filters={filters}
+              setFilters={setFilters}
+              source={scopedLeads}
+            />
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="mr-1.5 h-4 w-4" /> Export
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/data-uploads"><Upload className="mr-1.5 h-4 w-4" /> Import</Link>
+            </Button>
+            <Button size="sm" onClick={() => toast("Add Lead form coming soon")}>
+              <Plus className="mr-1.5 h-4 w-4" /> Add Lead
+            </Button>
+          </div>
+        </header>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search patient, parent, phone, email, insurance…"
+            className="h-11 w-full rounded-xl bg-muted/60 border border-border pl-10 pr-4 text-sm placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring focus:border-transparent transition outline-none"
+          />
+        </div>
+
+        {/* KPI strip */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {KPI_DEFS.map((k) => {
+            const active = activeKpi === k.key;
+            return (
+              <button
+                key={k.key}
+                onClick={() => setActiveKpi(active ? null : k.key)}
+                className={cn(
+                  "flex-shrink-0 min-w-[140px] rounded-2xl border px-4 py-3 text-left transition",
+                  active
+                    ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border/60 bg-card hover:bg-muted",
+                )}
+              >
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">{kpiCounts[k.key].toLocaleString()}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active filter chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {activeFilterChips.map((c, i) => (
+              <button
+                key={`${c.label}-${i}`}
+                onClick={c.clear}
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs hover:bg-muted/80"
+              >
+                {c.label}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+            <button
+              onClick={() => { setFilters(emptyFilters()); setActiveKpi(null); }}
+              className="text-xs text-muted-foreground hover:text-foreground ml-1"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
+        {/* View toggle + meta */}
+        <div className="flex items-center justify-between">
+          <div className="inline-flex items-center rounded-xl border border-border/60 bg-card p-1 text-sm">
+            {([
+              ["list", "List"],
+              ["pipeline", "Pipeline"],
+              ["followup", "Follow-Up"],
+            ] as [ViewMode, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={cn(
+                  "px-3 h-8 rounded-lg font-medium transition",
+                  view === id ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span>{filtered.length.toLocaleString()} of {scopedLeads.length.toLocaleString()} leads</span>
+            <button onClick={refresh} className="hover:text-foreground" aria-label="Refresh">
+              <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        {error && (
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5" /> {error}
+          </div>
+        )}
+
+        {loading && leads.length === 0 ? (
+          <div className="rounded-2xl border border-border/60 bg-card p-10 text-center">
+            <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">Loading leads…</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState onReset={() => { setQuery(""); setFilters(emptyFilters()); setActiveKpi(null); }} />
+        ) : view === "list" ? (
+          <ListView leads={filtered} onOpen={setOpenLeadId} page={page} setPage={setPage} />
+        ) : view === "pipeline" ? (
+          <PipelineView leads={filtered} onOpen={setOpenLeadId} />
+        ) : (
+          <FollowUpView leads={filtered} onOpen={setOpenLeadId} />
+        )}
+      </div>
+
+      {openLeadId && (
+        <LeadDetailDrawer leadId={openLeadId} onClose={() => setOpenLeadId(null)} />
+      )}
+    </OSShell>
+  );
+}
+
+/* ─────────────────────── List View ─────────────────────── */
+
+const PAGE_SIZE = 50;
+
+function ListView({
+  leads, onOpen, page, setPage,
+}: { leads: Lead[]; onOpen: (id: string) => void; page: number; setPage: (n: number) => void }) {
+  const start = page * PAGE_SIZE;
+  const slice = leads.slice(start, start + PAGE_SIZE);
+  const pages = Math.ceil(leads.length / PAGE_SIZE);
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-[11px] uppercase tracking-wide text-muted-foreground">
+            <tr>
+              {["Patient", "Parent", "State", "Owner", "Status", "Last Contact", "Form", "Insurance", "VOB", "Next Action", ""].map((h) => (
+                <th key={h} className="text-left font-medium px-3 py-2.5 whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {slice.map((l) => (
+              <tr
+                key={l.id}
+                onClick={() => onOpen(l.id)}
+                className="hover:bg-muted/40 cursor-pointer group"
+              >
+                <td className="px-3 py-2.5 font-medium whitespace-nowrap">{l.childName}</td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.parentName || "—"}</td>
+                <td className="px-3 py-2.5"><StateBadge state={l.state} /></td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.owner}</td>
+                <td className="px-3 py-2.5"><StatusChip status={l.status} /></td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap tabular-nums">{fmtDate(l.lastContacted)}</td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.formStatus}</td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap max-w-[160px] truncate" title={l.primaryInsurance}>{l.primaryInsurance || "—"}</td>
+                <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{l.vobStatus}</td>
+                <td className="px-3 py-2.5 text-muted-foreground max-w-[180px] truncate" title={l.nextAction}>{l.nextAction}</td>
+                <td className="px-3 py-2.5 text-right opacity-0 group-hover:opacity-100 transition">
+                  <RowQuickActions lead={l} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {pages > 1 && (
+        <div className="flex items-center justify-between border-t border-border/60 px-4 py-2.5 text-xs text-muted-foreground">
+          <span>Page {page + 1} of {pages}</span>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage(Math.max(0, page - 1))}
+              className="rounded-lg px-2.5 py-1 hover:bg-muted disabled:opacity-40"
+            >Prev</button>
+            <button
+              disabled={page >= pages - 1}
+              onClick={() => setPage(Math.min(pages - 1, page + 1))}
+              className="rounded-lg px-2.5 py-1 hover:bg-muted disabled:opacity-40"
+            >Next</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RowQuickActions({ lead }: { lead: Lead }) {
+  const stop = (e: React.MouseEvent) => { e.stopPropagation(); };
+  const Btn = ({ icon: Icon, label, href, onClick }: any) => (
+    <a
+      href={href}
+      onClick={(e) => { stop(e); onClick?.(); }}
+      className="inline-grid place-items-center size-7 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+      title={label}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </a>
+  );
+  return (
+    <div className="inline-flex items-center gap-0.5">
+      <Btn icon={PhoneCall} label="Call" href={lead.phone ? `tel:${lead.phone.replace(/\D/g, "")}` : undefined} />
+      <Btn icon={Mail} label="Email" href={lead.email ? `mailto:${lead.email}` : undefined} />
+      <Btn icon={Send} label="Send form" onClick={() => toast("Send form action")} />
+      <Btn icon={StickyNote} label="Note" onClick={() => toast("Add note")} />
+    </div>
+  );
+}
+
+/* ─────────────────────── Pipeline View ─────────────────────── */
+
+function PipelineView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+  const cols = PIPELINE_STAGES.map((s) => ({ ...s, items: leads.filter(s.match) }));
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="flex gap-3 min-w-min">
+        {cols.map((c) => (
+          <div key={c.key} className="w-[260px] flex-shrink-0 flex flex-col">
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-sm font-medium">{c.label}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{c.items.length}</span>
+            </div>
+            <div className="flex-1 rounded-2xl bg-muted/40 p-2 space-y-2 min-h-[120px]">
+              {c.items.slice(0, 50).map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => onOpen(l.id)}
+                  className="w-full text-left rounded-xl bg-card border border-border/60 p-3 hover:border-border hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <span className="text-sm font-medium truncate">{l.childName}</span>
+                    <StateBadge state={l.state} />
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{l.owner}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5 truncate">{l.nextAction}</p>
+                  <p className="text-[11px] text-muted-foreground/80 mt-0.5">Last: {fmtDate(l.lastContacted)}</p>
+                </button>
+              ))}
+              {c.items.length > 50 && (
+                <p className="text-[11px] text-muted-foreground text-center pt-1">+ {c.items.length - 50} more</p>
+              )}
+              {c.items.length === 0 && (
+                <p className="text-[11px] text-muted-foreground text-center py-6">No leads</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── Follow-Up View ─────────────────────── */
+
+function FollowUpView({ leads, onOpen }: { leads: Lead[]; onOpen: (id: string) => void }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const oneDay = 24 * 60 * 60 * 1000;
+  const ageDays = (iso: string | null) => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / oneDay) : 999;
+
+  const queues = [
+    { key: "due",  label: "Due Today",      items: leads.filter((l) => ageDays(l.lastContacted) === 2) },
+    { key: "over", label: "Overdue",        items: leads.filter((l) => l.status !== "Can't Reach" && l.status !== "Non-Qualified" && ageDays(l.lastContacted) > 3) },
+    { key: "a1",   label: "Attempt 1",      items: leads.filter((l) => !l.lastContacted && l.status === "New Lead") },
+    { key: "a2",   label: "Attempt 2",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 1 && ageDays(l.lastContacted) <= 2) },
+    { key: "a3",   label: "Attempt 3",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 3 && ageDays(l.lastContacted) <= 5) },
+    { key: "a4",   label: "Attempt 4",      items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 6 && ageDays(l.lastContacted) <= 8) },
+    { key: "fin",  label: "Final Attempt",  items: leads.filter((l) => l.status === "In Contact" && ageDays(l.lastContacted) >= 9) },
+    { key: "cr",   label: "Cannot Reach",   items: leads.filter((l) => l.status === "Can't Reach" || l.status === "Sent Packet - Can't Reach") },
+    { key: "wait", label: "Waiting Parent", items: leads.filter((l) => l.status === "Sent Form" || l.status === "Missing Information") },
+  ];
+
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="flex gap-3 min-w-min">
+        {queues.map((q) => (
+          <div key={q.key} className="w-[260px] flex-shrink-0">
+            <div className="flex items-center justify-between px-1 mb-2">
+              <span className="text-sm font-medium">{q.label}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{q.items.length}</span>
+            </div>
+            <div className="rounded-2xl bg-muted/40 p-2 space-y-2 min-h-[120px]">
+              {q.items.slice(0, 30).map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => onOpen(l.id)}
+                  className="w-full text-left rounded-xl bg-card border border-border/60 p-3 hover:border-border transition"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-medium truncate">{l.childName}</span>
+                    <StateBadge state={l.state} />
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{l.parentName}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">{l.phone || "no phone"}</p>
+                </button>
+              ))}
+              {q.items.length > 30 && (
+                <p className="text-[11px] text-muted-foreground text-center pt-1">+ {q.items.length - 30} more</p>
+              )}
+              {q.items.length === 0 && (
+                <p className="text-[11px] text-muted-foreground text-center py-6">All caught up</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── Filters ─────────────────────── */
+
+function FiltersButton({
+  filters, setFilters, source,
+}: { filters: FilterState; setFilters: (f: FilterState) => void; source: Lead[] }) {
+  const opts = useMemo(() => {
+    const grab = (fn: (l: Lead) => string) =>
+      Array.from(new Set(source.map(fn).filter(Boolean))).sort().slice(0, 50);
+    return {
+      states: grab((l) => l.state),
+      owners: grab((l) => l.owner),
+      statuses: grab((l) => l.status),
+      formStatuses: grab((l) => l.formStatus),
+      vobStatuses: grab((l) => l.vobStatus),
+      insurances: grab((l) => l.primaryInsurance || ""),
+    };
+  }, [source]);
+
+  const toggle = (key: keyof FilterState, v: string) => {
+    const next = new Set(filters[key] as Set<string>);
+    next.has(v) ? next.delete(v) : next.add(v);
+    setFilters({ ...filters, [key]: next });
+  };
+
+  const Section = ({ title, items, k }: { title: string; items: string[]; k: keyof FilterState }) => {
+    const set = filters[k] as Set<string>;
+    return (
+      <div>
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">{title}</p>
+        <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+          {items.map((v) => (
+            <button
+              key={v}
+              onClick={() => toggle(k, v)}
+              className={cn(
+                "text-xs rounded-full px-2.5 py-1 border transition",
+                set.has(v)
+                  ? "bg-primary/10 border-primary/30 text-foreground"
+                  : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+              )}
+            >{v}</button>
+          ))}
+          {!items.length && <span className="text-xs text-muted-foreground">No options</span>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Filter className="mr-1.5 h-4 w-4" /> Filters
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[420px] p-4 space-y-3" align="end">
+        <Section title="State" items={opts.states} k="states" />
+        <Section title="Intake Person" items={opts.owners} k="owners" />
+        <Section title="Status" items={opts.statuses} k="statuses" />
+        <Section title="Form Status" items={opts.formStatuses} k="formStatuses" />
+        <Section title="VOB Status" items={opts.vobStatuses} k="vobStatuses" />
+        <Section title="Insurance" items={opts.insurances} k="insurances" />
+        <label className="flex items-center gap-2 text-sm pt-1">
+          <input
+            type="checkbox"
+            checked={filters.missingOnly}
+            onChange={(e) => setFilters({ ...filters, missingOnly: e.target.checked })}
+            className="rounded"
+          />
+          Missing information only
+        </label>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ─────────────────────── Empty state ─────────────────────── */
+
+function EmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
+      <p className="text-sm text-muted-foreground">No leads match these filters.</p>
+      <button onClick={onReset} className="mt-3 text-sm text-foreground hover:underline">
+        Reset filters
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────── AI Rail ─────────────────────── */
+
+const AI_PROMPTS = [
+  "Summarize the leads needing follow-up today",
+  "Find leads missing information",
+  "Which leads are stuck?",
+  "Draft a parent follow-up message",
+  "Summarize VOB pipeline health",
+];
+
+function AIRail() {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-1">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold tracking-tight">Ask Blossom</h3>
+      </div>
+      <div className="glass rounded-2xl p-3 space-y-1.5">
+        {AI_PROMPTS.map((p) => (
+          <button
+            key={p}
+            onClick={() => toast(`AI: "${p}"`, { description: "Mock response — full AI coming soon." })}
+            className="w-full text-left text-[13px] leading-snug rounded-xl px-3 py-2.5 hover:bg-muted transition flex items-start gap-2 group"
+          >
+            <span className="flex-1">{p}</span>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground mt-0.5 opacity-0 group-hover:opacity-100 transition" />
+          </button>
+        ))}
+      </div>
+      <p className="px-1 text-[11px] text-muted-foreground leading-relaxed">
+        Ask Blossom uses your role and state scope to keep responses focused on leads you own.
+      </p>
+    </div>
+  );
+}

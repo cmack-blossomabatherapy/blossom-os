@@ -160,6 +160,7 @@ import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSLeads from "./pages/os/OSLeads";
+import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSClients from "./pages/os/OSClients";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
@@ -307,12 +308,7 @@ const App = () => (
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
-                  <Route path="/leads" element={<OSComingSoon title="Leads" tagline="Every lead, every source, every touchpoint — fully attributed from first click to first session." icon={Users2} features={[
-                    { title: "Unified lead inbox", description: "Web, Facebook, Google Ads, referrals, recruiting — all in one pipeline." },
-                    { title: "Source attribution", description: "UTM, call tracking, and referral relationships captured automatically." },
-                    { title: "Lifecycle stages", description: "New → Qualified → Intake → Active, with SLA timers and owner accountability." },
-                    { title: "AI lead scoring", description: "Prioritize leads most likely to convert based on source, geo, and behavior." },
-                  ]} />} />
+                  <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/intake" element={<OSComingSoon title="Intake" tagline="The intake pipeline from first contact through verified benefits and signed paperwork." icon={ClipboardList} features={[
                     { title: "Intake pipeline board", description: "Kanban view of every family by stage with bottleneck detection." },
                     { title: "Digital forms & e-sign", description: "Smart intake packets, parent portals, and e-signature collection." },
