@@ -263,12 +263,17 @@ type AuthModal =
   | { kind: "requestInfo"; client: Client };
 
 function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: () => void }) {
+  const { updateClient, appendTimeline, appendAutomation } = useClients();
   const [text, setText] = useState("");
   const [text2, setText2] = useState("");
   const [sel, setSel] = useState("");
   if (!active) return null;
   const name = active.client.childName;
-  const submit = (msg: string) => { toast.success(msg); setText(""); setText2(""); setSel(""); onClose(); };
+  const finish = (msg: string) => {
+    setText(""); setText2(""); setSel("");
+    toast.success(msg);
+    onClose();
+  };
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
