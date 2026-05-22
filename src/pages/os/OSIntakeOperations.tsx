@@ -523,9 +523,10 @@ function DailyFollowUps({
                 </span>
                 <div className="hidden md:flex items-center gap-0.5">
                   <IconBtn icon={Phone} onClick={(e) => { e.stopPropagation(); if (l.phone) window.location.href = `tel:${l.phone}`; }} />
-                  <IconBtn icon={MessageSquare} onClick={(e) => { e.stopPropagation(); toast("SMS"); }} />
-                  <IconBtn icon={Mail} onClick={(e) => { e.stopPropagation(); if (l.email) window.location.href = `mailto:${l.email}`; }} />
-                  <IconBtn icon={StickyNote} onClick={(e) => { e.stopPropagation(); toast("Note"); }} />
+                  <IconBtn icon={MessageSquare} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "text", lead: l }); }} />
+                  <IconBtn icon={Mail} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "comm", channel: "email", lead: l }); }} />
+                  <IconBtn icon={StickyNote} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "note", lead: l }); }} />
+                  <IconBtn icon={Clock} onClick={(e) => { e.stopPropagation(); modals.open({ kind: "snooze", lead: l, followUpLabel: activeQueue.label }); }} />
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </li>
