@@ -10,7 +10,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, CalendarCheck, GraduationCap, Zap,
+  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
