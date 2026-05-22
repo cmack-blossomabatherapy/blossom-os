@@ -193,6 +193,7 @@ import OSBCBAClients from "./pages/os/OSBCBAClients";
 import OSBCBAAuthorizations from "./pages/os/OSBCBAAuthorizations";
 import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSBCBAParentTraining from "./pages/os/OSBCBAParentTraining";
+import OSBCBAScheduling from "./pages/os/OSBCBAScheduling";
 import OSRBT from "./pages/os/OSRBT";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
@@ -354,12 +355,7 @@ const App = () => (
                   <Route path="/bcba/authorizations" element={<OSBCBAAuthorizations />} />
                   <Route path="/bcba/supervision" element={<OSBCBASupervision />} />
                   <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
-                  <Route path="/bcba/scheduling" element={<OSComingSoon title="My Scheduling" tagline="A clinician-focused scheduling view — your sessions, your coverage, your gaps." icon={Calendar} features={[
-                    { title: "Personal calendar", description: "All your sessions, supervision blocks, and parent trainings in a calm clinical view." },
-                    { title: "Coverage gaps", description: "Clients with uncovered or at-risk hours surfaced before they become an issue." },
-                    { title: "Cancellation patterns", description: "Repeated cancels on your caseload flagged with severity and trend." },
-                    { title: "Quick rebook", description: "Propose make-ups or hand a gap to the staffing team in one tap." },
-                  ]} />} />
+                  <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
