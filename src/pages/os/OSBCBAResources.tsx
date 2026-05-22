@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, Sparkles, BookOpen, ClipboardCheck, FileSignature, HeartHandshake,
   Calendar, MessageSquare, AlertTriangle, Workflow, FileText, PlayCircle,
-  HelpCircle, UserCheck, ChevronRight, Star, Clock, Bookmark, X,
+  HelpCircle, UserCheck, ChevronRight, Star, Clock, Bookmark, X, Loader2, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useBcbaCaseload } from "@/hooks/useBcbaCaseload";
+import { supabase } from "@/integrations/supabase/client";
 
 type ResourceType = "SOP" | "Workflow" | "Guide" | "Template" | "Checklist" | "Recording" | "FAQ";
 
