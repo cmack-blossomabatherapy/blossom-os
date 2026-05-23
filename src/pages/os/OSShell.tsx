@@ -246,8 +246,40 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // BCBA gets a curated clinical menu focused on their caseload.
+  const BCBA_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/bcba", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/bcba/workspace", label: "BCBA Workspace", icon: Workflow, module: "dashboard" },
+        { to: "/training/journeys/bcba", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "clients_clinical", label: "Clients & Clinical", items: [
+        { to: "/bcba/clients", label: "Clients", icon: Heart, module: "clients" },
+        { to: "/bcba/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations" },
+        { to: "/bcba/supervision", label: "Supervision", icon: ClipboardCheck, module: "evaluations" },
+        { to: "/bcba/parent-training", label: "Parent Training", icon: HeartHandshake, module: "clients" },
+        { to: "/bcba/scheduling", label: "Scheduling", icon: CalendarDays, module: "scheduling" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/bcba/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
+    : role === "bcba"
+    ? BCBA_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
