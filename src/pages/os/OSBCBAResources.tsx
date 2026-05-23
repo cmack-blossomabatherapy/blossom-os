@@ -296,6 +296,56 @@ export default function OSBCBAResources() {
   const current = CATEGORIES.find((c) => c.id === activeCat)!;
   const totalCount = allResources.length;
 
+  // Fetch AI guidance whenever a resource is opened (cache per session).
+  useEffect(() => {
+    if (!open) return;
+    const cached = aiCacheRef.current.get(open.id);
+    if (cached) {
+      setAiState({ loading: false, error: null, data: cached });
+      return;
+    }
+    const meta = allResources.find((r) => r.id === open.id);
+    const category = meta?._catLabel ?? "BCBA Resources";
+    let cancelled = false;
+    setAiState({ loading: true, error: null, data: null });
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("bcba-resource-ai", {
+          body: {
+            id: open.id,
+            title: open.title,
+            type: open.type,
+            category,
+            description: open.description,
+            tags: open.tags,
+            minutes: open.minutes,
+          },
+        });
+        if (cancelled) return;
+        if (error) {
+          setAiState({ loading: false, error: error.message || "Couldn't generate guidance.", data: null });
+          return;
+        }
+        if (!data || typeof data !== "object" || !("checklist" in data)) {
+          setAiState({ loading: false, error: "Couldn't generate guidance.", data: null });
+          return;
+        }
+        const g: AiGuidance = {
+          summary: String((data as any).summary ?? ""),
+          when_to_use: String((data as any).when_to_use ?? ""),
+          checklist: Array.isArray((data as any).checklist) ? (data as any).checklist.map(String) : [],
+          watch_outs: Array.isArray((data as any).watch_outs) ? (data as any).watch_outs.map(String) : [],
+        };
+        aiCacheRef.current.set(open.id, g);
+        setAiState({ loading: false, error: null, data: g });
+      } catch (e) {
+        if (cancelled) return;
+        setAiState({ loading: false, error: e instanceof Error ? e.message : "Couldn't generate guidance.", data: null });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, allResources]);
+
   return (
     <OSShell>
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-10 space-y-10">
