@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Inbox, Sparkles, Search, Filter, Plus, Send, CheckCircle2, AlertCircle,
   ChevronRight, X, Clock, MessageSquare, ArrowRight, UserCheck, ShieldAlert,
@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 /* ---------------- types ---------------- */
 interface Case {
@@ -75,19 +76,24 @@ function Kpi({ label, value, tone = "muted", hint, onClick, active }: { label: s
     </button>
   );
 }
-function HeaderBtn({ icon: Icon, children, primary, to = "#" }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string }) {
+function HeaderBtn({ icon: Icon, children, primary, to, onClick }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string; onClick?: () => void }) {
   const cls = primary
     ? "bg-primary text-primary-foreground hover:opacity-90"
     : "text-foreground border border-border/70 bg-card hover:bg-muted";
-  return (
+  if (to) return (
     <Link to={to} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </Link>
   );
-}
-function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
-    <button className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+    <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
+    </button>
+  );
+}
+function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {label}
     </button>
   );
@@ -198,6 +204,9 @@ const TAB_FILTER: Record<Tab, (c: Case) => boolean> = {
 
 export default function OSHRRequests() {
   const d = useData();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -329,10 +338,9 @@ export default function OSHRRequests() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Plus}>Create request</HeaderBtn>
-            <HeaderBtn icon={ListChecks}>Assign follow-up</HeaderBtn>
-            <HeaderBtn icon={Send}>Message employee</HeaderBtn>
-            <HeaderBtn icon={Flag}>Escalate</HeaderBtn>
+            <HeaderBtn icon={Plus} to="/hr/employee-support">Open employee support</HeaderBtn>
+            <HeaderBtn icon={Send} to="/hr/messages">Message employee</HeaderBtn>
+            <HeaderBtn icon={ListChecks} to="/hr/new-hires">New hire pipeline</HeaderBtn>
             <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
@@ -483,8 +491,8 @@ export default function OSHRRequests() {
                           </div>
                         </div>
                         <div className="hidden md:flex items-center gap-1">
-                          <QuickAction icon={UserCheck} label="Resolve" />
-                          <QuickAction icon={MessageSquare} label="Message" />
+                          <QuickAction icon={UserCheck} label="Open" onClick={() => navigate(`/hr/employee-support?employee=${b.empId}`)} />
+                          <QuickAction icon={MessageSquare} label="Message" onClick={() => navigate("/hr/messages")} />
                         </div>
                       </div>
                     ))}
@@ -683,22 +691,56 @@ export default function OSHRRequests() {
               {/* Actions */}
               <section className="pt-2 border-t border-border/70 -mx-6 px-6">
                 <div className="flex flex-wrap gap-2">
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] bg-primary text-primary-foreground hover:opacity-90 transition">
+                  <button onClick={() => navigate("/hr/messages")} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] bg-primary text-primary-foreground hover:opacity-90 transition">
                     <Send className="h-3.5 w-3.5" strokeWidth={1.75} /> Message employee
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const role = window.prompt("Reassign to owner role (HR, Manager, Payroll, Recruiting):", openCase.owner_role ?? "HR");
+                    if (!role) return;
+                    const { error } = await supabase.from("employee_cases").update({ owner_role: role }).eq("id", openCase.id);
+                    toast({ title: error ? "Could not reassign" : `Reassigned to ${role}` });
+                    if (!error) setReloadKey(k => k + 1);
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} /> Reassign
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const { error } = await supabase.from("employee_cases").update({ priority: "urgent" }).eq("id", openCase.id);
+                    toast({ title: error ? "Could not escalate" : "Escalated to urgent" });
+                    if (!error) setReloadKey(k => k + 1);
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <Flag className="h-3.5 w-3.5" strokeWidth={1.75} /> Escalate
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const note = window.prompt("Add operational note:");
+                    if (!note) return;
+                    const prefix = openCase.summary ? `${openCase.summary}\n\n` : "";
+                    const summary = `${prefix}[${new Date().toLocaleDateString()}] ${note}`;
+                    const { error } = await supabase.from("employee_cases").update({ summary }).eq("id", openCase.id);
+                    toast({ title: error ? "Could not add note" : "Note added" });
+                    if (!error) setReloadKey(k => k + 1);
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Add note
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const resolution = window.prompt("Resolution note:", openCase.resolution ?? "");
+                    if (resolution === null) return;
+                    const { error } = await supabase.from("employee_cases").update({
+                      status: "resolved", resolution, closed_at: new Date().toISOString(),
+                    }).eq("id", openCase.id);
+                    toast({ title: error ? "Could not resolve" : "Request resolved" });
+                    if (!error) { setOpenId(null); setReloadKey(k => k + 1); }
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> Resolve
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const date = window.prompt("Follow-up due date (YYYY-MM-DD):", new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10));
+                    if (!date) return;
+                    const { error } = await supabase.from("employee_cases").update({
+                      due_date: date, status: "waiting_employee",
+                    }).eq("id", openCase.id);
+                    toast({ title: error ? "Could not schedule" : `Follow-up set for ${date}` });
+                    if (!error) setReloadKey(k => k + 1);
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /> Create follow-up
                   </button>
                 </div>
