@@ -411,6 +411,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? bcbaSections
     : isQaOnly
     ? qaSections
+    : isRecruitingOnly
+    ? recruitingSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
