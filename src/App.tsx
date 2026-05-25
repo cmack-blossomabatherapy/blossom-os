@@ -195,6 +195,7 @@ import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSBCBAParentTraining from "./pages/os/OSBCBAParentTraining";
 import OSBCBAScheduling from "./pages/os/OSBCBAScheduling";
 import OSRBT from "./pages/os/OSRBT";
+import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
@@ -361,7 +362,7 @@ const App = () => (
                   <Route path="/bcba/resources" element={<OSBCBAResources />} />
                   <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
                   <Route path="/rbt" element={<OSRBT />} />
-                  <Route path="/rbt/my-day" element={<OSPlaceholder title="My Day" description="Your session-by-session execution view for today. Check in, prep, and wrap each session." icon={Radio} />} />
+                  <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
                   <Route path="/rbt/training-academy" element={<OSPlaceholder title="Training Academy" description="Your RBT learning journey — required and recommended training." icon={GraduationCap} />} />
                   <Route path="/rbt/clients" element={<OSPlaceholder title="My Clients" description="Clients assigned to you — focus areas, notes, and your assigned BCBA." icon={UserCheck} />} />
                   <Route path="/rbt/schedule" element={<OSPlaceholder title="My Schedule" description="Your upcoming sessions, dates, locations and any schedule changes." icon={CIcon} />} />
