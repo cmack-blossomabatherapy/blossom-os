@@ -155,6 +155,7 @@ export default function OSRBTHelp() {
         )}
 
         {selected && !submitted && (
+          <div id="help-form" className="scroll-mt-24">
           <RequestFlow
             category={selected}
             onBack={() => setSelected(null)}
@@ -163,6 +164,7 @@ export default function OSRBTHelp() {
               setSelected(null);
             }}
           />
+          </div>
         )}
 
         {submitted && (
