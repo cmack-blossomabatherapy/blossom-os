@@ -195,6 +195,7 @@ import OSBCBASupervision from "./pages/os/OSBCBASupervision";
 import OSBCBAParentTraining from "./pages/os/OSBCBAParentTraining";
 import OSBCBAScheduling from "./pages/os/OSBCBAScheduling";
 import OSRBT from "./pages/os/OSRBT";
+import OSRBTMyDay from "./pages/os/OSRBTMyDay";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
