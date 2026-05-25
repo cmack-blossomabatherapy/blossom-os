@@ -7,12 +7,21 @@ import {
   Brain, ChevronDown, UserPlus,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
-import { recruitingCandidates, type RecruitingCandidate } from "@/data/recruitingDashboard";
+import {
+  useRecruitingCandidates,
+  useRecruitingInterviews,
+  useRecruitingOffers,
+  useRecruitingFollowups,
+  useRecruitingEscalations,
+  useRecruitingOnboarding,
+  useRecruitingBackgroundChecks,
+  useRecruitingOrientation,
+  daysInStage,
+  fullName,
+  type RecruitingCandidate,
+} from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
-
-// Recruiting Workspace — execution hub for the Recruiting Team.
-// Calm, queue-first. Wired to recruitingDashboard.ts (pending Apploi ingest).
 
 type Tone = "ok" | "warn" | "crit";
 type QueueKey = "today" | "followup" | "offers" | "onboarding" | "escalation";
@@ -20,7 +29,7 @@ type QueueKey = "today" | "followup" | "offers" | "onboarding" | "escalation";
 function todayLabel() {
   return new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 }
-function timeLabel(iso?: string) {
+function timeLabel(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -66,59 +75,30 @@ function EmptyState({ icon: Icon, title }: { icon: React.ElementType; title: str
 }
 
 const QUEUE_DEFS: { key: QueueKey; label: string; icon: React.ElementType; tone: Tone }[] = [
-  { key: "today",      label: "Today",            icon: CalendarClock,  tone: "warn" },
-  { key: "followup",   label: "Follow-Ups",       icon: MessageSquare,  tone: "warn" },
-  { key: "offers",     label: "Offers",           icon: FileSignature,  tone: "warn" },
-  { key: "onboarding", label: "Onboarding",       icon: GraduationCap,  tone: "warn" },
-  { key: "escalation", label: "Escalations",      icon: Flame,          tone: "crit" },
+  { key: "today",      label: "Today",       icon: CalendarClock,  tone: "warn" },
+  { key: "followup",   label: "Follow-Ups",  icon: MessageSquare,  tone: "warn" },
+  { key: "offers",     label: "Offers",      icon: FileSignature,  tone: "warn" },
+  { key: "onboarding", label: "Onboarding",  icon: GraduationCap,  tone: "warn" },
+  { key: "escalation", label: "Escalations", icon: Flame,          tone: "crit" },
 ];
 
-function classifyCandidate(c: RecruitingCandidate): QueueKey | null {
-  // Escalations
-  if (
-    c.readinessStatus === "Blocked" ||
-    c.daysInStage >= 7 && (c.candidateStatus === "Onboarding Handoff" || c.candidateStatus === "Background Check") ||
-    c.backgroundCheck === "Delayed" ||
-    c.noShow
-  ) return "escalation";
-
-  if (c.interviewStatus === "Today" || c.interviewStatus === "Needs Outcome") return "today";
-
-  if (c.offerStatus === "Sent" || c.offerStatus === "Unsigned") return "offers";
-
-  if (
-    c.onboardingStatus === "Handoff Needed" ||
-    c.onboardingStatus === "Viventium Sent" ||
-    c.onboardingStatus === "Background Pending" ||
-    c.onboardingStatus === "Orientation Scheduled" ||
-    c.onboardingStatus === "Training Assigned"
-  ) return "onboarding";
-
-  if (c.candidateStatus === "New Applicant" || c.candidateStatus === "Screening") return "followup";
-
-  if (c.readinessStatus === "Ready for Staffing") return null;
-  return null;
-}
-
 function candidateTone(c: RecruitingCandidate): Tone {
-  if (c.readinessStatus === "Blocked" || c.noShow || c.daysInStage >= 10) return "crit";
-  if (c.daysInStage >= 5 || c.offerStatus === "Unsigned") return "warn";
+  const d = daysInStage(c);
+  if (c.pipeline_stage === "On Hold" || d >= 10) return "crit";
+  if (d >= 5) return "warn";
   return "ok";
 }
 
-function nextActionFor(c: RecruitingCandidate, key: QueueKey): string {
-  if (key === "today" && c.interviewStatus === "Today") return `Interview at ${timeLabel(c.interviewAt)}`;
-  if (key === "today" && c.interviewStatus === "Needs Outcome") return "Enter interview outcome";
-  if (key === "offers" && c.offerStatus === "Unsigned") return "Follow up on unsigned offer";
-  if (key === "offers") return "Track signature";
-  if (key === "onboarding") return c.nextAction;
-  if (key === "escalation") return c.blockers[0] ?? c.nextAction;
-  if (key === "followup") return c.nextAction;
-  return c.nextAction;
-}
-
 export default function OSRecruitingWorkspace() {
-  const items = recruitingCandidates;
+  const { candidates } = useRecruitingCandidates();
+  const { items: interviews } = useRecruitingInterviews();
+  const { items: offers } = useRecruitingOffers();
+  const { items: followups, resolve: resolveFollowup } = useRecruitingFollowups();
+  const { items: escalations } = useRecruitingEscalations();
+  const { items: onboardingTasks } = useRecruitingOnboarding();
+  const { items: bgChecks } = useRecruitingBackgroundChecks();
+  const { items: orientation } = useRecruitingOrientation();
+
   const [activeQueue, setActiveQueue] = useState<QueueKey>("today");
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
@@ -126,26 +106,82 @@ export default function OSRecruitingWorkspace() {
   const [recruiterFilter, setRecruiterFilter] = useState<string>("all");
   const [selected, setSelected] = useState<RecruitingCandidate | null>(null);
 
-  const buckets = useMemo(() => {
-    const b: Record<QueueKey, RecruitingCandidate[]> = {
-      today: [], followup: [], offers: [], onboarding: [], escalation: [],
-    };
-    items.forEach((c) => {
-      const k = classifyCandidate(c);
-      if (k) b[k].push(c);
-    });
-    Object.keys(b).forEach((k) => {
-      b[k as QueueKey].sort((a, x) => {
-        const rank = (y: RecruitingCandidate) =>
-          (y.readinessStatus === "Blocked" ? 3 : y.daysInStage >= 7 ? 2 : 1);
-        return rank(x) - rank(a) || x.daysInStage - a.daysInStage;
-      });
-    });
-    return b;
-  }, [items]);
+  const byId = useMemo(() => {
+    const m = new Map<string, RecruitingCandidate>();
+    candidates.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [candidates]);
 
-  const states = useMemo(() => Array.from(new Set(items.map((c) => c.state))).sort(), [items]);
-  const recruiters = useMemo(() => Array.from(new Set(items.map((c) => c.recruiter))).sort(), [items]);
+  const todayStart = useMemo(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
+  }, []);
+  const todayEnd = todayStart + 86400000;
+
+  const todayCandidates = useMemo(() => {
+    const ids = new Set<string>();
+    interviews.forEach((iv) => {
+      if (!iv.scheduled_at) return;
+      const t = new Date(iv.scheduled_at).getTime();
+      if (t >= todayStart && t < todayEnd && iv.status !== "Cancelled") ids.add(iv.candidate_id);
+      if (iv.status === "Completed" && !iv.outcome) ids.add(iv.candidate_id);
+    });
+    return candidates.filter((c) => ids.has(c.id));
+  }, [interviews, candidates, todayStart, todayEnd]);
+
+  const offerCandidates = useMemo(() => {
+    const ids = new Set<string>();
+    offers.forEach((o) => {
+      if (["Sent", "Unsigned", "Pending"].includes(o.status)) ids.add(o.candidate_id);
+    });
+    return candidates.filter((c) => ids.has(c.id));
+  }, [offers, candidates]);
+
+  const onboardingCandidates = useMemo(() => {
+    return candidates.filter((c) =>
+      ["Offer Accepted", "Background Check", "Orientation Scheduled", "Onboarding"].includes(c.pipeline_stage),
+    );
+  }, [candidates]);
+
+  const followupCandidates = useMemo(() => {
+    const ids = new Set<string>();
+    followups.forEach((f) => {
+      if (f.status === "Done" || !f.candidate_id) return;
+      ids.add(f.candidate_id);
+    });
+    candidates.forEach((c) => {
+      if (["New Applicant", "Phone Screen"].includes(c.pipeline_stage)) ids.add(c.id);
+    });
+    return candidates.filter((c) => ids.has(c.id));
+  }, [followups, candidates]);
+
+  const escalationCandidates = useMemo(() => {
+    const ids = new Set<string>();
+    escalations.forEach((e) => {
+      if (e.status === "Resolved" || !e.candidate_id) return;
+      ids.add(e.candidate_id);
+    });
+    bgChecks.forEach((b) => {
+      if (["Flagged", "Delayed"].includes(b.status)) ids.add(b.candidate_id);
+    });
+    candidates.forEach((c) => {
+      if (c.pipeline_stage === "On Hold" || daysInStage(c) >= 10) ids.add(c.id);
+    });
+    return candidates.filter((c) => ids.has(c.id));
+  }, [escalations, bgChecks, candidates]);
+
+  const buckets: Record<QueueKey, RecruitingCandidate[]> = useMemo(() => ({
+    today: todayCandidates,
+    followup: followupCandidates,
+    offers: offerCandidates,
+    onboarding: onboardingCandidates,
+    escalation: escalationCandidates,
+  }), [todayCandidates, followupCandidates, offerCandidates, onboardingCandidates, escalationCandidates]);
+
+  const states = useMemo(() => Array.from(new Set(candidates.map((c) => c.state))).sort(), [candidates]);
+  const recruiters = useMemo(
+    () => Array.from(new Set(candidates.map((c) => c.recruiter).filter(Boolean) as string[])).sort(),
+    [candidates],
+  );
 
   const feed = useMemo(() => {
     const list = buckets[activeQueue];
@@ -154,40 +190,91 @@ export default function OSRecruitingWorkspace() {
       if (stateFilter !== "all" && c.state !== stateFilter) return false;
       if (roleFilter !== "all" && c.role !== roleFilter) return false;
       if (recruiterFilter !== "all" && c.recruiter !== recruiterFilter) return false;
-      if (q && !(
-        c.name.toLowerCase().includes(q) ||
-        c.recruiter.toLowerCase().includes(q) ||
-        c.region.toLowerCase().includes(q) ||
-        c.candidateStatus.toLowerCase().includes(q)
-      )) return false;
+      if (q) {
+        const name = fullName(c).toLowerCase();
+        if (!name.includes(q) && !(c.recruiter ?? "").toLowerCase().includes(q) && !(c.city ?? "").toLowerCase().includes(q)) return false;
+      }
       return true;
-    });
+    }).sort((a, b) => daysInStage(b) - daysInStage(a));
   }, [buckets, activeQueue, query, stateFilter, roleFilter, recruiterFilter]);
 
-  const priorities = useMemo(() => [
-    ...buckets.escalation.slice(0, 3),
-    ...buckets.today.slice(0, 3),
-    ...buckets.offers.filter((c) => c.offerStatus === "Unsigned").slice(0, 2),
-  ].slice(0, 6), [buckets]);
+  const priorities = useMemo(() => {
+    const seen = new Set<string>();
+    const out: RecruitingCandidate[] = [];
+    [...escalationCandidates, ...todayCandidates, ...offerCandidates].forEach((c) => {
+      if (seen.has(c.id)) return;
+      seen.add(c.id);
+      out.push(c);
+    });
+    return out.slice(0, 6);
+  }, [escalationCandidates, todayCandidates, offerCandidates]);
 
   const recruiterLoad = useMemo(() => {
+    const activeIds = new Set<string>([
+      ...todayCandidates.map((c) => c.id),
+      ...followupCandidates.map((c) => c.id),
+      ...offerCandidates.map((c) => c.id),
+      ...onboardingCandidates.map((c) => c.id),
+      ...escalationCandidates.map((c) => c.id),
+    ]);
     const m = new Map<string, number>();
-    items.forEach((c) => {
-      if (classifyCandidate(c)) m.set(c.recruiter, (m.get(c.recruiter) ?? 0) + 1);
+    candidates.forEach((c) => {
+      if (!c.recruiter || !activeIds.has(c.id)) return;
+      m.set(c.recruiter, (m.get(c.recruiter) ?? 0) + 1);
     });
     return Array.from(m.entries())
       .map(([recruiter, count]) => ({ recruiter, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-  }, [items]);
+  }, [candidates, todayCandidates, followupCandidates, offerCandidates, onboardingCandidates, escalationCandidates]);
 
-  const workloadCount = items.filter((c) => classifyCandidate(c) !== null).length;
+  const workloadCount = new Set([
+    ...todayCandidates, ...followupCandidates, ...offerCandidates, ...onboardingCandidates, ...escalationCandidates,
+  ].map((c) => c.id)).size;
+
+  const offersByCandidate = useMemo(() => {
+    const m = new Map<string, typeof offers[number]>();
+    offers.forEach((o) => { if (!m.has(o.candidate_id)) m.set(o.candidate_id, o); });
+    return m;
+  }, [offers]);
+
+  const nextInterviewByCandidate = useMemo(() => {
+    const m = new Map<string, typeof interviews[number]>();
+    interviews.forEach((iv) => {
+      if (!iv.scheduled_at) return;
+      const cur = m.get(iv.candidate_id);
+      if (!cur || new Date(iv.scheduled_at) > new Date(cur.scheduled_at!)) m.set(iv.candidate_id, iv);
+    });
+    return m;
+  }, [interviews]);
+
+  function nextActionFor(c: RecruitingCandidate, key: QueueKey): string {
+    if (key === "today") {
+      const iv = nextInterviewByCandidate.get(c.id);
+      if (iv?.status === "Completed" && !iv.outcome) return "Enter interview outcome";
+      if (iv?.scheduled_at) return `Interview ${timeLabel(iv.scheduled_at)}`;
+    }
+    if (key === "offers") {
+      const o = offersByCandidate.get(c.id);
+      if (o?.status === "Unsigned") return "Follow up on unsigned offer";
+      if (o?.status === "Sent") return "Track signature";
+    }
+    if (key === "escalation") {
+      const esc = escalations.find((e) => e.candidate_id === c.id && e.status !== "Resolved");
+      if (esc) return esc.title;
+      const bg = bgChecks.find((b) => b.candidate_id === c.id && ["Flagged", "Delayed"].includes(b.status));
+      if (bg) return `Background ${bg.status}${bg.blocker ? ` — ${bg.blocker}` : ""}`;
+    }
+    if (key === "followup") {
+      const f = followups.find((x) => x.candidate_id === c.id && x.status !== "Done");
+      if (f) return f.title;
+    }
+    return c.next_action ?? `Stage: ${c.pipeline_stage}`;
+  }
 
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-[1500px] px-4 md:px-8 pb-24 pt-6 md:pt-10 space-y-6">
-
-        {/* HEADER */}
         <header>
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
@@ -214,7 +301,6 @@ export default function OSRecruitingWorkspace() {
             </div>
           </div>
 
-          {/* Search + filters */}
           <div className="mt-5 flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
@@ -229,14 +315,13 @@ export default function OSRecruitingWorkspace() {
               <FilterSelect icon={Filter} value={stateFilter} onChange={setStateFilter}
                 options={[{ v: "all", l: "All states" }, ...states.map((s) => ({ v: s, l: s }))]} />
               <FilterSelect icon={UserCheck} value={roleFilter} onChange={setRoleFilter}
-                options={[{ v: "all", l: "All roles" }, { v: "RBT", l: "RBT" }, { v: "BCBA", l: "BCBA" }]} />
+                options={[{ v: "all", l: "All roles" }, { v: "RBT", l: "RBT" }, { v: "BCBA", l: "BCBA" }, { v: "BT", l: "BT" }]} />
               <FilterSelect icon={UserPlus} value={recruiterFilter} onChange={setRecruiterFilter}
                 options={[{ v: "all", l: "All recruiters" }, ...recruiters.map((r) => ({ v: r, l: r }))]} />
             </div>
           </div>
         </header>
 
-        {/* QUEUE TABS */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {QUEUE_DEFS.map((q) => {
             const count = buckets[q.key].length;
@@ -247,9 +332,7 @@ export default function OSRecruitingWorkspace() {
                 onClick={() => setActiveQueue(q.key)}
                 className={cn(
                   "inline-flex items-center gap-2 px-4 h-10 rounded-full text-sm font-medium border whitespace-nowrap transition",
-                  active
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-card border-border/70 text-foreground hover:bg-muted/40",
+                  active ? "bg-foreground text-background border-foreground" : "bg-card border-border/70 text-foreground hover:bg-muted/40",
                 )}
               >
                 <q.icon className="h-4 w-4" strokeWidth={1.75} />
@@ -263,41 +346,34 @@ export default function OSRecruitingWorkspace() {
           })}
         </div>
 
-        {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
-
-          {/* FEED */}
           <div className="space-y-3 min-w-0">
             {feed.length === 0 ? (
-              <Card>
-                <EmptyState icon={CheckCircle2} title="You're all caught up on this queue." />
-              </Card>
+              <Card><EmptyState icon={CheckCircle2} title="You're all caught up on this queue." /></Card>
             ) : feed.map((c) => {
               const tone = candidateTone(c);
               const next = nextActionFor(c, activeQueue);
+              const d = daysInStage(c);
               return (
-                <Card key={c.id} className="p-4 hover:bg-muted/20 transition cursor-pointer" >
+                <Card key={c.id} className="p-4 hover:bg-muted/20 transition cursor-pointer">
                   <button onClick={() => setSelected(c)} className="w-full text-left">
                     <div className="flex items-start gap-4">
                       <div className="h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center text-sm font-semibold shrink-0">
-                        {initials(c.name)}
+                        {initials(fullName(c))}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-foreground truncate">{c.name}</h3>
+                          <h3 className="font-semibold text-foreground truncate">{fullName(c)}</h3>
                           <Pill tone="ok">{c.role}</Pill>
-                          <span className="text-xs text-muted-foreground">{c.state} · {c.region}</span>
+                          <span className="text-xs text-muted-foreground">{c.state}{c.city ? ` · ${c.city}` : ""}</span>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground truncate">{next}</p>
                         <div className="mt-2 flex items-center gap-2 flex-wrap">
-                          <Pill tone={tone}>
-                            <Clock className="h-3 w-3" />
-                            {c.daysInStage}d in stage
-                          </Pill>
-                          <span className="text-[11px] text-muted-foreground">· {c.candidateStatus}</span>
-                          <span className="text-[11px] text-muted-foreground">· {c.recruiter}</span>
-                          {c.source === "Apploi" && (
-                            <span className="text-[10px] uppercase font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded">Apploi</span>
+                          <Pill tone={tone}><Clock className="h-3 w-3" />{d}d in stage</Pill>
+                          <span className="text-[11px] text-muted-foreground">· {c.pipeline_stage}</span>
+                          {c.recruiter && <span className="text-[11px] text-muted-foreground">· {c.recruiter}</span>}
+                          {c.source && (
+                            <span className="text-[10px] uppercase font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded">{c.source}</span>
                           )}
                         </div>
                       </div>
@@ -309,9 +385,7 @@ export default function OSRecruitingWorkspace() {
             })}
           </div>
 
-          {/* RIGHT RAIL */}
           <aside className="space-y-4">
-            {/* Today's priorities */}
             <Card className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-foreground inline-flex items-center gap-1.5">
@@ -327,10 +401,10 @@ export default function OSRecruitingWorkspace() {
                     <li key={c.id}>
                       <button onClick={() => setSelected(c)} className="w-full text-left p-2 rounded-lg hover:bg-muted/40 transition">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-foreground truncate">{c.name}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0">{c.daysInStage}d</span>
+                          <span className="text-sm font-medium text-foreground truncate">{fullName(c)}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{daysInStage(c)}d</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate">{c.nextAction}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{c.next_action ?? c.pipeline_stage}</p>
                       </button>
                     </li>
                   ))}
@@ -338,7 +412,6 @@ export default function OSRecruitingWorkspace() {
               )}
             </Card>
 
-            {/* Recruiter load */}
             <Card className="p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3 inline-flex items-center gap-1.5">
                 <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> Recruiter load
@@ -357,7 +430,6 @@ export default function OSRecruitingWorkspace() {
               )}
             </Card>
 
-            {/* AI prompts */}
             <Card className="p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3 inline-flex items-center gap-1.5">
                 <Brain className="h-3.5 w-3.5 text-primary" /> Ask Blossom AI
@@ -383,13 +455,20 @@ export default function OSRecruitingWorkspace() {
         </div>
       </div>
 
-      {/* SLIDEOUT */}
-      <CandidateSlideout candidate={selected} onClose={() => setSelected(null)} />
+      <CandidateSlideout
+        candidate={selected}
+        onClose={() => setSelected(null)}
+        interview={selected ? nextInterviewByCandidate.get(selected.id) : undefined}
+        offer={selected ? offersByCandidate.get(selected.id) : undefined}
+        bgCheck={selected ? bgChecks.find((b) => b.candidate_id === selected.id) : undefined}
+        orientationSlot={selected ? orientation.find((o) => o.candidate_id === selected.id) : undefined}
+        onboardingTasks={selected ? onboardingTasks.filter((t) => t.candidate_id === selected.id) : []}
+        followups={selected ? followups.filter((f) => f.candidate_id === selected.id && f.status !== "Done") : []}
+      />
     </OSShell>
   );
 }
 
-/* ---------- FilterSelect ---------- */
 function FilterSelect({
   icon: Icon, value, onChange, options,
 }: {
@@ -413,12 +492,24 @@ function FilterSelect({
   );
 }
 
-/* ---------- Slideout ---------- */
-function CandidateSlideout({ candidate, onClose }: { candidate: RecruitingCandidate | null; onClose: () => void }) {
+function CandidateSlideout({
+  candidate, onClose, interview, offer, bgCheck, orientationSlot, onboardingTasks, followups,
+}: {
+  candidate: RecruitingCandidate | null;
+  onClose: () => void;
+  interview?: any;
+  offer?: any;
+  bgCheck?: any;
+  orientationSlot?: any;
+  onboardingTasks: any[];
+  followups: any[];
+}) {
   useSlideout(!!candidate, onClose);
   if (!candidate) return null;
   const c = candidate;
   const tone = candidateTone(c);
+  const d = daysInStage(c);
+  const completedTasks = onboardingTasks.filter((t) => t.completed).length;
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-foreground/10 backdrop-blur-sm" onClick={onClose} />
@@ -426,11 +517,11 @@ function CandidateSlideout({ candidate, onClose }: { candidate: RecruitingCandid
         <div className="sticky top-0 bg-background/95 backdrop-blur border-b border-border px-5 py-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold text-foreground truncate">{c.name}</h2>
+              <h2 className="text-lg font-semibold text-foreground truncate">{fullName(c)}</h2>
               <Pill tone="ok">{c.role}</Pill>
-              <Pill tone={tone}>{c.candidateStatus}</Pill>
+              <Pill tone={tone}>{c.pipeline_stage}</Pill>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{c.state} · {c.region} · {c.city}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{c.state}{c.city ? ` · ${c.city}` : ""}</p>
           </div>
           <button onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted grid place-items-center">
             <X className="h-4 w-4" />
@@ -438,13 +529,11 @@ function CandidateSlideout({ candidate, onClose }: { candidate: RecruitingCandid
         </div>
 
         <div className="p-5 space-y-5">
-          {/* Next action */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Next action</h3>
-            <p className="text-sm text-foreground">{c.nextAction}</p>
+            <p className="text-sm text-foreground">{c.next_action ?? `Continue ${c.pipeline_stage}`}</p>
           </section>
 
-          {/* Quick actions */}
           <div className="grid grid-cols-2 gap-2">
             <QuickAction icon={Send} label="Message" />
             <QuickAction icon={Phone} label="Call" />
@@ -452,56 +541,61 @@ function CandidateSlideout({ candidate, onClose }: { candidate: RecruitingCandid
             <QuickAction icon={Eye} label="Open profile" />
           </div>
 
-          {/* Pipeline */}
           <section className="space-y-2">
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground">Pipeline status</h3>
-            <Row label="Interview"   value={c.interviewStatus}   />
-            <Row label="Offer"       value={c.offerStatus}       />
-            <Row label="Onboarding"  value={c.onboardingStatus}  />
-            <Row label="Readiness"   value={c.readinessStatus}   />
-            <Row label="Background"  value={c.backgroundCheck}   />
-            <Row label="Orientation" value={c.orientation}       />
-            <Row label="Training"    value={c.training}          />
+            <Row label="Stage" value={c.pipeline_stage} />
+            <Row label="Days in stage" value={`${d}d`} />
+            <Row label="Interview" value={interview ? `${interview.status}${interview.scheduled_at ? ` · ${timeLabel(interview.scheduled_at)}` : ""}` : "—"} />
+            <Row label="Offer" value={offer ? offer.status : "—"} />
+            <Row label="Background" value={bgCheck ? bgCheck.status : "—"} />
+            <Row label="Orientation" value={orientationSlot ? `${orientationSlot.status}${orientationSlot.scheduled_date ? ` · ${orientationSlot.scheduled_date}` : ""}` : "—"} />
+            <Row label="Onboarding tasks" value={onboardingTasks.length ? `${completedTasks} / ${onboardingTasks.length}` : "—"} />
           </section>
 
-          {/* Blockers */}
-          {c.blockers.length > 0 && (
+          {followups.length > 0 && (
             <section>
               <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
-                <AlertTriangle className="h-3 w-3 text-destructive" /> Blockers
+                <AlertTriangle className="h-3 w-3 text-amber-500" /> Open follow-ups
               </h3>
               <ul className="space-y-1.5">
-                {c.blockers.map((b, i) => (
-                  <li key={i} className="text-sm text-foreground bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">{b}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* Tasks */}
-          {c.tasks.length > 0 && (
-            <section>
-              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Tasks</h3>
-              <ul className="space-y-1.5">
-                {c.tasks.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between text-sm border border-border/60 rounded-lg px-3 py-2">
-                    <span className={cn("text-foreground", t.completed && "line-through text-muted-foreground")}>{t.title}</span>
-                    <span className="text-[11px] text-muted-foreground">{t.owner}</span>
+                {followups.map((f) => (
+                  <li key={f.id} className="text-sm text-foreground bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+                    <span className="truncate">{f.title}</span>
+                    {f.due_date && <span className="text-[11px] text-muted-foreground shrink-0">{f.due_date}</span>}
                   </li>
                 ))}
               </ul>
             </section>
           )}
 
-          {/* Meta */}
+          {onboardingTasks.length > 0 && (
+            <section>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Onboarding tasks</h3>
+              <ul className="space-y-1.5">
+                {onboardingTasks.slice(0, 8).map((t) => (
+                  <li key={t.id} className="flex items-center justify-between text-sm border border-border/60 rounded-lg px-3 py-2">
+                    <span className={cn("text-foreground", t.completed && "line-through text-muted-foreground")}>{t.title}</span>
+                    {t.category && <span className="text-[11px] text-muted-foreground">{t.category}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <section className="grid grid-cols-2 gap-3 text-xs">
-            <Meta label="Recruiter"    value={c.recruiter} />
-            <Meta label="Interviewer"  value={c.interviewer} />
-            <Meta label="Source"       value={c.source} />
-            <Meta label="Applied"      value={c.appliedDate} />
-            <Meta label="Days in stage" value={`${c.daysInStage}d`} />
-            <Meta label="Availability" value={c.availability} />
+            <Meta label="Recruiter" value={c.recruiter ?? "—"} />
+            <Meta label="Source" value={c.source ?? "—"} />
+            <Meta label="Applied" value={c.applied_date} />
+            <Meta label="Email" value={c.email ?? "—"} />
+            <Meta label="Phone" value={c.phone ?? "—"} />
+            <Meta label="Rating" value={c.rating ? `${c.rating}/5` : "—"} />
           </section>
+          {c.notes && (
+            <section>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Notes</h3>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{c.notes}</p>
+            </section>
+          )}
         </div>
       </div>
     </div>
@@ -512,7 +606,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-foreground font-medium">{value}</span>
+      <span className="text-foreground font-medium text-right truncate ml-2">{value}</span>
     </div>
   );
 }
@@ -520,7 +614,7 @@ function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="text-foreground mt-0.5">{value}</p>
+      <p className="text-foreground mt-0.5 break-words">{value}</p>
     </div>
   );
 }
