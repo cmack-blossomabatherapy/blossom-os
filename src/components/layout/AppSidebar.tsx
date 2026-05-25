@@ -263,6 +263,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isQaOnly =
     osRole === "qa_team" ||
     (roles.includes("qa") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // Recruiting Team gets a curated operational menu focused on candidates,
+  // interviews, onboarding, orientation, and staffing coordination.
+  const isRecruitingOnly =
+    osRole === "recruiting_team" ||
+    (roles.includes("recruiting_assistant") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -394,6 +399,58 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
+  // Recruiting Team curated sections.
+  const recruitingSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard",            icon: LayoutDashboard, path: "/recruiting-team",       perm: "" },
+        { label: "Recruiting Workspace", icon: Workflow,        path: "/recruiting/workspace",  perm: "" },
+        { label: "Training Academy",     icon: GraduationCap,   path: "/academy",               perm: "" },
+      ],
+    },
+    {
+      title: "Candidates",
+      items: [
+        { label: "Applicant Pipeline", icon: Inbox,         path: "/recruiting/pipeline",     perm: "" },
+        { label: "Interviews",         icon: Calendar,      path: "/recruiting/interviews",   perm: "" },
+        { label: "Offers & Hiring",    icon: FileText,      path: "/recruiting/offers",       perm: "" },
+        { label: "Onboarding Status",  icon: GraduationCap, path: "/recruiting/onboarding",   perm: "" },
+        { label: "Background Checks",  icon: ShieldCheck,   path: "/recruiting/background",   perm: "" },
+        { label: "Orientation Queue",  icon: Clock,         path: "/recruiting/orientation",  perm: "" },
+      ],
+    },
+    {
+      title: "Staffing & Operations",
+      items: [
+        { label: "Open Staffing Needs",    icon: AlertTriangle, path: "/recruiting/staffing-needs",  perm: "" },
+        { label: "RBT Recruiting",         icon: UserPlus,      path: "/recruiting/rbt",             perm: "" },
+        { label: "BCBA Recruiting",        icon: UsersRound,    path: "/recruiting/bcba",            perm: "" },
+        { label: "Recruiting Performance", icon: BarChart3,     path: "/recruiting/performance",     perm: "" },
+        { label: "Hiring Follow-Ups",      icon: CheckSquare,   path: "/recruiting/follow-ups",      perm: "" },
+      ],
+    },
+    {
+      title: "Communication",
+      items: [
+        { label: "Messages & Updates",       icon: MessageSquare, path: "/recruiting/messages",     perm: "" },
+        { label: "Escalations & Follow-Ups", icon: Flame,         path: "/recruiting/escalations",  perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/recruiting/resources", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
   const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
@@ -406,6 +463,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? bcbaSections
     : isQaOnly
     ? qaSections
+    : isRecruitingOnly
+    ? recruitingSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),

@@ -1,687 +1,592 @@
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
-  ArrowUpRight, ArrowDownRight, Sparkles, AlertTriangle, CalendarDays, ChevronRight,
-  Users, Heart, FileCheck2, GraduationCap, Activity, Clock, BadgeCheck, Brain,
-  Lightbulb, AlertCircle, CheckCircle2, Radio, Flame, UserPlus, ClipboardCheck,
-  BookOpen, Inbox, ArrowRight, Phone, Mail, Send, FileText,
-  ShieldCheck, Smile, Pause, RefreshCw, Upload, StickyNote, Headphones, Hourglass,
-  CalendarClock, FileWarning, FileSignature, Building2, Stamp, ShieldAlert, TrendingUp,
-  Briefcase, UserCheck, Star, Target, Sparkle, Trophy,
+  Search, UserPlus, CalendarClock, FileSignature, ShieldCheck, GraduationCap,
+  AlertTriangle, MessageSquare, Hourglass, Flame, Sparkles, ChevronRight, ChevronDown,
+  ChevronUp, ArrowRight, Send, Eye, Briefcase, UserCheck, CheckCircle2, Inbox,
+  Bell, Filter, Clock, Phone,
 } from "lucide-react";
-import {
-  AreaChart, Area, ResponsiveContainer, RadialBarChart, RadialBar,
-} from "recharts";
 import { OSShell } from "./OSShell";
+import { recruitingCandidates, recruitingStates, staffingDemandByRegion, type RecruitingCandidate } from "@/data/recruitingDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-/* ============ types ============ */
+// Recruiting Dashboard — Home → Dashboard for the Recruiting Team role.
+// Calm operational command center. Real data from recruitingDashboard.ts
+// (the loaded Apploi / Monday / Viventium recruiting snapshot).
 
 type Tone = "ok" | "warn" | "crit";
 
-type Kpi = {
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-  status: Tone;
-  hint: string;
-  spark: number[];
-  icon: React.ElementType;
-};
+const ALL = "All";
 
-/* ============ MOCK DATA ============ */
-
-const kpis: Kpi[] = [
-  { label: "New Applicants",          value: "18",  delta: "+6",   up: true,  status: "ok",   hint: "vs yesterday",        spark: [6,8,10,12,13,15,16,17,18],  icon: UserPlus },
-  { label: "Active Candidates",       value: "74",  delta: "+9",   up: true,  status: "ok",   hint: "In pipeline",         spark: [55,58,62,65,68,70,72,73,74],icon: Users },
-  { label: "Interviews Scheduled",    value: "12",  delta: "+3",   up: true,  status: "ok",   hint: "This week",           spark: [4,5,7,8,9,10,11,12,12],     icon: CalendarClock },
-  { label: "Offer Letters Sent",      value: "8",   delta: "+2",   up: true,  status: "ok",   hint: "Last 7 days",         spark: [3,4,5,5,6,7,7,8,8],         icon: Send },
-  { label: "Offer Acceptance Rate",   value: "78%", delta: "+12%", up: true,  status: "ok",   hint: "30d rolling",         spark: [62,65,68,70,72,74,76,77,78],icon: BadgeCheck },
-  { label: "Orientation Completion",  value: "84%", delta: "-3%",  up: false, status: "warn", hint: "Target ≥ 90%",        spark: [90,88,87,86,86,85,84,84,84],icon: Trophy },
-  { label: "Avg Response Time",       value: "42m", delta: "-15m", up: true,  status: "ok",   hint: "Target ≤ 60m",        spark: [80,72,66,60,56,52,48,45,42], icon: Clock },
-  { label: "BCBA Pipeline",           value: "26",  delta: "+4",   up: true,  status: "ok",   hint: "Across 3 states",     spark: [18,19,21,22,23,24,25,26,26],icon: GraduationCap },
-  { label: "RBT Pipeline",            value: "48",  delta: "-3",   up: false, status: "warn", hint: "Below demand",        spark: [55,54,53,52,51,50,49,48,48],icon: Briefcase },
-  { label: "Awaiting Follow-Up",      value: "14",  delta: "+5",   up: false, status: "warn", hint: "6 over 48h",          spark: [6,7,9,10,11,12,13,14,14],   icon: Inbox },
-  { label: "Credentialing Pending",   value: "5",   delta: "+1",   up: false, status: "warn", hint: "3 BCBA · 2 RBT",      spark: [2,2,3,3,4,4,4,5,5],         icon: ShieldCheck },
-  { label: "Hiring Velocity",         value: "11d", delta: "-2d",  up: true,  status: "ok",   hint: "Applied → Hired",     spark: [16,15,14,14,13,12,12,11,11],icon: TrendingUp },
-];
-
-const stages = [
-  { name: "Applied",             count: 32, stalled: 4, avg: "0.6d", tone: "os-tone-lilac" },
-  { name: "Reviewing",           count: 21, stalled: 3, avg: "1.2d", tone: "os-tone-sky" },
-  { name: "Interview Scheduled", count: 12, stalled: 1, avg: "1.8d", tone: "os-tone-violet" },
-  { name: "Interview Completed", count: 9,  stalled: 2, avg: "1.4d", tone: "os-tone-rose" },
-  { name: "Offer Sent",          count: 8,  stalled: 2, avg: "2.1d", tone: "os-tone-amber" },
-  { name: "Offer Accepted",      count: 6,  stalled: 0, avg: "0.8d", tone: "os-tone-mint" },
-  { name: "Onboarding",          count: 7,  stalled: 1, avg: "3.4d", tone: "os-tone-sky" },
-  { name: "Orientation",         count: 5,  stalled: 1, avg: "2.0d", tone: "os-tone-violet" },
-  { name: "Ready for Staffing",  count: 4,  stalled: 0, avg: "0.4d", tone: "os-tone-mint" },
-];
-
-const leads = [
-  { parent: "Tasha Greene",  child: "RBT · Certified",   insurance: "Charlotte, NC", owner: "Rec: Rochell", stage: "Offer Sent",          since: "Expires 2d",  urgency: "crit" as Tone },
-  { parent: "Marcus Hill",   child: "BCBA · BCaBA",      insurance: "Atlanta, GA",   owner: "Rec: Jordan",  stage: "Awaiting follow-up",  since: "3d silent",   urgency: "warn" as Tone },
-  { parent: "Priya Patel",   child: "RBT · In training", insurance: "Raleigh, NC",   owner: "Rec: Rochell", stage: "Interview Scheduled", since: "Tomorrow 2p", urgency: "ok"   as Tone },
-  { parent: "Devon Brooks",  child: "BCBA · Licensed",   insurance: "Richmond, VA",  owner: "Rec: Jordan",  stage: "Onboarding",          since: "Stalled 4d",  urgency: "crit" as Tone },
-  { parent: "Aisha Cole",    child: "RBT · Certified",   insurance: "Charlotte, NC", owner: "Rec: Rochell", stage: "Orientation",         since: "Confirmed",   urgency: "warn" as Tone },
-  { parent: "Noah Reyes",    child: "BCBA · BCBA-D",     insurance: "Savannah, GA",  owner: "Rec: Jordan",  stage: "Offer Accepted",      since: "Today",       urgency: "ok"   as Tone },
-];
-
-const followups = [
-  { kind: "Call",      parent: "Tasha Greene · RBT",     time: "9:30 AM",   stage: "Offer expires in 2d",  priority: "High",   last: "Voicemail · 1d" },
-  { kind: "Interview", parent: "Priya Patel · RBT",      time: "2:00 PM",   stage: "Phone screen",         priority: "High",   last: "Confirmed · 2h" },
-  { kind: "Email",     parent: "Marcus Hill · BCBA",     time: "11:00 AM",  stage: "Awaiting follow-up",   priority: "Medium", last: "Sent · 3d" },
-  { kind: "Call",      parent: "Devon Brooks · BCBA",    time: "1:00 PM",   stage: "Onboarding stalled",   priority: "High",   last: "Pending docs" },
-  { kind: "Interview", parent: "Sam Webb · RBT",         time: "3:30 PM",   stage: "BCBA panel",           priority: "Medium", last: "Calendar sent" },
-  { kind: "Email",     parent: "Aisha Cole · RBT",       time: "4:15 PM",   stage: "Orientation reminder", priority: "Medium", last: "Confirmed" },
-];
-
-const forms = [
-  { name: "Tasha Greene · Background Check",   status: "In progress",        pct: 65, days: 2, tone: "warn" as Tone },
-  { name: "Devon Brooks · Viventium onboarding", status: "Stalled · 4d",     pct: 40, days: 4, tone: "crit" as Tone },
-  { name: "Aisha Cole · Orientation",          status: "Scheduled · Mon",    pct: 80, days: 0, tone: "ok"   as Tone },
-  { name: "Priya Patel · CR account setup",    status: "Awaiting candidate", pct: 30, days: 1, tone: "warn" as Tone },
-  { name: "Noah Reyes · Paperwork pack",       status: "Complete",           pct: 100,days: 0, tone: "ok"   as Tone },
-];
-
-const comms = [
-  { who: "Indeed",          what: "12 new applicants this morning",      when: "12m", tone: "os-tone-mint",   icon: UserPlus },
-  { who: "Apploi",          what: "candidate completed pre-screen",      when: "35m", tone: "os-tone-sky",    icon: ClipboardCheck },
-  { who: "Credentialing",   what: "BCBS enrollment approved · Reyes",    when: "1h",  tone: "os-tone-violet", icon: ShieldCheck },
-  { who: "Background Co.",  what: "Greene clearance received",           when: "2h",  tone: "os-tone-amber",  icon: BadgeCheck },
-  { who: "Candidate · Hill",what: "no response after 3 attempts",        when: "3h",  tone: "os-tone-coral",  icon: AlertTriangle },
-  { who: "Candidate · Cole",what: "confirmed orientation Monday",        when: "4h",  tone: "os-tone-rose",   icon: CheckCircle2 },
-];
-
-const bottlenecks = [
-  { severity: "crit", title: "Tasha Greene — offer expires tomorrow",        stage: "Offer Sent",      owner: "Rochell", action: "Call candidate today" },
-  { severity: "crit", title: "Devon Brooks — onboarding stalled 4 days",     stage: "Onboarding",      owner: "Rochell", action: "Escalate to credentialing" },
-  { severity: "warn", title: "Marcus Hill — no response after 3 contacts",   stage: "Awaiting reply",  owner: "Jordan",  action: "Final attempt email" },
-  { severity: "warn", title: "GA offer acceptance trending down",            stage: "Offer Sent",      owner: "Jordan",  action: "Review offer package" },
-  { severity: "warn", title: "RBT pipeline below demand · Charlotte",        stage: "Applied",         owner: "Rochell", action: "Open new sourcing" },
-  { severity: "warn", title: "Orientation no-show risk · 2 candidates",      stage: "Orientation",     owner: "Rochell", action: "Send reminder texts" },
-];
-
-const training = [
-  { name: "New Onboarding SOP · v4",          pct: 100, kind: "SOP",      tone: "os-tone-mint"   },
-  { name: "Apploi Workflow Updates",           pct: 60,  kind: "Training", tone: "os-tone-amber"  },
-  { name: "Tango Walkthrough · Interview Flow",pct: 35,  kind: "Walkthru", tone: "os-tone-violet" },
-  { name: "Viventium Setup Checklist",         pct: 80,  kind: "SOP",      tone: "os-tone-sky"    },
-];
-
-const aiInsights = [
-  { icon: AlertCircle,  tone: "os-tone-coral", title: "RBT pipeline below demand",     body: "Projected RBT need exceeds active pipeline by 18 in NC over next 30 days.", cta: "Open sourcing" },
-  { icon: AlertTriangle,tone: "os-tone-amber", title: "Offer acceptance dropping · GA", body: "GA offer acceptance fell 14% — competitor pay benchmark may be off.",      cta: "Review offers" },
-  { icon: Brain,        tone: "os-tone-sky",   title: "Response time impacts conversion", body: "Candidates contacted within 30m accept offers 22% more often.",        cta: "See trend" },
-  { icon: Lightbulb,    tone: "os-tone-lilac", title: "Indeed quality up",              body: "Indeed candidates are converting 18% above average this month.",          cta: "Boost spend" },
-  { icon: Activity,     tone: "os-tone-mint",  title: "Orientation attendance risk",    body: "2 of next 5 orientations have skipped past confirmations — text reminders.", cta: "Enable rule" },
-];
-
-const calls = [
-  { title: "Phone screen · Priya Patel",     time: "9:30 – 9:45 AM",  tone: "os-tone-sky" },
-  { title: "BCBA panel · Marcus Hill",       time: "10:30 – 11:15",   tone: "os-tone-violet" },
-  { title: "Offer call · Tasha Greene",      time: "1:00 – 1:30 PM",  tone: "os-tone-rose" },
-  { title: "Onboarding sync · Devon Brooks", time: "3:45 – 4:00 PM",  tone: "os-tone-amber" },
-];
-
-const quickActions = [
-  { label: "Add Candidate",       icon: UserPlus,       tone: "os-tone-rose"   },
-  { label: "Schedule Interview",  icon: CalendarClock,  tone: "os-tone-sky"    },
-  { label: "Send Offer",          icon: Send,           tone: "os-tone-violet" },
-  { label: "Schedule Orientation",icon: GraduationCap,  tone: "os-tone-mint"   },
-  { label: "Verify Certification",icon: BadgeCheck,     tone: "os-tone-amber"  },
-  { label: "View Reports",        icon: Activity,       tone: "os-tone-coral"  },
-  { label: "Open SOP",            icon: BookOpen,       tone: "os-tone-violet" },
-];
-
-const activity = [
-  { who: "Rochell",      what: "scheduled interview · Priya Patel",  when: "4m",  tone: "os-tone-violet", icon: CalendarClock },
-  { who: "System",       what: "new application received · RBT",      when: "18m", tone: "os-tone-mint",   icon: UserPlus },
-  { who: "Tasha Greene", what: "signed offer letter",                 when: "32m", tone: "os-tone-sky",    icon: FileSignature },
-  { who: "System",       what: "background check completed · Reyes",  when: "55m", tone: "os-tone-amber",  icon: BadgeCheck },
-  { who: "Aisha Cole",   what: "confirmed orientation Monday",        when: "1h",  tone: "os-tone-lilac",  icon: CheckCircle2 },
-  { who: "Jordan",       what: "marked Hill as ready for staffing",   when: "2h",  tone: "os-tone-rose",   icon: Trophy },
-];
-
-/* ============ helpers ============ */
-
-const toneText = (t: Tone) => t === "ok" ? "text-[hsl(155_55%_38%)]" : t === "warn" ? "text-[hsl(30_85%_45%)]" : "text-[hsl(355_72%_52%)]";
-const toneBg   = (t: Tone) => t === "ok" ? "bg-[hsl(150_70%_92%)]" : t === "warn" ? "bg-[hsl(40_100%_92%)]" : "bg-[hsl(355_100%_95%)]";
-const toneStrokeHsl = (t: Tone) => t === "ok" ? "hsl(155 55% 45%)" : t === "warn" ? "hsl(35 90% 55%)" : "hsl(355 75% 58%)";
-const toneGlow = (t: Tone) =>
-  t === "ok"   ? "shadow-[0_0_0_1px_hsl(155_60%_60%/0.22),0_18px_44px_-22px_hsl(155_60%_45%/0.35)]" :
-  t === "warn" ? "shadow-[0_0_0_1px_hsl(35_90%_65%/0.28),0_18px_44px_-22px_hsl(35_85%_55%/0.4)]"   :
-                 "shadow-[0_0_0_1px_hsl(355_75%_70%/0.30),0_18px_44px_-22px_hsl(355_72%_55%/0.45)]";
-const toneLabel = (t: Tone) => t === "ok" ? "Healthy" : t === "warn" ? "Watch" : "Urgent";
-
-function Pill({ tone = "default", children }: { tone?: "default" | "high" | "med" | "low" | "ok" | "warn" | "crit"; children: React.ReactNode }) {
-  const map: Record<string, string> = {
-    default: "bg-foreground/[0.05] text-foreground/70",
-    high:    "bg-[hsl(355_100%_95%)] text-[hsl(355_70%_50%)]",
-    med:     "bg-[hsl(30_100%_94%)]  text-[hsl(30_80%_45%)]",
-    low:     "bg-[hsl(210_100%_95%)] text-[hsl(215_70%_50%)]",
-    ok:      "bg-[hsl(150_70%_92%)]  text-[hsl(155_55%_32%)]",
-    warn:    "bg-[hsl(40_100%_92%)]  text-[hsl(30_80%_42%)]",
-    crit:    "bg-[hsl(355_100%_94%)] text-[hsl(355_70%_48%)]",
-  };
-  return <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-tight", map[tone])}>{children}</span>;
+function todayLabel() {
+  return new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+function daysSince(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.round(ms / 86_400_000));
+}
+function timeLabel(iso?: string) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function initials(name: string) {
+  return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
-function Dot({ tone }: { tone: Tone }) {
-  const c = tone === "ok" ? "bg-[hsl(155_60%_50%)] shadow-[0_0_0_4px_hsl(155_60%_50%/0.18)]"
-        : tone === "warn" ? "bg-[hsl(35_90%_55%)]  shadow-[0_0_0_4px_hsl(35_90%_55%/0.18)]"
-        :                   "bg-[hsl(355_75%_58%)] shadow-[0_0_0_4px_hsl(355_75%_58%/0.18)]";
-  return <span className={cn("inline-block h-2 w-2 rounded-full", c)} />;
+function toneClasses(t: Tone) {
+  switch (t) {
+    case "crit": return "bg-destructive/10 text-destructive border-destructive/20";
+    case "warn": return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20";
+    default:    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20";
+  }
 }
 
-function Spark({ data, tone }: { data: number[]; tone: Tone }) {
-  const stroke = toneStrokeHsl(tone);
-  const points = data.map((v, i) => ({ i, v }));
+function Card({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <ResponsiveContainer width="100%" height={36}>
-      <AreaChart data={points} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={`intk-${tone}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity={0.32} />
-            <stop offset="100%" stopColor={stroke} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.75} fill={`url(#intk-${tone})`} dot={false} />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className={cn(
+      "rounded-2xl border border-border/70 bg-card",
+      "shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]",
+      className,
+    )}>{children}</div>
   );
 }
 
-function KpiCard({ k }: { k: Kpi }) {
-  const Icon = k.icon;
+function Pill({ tone, children }: { tone: Tone; children: React.ReactNode }) {
   return (
-    <div className={cn(
-      "os-rise group relative overflow-hidden rounded-3xl border border-white/70 bg-white/75 p-4 backdrop-blur transition hover:-translate-y-0.5",
-      toneGlow(k.status),
-    )}>
-      <div className={cn(
-        "pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl opacity-70",
-        k.status === "ok" ? "bg-[hsl(155_70%_70%/0.30)]" : k.status === "warn" ? "bg-[hsl(35_95%_70%/0.32)]" : "bg-[hsl(355_85%_75%/0.38)]"
-      )} />
-      <div className="relative flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className={cn("grid h-8 w-8 place-items-center rounded-xl", toneBg(k.status), toneText(k.status))}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground leading-tight">{k.label}</p>
+    <span className={cn(
+      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap",
+      toneClasses(tone),
+    )}>{children}</span>
+  );
+}
+
+function SectionHeader({ icon: Icon, title, subtitle, action }: { icon: React.ElementType; title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex items-end justify-between gap-4 mb-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="h-9 w-9 rounded-full bg-muted grid place-items-center shrink-0">
+          <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
         </div>
-        <span className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-bold tracking-wide", toneBg(k.status), toneText(k.status))}>
-          <span className={cn("h-1 w-1 rounded-full",
-            k.status === "ok" ? "bg-[hsl(155_60%_45%)]" : k.status === "warn" ? "bg-[hsl(35_90%_50%)]" : "bg-[hsl(355_75%_55%)]")} />
-          {toneLabel(k.status)}
-        </span>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold tracking-tight truncate">{title}</h2>
+          {subtitle && <p className="text-sm text-muted-foreground truncate">{subtitle}</p>}
+        </div>
       </div>
-      <p className="relative mt-2.5 text-[26px] font-semibold tracking-tight leading-none tabular-nums">{k.value}</p>
-      <div className="relative mt-1 flex items-center justify-between text-[10.5px]">
-        <span className="text-muted-foreground">{k.hint}</span>
-        <span className={cn("inline-flex items-center gap-0.5 font-semibold", k.up ? "os-trend-up" : "os-trend-down")}>
-          {k.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {k.delta}
-        </span>
-      </div>
-      <div className="relative mt-2 -mx-1"><Spark data={k.spark} tone={k.status} /></div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
-const kindIcon: Record<string, React.ElementType> = { Call: Phone, Interview: CalendarClock, Email: Mail };
-const kindTone: Record<string, string> = { Call: "os-tone-sky", Interview: "os-tone-violet", Email: "os-tone-lilac" };
+function EmptyState({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-8 px-6">
+      <div className="h-9 w-9 rounded-full bg-muted grid place-items-center mb-2">
+        <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+      </div>
+      <p className="text-sm text-muted-foreground">{title}</p>
+    </div>
+  );
+}
 
-/* ============ PAGE ============ */
+/* ============ Classifiers — real operational rules ============ */
+
+function isStalled(c: RecruitingCandidate) {
+  return c.daysInStage >= 7 && !["Ready for Staffing", "Not Qualified"].includes(c.candidateStatus);
+}
+function isAwaitingReview(c: RecruitingCandidate) {
+  return c.candidateStatus === "New Applicant" || (c.candidateStatus === "Screening" && c.screeningOutcome === "Pending");
+}
+function isInterviewToday(c: RecruitingCandidate) {
+  return c.interviewStatus === "Today" || c.interviewStatus === "Scheduled" || c.interviewStatus === "Needs Outcome";
+}
+function isOfferPending(c: RecruitingCandidate) {
+  return c.offerStatus === "Sent" || c.offerStatus === "Unsigned";
+}
+function isBackgroundFlagged(c: RecruitingCandidate) {
+  return c.backgroundCheck === "Delayed" || (c.backgroundCheck === "Pending" && c.daysInStage > 5);
+}
+function isOrientationIncomplete(c: RecruitingCandidate) {
+  return c.offerStatus === "Accepted" && c.orientation !== "Complete" && c.candidateStatus !== "Ready for Staffing";
+}
+function isFollowUpOverdue(c: RecruitingCandidate) {
+  return c.tasks.some((t) => !t.completed && (t.due === "Overdue" || t.due === "Today"));
+}
+function urgentStaffingState(state: string, region: string, role: string) {
+  const d = staffingDemandByRegion[`${state}-${region}`];
+  return d ? d.priorityRole === role : false;
+}
+
+/* ============ Page ============ */
 
 export default function OSRecruitingTeam() {
   const { user } = useAuth();
-  const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Rochell").split(" ")[0];
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const score = 88;
+  const [stateFilter, setStateFilter] = useState<string>(ALL);
+  const [query, setQuery] = useState("");
+  const [showAllInterviews, setShowAllInterviews] = useState(false);
+
+  const candidates = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return recruitingCandidates
+      .filter((c) => stateFilter === ALL || c.state === stateFilter)
+      .filter((c) => !q || [c.name, c.recruiter, c.candidateStatus, c.role, c.state, c.region, c.nextAction]
+        .some((v) => v.toLowerCase().includes(q)));
+  }, [stateFilter, query]);
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  })();
+  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
+
+  // ===== Attention cards =====
+  const attention = useMemo(() => {
+    const reviews = candidates.filter(isAwaitingReview);
+    const interviewsToday = candidates.filter((c) => c.interviewStatus === "Today");
+    const offers = candidates.filter(isOfferPending);
+    const bg = candidates.filter(isBackgroundFlagged);
+    const orient = candidates.filter(isOrientationIncomplete);
+    const staffing = candidates.filter((c) => urgentStaffingState(c.state, c.region, c.role) && c.readinessStatus === "Ready for Staffing");
+    const followups = candidates.filter(isFollowUpOverdue);
+    const stalled = candidates.filter(isStalled);
+    return [
+      { key: "review", label: "Candidates Awaiting Review", count: reviews.length, hint: "Phone screen / file review",       icon: Eye,           tone: reviews.length > 5 ? "warn" : "ok" as Tone, href: "/recruiting/pipeline?queue=review" },
+      { key: "today",  label: "Interviews Today",            count: interviewsToday.length, hint: "Joining or pending outcome", icon: CalendarClock, tone: interviewsToday.length > 0 ? "warn" : "ok" as Tone, href: "/recruiting/interviews" },
+      { key: "offer",  label: "Offers Pending Signature",    count: offers.length, hint: "Awaiting candidate response",     icon: FileSignature, tone: offers.some((c) => c.offerStatus === "Unsigned") ? "crit" : "ok" as Tone, href: "/recruiting/offers" },
+      { key: "bg",     label: "Background Checks Flagged",   count: bg.length, hint: "Delayed or pending too long",         icon: ShieldCheck,   tone: bg.length > 0 ? "crit" : "ok" as Tone, href: "/recruiting/background" },
+      { key: "orient", label: "Orientation Incomplete",      count: orient.length, hint: "Scheduling or attendance gap",    icon: GraduationCap, tone: orient.length > 3 ? "warn" : "ok" as Tone, href: "/recruiting/orientation" },
+      { key: "staff",  label: "Staffing Needs Urgent",       count: staffing.length, hint: "Ready candidates · high demand", icon: AlertTriangle, tone: staffing.length === 0 ? "crit" : "warn" as Tone, href: "/recruiting/staffing-needs" },
+      { key: "follow", label: "Follow-Ups Overdue",          count: followups.length, hint: "Tasks due today or earlier",   icon: MessageSquare, tone: followups.length > 5 ? "warn" : "ok" as Tone, href: "/recruiting/follow-ups" },
+      { key: "stall",  label: "Candidates Stalled 7+ Days",  count: stalled.length, hint: "Aging without movement",         icon: Hourglass,     tone: stalled.length > 3 ? "warn" : "ok" as Tone, href: "/recruiting/pipeline?queue=stalled" },
+    ];
+  }, [candidates]);
+
+  // ===== Pipeline snapshot (operational stages, not raw monday stages) =====
+  const pipelineStages = useMemo(() => {
+    const buckets: { name: string; ids: string[] }[] = [
+      { name: "Applied",             ids: [] },
+      { name: "Reviewing",           ids: [] },
+      { name: "Interview Scheduled", ids: [] },
+      { name: "Interviewed",         ids: [] },
+      { name: "Offer Sent",          ids: [] },
+      { name: "Onboarding",          ids: [] },
+      { name: "Orientation",         ids: [] },
+      { name: "Staffing Ready",      ids: [] },
+      { name: "Active",              ids: [] },
+    ];
+    const put = (i: number, c: RecruitingCandidate) => buckets[i].ids.push(c.id);
+    for (const c of candidates) {
+      const s = c.candidateStatus;
+      if (s === "New Applicant") put(0, c);
+      else if (s === "Screening") put(1, c);
+      else if (s === "Interview Scheduled") put(2, c);
+      else if (s === "Interview Completed") put(3, c);
+      else if (s === "Offer Sent" || s === "Offer Accepted") put(4, c);
+      else if (s === "Onboarding Handoff" || s === "Background Check") put(5, c);
+      else if (s === "Orientation" || s === "Training") put(6, c);
+      else if (s === "Ready for Staffing") put(7, c);
+      // "Not Qualified" and any future "Active" omitted from pipeline display
+    }
+    return buckets.map((b) => {
+      const rows = candidates.filter((c) => b.ids.includes(c.id));
+      const stalled = rows.filter(isStalled).length;
+      const oldest = rows.reduce((max, c) => Math.max(max, c.daysInStage), 0);
+      const tone: Tone = stalled > 0 ? "warn" : oldest > 10 ? "warn" : "ok";
+      return { name: b.name, count: rows.length, stalled, oldest, tone };
+    });
+  }, [candidates]);
+
+  // ===== Upcoming interviews =====
+  const upcomingInterviews = useMemo(() => {
+    const list = candidates.filter((c) => c.interviewAt && (c.interviewStatus === "Scheduled" || c.interviewStatus === "Today"));
+    list.sort((a, b) => new Date(a.interviewAt!).getTime() - new Date(b.interviewAt!).getTime());
+    return list;
+  }, [candidates]);
+
+  // ===== Staffing urgency =====
+  const staffingRows = useMemo(() => {
+    return Object.entries(staffingDemandByRegion)
+      .map(([key, d]) => {
+        const [stateCode, regionName] = key.split("-");
+        if (stateFilter !== ALL && stateCode !== stateFilter) return null;
+        const ready = candidates.filter((c) => c.state === stateCode && c.region === regionName && c.role === d.priorityRole && c.readinessStatus === "Ready for Staffing");
+        const onboarding = candidates.filter((c) => c.state === stateCode && c.region === regionName && c.role === d.priorityRole && ["Onboarding", "Ready This Week"].includes(c.readinessStatus));
+        const gap = Math.max(0, d.demand - ready.length);
+        const tone: Tone = gap === 0 ? "ok" : gap >= 3 ? "crit" : "warn";
+        return { stateCode, regionName, role: d.priorityRole, demand: d.demand, ready: ready.length, onboarding: onboarding.length, gap, tone, owner: ready[0]?.recruiter ?? onboarding[0]?.recruiter ?? "Unassigned", daysOpen: 7 };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b!.gap - a!.gap)) as Array<NonNullable<ReturnType<typeof Object.entries> extends never ? never : { stateCode: string; regionName: string; role: string; demand: number; ready: number; onboarding: number; gap: number; tone: Tone; owner: string; daysOpen: number }>>;
+  }, [candidates, stateFilter]);
+
+  // ===== Orientation readiness =====
+  const orientation = useMemo(() => {
+    const accepted = candidates.filter((c) => c.offerStatus === "Accepted");
+    return {
+      onboardingComplete: accepted.filter((c) => c.viventium === "Complete").length,
+      backgroundPending: accepted.filter((c) => ["Pending", "Sent", "Delayed", "Not Sent"].includes(c.backgroundCheck)).length,
+      orientationScheduled: accepted.filter((c) => c.orientation === "Scheduled").length,
+      orientationIncomplete: accepted.filter((c) => c.orientation === "Not Scheduled").length,
+      readyForStaffing: accepted.filter((c) => c.readinessStatus === "Ready for Staffing").length,
+      total: accepted.length,
+    };
+  }, [candidates]);
+
+  // ===== Follow-ups feed =====
+  const followUps = useMemo(() => {
+    const items: Array<{ id: string; candidate: string; recruiter: string; title: string; due: string; tone: Tone }> = [];
+    for (const c of candidates) {
+      for (const t of c.tasks) {
+        if (t.completed) continue;
+        const tone: Tone = t.due === "Overdue" ? "crit" : t.due === "Today" ? "warn" : "ok";
+        items.push({ id: `${c.id}:${t.id}`, candidate: c.name, recruiter: c.recruiter, title: t.title, due: t.due, tone });
+      }
+    }
+    items.sort((a, b) => (a.due === "Overdue" ? -1 : a.due === "Today" ? -0.5 : 0) - (b.due === "Overdue" ? -1 : b.due === "Today" ? -0.5 : 0));
+    return items.slice(0, 12);
+  }, [candidates]);
+
+  // ===== Insights =====
+  const insights = useMemo(() => {
+    const interviewed = candidates.filter((c) => c.interviewStatus === "Completed" || c.interviewStatus === "Needs Outcome");
+    const accepted = candidates.filter((c) => c.offerStatus === "Accepted");
+    const onboardingComplete = accepted.filter((c) => c.viventium === "Complete").length;
+    const orientationDone = accepted.filter((c) => c.orientation === "Complete").length;
+    const ready = candidates.filter((c) => c.readinessStatus === "Ready for Staffing").length;
+    const avgToInterview = interviewed.length
+      ? Math.round(interviewed.reduce((sum, c) => sum + Math.max(1, daysSince(c.appliedDate) - c.daysInStage), 0) / interviewed.length)
+      : 0;
+    const sources: Record<string, number> = {};
+    for (const c of candidates) sources[c.source] = (sources[c.source] ?? 0) + 1;
+    const topSources = Object.entries(sources).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    return {
+      avgToInterview,
+      onboardingRate: accepted.length ? Math.round((onboardingComplete / accepted.length) * 100) : 0,
+      orientationRate: accepted.length ? Math.round((orientationDone / accepted.length) * 100) : 0,
+      staffingFulfillment: ready,
+      topSources,
+    };
+  }, [candidates]);
+
+  /* ============ Render ============ */
 
   return (
-    <OSShell
-      rightRail={
-        <>
-          {/* AI INTAKE INSIGHTS */}
-          <section className="os-card relative overflow-hidden">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.28)] to-transparent blur-2xl" />
-            <header className="mb-3 flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
-                <Brain className="h-3.5 w-3.5" />
-              </div>
-              <div>
-                <h3 className="text-[14px] font-semibold tracking-tight">AI Recruiting Insights</h3>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Predictive · Supportive</p>
-              </div>
-            </header>
-            <ul className="space-y-3">
-              {aiInsights.map((i) => (
-                <li key={i.title} className="group rounded-2xl border border-white/70 bg-white/70 p-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_hsl(265_60%_50%/0.25)]">
-                  <div className="flex items-start gap-2.5">
-                    <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", i.tone)}>
-                      <i.icon className="h-4 w-4" />
+    <OSShell>
+      <div className="p-6 md:p-8 space-y-8 max-w-[1400px] mx-auto">
+
+        {/* ====== HERO ====== */}
+        <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{todayLabel()}</p>
+            <h1 className="mt-1 text-3xl md:text-4xl font-semibold tracking-tight">Recruiting Dashboard</h1>
+            <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+              {greeting}, {displayName}. Track candidates, onboarding, interviews, and staffing readiness.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search candidates, recruiters, stages…"
+                className="h-10 w-[280px] rounded-xl bg-muted/60 border border-border pl-9 pr-4 text-sm placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring focus:border-transparent outline-none"
+              />
+            </div>
+            <select
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value)}
+              className="h-10 rounded-xl bg-muted/60 border border-border px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value={ALL}>All states</option>
+              {recruitingStates.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <button className="h-10 w-10 rounded-full bg-muted/60 border border-border grid place-items-center hover:bg-muted transition" aria-label="Notifications">
+              <Bell className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </button>
+          </div>
+        </header>
+
+        {/* ====== ATTENTION REQUIRED ====== */}
+        <section>
+          <SectionHeader icon={Flame} title="Attention Required" subtitle="What needs you, right now" />
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {attention.map((a) => (
+              <Card key={a.key} className="p-4 hover:-translate-y-0.5 transition-all duration-300 hover:border-border hover:shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_36px_-12px_oklch(0.2_0.02_260/0.14)] group">
+                <div className="flex items-start justify-between">
+                  <div className={cn("h-8 w-8 rounded-full grid place-items-center border", toneClasses(a.tone))}>
+                    <a.icon className="h-4 w-4" strokeWidth={1.75} />
+                  </div>
+                  <Pill tone={a.tone}>{a.tone === "crit" ? "Urgent" : a.tone === "warn" ? "Attention" : "On track"}</Pill>
+                </div>
+                <div className="mt-3 text-3xl font-semibold tracking-tight">{a.count}</div>
+                <p className="text-sm font-medium mt-0.5 truncate">{a.label}</p>
+                <p className="text-xs text-muted-foreground truncate">{a.hint}</p>
+                <Link to={a.href} className="mt-3 inline-flex items-center text-xs font-medium text-primary hover:underline">
+                  View queue <ChevronRight className="h-3 w-3 ml-0.5" />
+                </Link>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* ====== PIPELINE SNAPSHOT ====== */}
+        <section>
+          <SectionHeader icon={Briefcase} title="Recruiting Pipeline" subtitle="Where every candidate stands"
+            action={<Link to="/recruiting/pipeline" className="text-xs font-medium text-primary hover:underline inline-flex items-center">Open pipeline <ChevronRight className="h-3 w-3 ml-0.5" /></Link>} />
+          <Card className="p-4">
+            <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
+              {pipelineStages.map((s, idx) => (
+                <div key={s.name} className="flex items-center gap-2 shrink-0">
+                  <Link to={`/recruiting/pipeline?stage=${encodeURIComponent(s.name)}`} className="block min-w-[148px] rounded-xl border border-border/60 bg-muted/40 hover:bg-muted hover:border-border transition p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground truncate">{s.name}</span>
+                      <span className={cn("h-1.5 w-1.5 rounded-full",
+                        (s.tone as Tone) === "crit" ? "bg-destructive" : (s.tone as Tone) === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
                     </div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight">{s.count}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">
+                      {s.stalled > 0 ? `${s.stalled} stalled` : "All moving"}
+                      {s.count > 0 && ` · ${s.oldest}d oldest`}
+                    </div>
+                  </Link>
+                  {idx < pipelineStages.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
+
+        {/* ====== TWO-COL ROW: INTERVIEWS + STAFFING ====== */}
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Upcoming Interviews */}
+          <div>
+            <SectionHeader icon={CalendarClock} title="Upcoming Interviews" subtitle={`${upcomingInterviews.length} scheduled`} />
+            <Card className="divide-y divide-border/60">
+              {upcomingInterviews.length === 0 ? (
+                <EmptyState icon={CalendarClock} title="No upcoming interviews. You're all clear." />
+              ) : (
+                (showAllInterviews ? upcomingInterviews : upcomingInterviews.slice(0, 5)).map((c) => (
+                  <div key={c.id} className="p-4 flex items-center gap-4 hover:bg-muted/40 transition">
+                    <div className="h-9 w-9 rounded-full bg-muted grid place-items-center text-xs font-medium shrink-0">{initials(c.name)}</div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-semibold leading-tight">{i.title}</p>
-                      <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{i.body}</p>
-                      <button className="mt-1.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-[hsl(265_70%_55%)] hover:underline">
-                        {i.cta} <ChevronRight className="h-3 w-3" />
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{c.name}</p>
+                        <Pill tone={c.interviewStatus === "Today" ? "warn" : "ok"}>{c.interviewStatus}</Pill>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{c.role} · {c.state} · {c.recruiter}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-medium">{timeLabel(c.interviewAt)}</p>
+                      <p className="text-[11px] text-muted-foreground">{c.interviewer}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition">Join</button>
+                      <button className="h-8 w-8 rounded-full grid place-items-center hover:bg-muted transition" aria-label="Message">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
                       </button>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* INTAKE SCORE */}
-          <section className="os-card relative overflow-hidden">
-            <div className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-gradient-to-br from-[hsl(155_70%_70%/0.25)] to-transparent blur-2xl" />
-            <header className="mb-2">
-              <h3 className="text-[14px] font-semibold tracking-tight">Your Recruiting Score</h3>
-              <p className="text-[10.5px] text-muted-foreground">Velocity · Acceptance · Onboarding</p>
-            </header>
-            <div className="relative grid place-items-center py-2">
-              <div className="relative h-[140px] w-[140px]">
-                <ResponsiveContainer>
-                  <RadialBarChart innerRadius="75%" outerRadius="100%" data={[{ v: score }]} startAngle={90} endAngle={-270}>
-                    <RadialBar dataKey="v" cornerRadius={10} fill="hsl(265 85% 62%)" background={{ fill: "hsl(240 10% 94%)" }} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <div className="text-center">
-                    <p className="text-[28px] font-semibold leading-none tracking-tight">{score}</p>
-                    <p className="mt-1 text-[9.5px] uppercase tracking-wider text-muted-foreground">Strong</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-1 grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div className="rounded-lg bg-[hsl(150_70%_94%)] py-1.5 font-semibold text-[hsl(155_55%_32%)]">Vel 92</div>
-              <div className="rounded-lg bg-[hsl(40_100%_94%)] py-1.5 font-semibold text-[hsl(30_80%_42%)]">Acc 84</div>
-              <div className="rounded-lg bg-[hsl(265_100%_95%)] py-1.5 font-semibold text-[hsl(265_70%_50%)]">Onb 88</div>
-            </div>
-          </section>
-
-          {/* TODAY */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold tracking-tight">Today</h3>
-              <span className="text-[11px] text-muted-foreground">{today}</span>
-            </header>
-            <ul className="space-y-3">
-              {calls.map((m) => (
-                <li key={m.title} className="flex items-center gap-3">
-                  <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", m.tone)}>
-                    <Phone className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-medium leading-tight">{m.title}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{m.time}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* TRAINING & SOP */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight">Training & SOPs</h3>
-              </div>
-              <Pill tone="med">4</Pill>
-            </header>
-            <ul className="space-y-2.5">
-              {training.map((t) => (
-                <li key={t.name} className="rounded-xl border border-white/70 bg-white/70 p-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className={cn("grid h-7 w-7 place-items-center rounded-xl", t.tone)}>
-                      <BookOpen className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12px] font-semibold leading-tight">{t.name}</p>
-                      <p className="text-[10.5px] text-muted-foreground">{t.kind}</p>
-                    </div>
-                    <span className="tabular-nums text-[11px] font-semibold">{t.pct}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)]" style={{ width: `${t.pct}%` }} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* LIVE ACTIVITY */}
-          <section className="os-card">
-            <header className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Radio className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-                <h3 className="text-[14px] font-semibold tracking-tight">Recent Activity</h3>
-              </div>
-              <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-[hsl(155_55%_38%)]">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[hsl(155_60%_50%)]" /> Live
-              </span>
-            </header>
-            <ul className="space-y-3">
-              {activity.map((a, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <div className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-xl", a.tone)}>
-                    <a.icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] leading-tight">
-                      <span className="font-semibold">{a.who}</span>{" "}
-                      <span className="text-muted-foreground">{a.what}</span>
-                    </p>
-                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{a.when} ago</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
-      }
-    >
-      {/* HERO */}
-      <header className="os-rise relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-br from-white via-[hsl(265_100%_99%)] to-[hsl(210_100%_98%)] p-6 shadow-[0_24px_60px_-30px_hsl(265_60%_50%/0.25)]">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(265_85%_70%/0.35)] to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -left-20 -bottom-24 h-56 w-56 rounded-full bg-gradient-to-br from-[hsl(210_85%_75%/0.3)] to-transparent blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-2.5 py-1 text-[10.5px] font-semibold tracking-wide text-muted-foreground backdrop-blur">
-              <Briefcase className="h-3 w-3 text-[hsl(265_70%_55%)]" /> Recruiting Team · Mission Control
-            </div>
-            <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[34px]">
-              {greet}, <span className="capitalize">{name}</span> <span aria-hidden>👋</span>
-            </h1>
-            <p className="mt-1 text-[13.5px] text-muted-foreground">
-              {today} · Here's what's happening across Recruiting today.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(265_100%_95%)] px-2.5 py-1 font-semibold text-[hsl(265_70%_50%)]">
-                <Users className="h-3 w-3" /> 74 active candidates
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(355_100%_94%)] px-2.5 py-1 font-semibold text-[hsl(355_70%_48%)]">
-                <CalendarClock className="h-3 w-3" /> 12 interviews this week
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(40_100%_92%)] px-2.5 py-1 font-semibold text-[hsl(30_80%_42%)]">
-                <Send className="h-3 w-3" /> 8 offers out
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(150_70%_92%)] px-2.5 py-1 font-semibold text-[hsl(155_55%_32%)]">
-                <TrendingUp className="h-3 w-3" /> 78% acceptance
-              </span>
-            </div>
+                ))
+              )}
+              {upcomingInterviews.length > 5 && (
+                <button onClick={() => setShowAllInterviews((v) => !v)} className="w-full p-3 text-xs font-medium text-muted-foreground hover:bg-muted/40 transition inline-flex items-center justify-center gap-1">
+                  {showAllInterviews ? <>Show less <ChevronUp className="h-3 w-3" /></> : <>Show all {upcomingInterviews.length} <ChevronDown className="h-3 w-3" /></>}
+                </button>
+              )}
+            </Card>
           </div>
 
-          {/* AI Intake Briefing */}
-          <div className="relative w-full max-w-md shrink-0 rounded-2xl border border-white/80 bg-white/70 p-4 shadow-[0_14px_36px_-20px_hsl(265_60%_50%/0.35)] backdrop-blur">
-            <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_72%)] text-white">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold leading-none tracking-tight">Recruiting AI Briefing</p>
-                <p className="mt-1 text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground">Updated 2 min ago</p>
-              </div>
-            </div>
-            <p className="mt-3 text-[12.5px] leading-relaxed text-foreground/85">
-              <span className="font-semibold text-[hsl(355_70%_52%)]">BCBA velocity</span> is up this week, but
-              <span className="font-semibold"> RBT orientation completion</span> is below target.
-            </p>
-            <button className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] px-3 py-2 text-[12px] font-semibold text-white shadow-[0_10px_24px_-12px_hsl(265_85%_60%/0.55)] transition hover:opacity-95">
-              Open Recruiting Insights <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* KPI GRID */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h2 className="text-[15px] font-semibold tracking-tight">Daily Recruiting KPIs</h2>
-            <Pill tone="default">{kpis.length} metrics</Pill>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">Today</button>
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">7d</button>
-            <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">30d</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {kpis.map((k) => <KpiCard key={k.label} k={k} />)}
-        </div>
-      </section>
-
-      {/* LEAD PIPELINE */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
+          {/* Staffing Urgency Center */}
           <div>
-            <h3 className="text-[15px] font-semibold tracking-tight">Candidate Pipeline</h3>
-            <p className="mt-0.5 text-[11.5px] text-muted-foreground">Every stage from applied through ready for staffing</p>
-          </div>
-          <button className="text-[11.5px] font-semibold text-[hsl(265_70%_55%)] hover:underline">Open kanban</button>
-        </header>
-        <div className="-mx-1 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-3 px-1">
-            {stages.map((s) => (
-              <div key={s.name} className="w-[170px] shrink-0 rounded-2xl border border-white/70 bg-white/70 p-3">
-                <div className="flex items-center gap-2">
-                  <div className={cn("grid h-7 w-7 place-items-center rounded-xl", s.tone)}>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="truncate text-[11.5px] font-semibold leading-tight">{s.name}</p>
-                </div>
-                <p className="mt-2 text-[22px] font-semibold tabular-nums leading-none">{s.count}</p>
-                <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>Avg {s.avg}</span>
-                  {s.stalled > 0 ? <Pill tone="warn">{s.stalled} stalled</Pill> : <Pill tone="ok">on track</Pill>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* recent lead cards */}
-        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {leads.map((l) => (
-            <button key={l.parent} className="group flex items-start gap-3 rounded-2xl border border-white/70 bg-white/70 p-3.5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-22px_hsl(265_60%_50%/0.28)]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_70%/0.18)] to-[hsl(210_85%_75%/0.18)] text-[hsl(265_70%_45%)] font-semibold">
-                {l.parent.split(" ").map((n) => n[0]).join("")}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[13px] font-semibold leading-tight">{l.parent}</p>
-                  <Dot tone={l.urgency} />
-                </div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{l.child} · {l.insurance}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <Pill tone="default">{l.stage}</Pill>
-                  <span className="text-[10.5px] text-muted-foreground">{l.since}</span>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 self-center text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* FOLLOW-UPS & TASKS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Tasks & Communication</h3>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {["All", "Follow-Ups", "Interviews", "Offers", "Onboarding", "Orientation", "Escalations"].map((t, i) => (
-              <button key={t} className={cn(
-                "rounded-xl px-2.5 py-1 text-[11px] font-semibold",
-                i === 0 ? "bg-foreground text-background" : "bg-foreground/[0.05] text-foreground/70 hover:bg-foreground/[0.08]"
-              )}>{t}</button>
-            ))}
-          </div>
-        </header>
-        <ul className="divide-y divide-foreground/[0.06]">
-          {followups.map((f) => {
-            const Icon = kindIcon[f.kind] ?? Phone;
-            const prio = f.priority === "High" ? "high" : f.priority === "Medium" ? "med" : "low";
-            return (
-              <li key={f.parent + f.time} className="group flex items-center gap-3 py-3">
-                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", kindTone[f.kind] ?? "os-tone-sky")}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-semibold leading-tight">{f.parent}</p>
-                  <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.stage} · Last: {f.last} · {f.time}</p>
-                </div>
-                <Pill tone={prio as any}>{f.priority}</Pill>
-                <div className="ml-1 hidden items-center gap-1 md:flex">
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Call"><Phone className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Snooze"><Pause className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/[0.05] hover:bg-foreground/[0.08]" title="Reassign"><RefreshCw className="h-3.5 w-3.5" /></button>
-                  <button className="grid h-8 w-8 place-items-center rounded-lg bg-[hsl(150_70%_92%)] text-[hsl(155_55%_35%)] hover:bg-[hsl(150_70%_88%)]" title="Complete"><CheckCircle2 className="h-3.5 w-3.5" /></button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {/* FORMS & VOB + COMMS */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <section className="os-card lg:col-span-2">
-          <header className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Onboarding & Orientation Tracking</h3>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Pill tone="warn">3 stalled</Pill>
-              <Pill tone="crit">1 flagged</Pill>
-            </div>
-          </header>
-          <ul className="space-y-2.5">
-            {forms.map((f) => (
-              <li key={f.name} className={cn(
-                "rounded-2xl border border-white/70 bg-white/70 p-3.5",
-                f.tone === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
-                f.tone === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
-              )}>
-                <div className="flex items-center gap-3">
-                  <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneBg(f.tone), toneText(f.tone))}>
-                    <FileText className="h-4 w-4" />
-                  </div>
+            <SectionHeader icon={AlertTriangle} title="Staffing Urgency" subtitle="Demand vs ready candidates by region"
+              action={<Link to="/recruiting/staffing-needs" className="text-xs font-medium text-primary hover:underline">Open</Link>} />
+            <Card className="divide-y divide-border/60">
+              {staffingRows.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No regions matching this state." />
+              ) : staffingRows.slice(0, 6).map((r) => (
+                <div key={`${r.stateCode}-${r.regionName}`} className="p-4 flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] font-semibold leading-tight">{f.name}</p>
-                    <p className="mt-0.5 text-[10.5px] text-muted-foreground">{f.status}{f.days > 0 ? ` · ${f.days}d open` : ""}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium truncate">{r.regionName}</span>
+                      <span className="text-[11px] text-muted-foreground">{r.stateCode}</span>
+                      <Pill tone={r.tone}>{r.gap === 0 ? "Met" : `Gap ${r.gap}`}</Pill>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{r.role} · {r.daysOpen}d open · {r.owner}</p>
                   </div>
-                  <Pill tone={f.tone}>{toneLabel(f.tone)}</Pill>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold">{r.ready}<span className="text-xs text-muted-foreground">/{r.demand}</span></div>
+                    <p className="text-[11px] text-muted-foreground">{r.onboarding} onboarding</p>
+                  </div>
+                  <button className="h-8 px-3 rounded-lg border border-border/70 text-xs font-medium hover:bg-muted transition shrink-0">Escalate</button>
                 </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/[0.06]">
-                  <div className="h-full rounded-full" style={{ width: `${f.pct}%`, background: `linear-gradient(90deg, ${toneStrokeHsl(f.tone)}, hsl(265 85% 72%))` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </Card>
+          </div>
         </section>
 
-        <section className="os-card">
-          <header className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[15px] font-semibold tracking-tight">Credentialing Coordination</h3>
+        {/* ====== ORIENTATION READINESS ====== */}
+        <section>
+          <SectionHeader icon={GraduationCap} title="Orientation Readiness" subtitle={`${orientation.total} candidates in onboarding`} />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: "Onboarding Complete",   value: orientation.onboardingComplete,   total: orientation.total, tone: "ok"   as Tone, icon: CheckCircle2 },
+              { label: "Background Pending",    value: orientation.backgroundPending,    total: orientation.total, tone: "warn" as Tone, icon: ShieldCheck },
+              { label: "Orientation Scheduled", value: orientation.orientationScheduled, total: orientation.total, tone: "ok"   as Tone, icon: CalendarClock },
+              { label: "Orientation Incomplete",value: orientation.orientationIncomplete,total: orientation.total, tone: "crit" as Tone, icon: AlertTriangle },
+              { label: "Ready for Staffing",    value: orientation.readyForStaffing,     total: orientation.total, tone: "ok"   as Tone, icon: UserCheck },
+            ].map((t) => {
+              const pct = t.total ? Math.round((t.value / t.total) * 100) : 0;
+              return (
+                <Card key={t.label} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className={cn("h-7 w-7 rounded-full grid place-items-center border", toneClasses(t.tone))}>
+                      <t.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">{pct}%</span>
+                  </div>
+                  <div className="mt-3 text-2xl font-semibold tracking-tight">{t.value}</div>
+                  <p className="text-xs text-muted-foreground truncate">{t.label}</p>
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className={cn("h-full rounded-full",
+                      (t.tone as Tone) === "crit" ? "bg-destructive" : (t.tone as Tone) === "warn" ? "bg-amber-500" : "bg-emerald-500"
+                    )} style={{ width: `${pct}%` }} />
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ====== TWO-COL: FOLLOW-UPS + QUICK ACTIONS ====== */}
+        <section className="grid grid-cols-1 xl:grid-cols-[1.4fr_1fr] gap-6">
+          {/* Follow-ups */}
+          <div>
+            <SectionHeader icon={Inbox} title="Recruiter Follow-Ups" subtitle={`${followUps.length} open`}
+              action={<Link to="/recruiting/follow-ups" className="text-xs font-medium text-primary hover:underline">Open all</Link>} />
+            <Card className="divide-y divide-border/60">
+              {followUps.length === 0 ? (
+                <EmptyState icon={CheckCircle2} title="No open follow-ups. You're all caught up." />
+              ) : followUps.map((f) => (
+                <div key={f.id} className="p-3 flex items-center gap-3 hover:bg-muted/40 transition">
+                  <div className={cn("h-2 w-2 rounded-full shrink-0", f.tone === "crit" ? "bg-destructive" : f.tone === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm truncate"><span className="font-medium">{f.candidate}</span> · {f.title}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{f.recruiter}</p>
+                  </div>
+                  <Pill tone={f.tone}>{f.due}</Pill>
+                  <button className="h-7 w-7 rounded-full grid place-items-center hover:bg-muted transition shrink-0" aria-label="Complete">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              ))}
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div>
+            <SectionHeader icon={Sparkles} title="Quick Actions" subtitle="Move work forward, fast" />
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Add Candidate",          icon: UserPlus,       href: "/recruiting/pipeline?new=1" },
+                { label: "Schedule Interview",     icon: CalendarClock,  href: "/recruiting/interviews?new=1" },
+                { label: "Send Offer",             icon: Send,           href: "/recruiting/offers?new=1" },
+                { label: "Start Onboarding",       icon: GraduationCap,  href: "/recruiting/onboarding?new=1" },
+                { label: "Request Background",     icon: ShieldCheck,    href: "/recruiting/background?new=1" },
+                { label: "Schedule Orientation",   icon: Clock,          href: "/recruiting/orientation?new=1" },
+                { label: "Escalate Staffing",      icon: AlertTriangle,  href: "/recruiting/staffing-needs?escalate=1" },
+                { label: "Message Candidate",      icon: Phone,          href: "/recruiting/messages?new=1" },
+              ].map((a) => (
+                <Link key={a.label} to={a.href}
+                  className="rounded-2xl border border-border/70 bg-card p-4 hover:-translate-y-0.5 hover:border-border transition-all duration-300 group"
+                >
+                  <a.icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition" strokeWidth={1.75} />
+                  <p className="mt-3 text-sm font-medium">{a.label}</p>
+                </Link>
+              ))}
             </div>
-            <Pill tone="ok">84% ready</Pill>
-          </header>
-          <ul className="space-y-3">
-            {comms.map((c, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", c.tone)}>
-                  <c.icon className="h-3.5 w-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] leading-tight">
-                    <span className="font-semibold">{c.who}</span>{" "}
-                    <span className="text-muted-foreground">{c.what}</span>
-                  </p>
-                  <p className="mt-0.5 text-[10.5px] text-muted-foreground">{c.when} ago</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><BadgeCheck className="mr-1 inline h-3 w-3" />Verify</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><Send className="mr-1 inline h-3 w-3" />Enroll</button>
-            <button className="rounded-xl bg-foreground/[0.05] py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]"><RefreshCw className="mr-1 inline h-3 w-3" />Renew</button>
           </div>
         </section>
-      </div>
 
-      {/* INTAKE BOTTLENECKS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-[hsl(355_70%_55%)]" />
-            <h3 className="text-[15px] font-semibold tracking-tight">Active Applicants & Urgent Follow-Ups</h3>
+        {/* ====== INSIGHTS ====== */}
+        <section>
+          <SectionHeader icon={Eye} title="Recruiting Insights" subtitle="Lightweight signals · last 30 days" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Avg time to interview</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{insights.avgToInterview}<span className="text-sm font-normal text-muted-foreground ml-1">days</span></p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Onboarding completion</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{insights.onboardingRate}%</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Orientation completion</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{insights.orientationRate}%</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Staffing-ready</p>
+              <p className="mt-1 text-2xl font-semibold tracking-tight">{insights.staffingFulfillment}</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground mb-2">Top sources</p>
+              <div className="space-y-1.5">
+                {insights.topSources.map(([source, count]) => {
+                  const max = insights.topSources[0]?.[1] || 1;
+                  return (
+                    <div key={source} className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground w-16 truncate">{source}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary/70 rounded-full" style={{ width: `${(count / max) * 100}%` }} />
+                      </div>
+                      <span className="text-[11px] font-medium tabular-nums">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Pill tone="crit">2 critical</Pill>
-            <Pill tone="warn">4 watch</Pill>
-          </div>
-        </header>
-        <ul className="space-y-2">
-          {bottlenecks.map((b) => (
-            <li key={b.title} className={cn(
-              "flex items-center gap-3 rounded-2xl border border-white/70 bg-white/70 p-3.5",
-              b.severity === "crit" && "shadow-[inset_3px_0_0_hsl(355_75%_58%)]",
-              b.severity === "warn" && "shadow-[inset_3px_0_0_hsl(35_90%_55%)]",
-            )}>
-              <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl",
-                b.severity === "crit" ? "bg-[hsl(355_100%_95%)] text-[hsl(355_70%_50%)]" : "bg-[hsl(40_100%_92%)] text-[hsl(30_80%_45%)]")}>
-                {b.severity === "crit" ? <AlertCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+        </section>
+
+        {/* ====== ASK BLOSSOM AI ====== */}
+        <section>
+          <SectionHeader icon={Sparkles} title="Ask Blossom AI" subtitle="Your recruiting operational copilot" />
+          <Card className="p-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center">
+                <Sparkles className="h-5 w-5" strokeWidth={1.75} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] font-semibold leading-tight">{b.title}</p>
-                <p className="mt-0.5 text-[10.5px] text-muted-foreground">{b.stage} · Owner {b.owner}</p>
+                <p className="text-sm font-medium">Ask anything about your recruiting pipeline</p>
+                <p className="text-xs text-muted-foreground">Stalled candidates, blocked onboarding, urgent staffing — answered instantly.</p>
               </div>
-              <div className="hidden items-center gap-1.5 text-[10.5px] text-muted-foreground md:flex">
-                <span>Next:</span>
-                <span className="font-semibold text-foreground">{b.action}</span>
-              </div>
-              <button className="ml-1 inline-flex items-center gap-1 rounded-lg bg-foreground/[0.05] px-2.5 py-1.5 text-[11px] font-semibold hover:bg-foreground/[0.08]">
-                Take action <ArrowRight className="h-3 w-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+              <Link to="/ai/assistant" className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition inline-flex items-center">
+                Open <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Link>
+            </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {[
+                "Which candidates are stalled 7+ days?",
+                "What onboarding is blocked right now?",
+                "Which staffing needs are most urgent?",
+                "Show pending orientations this week.",
+                "What interviews are scheduled tomorrow?",
+                "Summarize my recruiting follow-ups.",
+              ].map((p) => (
+                <Link key={p} to={`/ai/assistant?q=${encodeURIComponent(p)}`}
+                  className="text-left text-xs rounded-xl border border-border/60 bg-muted/40 hover:bg-muted hover:border-border px-3 py-2 transition truncate">
+                  {p}
+                </Link>
+              ))}
+            </div>
+          </Card>
+        </section>
 
-      {/* QUICK ACTIONS */}
-      <section className="os-card">
-        <header className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold tracking-tight">Quick Actions</h3>
-          <span className="text-[11px] text-muted-foreground">⌘K to search anything</span>
-        </header>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          {quickActions.map((a) => (
-            <button key={a.label} className="group flex flex-col items-start gap-2 rounded-2xl border border-white/70 bg-white/70 p-3 text-left transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-20px_hsl(265_60%_50%/0.28)]">
-              <div className={cn("grid h-9 w-9 place-items-center rounded-xl", a.tone)}>
-                <a.icon className="h-4 w-4" />
-              </div>
-              <span className="text-[11.5px] font-semibold leading-tight tracking-tight">{a.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      </div>
     </OSShell>
   );
 }
