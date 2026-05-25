@@ -165,6 +165,7 @@ import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
 import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
+import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
