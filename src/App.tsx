@@ -446,7 +446,7 @@ const App = () => (
                   <Route path="/qa/resources" element={<OSQAResources />} />
                   <Route path="/payroll-coordinator" element={<OSPayrollCoordinator />} />
                   <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
-                  <Route path="/payroll/training-academy" element={<OSPlaceholder title="Payroll Training Academy" description="Payroll-specific learning paths. Built in phase 4." icon={GraduationCap} />} />
+                  <Route path="/payroll/training-academy" element={<OSPayrollTrainingAcademy />} />
                   <Route path="/payroll/queue" element={<OSPlaceholder title="Payroll Queue" description="Structured task queue for payroll operations. Built in phase 2." icon={KanbanSquare} />} />
                   <Route path="/payroll/adjustments" element={<OSPlaceholder title="Payroll Adjustments" description="Bonuses, corrections, retro pay, reimbursements. Built in phase 2." icon={Wallet} />} />
                   <Route path="/payroll/time-attendance" element={<OSPlaceholder title="Time & Attendance" description="Timesheets, punches, exceptions. Built in phase 2." icon={CIcon} />} />
