@@ -190,6 +190,7 @@ import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
 import OSRecruitingOnboarding from "./pages/os/OSRecruitingOnboarding";
+import OSRecruitingBackgroundChecks from "./pages/os/OSRecruitingBackgroundChecks";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
@@ -383,7 +384,7 @@ const App = () => (
                   <Route path="/recruiting/interviews"     element={<OSRecruitingInterviews />} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
-                  <Route path="/recruiting/background"     element={<OSPlaceholder title="Background Checks" description="Background check status and flagged candidates." icon={ShieldCheck} />} />
+                  <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />
                   <Route path="/recruiting/orientation"    element={<OSPlaceholder title="Orientation Queue" description="Orientation scheduling and attendance." icon={Clock} />} />
                   <Route path="/recruiting/staffing-needs" element={<OSPlaceholder title="Open Staffing Needs" description="Demand vs supply by region — escalations and placements." icon={AlertTriangle} />} />
                   <Route path="/recruiting/rbt"            element={<OSPlaceholder title="RBT Recruiting" description="RBT pipeline, screening, and onboarding." icon={UserPlus} />} />
