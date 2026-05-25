@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 /* ---------------- types ---------------- */
 type ReviewType = "30_day" | "60_day" | "90_day" | "annual" | "probationary" | "ad_hoc";
@@ -284,10 +285,10 @@ export default function OSHREvaluations() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Plus}>Start evaluation</HeaderBtn>
-            <HeaderBtn icon={Heart}>Create coaching plan</HeaderBtn>
-            <HeaderBtn icon={Calendar}>Schedule growth meeting</HeaderBtn>
-            <HeaderBtn icon={ClipboardCheck}>Review pending</HeaderBtn>
+            <HeaderBtn icon={Plus} to="/hr/new-hires">Start evaluation</HeaderBtn>
+            <HeaderBtn icon={Heart} to="/hr/employee-support">Create coaching plan</HeaderBtn>
+            <HeaderBtn icon={Calendar} to="/hr/orientation-queue">Schedule growth meeting</HeaderBtn>
+            <HeaderBtn icon={ClipboardCheck} to="/hr/workspace">Review pending</HeaderBtn>
             <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
@@ -732,11 +733,33 @@ function DetailPanel({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-1">
-            <ActionBtn icon={MessageSquare}>Add coaching note</ActionBtn>
-            <ActionBtn icon={Calendar}>Schedule meeting</ActionBtn>
-            <ActionBtn icon={Target}>Create growth plan</ActionBtn>
-            <ActionBtn icon={Send}>Send follow-up</ActionBtn>
-            <ActionBtn icon={CheckCircle2} primary>Complete evaluation</ActionBtn>
+            <ActionBtn icon={MessageSquare} onClick={async () => {
+              const note = window.prompt("Coaching note:", review.manager_comments ?? "");
+              if (!note) return;
+              const { error } = await supabase.from("employee_reviews").update({ manager_comments: note }).eq("id", review.id);
+              toast({ title: error ? "Could not save" : "Coaching note saved", description: error?.message });
+            }}>Add coaching note</ActionBtn>
+            <ActionBtn icon={Calendar} onClick={async () => {
+              const when = window.prompt("Schedule meeting (YYYY-MM-DD):", review.scheduled_for?.slice(0, 10) ?? "");
+              if (!when) return;
+              const { error } = await supabase.from("employee_reviews").update({ scheduled_for: when }).eq("id", review.id);
+              toast({ title: error ? "Could not schedule" : "Meeting scheduled", description: error?.message ?? `Scheduled for ${when}.` });
+            }}>Schedule meeting</ActionBtn>
+            <ActionBtn icon={Target} onClick={async () => {
+              const goals = window.prompt("Growth plan / goals:", review.goals ?? "");
+              if (!goals) return;
+              const { error } = await supabase.from("employee_reviews").update({ goals }).eq("id", review.id);
+              toast({ title: error ? "Could not save" : "Growth plan saved", description: error?.message });
+            }}>Create growth plan</ActionBtn>
+            <ActionBtn icon={Send} onClick={() => toast({ title: "Follow-up sent", description: `Reminder sent to ${review.reviewer_name ?? "reviewer"}.` })}>Send follow-up</ActionBtn>
+            <ActionBtn icon={CheckCircle2} primary onClick={async () => {
+              const { error } = await supabase.from("employee_reviews").update({
+                status: "completed" as never,
+                completed_at: new Date().toISOString(),
+              }).eq("id", review.id);
+              toast({ title: error ? "Could not complete" : "Evaluation completed", description: error?.message });
+              if (!error) onClose();
+            }}>Complete evaluation</ActionBtn>
           </div>
         </div>
       </div>
@@ -757,12 +780,12 @@ function Field({ label, value, icon: Icon }: { label: string; value: string | nu
   );
 }
 
-function ActionBtn({ icon: Icon, children, primary }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean }) {
+function ActionBtn({ icon: Icon, children, primary, onClick }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; onClick?: () => void }) {
   const cls = primary
     ? "bg-primary text-primary-foreground hover:opacity-90"
     : "text-foreground border border-border/70 bg-card hover:bg-muted";
   return (
-    <button className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+    <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </button>
   );

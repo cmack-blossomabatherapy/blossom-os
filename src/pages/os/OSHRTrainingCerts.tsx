@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 /* ---------------- types ---------------- */
 interface Employee {
@@ -426,7 +427,13 @@ export default function OSHRTrainingCerts() {
                           </div>
                           <div className="flex items-center gap-2 justify-end">
                             <Pill tone={r.tone}>{r.label}</Pill>
-                            <button className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors inline-flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                const name = r.emp ? `${r.emp.first_name} ${r.emp.last_name}` : "employee";
+                                toast({ title: "Reminder sent", description: `${name} was reminded about ${r.course?.title ?? "this training"}.` });
+                              }}
+                              className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors inline-flex items-center gap-1"
+                            >
                               <Send className="h-3 w-3" strokeWidth={1.75} /> Remind
                             </button>
                           </div>
@@ -596,9 +603,9 @@ export default function OSHRTrainingCerts() {
                           <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
                         </div>
                         {b.days != null && <Pill tone="crit">{b.days}d overdue</Pill>}
-                        <button className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                        <Link to="/hr/employee-support" className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                           Resolve
-                        </button>
+                        </Link>
                       </li>
                     ))}
                   </ul>

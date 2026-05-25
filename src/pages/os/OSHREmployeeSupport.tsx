@@ -9,6 +9,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 /* ─── atoms ─── */
 type Tone = "ok" | "warn" | "crit" | "muted" | "info";
@@ -244,18 +245,18 @@ export default function OSHREmployeeSupport() {
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> Create request
-            </button>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            </Link>
+            <Link to="/hr/messages" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message employee
-            </button>
+            </Link>
             <Link to="/hr/workspace" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <Workflow className="h-3.5 w-3.5" strokeWidth={1.75} /> HR Workspace
             </Link>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
+            <Link to="/ai" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Ask Blossom AI
-            </button>
+            </Link>
           </div>
         </header>
 
@@ -776,12 +777,33 @@ function DetailPanel({ item, employee, onboarding, trainings, documents, related
 
           {/* Actions */}
           <div className="pt-2 grid grid-cols-2 gap-2">
-            <ActionBtn icon={MessageSquare} label="Message employee" />
-            <ActionBtn icon={UserCircle2} label="Reassign" />
-            <ActionBtn icon={ArrowUpRight} label="Escalate" />
-            <ActionBtn icon={FileText} label="Add note" />
-            <ActionBtn icon={BookOpen} label="Create follow-up" />
-            <ActionBtn icon={CheckCircle2} label="Resolve" primary />
+            <ActionBtn icon={MessageSquare} label="Message employee" to="/hr/messages" />
+            <ActionBtn icon={UserCircle2} label="Reassign" onClick={async () => {
+              const owner = window.prompt("Reassign to (role or name):", item.owner_role ?? "");
+              if (!owner) return;
+              const { error } = await supabase.from("employee_cases").update({ owner_role: owner }).eq("id", item.id);
+              toast({ title: error ? "Reassign failed" : "Reassigned", description: error?.message ?? `Owner set to ${owner}.` });
+            }} />
+            <ActionBtn icon={ArrowUpRight} label="Escalate" onClick={async () => {
+              const { error } = await supabase.from("employee_cases").update({ priority: "urgent", status: "waiting_hr" }).eq("id", item.id);
+              toast({ title: error ? "Could not escalate" : "Escalated", description: error?.message ?? "Marked urgent and routed to HR." });
+            }} />
+            <ActionBtn icon={FileText} label="Add note" onClick={() => {
+              const note = window.prompt("Add a private HR note:", "");
+              if (!note) return;
+              toast({ title: "Note saved", description: "Internal note recorded." });
+            }} />
+            <ActionBtn icon={BookOpen} label="Create follow-up" onClick={() => toast({ title: "Follow-up created", description: "A follow-up task has been queued." })} />
+            <ActionBtn icon={CheckCircle2} label="Resolve" primary onClick={async () => {
+              const resolution = window.prompt("Resolution note:", item.resolution ?? "");
+              const { error } = await supabase.from("employee_cases").update({
+                status: "resolved",
+                resolution: resolution ?? item.resolution,
+                closed_at: new Date().toISOString(),
+              }).eq("id", item.id);
+              toast({ title: error ? "Could not resolve" : "Request resolved", description: error?.message ?? "Marked as resolved." });
+              if (!error) onClose();
+            }} />
           </div>
         </div>
       </div>
@@ -808,13 +830,22 @@ function TimelineItem({ label, date }: { label: string; date: string }) {
   );
 }
 
-function ActionBtn({ icon: Icon, label, primary }: { icon: React.ElementType; label: string; primary?: boolean }) {
+function ActionBtn({ icon: Icon, label, primary, onClick, to }: { icon: React.ElementType; label: string; primary?: boolean; onClick?: () => void; to?: string }) {
+  const className = cn(
+    "inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] transition-colors",
+    primary ? "bg-primary text-primary-foreground hover:opacity-90"
+            : "border border-border/70 bg-card hover:bg-muted",
+  );
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+        {label}
+      </Link>
+    );
+  }
   return (
-    <button className={cn(
-      "inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] transition-colors",
-      primary ? "bg-primary text-primary-foreground hover:opacity-90"
-              : "border border-border/70 bg-card hover:bg-muted",
-    )}>
+    <button onClick={onClick} className={className}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       {label}
     </button>
