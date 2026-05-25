@@ -194,6 +194,7 @@ import OSQAProgressReports from "./pages/os/OSQAProgressReports";
 import OSQATreatmentPlans from "./pages/os/OSQATreatmentPlans";
 import OSQAMissingInfo from "./pages/os/OSQAMissingInfo";
 import OSQAExpiring from "./pages/os/OSQAExpiring";
+import OSQAClients from "./pages/os/OSQAClients";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
@@ -251,7 +252,9 @@ const queryClient = new QueryClient();
 
 function ClientsRouter() {
   const { role } = useOSRole();
-  return role === "intake_coordinator" ? <OSIntakeClients /> : <OSClientsOperations />;
+  if (role === "intake_coordinator") return <OSIntakeClients />;
+  if (role === "qa_team") return <OSQAClients />;
+  return <OSClientsOperations />;
 }
 
 function AuthorizationsRouter() {
