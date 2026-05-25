@@ -191,6 +191,7 @@ import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
 import OSRecruitingOnboarding from "./pages/os/OSRecruitingOnboarding";
 import OSRecruitingBackgroundChecks from "./pages/os/OSRecruitingBackgroundChecks";
+import OSRecruitingOrientation from "./pages/os/OSRecruitingOrientation";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
