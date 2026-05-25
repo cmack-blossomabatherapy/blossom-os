@@ -448,10 +448,10 @@ const App = () => (
                   <Route path="/payroll/training-academy" element={<OSPlaceholder title="Payroll Training Academy" description="Payroll-specific learning paths. Built in phase 4." icon={GraduationCap} />} />
                   <Route path="/payroll/queue" element={<OSPlaceholder title="Payroll Queue" description="Structured task queue for payroll operations. Built in phase 2." icon={KanbanSquare} />} />
                   <Route path="/payroll/adjustments" element={<OSPlaceholder title="Payroll Adjustments" description="Bonuses, corrections, retro pay, reimbursements. Built in phase 2." icon={Wallet} />} />
-                  <Route path="/payroll/time-attendance" element={<OSPlaceholder title="Time & Attendance" description="Timesheets, punches, exceptions. Built in phase 2." icon={CalendarDays} />} />
+                  <Route path="/payroll/time-attendance" element={<OSPlaceholder title="Time & Attendance" description="Timesheets, punches, exceptions. Built in phase 2." icon={CIcon} />} />
                   <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
-                  <Route path="/payroll/profiles" element={<OSPlaceholder title="Employee Payroll Profiles" description="Per-employee payroll view. Built in phase 3." icon={Users} />} />
-                  <Route path="/payroll/pto" element={<OSPlaceholder title="PTO & Time Off" description="PTO requests, balances, payroll impact. Built in phase 3." icon={Heart} />} />
+                  <Route path="/payroll/profiles" element={<OSPlaceholder title="Employee Payroll Profiles" description="Per-employee payroll view. Built in phase 3." icon={Users2} />} />
+                  <Route path="/payroll/pto" element={<OSPlaceholder title="PTO & Time Off" description="PTO requests, balances, payroll impact. Built in phase 3." icon={HeartHandshake} />} />
                   <Route path="/payroll/benefits" element={<OSPlaceholder title="Benefits & Deductions" description="Benefits enrollment and recurring deductions. Built in phase 3." icon={Briefcase} />} />
                   <Route path="/payroll/compliance" element={<OSPlaceholder title="Payroll Compliance" description="Audit-ready payroll compliance tracking. Built in phase 3." icon={ShieldCheck} />} />
                   <Route path="/payroll/tax-documents" element={<OSPlaceholder title="Tax Documents & Records" description="W-2s, 1099s, tax filings. Built in phase 3." icon={FileCheck2} />} />
