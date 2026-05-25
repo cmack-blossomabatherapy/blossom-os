@@ -364,7 +364,7 @@ const App = () => (
                   <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/rbt/my-day" element={<OSRBTMyDay />} />
-                  <Route path="/rbt/training-academy" element={<OSPlaceholder title="Training Academy" description="Your RBT learning journey — required and recommended training." icon={GraduationCap} />} />
+                  <Route path="/rbt/training-academy" element={<OSRBTTrainingAcademy />} />
                   <Route path="/rbt/clients" element={<OSPlaceholder title="My Clients" description="Clients assigned to you — focus areas, notes, and your assigned BCBA." icon={UserCheck} />} />
                   <Route path="/rbt/schedule" element={<OSPlaceholder title="My Schedule" description="Your upcoming sessions, dates, locations and any schedule changes." icon={CIcon} />} />
                   <Route path="/rbt/session-support" element={<OSPlaceholder title="Session Support" description="Session readiness checklists, expectations, and quick links for common issues." icon={LifeBuoy} />} />
