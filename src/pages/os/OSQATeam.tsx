@@ -590,7 +590,7 @@ export default function OSQATeam() {
                   ].map(p => (
                     <Link
                       key={p}
-                      to={`/ask-blossom-ai?q=${encodeURIComponent(p)}`}
+                      to={`/ai/assistant?q=${encodeURIComponent(p)}`}
                       className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-muted/60 hover:bg-muted transition text-foreground"
                     >
                       <Sparkles className="h-3 w-3 inline mr-1.5 text-primary" strokeWidth={2} />

@@ -590,7 +590,7 @@ export default function OSQAWorkspace() {
                     "Show unresolved escalations.",
                     "Which BCBAs need follow-up?",
                   ].map(p => (
-                    <Link key={p} to={`/ask-blossom-ai?q=${encodeURIComponent(p)}`}
+                    <Link key={p} to={`/ai/assistant?q=${encodeURIComponent(p)}`}
                       className="block text-[12px] px-2.5 py-1.5 rounded-lg bg-muted/60 hover:bg-muted transition text-foreground">
                       <Sparkles className="h-3 w-3 inline mr-1.5 text-primary" strokeWidth={2} />
                       {p}
