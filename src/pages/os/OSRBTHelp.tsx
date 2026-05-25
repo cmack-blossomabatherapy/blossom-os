@@ -184,8 +184,12 @@ export default function OSRBTHelp() {
               <OpenRequestCard key={r.id} req={r} />
             ))}
             {OPEN_REQUESTS.length === 0 && (
-              <div className="rounded-2xl bg-card border border-border/70 p-8 text-center text-sm text-muted-foreground">
-                No open requests. You're covered.
+              <div className="rounded-2xl bg-card border border-border/70 p-10 text-center">
+                <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
+                  <CheckCircle2 className="size-5 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium text-foreground">No open requests</h3>
+                <p className="mt-1 text-sm text-muted-foreground">You're covered — we'll keep this empty until you need it.</p>
               </div>
             )}
           </div>
