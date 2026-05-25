@@ -202,6 +202,7 @@ import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
 import OSRBTSupervision from "./pages/os/OSRBTSupervision";
 import OSRBTMessages from "./pages/os/OSRBTMessages";
+import OSRBTHelp from "./pages/os/OSRBTHelp";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
@@ -375,7 +376,7 @@ const App = () => (
                   <Route path="/rbt/session-support" element={<OSRBTSessionSupport />} />
                   <Route path="/rbt/supervision" element={<OSRBTSupervision />} />
                   <Route path="/rbt/messages" element={<OSRBTMessages />} />
-                  <Route path="/rbt/help" element={<OSPlaceholder title="Need Help / Escalations" description="Fast, guided support for schedule, clinical, parent, tech, or safety concerns." icon={AlertTriangle} />} />
+                  <Route path="/rbt/help" element={<OSRBTHelp />} />
                   <Route path="/rbt/resources" element={<OSPlaceholder title="Resource Library" description="RBT SOPs, session guides, communication templates, and safety resources." icon={BookOpen} />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
