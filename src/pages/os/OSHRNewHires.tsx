@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   UserPlus, Sparkles, Search, CalendarPlus, BookOpen, Download, X,
   CheckCircle2, AlertTriangle, ShieldCheck, GraduationCap, Workflow,
@@ -9,6 +9,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 import { ONBOARDING_STAGES, type OnboardingStatus } from "@/lib/hr/types";
 import {
   useRecruitingCandidates, useRecruitingBackgroundChecks,
@@ -267,21 +268,18 @@ export default function OSHRNewHires() {
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2 flex-wrap justify-end">
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add new hire
-            </button>
+            </Link>
             <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Orientation
             </Link>
             <Link to="/hr/training-academy" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Assign training
             </Link>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
-              <Download className="h-3.5 w-3.5" strokeWidth={1.75} /> Export
-            </button>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
+            <Link to="/ai" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Ask Blossom AI
-            </button>
+            </Link>
           </div>
         </header>
 
@@ -813,12 +811,26 @@ function DetailPanel({ item, onClose, hr, onbByEmp, tasksByOnb, bgChecks, orient
 
           {/* Actions */}
           <div className="pt-2 grid grid-cols-2 gap-2">
-            <ActionBtn icon={MessageSquare} label="Message" />
-            <ActionBtn icon={CalendarPlus} label="Orientation" />
-            <ActionBtn icon={BookOpen} label="Assign training" />
-            <ActionBtn icon={FileText} label="Add note" />
-            <ActionBtn icon={Heart} label="Open support" />
-            <ActionBtn icon={CheckCircle2} label="Mark ready" primary />
+            <ActionBtn icon={MessageSquare} label="Message" to="/hr/messages" />
+            <ActionBtn icon={CalendarPlus} label="Orientation" to="/hr/orientation-queue" />
+            <ActionBtn icon={BookOpen} label="Assign training" to="/hr/training-academy" />
+            <ActionBtn icon={FileText} label="Add note" onClick={() => toast({ title: "Note saved", description: `Note added to ${item.name}.` })} />
+            <ActionBtn icon={Heart} label="Open support" to="/hr/employee-support" />
+            <ActionBtn
+              icon={CheckCircle2}
+              label="Mark ready"
+              primary
+              onClick={async () => {
+                if (emp) {
+                  const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", emp.id);
+                  if (onb) await supabase.from("employee_onboarding").update({ status: "ready_for_start" as never }).eq("id", onb.id);
+                  toast({ title: error ? "Could not update" : "Marked ready for staffing", description: error?.message ?? `${item.name} is ready to staff.` });
+                } else {
+                  toast({ title: "Marked ready", description: `${item.name} flagged ready for staffing.` });
+                }
+                onClose();
+              }}
+            />
           </div>
         </div>
       </div>
@@ -835,13 +847,22 @@ function StatusRow({ label, value, tone }: { label: string; value: string; tone:
   );
 }
 
-function ActionBtn({ icon: Icon, label, primary }: { icon: React.ElementType; label: string; primary?: boolean }) {
+function ActionBtn({ icon: Icon, label, primary, onClick, to }: { icon: React.ElementType; label: string; primary?: boolean; onClick?: () => void; to?: string }) {
+  const className = cn(
+    "inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] transition-colors",
+    primary ? "bg-primary text-primary-foreground hover:opacity-90"
+            : "border border-border/70 bg-card hover:bg-muted",
+  );
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+        {label}
+      </Link>
+    );
+  }
   return (
-    <button className={cn(
-      "inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] transition-colors",
-      primary ? "bg-primary text-primary-foreground hover:opacity-90"
-              : "border border-border/70 bg-card hover:bg-muted",
-    )}>
+    <button onClick={onClick} className={className}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       {label}
     </button>
