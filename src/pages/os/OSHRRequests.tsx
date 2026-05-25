@@ -157,7 +157,7 @@ function daysOpen(iso: string) {
 }
 
 /* ---------------- data ---------------- */
-function useData() {
+function useData(reloadKey = 0) {
   const [s, set] = useState({
     cases: [] as Case[],
     employees: [] as Employee[],
@@ -184,7 +184,7 @@ function useData() {
       });
     })();
     return () => { cancel = true; };
-  }, []);
+  }, [reloadKey]);
   return s;
 }
 
@@ -203,10 +203,10 @@ const TAB_FILTER: Record<Tab, (c: Case) => boolean> = {
 };
 
 export default function OSHRRequests() {
-  const d = useData();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [reloadKey, setReloadKey] = useState(0);
+  const d = useData(reloadKey);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
