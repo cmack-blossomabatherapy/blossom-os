@@ -453,7 +453,7 @@ export default function OSRecruitingTeam() {
                   <p className="text-xs text-muted-foreground truncate">{t.label}</p>
                   <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                     <div className={cn("h-full rounded-full",
-                      t.tone === "crit" ? "bg-destructive" : t.tone === "warn" ? "bg-amber-500" : "bg-emerald-500"
+                      (t.tone as Tone) === "crit" ? "bg-destructive" : (t.tone as Tone) === "warn" ? "bg-amber-500" : "bg-emerald-500"
                     )} style={{ width: `${pct}%` }} />
                   </div>
                 </Card>
