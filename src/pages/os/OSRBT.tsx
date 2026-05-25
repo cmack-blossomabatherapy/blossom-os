@@ -172,7 +172,7 @@ export default function OSRBT() {
                 Open supervision <ChevronRight className="size-3.5" />
               </Link>
               <span className="text-muted-foreground/40">·</span>
-              <Link to="/rbt/messages" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <Link to="/rbt/messages?focus=bcba" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                 <MessageSquare className="size-3.5" /> Message
               </Link>
             </div>
@@ -215,7 +215,7 @@ export default function OSRBT() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <QuickAction to="/rbt/my-day" icon={PlayCircle} label="Open My Day" primary />
             <QuickAction to="/rbt/schedule" icon={CalendarDays} label="View schedule" />
-            <QuickAction to="/rbt/messages" icon={MessageSquare} label="Message BCBA" />
+            <QuickAction to="/rbt/messages?focus=bcba" icon={MessageSquare} label="Message BCBA" />
             <QuickAction to="/rbt/training-academy" icon={GraduationCap} label="Continue training" />
             <QuickAction to="/rbt/resources" icon={BookOpen} label="Resource library" />
             <QuickAction to="/rbt/clients" icon={Users} label="My clients" />

@@ -322,7 +322,7 @@ export default function OSRBTSessionSupport() {
               <p className="mt-0.5 text-base font-semibold tracking-tight text-foreground">{assignedBCBA.name}</p>
               <p className="text-sm text-muted-foreground">Next supervision · {assignedBCBA.nextSupervision}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <ActionBtn icon={MessageSquare} label="Message" to="/rbt/messages" />
+                <ActionBtn icon={MessageSquare} label="Message BCBA" to="/rbt/messages?focus=bcba" />
                 <ActionBtn icon={Phone}         label="Call"    href="tel:+1" />
                 <ActionBtn icon={Headphones}    label="Request support" onClick={() => setHelpOpen(true)} />
               </div>
@@ -465,7 +465,7 @@ function HelpSheet({ onClose }: { onClose: () => void }) {
           {helpOptions.map((o) => {
             const Icon = o.icon;
             return (
-              <Link key={o.label} to="/rbt/help" onClick={onClose} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-secondary/60 p-3 text-sm font-medium text-foreground transition hover:bg-muted">
+              <Link key={o.label} to={`/rbt/help?category=${({"Running late":"late","Schedule issue":"schedule","Parent concern":"parent","Clinical support":"clinical","Clinical help":"clinical","Tech / system":"tech","Tech support":"tech","Contact BCBA":"bcba","Safety concern":"safety","Client canceled":"cancel","Training question":"training"} as Record<string,string>)[o.label] || "other"}`} onClick={onClose} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-secondary/60 p-3 text-sm font-medium text-foreground transition hover:bg-muted">
                 <Icon className="size-4 text-muted-foreground" />{o.label}
               </Link>
             );

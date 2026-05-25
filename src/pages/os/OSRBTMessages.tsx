@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronRight, MessageSquare, Phone, Calendar, Clock, MapPin, LifeBuoy, X,
   HeartHandshake, ClipboardCheck, Wrench, Users, ShieldAlert, AlertTriangle,
@@ -132,6 +132,28 @@ export default function OSRBTMessages() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [doneActions, setDoneActions] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState<"all" | "bcba" | "scheduling" | "training">("all");
+  const [params] = useSearchParams();
+  const bcbaRef = useRef<HTMLElement | null>(null);
+  const scheduleRef = useRef<HTMLElement | null>(null);
+  const [highlight, setHighlight] = useState<string | null>(null);
+
+  useEffect(() => {
+    const focus = params.get("focus");
+    if (!focus) return;
+    if (focus === "bcba" || focus === "scheduling" || focus === "training") {
+      setFilter(focus);
+    }
+    const target =
+      focus === "bcba" ? bcbaRef.current :
+      focus === "schedule" || focus === "scheduling" ? scheduleRef.current :
+      null;
+    if (target) {
+      setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      setHighlight(focus);
+      const t = setTimeout(() => setHighlight(null), 1800);
+      return () => clearTimeout(t);
+    }
+  }, [params]);
 
   const filteredUpdates = useMemo(() => {
     if (filter === "all") return UPDATES;
@@ -253,7 +275,10 @@ export default function OSRBTMessages() {
         </section>
 
         {/* SCHEDULE UPDATES */}
-        <section>
+        <section
+          ref={scheduleRef}
+          className={`scroll-mt-24 rounded-2xl transition-shadow ${highlight === "scheduling" || highlight === "schedule" ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background" : ""}`}
+        >
           <div className="flex items-end justify-between">
             <SectionTitle>Schedule updates</SectionTitle>
             <Link to="/rbt/schedule" className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
@@ -278,7 +303,10 @@ export default function OSRBTMessages() {
         </section>
 
         {/* BCBA COMMUNICATION */}
-        <section>
+        <section
+          ref={bcbaRef}
+          className={`scroll-mt-24 rounded-2xl transition-shadow ${highlight === "bcba" ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background" : ""}`}
+        >
           <SectionTitle>From your BCBA</SectionTitle>
           <div className="mt-4 rounded-2xl bg-card border border-border/70 p-5 md:p-6">
             <div className="flex items-center gap-4">

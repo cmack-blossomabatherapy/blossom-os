@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ChevronRight, Clock, CalendarClock, CalendarX, Users, ClipboardCheck,
   ShieldAlert, Wrench, HeartHandshake, GraduationCap, HelpCircle, MessageSquare,
@@ -92,6 +92,19 @@ function relTime(iso: string) {
 export default function OSRBTHelp() {
   const [selected, setSelected] = useState<Category | null>(null);
   const [submitted, setSubmitted] = useState<{ category: Category; routing: string } | null>(null);
+  const [params] = useSearchParams();
+
+  useEffect(() => {
+    const cat = params.get("category");
+    if (!cat) return;
+    const match = CATEGORIES.find((c) => c.id === cat);
+    if (match) {
+      setSelected(match);
+      setTimeout(() => {
+        document.getElementById("help-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [params]);
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -142,6 +155,7 @@ export default function OSRBTHelp() {
         )}
 
         {selected && !submitted && (
+          <div id="help-form" className="scroll-mt-24">
           <RequestFlow
             category={selected}
             onBack={() => setSelected(null)}
@@ -150,6 +164,7 @@ export default function OSRBTHelp() {
               setSelected(null);
             }}
           />
+          </div>
         )}
 
         {submitted && (
@@ -442,7 +457,7 @@ function ConfirmationCard({
             Send another
           </button>
           <Link
-            to="/rbt/messages"
+            to="/rbt/messages?focus=bcba"
             className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition inline-flex items-center gap-1.5"
           >
             <MessageSquare className="size-4" /> Go to Messages
