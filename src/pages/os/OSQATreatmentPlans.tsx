@@ -150,7 +150,7 @@ function readinessChecklist(a: Authorization): { label: string; done: boolean }[
 
 // ---------- page ----------
 export default function OSQATreatmentPlans() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
 
   const tps = useMemo(() => items.filter(isTPRelevant), [items]);
 

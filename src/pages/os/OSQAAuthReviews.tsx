@@ -123,7 +123,7 @@ function isActive(a: Authorization): boolean {
 
 // ---------- Page ----------
 export default function OSQAAuthReviews() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
 
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState("all");

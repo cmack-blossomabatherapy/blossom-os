@@ -151,7 +151,7 @@ function readinessChecklist(a: Authorization): { label: string; done: boolean }[
 
 // ---------- page ----------
 export default function OSQAExpiring() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const expiring = useMemo(() => items.filter(isExpirationRelevant), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");

@@ -177,7 +177,7 @@ function buildRows(items: Authorization[]): BlockerRow[] {
 
 // ---------- page ----------
 export default function OSQAMissingInfo() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const allRows = useMemo(() => buildRows(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");

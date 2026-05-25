@@ -136,7 +136,7 @@ function EmptyState({ icon: Icon, title, hint }: { icon: React.ElementType; titl
 
 export default function OSQATeam() {
   const { user } = useAuth();
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const [query, setQuery] = useState("");
 
   const data = useMemo(() => {

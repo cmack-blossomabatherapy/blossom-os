@@ -300,7 +300,7 @@ function fillTemplate(body: string, t: Thread): string {
 // ---------- page ----------
 
 export default function OSQAMessages() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const threads = useMemo(() => buildThreads(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");

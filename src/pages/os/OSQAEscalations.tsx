@@ -420,7 +420,7 @@ function EscalationSlideout({ e, onClose }: { e: Escalation; onClose: () => void
 
 // ---------- main page ----------
 export default function OSQAEscalations() {
-  const { items } = useLiveAuthorizations();
+  const { qaItems: items } = useLiveAuthorizations();
   const all = useMemo(() => buildEscalations(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");
