@@ -101,7 +101,7 @@ function useNewHiresData() {
     (async () => {
       const [emp, onb, tr, dc] = await Promise.all([
         supabase.from("employees").select("id,first_name,last_name,preferred_name,job_title,state,status,start_date,hire_date,email,phone").order("hire_date", { ascending: false }),
-        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers,hr_owner"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,stage_entered_at,blockers"),
         supabase.from("employee_trainings").select("id,employee_id,course_id,status,due_date,completed_at"),
         supabase.from("employee_documents_hr").select("id,employee_id,doc_type,name,status,required"),
       ]);
