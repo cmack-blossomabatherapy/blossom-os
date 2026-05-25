@@ -309,7 +309,7 @@ function SessionItem({ session, onHelp }: { session: Session; onHelp: () => void
                 <User className="size-3.5" /> Open client
               </Link>
               <Link
-                to="/rbt/messages"
+                to="/rbt/messages?focus=bcba"
                 className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-muted"
               >
                 <MessageSquare className="size-3.5" /> Message BCBA

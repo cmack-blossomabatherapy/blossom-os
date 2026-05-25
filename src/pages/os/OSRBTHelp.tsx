@@ -457,7 +457,7 @@ function ConfirmationCard({
             Send another
           </button>
           <Link
-            to="/rbt/messages"
+            to="/rbt/messages?focus=bcba"
             className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition inline-flex items-center gap-1.5"
           >
             <MessageSquare className="size-4" /> Go to Messages

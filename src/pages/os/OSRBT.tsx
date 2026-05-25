@@ -172,7 +172,7 @@ export default function OSRBT() {
                 Open supervision <ChevronRight className="size-3.5" />
               </Link>
               <span className="text-muted-foreground/40">·</span>
-              <Link to="/rbt/messages" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <Link to="/rbt/messages?focus=bcba" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                 <MessageSquare className="size-3.5" /> Message
               </Link>
             </div>
