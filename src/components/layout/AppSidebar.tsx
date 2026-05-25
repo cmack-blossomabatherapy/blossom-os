@@ -268,6 +268,12 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isRecruitingOnly =
     osRole === "recruiting_team" ||
     (roles.includes("recruiting_assistant") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // HR Team gets a curated people-ops menu focused on new hires, training,
+  // orientation, evaluations, requests, compliance, and employee support.
+  const isHrOnly =
+    osRole === "hr_team" ||
+    ((roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager"))
+      && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
