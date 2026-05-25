@@ -15,7 +15,7 @@ type ModuleType =
   | "shadowing" | "meeting" | "reflection" | "task";
 
 interface Track   { id: string; name: string; description: string | null; }
-interface Phase   { id: string; track_id: string; name: string; position: number; description: string | null; }
+interface Phase   { id: string; track_id: string; name: string; position: number; tagline: string | null; }
 interface Week    { id: string; phase_id: string; week_number: number; title: string; }
 interface ModuleRow {
   id: string; week_id: string; position: number; title: string;
@@ -23,7 +23,7 @@ interface ModuleRow {
   is_required: boolean; is_archived: boolean;
 }
 interface Certificate { id: string; track_id: string; code: string; name: string; description: string | null; position: number; awarded_after_phase_id: string | null; }
-interface Enrollment  { id: string; track_id: string; user_id: string; status: string; current_week_number: number | null; }
+interface Enrollment  { id: string; track_id: string; employee_id: string; status: string; current_week_id: string | null; }
 
 /* ---------------- atoms (Blossom OS) ---------------- */
 type Tone = "ok" | "warn" | "crit" | "muted";
@@ -79,11 +79,11 @@ function useAcademyData() {
     (async () => {
       const [tr, ph, wk, md, ct, en] = await Promise.all([
         supabase.from("academy_tracks").select("id,name,description").order("name"),
-        supabase.from("academy_phases").select("id,track_id,name,position,description").order("position"),
+        supabase.from("academy_phases").select("id,track_id,name,position,tagline").order("position"),
         supabase.from("academy_weeks").select("id,phase_id,week_number,title").order("week_number"),
         supabase.from("academy_modules").select("id,week_id,position,title,module_type,duration_label,is_required,is_archived").eq("is_archived", false).order("position"),
         supabase.from("academy_certificates").select("id,track_id,code,name,description,position,awarded_after_phase_id").order("position"),
-        supabase.from("academy_enrollments").select("id,track_id,user_id,status,current_week_number"),
+        supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id"),
       ]);
       if (cancelled) return;
       setTracks((tr.data ?? []) as Track[]);
