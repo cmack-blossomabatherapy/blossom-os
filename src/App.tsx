@@ -250,7 +250,7 @@ import {
   Wallet, TrendingUp, ShieldAlert, Target, Workflow, BookOpen, Megaphone, PieChart,
   LifeBuoy, Inbox, AlertTriangle, KanbanSquare, Bot, Brain, Zap, Wand2, Activity,
   Users2, MapPin, UserPlus, MessageSquare, Globe, Hash, Sparkles, Star, HeartHandshake,
-  ShieldCheck, UserCheck, Eye, Calendar,
+  ShieldCheck, UserCheck, Eye, Calendar, FileText, Clock, UsersRound, CheckSquare, Flame, Library,
 } from "lucide-react";
 
 const queryClient = new QueryClient();
