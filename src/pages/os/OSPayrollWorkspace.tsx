@@ -1,0 +1,452 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Workflow, AlertTriangle, BellRing, Sparkles, KanbanSquare, Wallet,
+  Heart, Briefcase, CalendarDays, Search, CheckCircle2, ArrowUpRight, MessageSquare,
+} from "lucide-react";
+import { OSShell } from "./OSShell";
+import { Card, Pill, HeaderBtn, PageHeader, Empty, fullName, fmtDate } from "./_PayrollAtoms";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+type TabKey = "issues" | "adjustments" | "pto" | "reminders" | "comms";
+
+const TABS: { key: TabKey; label: string; icon: any }[] = [
+  { key: "issues", label: "Issues", icon: AlertTriangle },
+  { key: "adjustments", label: "Adjustments", icon: Wallet },
+  { key: "pto", label: "PTO", icon: Heart },
+  { key: "reminders", label: "Reminders", icon: BellRing },
+  { key: "comms", label: "Communications", icon: MessageSquare },
+];
+
+interface Emp { id: string; first_name: string; last_name: string; preferred_name: string | null; state: string | null; }
+interface Issue {
+  id: string; title: string; description: string | null; category: string; priority: string;
+  status: string; due_date: string | null; employee_id: string | null; owner_role: string | null;
+  resolution: string | null; updated_at: string;
+}
+interface Adj {
+  id: string; employee_id: string; adjustment_type: string; amount: number; hours: number;
+  reason: string | null; status: string; updated_at: string;
+}
+interface Pto {
+  id: string; user_id: string; pto_type: string; start_date: string; end_date: string;
+  hours: number; status: string; reason: string | null;
+}
+interface Reminder {
+  id: string; title: string; cadence: string; status: string;
+  scheduled_for: string | null; sent_at: string | null; audience: string;
+}
+interface Comm {
+  id: string; employee_id: string | null; channel: string; category: string;
+  subject: string | null; body: string | null; status: string; created_at: string;
+}
+
+export default function OSPayrollWorkspace() {
+  const [tab, setTab] = useState<TabKey>("issues");
+  const [query, setQuery] = useState("");
+  const [reload, setReload] = useState(0);
+  const refresh = () => setReload((k) => k + 1);
+
+  const [employees, setEmployees] = useState<Emp[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [adjustments, setAdjustments] = useState<Adj[]>([]);
+  const [pto, setPto] = useState<Pto[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [comms, setComms] = useState<Comm[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [empR, isR, adR, ptR, rmR, cmR] = await Promise.all([
+        supabase.from("employees").select("id,first_name,last_name,preferred_name,state").order("last_name"),
+        supabase.from("payroll_issues").select("*").order("updated_at", { ascending: false }),
+        supabase.from("payroll_adjustments").select("*").order("updated_at", { ascending: false }),
+        supabase.from("pto_requests").select("id,user_id,pto_type,start_date,end_date,hours,status,reason").order("start_date", { ascending: false }),
+        supabase.from("payroll_reminders").select("*").order("scheduled_for", { ascending: true, nullsFirst: false }),
+        supabase.from("payroll_communications").select("*").order("created_at", { ascending: false }).limit(100),
+      ]);
+      if (cancelled) return;
+      setEmployees((empR.data ?? []) as Emp[]);
+      setIssues((isR.data ?? []) as Issue[]);
+      setAdjustments((adR.data ?? []) as Adj[]);
+      setPto((ptR.data ?? []) as Pto[]);
+      setReminders((rmR.data ?? []) as Reminder[]);
+      setComms((cmR.data ?? []) as Comm[]);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [reload]);
+
+  const empById = useMemo(() => {
+    const m = new Map<string, Emp>();
+    employees.forEach((e) => m.set(e.id, e));
+    return m;
+  }, [employees]);
+
+  const matchEmp = (id: string | null) => {
+    if (!query.trim()) return true;
+    if (!id) return query.trim() === "";
+    const e = empById.get(id);
+    if (!e) return false;
+    return `${e.first_name} ${e.last_name}`.toLowerCase().includes(query.toLowerCase());
+  };
+
+  return (
+    <OSShell>
+      <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
+        <PageHeader
+          icon={Workflow}
+          title="Payroll Workspace"
+          subtitle="Mission control for payroll. Track issues, adjustments, PTO, reminders, and every written touchpoint in one place."
+        >
+          <HeaderBtn icon={KanbanSquare} to="/payroll/queue">Open queue</HeaderBtn>
+          <HeaderBtn icon={BellRing} to="/payroll/messages">Reminders</HeaderBtn>
+          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What%20payroll%20items%20need%20attention" primary>Ask Blossom AI</HeaderBtn>
+        </PageHeader>
+
+        <Card className="p-2 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-2">
+            <div className="flex flex-wrap gap-1 flex-1">
+              {TABS.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] transition-colors",
+                      active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    <t.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="relative md:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search employees…"
+                className="w-full h-8 pl-8 pr-3 rounded-lg bg-muted/60 border border-border/70 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-transparent transition"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {loading && <Card className="p-8"><p className="text-sm text-muted-foreground text-center">Loading…</p></Card>}
+
+        {!loading && tab === "issues" && (
+          <IssuesPanel rows={issues.filter((i) => matchEmp(i.employee_id))} empById={empById} refresh={refresh} />
+        )}
+        {!loading && tab === "adjustments" && (
+          <AdjustmentsPanel rows={adjustments.filter((a) => matchEmp(a.employee_id))} empById={empById} refresh={refresh} />
+        )}
+        {!loading && tab === "pto" && (
+          <PtoPanel rows={pto} employees={employees} query={query} refresh={refresh} />
+        )}
+        {!loading && tab === "reminders" && (
+          <RemindersPanel rows={reminders} refresh={refresh} />
+        )}
+        {!loading && tab === "comms" && (
+          <CommsPanel rows={comms.filter((c) => matchEmp(c.employee_id))} empById={empById} />
+        )}
+      </div>
+    </OSShell>
+  );
+}
+
+/* -------- panels -------- */
+
+function IssuesPanel({ rows, empById, refresh }: { rows: Issue[]; empById: Map<string, Emp>; refresh: () => void }) {
+  if (!rows.length) {
+    return (
+      <Card className="p-6">
+        <Empty
+          icon={CheckCircle2}
+          title="No open payroll issues."
+          hint="New issues from the queue, employee messages, or time/attendance reviews will show up here."
+        />
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3">
+      {rows.map((it) => {
+        const emp = it.employee_id ? empById.get(it.employee_id) : null;
+        const overdue = it.due_date && new Date(it.due_date) < new Date();
+        return (
+          <Card key={it.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center shrink-0">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[14px] font-medium tracking-tight">{it.title}</p>
+                  {it.priority === "urgent" && <Pill tone="crit">Urgent</Pill>}
+                  {it.priority === "high" && <Pill tone="warn">High</Pill>}
+                  <Pill tone={it.status === "resolved" ? "ok" : it.status === "escalated" ? "crit" : "info"}>
+                    {it.status.replace(/_/g, " ")}
+                  </Pill>
+                  {it.due_date && <Pill tone={overdue ? "crit" : "muted"}>{overdue ? "Overdue · " : "Due "}{fmtDate(it.due_date)}</Pill>}
+                </div>
+                <p className="text-[12.5px] text-muted-foreground mt-1">
+                  {emp ? fullName(emp) : "Unassigned"} · {it.category.replace(/_/g, " ")}
+                  {it.owner_role && <> · Owner: {it.owner_role}</>}
+                </p>
+                {it.description && <p className="text-[12.5px] text-foreground/80 mt-2 leading-relaxed">{it.description}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <ActionBtn
+                  icon={CheckCircle2}
+                  label="Resolve"
+                  primary
+                  onClick={async () => {
+                    const resolution = window.prompt("Resolution note (optional):", "");
+                    const { error } = await supabase
+                      .from("payroll_issues")
+                      .update({ status: "resolved", resolution, resolved_at: new Date().toISOString() })
+                      .eq("id", it.id);
+                    toast[error ? "error" : "success"](error ? "Could not resolve" : "Issue resolved");
+                    if (!error) refresh();
+                  }}
+                />
+                <ActionBtn
+                  icon={ArrowUpRight}
+                  label="Escalate"
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("payroll_issues")
+                      .update({ status: "escalated", priority: "urgent" })
+                      .eq("id", it.id);
+                    toast[error ? "error" : "success"](error ? "Could not escalate" : "Issue escalated");
+                    if (!error) refresh();
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function AdjustmentsPanel({ rows, empById, refresh }: { rows: Adj[]; empById: Map<string, Emp>; refresh: () => void }) {
+  if (!rows.length) {
+    return (
+      <Card className="p-6">
+        <Empty icon={Wallet} title="No payroll adjustments." hint="Bonuses, corrections, retro pay, and reimbursements will appear here." />
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3">
+      {rows.map((a) => {
+        const emp = empById.get(a.employee_id);
+        return (
+          <Card key={a.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center shrink-0">
+                <Wallet className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[14px] font-medium tracking-tight">{a.adjustment_type.replace(/_/g, " ")}</p>
+                  <Pill tone={a.status === "approved" || a.status === "applied" ? "ok" : a.status === "rejected" ? "crit" : "warn"}>
+                    {a.status}
+                  </Pill>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground mt-1">
+                  {emp ? fullName(emp) : "—"} · {a.hours ? `${a.hours}h · ` : ""}${Number(a.amount).toFixed(2)}
+                </p>
+                {a.reason && <p className="text-[12.5px] text-foreground/80 mt-2 leading-relaxed">{a.reason}</p>}
+              </div>
+              {a.status === "pending" && (
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <ActionBtn
+                    icon={CheckCircle2}
+                    label="Approve"
+                    primary
+                    onClick={async () => {
+                      const { error } = await supabase
+                        .from("payroll_adjustments")
+                        .update({ status: "approved", approved_at: new Date().toISOString() })
+                        .eq("id", a.id);
+                      toast[error ? "error" : "success"](error ? "Could not approve" : "Adjustment approved");
+                      if (!error) refresh();
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function PtoPanel({ rows, employees, query, refresh }: { rows: Pto[]; employees: Emp[]; query: string; refresh: () => void }) {
+  // PTO is keyed by user_id, not employee_id. Filter by employee name.
+  const empByUser = useMemo(() => {
+    // Not all employees have user_id; ignored here as we'll display whatever we can.
+    return new Map<string, Emp>();
+  }, [employees]);
+  const filtered = rows.filter(() => true); // free-text on user names not directly mappable without user_id link
+  if (!filtered.length) {
+    return <Card className="p-6"><Empty icon={Heart} title="No PTO requests." hint="Submitted requests will appear here for review." /></Card>;
+  }
+  return (
+    <div className="grid gap-3">
+      {filtered.map((r) => (
+        <Card key={r.id} className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center shrink-0">
+              <Heart className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[14px] font-medium tracking-tight">{r.pto_type.replace(/_/g, " ")}</p>
+                <Pill tone={r.status === "approved" ? "ok" : r.status === "denied" || r.status === "cancelled" ? "crit" : "warn"}>
+                  {r.status.replace(/_/g, " ")}
+                </Pill>
+              </div>
+              <p className="text-[12.5px] text-muted-foreground mt-1">
+                {fmtDate(r.start_date)} → {fmtDate(r.end_date)} · {r.hours}h
+              </p>
+              {r.reason && <p className="text-[12.5px] text-foreground/80 mt-2 leading-relaxed">{r.reason}</p>}
+            </div>
+            {(r.status === "submitted" || r.status === "pending_review") && (
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <ActionBtn
+                  icon={CheckCircle2}
+                  label="Approve"
+                  primary
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("pto_requests")
+                      .update({ status: "approved", reviewed_at: new Date().toISOString() })
+                      .eq("id", r.id);
+                    toast[error ? "error" : "success"](error ? "Could not approve" : "PTO approved");
+                    if (!error) refresh();
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function RemindersPanel({ rows, refresh }: { rows: Reminder[]; refresh: () => void }) {
+  if (!rows.length) {
+    return (
+      <Card className="p-6">
+        <Empty
+          icon={BellRing}
+          title="No scheduled reminders."
+          hint="Schedule a weekly payroll reminder so the entire team is in sync."
+          action={<HeaderBtn icon={BellRing} to="/payroll/messages" primary>Schedule reminder</HeaderBtn>}
+        />
+      </Card>
+    );
+  }
+  return (
+    <div className="grid gap-3">
+      {rows.map((r) => (
+        <Card key={r.id} className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center shrink-0">
+              <BellRing className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[14px] font-medium tracking-tight">{r.title}</p>
+                <Pill tone={r.status === "sent" ? "ok" : r.status === "scheduled" ? "info" : "muted"}>{r.status}</Pill>
+                <Pill tone="muted">{r.cadence.replace("_", " ")}</Pill>
+                <Pill tone="muted">{r.audience}</Pill>
+              </div>
+              <p className="text-[12.5px] text-muted-foreground mt-1">
+                {r.scheduled_for ? `Scheduled for ${fmtDate(r.scheduled_for)}` : r.sent_at ? `Sent ${fmtDate(r.sent_at)}` : "Draft"}
+              </p>
+            </div>
+            {r.status === "scheduled" && (
+              <ActionBtn
+                icon={CheckCircle2}
+                label="Mark sent"
+                primary
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from("payroll_reminders")
+                    .update({ status: "sent", sent_at: new Date().toISOString() })
+                    .eq("id", r.id);
+                  toast[error ? "error" : "success"](error ? "Could not update" : "Marked as sent");
+                  if (!error) refresh();
+                }}
+              />
+            )}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function CommsPanel({ rows, empById }: { rows: Comm[]; empById: Map<string, Emp> }) {
+  if (!rows.length) {
+    return <Card className="p-6"><Empty icon={MessageSquare} title="No payroll communications yet." hint="Every touchpoint — reminders, follow-ups, PTO clarifications, escalations — should be logged here." /></Card>;
+  }
+  return (
+    <div className="grid gap-3">
+      {rows.map((c) => {
+        const emp = c.employee_id ? empById.get(c.employee_id) : null;
+        return (
+          <Card key={c.id} className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center shrink-0">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[14px] font-medium tracking-tight">{c.subject || c.category.replace(/_/g, " ")}</p>
+                  <Pill tone="muted">{c.channel}</Pill>
+                  <Pill tone="muted">{c.category.replace(/_/g, " ")}</Pill>
+                </div>
+                <p className="text-[12.5px] text-muted-foreground mt-1">
+                  {emp ? fullName(emp) : "Internal"} · {fmtDate(c.created_at)}
+                </p>
+                {c.body && <p className="text-[12.5px] text-foreground/80 mt-2 leading-relaxed line-clamp-3">{c.body}</p>}
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function ActionBtn({
+  icon: Icon, label, onClick, primary,
+}: { icon: any; label: string; onClick: () => void; primary?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] transition-colors whitespace-nowrap",
+        primary ? "bg-primary text-primary-foreground hover:opacity-90" : "border border-border/70 bg-card hover:bg-muted text-foreground",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {label}
+    </button>
+  );
+}
