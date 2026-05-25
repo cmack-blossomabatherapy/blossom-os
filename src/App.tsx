@@ -208,6 +208,7 @@ import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
 import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
+import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
