@@ -322,7 +322,7 @@ export default function OSRBTSessionSupport() {
               <p className="mt-0.5 text-base font-semibold tracking-tight text-foreground">{assignedBCBA.name}</p>
               <p className="text-sm text-muted-foreground">Next supervision · {assignedBCBA.nextSupervision}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <ActionBtn icon={MessageSquare} label="Message" to="/rbt/messages" />
+                <ActionBtn icon={MessageSquare} label="Message BCBA" to="/rbt/messages?focus=bcba" />
                 <ActionBtn icon={Phone}         label="Call"    href="tel:+1" />
                 <ActionBtn icon={Headphones}    label="Request support" onClick={() => setHelpOpen(true)} />
               </div>
