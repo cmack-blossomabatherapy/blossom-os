@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   Workflow, AlertTriangle, BellRing, Sparkles, KanbanSquare, Wallet,
   Heart, Briefcase, CalendarDays, Search, CheckCircle2, ArrowUpRight, MessageSquare,
+  Timer, Plus, ChevronRight, Flame, FileText, UserCircle2,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Card, Pill, HeaderBtn, PageHeader, Empty, fullName, fmtDate } from "./_PayrollAtoms";
@@ -95,70 +96,256 @@ export default function OSPayrollWorkspace() {
     return `${e.first_name} ${e.last_name}`.toLowerCase().includes(query.toLowerCase());
   };
 
+  // Operational rollups
+  const openIssues = issues.filter((i) => i.status !== "resolved");
+  const escalated = openIssues.filter((i) => i.status === "escalated" || i.priority === "urgent");
+  const overdueIssues = openIssues.filter((i) => i.due_date && new Date(i.due_date) < new Date());
+  const pendingAdj = adjustments.filter((a) => a.status === "pending");
+  const pendingPto = pto.filter((p) => p.status === "submitted" || p.status === "pending_review");
+  const scheduledReminders = reminders.filter((r) => r.status === "scheduled");
+  const openComms = comms.filter((c) => c.status === "open");
+
+  // Pipeline buckets
+  const pipeline: Array<{ key: string; label: string; items: Issue[]; tone: "muted" | "info" | "warn" | "crit" | "ok" }> = [
+    { key: "open", label: "New", items: openIssues.filter((i) => i.status === "open"), tone: "info" },
+    { key: "in_progress", label: "In progress", items: openIssues.filter((i) => i.status === "in_progress"), tone: "warn" },
+    { key: "waiting", label: "Waiting on employee", items: openIssues.filter((i) => i.status === "waiting_on_employee"), tone: "muted" },
+    { key: "escalated", label: "Escalated", items: openIssues.filter((i) => i.status === "escalated"), tone: "crit" },
+    { key: "resolved", label: "Resolved (recent)", items: issues.filter((i) => i.status === "resolved").slice(0, 6), tone: "ok" },
+  ];
+
+  const summaryLine = (() => {
+    if (loading) return "Loading payroll operations…";
+    if (overdueIssues.length) return `${overdueIssues.length} payroll item${overdueIssues.length === 1 ? "" : "s"} overdue. Start with escalations.`;
+    if (openIssues.length || pendingAdj.length) return `${openIssues.length + pendingAdj.length} items in flight. Nothing overdue yet — payroll is on track.`;
+    return "Workspace is clear. A calm moment to send weekly reminders or close follow-ups.";
+  })();
+
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
-        <PageHeader
-          icon={Workflow}
-          title="Payroll Workspace"
-          subtitle="Mission control for payroll. Track issues, adjustments, PTO, reminders, and every written touchpoint in one place."
-        >
-          <HeaderBtn icon={KanbanSquare} to="/payroll/queue">Open queue</HeaderBtn>
-          <HeaderBtn icon={BellRing} to="/payroll/messages">Reminders</HeaderBtn>
-          <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What%20payroll%20items%20need%20attention" primary>Ask Blossom AI</HeaderBtn>
-        </PageHeader>
-
-        <Card className="p-2 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-2">
-            <div className="flex flex-wrap gap-1 flex-1">
-              {TABS.map((t) => {
-                const active = tab === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setTab(t.key)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] transition-colors",
-                      active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    <t.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="relative md:w-64">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search employees…"
-                className="w-full h-8 pl-8 pr-3 rounded-lg bg-muted/60 border border-border/70 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-transparent transition"
-              />
-            </div>
+        {/* Workspace header */}
+        <header className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Payroll · Workspace</p>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Payroll Workspace</h1>
+            <p className="text-[14px] text-muted-foreground mt-1.5 max-w-xl">{summaryLine}</p>
           </div>
-        </Card>
+          <div className="flex flex-wrap items-center gap-2">
+            <HeaderBtn icon={Plus} to="/payroll/issues">Log issue</HeaderBtn>
+            <HeaderBtn icon={BellRing} to="/payroll/messages">Send reminder</HeaderBtn>
+            <HeaderBtn icon={Sparkles} to="/ai/assistant?q=What%20payroll%20items%20need%20attention" primary>Ask Blossom AI</HeaderBtn>
+          </div>
+        </header>
 
-        {loading && <Card className="p-8"><p className="text-sm text-muted-foreground text-center">Loading…</p></Card>}
+        {/* Operational metrics strip */}
+        <div className="grid gap-3 mb-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <MetricCard label="Active tasks" value={openIssues.length} tone={openIssues.length ? "info" : "ok"} />
+          <MetricCard label="Blockers" value={overdueIssues.length} tone={overdueIssues.length ? "crit" : "ok"} hint="Overdue" />
+          <MetricCard label="PTO pending" value={pendingPto.length} tone={pendingPto.length ? "warn" : "ok"} />
+          <MetricCard label="Missing time" value={0} tone="muted" hint="Connect timesheets" />
+          <MetricCard label="Escalated" value={escalated.length} tone={escalated.length ? "crit" : "ok"} />
+        </div>
 
-        {!loading && tab === "issues" && (
-          <IssuesPanel rows={issues.filter((i) => matchEmp(i.employee_id))} empById={empById} refresh={refresh} />
-        )}
-        {!loading && tab === "adjustments" && (
-          <AdjustmentsPanel rows={adjustments.filter((a) => matchEmp(a.employee_id))} empById={empById} refresh={refresh} />
-        )}
-        {!loading && tab === "pto" && (
-          <PtoPanel rows={pto} employees={employees} query={query} refresh={refresh} />
-        )}
-        {!loading && tab === "reminders" && (
-          <RemindersPanel rows={reminders} refresh={refresh} />
-        )}
-        {!loading && tab === "comms" && (
-          <CommsPanel rows={comms.filter((c) => matchEmp(c.employee_id))} empById={empById} />
-        )}
+        {/* Active Payroll Operations — pipeline */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-[15px] font-semibold tracking-tight">Active payroll operations</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Live operational pipeline — every payroll task, written down and trackable.</p>
+            </div>
+            <Link to="/payroll/issues" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              Full queue <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {pipeline.map((col) => (
+              <Card key={col.key} className="p-3 min-h-[160px]">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{col.label}</span>
+                  <Pill tone={col.tone}>{col.items.length}</Pill>
+                </div>
+                <ul className="space-y-1.5">
+                  {col.items.slice(0, 4).map((it) => {
+                    const emp = it.employee_id ? empById.get(it.employee_id) : null;
+                    return (
+                      <li key={it.id} className="rounded-lg bg-muted/50 p-2">
+                        <p className="text-[12px] font-medium tracking-tight truncate">{it.title}</p>
+                        <p className="text-[10.5px] text-muted-foreground truncate">{emp ? fullName(emp) : "Unassigned"}</p>
+                      </li>
+                    );
+                  })}
+                  {col.items.length === 0 && <li className="text-[11.5px] text-muted-foreground italic">Empty</li>}
+                </ul>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Main grid: tabbed workspace + side rail */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="min-w-0">
+            <Card className="p-2 mb-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <div className="flex flex-wrap gap-1 flex-1">
+                  {TABS.map((t) => {
+                    const active = tab === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        onClick={() => setTab(t.key)}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] transition-colors",
+                          active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        <t.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="relative md:w-64">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search employees…"
+                    className="w-full h-8 pl-8 pr-3 rounded-lg bg-muted/60 border border-border/70 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-transparent transition"
+                  />
+                </div>
+              </div>
+            </Card>
+
+            {loading && <Card className="p-8"><p className="text-sm text-muted-foreground text-center">Loading…</p></Card>}
+
+            {!loading && tab === "issues" && (
+              <IssuesPanel rows={issues.filter((i) => matchEmp(i.employee_id))} empById={empById} refresh={refresh} />
+            )}
+            {!loading && tab === "adjustments" && (
+              <AdjustmentsPanel rows={adjustments.filter((a) => matchEmp(a.employee_id))} empById={empById} refresh={refresh} />
+            )}
+            {!loading && tab === "pto" && (
+              <PtoPanel rows={pto} employees={employees} query={query} refresh={refresh} />
+            )}
+            {!loading && tab === "reminders" && (
+              <RemindersPanel rows={reminders} refresh={refresh} />
+            )}
+            {!loading && tab === "comms" && (
+              <CommsPanel rows={comms.filter((c) => matchEmp(c.employee_id))} empById={empById} />
+            )}
+          </div>
+
+          {/* Side rail */}
+          <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            {/* Escalations */}
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Flame className="h-3.5 w-3.5 text-destructive" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Escalations</h3>
+              </div>
+              {escalated.length === 0
+                ? <p className="text-[12.5px] text-muted-foreground">No active escalations.</p>
+                : (
+                  <ul className="space-y-2">
+                    {escalated.slice(0, 5).map((it) => {
+                      const emp = it.employee_id ? empById.get(it.employee_id) : null;
+                      return (
+                        <li key={it.id} className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5">
+                          <p className="text-[12.5px] font-medium tracking-tight truncate">{it.title}</p>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{emp ? fullName(emp) : "Unassigned"} · {it.category.replace(/_/g, " ")}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+            </Card>
+
+            {/* Quick actions */}
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Quick actions</h3>
+              </div>
+              <ul className="space-y-1">
+                <RailLink icon={AlertTriangle} to="/payroll/issues" label="Log payroll issue" />
+                <RailLink icon={Wallet} to="/payroll/adjustments" label="Create adjustment" />
+                <RailLink icon={BellRing} to="/payroll/messages" label="Send payroll reminder" />
+                <RailLink icon={Heart} to="/payroll/pto" label="Review PTO" />
+                <RailLink icon={Timer} to="/payroll/time-attendance" label="Request missing time" />
+                <RailLink icon={UserCircle2} to="/payroll/employees" label="Open employee profile" />
+                <RailLink icon={FileText} to="/payroll/tax-documents" label="Export payroll notes" />
+              </ul>
+            </Card>
+
+            {/* Ask Blossom AI */}
+            <Card className="p-5 bg-muted/40">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ask Blossom AI — Payroll Operations</h3>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  "What payroll blockers are unresolved?",
+                  "Who still has missing time entries?",
+                  "What PTO requests impact this payroll cycle?",
+                  "Which payroll issues are overdue?",
+                  "Summarize this week's payroll follow-ups.",
+                ].map((p) => (
+                  <Link
+                    key={p}
+                    to={`/ai/assistant?q=${encodeURIComponent(p)}`}
+                    className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors"
+                  >
+                    {p}
+                  </Link>
+                ))}
+              </div>
+            </Card>
+
+            {/* Workspace summary */}
+            <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Workspace summary</h3>
+              <ul className="space-y-2 text-[12.5px]">
+                <li className="flex justify-between"><span className="text-muted-foreground">Open issues</span><span className="font-medium">{openIssues.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">Pending adjustments</span><span className="font-medium">{pendingAdj.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">PTO to review</span><span className="font-medium">{pendingPto.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">Scheduled reminders</span><span className="font-medium">{scheduledReminders.length}</span></li>
+                <li className="flex justify-between"><span className="text-muted-foreground">Open follow-ups</span><span className="font-medium">{openComms.length}</span></li>
+              </ul>
+            </Card>
+          </aside>
+        </div>
       </div>
     </OSShell>
+  );
+}
+
+function MetricCard({ label, value, tone = "muted", hint }: { label: string; value: number | string; tone?: "ok" | "warn" | "crit" | "info" | "muted"; hint?: string }) {
+  const accent =
+    tone === "crit" ? "text-destructive"
+    : tone === "warn" ? "text-amber-700 dark:text-amber-400"
+    : tone === "ok" ? "text-emerald-700 dark:text-emerald-400"
+    : tone === "info" ? "text-blue-700 dark:text-blue-400"
+    : "text-foreground";
+  return (
+    <Card className="p-4">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={cn("text-2xl font-semibold tracking-tight mt-1", accent)}>{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
+    </Card>
+  );
+}
+
+function RailLink({ icon: Icon, to, label }: { icon: any; to: string; label: string }) {
+  return (
+    <li>
+      <Link to={to} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-[12.5px] hover:bg-muted transition-colors">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+        <span className="flex-1">{label}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+      </Link>
+    </li>
   );
 }
 
