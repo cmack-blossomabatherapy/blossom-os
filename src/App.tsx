@@ -163,6 +163,8 @@ import JourneyEditor from "./pages/admin/JourneyEditor";
 import { JourneyOverridesProvider } from "@/hooks/useJourneyOverrides";
 import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
+import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
+import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
@@ -441,7 +443,20 @@ const App = () => (
                   <Route path="/qa-messages" element={<OSQAMessages />} />
                   <Route path="/escalations-followups" element={<OSQAEscalations />} />
                   <Route path="/qa/resources" element={<OSQAResources />} />
-                  <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
+                  <Route path="/payroll-coordinator" element={<OSPayrollCoordinator />} />
+                  <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
+                  <Route path="/payroll/training-academy" element={<OSPlaceholder title="Payroll Training Academy" description="Payroll-specific learning paths. Built in phase 4." icon={GraduationCap} />} />
+                  <Route path="/payroll/queue" element={<OSPlaceholder title="Payroll Queue" description="Structured task queue for payroll operations. Built in phase 2." icon={KanbanSquare} />} />
+                  <Route path="/payroll/adjustments" element={<OSPlaceholder title="Payroll Adjustments" description="Bonuses, corrections, retro pay, reimbursements. Built in phase 2." icon={Wallet} />} />
+                  <Route path="/payroll/time-attendance" element={<OSPlaceholder title="Time & Attendance" description="Timesheets, punches, exceptions. Built in phase 2." icon={CalendarDays} />} />
+                  <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
+                  <Route path="/payroll/profiles" element={<OSPlaceholder title="Employee Payroll Profiles" description="Per-employee payroll view. Built in phase 3." icon={Users} />} />
+                  <Route path="/payroll/pto" element={<OSPlaceholder title="PTO & Time Off" description="PTO requests, balances, payroll impact. Built in phase 3." icon={Heart} />} />
+                  <Route path="/payroll/benefits" element={<OSPlaceholder title="Benefits & Deductions" description="Benefits enrollment and recurring deductions. Built in phase 3." icon={Briefcase} />} />
+                  <Route path="/payroll/compliance" element={<OSPlaceholder title="Payroll Compliance" description="Audit-ready payroll compliance tracking. Built in phase 3." icon={ShieldCheck} />} />
+                  <Route path="/payroll/tax-documents" element={<OSPlaceholder title="Tax Documents & Records" description="W-2s, 1099s, tax filings. Built in phase 3." icon={FileCheck2} />} />
+                  <Route path="/payroll/messages" element={<OSPlaceholder title="Payroll Messages & Updates" description="Centralized written payroll communication. Built in phase 4." icon={BellRing} />} />
+                  <Route path="/payroll/resources" element={<OSPlaceholder title="Payroll Resource Library" description="Payroll SOPs, Viventium guides, timelines. Built in phase 4." icon={BookOpen} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
