@@ -311,12 +311,61 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // Payroll Coordinator gets a focused payroll operations menu.
+  const PAYROLL_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/payroll-coordinator", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/payroll/workspace", label: "Payroll Workspace", icon: Workflow, module: "payroll" },
+        { to: "/payroll/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "payroll_operations", label: "Payroll Operations", items: [
+        { to: "/payroll/queue", label: "Payroll Queue", icon: KanbanSquare, module: "payroll" },
+        { to: "/payroll/adjustments", label: "Payroll Adjustments", icon: Wallet, module: "payroll" },
+        { to: "/payroll/time-attendance", label: "Time & Attendance", icon: CalendarDays, module: "payroll" },
+        { to: "/payroll/issues", label: "Payroll Issues", icon: AlertTriangle, module: "payroll" },
+      ],
+    },
+    {
+      id: "employees", label: "Employees", items: [
+        { to: "/payroll/profiles", label: "Employee Payroll Profiles", icon: Users, module: "payroll" },
+        { to: "/payroll/pto", label: "PTO & Time Off", icon: Heart, module: "payroll" },
+        { to: "/payroll/benefits", label: "Benefits & Deductions", icon: Briefcase, module: "payroll" },
+      ],
+    },
+    {
+      id: "compliance", label: "Compliance", items: [
+        { to: "/payroll/compliance", label: "Payroll Compliance", icon: ShieldCheck, module: "payroll" },
+        { to: "/payroll/tax-documents", label: "Tax Documents & Records", icon: FileCheck2, module: "payroll" },
+      ],
+    },
+    {
+      id: "communication", label: "Communication", items: [
+        { to: "/payroll/messages", label: "Payroll Messages & Updates", icon: BellRing, module: "payroll" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/payroll/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
     : role === "bcba"
     ? BCBA_SECTIONS
     : role === "rbt"
     ? RBT_SECTIONS
+    : role === "payroll_coordinator"
+    ? PAYROLL_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
