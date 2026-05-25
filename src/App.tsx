@@ -186,6 +186,7 @@ import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
 import OSRecruitingTrainingAcademy from "./pages/os/OSRecruitingTrainingAcademy";
+import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
@@ -375,7 +376,7 @@ const App = () => (
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
                   <Route path="/recruiting/workspace"      element={<OSRecruitingWorkspace />} />
                   <Route path="/recruiting/academy"        element={<OSRecruitingTrainingAcademy />} />
-                  <Route path="/recruiting/pipeline"       element={<OSPlaceholder title="Applicant Pipeline" description="All candidates by stage, source, recruiter, and state." icon={Inbox} />} />
+                  <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
                   <Route path="/recruiting/interviews"     element={<OSPlaceholder title="Interviews" description="Scheduling, outcomes, and interview management." icon={Calendar} />} />
                   <Route path="/recruiting/offers"         element={<OSPlaceholder title="Offers & Hiring" description="Offer letters, signatures, and acceptance tracking." icon={FileText} />} />
                   <Route path="/recruiting/onboarding"     element={<OSPlaceholder title="Onboarding Status" description="Viventium handoff, I-9 / E-Verify, and onboarding progress." icon={GraduationCap} />} />
