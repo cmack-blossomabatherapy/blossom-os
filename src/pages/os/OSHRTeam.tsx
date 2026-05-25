@@ -114,26 +114,27 @@ function useHrCounts() {
     async function load() {
       const in30 = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
       const today = new Date().toISOString().slice(0, 10);
-      const [{ count: expiring }, { count: missing }, { count: due }, { count: overdue }, trainingOverdue, openRequests] = await Promise.all([
-        supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
-          .gte("expires_on", today).lte("expires_on", in30),
-        supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
-          .eq("required", true).eq("status", "requested"),
-        supabase.from("employee_reviews").select("*", { count: "exact", head: true })
-          .eq("status", "scheduled" as never).gte("scheduled_for", today),
-        supabase.from("employee_reviews").select("*", { count: "exact", head: true })
-          .eq("status", "scheduled" as never).lt("scheduled_for", today),
+      const c = (p: Promise<{ count: number | null }>) => p.then(r => r.count ?? 0).catch(() => 0);
+      const [expiring, missing, due, overdue, trainingOverdue, openRequests] = await Promise.all([
+        c(supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
+          .gte("expires_on", today).lte("expires_on", in30) as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
+          .eq("required", true).eq("status", "requested") as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_reviews").select("*", { count: "exact", head: true })
+          .eq("status", "scheduled" as never).gte("scheduled_for", today) as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_reviews").select("*", { count: "exact", head: true })
+          .eq("status", "scheduled" as never).lt("scheduled_for", today) as unknown as Promise<{ count: number | null }>),
         countTrainingOverdue(),
         countOpenCases(),
-      ]).catch(() => [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }, 0, 0] as const);
+      ]);
       if (cancelled) return;
       setCounts({
-        expiringDocs: expiring ?? 0,
-        missingDocs: missing ?? 0,
-        reviewsDue: due ?? 0,
-        reviewsOverdue: overdue ?? 0,
-        trainingOverdue: (trainingOverdue as number) ?? 0,
-        openRequests: (openRequests as number) ?? 0,
+        expiringDocs: expiring,
+        missingDocs: missing,
+        reviewsDue: due,
+        reviewsOverdue: overdue,
+        trainingOverdue,
+        openRequests,
       });
     }
     void load();
