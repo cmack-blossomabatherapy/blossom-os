@@ -199,11 +199,12 @@ const QUICK_ACTIONS = [
 export default function OSRecruitingEscalations() {
   const base = useMemo(() => buildEscalations(recruitingCandidates), []);
 
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
+  const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
     base.forEach((e) => { m[e.id] = e.stage; });
     return m;
-  });
+  }, [base]);
+  const { stageMap, moveStage: persistStage } = useWorkflowStages("escalations", defaults);
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -309,7 +310,10 @@ export default function OSRecruitingEscalations() {
 
   const selected = selectedId ? base.find((e) => e.id === selectedId) ?? null : null;
 
-  function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to })); }
+  function moveStage(id: string, to: StageKey) {
+    const item = base.find((e) => e.id === id);
+    persistStage(id, to, item?.candidate.id);
+  }
   function onDragStart(ev: React.DragEvent, id: string) {
     ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move";
   }

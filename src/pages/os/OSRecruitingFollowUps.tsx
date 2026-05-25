@@ -171,11 +171,12 @@ const CHIPS = [
 export default function OSRecruitingFollowUps() {
   const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), []);
 
-  const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() => {
+  const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
     baseFollowUps.forEach((f) => { m[f.id] = f.stage; });
     return m;
-  });
+  }, [baseFollowUps]);
+  const { stageMap, moveStage: persistStage } = useWorkflowStages("follow-ups", defaults);
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
@@ -276,7 +277,10 @@ export default function OSRecruitingFollowUps() {
 
   const selected = selectedId ? baseFollowUps.find((f) => f.id === selectedId) ?? null : null;
 
-  function moveStage(id: string, to: StageKey) { setStageMap((m) => ({ ...m, [id]: to })); }
+  function moveStage(id: string, to: StageKey) {
+    const item = baseFollowUps.find((f) => f.id === id);
+    persistStage(id, to, item?.candidate.id);
+  }
   function onDragStart(e: React.DragEvent, id: string) {
     e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move";
   }
