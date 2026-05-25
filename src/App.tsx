@@ -211,6 +211,7 @@ import OSHROrientationQueue from "./pages/os/OSHROrientationQueue";
 import OSHRRequests from "./pages/os/OSHRRequests";
 import OSHRCompliance from "./pages/os/OSHRCompliance";
 import OSHRMessages from "./pages/os/OSHRMessages";
+import OSHRResources from "./pages/os/OSHRResources";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSQAWorkspace from "./pages/os/OSQAWorkspace";
@@ -424,6 +425,7 @@ const App = () => (
                   <Route path="/hr/requests" element={<OSHRRequests />} />
                   <Route path="/hr/compliance" element={<OSHRCompliance />} />
                   <Route path="/hr/messages" element={<OSHRMessages />} />
+                  <Route path="/hr/team-resources" element={<OSHRResources />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/qa-team" element={<OSQATeam />} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
