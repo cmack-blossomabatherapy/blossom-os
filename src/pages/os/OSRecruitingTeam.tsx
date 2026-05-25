@@ -346,7 +346,7 @@ export default function OSRecruitingTeam() {
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] uppercase tracking-wider text-muted-foreground truncate">{s.name}</span>
                       <span className={cn("h-1.5 w-1.5 rounded-full",
-                        s.tone === "crit" ? "bg-destructive" : s.tone === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
+                        (s.tone as Tone) === "crit" ? "bg-destructive" : (s.tone as Tone) === "warn" ? "bg-amber-500" : "bg-emerald-500")} />
                     </div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight">{s.count}</div>
                     <div className="mt-1 text-[11px] text-muted-foreground">
