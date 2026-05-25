@@ -13,11 +13,11 @@ import {
   type StaffingClientNeed,
 } from "@/data/staffing";
 import {
-  recruitingCandidates,
   recruitingStates,
   recruitingRecruiters,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
@@ -110,6 +110,7 @@ function fitScore(n: StaffingClientNeed, c: RecruitingCandidate): number {
 }
 
 export default function OSRecruitingStaffingNeeds() {
+  const recruitingCandidates = useLegacyRecruitingCandidates();
   // Build needs list
   const baseNeeds = useMemo(() => getClientStaffingNeeds(), []);
   const readyCandidates = useMemo(

@@ -7,12 +7,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingRecruiters,
   recruitingStates,
   staffingDemandByRegion,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Communication → Messages & Updates
@@ -263,7 +263,8 @@ const QUICK_ACTIONS = [
 ];
 
 export default function OSRecruitingMessages() {
-  const baseMessages = useMemo(() => buildMessages(recruitingCandidates), []);
+  const recruitingCandidates = useLegacyRecruitingCandidates();
+  const baseMessages = useMemo(() => buildMessages(recruitingCandidates), [recruitingCandidates]);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");

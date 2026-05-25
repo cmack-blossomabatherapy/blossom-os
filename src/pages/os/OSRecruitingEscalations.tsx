@@ -7,12 +7,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingRecruiters,
   recruitingStates,
   staffingDemandByRegion,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -198,7 +198,8 @@ const QUICK_ACTIONS = [
 ];
 
 export default function OSRecruitingEscalations() {
-  const base = useMemo(() => buildEscalations(recruitingCandidates), []);
+  const recruitingCandidates = useLegacyRecruitingCandidates();
+  const base = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};
