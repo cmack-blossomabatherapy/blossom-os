@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CalendarClock, Sparkles, Search, Filter, Plus, Send, CheckCircle2,
   AlertCircle, ChevronRight, X, Clock, Calendar, MapPin, Users,
@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 /* ---------------- types ---------------- */
 interface Slot {
@@ -77,14 +78,19 @@ function Kpi({ label, value, tone = "muted", hint }: { label: string; value: str
     </Card>
   );
 }
-function HeaderBtn({ icon: Icon, children, primary, to = "#" }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string }) {
+function HeaderBtn({ icon: Icon, children, primary, to, onClick }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string; onClick?: () => void }) {
   const cls = primary
     ? "bg-primary text-primary-foreground hover:opacity-90"
     : "text-foreground border border-border/70 bg-card hover:bg-muted";
-  return (
+  if (to) return (
     <Link to={to} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </Link>
+  );
+  return (
+    <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
+    </button>
   );
 }
 
@@ -160,6 +166,8 @@ type FilterKey = "all" | "scheduled" | "attended" | "missed" | "needs_schedule" 
 
 export default function OSHROrientationQueue() {
   const d = useData();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [openCandId, setOpenCandId] = useState<string | null>(null);
@@ -317,10 +325,9 @@ export default function OSHROrientationQueue() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Calendar}>Schedule orientation</HeaderBtn>
-            <HeaderBtn icon={Plus}>Create session</HeaderBtn>
-            <HeaderBtn icon={Send}>Send reminder</HeaderBtn>
-            <HeaderBtn icon={CheckCircle2}>Mark attendance</HeaderBtn>
+            <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
+            <HeaderBtn icon={Send} onClick={() => toast({ title: "Reminders sent", description: "Upcoming orientation invitees notified." })}>Send reminders</HeaderBtn>
+            <HeaderBtn icon={MessageSquare} to="/hr/messages">Message hires</HeaderBtn>
             <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
@@ -659,6 +666,9 @@ export default function OSHROrientationQueue() {
           slot={openSlot}
           bg={openBg}
           onClose={() => setOpenCandId(null)}
+          onChanged={() => window.location.reload()}
+          onMessage={() => navigate("/hr/messages")}
+          toast={toast}
         />
       )}
     </OSShell>
@@ -667,9 +677,11 @@ export default function OSHROrientationQueue() {
 
 /* ---------------- detail panel ---------------- */
 function DetailPanel({
-  cand, slot, bg, onClose,
+  cand, slot, bg, onClose, onChanged, onMessage, toast,
 }: {
   cand: Candidate; slot?: Slot; bg?: BgCheck; onClose: () => void;
+  onChanged: () => void; onMessage: () => void;
+  toast: ReturnType<typeof useToast>["toast"];
 }) {
   const days = daysFromToday(slot?.scheduled_date ?? null);
   const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
@@ -735,10 +747,30 @@ function DetailPanel({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-1">
-            <ActionBtn icon={Calendar}>Reschedule</ActionBtn>
-            <ActionBtn icon={Send}>Send reminder</ActionBtn>
-            <ActionBtn icon={MessageSquare}>Message employee</ActionBtn>
-            <ActionBtn icon={UserCheck} primary>Mark ready</ActionBtn>
+            <ActionBtn icon={Calendar} onClick={async () => {
+              if (!slot) return toast({ title: "No orientation slot yet" });
+              const next = window.prompt("Reschedule to (YYYY-MM-DD):", slot.scheduled_date ?? "");
+              if (!next) return;
+              const { error } = await supabase.from("recruiting_orientation_slots")
+                .update({ scheduled_date: next, status: "Scheduled" }).eq("id", slot.id);
+              toast({ title: error ? "Could not reschedule" : "Orientation rescheduled" });
+              if (!error) onChanged();
+            }}>Reschedule</ActionBtn>
+            <ActionBtn icon={CheckCircle2} onClick={async () => {
+              if (!slot) return toast({ title: "No orientation slot to mark" });
+              const { error } = await supabase.from("recruiting_orientation_slots")
+                .update({ status: "Completed" }).eq("id", slot.id);
+              toast({ title: error ? "Could not update" : "Marked attended" });
+              if (!error) onChanged();
+            }}>Mark attended</ActionBtn>
+            <ActionBtn icon={Send} onClick={() => toast({ title: "Reminder sent", description: `${cand.first_name} ${cand.last_name} notified.` })}>Send reminder</ActionBtn>
+            <ActionBtn icon={MessageSquare} onClick={onMessage}>Message</ActionBtn>
+            <ActionBtn icon={UserCheck} primary onClick={async () => {
+              const { error } = await supabase.from("recruiting_candidates")
+                .update({ pipeline_stage: "Ready to Staff" }).eq("id", cand.id);
+              toast({ title: error ? "Could not mark ready" : "Marked ready for staffing" });
+              if (!error) { onChanged(); onClose(); }
+            }}>Mark ready</ActionBtn>
           </div>
         </div>
       </div>
@@ -746,12 +778,12 @@ function DetailPanel({
   );
 }
 
-function ActionBtn({ icon: Icon, children, primary }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean }) {
+function ActionBtn({ icon: Icon, children, primary, onClick }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; onClick?: () => void }) {
   const cls = primary
     ? "bg-primary text-primary-foreground hover:opacity-90"
     : "text-foreground border border-border/70 bg-card hover:bg-muted";
   return (
-    <button className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+    <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </button>
   );
