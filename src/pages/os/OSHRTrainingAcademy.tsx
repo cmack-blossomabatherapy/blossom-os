@@ -64,6 +64,11 @@ const TYPE_ICON: Record<ModuleType, React.ElementType> = {
   shadowing: Eye, meeting: Users, reflection: Pencil, task: CheckSquare,
 };
 
+function weekNumberFromId(id: string | null, weeks: Week[]) {
+  if (!id) return null;
+  return weeks.find((w) => w.id === id)?.week_number ?? null;
+}
+
 /* ---------------- data hook ---------------- */
 function useAcademyData() {
   const [tracks, setTracks] = useState<Track[]>([]);
