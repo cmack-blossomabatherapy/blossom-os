@@ -268,6 +268,12 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isRecruitingOnly =
     osRole === "recruiting_team" ||
     (roles.includes("recruiting_assistant") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // HR Team gets a curated people-ops menu focused on new hires, training,
+  // orientation, evaluations, requests, compliance, and employee support.
+  const isHrOnly =
+    osRole === "hr_team" ||
+    ((roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager"))
+      && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -451,6 +457,52 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
+  const hrSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard",        icon: LayoutDashboard, path: "/hr-team",       perm: "" },
+        { label: "HR Workspace",     icon: Workflow,        path: "/hr/workspace",  perm: "" },
+        { label: "Training Academy", icon: GraduationCap,   path: "/academy",       perm: "" },
+      ],
+    },
+    {
+      title: "People",
+      items: [
+        { label: "New Hires",                 icon: UserPlus,       path: "/hr/new-hires",                perm: "" },
+        { label: "Employee Support",          icon: HeartHandshake, path: "/hr/employee-support",         perm: "" },
+        { label: "Training & Certifications", icon: GraduationCap,  path: "/hr/training-certifications",  perm: "" },
+        { label: "Evaluations & Growth",      icon: ClipboardCheck, path: "/hr/evaluations",              perm: "" },
+      ],
+    },
+    {
+      title: "Operations",
+      items: [
+        { label: "Orientation Queue",      icon: Clock,        path: "/hr/orientation-queue", perm: "" },
+        { label: "HR Requests",            icon: Inbox,        path: "/hr/requests",          perm: "" },
+        { label: "Compliance & Documents", icon: ShieldCheck,  path: "/hr/compliance",        perm: "" },
+      ],
+    },
+    {
+      title: "Communication",
+      items: [
+        { label: "Messages & Updates", icon: MessageSquare, path: "/hr/messages", perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/hr/resources", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
   const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
@@ -465,6 +517,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? qaSections
     : isRecruitingOnly
     ? recruitingSections
+    : isHrOnly
+    ? hrSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
