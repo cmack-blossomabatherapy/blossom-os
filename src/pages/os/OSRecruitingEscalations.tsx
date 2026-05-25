@@ -14,6 +14,7 @@ import {
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
 import { cn } from "@/lib/utils";
+import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
 // Recruiting → Communication → Escalations & Follow-Ups
 
