@@ -39,7 +39,7 @@ export function HRShellPage({ title, subtitle, icon: Icon, intent, kpis, section
         </header>
 
         {kpis && kpis.length > 0 && (
-          <div className={cn("grid gap-3 mb-8", "grid-cols-2 md:grid-cols-" + Math.min(kpis.length, 5))}>
+          <div className="grid gap-3 mb-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {kpis.map((k) => (
               <div key={k.label} className="rounded-2xl border border-border/70 bg-card p-4 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{k.label}</p>
