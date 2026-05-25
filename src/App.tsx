@@ -376,6 +376,7 @@ const App = () => (
                   <Route path="/qa-team" element={<OSQATeam />} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
                   <Route path="/qa-queue" element={<OSQAQueue />} />
+                  <Route path="/qa-clients" element={<OSQAClients />} />
                   <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
                   <Route path="/progress-reports" element={<OSQAProgressReports />} />
                   <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
