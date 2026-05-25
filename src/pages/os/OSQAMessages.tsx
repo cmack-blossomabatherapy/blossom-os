@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -988,6 +989,7 @@ function CategoryIcon({ category }: { category: Category }) {
 }
 
 function ThreadSlideout({ t, onClose }: { t: Thread; onClose: () => void }) {
+  useSlideout(true, onClose);
   return (
     <>
       <div className="fixed inset-0 bg-foreground/10 backdrop-blur-[2px] z-40" onClick={onClose} />

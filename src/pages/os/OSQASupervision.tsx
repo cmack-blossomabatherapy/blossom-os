@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -918,6 +919,7 @@ function BucketCard({ title, rows, tone, onOpen }: { title: string; rows: SupRow
 }
 
 function SupSlideout({ r, onClose }: { r: SupRow; onClose: () => void }) {
+  useSlideout(true, onClose);
   const checklist = [
     { ok: r.lastBcbaSession !== null && (r.daysSinceSup ?? 0) < 14, label: "BCBA supervision session within 14 days" },
     { ok: !r.supDocMissing, label: "Supervision documentation on file" },

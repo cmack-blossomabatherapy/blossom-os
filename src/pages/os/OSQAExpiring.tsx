@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -832,6 +833,7 @@ function ExpCard({ auth: a, onOpen }: { auth: Authorization; onOpen: () => void 
 }
 
 function ExpSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => void }) {
+  useSlideout(true, onClose);
   const tone = urgencyOf(a);
   const status = wfStatus(a);
   const d = daysUntil(a.expirationDate);
