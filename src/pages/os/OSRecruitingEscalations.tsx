@@ -199,7 +199,7 @@ const QUICK_ACTIONS = [
 
 export default function OSRecruitingEscalations() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
-  const base = useMemo(() => buildEscalations(recruitingCandidates), []);
+  const base = useMemo(() => buildEscalations(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};

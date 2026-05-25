@@ -171,7 +171,7 @@ const CHIPS = [
 
 export default function OSRecruitingFollowUps() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
-  const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), []);
+  const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), [recruitingCandidates]);
 
   const defaults = useMemo(() => {
     const m: Record<string, StageKey> = {};

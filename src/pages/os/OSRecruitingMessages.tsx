@@ -264,7 +264,7 @@ const QUICK_ACTIONS = [
 
 export default function OSRecruitingMessages() {
   const recruitingCandidates = useLegacyRecruitingCandidates();
-  const baseMessages = useMemo(() => buildMessages(recruitingCandidates), []);
+  const baseMessages = useMemo(() => buildMessages(recruitingCandidates), [recruitingCandidates]);
 
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
