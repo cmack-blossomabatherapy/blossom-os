@@ -195,6 +195,7 @@ import OSQATreatmentPlans from "./pages/os/OSQATreatmentPlans";
 import OSQAMissingInfo from "./pages/os/OSQAMissingInfo";
 import OSQAExpiring from "./pages/os/OSQAExpiring";
 import OSQAClients from "./pages/os/OSQAClients";
+import OSQABCBAs from "./pages/os/OSQABCBAs";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
@@ -376,6 +377,7 @@ const App = () => (
                   <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
                   <Route path="/missing-information" element={<OSQAMissingInfo />} />
                   <Route path="/expiring-items" element={<OSQAExpiring />} />
+                  <Route path="/assigned-bcbas" element={<OSQABCBAs />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
