@@ -276,10 +276,47 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // RBT gets a focused daily-support menu — assignment-scoped, mobile-first.
+  const RBT_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/rbt", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/rbt/my-day", label: "My Day", icon: Radio, module: "dashboard" },
+        { to: "/rbt/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "clients_sessions", label: "Clients & Sessions", items: [
+        { to: "/rbt/clients", label: "My Clients", icon: Heart, module: "clients" },
+        { to: "/rbt/schedule", label: "My Schedule", icon: CalendarDays, module: "scheduling" },
+        { to: "/rbt/session-support", label: "Session Support", icon: LifeBuoy, module: "sop" },
+        { to: "/rbt/supervision", label: "Supervision", icon: ClipboardCheck, module: "evaluations" },
+      ],
+    },
+    {
+      id: "communication", label: "Communication", items: [
+        { to: "/rbt/messages", label: "Messages & Updates", icon: BellRing, module: "dashboard" },
+        { to: "/rbt/help", label: "Need Help / Escalations", icon: AlertTriangle, module: "dashboard" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/rbt/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
     : role === "bcba"
     ? BCBA_SECTIONS
+    : role === "rbt"
+    ? RBT_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
