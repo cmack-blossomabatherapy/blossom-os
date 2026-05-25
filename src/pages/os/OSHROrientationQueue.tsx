@@ -1,25 +1,758 @@
-import { CalendarClock } from "lucide-react";
-import { HRShellPage } from "./_HRShellPage";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  CalendarClock, Sparkles, Search, Filter, Plus, Send, CheckCircle2,
+  AlertCircle, ChevronRight, X, Clock, Calendar, MapPin, Users,
+  ShieldCheck, GraduationCap, MessageSquare, ArrowRight, UserCheck, Video,
+} from "lucide-react";
+import { OSShell } from "./OSShell";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+
+/* ---------------- types ---------------- */
+interface Slot {
+  id: string; scheduled_date: string | null; scheduled_time: string | null;
+  format: string | null; status: string | null; notes: string | null;
+  candidate_id: string | null;
+}
+interface Candidate {
+  id: string; first_name: string; last_name: string; email: string | null;
+  role: string | null; state: string | null; city: string | null;
+  pipeline_stage: string | null; recruiter: string | null;
+  applied_date: string | null; next_action: string | null; next_action_due: string | null;
+}
+interface BgCheck {
+  id: string; candidate_id: string | null; vendor: string | null; status: string | null;
+  initiated_at: string | null; cleared_at: string | null; blocker: string | null;
+}
+interface Employee {
+  id: string; first_name: string; last_name: string; job_title: string;
+  state: string; status: string; start_date: string | null;
+}
+interface Onboarding { id: string; employee_id: string; status: string; blockers: string[] | null; }
+
+/* ---------------- atoms ---------------- */
+type Tone = "ok" | "warn" | "crit" | "muted" | "info";
+
+function Card({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn(
+      "rounded-2xl border border-border/70 bg-card",
+      "shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]",
+      className,
+    )}>{children}</div>
+  );
+}
+function Pill({ tone = "muted", children }: { tone?: Tone; children: React.ReactNode }) {
+  const cls =
+    tone === "crit" ? "bg-destructive/10 text-destructive border-destructive/20"
+    : tone === "warn" ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+    : tone === "ok"   ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+    : tone === "info" ? "bg-primary/10 text-primary border-primary/20"
+    : "bg-muted text-muted-foreground border-border/70";
+  return <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", cls)}>{children}</span>;
+}
+function Empty({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint?: string }) {
+  return (
+    <div className="py-10 text-center">
+      <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-muted grid place-items-center">
+        <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+      </div>
+      <p className="text-sm font-medium tracking-tight">{title}</p>
+      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+    </div>
+  );
+}
+function Kpi({ label, value, tone = "muted", hint }: { label: string; value: string | number; tone?: Tone; hint?: string }) {
+  const accent =
+    tone === "crit" ? "text-destructive"
+    : tone === "warn" ? "text-amber-700 dark:text-amber-400"
+    : tone === "ok" ? "text-emerald-700 dark:text-emerald-400"
+    : "text-foreground";
+  return (
+    <Card className="p-4">
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={cn("text-2xl font-semibold tracking-tight mt-1 tabular-nums", accent)}>{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
+    </Card>
+  );
+}
+function HeaderBtn({ icon: Icon, children, primary, to = "#" }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string }) {
+  const cls = primary
+    ? "bg-primary text-primary-foreground hover:opacity-90"
+    : "text-foreground border border-border/70 bg-card hover:bg-muted";
+  return (
+    <Link to={to} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
+    </Link>
+  );
+}
+
+/* ---------------- helpers ---------------- */
+function fmtDate(d: string | null) {
+  if (!d) return "—";
+  try { return new Date(d + (d.length === 10 ? "T00:00:00" : "")).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); }
+  catch { return d; }
+}
+function daysFromToday(d: string | null) {
+  if (!d) return null;
+  return Math.round((new Date(d + (d.length === 10 ? "T00:00:00" : "")).getTime() - Date.now()) / 86400000);
+}
+
+function slotStatusTone(status: string | null, days: number | null): { tone: Tone; label: string } {
+  const s = (status ?? "").toLowerCase();
+  if (s === "completed" || s === "attended") return { tone: "ok", label: "Attended" };
+  if (s === "missed" || s === "no_show" || s === "no-show") return { tone: "crit", label: "Missed" };
+  if (s === "cancelled" || s === "canceled") return { tone: "muted", label: "Cancelled" };
+  if (s === "scheduled") {
+    if (days != null && days < 0) return { tone: "crit", label: "Past due" };
+    if (days != null && days <= 2) return { tone: "warn", label: "Soon" };
+    return { tone: "info", label: "Scheduled" };
+  }
+  return { tone: "muted", label: status ?? "Pending" };
+}
+
+function bgTone(s: string | null): Tone {
+  const x = (s ?? "").toLowerCase();
+  if (x === "cleared") return "ok";
+  if (x === "needs review") return "warn";
+  if (x === "in progress") return "info";
+  return "muted";
+}
+
+/* ---------------- data hook ---------------- */
+function useData() {
+  const [s, set] = useState({
+    slots: [] as Slot[],
+    candidates: [] as Candidate[],
+    bg: [] as BgCheck[],
+    employees: [] as Employee[],
+    onboarding: [] as Onboarding[],
+    loading: true,
+  });
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const [sl, cd, bc, em, ob] = await Promise.all([
+        supabase.from("recruiting_orientation_slots").select("*").order("scheduled_date"),
+        supabase.from("recruiting_candidates").select("id,first_name,last_name,email,role,state,city,pipeline_stage,recruiter,applied_date,next_action,next_action_due").eq("is_archived", false),
+        supabase.from("recruiting_background_checks").select("*"),
+        supabase.from("employees").select("id,first_name,last_name,job_title,state,status,start_date").in("status", ["pending_start", "active"]).order("last_name"),
+        supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
+      ]);
+      if (cancel) return;
+      set({
+        slots: (sl.data ?? []) as Slot[],
+        candidates: (cd.data ?? []) as Candidate[],
+        bg: (bc.data ?? []) as BgCheck[],
+        employees: (em.data ?? []) as Employee[],
+        onboarding: (ob.data ?? []) as Onboarding[],
+        loading: false,
+      });
+    })();
+    return () => { cancel = true; };
+  }, []);
+  return s;
+}
+
+/* ---------------- page ---------------- */
+type FilterKey = "all" | "scheduled" | "attended" | "missed" | "needs_schedule" | "ready";
 
 export default function OSHROrientationQueue() {
+  const d = useData();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [openCandId, setOpenCandId] = useState<string | null>(null);
+
+  const candById = useMemo(() => Object.fromEntries(d.candidates.map(c => [c.id, c])), [d.candidates]);
+  const bgByCand = useMemo(() => {
+    const m = new Map<string, BgCheck>();
+    d.bg.forEach(b => { if (b.candidate_id) m.set(b.candidate_id, b); });
+    return m;
+  }, [d.bg]);
+  const slotByCand = useMemo(() => {
+    const m = new Map<string, Slot>();
+    d.slots.forEach(s => { if (s.candidate_id) m.set(s.candidate_id, s); });
+    return m;
+  }, [d.slots]);
+
+  /* derived stats */
+  const stats = useMemo(() => {
+    const scheduled = d.slots.filter(s => (s.status ?? "").toLowerCase() === "scheduled").length;
+    const completedRecent = d.slots.filter(s => (s.status ?? "").toLowerCase() === "completed").length;
+    const missed = d.slots.filter(s => ["missed","no_show","no-show"].includes((s.status ?? "").toLowerCase())).length;
+    const needsSchedule = d.candidates.filter(c =>
+      ["Offer Accepted", "Background Check", "Orientation Scheduled"].includes(c.pipeline_stage ?? "") && !slotByCand.get(c.id)
+    ).length;
+    const bgPending = d.bg.filter(b => ["In Progress", "Needs Review"].includes(b.status ?? "")).length;
+    const readyForStaffing = d.candidates.filter(c => c.pipeline_stage === "Ready to Staff").length;
+    return { scheduled, completedRecent, missed, needsSchedule, bgPending, readyForStaffing };
+  }, [d.slots, d.candidates, d.bg, slotByCand]);
+
+  /* queue rows = candidates in orientation/onboarding stages */
+  const queueRows = useMemo(() => {
+    const RELEVANT = new Set(["Offer Accepted", "Background Check", "Orientation Scheduled", "Onboarding", "Ready to Staff"]);
+    let rows = d.candidates
+      .filter(c => RELEVANT.has(c.pipeline_stage ?? ""))
+      .map(c => {
+        const slot = slotByCand.get(c.id);
+        const bg = bgByCand.get(c.id);
+        const days = daysFromToday(slot?.scheduled_date ?? null);
+        const sStatus = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
+        return { c, slot, bg, days, sStatus };
+      });
+    if (filter === "scheduled") rows = rows.filter(r => (r.slot?.status ?? "").toLowerCase() === "scheduled");
+    else if (filter === "attended") rows = rows.filter(r => (r.slot?.status ?? "").toLowerCase() === "completed");
+    else if (filter === "missed") rows = rows.filter(r => ["missed","no_show","no-show"].includes((r.slot?.status ?? "").toLowerCase()));
+    else if (filter === "needs_schedule") rows = rows.filter(r => !r.slot);
+    else if (filter === "ready") rows = rows.filter(r => r.c.pipeline_stage === "Ready to Staff");
+    if (query) {
+      const q = query.toLowerCase();
+      rows = rows.filter(r =>
+        `${r.c.first_name} ${r.c.last_name}`.toLowerCase().includes(q)
+        || (r.c.role ?? "").toLowerCase().includes(q)
+        || (r.c.state ?? "").toLowerCase().includes(q)
+      );
+    }
+    // sort: scheduled soonest first, then no-slot
+    rows.sort((a, b) => {
+      const ad = a.slot?.scheduled_date ?? "9999-12-31";
+      const bd = b.slot?.scheduled_date ?? "9999-12-31";
+      return ad.localeCompare(bd);
+    });
+    return rows;
+  }, [d.candidates, slotByCand, bgByCand, filter, query]);
+
+  /* sessions grouped by date+time */
+  const sessions = useMemo(() => {
+    const m = new Map<string, { key: string; date: string | null; time: string | null; format: string | null; slots: Slot[] }>();
+    d.slots.forEach(s => {
+      const key = `${s.scheduled_date ?? ""}|${s.scheduled_time ?? ""}|${s.format ?? ""}`;
+      const e = m.get(key) ?? { key, date: s.scheduled_date, time: s.scheduled_time, format: s.format, slots: [] };
+      e.slots.push(s);
+      m.set(key, e);
+    });
+    return Array.from(m.values()).sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+  }, [d.slots]);
+
+  /* blockers */
+  const blockers = useMemo(() => {
+    const items: { who: string; role: string | null; kind: string; detail: string; days: number | null; candId?: string }[] = [];
+    // No slot in onboarding stages
+    d.candidates
+      .filter(c => ["Offer Accepted", "Background Check"].includes(c.pipeline_stage ?? "") && !slotByCand.get(c.id))
+      .forEach(c => items.push({
+        who: `${c.first_name} ${c.last_name}`, role: c.role, candId: c.id,
+        kind: "Orientation not scheduled", detail: c.pipeline_stage ?? "—",
+        days: daysFromToday(c.next_action_due ?? null),
+      }));
+    // BG check pending/needs review
+    d.bg.filter(b => ["Needs Review", "In Progress"].includes(b.status ?? "")).forEach(b => {
+      const c = b.candidate_id ? candById[b.candidate_id] : undefined;
+      items.push({
+        who: c ? `${c.first_name} ${c.last_name}` : "Candidate",
+        role: c?.role ?? null, candId: c?.id,
+        kind: b.status === "Needs Review" ? "Background check needs review" : "Background check in progress",
+        detail: b.blocker ?? b.vendor ?? "—",
+        days: b.initiated_at ? Math.round((Date.now() - new Date(b.initiated_at).getTime()) / 86400000) : null,
+      });
+    });
+    // Missed orientations
+    d.slots.filter(s => ["missed","no_show","no-show"].includes((s.status ?? "").toLowerCase())).forEach(s => {
+      const c = s.candidate_id ? candById[s.candidate_id] : undefined;
+      items.push({
+        who: c ? `${c.first_name} ${c.last_name}` : "Candidate",
+        role: c?.role ?? null, candId: c?.id,
+        kind: "Missed orientation", detail: fmtDate(s.scheduled_date),
+        days: null,
+      });
+    });
+    return items.slice(0, 20);
+  }, [d.candidates, d.bg, d.slots, slotByCand, candById]);
+
+  /* readiness */
+  const readiness = useMemo(() => {
+    return d.candidates
+      .filter(c => ["Offer Accepted", "Background Check", "Orientation Scheduled", "Onboarding", "Ready to Staff"].includes(c.pipeline_stage ?? ""))
+      .map(c => {
+        const slot = slotByCand.get(c.id);
+        const bg = bgByCand.get(c.id);
+        const slotOk = (slot?.status ?? "").toLowerCase() === "completed";
+        const bgOk = (bg?.status ?? "").toLowerCase() === "cleared";
+        const stageOk = c.pipeline_stage === "Ready to Staff" || c.pipeline_stage === "Onboarding";
+        let pct = 0;
+        if (slot) pct += 25;
+        if (slotOk) pct += 25;
+        if (bg) pct += 15;
+        if (bgOk) pct += 15;
+        if (stageOk) pct += 20;
+        let status: { tone: Tone; label: string };
+        if (c.pipeline_stage === "Ready to Staff") status = { tone: "ok", label: "Ready" };
+        else if (pct >= 70) status = { tone: "info", label: "Almost ready" };
+        else if (pct >= 40) status = { tone: "warn", label: "Needs attention" };
+        else status = { tone: "crit", label: "Blocked" };
+        return { c, pct, status, slot, bg };
+      })
+      .sort((a, b) => b.pct - a.pct);
+  }, [d.candidates, slotByCand, bgByCand]);
+
+  const openCand = openCandId ? candById[openCandId] : null;
+  const openSlot = openCand ? slotByCand.get(openCand.id) : undefined;
+  const openBg = openCand ? bgByCand.get(openCand.id) : undefined;
+
   return (
-    <HRShellPage
-      title="Orientation Queue"
-      subtitle="Who’s scheduled, who attended, who missed"
-      icon={CalendarClock}
-      intent="Keep orientation on rails — confirm attendance, reschedule no-shows, hand off to onboarding cleanly."
-      kpis={[
-        { label: "This week", value: "—" },
-        { label: "Confirmed", value: "—" },
-        { label: "No-shows (30d)", value: "—" },
-        { label: "Awaiting reschedule", value: "—" },
-        { label: "Completed (30d)", value: "—" },
-      ]}
-      sections={[
-        { title: "Upcoming sessions", body: <p className="text-sm text-muted-foreground">Already-built `orientation` table powers this in Phase 2.</p> },
-        { title: "Needs reschedule", body: <p className="text-sm text-muted-foreground">No-shows + cancellations needing HR follow-up.</p> },
-      ]}
-      aside={<p className="text-sm text-muted-foreground">“Show me orientation attendance trend.”</p>}
-    />
+    <OSShell>
+      <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
+        {/* header */}
+        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className="h-11 w-11 rounded-2xl bg-muted grid place-items-center shrink-0">
+              <CalendarClock className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Orientation Queue</h1>
+              <p className="text-[13px] text-muted-foreground mt-1 max-w-2xl">
+                Coordinate orientation scheduling, onboarding readiness, attendance, and staffing preparation across Blossom.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <HeaderBtn icon={Calendar}>Schedule orientation</HeaderBtn>
+            <HeaderBtn icon={Plus}>Create session</HeaderBtn>
+            <HeaderBtn icon={Send}>Send reminder</HeaderBtn>
+            <HeaderBtn icon={CheckCircle2}>Mark attendance</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+          </div>
+        </header>
+
+        {/* KPI snapshot */}
+        <div className="grid gap-3 mb-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <Kpi label="Scheduled" value={d.loading ? "—" : stats.scheduled} hint="On the calendar" />
+          <Kpi label="Completed" value={d.loading ? "—" : stats.completedRecent} tone="ok" hint="Recently attended" />
+          <Kpi label="Missing orientation" value={d.loading ? "—" : stats.needsSchedule} tone={stats.needsSchedule ? "warn" : "ok"} hint="No session scheduled" />
+          <Kpi label="Background pending" value={d.loading ? "—" : stats.bgPending} tone={stats.bgPending ? "warn" : "ok"} hint="In progress / needs review" />
+          <Kpi label="Missed" value={d.loading ? "—" : stats.missed} tone={stats.missed ? "crit" : "ok"} hint="Needs follow-up" />
+          <Kpi label="Ready for staffing" value={d.loading ? "—" : stats.readyForStaffing} tone="ok" hint="Cleared to assign" />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          {/* MAIN */}
+          <div className="space-y-6 min-w-0">
+
+            {/* QUEUE */}
+            <section>
+              <div className="flex items-end justify-between mb-3 gap-3">
+                <div>
+                  <h2 className="text-base font-medium tracking-tight">Orientation queue</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Live new hires moving through orientation, background checks, and staffing readiness.</p>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by name, role, state…"
+                    className="w-56 h-8 pl-8 pr-3 rounded-lg bg-muted/60 border border-border/70 text-[12.5px] placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-transparent transition"
+                  />
+                </div>
+              </div>
+              <Card>
+                <div className="flex items-center gap-1.5 p-2 border-b border-border/70 overflow-x-auto">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground ml-1 mr-1" strokeWidth={1.75} />
+                  {([
+                    ["all", `All (${queueRows.length || 0})`],
+                    ["needs_schedule", `Not scheduled (${stats.needsSchedule})`],
+                    ["scheduled", "Scheduled"],
+                    ["attended", "Attended"],
+                    ["missed", `Missed (${stats.missed})`],
+                    ["ready", "Ready for staffing"],
+                  ] as [FilterKey, string][]).map(([k, label]) => (
+                    <button
+                      key={k}
+                      onClick={() => setFilter(k)}
+                      className={cn(
+                        "h-7 px-3 rounded-lg text-[12px] transition-colors whitespace-nowrap",
+                        filter === k ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >{label}</button>
+                  ))}
+                </div>
+                {d.loading ? (
+                  <div className="p-6"><p className="text-sm text-muted-foreground">Loading…</p></div>
+                ) : queueRows.length === 0 ? (
+                  <Empty
+                    icon={CheckCircle2}
+                    title="All upcoming orientations are ready."
+                    hint="No new hires match this filter right now."
+                  />
+                ) : (
+                  <ul className="divide-y divide-border/70">
+                    {queueRows.slice(0, 30).map(({ c, slot, bg, sStatus }) => (
+                      <li key={c.id}>
+                        <button
+                          onClick={() => setOpenCandId(c.id)}
+                          className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/40 transition-colors"
+                        >
+                          <div className="h-8 w-8 rounded-xl bg-muted grid place-items-center shrink-0 text-[11px] font-medium">
+                            {c.first_name[0]}{c.last_name[0]}
+                          </div>
+                          <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-[1.2fr_1.4fr_auto] gap-2 md:gap-4 items-center">
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-medium tracking-tight truncate">{c.first_name} {c.last_name}</p>
+                              <p className="text-[11.5px] text-muted-foreground truncate">{c.role ?? "—"} · {c.state ?? "—"}</p>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[13px] truncate">
+                                {slot ? `${fmtDate(slot.scheduled_date)} · ${slot.scheduled_time ?? ""}` : "Orientation not scheduled"}
+                              </p>
+                              <p className="text-[11.5px] text-muted-foreground truncate">
+                                Stage: {c.pipeline_stage ?? "—"} · BG: {bg?.status ?? "Not started"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Pill tone={sStatus.tone}>{sStatus.label}</Pill>
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            </section>
+
+            {/* SESSIONS */}
+            <section>
+              <div className="flex items-end justify-between mb-3">
+                <div>
+                  <h2 className="text-base font-medium tracking-tight">Orientation sessions</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Upcoming and recent sessions with attendance.</p>
+                </div>
+              </div>
+              {d.loading ? (
+                <Card className="p-6"><p className="text-sm text-muted-foreground">Loading…</p></Card>
+              ) : sessions.length === 0 ? (
+                <Card className="p-6">
+                  <Empty icon={Calendar} title="No orientation sessions yet." hint="Create the first session to start coordinating new hires." />
+                </Card>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {sessions.map(sess => {
+                    const completed = sess.slots.filter(s => (s.status ?? "").toLowerCase() === "completed").length;
+                    const missed = sess.slots.filter(s => ["missed","no_show","no-show"].includes((s.status ?? "").toLowerCase())).length;
+                    const total = sess.slots.length;
+                    const days = daysFromToday(sess.date);
+                    const isPast = days != null && days < 0;
+                    return (
+                      <Card key={sess.key} className="p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                              {isPast ? "Past session" : days === 0 ? "Today" : "Upcoming"}
+                            </p>
+                            <h3 className="text-[14.5px] font-medium tracking-tight mt-1 truncate">
+                              {fmtDate(sess.date)} · {sess.time ?? ""}
+                            </h3>
+                            <p className="text-[12px] text-muted-foreground mt-0.5 inline-flex items-center gap-1">
+                              {sess.format?.toLowerCase().includes("virtual")
+                                ? <Video className="h-3 w-3" strokeWidth={1.75} />
+                                : <MapPin className="h-3 w-3" strokeWidth={1.75} />}
+                              {sess.format ?? "—"}
+                            </p>
+                          </div>
+                          <Pill tone={isPast ? "muted" : "info"}>{total} attendee{total === 1 ? "" : "s"}</Pill>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px]">
+                          <div className="rounded-lg bg-muted/60 px-2 py-1.5">
+                            <span className="text-muted-foreground">Attended</span>
+                            <p className="font-medium text-emerald-700 dark:text-emerald-400">{completed}</p>
+                          </div>
+                          <div className="rounded-lg bg-muted/60 px-2 py-1.5">
+                            <span className="text-muted-foreground">Missed</span>
+                            <p className={cn("font-medium", missed ? "text-destructive" : "")}>{missed}</p>
+                          </div>
+                          <div className="rounded-lg bg-muted/60 px-2 py-1.5">
+                            <span className="text-muted-foreground">Pending</span>
+                            <p className="font-medium">{total - completed - missed}</p>
+                          </div>
+                        </div>
+                        <ul className="mt-3 space-y-1.5">
+                          {sess.slots.slice(0, 5).map(s => {
+                            const c = s.candidate_id ? candById[s.candidate_id] : undefined;
+                            const st = slotStatusTone(s.status, null);
+                            return (
+                              <li key={s.id} className="flex items-center justify-between text-[12.5px]">
+                                <button
+                                  onClick={() => c && setOpenCandId(c.id)}
+                                  className="truncate text-left hover:text-primary transition-colors"
+                                >
+                                  {c ? `${c.first_name} ${c.last_name}` : "Unknown candidate"}
+                                  <span className="text-muted-foreground"> · {c?.role ?? "—"}</span>
+                                </button>
+                                <Pill tone={st.tone}>{st.label}</Pill>
+                              </li>
+                            );
+                          })}
+                          {sess.slots.length > 5 && (
+                            <li className="text-[11.5px] text-muted-foreground">+{sess.slots.length - 5} more</li>
+                          )}
+                        </ul>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* READINESS BLOCKERS */}
+            <section>
+              <h2 className="text-base font-medium tracking-tight mb-3">Readiness blockers</h2>
+              <Card>
+                {d.loading ? (
+                  <div className="p-6"><p className="text-sm text-muted-foreground">Loading…</p></div>
+                ) : blockers.length === 0 ? (
+                  <Empty icon={CheckCircle2} title="No onboarding blockers right now." hint="Everyone is progressing smoothly." />
+                ) : (
+                  <ul className="divide-y divide-border/70">
+                    {blockers.map((b, i) => (
+                      <li key={i} className="px-4 py-3 flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 grid place-items-center shrink-0">
+                          <AlertCircle className="h-4 w-4" strokeWidth={1.75} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-medium tracking-tight truncate">
+                            {b.who} <span className="text-muted-foreground font-normal">· {b.role ?? "—"}</span>
+                          </p>
+                          <p className="text-[11.5px] text-muted-foreground truncate">{b.kind}: {b.detail}</p>
+                        </div>
+                        {b.days != null && b.days > 0 && <Pill tone="warn">{b.days}d waiting</Pill>}
+                        {b.candId && (
+                          <button onClick={() => setOpenCandId(b.candId!)} className="h-7 px-2.5 rounded-lg text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                            Open
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            </section>
+
+            {/* STAFFING READINESS */}
+            <section>
+              <div className="flex items-end justify-between mb-3">
+                <h2 className="text-base font-medium tracking-tight">Staffing readiness</h2>
+                <Link to="/staffing" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                  Open staffing <ArrowRight className="h-3 w-3" strokeWidth={1.75} />
+                </Link>
+              </div>
+              {d.loading ? (
+                <Card className="p-6"><p className="text-sm text-muted-foreground">Loading…</p></Card>
+              ) : readiness.length === 0 ? (
+                <Card className="p-6">
+                  <Empty icon={UserCheck} title="No new hires in flight." hint="Readiness will appear here as candidates progress." />
+                </Card>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {readiness.slice(0, 9).map(r => (
+                    <Card key={r.c.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[13.5px] font-medium tracking-tight truncate">{r.c.first_name} {r.c.last_name}</p>
+                          <p className="text-[11.5px] text-muted-foreground truncate">{r.c.role ?? "—"} · {r.c.state ?? "—"}</p>
+                        </div>
+                        <Pill tone={r.status.tone}>{r.status.label}</Pill>
+                      </div>
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                          <span>Readiness</span>
+                          <span className="tabular-nums">{r.pct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              r.status.tone === "ok" ? "bg-emerald-500"
+                              : r.status.tone === "info" ? "bg-primary"
+                              : r.status.tone === "warn" ? "bg-amber-500"
+                              : "bg-destructive",
+                            )}
+                            style={{ width: `${r.pct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setOpenCandId(r.c.id)}
+                        className="mt-3 text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                      >
+                        Open <ChevronRight className="h-3 w-3" />
+                      </button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* RIGHT RAIL */}
+          <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.75} />
+                <h3 className="text-sm font-medium tracking-tight">Ask Blossom AI</h3>
+              </div>
+              <p className="text-[12px] text-muted-foreground mb-3">
+                Orientation assistant — scoped to HR Team data and permissions.
+              </p>
+              <ul className="space-y-1.5">
+                {[
+                  "Who missed orientation?",
+                  "Who is blocked from readiness?",
+                  "Show pending orientation follow-ups.",
+                  "Which employees are almost staffing ready?",
+                  "Who still needs orientation scheduled?",
+                ].map(p => (
+                  <li key={p}>
+                    <button className="w-full text-left text-[12.5px] rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors">{p}</button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            <Card className="p-5">
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
+              <nav className="space-y-1">
+                {[
+                  { label: "New Hires", to: "/hr/new-hires", icon: Users },
+                  { label: "Employee Support", to: "/hr/employee-support", icon: MessageSquare },
+                  { label: "Training & Certifications", to: "/hr/training-certifications", icon: GraduationCap },
+                  { label: "Compliance & Documents", to: "/hr/compliance", icon: ShieldCheck },
+                ].map(l => (
+                  <Link key={l.label} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
+                    <span className="inline-flex items-center gap-2">
+                      <l.icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} /> {l.label}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                  </Link>
+                ))}
+              </nav>
+            </Card>
+
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                <h3 className="text-[12px] font-medium tracking-tight">Operational note</h3>
+              </div>
+              <p className="text-[12px] text-muted-foreground">
+                Orientation hands off to Onboarding (Viventium) and Training Academy. Mark attendance to unlock staffing readiness.
+              </p>
+            </Card>
+          </aside>
+        </div>
+      </div>
+
+      {/* Detail panel */}
+      {openCand && (
+        <DetailPanel
+          cand={openCand}
+          slot={openSlot}
+          bg={openBg}
+          onClose={() => setOpenCandId(null)}
+        />
+      )}
+    </OSShell>
+  );
+}
+
+/* ---------------- detail panel ---------------- */
+function DetailPanel({
+  cand, slot, bg, onClose,
+}: {
+  cand: Candidate; slot?: Slot; bg?: BgCheck; onClose: () => void;
+}) {
+  const days = daysFromToday(slot?.scheduled_date ?? null);
+  const slotSt = slotStatusTone(slot?.status ?? (slot ? null : "not_scheduled"), days);
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-foreground/10 backdrop-blur-[2px]" />
+      <div className="relative w-full max-w-xl h-full bg-card border-l border-border/70 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-200">
+        <header className="sticky top-0 bg-card/95 backdrop-blur border-b border-border/70 px-6 py-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Orientation · {cand.pipeline_stage ?? "—"}</p>
+            <h2 className="text-lg font-semibold tracking-tight mt-0.5 truncate">{cand.first_name} {cand.last_name}</h2>
+            <p className="text-[12px] text-muted-foreground truncate">{cand.role ?? "—"} · {cand.state ?? "—"} {cand.city ? `· ${cand.city}` : ""}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Pill tone={slotSt.tone}>{slotSt.label}</Pill>
+            <button onClick={onClose} className="h-8 w-8 rounded-full grid place-items-center hover:bg-muted transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* Status grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3">
+              <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Orientation</p>
+              <p className="text-[13.5px] font-medium mt-0.5">{slot ? `${fmtDate(slot.scheduled_date)} · ${slot.scheduled_time ?? ""}` : "Not scheduled"}</p>
+              {slot?.format && <p className="text-[11.5px] text-muted-foreground mt-0.5">{slot.format}</p>}
+            </Card>
+            <Card className="p-3">
+              <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Background check</p>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <Pill tone={bgTone(bg?.status ?? null)}>{bg?.status ?? "Not started"}</Pill>
+              </div>
+              {bg?.blocker && <p className="text-[11.5px] text-destructive mt-0.5 truncate">{bg.blocker}</p>}
+            </Card>
+            <Card className="p-3">
+              <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Recruiter</p>
+              <p className="text-[13.5px] font-medium mt-0.5 truncate">{cand.recruiter ?? "Unassigned"}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground">Applied</p>
+              <p className="text-[13.5px] font-medium mt-0.5">{fmtDate(cand.applied_date)}</p>
+            </Card>
+          </div>
+
+          {/* Next action */}
+          {cand.next_action && (
+            <Card className="p-4">
+              <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground mb-1">Next action</p>
+              <p className="text-[13px]">{cand.next_action}</p>
+              {cand.next_action_due && <p className="text-[11.5px] text-muted-foreground mt-1">Due {fmtDate(cand.next_action_due)}</p>}
+            </Card>
+          )}
+
+          {/* Notes */}
+          {(slot?.notes || cand.email) && (
+            <Card className="p-4 space-y-2">
+              {cand.email && <p className="text-[12.5px] text-muted-foreground truncate">{cand.email}</p>}
+              {slot?.notes && <p className="text-[12.5px]">{slot.notes}</p>}
+            </Card>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <ActionBtn icon={Calendar}>Reschedule</ActionBtn>
+            <ActionBtn icon={Send}>Send reminder</ActionBtn>
+            <ActionBtn icon={MessageSquare}>Message employee</ActionBtn>
+            <ActionBtn icon={UserCheck} primary>Mark ready</ActionBtn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionBtn({ icon: Icon, children, primary }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean }) {
+  const cls = primary
+    ? "bg-primary text-primary-foreground hover:opacity-90"
+    : "text-foreground border border-border/70 bg-card hover:bg-muted";
+  return (
+    <button className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
+    </button>
   );
 }
