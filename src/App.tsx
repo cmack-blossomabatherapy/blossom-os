@@ -364,6 +364,7 @@ const App = () => (
                   <Route path="/qa-team" element={<OSQATeam />} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
                   <Route path="/qa-queue" element={<OSQAQueue />} />
+                  <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
