@@ -253,7 +253,7 @@ const queryClient = new QueryClient();
 function ClientsRouter() {
   const { role } = useOSRole();
   if (role === "intake_coordinator") return <OSIntakeClients />;
-  if (role === "qa_team" || role === "qa_compliance") return <OSQAClients />;
+  if (role === "qa_team") return <OSQAClients />;
   return <OSClientsOperations />;
 }
 
