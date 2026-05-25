@@ -7,6 +7,7 @@ import {
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
   History as HistoryIcon, Search, Compass, Lock, Bot, LogOut, Home, Library, User as UserIcon,
+  Inbox, AlertTriangle, MessageSquare, Flame, Eye,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -257,6 +258,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isBcbaOnly =
     osRole === "bcba" ||
     (roles.includes("bcba") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // QA Team gets a curated operational menu focused on auth/PR review, client oversight,
+  // BCBA coordination, escalations, and supervision visibility.
+  const isQaOnly =
+    osRole === "qa_team" ||
+    (roles.includes("qa") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -338,6 +344,56 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
+  // QA Team curated sections.
+  const qaSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard", icon: LayoutDashboard, path: "/qa-team", perm: "" },
+        { label: "QA Workspace", icon: Workflow, path: "/qa-workspace", perm: "" },
+        { label: "QA Queue", icon: Inbox, path: "/qa-queue", perm: "" },
+        { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+      ],
+    },
+    {
+      title: "Review Workflows",
+      items: [
+        { label: "Authorization Reviews", icon: ShieldCheck, path: "/authorization-reviews", perm: "" },
+        { label: "Progress Reports", icon: FileText, path: "/progress-reports", perm: "" },
+        { label: "Treatment Plan Reviews", icon: ClipboardCheck, path: "/treatment-plan-reviews", perm: "" },
+        { label: "Missing Information", icon: AlertTriangle, path: "/missing-information", perm: "" },
+        { label: "Expiring Items", icon: Clock, path: "/expiring-items", perm: "" },
+      ],
+    },
+    {
+      title: "Client Oversight",
+      items: [
+        { label: "Clients", icon: UserCheck, path: "/qa-clients", perm: "" },
+        { label: "Assigned BCBAs", icon: UsersRound, path: "/assigned-bcbas", perm: "" },
+        { label: "Supervision Visibility", icon: Eye, path: "/supervision-visibility", perm: "" },
+      ],
+    },
+    {
+      title: "Communication",
+      items: [
+        { label: "Messages & Updates", icon: MessageSquare, path: "/qa-messages", perm: "" },
+        { label: "Escalations & Follow-Ups", icon: Flame, path: "/escalations-followups", perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/qa/resources", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
   const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
@@ -348,6 +404,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? schedulingSections
     : isBcbaOnly
     ? bcbaSections
+    : isQaOnly
+    ? qaSections
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
