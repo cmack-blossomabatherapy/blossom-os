@@ -5820,6 +5820,537 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiting_background_checks: {
+        Row: {
+          blocker: string | null
+          candidate_id: string
+          cleared_at: string | null
+          created_at: string
+          id: string
+          initiated_at: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          blocker?: string | null
+          candidate_id: string
+          cleared_at?: string | null
+          created_at?: string
+          id?: string
+          initiated_at?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          blocker?: string | null
+          candidate_id?: string
+          cleared_at?: string | null
+          created_at?: string
+          id?: string
+          initiated_at?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_background_checks_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_candidates: {
+        Row: {
+          applied_date: string
+          city: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          is_archived: boolean
+          last_name: string
+          next_action: string | null
+          next_action_due: string | null
+          notes: string | null
+          phone: string | null
+          pipeline_stage: Database["public"]["Enums"]["recruiting_pipeline_stage"]
+          rating: number | null
+          recruiter: string | null
+          recruiter_user_id: string | null
+          resume_url: string | null
+          role: Database["public"]["Enums"]["recruiting_role"]
+          source: string | null
+          stage_entered_at: string
+          state: Database["public"]["Enums"]["recruiting_state"]
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          applied_date?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          is_archived?: boolean
+          last_name: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: Database["public"]["Enums"]["recruiting_pipeline_stage"]
+          rating?: number | null
+          recruiter?: string | null
+          recruiter_user_id?: string | null
+          resume_url?: string | null
+          role?: Database["public"]["Enums"]["recruiting_role"]
+          source?: string | null
+          stage_entered_at?: string
+          state?: Database["public"]["Enums"]["recruiting_state"]
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          applied_date?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          is_archived?: boolean
+          last_name?: string
+          next_action?: string | null
+          next_action_due?: string | null
+          notes?: string | null
+          phone?: string | null
+          pipeline_stage?: Database["public"]["Enums"]["recruiting_pipeline_stage"]
+          rating?: number | null
+          recruiter?: string | null
+          recruiter_user_id?: string | null
+          resume_url?: string | null
+          role?: Database["public"]["Enums"]["recruiting_role"]
+          source?: string | null
+          stage_entered_at?: string
+          state?: Database["public"]["Enums"]["recruiting_state"]
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      recruiting_escalations: {
+        Row: {
+          candidate_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          opened_at: string
+          owner: string | null
+          reason: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          owner?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          owner?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_escalations_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_followups: {
+        Row: {
+          candidate_id: string | null
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          owner: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          owner?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          owner?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_followups_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_interviews: {
+        Row: {
+          candidate_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          interview_type: string
+          notes: string | null
+          outcome: string | null
+          panel: string | null
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          interview_type?: string
+          notes?: string | null
+          outcome?: string | null
+          panel?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          interview_type?: string
+          notes?: string | null
+          outcome?: string | null
+          panel?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_interviews_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_messages: {
+        Row: {
+          body: string
+          candidate_id: string
+          channel: string
+          created_at: string
+          direction: string
+          id: string
+          sender: string | null
+          sent_at: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          body: string
+          candidate_id: string
+          channel?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          sender?: string | null
+          sent_at?: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string
+          candidate_id?: string
+          channel?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          sender?: string | null
+          sent_at?: string
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_messages_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_offers: {
+        Row: {
+          accepted_at: string | null
+          candidate_id: string
+          created_at: string
+          declined_at: string | null
+          hourly_rate: number | null
+          hours_per_week: number | null
+          id: string
+          notes: string | null
+          sent_at: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          candidate_id: string
+          created_at?: string
+          declined_at?: string | null
+          hourly_rate?: number | null
+          hours_per_week?: number | null
+          id?: string
+          notes?: string | null
+          sent_at?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          candidate_id?: string
+          created_at?: string
+          declined_at?: string | null
+          hourly_rate?: number | null
+          hours_per_week?: number | null
+          id?: string
+          notes?: string | null
+          sent_at?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_offers_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_onboarding_tasks: {
+        Row: {
+          candidate_id: string
+          category: string | null
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          position: number | null
+          task_key: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          category?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          position?: number | null
+          task_key: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          category?: string | null
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          position?: number | null
+          task_key?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_onboarding_tasks_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_orientation_slots: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          format: string | null
+          id: string
+          notes: string | null
+          scheduled_date: string | null
+          scheduled_time: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          format?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          format?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_orientation_slots_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recruiting_staffing_needs: {
+        Row: {
+          client_label: string
+          created_at: string
+          filled_at: string | null
+          hours_per_week: number | null
+          id: string
+          matched_candidate_id: string | null
+          notes: string | null
+          opened_at: string
+          priority: string | null
+          role_needed: Database["public"]["Enums"]["recruiting_role"]
+          state: Database["public"]["Enums"]["recruiting_state"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_label: string
+          created_at?: string
+          filled_at?: string | null
+          hours_per_week?: number | null
+          id?: string
+          matched_candidate_id?: string | null
+          notes?: string | null
+          opened_at?: string
+          priority?: string | null
+          role_needed?: Database["public"]["Enums"]["recruiting_role"]
+          state?: Database["public"]["Enums"]["recruiting_state"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_label?: string
+          created_at?: string
+          filled_at?: string | null
+          hours_per_week?: number | null
+          id?: string
+          matched_candidate_id?: string | null
+          notes?: string | null
+          opened_at?: string
+          priority?: string | null
+          role_needed?: Database["public"]["Enums"]["recruiting_role"]
+          state?: Database["public"]["Enums"]["recruiting_state"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recruiting_staffing_needs_matched_candidate_id_fkey"
+            columns: ["matched_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "recruiting_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recruiting_workflow_stages: {
         Row: {
           board: string
@@ -7305,6 +7836,7 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: undefined
       }
+      recruiting_can_write: { Args: { _user_id: string }; Returns: boolean }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
       resolve_alert_sla: {
         Args: { _alert_type: string; _payor: string; _state: string }
@@ -7729,6 +8261,32 @@ export type Database = {
         | "Submitted"
         | "Approved"
         | "Denied"
+      recruiting_pipeline_stage:
+        | "New Applicant"
+        | "Phone Screen"
+        | "Interview Scheduled"
+        | "Interview Complete"
+        | "Offer Sent"
+        | "Offer Accepted"
+        | "Background Check"
+        | "Orientation Scheduled"
+        | "Onboarding"
+        | "Ready to Staff"
+        | "Staffed"
+        | "Withdrawn"
+        | "Rejected"
+        | "On Hold"
+      recruiting_role: "RBT" | "BCBA" | "BT" | "Other"
+      recruiting_state:
+        | "GA"
+        | "NC"
+        | "TN"
+        | "VA"
+        | "MD"
+        | "FL"
+        | "TX"
+        | "SC"
+        | "Other"
       review_rating:
         | "exceeds"
         | "meets"
@@ -8365,6 +8923,34 @@ export const Constants = {
         "Submitted",
         "Approved",
         "Denied",
+      ],
+      recruiting_pipeline_stage: [
+        "New Applicant",
+        "Phone Screen",
+        "Interview Scheduled",
+        "Interview Complete",
+        "Offer Sent",
+        "Offer Accepted",
+        "Background Check",
+        "Orientation Scheduled",
+        "Onboarding",
+        "Ready to Staff",
+        "Staffed",
+        "Withdrawn",
+        "Rejected",
+        "On Hold",
+      ],
+      recruiting_role: ["RBT", "BCBA", "BT", "Other"],
+      recruiting_state: [
+        "GA",
+        "NC",
+        "TN",
+        "VA",
+        "MD",
+        "FL",
+        "TX",
+        "SC",
+        "Other",
       ],
       review_rating: [
         "exceeds",

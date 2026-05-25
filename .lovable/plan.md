@@ -1,61 +1,44 @@
-## RBT Role Buildout — Confirmed Principles
 
-Before writing code, confirming the RBT role is governed by:
+## Recruiting Team — Audit & Real Backend Plan
 
-- **Role-scoped** — only see RBT-relevant pages, no leadership/finance/recruiting/HR-admin surfaces
-- **Assignment-scoped** — only their assigned clients, schedule, BCBA, supervision, training
-- **Mobile-first** — primary surface is one-thumb usable; desktop is a graceful upgrade
-- **Extremely simple** — daily clarity over analytics; no KPI walls, no charts unless they answer "what do I do next?"
-- **Focused on**: today's schedule, assigned clients, session support, training, communication, help/escalations
+The Recruiting Team module has **17 pages** wired up at clean routes (`/recruiting/*`) with a working sidebar nav. Everything renders, drag-and-drop stage moves persist, and interview checklists persist. **Every other page still runs on per-file static mock arrays.** There is no `candidates` table — only `recruiting_workflow_stages` and `interview_outcome_checks`.
 
-If anything above is wrong, say so and I'll adjust before building.
+Making "all data real" means designing one shared candidate domain, seeding it with realistic Blossom data, and rewriting each page to read/write from it. That is a large body of work. Here is how I will phase it so it lands correctly without breaking what already works.
 
----
+### Phase 0 — Audit pass (no code changes)
+- Confirm every sidebar link routes to a real page (✅ confirmed — all 17 routes exist in `App.tsx`).
+- Confirm cross-page links (Team → Pipeline, Pipeline → Interviews, etc.) are intact.
+- Catalog the data shape every page invents locally so the unified schema covers them all.
 
-## Phased Build (this chat = phase 1)
+### Phase 1 — Foundation: real candidate backend
+- **Migration**: create `recruiting_candidates` (identity, role RBT/BCBA, state, pipeline stage, source, recruiter, dates), `recruiting_interviews`, `recruiting_offers`, `recruiting_onboarding_tasks`, `recruiting_background_checks`, `recruiting_orientation_slots`, `recruiting_staffing_needs`, `recruiting_followups`, `recruiting_escalations`, `recruiting_messages`. RLS: authenticated read; recruiter/admin write.
+- **Seed** ~30 realistic candidates across GA/NC/TN/VA/MD with the full lifecycle populated (some in pipeline, some interviewing, some offered, some onboarding, some BG-check, some orientation-ready, some staffed). This is realistic operational data — not Lorem.
+- **Shared hook** `useRecruitingCandidates()` with filters + realtime, used by every page.
 
-### Phase 1 — Right now
-1. **Rebuild the RBT sidebar** in `OSShell.tsx` with the exact RBT menu (Home / Clients & Sessions / Communication / Resources / AI).
-2. **Rebuild `/rbt` Dashboard** (`OSRBT.tsx`) — strip the current "mission control" page back to a calm, mobile-first daily-clarity dashboard:
-   - Greeting + today's date
-   - Next session card (single focal point)
-   - Today's schedule (compact list, 1 line per session)
-   - Schedule changes / cancellations alert (if any)
-   - Supervision reminder (assigned BCBA + next touchpoint)
-   - 1 training reminder (next due)
-   - Quick "Need Help" button
-   - No analytics, no wellness gauge, no team comparison, no AI sparkles panel
-3. **Add placeholder routes** for the rest of the RBT menu so navigation never 404s.
+### Phase 2 — Pipeline + Workspace + Team dashboard
+Rewire these three (the entry points) onto `useRecruitingCandidates`. Drag-and-drop already persists; now the candidates themselves do.
 
-### Phase 2 — Next chats (one page per turn, in order)
-- My Day (execution home — session check-in flow)
-- My Schedule
-- My Clients
-- Session Support
-- Supervision
-- Messages & Updates
-- Need Help / Escalations
-- RBT Training Academy journey
-- RBT-scoped Resource Library view
-- RBT-scoped Ask Blossom AI prompts
+### Phase 3 — Interviews, Offers, Onboarding, Background, Orientation
+Rewire the per-stage operational pages. Each becomes a filtered view + the stage-specific child table (interview slots, offer terms, BG status, orientation date, onboarding tasks).
 
-### Phase 3 — Data wiring
-Replace mock data with real assignments from existing CentralReach / `useCentralReachOps` / `bcbaCaseload` hooks, scoped to `auth.user_id` → assigned RBT record.
+### Phase 4 — Staffing Needs, RBT, BCBA, Performance
+Rewire the staffing/role-specific views. Performance pulls real aggregates from the candidates + interviews + offers tables.
 
----
+### Phase 5 — Follow-Ups, Escalations, Messages
+These are operational comm/workflow tables — wire to their own seeded tables plus realtime.
 
-## Technical notes
+### Phase 6 — Verification
+- Click every sidebar item, confirm no errors and real data renders.
+- Verify cross-page deep links (`?queue=`, `?stage=`, `?candidate=`) resolve correctly.
+- Run the Supabase linter; fix any RLS findings.
 
-- Reuse `OSShell` — add a new `RBT_SECTIONS` array and route on `role === "rbt"` (same pattern as `BCBA_SECTIONS`).
-- New routes: `/rbt/my-day`, `/rbt/clients`, `/rbt/schedule`, `/rbt/session-support`, `/rbt/supervision`, `/rbt/messages`, `/rbt/help`, `/rbt/training-academy`, `/rbt/resources`. AI uses existing `/ai/assistant`.
-- Mobile-first: dashboard built at `375px` baseline, scales up. No horizontal scroll, tap targets ≥ 44px.
-- Design tokens only (no raw colors). Apple-calm aesthetic per Blossom OS design system.
-- Strip the existing `OSRBT.tsx` decoratively-heavy hero, AI panel, wellness gauge, performance sparklines, badges, and "Daily Mission Control" branding. Save as backup? — No, replace; we can always revert.
+### Scope note
+Phase 1 alone is ~10 tables, RLS, ~30 seeded candidates with full child records, and one shared hook. Phases 2–5 each rewrite 3–5 large page files (600–800 lines each). I will execute **Phase 0 + Phase 1** in this response (migration + seed + hook), then continue Phase 2+ in follow-up turns so each phase is reviewable and the app never breaks mid-flight.
 
----
+### Technical details
+- Tables use `gen_random_uuid()` PKs, `created_at`/`updated_at`, `updated_at` triggers, and the existing role pattern (no roles on profiles).
+- Realtime publication added for tables that need live drag/drop sync.
+- Hook lives at `src/hooks/useRecruitingCandidates.ts`; child-record hooks live alongside it.
+- Existing `recruiting_workflow_stages` and `interview_outcome_checks` are kept; they continue to override the canonical stage when a recruiter has dragged a card.
 
-## Open questions (answer only if you want different defaults)
-
-1. Keep the rich "right rail" on the dashboard or drop it entirely for calm? (Default: **drop it** on the dashboard; My Day will have a small "support" rail.)
-2. For the "Need Help" entry — separate page (default) or a global modal triggered from every page?
-3. Real-data wiring: do it now (Phase 1) or after all pages have shape (Phase 3, default)?
+Proceed with Phase 0 audit + Phase 1 (schema, seed, hook)?
