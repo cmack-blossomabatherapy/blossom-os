@@ -197,6 +197,7 @@ import OSQAExpiring from "./pages/os/OSQAExpiring";
 import OSQAClients from "./pages/os/OSQAClients";
 import OSQABCBAs from "./pages/os/OSQABCBAs";
 import OSQASupervision from "./pages/os/OSQASupervision";
+import OSQAMessages from "./pages/os/OSQAMessages";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
@@ -380,6 +381,7 @@ const App = () => (
                   <Route path="/expiring-items" element={<OSQAExpiring />} />
                   <Route path="/assigned-bcbas" element={<OSQABCBAs />} />
                   <Route path="/supervision-visibility" element={<OSQASupervision />} />
+                  <Route path="/qa-messages" element={<OSQAMessages />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
