@@ -385,7 +385,7 @@ const App = () => (
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
                   <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
                   <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />
-                  <Route path="/recruiting/orientation"    element={<OSPlaceholder title="Orientation Queue" description="Orientation scheduling and attendance." icon={Clock} />} />
+                  <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSPlaceholder title="Open Staffing Needs" description="Demand vs supply by region — escalations and placements." icon={AlertTriangle} />} />
                   <Route path="/recruiting/rbt"            element={<OSPlaceholder title="RBT Recruiting" description="RBT pipeline, screening, and onboarding." icon={UserPlus} />} />
                   <Route path="/recruiting/bcba"           element={<OSPlaceholder title="BCBA Recruiting" description="BCBA pipeline, credentialing, and placement." icon={UsersRound} />} />
