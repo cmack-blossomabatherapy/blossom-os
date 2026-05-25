@@ -361,6 +361,15 @@ const App = () => (
                   <Route path="/bcba/resources" element={<OSBCBAResources />} />
                   <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
                   <Route path="/rbt" element={<OSRBT />} />
+                  <Route path="/rbt/my-day" element={<OSPlaceholder title="My Day" description="Your session-by-session execution view for today. Check in, prep, and wrap each session." icon={Radio} />} />
+                  <Route path="/rbt/training-academy" element={<OSPlaceholder title="Training Academy" description="Your RBT learning journey — required and recommended training." icon={GraduationCap} />} />
+                  <Route path="/rbt/clients" element={<OSPlaceholder title="My Clients" description="Clients assigned to you — focus areas, notes, and your assigned BCBA." icon={UserCheck} />} />
+                  <Route path="/rbt/schedule" element={<OSPlaceholder title="My Schedule" description="Your upcoming sessions, dates, locations and any schedule changes." icon={CIcon} />} />
+                  <Route path="/rbt/session-support" element={<OSPlaceholder title="Session Support" description="Session readiness checklists, expectations, and quick links for common issues." icon={LifeBuoy} />} />
+                  <Route path="/rbt/supervision" element={<OSPlaceholder title="Supervision" description="Upcoming supervision, recent touchpoints, and support from your assigned BCBA." icon={ClipboardCheck} />} />
+                  <Route path="/rbt/messages" element={<OSPlaceholder title="Messages & Updates" description="Updates from your BCBA, schedule changes, and announcements relevant to RBTs." icon={BellRing} />} />
+                  <Route path="/rbt/help" element={<OSPlaceholder title="Need Help / Escalations" description="Fast, guided support for schedule, clinical, parent, tech, or safety concerns." icon={AlertTriangle} />} />
+                  <Route path="/rbt/resources" element={<OSPlaceholder title="Resource Library" description="RBT SOPs, session guides, communication templates, and safety resources." icon={BookOpen} />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
                   <Route path="/leads/operations" element={<OSIntakeOperations />} />
