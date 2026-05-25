@@ -194,6 +194,7 @@ import OSRecruitingBackgroundChecks from "./pages/os/OSRecruitingBackgroundCheck
 import OSRecruitingOrientation from "./pages/os/OSRecruitingOrientation";
 import OSRecruitingStaffingNeeds from "./pages/os/OSRecruitingStaffingNeeds";
 import OSRecruitingRBT from "./pages/os/OSRecruitingRBT";
+import OSRecruitingBCBA from "./pages/os/OSRecruitingBCBA";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
@@ -391,7 +392,7 @@ const App = () => (
                   <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSRecruitingStaffingNeeds />} />
                   <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
-                  <Route path="/recruiting/bcba"           element={<OSPlaceholder title="BCBA Recruiting" description="BCBA pipeline, credentialing, and placement." icon={UsersRound} />} />
+                  <Route path="/recruiting/bcba"           element={<OSRecruitingBCBA />} />
                   <Route path="/recruiting/performance"    element={<OSPlaceholder title="Recruiting Performance" description="Source, recruiter, and velocity insights." icon={BarChart3} />} />
                   <Route path="/recruiting/follow-ups"     element={<OSPlaceholder title="Hiring Follow-Ups" description="Open recruiter follow-ups across the pipeline." icon={CheckSquare} />} />
                   <Route path="/recruiting/messages"       element={<OSPlaceholder title="Messages & Updates" description="Candidate and team communication." icon={MessageSquare} />} />
