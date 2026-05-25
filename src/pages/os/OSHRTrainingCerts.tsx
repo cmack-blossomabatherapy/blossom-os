@@ -33,7 +33,7 @@ interface ModuleRow { id: string; week_id: string; title: string; module_type: s
 interface Enrollment {
   id: string; track_id: string; employee_id: string;
   status: string; current_week_id: string | null;
-  started_at: string | null; completed_at: string | null;
+  start_date: string | null;
 }
 interface Cert { id: string; track_id: string; code: string; name: string; description: string | null; }
 interface UserCert { id: string; enrollment_id: string; certificate_id: string; awarded_at: string; }
@@ -152,7 +152,7 @@ function useData() {
         supabase.from("academy_phases").select("id,track_id,name,position").order("position"),
         supabase.from("academy_weeks").select("id,phase_id,week_number,title").order("week_number"),
         supabase.from("academy_modules").select("id,week_id,title,module_type,is_required,is_archived").eq("is_archived", false),
-        supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id,started_at,completed_at"),
+        supabase.from("academy_enrollments").select("id,track_id,employee_id,status,current_week_id,start_date"),
         supabase.from("academy_certificates").select("id,track_id,code,name,description"),
         supabase.from("academy_user_certificates").select("id,enrollment_id,certificate_id,awarded_at"),
         supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
