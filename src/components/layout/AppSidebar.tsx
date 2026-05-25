@@ -406,7 +406,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Dashboard",            icon: LayoutDashboard, path: "/recruiting-team",       perm: "" },
         { label: "Recruiting Workspace", icon: Workflow,        path: "/recruiting/workspace",  perm: "" },
-        { label: "Training Academy",     icon: GraduationCap,   path: "/academy",               perm: "" },
+        { label: "Training Academy",     icon: GraduationCap,   path: "/recruiting/academy",    perm: "" },
       ],
     },
     {
