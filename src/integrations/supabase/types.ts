@@ -4221,6 +4221,39 @@ export type Database = {
           },
         ]
       }
+      interview_outcome_checks: {
+        Row: {
+          candidate_id: string
+          completed: boolean
+          completed_at: string
+          completed_by: string | null
+          created_at: string
+          id: string
+          step_key: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          completed?: boolean
+          completed_at?: string
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          step_key: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          completed?: boolean
+          completed_at?: string
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          step_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invite_email_logs: {
         Row: {
           created_at: string

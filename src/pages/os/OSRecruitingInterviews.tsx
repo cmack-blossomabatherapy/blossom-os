@@ -15,6 +15,7 @@ import {
 } from "@/data/recruitingDashboard";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
+import { useInterviewChecklist } from "@/hooks/useInterviewChecklist";
 
 // Recruiting → Candidates → Interviews
 // Calm operational interview coordination center. Wired to recruitingDashboard.ts
@@ -139,7 +140,7 @@ export default function OSRecruitingInterviews() {
   const [recruiter, setRecruiter] = useState<string>("all");
   const [source, setSource] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [checks, setChecks] = useState<Record<string, boolean[]>>({});
+  const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
 
   const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
 
@@ -220,7 +221,7 @@ export default function OSRecruitingInterviews() {
     if (id) moveStage(id, to);
   }
 
-  const selectedChecks = selected ? (checks[selected.id] ?? new Array(OUTCOME_STEPS.length).fill(false)) : [];
+  const selectedChecks = selected ? getChecks(selected.id) : [];
   const completedSteps = selectedChecks.filter(Boolean).length;
 
   return (
@@ -419,13 +420,7 @@ export default function OSRecruitingInterviews() {
           stage={stageOf(selected)}
           checks={selectedChecks}
           completedSteps={completedSteps}
-          onCheck={(i) => {
-            setChecks((m) => {
-              const arr = (m[selected.id] ?? new Array(OUTCOME_STEPS.length).fill(false)).slice();
-              arr[i] = !arr[i];
-              return { ...m, [selected.id]: arr };
-            });
-          }}
+          onCheck={(i) => toggleStep(selected.id, i)}
           onMove={(to) => moveStage(selected.id, to)}
           onClose={() => setSelectedId(null)}
         />
