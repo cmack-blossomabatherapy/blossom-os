@@ -5356,6 +5356,419 @@ export type Database = {
         }
         Relationships: []
       }
+      payroll_adjustments: {
+        Row: {
+          adjustment_type: Database["public"]["Enums"]["payroll_adjustment_type"]
+          amount: number
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          employee_id: string
+          hours: number
+          id: string
+          notes: string | null
+          payroll_run_id: string | null
+          reason: string | null
+          requested_by: string | null
+          requested_by_name: string | null
+          status: Database["public"]["Enums"]["payroll_adjustment_status"]
+          updated_at: string
+        }
+        Insert: {
+          adjustment_type?: Database["public"]["Enums"]["payroll_adjustment_type"]
+          amount?: number
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          employee_id: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          payroll_run_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: Database["public"]["Enums"]["payroll_adjustment_status"]
+          updated_at?: string
+        }
+        Update: {
+          adjustment_type?: Database["public"]["Enums"]["payroll_adjustment_type"]
+          amount?: number
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          employee_id?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          payroll_run_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          status?: Database["public"]["Enums"]["payroll_adjustment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_adjustments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_adjustments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_adjustments_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_benefits: {
+        Row: {
+          benefit_type: string
+          created_at: string
+          effective_date: string | null
+          employee_contribution: number | null
+          employee_id: string
+          employer_contribution: number | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          plan_name: string | null
+          provider: string | null
+          status: Database["public"]["Enums"]["payroll_benefit_status"]
+          updated_at: string
+        }
+        Insert: {
+          benefit_type: string
+          created_at?: string
+          effective_date?: string | null
+          employee_contribution?: number | null
+          employee_id: string
+          employer_contribution?: number | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          plan_name?: string | null
+          provider?: string | null
+          status?: Database["public"]["Enums"]["payroll_benefit_status"]
+          updated_at?: string
+        }
+        Update: {
+          benefit_type?: string
+          created_at?: string
+          effective_date?: string | null
+          employee_contribution?: number | null
+          employee_id?: string
+          employer_contribution?: number | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          plan_name?: string | null
+          provider?: string | null
+          status?: Database["public"]["Enums"]["payroll_benefit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_benefits_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_benefits_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_communications: {
+        Row: {
+          body: string | null
+          category: string
+          channel: Database["public"]["Enums"]["payroll_comm_channel"]
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          direction: Database["public"]["Enums"]["payroll_comm_direction"]
+          employee_id: string | null
+          id: string
+          related_issue_id: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string
+          channel?: Database["public"]["Enums"]["payroll_comm_channel"]
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          direction?: Database["public"]["Enums"]["payroll_comm_direction"]
+          employee_id?: string | null
+          id?: string
+          related_issue_id?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          channel?: Database["public"]["Enums"]["payroll_comm_channel"]
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          direction?: Database["public"]["Enums"]["payroll_comm_direction"]
+          employee_id?: string | null
+          id?: string
+          related_issue_id?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_communications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_communications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_communications_related_issue_id_fkey"
+            columns: ["related_issue_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_deductions: {
+        Row: {
+          amount: number
+          created_at: string
+          deduction_type: string
+          employee_id: string
+          end_date: string | null
+          frequency: Database["public"]["Enums"]["payroll_deduction_frequency"]
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["payroll_deduction_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          deduction_type: string
+          employee_id: string
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["payroll_deduction_frequency"]
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["payroll_deduction_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          deduction_type?: string
+          employee_id?: string
+          end_date?: string | null
+          frequency?: Database["public"]["Enums"]["payroll_deduction_frequency"]
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["payroll_deduction_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_deductions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_deductions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_issues: {
+        Row: {
+          category: Database["public"]["Enums"]["payroll_issue_category"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          employee_id: string | null
+          id: string
+          owner_role: string | null
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["payroll_priority"]
+          resolution: string | null
+          resolved_at: string | null
+          source: string | null
+          status: Database["public"]["Enums"]["payroll_issue_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["payroll_issue_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["payroll_priority"]
+          resolution?: string | null
+          resolved_at?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["payroll_issue_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["payroll_issue_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          owner_role?: string | null
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["payroll_priority"]
+          resolution?: string | null
+          resolved_at?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["payroll_issue_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_issues_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_issues_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_reminders: {
+        Row: {
+          audience: string
+          cadence: Database["public"]["Enums"]["payroll_reminder_cadence"]
+          created_at: string
+          id: string
+          message: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["payroll_reminder_status"]
+          target_employee_id: string | null
+          target_role: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: string
+          cadence?: Database["public"]["Enums"]["payroll_reminder_cadence"]
+          created_at?: string
+          id?: string
+          message?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["payroll_reminder_status"]
+          target_employee_id?: string | null
+          target_role?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          cadence?: Database["public"]["Enums"]["payroll_reminder_cadence"]
+          created_at?: string
+          id?: string
+          message?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["payroll_reminder_status"]
+          target_employee_id?: string | null
+          target_role?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_reminders_target_employee_id_fkey"
+            columns: ["target_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_reminders_target_employee_id_fkey"
+            columns: ["target_employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_run_items: {
         Row: {
           bonus_total: number
@@ -8209,6 +8622,40 @@ export type Database = {
         | "Approved"
         | "Declined"
         | "Not Qualified"
+      payroll_adjustment_status: "pending" | "approved" | "applied" | "rejected"
+      payroll_adjustment_type:
+        | "bonus"
+        | "correction"
+        | "retro"
+        | "reimbursement"
+        | "deduction"
+        | "other"
+      payroll_benefit_status: "pending" | "active" | "inactive" | "terminated"
+      payroll_comm_channel: "message" | "email" | "call" | "note"
+      payroll_comm_direction: "inbound" | "outbound" | "internal"
+      payroll_deduction_frequency: "per_paycheck" | "monthly" | "one_time"
+      payroll_deduction_status: "active" | "paused" | "completed" | "cancelled"
+      payroll_issue_category:
+        | "missing_time"
+        | "adjustment"
+        | "blocker"
+        | "pto_review"
+        | "benefits"
+        | "employee_question"
+        | "attendance_exception"
+        | "approval_needed"
+        | "reminder"
+        | "escalation"
+        | "other"
+      payroll_issue_status:
+        | "open"
+        | "in_progress"
+        | "resolved"
+        | "escalated"
+        | "cancelled"
+      payroll_priority: "low" | "normal" | "high" | "urgent"
+      payroll_reminder_cadence: "weekly" | "biweekly" | "one_time"
+      payroll_reminder_status: "draft" | "scheduled" | "sent" | "cancelled"
       payroll_run_status:
         | "open"
         | "ready"
@@ -8866,6 +9313,43 @@ export const Constants = {
         "Declined",
         "Not Qualified",
       ],
+      payroll_adjustment_status: ["pending", "approved", "applied", "rejected"],
+      payroll_adjustment_type: [
+        "bonus",
+        "correction",
+        "retro",
+        "reimbursement",
+        "deduction",
+        "other",
+      ],
+      payroll_benefit_status: ["pending", "active", "inactive", "terminated"],
+      payroll_comm_channel: ["message", "email", "call", "note"],
+      payroll_comm_direction: ["inbound", "outbound", "internal"],
+      payroll_deduction_frequency: ["per_paycheck", "monthly", "one_time"],
+      payroll_deduction_status: ["active", "paused", "completed", "cancelled"],
+      payroll_issue_category: [
+        "missing_time",
+        "adjustment",
+        "blocker",
+        "pto_review",
+        "benefits",
+        "employee_question",
+        "attendance_exception",
+        "approval_needed",
+        "reminder",
+        "escalation",
+        "other",
+      ],
+      payroll_issue_status: [
+        "open",
+        "in_progress",
+        "resolved",
+        "escalated",
+        "cancelled",
+      ],
+      payroll_priority: ["low", "normal", "high", "urgent"],
+      payroll_reminder_cadence: ["weekly", "biweekly", "one_time"],
+      payroll_reminder_status: ["draft", "scheduled", "sent", "cancelled"],
       payroll_run_status: [
         "open",
         "ready",
