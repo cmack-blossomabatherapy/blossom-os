@@ -202,6 +202,7 @@ import OSRecruitingEscalations from "./pages/os/OSRecruitingEscalations";
 import OSRecruitingResources from "./pages/os/OSRecruitingResources";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSHRWorkspace from "./pages/os/OSHRWorkspace";
+import OSHRTrainingAcademy from "./pages/os/OSHRTrainingAcademy";
 import OSHRNewHires from "./pages/os/OSHRNewHires";
 import OSHREmployeeSupport from "./pages/os/OSHREmployeeSupport";
 import OSHRTrainingCerts from "./pages/os/OSHRTrainingCerts";
