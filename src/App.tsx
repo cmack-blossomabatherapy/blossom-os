@@ -192,6 +192,7 @@ import OSQAQueue from "./pages/os/OSQAQueue";
 import OSQAAuthReviews from "./pages/os/OSQAAuthReviews";
 import OSQAProgressReports from "./pages/os/OSQAProgressReports";
 import OSQATreatmentPlans from "./pages/os/OSQATreatmentPlans";
+import OSQAMissingInfo from "./pages/os/OSQAMissingInfo";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
@@ -369,6 +370,7 @@ const App = () => (
                   <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
                   <Route path="/progress-reports" element={<OSQAProgressReports />} />
                   <Route path="/treatment-plan-reviews" element={<OSQATreatmentPlans />} />
+                  <Route path="/missing-information" element={<OSQAMissingInfo />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
