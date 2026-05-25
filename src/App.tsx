@@ -188,6 +188,7 @@ import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSQAWorkspace from "./pages/os/OSQAWorkspace";
+import OSQAQueue from "./pages/os/OSQAQueue";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
