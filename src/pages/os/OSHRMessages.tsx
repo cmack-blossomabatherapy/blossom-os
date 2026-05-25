@@ -847,7 +847,7 @@ export default function OSHRMessages() {
                 </button>
               </div>
 
-              <Link to="/os/hr/employee-support" className="inline-flex items-center gap-1.5 text-[12px] text-primary hover:opacity-80">
+              <Link to="/hr/employee-support" className="inline-flex items-center gap-1.5 text-[12px] text-primary hover:opacity-80">
                 <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} /> Open employee record <ChevronRight className="h-3 w-3" strokeWidth={1.75} />
               </Link>
             </div>

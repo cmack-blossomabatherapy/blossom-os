@@ -462,8 +462,8 @@ export default function OSHRTeam() {
             <SectionHeader icon={BookOpen} title="Content Updates" subtitle="Training Academy & Resource Library" />
             <Card className="divide-y divide-border/60">
               <ContentLine label="Draft modules pending publish" value={0} href="/hr/training-center" />
-              <ContentLine label="SOPs needing review" value={0} href="/hr/resources" />
-              <ContentLine label="Resources missing visibility tags" value={0} href="/hr/resources" />
+              <ContentLine label="SOPs needing review" value={0} href="/hr/team-resources" />
+              <ContentLine label="Resources missing visibility tags" value={0} href="/hr/team-resources" />
               <ContentLine label="Outdated training modules" value={0} href="/hr/training-center" />
               <ContentLine label="Quizzes needing updates" value={0} href="/hr/training-center" />
             </Card>
