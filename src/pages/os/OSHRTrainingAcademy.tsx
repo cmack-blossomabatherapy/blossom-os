@@ -392,9 +392,9 @@ export default function OSHRTrainingAcademy() {
                   "What modules are most assigned?",
                   "Summarize onboarding readiness.",
                 ].map((p) => (
-                  <button key={p} className="w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
+                  <Link key={p} to={`/ai/assistant?q=${encodeURIComponent(p)}`} className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
                     {p}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </Card>
