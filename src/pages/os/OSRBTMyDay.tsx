@@ -124,6 +124,15 @@ export default function OSRBTMyDay() {
                 <SessionItem key={s.id} session={s} onHelp={() => setHelpOpen(true)} />
               ))}
             </ul>
+            {sessions.length === 0 && (
+              <div className="rounded-2xl border border-border/70 bg-card p-8 text-center">
+                <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
+                  <Sparkles className="size-5 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium text-foreground">No sessions today</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Enjoy the day off — we'll let you know if anything changes.</p>
+              </div>
+            )}
           </div>
         </section>
 

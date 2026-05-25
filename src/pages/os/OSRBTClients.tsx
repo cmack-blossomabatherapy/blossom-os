@@ -187,8 +187,20 @@ export default function OSRBTClients() {
             />
           ))}
           {filtered.length === 0 && (
-            <div className="rounded-2xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground">
-              No clients match "{query}".
+            <div className="rounded-2xl border border-border/70 bg-card p-8 text-center">
+              <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
+                <Users className="size-5 text-muted-foreground" />
+              </div>
+              <h3 className="mt-4 text-base font-medium text-foreground">No matches</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Nothing matches "{query}". Try a different name or BCBA.
+              </p>
+              <button
+                onClick={() => setQuery("")}
+                className="mt-4 inline-flex h-9 items-center rounded-xl border border-border/70 bg-secondary px-3.5 text-sm font-medium text-secondary-foreground hover:bg-muted transition"
+              >
+                Clear search
+              </button>
             </div>
           )}
         </section>

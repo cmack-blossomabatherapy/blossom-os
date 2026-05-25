@@ -240,8 +240,12 @@ export default function OSRBTSchedule() {
           </div>
 
           {grouped.length === 0 ? (
-            <div className="rounded-2xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground">
-              Nothing scheduled in this range.
+            <div className="rounded-2xl border border-border/70 bg-card p-8 text-center">
+              <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
+                <CalendarDays className="size-5 text-muted-foreground" />
+              </div>
+              <h3 className="mt-4 text-base font-medium text-foreground">Nothing scheduled</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Try a different range, or check back later for new assignments.</p>
             </div>
           ) : (
             <div className="space-y-5">

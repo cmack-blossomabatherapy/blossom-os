@@ -256,7 +256,13 @@ export default function OSRBTMessages() {
           </div>
           <div className="mt-4 rounded-2xl bg-card border border-border/70 overflow-hidden">
             {filteredUpdates.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">No updates in this view.</div>
+              <div className="p-10 text-center">
+                <div className="mx-auto grid size-12 place-items-center rounded-full bg-muted">
+                  <CheckCircle2 className="size-5 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium text-foreground">You're all caught up</h3>
+                <p className="mt-1 text-sm text-muted-foreground">No updates in this view right now.</p>
+              </div>
             ) : (
               filteredUpdates.map((u, i) => (
                 <div key={u.id} className={`flex items-start gap-3 p-4 md:px-5 ${i > 0 ? "border-t border-border/60" : ""}`}>
