@@ -252,7 +252,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       id: "home", label: "Home", items: [
         { to: "/bcba", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
         { to: "/bcba/workspace", label: "BCBA Workspace", icon: Workflow, module: "dashboard" },
-        { to: "/training/journeys/bcba", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/bcba/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
       ],
     },
     {
