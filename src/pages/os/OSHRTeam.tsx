@@ -185,7 +185,7 @@ export default function OSHRTeam() {
     { label: "Orientation This Week",         value: orientationThisWeek.length, hint: "Sessions scheduled in the next 7 days",                                                              icon: CalendarClock,  href: "/hr/orientation-queue",        tone: (orientationThisWeek.length > 0 ? "warn" : "ok") as Tone },
     { label: "Training Overdue",              value: trainingOverdue,            hint: trainingOverdue === 0 ? "No overdue trainings" : "Across departments",                                icon: GraduationCap,  href: "/hr/training-certifications",  tone: (trainingOverdue > 0 ? "crit" : "ok") as Tone },
     { label: "Certifications Expiring",       value: hr.expiringDocs,            hint: hr.expiringDocs === 0 ? "Nothing in the next 30 days" : "Within 30 days",                              icon: ShieldCheck,    href: "/hr/compliance",               tone: (hr.expiringDocs > 0 ? "warn" : "ok") as Tone },
-    { label: "Open HR Requests",              value: openRequests,               hint: openRequests === 0 ? "Inbox clear" : "Awaiting HR review",                                              icon: Inbox,          href: "/hr/requests",                 tone: (openRequests > 5 ? "warn" : "ok") as Tone },
+    { label: "Open HR Requests",              value: openRequests,               hint: openRequests === 0 ? "Inbox clear" : "Awaiting HR review",                                              icon: Inbox,          href: "/hr/requests",                 tone: (openRequests > 5 ? "warn" : openRequests > 0 ? "warn" : "ok") as Tone },
     { label: "Evaluations Pending",           value: hr.reviewsDue,              hint: hr.reviewsOverdue > 0 ? `${hr.reviewsOverdue} overdue` : "All on track",                                icon: ClipboardCheck, href: "/hr/evaluations",              tone: (hr.reviewsOverdue > 0 ? "crit" : hr.reviewsDue > 0 ? "warn" : "ok") as Tone },
   ];
 
@@ -525,6 +525,5 @@ function ContentLine({ label, value, href }: { label: string; value: number; hre
   );
 }
 
-void Users; // reserved for future Users overview
-void RecruitingCandidate; void Hourglass;
-export {};
+void Users; void Hourglass;
+export type { RecruitingCandidate };
