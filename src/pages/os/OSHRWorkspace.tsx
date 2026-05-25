@@ -302,7 +302,7 @@ export default function OSHRWorkspace() {
               <nav className="space-y-1">
                 {[
                   { label: "Training Academy",   to: "/hr/training-academy" },
-                  { label: "Resource Library",   to: "/os/resources" },
+                  { label: "Resource Library",   to: "/hr/team-resources" },
                   { label: "HR Requests",        to: "/hr/requests" },
                   { label: "Messages & Updates", to: "/hr/messages" },
                   { label: "Compliance & Docs",  to: "/hr/compliance" },
