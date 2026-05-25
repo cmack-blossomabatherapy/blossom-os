@@ -263,6 +263,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isQaOnly =
     osRole === "qa_team" ||
     (roles.includes("qa") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // Recruiting Team gets a curated operational menu focused on candidates,
+  // interviews, onboarding, orientation, and staffing coordination.
+  const isRecruitingOnly =
+    osRole === "recruiting_team" ||
+    (roles.includes("recruiting_assistant") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
