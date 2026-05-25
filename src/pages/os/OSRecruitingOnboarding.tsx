@@ -41,7 +41,7 @@ function classify(c: RecruitingCandidate): StageKey {
   if (c.readinessStatus === "Ready for Staffing") return "orientationReady";
   if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Clear" && c.orientation !== "Complete") return "orientationReady";
   if (c.backgroundCheck === "Pending" || c.backgroundCheck === "Sent" || c.backgroundCheck === "Delayed") return "bgPending";
-  if (c.onboardingStatus === "Complete" && (c.backgroundCheck === "Not Sent" || c.backgroundCheck === "Not Sent")) return "bgNeeded";
+  if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Not Sent") return "bgNeeded";
   if (c.onboardingStatus === "Complete" && c.orientation === "Not Scheduled") return "addOrientationBoard";
   if (c.onboardingStatus === "Complete") return "onboardingComplete";
   if (c.blockers.some((b) => /missing|doc|i-?9|tax|direct deposit|cert/i.test(b))) return "missingDocs";
@@ -102,7 +102,7 @@ function missingItems(c: RecruitingCandidate): string[] {
   if (c.viventium === "Not Started") items.push("Viventium setup");
   if (c.i9 !== "Complete") items.push("I-9");
   if (c.everify !== "Complete") items.push("E-Verify");
-  if (c.backgroundCheck === "Not Sent" || c.backgroundCheck === "Not Sent") items.push("Background check consent");
+  if (c.backgroundCheck === "Not Sent") items.push("Background check consent");
   c.blockers.forEach((b) => { if (/missing|doc|tax|deposit|cert|id/i.test(b)) items.push(b); });
   return items;
 }
