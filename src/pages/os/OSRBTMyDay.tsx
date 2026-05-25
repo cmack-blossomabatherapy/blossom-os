@@ -91,6 +91,12 @@ export default function OSRBTMyDay() {
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-32 pt-5 md:px-6 md:pt-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <Link to="/rbt" className="hover:text-foreground transition-colors">RBT</Link>
+          <ChevronRight className="size-3" />
+          <span>My Day</span>
+        </div>
         {/* 1. Today Header */}
         <header className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 via-card to-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">{todayLabel()}</p>
