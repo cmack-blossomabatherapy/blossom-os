@@ -394,10 +394,10 @@ export default function OSRecruitingPerformance() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium truncate">
                       <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{need.client.name}</span>
+                      <span className="truncate">{need.client.childName}</span>
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {need.client.state} · {need.client.location ?? "—"} · {need.daysWaiting}d waiting · needs {need.client.bcba ? "RBT" : "BCBA"}
+                      {need.client.state} · {need.client.clinic} · {need.daysWaiting}d waiting · needs {need.client.bcba ? "RBT" : "BCBA"}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
