@@ -87,6 +87,7 @@ type SupRow = {
 function buildSupRows(
   pairings: ClientPairing[],
   auths: Authorization[],
+  bcbaById: Map<string, string>,
 ): SupRow[] {
   // index auths by client lowercase, pick most operationally-relevant
   const authByClient = new Map<string, Authorization>();
@@ -116,6 +117,7 @@ function buildSupRows(
     if (seen.has(k)) return;
     seen.add(k);
     const a = authByClient.get(k) ?? null;
+    const authBcba = a ? (bcbaById.get(a.id) ?? null) : null;
     const expirationDays = a ? daysUntil(a.expirationDate) : null;
     const prMissing = !!a && a.missingRequirements.some(r => PR_KW.test(r));
     const tpMissing = !!a && (a.missingRequirements.some(r => TP_KW.test(r)) || a.treatmentPlanReceived === false);
@@ -169,7 +171,7 @@ function buildSupRows(
       id: k,
       clientName,
       state: state ?? a?.state ?? "—",
-      bcba: bcba ?? a?.coordinator ?? null,
+      bcba: bcba ?? authBcba ?? a?.coordinator ?? null,
       rbts,
       qaOwner: a?.qaOwner ?? null,
       auth: a,
@@ -193,7 +195,7 @@ function buildSupRows(
   // auths-only fallbacks
   for (const a of auths) {
     if (a.stage === "Flaked Client") continue;
-    buildFor(a.clientName, a.state, a.coordinator, [], null);
+    buildFor(a.clientName, a.state, bcbaById.get(a.id) ?? a.coordinator, [], null);
   }
 
   return rows;
@@ -202,12 +204,12 @@ function buildSupRows(
 // ---------- page ----------
 
 export default function OSQASupervision() {
-  const { items, loading: aLoading } = useLiveAuthorizations();
+  const { items, loading: aLoading, bcbaById } = useLiveAuthorizations();
   const cr = useCentralReachOps();
   const loading = aLoading || cr.loading;
 
   const pairings = useMemo(() => Array.from(cr.pairingsByClient.values()), [cr.pairingsByClient]);
-  const rows = useMemo(() => buildSupRows(pairings, items), [pairings, items]);
+  const rows = useMemo(() => buildSupRows(pairings, items, bcbaById), [pairings, items, bcbaById]);
 
   const [tab, setTab] = useState<TabKey>("all");
   const [query, setQuery] = useState("");
