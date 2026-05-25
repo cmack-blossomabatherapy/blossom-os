@@ -427,7 +427,7 @@ export default function OSHRMessages() {
             <HeaderBtn icon={Megaphone}>Send announcement</HeaderBtn>
             <HeaderBtn icon={BellRing}>Schedule reminder</HeaderBtn>
             <HeaderBtn icon={Pin}>Create update</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 

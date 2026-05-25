@@ -367,7 +367,7 @@ export default function OSHRCompliance() {
               URL.revokeObjectURL(url);
               toast({ title: "Report exported" });
             }}>Export CSV</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 
@@ -595,7 +595,7 @@ export default function OSHRCompliance() {
                   "Who still needs CPR renewal?",
                   "Summarize pending compliance reviews.",
                 ].map(p => (
-                  <Link key={p} to="/ai" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
+                  <Link key={p} to="/ai/assistant" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
                     "{p}"
                   </Link>
                 ))}

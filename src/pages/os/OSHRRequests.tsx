@@ -341,7 +341,7 @@ export default function OSHRRequests() {
             <HeaderBtn icon={Plus} to="/hr/employee-support">Open employee support</HeaderBtn>
             <HeaderBtn icon={Send} to="/hr/messages">Message employee</HeaderBtn>
             <HeaderBtn icon={ListChecks} to="/hr/new-hires">New hire pipeline</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 
@@ -584,7 +584,7 @@ export default function OSHRRequests() {
                   "Which employees are blocked from readiness?",
                   "Summarize open HR requests.",
                 ].map(p => (
-                  <Link key={p} to="/ai" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
+                  <Link key={p} to="/ai/assistant" className="block text-[12.5px] text-foreground/80 hover:text-foreground rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors leading-snug">
                     "{p}"
                   </Link>
                 ))}
