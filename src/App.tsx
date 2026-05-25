@@ -415,6 +415,7 @@ const App = () => (
                   <Route path="/recruiting/resources"      element={<OSRecruitingResources />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/hr/workspace" element={<OSHRWorkspace />} />
+                  <Route path="/hr/training-academy" element={<OSHRTrainingAcademy />} />
                   <Route path="/hr/new-hires" element={<OSHRNewHires />} />
                   <Route path="/hr/employee-support" element={<OSHREmployeeSupport />} />
                   <Route path="/hr/training-certifications" element={<OSHRTrainingCerts />} />
