@@ -19,6 +19,7 @@ import {
   type PipelineStage,
 } from "@/hooks/useRecruitingCandidates";
 import { supabase } from "@/integrations/supabase/client";
+import { countTrainingOverdue, countOpenCases } from "@/lib/os/hr/queries";
 
 // ============================================================================
 // HR Team — Dashboard (awareness layer)
@@ -105,28 +106,35 @@ function useHrCounts() {
     missingDocs: 0,
     reviewsDue: 0,
     reviewsOverdue: 0,
+    trainingOverdue: 0,
+    openRequests: 0,
   });
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const in30 = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
       const today = new Date().toISOString().slice(0, 10);
-      const [{ count: expiring }, { count: missing }, { count: due }, { count: overdue }] = await Promise.all([
-        supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
-          .gte("expires_on", today).lte("expires_on", in30),
-        supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
-          .eq("required", true).eq("status", "requested"),
-        supabase.from("employee_reviews").select("*", { count: "exact", head: true })
-          .eq("status", "scheduled" as never).gte("scheduled_for", today),
-        supabase.from("employee_reviews").select("*", { count: "exact", head: true })
-          .eq("status", "scheduled" as never).lt("scheduled_for", today),
-      ]).catch(() => [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }]);
+      const c = (p: Promise<{ count: number | null }>) => p.then(r => r.count ?? 0).catch(() => 0);
+      const [expiring, missing, due, overdue, trainingOverdue, openRequests] = await Promise.all([
+        c(supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
+          .gte("expires_on", today).lte("expires_on", in30) as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
+          .eq("required", true).eq("status", "requested") as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_reviews").select("*", { count: "exact", head: true })
+          .eq("status", "scheduled" as never).gte("scheduled_for", today) as unknown as Promise<{ count: number | null }>),
+        c(supabase.from("employee_reviews").select("*", { count: "exact", head: true })
+          .eq("status", "scheduled" as never).lt("scheduled_for", today) as unknown as Promise<{ count: number | null }>),
+        countTrainingOverdue(),
+        countOpenCases(),
+      ]);
       if (cancelled) return;
       setCounts({
-        expiringDocs: expiring ?? 0,
-        missingDocs: missing ?? 0,
-        reviewsDue: due ?? 0,
-        reviewsOverdue: overdue ?? 0,
+        expiringDocs: expiring,
+        missingDocs: missing,
+        reviewsDue: due,
+        reviewsOverdue: overdue,
+        trainingOverdue,
+        openRequests,
       });
     }
     void load();
@@ -177,8 +185,8 @@ export default function OSHRTeam() {
       return d >= now && d <= weekEnd;
     });
   }, [orientation]);
-  const trainingOverdue = 0; // wires to training_assignments + completions in Phase 2
-  const openRequests = 0;    // wires to hr_requests in Phase 2
+  const trainingOverdue = hr.trainingOverdue;
+  const openRequests = hr.openRequests;
 
   const snapshot = [
     { label: "New Hires In Progress",         value: newHiresInProgress.length, hint: `${newHiresInProgress.length === 1 ? "employee" : "employees"} moving through onboarding`,            icon: UserPlus,       href: "/hr/new-hires",                tone: (newHiresInProgress.length > 0 ? "warn" : "ok") as Tone },
@@ -462,8 +470,8 @@ export default function OSHRTeam() {
             <SectionHeader icon={BookOpen} title="Content Updates" subtitle="Training Academy & Resource Library" />
             <Card className="divide-y divide-border/60">
               <ContentLine label="Draft modules pending publish" value={0} href="/hr/training-center" />
-              <ContentLine label="SOPs needing review" value={0} href="/hr/resources" />
-              <ContentLine label="Resources missing visibility tags" value={0} href="/hr/resources" />
+              <ContentLine label="SOPs needing review" value={0} href="/hr/team-resources" />
+              <ContentLine label="Resources missing visibility tags" value={0} href="/hr/team-resources" />
               <ContentLine label="Outdated training modules" value={0} href="/hr/training-center" />
               <ContentLine label="Quizzes needing updates" value={0} href="/hr/training-center" />
             </Card>

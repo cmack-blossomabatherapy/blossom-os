@@ -270,10 +270,10 @@ export default function OSHRNewHires() {
             <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add new hire
             </button>
-            <Link to="/os/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Orientation
             </Link>
-            <Link to="/os/hr/training" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/training-academy" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Assign training
             </Link>
             <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
@@ -456,11 +456,11 @@ export default function OSHRNewHires() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "HR Workspace",     to: "/os/hr/workspace" },
-                  { label: "Orientation queue",to: "/os/hr/orientation-queue" },
-                  { label: "Training Academy", to: "/os/hr/training" },
-                  { label: "Compliance & docs",to: "/os/hr/compliance" },
-                  { label: "Employee support", to: "/os/hr/employee-support" },
+                  { label: "HR Workspace",     to: "/hr/workspace" },
+                  { label: "Orientation queue",to: "/hr/orientation-queue" },
+                  { label: "Training Academy", to: "/hr/training-academy" },
+                  { label: "Compliance & docs",to: "/hr/compliance" },
+                  { label: "Employee support", to: "/hr/employee-support" },
                 ].map((l) => (
                   <Link key={l.to} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
                     <span>{l.label}</span>

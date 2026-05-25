@@ -1,44 +1,61 @@
+# HR Team Role — Full Audit Plan
 
-## Recruiting Team — Audit & Real Backend Plan
+12 pages, ~8,700 lines. I'll do this in **4 phases**, shipping each phase as a self-contained pass so we can verify before moving on.
 
-The Recruiting Team module has **17 pages** wired up at clean routes (`/recruiting/*`) with a working sidebar nav. Everything renders, drag-and-drop stage moves persist, and interview checklists persist. **Every other page still runs on per-file static mock arrays.** There is no `candidates` table — only `recruiting_workflow_stages` and `interview_outcome_checks`.
+## Scope (every page in HR Team role)
 
-Making "all data real" means designing one shared candidate domain, seeding it with realistic Blossom data, and rewriting each page to read/write from it. That is a large body of work. Here is how I will phase it so it lands correctly without breaking what already works.
+```
+Workspace        Operations              Records              Comms / Resources
+─────────────    ───────────────────     ─────────────────    ──────────────────
+HR Workspace     Orientation Queue       New Hires            Messages & Updates
+Training Academy HR Requests             Employee Support     Resource Library
+                 Compliance & Documents  Training & Certs
+                                         Evaluations & Growth
+```
 
-### Phase 0 — Audit pass (no code changes)
-- Confirm every sidebar link routes to a real page (✅ confirmed — all 17 routes exist in `App.tsx`).
-- Confirm cross-page links (Team → Pipeline, Pipeline → Interviews, etc.) are intact.
-- Catalog the data shape every page invents locally so the unified schema covers them all.
+Plus: confirm `/hr-team` landing, sidebar entries, and remove links to any legacy `/hr/*` routes still referenced from HR Team views.
 
-### Phase 1 — Foundation: real candidate backend
-- **Migration**: create `recruiting_candidates` (identity, role RBT/BCBA, state, pipeline stage, source, recruiter, dates), `recruiting_interviews`, `recruiting_offers`, `recruiting_onboarding_tasks`, `recruiting_background_checks`, `recruiting_orientation_slots`, `recruiting_staffing_needs`, `recruiting_followups`, `recruiting_escalations`, `recruiting_messages`. RLS: authenticated read; recruiter/admin write.
-- **Seed** ~30 realistic candidates across GA/NC/TN/VA/MD with the full lifecycle populated (some in pipeline, some interviewing, some offered, some onboarding, some BG-check, some orientation-ready, some staffed). This is realistic operational data — not Lorem.
-- **Shared hook** `useRecruitingCandidates()` with filters + realtime, used by every page.
+## Audit checklist applied to every page
 
-### Phase 2 — Pipeline + Workspace + Team dashboard
-Rewire these three (the entry points) onto `useRecruitingCandidates`. Drag-and-drop already persists; now the candidates themselves do.
+1. **Real data only** — every list/KPI sourced from Supabase tables (`employees`, `employee_onboarding`, `employee_cases`, `employee_trainings`, `employee_certifications`, `employee_evaluations`, `hr_announcements`, `recruiting_orientation_slots`, `academy_*`, etc.). Remove any remaining mock arrays, placeholder counts, or hardcoded names.
+2. **Loading + empty states** — skeleton on load, calm empty state, no fake fillers.
+3. **Buttons work** — every CTA, row action, filter, tab, and detail-panel action either performs a real mutation (insert/update via supabase client) or navigates to a real OS route. No dead `onClick={() => {}}`.
+4. **Routes are new** — all internal links point to `/hr/workspace`, `/hr/new-hires`, `/hr/orientation-queue`, etc. — never to legacy `/hr/onboarding`, `/hr/directory`, `/hr/training`, `/hr/reviews`.
+5. **Design matches Blossom OS** — `OSShell` + semantic tokens + glass/hairline cards, one primary action per view, no raw color classes.
+6. **Permissions** — HR Team role only; sensitive payroll/financial actions hidden.
+7. **Mobile** — KPI grid + tables collapse cleanly.
 
-### Phase 3 — Interviews, Offers, Onboarding, Background, Orientation
-Rewire the per-stage operational pages. Each becomes a filtered view + the stage-specific child table (interview slots, offer terms, BG status, orientation date, onboarding tasks).
+## Phase 1 — Foundation & data layer
 
-### Phase 4 — Staffing Needs, RBT, BCBA, Performance
-Rewire the staffing/role-specific views. Performance pulls real aggregates from the candidates + interviews + offers tables.
+- Inventory all Supabase tables the pages need; for any that don't exist yet (e.g. `hr_requests`, evaluation cycles), create a migration with RLS.
+- Create `src/lib/os/hr/queries.ts` with shared typed query helpers (employees, onboarding, cases, trainings, evaluations, announcements, orientation slots) so all 12 pages use one source of truth.
+- Fix `/hr-team` landing (`OSHRTeam`) to use real KPIs from those queries.
 
-### Phase 5 — Follow-Ups, Escalations, Messages
-These are operational comm/workflow tables — wire to their own seeded tables plus realtime.
+## Phase 2 — Records pages
 
-### Phase 6 — Verification
-- Click every sidebar item, confirm no errors and real data renders.
-- Verify cross-page deep links (`?queue=`, `?stage=`, `?candidate=`) resolve correctly.
-- Run the Supabase linter; fix any RLS findings.
+- `OSHRNewHires` — wire to `employee_onboarding` + `employees`; row actions (advance stage, add blocker, message employee).
+- `OSHREmployeeSupport` — wire to `employee_cases`; resolve / reassign / escalate mutations.
+- `OSHRTrainingCerts` — wire to `employee_trainings` + `employee_certifications` + `academy_enrollments`; assign / mark complete / remind.
+- `OSHREvaluations` — wire to evaluation cycle tables; schedule / record outcome.
 
-### Scope note
-Phase 1 alone is ~10 tables, RLS, ~30 seeded candidates with full child records, and one shared hook. Phases 2–5 each rewrite 3–5 large page files (600–800 lines each). I will execute **Phase 0 + Phase 1** in this response (migration + seed + hook), then continue Phase 2+ in follow-up turns so each phase is reviewable and the app never breaks mid-flight.
+## Phase 3 — Operations pages
 
-### Technical details
-- Tables use `gen_random_uuid()` PKs, `created_at`/`updated_at`, `updated_at` triggers, and the existing role pattern (no roles on profiles).
-- Realtime publication added for tables that need live drag/drop sync.
-- Hook lives at `src/hooks/useRecruitingCandidates.ts`; child-record hooks live alongside it.
-- Existing `recruiting_workflow_stages` and `interview_outcome_checks` are kept; they continue to override the canonical stage when a recruiter has dragged a card.
+- `OSHROrientationQueue` — wire to `recruiting_orientation_slots`; confirm / reschedule / mark attended.
+- `OSHRRequests` — wire to (new) `hr_requests` table; intake / assign / resolve.
+- `OSHRCompliance` — wire to `employee_certifications` + compliance documents; upload / verify / remind.
 
-Proceed with Phase 0 audit + Phase 1 (schema, seed, hook)?
+## Phase 4 — Workspace, comms, resources, QA
+
+- `OSHRWorkspace` — top-level command center driven by Phase 1 queries.
+- `OSHRTrainingAcademy` — real `academy_tracks` + `academy_enrollments` data.
+- `OSHRMessages` — wire compose/reply/escalate to `employee_cases` + `hr_announcements` mutations.
+- `OSHRResources` — confirm category structure, persist saved/recent state per HR user.
+- Final QA pass per checklist on all 12 pages; mobile pass; verify no legacy `/hr/*` link remains in HR Team views; confirm build is clean.
+
+## Deliverable per phase
+
+Short report listing: tables touched, mutations added, dead buttons fixed, legacy routes removed, and any deferred items. Then we proceed to the next phase.
+
+---
+
+**Reply "go" (or "start phase 1") and I'll begin with Phase 1.** If you want to reorder phases or add/remove pages from scope, tell me now.

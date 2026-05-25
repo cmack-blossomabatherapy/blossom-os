@@ -250,7 +250,7 @@ export default function OSHREmployeeSupport() {
             <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message employee
             </button>
-            <Link to="/os/hr/workspace" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/workspace" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition-colors">
               <Workflow className="h-3.5 w-3.5" strokeWidth={1.75} /> HR Workspace
             </Link>
             <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
@@ -423,11 +423,11 @@ export default function OSHREmployeeSupport() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "HR Workspace",      to: "/os/hr/workspace" },
-                  { label: "New Hires",         to: "/os/hr/new-hires" },
-                  { label: "Orientation queue", to: "/os/hr/orientation-queue" },
-                  { label: "Training Academy",  to: "/os/hr/training" },
-                  { label: "HR Requests",       to: "/os/hr/requests" },
+                  { label: "HR Workspace",      to: "/hr/workspace" },
+                  { label: "New Hires",         to: "/hr/new-hires" },
+                  { label: "Orientation queue", to: "/hr/orientation-queue" },
+                  { label: "Training Academy",  to: "/hr/training-academy" },
+                  { label: "HR Requests",       to: "/hr/requests" },
                 ].map((l) => (
                   <Link key={l.to} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
                     <span>{l.label}</span>

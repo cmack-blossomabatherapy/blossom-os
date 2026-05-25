@@ -214,16 +214,16 @@ export default function OSHRWorkspace() {
             </p>
           </div>
           <div className="hidden md:flex items-center gap-2">
-            <Link to="/os/hr/new-hires" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/new-hires" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add new hire
             </Link>
-            <Link to="/os/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/orientation-queue" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <CalendarPlus className="h-3.5 w-3.5" strokeWidth={1.75} /> Orientation
             </Link>
-            <Link to="/os/hr/training" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/training-academy" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} /> Training
             </Link>
-            <Link to="/os/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+            <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Requests
             </Link>
             <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
@@ -301,11 +301,11 @@ export default function OSHRWorkspace() {
               <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Quick links</h3>
               <nav className="space-y-1">
                 {[
-                  { label: "Training Academy",   to: "/os/hr/training" },
+                  { label: "Training Academy",   to: "/hr/training-academy" },
                   { label: "Resource Library",   to: "/os/resources" },
-                  { label: "HR Requests",        to: "/os/hr/requests" },
-                  { label: "Messages & Updates", to: "/os/hr/messages" },
-                  { label: "Compliance & Docs",  to: "/os/hr/compliance" },
+                  { label: "HR Requests",        to: "/hr/requests" },
+                  { label: "Messages & Updates", to: "/hr/messages" },
+                  { label: "Compliance & Docs",  to: "/hr/compliance" },
                 ].map((l) => (
                   <Link key={l.to} to={l.to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] hover:bg-muted transition-colors">
                     <span>{l.label}</span>
@@ -589,7 +589,7 @@ function SupportPanel() {
         hint="Requests submitted via HR Requests will appear here for triage."
       />
       <div className="mt-4 flex justify-center">
-        <Link to="/os/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
+        <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
           <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Open HR Requests
         </Link>
       </div>
@@ -702,31 +702,31 @@ function TodayList({ data }: { data: Data }) {
     {
       label: "Onboarding tasks due",
       count: data.tasks.filter((t) => !t.completed && t.due_date && daysUntil(t.due_date) <= 0).length,
-      to: "/os/hr/new-hires",
+      to: "/hr/new-hires",
       tone: "warn",
     },
     {
       label: "Orientations today",
       count: data.employees.filter((e) => e.status === "pending_start" && e.start_date && daysUntil(e.start_date) === 0).length,
-      to: "/os/hr/orientation-queue",
+      to: "/hr/orientation-queue",
       tone: "warn",
     },
     {
       label: "Training overdue",
       count: data.trainings.filter((t) => t.status !== "completed" && t.due_date && daysUntil(t.due_date) < 0).length,
-      to: "/os/hr/training",
+      to: "/hr/training-academy",
       tone: "crit",
     },
     {
       label: "Expiring certifications",
       count: data.documents.filter((d) => d.expires_on && daysUntil(d.expires_on) <= 30 && daysUntil(d.expires_on) >= 0).length,
-      to: "/os/hr/compliance",
+      to: "/hr/compliance",
       tone: "warn",
     },
     {
       label: "Evaluations due",
       count: data.reviews.filter((r) => r.status !== "completed" && r.due_date && daysUntil(r.due_date) <= 14).length,
-      to: "/os/hr/evaluations",
+      to: "/hr/evaluations",
       tone: "warn",
     },
   ];
