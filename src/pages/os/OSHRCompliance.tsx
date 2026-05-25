@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ShieldCheck, Sparkles, Search, Filter, Upload, Send, CheckCircle2,
   AlertCircle, ChevronRight, X, FileText, FileCheck2, Award, Clock,
@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 /* ---------------- types ---------------- */
 interface Doc {
@@ -79,14 +80,19 @@ function Kpi({ label, value, tone = "muted", hint, onClick, active }: { label: s
     </button>
   );
 }
-function HeaderBtn({ icon: Icon, children, primary, to = "#" }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string }) {
+function HeaderBtn({ icon: Icon, children, primary, to, onClick }: { icon: React.ElementType; children: React.ReactNode; primary?: boolean; to?: string; onClick?: () => void }) {
   const cls = primary
     ? "bg-primary text-primary-foreground hover:opacity-90"
     : "text-foreground border border-border/70 bg-card hover:bg-muted";
-  return (
+  if (to) return (
     <Link to={to} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
     </Link>
+  );
+  return (
+    <button onClick={onClick} className={cn("inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] transition-colors", cls)}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={1.75} /> {children}
+    </button>
   );
 }
 function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
@@ -140,7 +146,7 @@ function isOnboardingDoc(t: string) { return /onboard|i-?9|w-?[24]|form|ack|poli
 function isBgCheckDoc(t: string) { return /background|bg.?check|fingerprint|clear/i.test(t); }
 
 /* ---------------- data ---------------- */
-function useData() {
+function useData(reloadKey = 0) {
   const [s, set] = useState({
     docs: [] as Doc[],
     employees: [] as Employee[],
@@ -170,7 +176,7 @@ function useData() {
       });
     })();
     return () => { cancel = true; };
-  }, []);
+  }, [reloadKey]);
   return s;
 }
 
@@ -178,7 +184,11 @@ function useData() {
 type Tab = "all" | "onboarding" | "certifications" | "background" | "missing" | "expiring" | "pending";
 
 export default function OSHRCompliance() {
-  const d = useData();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [reloadKey, setReloadKey] = useState(0);
+  const d = useData(reloadKey);
+  const refresh = () => setReloadKey(k => k + 1);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<Tab>("all");
   const [openEmpId, setOpenEmpId] = useState<string | null>(null);
@@ -336,10 +346,27 @@ export default function OSHRCompliance() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <HeaderBtn icon={Upload}>Upload document</HeaderBtn>
-            <HeaderBtn icon={Send}>Request document</HeaderBtn>
-            <HeaderBtn icon={Award}>Review certifications</HeaderBtn>
-            <HeaderBtn icon={Download}>Export report</HeaderBtn>
+            <HeaderBtn icon={Send} to="/hr/messages">Message employees</HeaderBtn>
+            <HeaderBtn icon={Award} to="/hr/training-certifications">Training & certs</HeaderBtn>
+            <HeaderBtn icon={Download} onClick={() => {
+              const rows = [["Employee","Role","State","Readiness","Missing","Expired","Expiring"]];
+              d.employees.forEach(e => {
+                const r = readinessByEmp.get(e.id);
+                const docs = docsByEmp.get(e.id) ?? [];
+                const missing = docs.filter(x => x.status === "missing" || x.status === "requested").length;
+                const expired = docs.filter(x => x.status === "expired").length;
+                const expiring = docs.filter(x => x.expires_on && expiresInDays(x.expires_on)! >= 0 && expiresInDays(x.expires_on)! <= 30).length;
+                rows.push([`${e.first_name} ${e.last_name}`, e.job_title, e.state, `${r?.pct ?? 100}%`, String(missing), String(expired), String(expiring)]);
+              });
+              const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = `compliance-${new Date().toISOString().slice(0,10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast({ title: "Report exported" });
+            }}>Export CSV</HeaderBtn>
             <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
@@ -707,19 +734,48 @@ export default function OSHRCompliance() {
               {/* Actions */}
               <section className="pt-2 border-t border-border/70 -mx-6 px-6">
                 <div className="flex flex-wrap gap-2">
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] bg-primary text-primary-foreground hover:opacity-90 transition">
-                    <Upload className="h-3.5 w-3.5" strokeWidth={1.75} /> Upload document
+                  <button onClick={async () => {
+                    const docType = window.prompt("Document type (e.g. cpr_cert, i9, w4):");
+                    if (!docType) return;
+                    const name = window.prompt("Document name:", docType);
+                    if (!name) return;
+                    const { error } = await supabase.from("employee_documents_hr").insert({
+                      employee_id: openEmp.id, doc_type: docType, name, status: "requested", required: true,
+                    });
+                    toast({ title: error ? "Could not request" : "Document requested" });
+                    if (!error) refresh();
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] bg-primary text-primary-foreground hover:opacity-90 transition">
+                    <Send className="h-3.5 w-3.5" strokeWidth={1.75} /> Request document
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const pendingDocs = openDocs.filter(x => x.status === "uploaded");
+                    if (pendingDocs.length === 0) return toast({ title: "No documents pending review" });
+                    const { error } = await supabase.from("employee_documents_hr").update({
+                      status: "verified", verified_at: new Date().toISOString(),
+                    }).in("id", pendingDocs.map(x => x.id));
+                    toast({ title: error ? "Could not approve" : `Approved ${pendingDocs.length} document(s)` });
+                    if (!error) refresh();
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> Approve
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const expired = openDocs.filter(x => x.status === "expired" || (x.expires_on && expiresInDays(x.expires_on)! < 0));
+                    if (expired.length === 0) return toast({ title: "Nothing needs renewal" });
+                    const { error } = await supabase.from("employee_documents_hr").update({ status: "requested" })
+                      .in("id", expired.map(x => x.id));
+                    toast({ title: error ? "Could not request" : `Requested update on ${expired.length} document(s)` });
+                    if (!error) refresh();
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <Send className="h-3.5 w-3.5" strokeWidth={1.75} /> Request update
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={() => navigate("/hr/messages")} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.75} /> Message
                   </button>
-                  <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
+                  <button onClick={async () => {
+                    const { error } = await supabase.from("employees").update({ status: "active" }).eq("id", openEmp.id);
+                    toast({ title: error ? "Could not update" : "Marked staffing ready" });
+                    if (!error) { setOpenEmpId(null); refresh(); }
+                  }} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] border border-border/70 bg-card hover:bg-muted transition">
                     <UserCheck className="h-3.5 w-3.5" strokeWidth={1.75} /> Mark ready
                   </button>
                 </div>
