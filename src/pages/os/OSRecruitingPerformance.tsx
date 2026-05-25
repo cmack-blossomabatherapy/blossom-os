@@ -6,12 +6,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingRecruiters,
   recruitingStates,
   staffingDemandByRegion,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { getClientStaffingNeeds } from "@/data/staffing";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,7 @@ const CHIPS = [
 const TIME_RANGES = ["7d", "30d", "90d", "QTD"] as const;
 
 export default function OSRecruitingPerformance() {
+  const recruitingCandidates = useLegacyRecruitingCandidates();
   const [activeChip, setActiveChip] = useState("all");
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");

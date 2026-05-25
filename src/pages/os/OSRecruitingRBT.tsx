@@ -7,12 +7,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingRecruiters,
   recruitingStates,
   staffingDemandByRegion,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { getClientStaffingNeeds, type StaffingClientNeed } from "@/data/staffing";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
@@ -123,6 +123,7 @@ function urgencyForCandidate(c: RecruitingCandidate): typeof URGENCY_OPTS[number
 }
 
 export default function OSRecruitingRBT() {
+  const recruitingCandidates = useLegacyRecruitingCandidates();
   const baseCandidates = useMemo(
     () => recruitingCandidates.filter((c) => c.role === "RBT"),
     []

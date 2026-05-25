@@ -6,12 +6,12 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingRecruiters,
   recruitingStates,
   staffingDemandByRegion,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { cn } from "@/lib/utils";
 import { useWorkflowStages } from "@/hooks/useWorkflowStages";
 
@@ -170,6 +170,7 @@ const CHIPS = [
 ];
 
 export default function OSRecruitingFollowUps() {
+  const recruitingCandidates = useLegacyRecruitingCandidates();
   const baseFollowUps = useMemo(() => buildFollowUps(recruitingCandidates), []);
 
   const defaults = useMemo(() => {

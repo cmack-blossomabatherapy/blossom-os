@@ -6,13 +6,13 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
   recruitingStates,
   recruitingRoles,
   recruitingRecruiters,
   recruitingSources,
   type RecruitingCandidate,
 } from "@/data/recruitingDashboard";
+import { useLegacyRecruitingCandidates } from "@/hooks/useLegacyRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 import { useInterviewChecklist } from "@/hooks/useInterviewChecklist";
@@ -133,6 +133,7 @@ const OUTCOME_STEPS = [
 ];
 
 export default function OSRecruitingInterviews() {
+  const recruitingCandidates = useLegacyRecruitingCandidates();
   const [stageMap, setStageMap] = useState<Record<string, StageKey>>(() =>
     Object.fromEntries(recruitingCandidates.map((c) => [c.id, classify(c)]))
   );
