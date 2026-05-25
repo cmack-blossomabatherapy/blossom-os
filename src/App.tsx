@@ -304,7 +304,7 @@ function RoleDashboardRedirect() {
     ["hr", "/hr"],
     ["hr_admin", "/hr"],
     ["hr_manager", "/hr"],
-    ["recruiting_assistant", "/recruiting-dashboard"],
+    ["recruiting_assistant", "/recruiting-team"],
     ["payroll_admin", "/hr/payroll"],
     ["phone_support", "/phone-calls"],
   ];
