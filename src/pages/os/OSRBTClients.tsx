@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Clock, MapPin, Stethoscope, ChevronDown, ChevronUp, ChevronRight,
   LifeBuoy, MessageSquare, Phone, AlertTriangle, ShieldAlert, Wrench,
@@ -107,6 +107,20 @@ export default function OSRBTClients() {
   const _ = user;
   const [helpOpen, setHelpOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [params] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const id = params.get("id");
+    if (!id) return;
+    if (CLIENTS.some((c) => c.id === id)) {
+      setOpenId(id);
+      setTimeout(() => {
+        cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [params]);
 
   const summary = useMemo(() => {
     const todayCount = CLIENTS.filter((c) => c.nextSession && new Date(c.nextSession.iso).toDateString() === new Date().toDateString()).length;
@@ -163,7 +177,15 @@ export default function OSRBTClients() {
 
         {/* 3. Client cards */}
         <section className="space-y-3">
-          {filtered.map((c) => <ClientCard key={c.id} client={c} onHelp={() => setHelpOpen(true)} />)}
+          {filtered.map((c) => (
+            <ClientCard
+              key={c.id}
+              client={c}
+              onHelp={() => setHelpOpen(true)}
+              defaultOpen={openId === c.id}
+              setRef={(el) => { cardRefs.current[c.id] = el; }}
+            />
+          ))}
           {filtered.length === 0 && (
             <div className="rounded-2xl border border-border/70 bg-card p-8 text-center text-sm text-muted-foreground">
               No clients match "{query}".
@@ -202,12 +224,16 @@ export default function OSRBTClients() {
 
 // --- Subcomponents ---
 
-function ClientCard({ client, onHelp }: { client: Client; onHelp: () => void }) {
-  const [open, setOpen] = useState(false);
+function ClientCard({ client, onHelp, defaultOpen, setRef }: { client: Client; onHelp: () => void; defaultOpen?: boolean; setRef?: (el: HTMLDivElement | null) => void }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen]);
   const [tab, setTab] = useState<"overview" | "schedule" | "notes" | "resources">("overview");
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_4px_16px_-12px_oklch(0.2_0.02_260/0.06)] transition hover:border-border">
+    <div
+      ref={setRef}
+      className={`scroll-mt-24 rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_4px_16px_-12px_oklch(0.2_0.02_260/0.06)] transition hover:border-border ${defaultOpen ? "ring-2 ring-primary/40" : ""}`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
