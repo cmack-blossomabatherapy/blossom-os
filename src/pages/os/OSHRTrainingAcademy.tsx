@@ -290,7 +290,7 @@ export default function OSHRTrainingAcademy() {
                         <li key={e.id} className="py-2.5 flex items-center justify-between">
                           <div className="min-w-0">
                             <p className="text-[13px] font-medium tracking-tight truncate">{track?.name ?? "Track"}</p>
-                            <p className="text-[11.5px] text-muted-foreground">Week {e.current_week_number ?? "—"}</p>
+                            <p className="text-[11.5px] text-muted-foreground">Week {weekNumberFromId(e.current_week_id, data.weeks) ?? "—"}</p>
                           </div>
                           <Pill tone={tone}>{e.status.replace("_", " ")}</Pill>
                         </li>
@@ -366,7 +366,7 @@ export default function OSHRTrainingAcademy() {
                     return (
                       <li key={e.id} className="flex items-center justify-between gap-2 text-[12.5px]">
                         <span className="truncate">{t?.name}</span>
-                        <span className="text-muted-foreground">W{e.current_week_number ?? "—"}</span>
+                        <span className="text-muted-foreground">W{weekNumberFromId(e.current_week_id, data.weeks) ?? "—"}</span>
                       </li>
                     );
                   })}
@@ -504,7 +504,7 @@ function JourneyDetail({
               <div className="px-4 py-3 border-b border-border/70 flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-medium tracking-tight">Phase {p.position}: {p.name}</p>
-                  {p.description && <p className="text-[11.5px] text-muted-foreground mt-0.5">{p.description}</p>}
+                  {p.tagline && <p className="text-[11.5px] text-muted-foreground mt-0.5">{p.tagline}</p>}
                 </div>
                 <span className="text-[11px] text-muted-foreground">{ws.length} week{ws.length === 1 ? "" : "s"}</span>
               </div>
