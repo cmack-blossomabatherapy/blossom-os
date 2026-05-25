@@ -14,7 +14,7 @@ const inDays = (n: number) =>
   new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
 async function safeCount(
-  fn: () => Promise<{ count: number | null; error: unknown }>,
+  fn: () => PromiseLike<{ count: number | null; error: unknown }>,
 ): Promise<number> {
   try {
     const { count, error } = await fn();
