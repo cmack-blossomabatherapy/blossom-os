@@ -402,7 +402,7 @@ const App = () => (
                   <Route path="/recruiting/follow-ups"     element={<OSRecruitingFollowUps />} />
                   <Route path="/recruiting/messages"       element={<OSRecruitingMessages />} />
                   <Route path="/recruiting/escalations"    element={<OSRecruitingEscalations />} />
-                  <Route path="/recruiting/resources"      element={<OSPlaceholder title="Recruiting Resource Library" description="SOPs, scripts, and recruiting playbooks." icon={Library} />} />
+                  <Route path="/recruiting/resources"      element={<OSRecruitingResources />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/qa-team" element={<OSQATeam />} />
