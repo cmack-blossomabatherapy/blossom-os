@@ -19,6 +19,7 @@ import {
   type PipelineStage,
 } from "@/hooks/useRecruitingCandidates";
 import { supabase } from "@/integrations/supabase/client";
+import { countTrainingOverdue, countOpenCases } from "@/lib/os/hr/queries";
 
 // ============================================================================
 // HR Team — Dashboard (awareness layer)
@@ -105,13 +106,15 @@ function useHrCounts() {
     missingDocs: 0,
     reviewsDue: 0,
     reviewsOverdue: 0,
+    trainingOverdue: 0,
+    openRequests: 0,
   });
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const in30 = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
       const today = new Date().toISOString().slice(0, 10);
-      const [{ count: expiring }, { count: missing }, { count: due }, { count: overdue }] = await Promise.all([
+      const [{ count: expiring }, { count: missing }, { count: due }, { count: overdue }, trainingOverdue, openRequests] = await Promise.all([
         supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
           .gte("expires_on", today).lte("expires_on", in30),
         supabase.from("employee_documents_hr").select("*", { count: "exact", head: true })
@@ -120,13 +123,17 @@ function useHrCounts() {
           .eq("status", "scheduled" as never).gte("scheduled_for", today),
         supabase.from("employee_reviews").select("*", { count: "exact", head: true })
           .eq("status", "scheduled" as never).lt("scheduled_for", today),
-      ]).catch(() => [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }]);
+        countTrainingOverdue(),
+        countOpenCases(),
+      ]).catch(() => [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }, 0, 0] as const);
       if (cancelled) return;
       setCounts({
         expiringDocs: expiring ?? 0,
         missingDocs: missing ?? 0,
         reviewsDue: due ?? 0,
         reviewsOverdue: overdue ?? 0,
+        trainingOverdue: (trainingOverdue as number) ?? 0,
+        openRequests: (openRequests as number) ?? 0,
       });
     }
     void load();
@@ -177,8 +184,8 @@ export default function OSHRTeam() {
       return d >= now && d <= weekEnd;
     });
   }, [orientation]);
-  const trainingOverdue = 0; // wires to training_assignments + completions in Phase 2
-  const openRequests = 0;    // wires to hr_requests in Phase 2
+  const trainingOverdue = hr.trainingOverdue;
+  const openRequests = hr.openRequests;
 
   const snapshot = [
     { label: "New Hires In Progress",         value: newHiresInProgress.length, hint: `${newHiresInProgress.length === 1 ? "employee" : "employees"} moving through onboarding`,            icon: UserPlus,       href: "/hr/new-hires",                tone: (newHiresInProgress.length > 0 ? "warn" : "ok") as Tone },
