@@ -328,7 +328,7 @@ export default function OSHROrientationQueue() {
             <HeaderBtn icon={Calendar} to="/hr/new-hires">Schedule orientation</HeaderBtn>
             <HeaderBtn icon={Send} onClick={() => toast({ title: "Reminders sent", description: "Upcoming orientation invitees notified." })}>Send reminders</HeaderBtn>
             <HeaderBtn icon={MessageSquare} to="/hr/messages">Message hires</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 

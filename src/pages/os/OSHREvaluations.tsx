@@ -289,7 +289,7 @@ export default function OSHREvaluations() {
             <HeaderBtn icon={Heart} to="/hr/employee-support">Create coaching plan</HeaderBtn>
             <HeaderBtn icon={Calendar} to="/hr/orientation-queue">Schedule growth meeting</HeaderBtn>
             <HeaderBtn icon={ClipboardCheck} to="/hr/workspace">Review pending</HeaderBtn>
-            <HeaderBtn icon={Sparkles} primary to="/ai">Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} primary to="/ai/assistant">Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 

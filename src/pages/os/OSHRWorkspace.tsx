@@ -226,9 +226,9 @@ export default function OSHRWorkspace() {
             <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Requests
             </Link>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
+            <Link to="/ai/assistant" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Ask Blossom AI
-            </button>
+            </Link>
           </div>
         </header>
 
@@ -302,7 +302,7 @@ export default function OSHRWorkspace() {
               <nav className="space-y-1">
                 {[
                   { label: "Training Academy",   to: "/hr/training-academy" },
-                  { label: "Resource Library",   to: "/os/resources" },
+                  { label: "Resource Library",   to: "/hr/team-resources" },
                   { label: "HR Requests",        to: "/hr/requests" },
                   { label: "Messages & Updates", to: "/hr/messages" },
                   { label: "Compliance & Docs",  to: "/hr/compliance" },
@@ -328,9 +328,9 @@ export default function OSHRWorkspace() {
                   "Who is not staffing ready?",
                   "Show overdue onboarding tasks.",
                 ].map((p) => (
-                  <button key={p} className="w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
+                  <Link key={p} to={`/ai/assistant?q=${encodeURIComponent(p)}`} className="block w-full text-left rounded-lg px-2 py-1.5 text-[12.5px] text-muted-foreground hover:bg-card hover:text-foreground transition-colors">
                     {p}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </Card>

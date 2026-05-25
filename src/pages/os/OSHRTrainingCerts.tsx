@@ -338,7 +338,7 @@ export default function OSHRTrainingCerts() {
             <HeaderBtn icon={Workflow} to="/training/manage">Create journey</HeaderBtn>
             <HeaderBtn icon={BookOpen} to="/training/manage">Create module</HeaderBtn>
             <HeaderBtn icon={ShieldCheck} to="/hr/compliance">Manage certifications</HeaderBtn>
-            <HeaderBtn icon={Sparkles} to="/ai" primary>Ask Blossom AI</HeaderBtn>
+            <HeaderBtn icon={Sparkles} to="/ai/assistant" primary>Ask Blossom AI</HeaderBtn>
           </div>
         </header>
 
