@@ -325,7 +325,7 @@ export default function OSRecruitingTeam() {
                       <p className="text-sm font-medium truncate">{n.client_label}</p>
                       <p className="text-xs text-muted-foreground">{n.role_needed} · {n.state} · {n.hours_per_week ?? "—"} hr/wk · opened {Math.max(0, Math.floor((Date.now() - new Date(n.opened_at).getTime()) / 86400000))}d ago</p>
                     </div>
-                    <Pill tone={n.priority === "Critical" ? "crit" : n.priority === "High" ? "warn" : "ok"}>{n.priority ?? "Normal"}</Pill>
+                    <Pill tone={(n.priority === "Critical" ? "crit" : n.priority === "High" ? "warn" : "ok") as Tone}>{n.priority ?? "Normal"}</Pill>
                     <Pill tone={n.status === "Open" ? "warn" : "ok"}>{n.status}</Pill>
                   </div>
                 ))
