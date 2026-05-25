@@ -226,9 +226,9 @@ export default function OSHRWorkspace() {
             <Link to="/hr/requests" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-foreground border border-border/70 bg-card hover:bg-muted transition-colors">
               <Inbox className="h-3.5 w-3.5" strokeWidth={1.75} /> Requests
             </Link>
-            <button className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
+            <Link to="/ai/assistant" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[13px] text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
               <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} /> Ask Blossom AI
-            </button>
+            </Link>
           </div>
         </header>
 
