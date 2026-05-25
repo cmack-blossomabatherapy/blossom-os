@@ -390,7 +390,7 @@ const App = () => (
                   <Route path="/recruiting/background"     element={<OSRecruitingBackgroundChecks />} />
                   <Route path="/recruiting/orientation"    element={<OSRecruitingOrientation />} />
                   <Route path="/recruiting/staffing-needs" element={<OSRecruitingStaffingNeeds />} />
-                  <Route path="/recruiting/rbt"            element={<OSPlaceholder title="RBT Recruiting" description="RBT pipeline, screening, and onboarding." icon={UserPlus} />} />
+                  <Route path="/recruiting/rbt"            element={<OSRecruitingRBT />} />
                   <Route path="/recruiting/bcba"           element={<OSPlaceholder title="BCBA Recruiting" description="BCBA pipeline, credentialing, and placement." icon={UsersRound} />} />
                   <Route path="/recruiting/performance"    element={<OSPlaceholder title="Recruiting Performance" description="Source, recruiter, and velocity insights." icon={BarChart3} />} />
                   <Route path="/recruiting/follow-ups"     element={<OSPlaceholder title="Hiring Follow-Ups" description="Open recruiter follow-ups across the pipeline." icon={CheckSquare} />} />
