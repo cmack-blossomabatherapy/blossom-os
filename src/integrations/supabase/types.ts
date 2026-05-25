@@ -5787,6 +5787,39 @@ export type Database = {
         }
         Relationships: []
       }
+      recruiting_workflow_stages: {
+        Row: {
+          board: string
+          candidate_id: string | null
+          created_at: string
+          id: string
+          item_id: string
+          stage: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          board: string
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          stage: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          board?: string
+          candidate_id?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          stage?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       role_audit_log: {
         Row: {
           action: string
