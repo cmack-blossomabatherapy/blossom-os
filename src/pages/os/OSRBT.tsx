@@ -215,7 +215,7 @@ export default function OSRBT() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <QuickAction to="/rbt/my-day" icon={PlayCircle} label="Open My Day" primary />
             <QuickAction to="/rbt/schedule" icon={CalendarDays} label="View schedule" />
-            <QuickAction to="/rbt/messages" icon={MessageSquare} label="Message BCBA" />
+            <QuickAction to="/rbt/messages?focus=bcba" icon={MessageSquare} label="Message BCBA" />
             <QuickAction to="/rbt/training-academy" icon={GraduationCap} label="Continue training" />
             <QuickAction to="/rbt/resources" icon={BookOpen} label="Resource library" />
             <QuickAction to="/rbt/clients" icon={Users} label="My clients" />

@@ -256,8 +256,8 @@ export default function OSRBTSchedule() {
         <section className="space-y-2">
           <h2 className="px-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Quick actions</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <QuickAction icon={MessageSquare}   label="Message BCBA"        to="/rbt/messages" />
-            <QuickAction icon={Phone}           label="Contact scheduling"  to="/rbt/messages" />
+            <QuickAction icon={MessageSquare}   label="Message BCBA" to="/rbt/messages?focus=bcba" />
+            <QuickAction icon={Phone}           label="Contact scheduling" to="/rbt/messages?focus=scheduling" />
             <QuickAction icon={Clock}           label="Running late"        onClick={() => setHelpOpen(true)} />
             <QuickAction icon={CalendarDays}    label="Schedule concern"    onClick={() => setHelpOpen(true)} />
             <QuickAction icon={Stethoscope}     label="Clinical help"       onClick={() => setHelpOpen(true)} />
@@ -376,7 +376,7 @@ function SessionRow({ session, onHelp }: { session: Session; onHelp: () => void 
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(session.address)}`}
                 external
               />
-              <ActionBtn icon={MessageSquare} label="Message BCBA" to="/rbt/messages" />
+              <ActionBtn icon={MessageSquare} label="Message BCBA" to="/rbt/messages?focus=bcba" />
               <ActionBtn icon={FileText}      label="Session resources" to="/rbt/resources" />
               <ActionBtn icon={AlertTriangle} label="Running late" onClick={onHelp} />
             </div>

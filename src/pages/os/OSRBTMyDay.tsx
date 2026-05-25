@@ -133,8 +133,8 @@ export default function OSRBTMyDay() {
             Quick actions
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <QuickAction icon={MessageSquare} label="Message BCBA" to="/rbt/messages" />
-            <QuickAction icon={Phone}         label="Contact scheduling" to="/rbt/messages" />
+            <QuickAction icon={MessageSquare} label="Message BCBA" to="/rbt/messages?focus=bcba" />
+            <QuickAction icon={Phone}         label="Contact scheduling" to="/rbt/messages?focus=scheduling" />
             <QuickAction icon={Clock}         label="Running late" onClick={() => setHelpOpen(true)} />
             <QuickAction icon={Stethoscope}   label="Clinical help" onClick={() => setHelpOpen(true)} />
             <QuickAction icon={HeartHandshake} label="Parent concern" onClick={() => setHelpOpen(true)} />
@@ -219,7 +219,7 @@ function NextSessionCard({ session, onHelp }: { session: Session; onHelp: () => 
       <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <PrimaryAction to={`/rbt/clients`} icon={User} label="Open client" />
         <SecondaryAction href={directions} icon={Navigation} label="Directions" external />
-        <SecondaryAction to="/rbt/messages" icon={MessageSquare} label="Message BCBA" />
+        <SecondaryAction to="/rbt/messages?focus=bcba" icon={MessageSquare} label="Message BCBA" />
         <SecondaryAction onClick={onHelp} icon={LifeBuoy} label="Need help" />
       </div>
     </section>
