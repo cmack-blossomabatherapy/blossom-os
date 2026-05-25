@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type StageMap = Record<string, string>;
-
 /**
  * Persists recruiting drag-and-drop stage assignments to the backend.
  * Each row in `recruiting_workflow_stages` represents one card's current
  * column on a given board (e.g. "follow-ups", "escalations").
  */
-export function useWorkflowStages(board: string, defaults: StageMap) {
-  const [stageMap, setStageMap] = useState<StageMap>(defaults);
+export function useWorkflowStages<S extends string = string>(
+  board: string,
+  defaults: Record<string, S>
+) {
+  const [stageMap, setStageMap] = useState<Record<string, S>>(defaults);
   const [loaded, setLoaded] = useState(false);
 
   // Initial load + realtime sync
@@ -23,8 +24,8 @@ export function useWorkflowStages(board: string, defaults: StageMap) {
         .eq("board", board);
 
       if (!cancelled && !error && data) {
-        const overrides: StageMap = {};
-        data.forEach((r) => { overrides[r.item_id] = r.stage; });
+        const overrides: Record<string, S> = {};
+        data.forEach((r) => { overrides[r.item_id] = r.stage as S; });
         setStageMap((prev) => ({ ...prev, ...overrides }));
       }
       if (!cancelled) setLoaded(true);
@@ -41,7 +42,7 @@ export function useWorkflowStages(board: string, defaults: StageMap) {
           setStageMap((prev) => {
             const next = { ...prev };
             if (payload.eventType === "DELETE") delete next[row.item_id];
-            else next[row.item_id] = row.stage;
+            else next[row.item_id] = row.stage as S;
             return next;
           });
         }
@@ -52,7 +53,7 @@ export function useWorkflowStages(board: string, defaults: StageMap) {
   }, [board]);
 
   const moveStage = useCallback(
-    async (itemId: string, stage: string, candidateId?: string) => {
+    async (itemId: string, stage: S, candidateId?: string) => {
       // Optimistic update
       setStageMap((prev) => ({ ...prev, [itemId]: stage }));
       const { data: authData } = await supabase.auth.getUser();
