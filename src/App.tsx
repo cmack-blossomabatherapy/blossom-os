@@ -379,6 +379,7 @@ const App = () => (
                   <Route path="/missing-information" element={<OSQAMissingInfo />} />
                   <Route path="/expiring-items" element={<OSQAExpiring />} />
                   <Route path="/assigned-bcbas" element={<OSQABCBAs />} />
+                  <Route path="/supervision-visibility" element={<OSQASupervision />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
