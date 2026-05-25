@@ -145,6 +145,54 @@ export default function OSRecruitingInterviews() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
 
+  // Ask Blossom AI panel state
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function askBlossom(question: string) {
+    if (!question.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiAnswer(null);
+    // Send a compact, AI-friendly view of the *currently filtered* candidates.
+    const payload = candidates.map((c) => ({
+      id: c.id,
+      name: c.name,
+      role: c.role,
+      state: c.state,
+      region: c.region,
+      recruiter: c.recruiter,
+      interviewer: c.interviewer,
+      candidateStatus: c.candidateStatus,
+      interviewStatus: c.interviewStatus,
+      interviewAt: c.interviewAt ?? null,
+      offerStatus: c.offerStatus,
+      onboardingStatus: c.onboardingStatus,
+      readinessStatus: c.readinessStatus,
+      daysInStage: c.daysInStage,
+      nextAction: c.nextAction,
+      stage: stageOf(c),
+      noShow: c.noShow,
+      eligibility: c.eligibility,
+      screeningOutcome: c.screeningOutcome,
+      blockers: c.blockers,
+    }));
+    try {
+      const { data, error } = await supabase.functions.invoke("ask-blossom-recruiting", {
+        body: { question, candidates: payload },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setAiAnswer((data as any)?.answer ?? "No response.");
+    } catch (e: any) {
+      const msg = e?.message ?? "Failed to reach Ask Blossom AI.";
+      toast.error(msg);
+      setAiAnswer(`**Error:** ${msg}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
 
   const candidates = useMemo(() => {
