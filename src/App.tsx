@@ -201,6 +201,15 @@ import OSRecruitingMessages from "./pages/os/OSRecruitingMessages";
 import OSRecruitingEscalations from "./pages/os/OSRecruitingEscalations";
 import OSRecruitingResources from "./pages/os/OSRecruitingResources";
 import OSHRTeam from "./pages/os/OSHRTeam";
+import OSHRWorkspace from "./pages/os/OSHRWorkspace";
+import OSHRNewHires from "./pages/os/OSHRNewHires";
+import OSHREmployeeSupport from "./pages/os/OSHREmployeeSupport";
+import OSHRTrainingCerts from "./pages/os/OSHRTrainingCerts";
+import OSHREvaluations from "./pages/os/OSHREvaluations";
+import OSHROrientationQueue from "./pages/os/OSHROrientationQueue";
+import OSHRRequests from "./pages/os/OSHRRequests";
+import OSHRCompliance from "./pages/os/OSHRCompliance";
+import OSHRMessages from "./pages/os/OSHRMessages";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
 import OSQAWorkspace from "./pages/os/OSQAWorkspace";
@@ -404,6 +413,15 @@ const App = () => (
                   <Route path="/recruiting/escalations"    element={<OSRecruitingEscalations />} />
                   <Route path="/recruiting/resources"      element={<OSRecruitingResources />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
+                  <Route path="/hr/workspace" element={<OSHRWorkspace />} />
+                  <Route path="/hr/new-hires" element={<OSHRNewHires />} />
+                  <Route path="/hr/employee-support" element={<OSHREmployeeSupport />} />
+                  <Route path="/hr/training-certifications" element={<OSHRTrainingCerts />} />
+                  <Route path="/hr/evaluations" element={<OSHREvaluations />} />
+                  <Route path="/hr/orientation-queue" element={<OSHROrientationQueue />} />
+                  <Route path="/hr/requests" element={<OSHRRequests />} />
+                  <Route path="/hr/compliance" element={<OSHRCompliance />} />
+                  <Route path="/hr/messages" element={<OSHRMessages />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/qa-team" element={<OSQATeam />} />
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
