@@ -28,8 +28,8 @@ interface Announcement {
   author_name: string | null; created_at: string;
 }
 interface OrientationSlot {
-  id: string; candidate_id: string | null; scheduled_at: string | null;
-  status: string | null; location: string | null;
+  id: string; candidate_id: string | null; scheduled_date: string | null;
+  scheduled_time: string | null; status: string | null; format: string | null;
 }
 interface Candidate {
   id: string; first_name: string; last_name: string; role: string;
@@ -186,7 +186,7 @@ function useData() {
         supabase.from("employee_onboarding").select("id,employee_id,status,blockers"),
         supabase.from("employee_trainings").select("id,employee_id,status,due_date,course_id"),
         supabase.from("hr_announcements").select("*").order("publish_at", { ascending: false }).limit(20),
-        supabase.from("recruiting_orientation_slots").select("id,candidate_id,scheduled_at,status,location").order("scheduled_at", { ascending: true }),
+        supabase.from("recruiting_orientation_slots").select("id,candidate_id,scheduled_date,scheduled_time,status,format").order("scheduled_date", { ascending: true }),
         supabase.from("recruiting_candidates").select("id,first_name,last_name,role,state,pipeline_stage"),
       ]);
       if (cancel) return;
@@ -302,7 +302,8 @@ export default function OSHRMessages() {
     const dueToday = d.cases.filter(c => c.due_date && !["resolved","closed"].includes(c.status)
       && new Date(c.due_date + "T23:59:59").toDateString() === new Date().toDateString()).length;
     const weekAgo = Date.now() - 7 * 86400000;
-    const orientReminders = d.slots.filter(s => s.scheduled_at && new Date(s.scheduled_at).getTime() > Date.now()).length;
+    const today = new Date().toISOString().slice(0, 10);
+    const orientReminders = d.slots.filter(s => s.scheduled_date && s.scheduled_date >= today).length;
     const trainingPending = d.trainings.filter(t => t.status !== "completed").length;
     const annWeek = d.announcements.filter(a => new Date(a.publish_at).getTime() >= weekAgo).length;
     return {
@@ -343,14 +344,15 @@ export default function OSHRMessages() {
     const items: { id: string; type: string; audience: string; when: string; owner: string; tone: Tone }[] = [];
     d.slots.slice(0, 6).forEach(s => {
       const cand = s.candidate_id ? candById[s.candidate_id] : null;
-      if (!s.scheduled_at) return;
+      if (!s.scheduled_date) return;
+      const today = new Date().toISOString().slice(0, 10);
       items.push({
         id: s.id,
         type: "Orientation reminder",
-        audience: cand ? `${cand.first_name} ${cand.last_name} · ${cand.role}` : (s.location ?? "Cohort"),
-        when: fmtDate(s.scheduled_at),
+        audience: cand ? `${cand.first_name} ${cand.last_name} · ${cand.role}` : (s.format ?? "Cohort"),
+        when: fmtDate(s.scheduled_date) + (s.scheduled_time ? ` · ${s.scheduled_time}` : ""),
         owner: "HR",
-        tone: new Date(s.scheduled_at).getTime() < Date.now() ? "warn" : "info",
+        tone: s.scheduled_date < today ? "warn" : "info",
       });
     });
     d.trainings
