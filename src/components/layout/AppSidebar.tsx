@@ -258,6 +258,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isBcbaOnly =
     osRole === "bcba" ||
     (roles.includes("bcba") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // QA Team gets a curated operational menu focused on auth/PR review, client oversight,
+  // BCBA coordination, escalations, and supervision visibility.
+  const isQaOnly =
+    osRole === "qa_team" ||
+    (roles.includes("qa") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
