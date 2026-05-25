@@ -1,58 +1,50 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, Filter, X, ChevronDown, UserPlus, Download, Send, Phone,
-  Eye, CalendarClock, AlertTriangle, CheckCircle2, Clock, Sparkles,
-  Brain, Inbox, FileText, ShieldCheck, GraduationCap, XCircle, Users,
-  ArrowRight, MessageSquare, MoreHorizontal,
+  Search, Filter, X, ChevronDown, UserPlus, CheckCircle2, Clock,
+  Brain, Inbox, XCircle, Users, ArrowRight, MessageSquare, AlertTriangle,
+  Send, Phone, Eye, GraduationCap, ShieldCheck, Loader2,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import {
-  recruitingCandidates,
-  recruitingStates,
-  recruitingRoles,
-  recruitingRecruiters,
-  recruitingSources,
+  useRecruitingCandidates,
+  fullName,
+  daysInStage,
   type RecruitingCandidate,
-} from "@/data/recruitingDashboard";
+  type PipelineStage,
+} from "@/hooks/useRecruitingCandidates";
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 
 // Recruiting → Candidates → Applicant Pipeline
-// Calm, workflow-first applicant board. Wired to recruitingDashboard.ts
-// (operational scaffolding until Apploi ingest lands).
+// Real backend (recruiting_candidates). DnD persists pipeline_stage.
 
 type Tone = "ok" | "warn" | "crit" | "muted";
 
-const STAGES = [
-  { key: "new",        label: "New Applicant" },
-  { key: "review",     label: "Needs Review" },
-  { key: "cert",       label: "RBT Cert Check" },
-  { key: "resume",     label: "Resume Review" },
-  { key: "ready",      label: "Interview Ready" },
-  { key: "linkSent",   label: "Interview Link Sent" },
-  { key: "waiting",    label: "Waiting on Candidate" },
-  { key: "moved",      label: "Moved to Interview" },
-  { key: "notq",       label: "Not Qualified" },
-] as const;
-type StageKey = typeof STAGES[number]["key"];
+const STAGES: { key: PipelineStage; label: string }[] = [
+  { key: "New Applicant",         label: "New Applicant" },
+  { key: "Phone Screen",          label: "Phone Screen" },
+  { key: "Interview Scheduled",   label: "Interview Scheduled" },
+  { key: "Interview Complete",    label: "Interview Complete" },
+  { key: "Offer Sent",            label: "Offer Sent" },
+  { key: "Offer Accepted",        label: "Offer Accepted" },
+  { key: "Background Check",      label: "Background Check" },
+  { key: "Orientation Scheduled", label: "Orientation" },
+  { key: "Onboarding",            label: "Onboarding" },
+  { key: "Ready to Staff",        label: "Ready to Staff" },
+  { key: "On Hold",               label: "On Hold" },
+  { key: "Withdrawn",             label: "Withdrawn" },
+  { key: "Rejected",              label: "Rejected" },
+];
 
-function classify(c: RecruitingCandidate): StageKey {
-  if (c.candidateStatus === "Not Qualified" || c.eligibility === "Not Eligible") return "notq";
-  if (["Interview Completed","Offer Sent","Offer Accepted","Onboarding Handoff","Background Check","Orientation","Training","Ready for Staffing"].includes(c.candidateStatus)) return "moved";
-  if (c.interviewStatus === "No-Show") return "waiting";
-  if (c.interviewStatus === "Scheduled" || c.interviewStatus === "Today") return "linkSent";
-  if (c.resume === "Missing") return "resume";
-  if (c.role === "RBT" && (c.certification === "Pending" || c.certification === "Missing")) return "cert";
-  if (c.screeningOutcome === "Pass" && c.interviewStatus === "Not Scheduled") return "ready";
-  if (c.candidateStatus === "New Applicant" && c.daysInStage <= 1) return "new";
-  return "review";
-}
+const ROLES = ["RBT", "BCBA", "BT", "Other"] as const;
+const STATES = ["GA", "NC", "TN", "VA", "MD", "FL", "TX", "SC"] as const;
 
 function toneFor(c: RecruitingCandidate): Tone {
-  if (c.candidateStatus === "Not Qualified") return "muted";
-  if (c.daysInStage >= 7) return "crit";
-  if (c.daysInStage >= 4 || c.blockers.length > 0) return "warn";
+  if (c.pipeline_stage === "Withdrawn" || c.pipeline_stage === "Rejected") return "muted";
+  const d = daysInStage(c);
+  if (d >= 7) return "crit";
+  if (d >= 4) return "warn";
   return "ok";
 }
 
@@ -78,86 +70,84 @@ function initials(n: string) {
 }
 
 export default function OSRecruitingPipeline() {
-  // Stage overrides (local optimistic updates from drag/drop & quick actions)
-  const [overrides, setOverrides] = useState<Record<string, StageKey>>({});
+  const { candidates, loading, updateStage } = useRecruitingCandidates();
   const [selected, setSelected] = useState<RecruitingCandidate | null>(null);
   const [search, setSearch] = useState("");
   const [stateF, setStateF] = useState("all");
   const [roleF, setRoleF] = useState("all");
   const [sourceF, setSourceF] = useState("all");
   const [recruiterF, setRecruiterF] = useState("all");
-  const [chip, setChip] = useState<"all" | StageKey | "stalled">("all");
+  const [chip, setChip] = useState<"all" | PipelineStage | "stalled">("all");
 
-  const stageOf = (c: RecruitingCandidate): StageKey => overrides[c.id] ?? classify(c);
+  const allSources = useMemo(
+    () => Array.from(new Set(candidates.map((c) => c.source).filter(Boolean))) as string[],
+    [candidates],
+  );
+  const allRecruiters = useMemo(
+    () => Array.from(new Set(candidates.map((c) => c.recruiter).filter(Boolean))) as string[],
+    [candidates],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return recruitingCandidates.filter((c) => {
+    return candidates.filter((c) => {
       if (stateF !== "all" && c.state !== stateF) return false;
       if (roleF !== "all" && c.role !== roleF) return false;
       if (sourceF !== "all" && c.source !== sourceF) return false;
       if (recruiterF !== "all" && c.recruiter !== recruiterF) return false;
-      if (chip === "stalled" && c.daysInStage < 7) return false;
-      if (chip !== "all" && chip !== "stalled" && stageOf(c) !== chip) return false;
+      if (chip === "stalled" && daysInStage(c) < 7) return false;
+      if (chip !== "all" && chip !== "stalled" && c.pipeline_stage !== chip) return false;
       if (!q) return true;
-      return [c.name, c.role, c.state, c.region, c.city, c.source, c.recruiter, c.id]
-        .some((v) => String(v).toLowerCase().includes(q));
+      return [fullName(c), c.role, c.state, c.city, c.source, c.recruiter, c.email]
+        .some((v) => String(v ?? "").toLowerCase().includes(q));
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, stateF, roleF, sourceF, recruiterF, chip, overrides]);
+  }, [candidates, search, stateF, roleF, sourceF, recruiterF, chip]);
 
   const stageBuckets = useMemo(() => {
-    const map: Record<StageKey, RecruitingCandidate[]> = Object.fromEntries(STAGES.map(s => [s.key, []])) as any;
-    filtered.forEach((c) => map[stageOf(c)].push(c));
+    const map = new Map<PipelineStage, RecruitingCandidate[]>();
+    STAGES.forEach((s) => map.set(s.key, []));
+    filtered.forEach((c) => map.get(c.pipeline_stage)?.push(c));
     return map;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, overrides]);
+  }, [filtered]);
 
-  // Summary metrics (on full candidate set, not filtered)
   const summary = useMemo(() => {
-    const all = recruitingCandidates;
-    const s = (k: StageKey) => all.filter((c) => stageOf(c) === k).length;
+    const total = candidates.length;
+    const stalled = candidates.filter((c) => daysInStage(c) >= 7).length;
+    const active = candidates.filter((c) => !["Withdrawn", "Rejected", "On Hold"].includes(c.pipeline_stage)).length;
+    const inInterview = candidates.filter((c) => ["Interview Scheduled", "Interview Complete"].includes(c.pipeline_stage)).length;
+    const offer = candidates.filter((c) => ["Offer Sent", "Offer Accepted"].includes(c.pipeline_stage)).length;
+    const onboarding = candidates.filter((c) => ["Background Check", "Orientation Scheduled", "Onboarding"].includes(c.pipeline_stage)).length;
+    const ready = candidates.filter((c) => c.pipeline_stage === "Ready to Staff").length;
+    const fresh = candidates.filter((c) => c.pipeline_stage === "New Applicant").length;
     return [
-      { key: "new",      label: "New Applicants",       value: s("new"),    hint: "Just landed", tone: "ok" as Tone },
-      { key: "review",   label: "Needs Review",         value: s("review"), hint: "Awaiting first screen", tone: "warn" as Tone },
-      { key: "cert",     label: "RBT Cert Check",       value: s("cert"),   hint: "Verify certification", tone: "warn" as Tone },
-      { key: "bacb",     label: "Needs BACB Check",     value: all.filter(c => c.bacbCheck === "Pending" || c.bacbCheck === "Not Started").filter(c => c.role === "BCBA").length, hint: "BCBA verification", tone: "warn" as Tone },
-      { key: "ready",    label: "Interview Link Needed",value: s("ready"),  hint: "Ready to schedule", tone: "ok" as Tone },
-      { key: "waiting",  label: "Waiting on Candidate", value: s("waiting"),hint: "No response / no-show", tone: "warn" as Tone },
-      { key: "stalled",  label: "Stalled 7+ Days",      value: all.filter(c => c.daysInStage >= 7).length, hint: "Needs intervention", tone: "crit" as Tone },
-      { key: "notq",     label: "Not Qualified",        value: s("notq"),   hint: "Disqualified this week", tone: "muted" as Tone },
+      { key: "total",       label: "Total Active",     value: active,      hint: `${total} all-time`,        tone: "ok" as Tone },
+      { key: "fresh",       label: "New Applicants",   value: fresh,       hint: "Just landed",              tone: "ok" as Tone },
+      { key: "interview",   label: "In Interview",     value: inInterview, hint: "Scheduled + complete",     tone: "warn" as Tone },
+      { key: "offer",       label: "Offer Stage",      value: offer,       hint: "Sent or accepted",         tone: "warn" as Tone },
+      { key: "onboarding",  label: "Onboarding",       value: onboarding,  hint: "BG / orient / paperwork",  tone: "warn" as Tone },
+      { key: "ready",       label: "Ready to Staff",   value: ready,       hint: "Ready for client match",   tone: "ok" as Tone },
+      { key: "stalled",     label: "Stalled 7+ Days",  value: stalled,     hint: "Needs intervention",       tone: "crit" as Tone },
     ];
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overrides]);
+  }, [candidates]);
 
-  // Follow-up queue
   const followUps = useMemo(() => {
-    return recruitingCandidates
-      .filter((c) => {
-        const st = stageOf(c);
-        return st === "review" || st === "ready" || st === "waiting" || c.daysInStage >= 7;
-      })
-      .sort((a, b) => b.daysInStage - a.daysInStage)
+    return candidates
+      .filter((c) => !["Withdrawn", "Rejected"].includes(c.pipeline_stage))
+      .sort((a, b) => daysInStage(b) - daysInStage(a))
       .slice(0, 8);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overrides]);
+  }, [candidates]);
 
-  // Sources
   const bySource = useMemo(() => {
-    return recruitingSources.map((src) => {
-      const list = recruitingCandidates.filter((c) => c.source === src);
+    return allSources.map((src) => {
+      const list = candidates.filter((c) => c.source === src);
       return {
         source: src,
         total: list.length,
-        qualified: list.filter((c) => c.screeningOutcome === "Pass").length,
-        ready: list.filter((c) => stageOf(c) === "ready" || stageOf(c) === "linkSent").length,
+        active: list.filter((c) => !["Withdrawn", "Rejected", "On Hold"].includes(c.pipeline_stage)).length,
+        ready: list.filter((c) => c.pipeline_stage === "Ready to Staff").length,
       };
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overrides]);
-
-  const updateStage = (id: string, stage: StageKey) =>
-    setOverrides((o) => ({ ...o, [id]: stage }));
+  }, [candidates, allSources]);
 
   return (
     <OSShell>
@@ -181,7 +171,7 @@ export default function OSRecruitingPipeline() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-border/70 bg-card text-sm font-medium text-foreground hover:bg-muted/40 transition">
-                  <Download className="h-3.5 w-3.5" /> Import Apploi
+                  <UserPlus className="h-3.5 w-3.5" /> Import Apploi
                 </button>
                 <button className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition">
                   <UserPlus className="h-3.5 w-3.5" /> Add candidate
@@ -200,26 +190,33 @@ export default function OSRecruitingPipeline() {
                   className="w-full h-10 pl-9 pr-3 rounded-xl bg-muted/60 border border-border/70 text-sm placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
-              <Select icon={Filter} value={stateF}     onChange={setStateF}     options={[{v:"all",l:"All states"}, ...recruitingStates.map((s)=>({v:s,l:s}))]} />
-              <Select icon={Filter} value={roleF}      onChange={setRoleF}      options={[{v:"all",l:"All roles"},  ...recruitingRoles.map((r)=>({v:r,l:r}))]} />
-              <Select icon={Filter} value={sourceF}    onChange={setSourceF}    options={[{v:"all",l:"All sources"},...recruitingSources.map((s)=>({v:s,l:s}))]} />
-              <Select icon={Filter} value={recruiterF} onChange={setRecruiterF} options={[{v:"all",l:"All recruiters"},...recruitingRecruiters.map((r)=>({v:r,l:r}))]} />
+              <Select icon={Filter} value={stateF}     onChange={setStateF}     options={[{v:"all",l:"All states"}, ...STATES.map((s)=>({v:s,l:s}))]} />
+              <Select icon={Filter} value={roleF}      onChange={setRoleF}      options={[{v:"all",l:"All roles"},  ...ROLES.map((r)=>({v:r,l:r}))]} />
+              <Select icon={Filter} value={sourceF}    onChange={setSourceF}    options={[{v:"all",l:"All sources"},...allSources.map((s)=>({v:s,l:s}))]} />
+              <Select icon={Filter} value={recruiterF} onChange={setRecruiterF} options={[{v:"all",l:"All recruiters"},...allRecruiters.map((r)=>({v:r,l:r}))]} />
             </div>
           </div>
         </header>
 
         {/* BODY */}
         <div className="max-w-[1500px] mx-auto px-6 py-6 space-y-6">
+          {loading && (
+            <div className="flex items-center justify-center py-10 text-muted-foreground gap-2 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading candidates…
+            </div>
+          )}
           {/* SUMMARY CARDS */}
           <section>
-            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
               {summary.map((s) => {
-                const active = chip === s.key;
+                const active = (s.key === "stalled" && chip === "stalled");
                 return (
                   <button
                     key={s.key}
                     type="button"
-                    onClick={() => setChip(active ? "all" : (s.key as any))}
+                    onClick={() => {
+                      if (s.key === "stalled") setChip(chip === "stalled" ? "all" : "stalled");
+                    }}
                     className={cn(
                       "rounded-2xl border bg-card text-left p-3.5 transition hover:-translate-y-0.5",
                       active ? "border-primary/40 ring-2 ring-primary/20" : "border-border/70",
@@ -253,10 +250,10 @@ export default function OSRecruitingPipeline() {
             <div className="overflow-x-auto -mx-2 px-2 pb-3">
               <div className="flex gap-3 min-w-max">
                 {STAGES.map((s) => {
-                  const list = stageBuckets[s.key];
-                  const stalled = list.filter((c) => c.daysInStage >= 7).length;
+                  const list = stageBuckets.get(s.key) ?? [];
+                  const stalled = list.filter((c) => daysInStage(c) >= 7).length;
                   const avg = list.length
-                    ? Math.round(list.reduce((a, c) => a + c.daysInStage, 0) / list.length)
+                    ? Math.round(list.reduce((a, c) => a + daysInStage(c), 0) / list.length)
                     : 0;
                   return (
                     <div
@@ -319,15 +316,15 @@ export default function OSRecruitingPipeline() {
                   {followUps.map((c) => (
                     <li key={c.id} className="flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2.5 hover:bg-muted/30 transition">
                       <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-[10px] font-semibold text-muted-foreground shrink-0">
-                        {initials(c.name)}
+                        {initials(fullName(c))}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{fullName(c)}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
-                          {c.role} · {c.state} · {c.recruiter} · {c.nextAction}
+                          {c.role} · {c.state} · {c.recruiter ?? "Unassigned"} · {c.next_action ?? c.pipeline_stage}
                         </p>
                       </div>
-                      <Pill tone={toneFor(c)}>{c.daysInStage}d</Pill>
+                      <Pill tone={toneFor(c)}>{daysInStage(c)}d</Pill>
                       <button
                         onClick={() => setSelected(c)}
                         className="hidden sm:inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-border/70 text-xs hover:bg-muted/40 transition"
@@ -351,7 +348,7 @@ export default function OSRecruitingPipeline() {
                     <li key={s.source} className="flex items-center justify-between text-sm">
                       <span className="text-foreground">{s.source}</span>
                       <span className="text-xs text-muted-foreground tabular-nums">
-                        {s.total} · {s.qualified} qual · {s.ready} ready
+                        {s.total} · {s.active} active · {s.ready} ready
                       </span>
                     </li>
                   ))}
@@ -387,7 +384,12 @@ export default function OSRecruitingPipeline() {
         <CandidateSlideout
           candidate={selected}
           onClose={() => setSelected(null)}
-          onStageChange={(stage) => selected && updateStage(selected.id, stage)}
+          onStageChange={(stage) => {
+            if (selected) {
+              updateStage(selected.id, stage);
+              setSelected({ ...selected, pipeline_stage: stage });
+            }
+          }}
         />
       </div>
     </OSShell>
@@ -403,13 +405,13 @@ function ApplicantCard({
   onDragStart: (e: React.DragEvent) => void;
 }) {
   const tone = toneFor(c);
+  const d = daysInStage(c);
   const badges: { tone: Tone; label: string }[] = [];
-  if (c.role === "RBT" && c.certification === "Verified") badges.push({ tone: "ok", label: "RBT Certified" });
-  if (c.role === "BCBA" && (c.bacbCheck === "Pending" || c.bacbCheck === "Not Started")) badges.push({ tone: "warn", label: "Needs BACB" });
-  if (c.role === "RBT" && c.certification === "Missing") badges.push({ tone: "warn", label: "Needs 40-Hour" });
-  if (c.screeningOutcome === "Pass" && c.interviewStatus === "Not Scheduled") badges.push({ tone: "ok", label: "Interview Ready" });
-  if (c.daysInStage >= 7) badges.push({ tone: "crit", label: "Stalled" });
-  if (c.candidateStatus === "Not Qualified") badges.push({ tone: "muted", label: "Not Qualified" });
+  if (c.tags?.includes("hot")) badges.push({ tone: "ok", label: "Hot" });
+  if (c.tags?.includes("bcba")) badges.push({ tone: "ok", label: "BCBA" });
+  if (c.tags?.includes("bg-flag")) badges.push({ tone: "warn", label: "BG Flag" });
+  if (c.tags?.includes("stalled") || d >= 7) badges.push({ tone: "crit", label: "Stalled" });
+  if (c.pipeline_stage === "Withdrawn") badges.push({ tone: "muted", label: "Withdrawn" });
 
   return (
     <article
@@ -420,15 +422,15 @@ function ApplicantCard({
     >
       <div className="flex items-start gap-2.5">
         <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-[10px] font-semibold text-muted-foreground shrink-0">
-          {initials(c.name)}
+          {initials(fullName(c))}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+          <p className="text-sm font-medium text-foreground truncate">{fullName(c)}</p>
           <p className="text-[11px] text-muted-foreground truncate">
-            {c.role} · {c.state} · {c.source}
+            {c.role} · {c.state} · {c.source ?? "—"}
           </p>
         </div>
-        <Pill tone={tone}>{c.daysInStage}d</Pill>
+        <Pill tone={tone}>{d}d</Pill>
       </div>
       {badges.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
@@ -438,9 +440,9 @@ function ApplicantCard({
         </div>
       )}
       <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span className="truncate">{c.recruiter}</span>
+        <span className="truncate">{c.recruiter ?? "Unassigned"}</span>
         <span className="inline-flex items-center gap-1">
-          <Clock className="h-3 w-3" /> {c.nextAction.length > 24 ? c.nextAction.slice(0, 24) + "…" : c.nextAction}
+          <Clock className="h-3 w-3" /> {(c.next_action ?? c.pipeline_stage).length > 24 ? (c.next_action ?? c.pipeline_stage).slice(0, 24) + "…" : (c.next_action ?? c.pipeline_stage)}
         </span>
       </div>
     </article>
@@ -506,16 +508,10 @@ function EmptyState({ icon: Icon, title }: { icon: React.ElementType; title: str
 }
 
 /* ---------- Slideout ---------- */
-const REVIEW_STEPS: { key: string; label: string; check: (c: RecruitingCandidate) => boolean }[] = [
-  { key: "opened",   label: "Application opened",                    check: (c) => c.resume === "Received" },
-  { key: "resume",   label: "Resume reviewed",                       check: (c) => c.resume === "Received" && c.screeningOutcome !== "Pending" },
-  { key: "cert",     label: "RBT certification checked",             check: (c) => c.certification !== "Pending" },
-  { key: "bacb",     label: "BACB verified (if BCBA)",               check: (c) => c.role !== "BCBA" || c.bacbCheck === "Clear" },
-  { key: "exp",      label: "Experience with children reviewed",     check: (c) => c.kidsExperience !== "Entry" },
-  { key: "state",    label: "State / location confirmed",            check: (c) => !!c.state && !!c.city },
-  { key: "avail",    label: "Availability reviewed",                 check: (c) => !!c.availability },
-  { key: "decision", label: "Candidate qualified decision made",     check: (c) => c.eligibility !== "Review" },
-  { key: "next",     label: "Next step sent",                        check: (c) => c.interviewStatus !== "Not Scheduled" || c.candidateStatus === "Not Qualified" },
+const STAGE_PROGRESS: PipelineStage[] = [
+  "New Applicant", "Phone Screen", "Interview Scheduled", "Interview Complete",
+  "Offer Sent", "Offer Accepted", "Background Check", "Orientation Scheduled",
+  "Onboarding", "Ready to Staff",
 ];
 
 function CandidateSlideout({
@@ -523,12 +519,13 @@ function CandidateSlideout({
 }: {
   candidate: RecruitingCandidate | null;
   onClose: () => void;
-  onStageChange: (stage: StageKey) => void;
+  onStageChange: (stage: PipelineStage) => void;
 }) {
   useSlideout(!!candidate, onClose);
   if (!candidate) return null;
   const c = candidate;
-  const done = REVIEW_STEPS.filter((s) => s.check(c)).length;
+  const stageIndex = STAGE_PROGRESS.indexOf(c.pipeline_stage);
+  const done = stageIndex < 0 ? 0 : stageIndex + 1;
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -537,11 +534,11 @@ function CandidateSlideout({
         <div className="sticky top-0 bg-background/95 backdrop-blur border-b border-border px-5 py-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold text-foreground truncate">{c.name}</h2>
+              <h2 className="text-lg font-semibold text-foreground truncate">{fullName(c)}</h2>
               <Pill tone="ok">{c.role}</Pill>
-              <Pill tone={toneFor(c)}>{c.candidateStatus}</Pill>
+              <Pill tone={toneFor(c)}>{c.pipeline_stage}</Pill>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">{c.state} · {c.region} · {c.city}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{c.state}{c.city ? ` · ${c.city}` : ""}</p>
           </div>
           <button onClick={onClose} className="h-8 w-8 rounded-full hover:bg-muted grid place-items-center">
             <X className="h-4 w-4" />
@@ -551,7 +548,10 @@ function CandidateSlideout({
         <div className="p-5 space-y-5">
           <section>
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Next action</h3>
-            <p className="text-sm text-foreground">{c.nextAction}</p>
+            <p className="text-sm text-foreground">{c.next_action ?? "—"}</p>
+            {c.next_action_due && (
+              <p className="text-xs text-muted-foreground mt-0.5">Due {new Date(c.next_action_due).toLocaleDateString()}</p>
+            )}
           </section>
 
           {/* Quick actions */}
@@ -564,24 +564,24 @@ function CandidateSlideout({
             <QuickAction icon={Eye} label="Open profile" />
           </div>
 
-          {/* Qualification checklist */}
+          {/* Lifecycle progress */}
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground">Qualification review</h3>
-              <span className="text-[11px] text-muted-foreground">{done} of {REVIEW_STEPS.length} complete</span>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground">Lifecycle progress</h3>
+              <span className="text-[11px] text-muted-foreground">{done} of {STAGE_PROGRESS.length} stages</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden mb-3">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(done/REVIEW_STEPS.length)*100}%` }} />
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(done/STAGE_PROGRESS.length)*100}%` }} />
             </div>
             <ul className="space-y-1.5">
-              {REVIEW_STEPS.map((s) => {
-                const ok = s.check(c);
+              {STAGE_PROGRESS.map((s, i) => {
+                const ok = i < done;
                 return (
-                  <li key={s.key} className="flex items-center gap-2 text-sm">
+                  <li key={s} className="flex items-center gap-2 text-sm">
                     {ok
                       ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       : <span className="h-4 w-4 rounded-full border border-border/70 shrink-0" />}
-                    <span className={cn("text-foreground", ok && "text-muted-foreground line-through")}>{s.label}</span>
+                    <span className={cn("text-foreground", ok && "text-muted-foreground")}>{s}</span>
                   </li>
                 );
               })}
@@ -591,11 +591,11 @@ function CandidateSlideout({
           {/* Pipeline / app details */}
           <section className="space-y-2">
             <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground">Pipeline status</h3>
-            <Row label="Interview"     value={c.interviewStatus}   />
-            <Row label="Certification" value={c.certification}     />
-            <Row label="BACB"          value={c.bacbCheck}         />
-            <Row label="Resume"        value={c.resume}            />
-            <Row label="Eligibility"   value={c.eligibility}       />
+            <Row label="Stage"         value={c.pipeline_stage} />
+            <Row label="Days in stage" value={`${daysInStage(c)}d`} />
+            <Row label="Email"         value={c.email ?? "—"} />
+            <Row label="Phone"         value={c.phone ?? "—"} />
+            <Row label="Rating"        value={c.rating ? `${c.rating}/5` : "—"} />
           </section>
 
           {/* Move to stage */}
@@ -606,13 +606,18 @@ function CandidateSlideout({
                 <button
                   key={s.key}
                   onClick={() => onStageChange(s.key)}
-                  className="h-7 px-2.5 rounded-full border border-border/70 text-[11px] text-foreground hover:bg-muted/40 transition"
+                  className={cn(
+                    "h-7 px-2.5 rounded-full border text-[11px] hover:bg-muted/40 transition",
+                    c.pipeline_stage === s.key
+                      ? "border-primary/40 bg-primary/5 text-primary"
+                      : "border-border/70 text-foreground",
+                  )}
                 >
                   {s.label}
                 </button>
               ))}
               <button
-                onClick={() => onStageChange("notq")}
+                onClick={() => onStageChange("Rejected")}
                 className="h-7 px-2.5 rounded-full border border-destructive/30 text-[11px] text-destructive hover:bg-destructive/5 transition inline-flex items-center gap-1"
               >
                 <XCircle className="h-3 w-3" /> Mark not qualified
@@ -620,28 +625,21 @@ function CandidateSlideout({
             </div>
           </section>
 
-          {/* Blockers */}
-          {c.blockers.length > 0 && (
+          {c.notes && (
             <section>
-              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 inline-flex items-center gap-1.5">
-                <AlertTriangle className="h-3 w-3 text-destructive" /> Blockers
-              </h3>
-              <ul className="space-y-1.5">
-                {c.blockers.map((b, i) => (
-                  <li key={i} className="text-sm text-foreground bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">{b}</li>
-                ))}
-              </ul>
+              <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Notes</h3>
+              <p className="text-sm text-foreground bg-muted/30 border border-border/60 rounded-lg px-3 py-2 whitespace-pre-wrap">{c.notes}</p>
             </section>
           )}
 
           {/* Meta */}
           <section className="grid grid-cols-2 gap-3 text-xs">
-            <Meta label="Recruiter"     value={c.recruiter} />
-            <Meta label="Source"        value={c.source} />
-            <Meta label="Applied"       value={c.appliedDate} />
-            <Meta label="Days in stage" value={`${c.daysInStage}d`} />
-            <Meta label="Availability"  value={c.availability} />
-            <Meta label="Travel"        value={`${c.travelRadius} mi`} />
+            <Meta label="Recruiter"     value={c.recruiter ?? "Unassigned"} />
+            <Meta label="Source"        value={c.source ?? "—"} />
+            <Meta label="Applied"       value={new Date(c.applied_date).toLocaleDateString()} />
+            <Meta label="Days in stage" value={`${daysInStage(c)}d`} />
+            <Meta label="State"         value={c.state} />
+            <Meta label="City"          value={c.city ?? "—"} />
           </section>
         </div>
       </div>
