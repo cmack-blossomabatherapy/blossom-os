@@ -457,9 +457,6 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
-  const allSections: NavSection[] = isExecOnly
-  // (HR sections injected just above)
-  ;
   const hrSections: NavSection[] = [
     {
       title: "Home",
@@ -506,7 +503,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
-  const allSectionsResolved: NavSection[] = isExecOnly
+  const allSections: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
         ...academySections,
