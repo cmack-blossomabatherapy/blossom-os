@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -753,6 +754,7 @@ function IconBtn({
 }
 
 function PRSlideout({ auth: a, onClose }: { auth: Authorization; onClose: () => void }) {
+  useSlideout(true, onClose);
   const tone = prUrgency(a);
   const status = prStatus(a);
   const blocker = blockerOf(a);

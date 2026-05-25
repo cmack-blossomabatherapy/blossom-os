@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -851,6 +852,7 @@ function BCBACard({ b, onOpen }: { b: BCBARow; onOpen: () => void }) {
 }
 
 function BCBASlideout({ b, onClose }: { b: BCBARow; onClose: () => void }) {
+  useSlideout(true, onClose);
   const checklist = [
     { ok: b.prOverdue === 0, label: "No overdue progress reports" },
     { ok: b.tpAwaiting === 0, label: "Treatment plans on file" },

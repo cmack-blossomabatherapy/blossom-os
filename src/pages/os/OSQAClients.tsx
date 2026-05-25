@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -897,6 +898,7 @@ function ClientCard({ c, onOpen }: { c: ClientRow; onOpen: () => void }) {
 }
 
 function ClientSlideout({ c, onClose }: { c: ClientRow; onClose: () => void }) {
+  useSlideout(true, onClose);
   const checklist = [
     { ok: !c.primary.missingInfo, label: "All required information received" },
     { ok: c.tpStatus === "Received" || c.tpStatus === "Approved", label: "Treatment plan on file" },

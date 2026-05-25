@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -825,6 +826,7 @@ function BlockerCard({ row: r, onOpen }: { row: BlockerRow; onOpen: () => void }
 }
 
 function BlockerSlideout({ row: r, onClose }: { row: BlockerRow; onClose: () => void }) {
+  useSlideout(true, onClose);
   const a = r.auth;
 
   useEffect(() => {

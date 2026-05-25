@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSlideout } from "@/hooks/useSlideout";
 import { Link } from "react-router-dom";
 import {
   Search, Flame, Sparkles, CheckCircle2, Send, ExternalLink, StickyNote,
@@ -326,6 +327,7 @@ function Select({ value, onChange, options, label }: { value: string; onChange: 
 
 // ---------- slideout ----------
 function EscalationSlideout({ e, onClose }: { e: Escalation; onClose: () => void }) {
+  useSlideout(true, onClose);
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-foreground/10 backdrop-blur-sm" onClick={onClose} />
