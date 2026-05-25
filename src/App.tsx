@@ -198,6 +198,7 @@ import OSRecruitingBCBA from "./pages/os/OSRecruitingBCBA";
 import OSRecruitingPerformance from "./pages/os/OSRecruitingPerformance";
 import OSRecruitingFollowUps from "./pages/os/OSRecruitingFollowUps";
 import OSRecruitingMessages from "./pages/os/OSRecruitingMessages";
+import OSRecruitingEscalations from "./pages/os/OSRecruitingEscalations";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
@@ -399,7 +400,7 @@ const App = () => (
                   <Route path="/recruiting/performance"    element={<OSRecruitingPerformance />} />
                   <Route path="/recruiting/follow-ups"     element={<OSRecruitingFollowUps />} />
                   <Route path="/recruiting/messages"       element={<OSRecruitingMessages />} />
-                  <Route path="/recruiting/escalations"    element={<OSPlaceholder title="Escalations & Follow-Ups" description="Stalled candidates and operational escalations." icon={Flame} />} />
+                  <Route path="/recruiting/escalations"    element={<OSRecruitingEscalations />} />
                   <Route path="/recruiting/resources"      element={<OSPlaceholder title="Recruiting Resource Library" description="SOPs, scripts, and recruiting playbooks." icon={Library} />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
