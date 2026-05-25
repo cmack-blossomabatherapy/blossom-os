@@ -299,7 +299,7 @@ function RoleDashboardRedirect() {
     ["staffing", "/staffing-dashboard"],
     ["clinic", "/clinic-dashboard"],
     ["clinic_director", "/clinic-dashboard"],
-    ["qa", "/qa-dashboard"],
+    ["qa", "/qa-team"],
     ["finance", "/finance-dashboard"],
     ["hr", "/hr"],
     ["hr_admin", "/hr"],
