@@ -359,6 +359,7 @@ const App = () => (
                   <Route path="/bcba/parent-training" element={<OSBCBAParentTraining />} />
                   <Route path="/bcba/scheduling" element={<OSBCBAScheduling />} />
                   <Route path="/bcba/resources" element={<OSBCBAResources />} />
+                  <Route path="/bcba/training-academy" element={<OSBCBATrainingAcademy />} />
                   <Route path="/rbt" element={<OSRBT />} />
                   <Route path="/command-center" element={<OSCommandCenter />} />
                   <Route path="/leads" element={<OSLeadsV2 />} />
