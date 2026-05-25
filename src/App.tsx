@@ -189,6 +189,7 @@ import OSRecruitingTrainingAcademy from "./pages/os/OSRecruitingTrainingAcademy"
 import OSRecruitingPipeline from "./pages/os/OSRecruitingPipeline";
 import OSRecruitingInterviews from "./pages/os/OSRecruitingInterviews";
 import OSRecruitingOffers from "./pages/os/OSRecruitingOffers";
+import OSRecruitingOnboarding from "./pages/os/OSRecruitingOnboarding";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
@@ -381,7 +382,7 @@ const App = () => (
                   <Route path="/recruiting/pipeline"       element={<OSRecruitingPipeline />} />
                   <Route path="/recruiting/interviews"     element={<OSRecruitingInterviews />} />
                  <Route path="/recruiting/offers"         element={<OSRecruitingOffers />} />
-                  <Route path="/recruiting/onboarding"     element={<OSPlaceholder title="Onboarding Status" description="Viventium handoff, I-9 / E-Verify, and onboarding progress." icon={GraduationCap} />} />
+                  <Route path="/recruiting/onboarding"     element={<OSRecruitingOnboarding />} />
                   <Route path="/recruiting/background"     element={<OSPlaceholder title="Background Checks" description="Background check status and flagged candidates." icon={ShieldCheck} />} />
                   <Route path="/recruiting/orientation"    element={<OSPlaceholder title="Orientation Queue" description="Orientation scheduling and attendance." icon={Clock} />} />
                   <Route path="/recruiting/staffing-needs" element={<OSPlaceholder title="Open Staffing Needs" description="Demand vs supply by region — escalations and placements." icon={AlertTriangle} />} />
