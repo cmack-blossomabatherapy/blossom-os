@@ -463,7 +463,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Dashboard",        icon: LayoutDashboard, path: "/hr-team",       perm: "" },
         { label: "HR Workspace",     icon: Workflow,        path: "/hr/workspace",  perm: "" },
-        { label: "Training Academy", icon: GraduationCap,   path: "/academy",       perm: "" },
+        { label: "Training Academy", icon: GraduationCap,   path: "/hr/training-academy", perm: "" },
       ],
     },
     {
