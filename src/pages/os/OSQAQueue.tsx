@@ -132,7 +132,7 @@ function isExpiringSoon(a: Authorization): boolean {
 
 // ---------- Page ----------
 export default function OSQAQueue() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
 
   const [tab, setTab] = useState<TabKey>("active");
   const [query, setQuery] = useState("");

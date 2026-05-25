@@ -98,13 +98,18 @@ function mostCommon<T>(arr: (T | null | undefined)[]): T | null {
 }
 
 function buildBCBAs(items: Authorization[]): BCBARow[] {
+  return buildBCBAsWithMap(items, new Map());
+}
+
+function buildBCBAsWithMap(items: Authorization[], bcbaById: Map<string, string>): BCBARow[] {
   const groups = new Map<string, Authorization[]>();
   for (const a of items) {
-    if (!a.coordinator) continue;
     if (a.stage === "Flaked Client") continue;
-    const arr = groups.get(a.coordinator) ?? [];
+    const bcba = bcbaById.get(a.id) ?? a.coordinator;
+    if (!bcba) continue;
+    const arr = groups.get(bcba) ?? [];
     arr.push(a);
-    groups.set(a.coordinator, arr);
+    groups.set(bcba, arr);
   }
 
   const rows: BCBARow[] = [];
@@ -183,8 +188,8 @@ function buildBCBAs(items: Authorization[]): BCBARow[] {
 
 // ---------- page ----------
 export default function OSQABCBAs() {
-  const { items, loading } = useLiveAuthorizations();
-  const allBcbas = useMemo(() => buildBCBAs(items), [items]);
+  const { items, loading, bcbaById } = useLiveAuthorizations();
+  const allBcbas = useMemo(() => buildBCBAsWithMap(items, bcbaById), [items, bcbaById]);
 
   const [tab, setTab] = useState<TabKey>("all");
   const [query, setQuery] = useState("");

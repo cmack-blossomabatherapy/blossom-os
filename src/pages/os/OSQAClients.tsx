@@ -186,7 +186,7 @@ function buildClients(items: Authorization[]): ClientRow[] {
 
 // ---------- page ----------
 export default function OSQAClients() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const allClients = useMemo(() => buildClients(items), [items]);
 
   const [tab, setTab] = useState<TabKey>("all");

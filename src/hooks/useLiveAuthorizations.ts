@@ -158,6 +158,13 @@ export interface LiveAuthorizations {
   loading: boolean;
   error: string | null;
   items: Authorization[];
+  /**
+   * Same as `items`, but `coordinator` is overwritten with the actual
+   * `Active BCBA` (from Monday) when one exists. QA pages display this
+   * field as "BCBA", so this gives them the correct attribution without
+   * affecting non-QA consumers that still need the auth coordinator.
+   */
+  qaItems: Authorization[];
   bcbaById: Map<string, string>;
   totalRows: number;
 }
@@ -207,6 +214,10 @@ export function useLiveAuthorizations(): LiveAuthorizations {
       if (liveBcba) bcbaById.set(auth.id, liveBcba);
       return auth;
     });
-    return { loading, error, items, bcbaById, totalRows: rows.length };
+    const qaItems: Authorization[] = items.map((a) => {
+      const bcba = bcbaById.get(a.id);
+      return bcba ? { ...a, coordinator: bcba } : a;
+    });
+    return { loading, error, items, qaItems, bcbaById, totalRows: rows.length };
   }, [rows, loading, error]);
 }

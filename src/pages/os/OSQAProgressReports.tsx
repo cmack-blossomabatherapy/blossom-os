@@ -172,7 +172,7 @@ function prMilestones(a: Authorization): Milestone[] {
 
 // ---------- page ----------
 export default function OSQAProgressReports() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
 
   const prs = useMemo(() => items.filter(isPRRelevant), [items]);
 

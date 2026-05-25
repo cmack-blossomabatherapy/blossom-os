@@ -118,7 +118,7 @@ function stageTone(a: Authorization): Tone {
 }
 
 export default function OSQAWorkspace() {
-  const { items, loading } = useLiveAuthorizations();
+  const { qaItems: items, loading } = useLiveAuthorizations();
   const [activeQueue, setActiveQueue] = useState<QueueKey>("review");
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
