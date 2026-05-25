@@ -185,6 +185,7 @@ import OSSchedulingTeam from "./pages/os/OSSchedulingTeam";
 import OSSchedulingWorkspace from "./pages/os/OSSchedulingWorkspace";
 import OSRecruitingTeam from "./pages/os/OSRecruitingTeam";
 import OSRecruitingWorkspace from "./pages/os/OSRecruitingWorkspace";
+import OSRecruitingTrainingAcademy from "./pages/os/OSRecruitingTrainingAcademy";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSBillingFinance from "./pages/os/OSBillingFinance";
 import OSQATeam from "./pages/os/OSQATeam";
