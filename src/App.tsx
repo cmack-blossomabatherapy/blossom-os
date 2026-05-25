@@ -371,6 +371,21 @@ const App = () => (
                   <Route path="/scheduling-workspace" element={<OSSchedulingWorkspace />} />
                   <Route path="/staffing" element={<OSStaffingQueue />} />
                   <Route path="/recruiting-team" element={<OSRecruitingTeam />} />
+                  <Route path="/recruiting/workspace"      element={<OSPlaceholder title="Recruiting Workspace" description="Daily execution hub for recruiters — candidates, follow-ups, and queues." icon={Workflow} />} />
+                  <Route path="/recruiting/pipeline"       element={<OSPlaceholder title="Applicant Pipeline" description="All candidates by stage, source, recruiter, and state." icon={Inbox} />} />
+                  <Route path="/recruiting/interviews"     element={<OSPlaceholder title="Interviews" description="Scheduling, outcomes, and interview management." icon={Calendar} />} />
+                  <Route path="/recruiting/offers"         element={<OSPlaceholder title="Offers & Hiring" description="Offer letters, signatures, and acceptance tracking." icon={FileText} />} />
+                  <Route path="/recruiting/onboarding"     element={<OSPlaceholder title="Onboarding Status" description="Viventium handoff, I-9 / E-Verify, and onboarding progress." icon={GraduationCap} />} />
+                  <Route path="/recruiting/background"     element={<OSPlaceholder title="Background Checks" description="Background check status and flagged candidates." icon={ShieldCheck} />} />
+                  <Route path="/recruiting/orientation"    element={<OSPlaceholder title="Orientation Queue" description="Orientation scheduling and attendance." icon={Clock} />} />
+                  <Route path="/recruiting/staffing-needs" element={<OSPlaceholder title="Open Staffing Needs" description="Demand vs supply by region — escalations and placements." icon={AlertTriangle} />} />
+                  <Route path="/recruiting/rbt"            element={<OSPlaceholder title="RBT Recruiting" description="RBT pipeline, screening, and onboarding." icon={UserPlus} />} />
+                  <Route path="/recruiting/bcba"           element={<OSPlaceholder title="BCBA Recruiting" description="BCBA pipeline, credentialing, and placement." icon={UsersRound} />} />
+                  <Route path="/recruiting/performance"    element={<OSPlaceholder title="Recruiting Performance" description="Source, recruiter, and velocity insights." icon={BarChart3} />} />
+                  <Route path="/recruiting/follow-ups"     element={<OSPlaceholder title="Hiring Follow-Ups" description="Open recruiter follow-ups across the pipeline." icon={CheckSquare} />} />
+                  <Route path="/recruiting/messages"       element={<OSPlaceholder title="Messages & Updates" description="Candidate and team communication." icon={MessageSquare} />} />
+                  <Route path="/recruiting/escalations"    element={<OSPlaceholder title="Escalations & Follow-Ups" description="Stalled candidates and operational escalations." icon={Flame} />} />
+                  <Route path="/recruiting/resources"      element={<OSPlaceholder title="Recruiting Resource Library" description="SOPs, scripts, and recruiting playbooks." icon={Library} />} />
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/billing-finance" element={<OSBillingFinance />} />
                   <Route path="/qa-team" element={<OSQATeam />} />
