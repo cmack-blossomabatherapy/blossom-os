@@ -196,6 +196,7 @@ import OSQAMissingInfo from "./pages/os/OSQAMissingInfo";
 import OSQAExpiring from "./pages/os/OSQAExpiring";
 import OSQAClients from "./pages/os/OSQAClients";
 import OSQABCBAs from "./pages/os/OSQABCBAs";
+import OSQASupervision from "./pages/os/OSQASupervision";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
