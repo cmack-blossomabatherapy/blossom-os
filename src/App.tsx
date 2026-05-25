@@ -200,6 +200,7 @@ import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
+import OSRBTSupervision from "./pages/os/OSRBTSupervision";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
