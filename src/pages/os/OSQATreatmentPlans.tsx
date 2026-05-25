@@ -140,7 +140,7 @@ function isExpiringSoon(a: Authorization): boolean {
 function readinessChecklist(a: Authorization): { label: string; done: boolean }[] {
   return [
     { label: "Treatment plan received",   done: a.treatmentPlanReceived },
-    { label: "QA review complete",        done: a.qaStatus === "Approved" || a.stage === "Awaiting Submission" || a.stage === "Submitted" || a.stage === "Approved" },
+    { label: "QA review complete",        done: a.qaStatus === "Complete" || a.stage === "Awaiting Submission" || a.stage === "Submitted" || a.stage === "Approved" },
     { label: "Progress report on file",   done: !hasPRBlocker(a) },
     { label: "Required signatures",       done: !hasSignatureBlocker(a) },
     { label: "No missing documentation",  done: !a.missingInfo },
