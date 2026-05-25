@@ -1,10 +1,10 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, CalendarClock, FileSignature, ShieldCheck, GraduationCap,
+  Search, CalendarClock, FileSignature, GraduationCap,
   Flame, MessageSquare, Sparkles, ChevronRight, Inbox, Filter, X,
   Phone, Send, Eye, UserCheck, CheckCircle2, Clock, AlertTriangle,
-  Brain, ChevronDown, ChevronUp, UserPlus,
+  Brain, ChevronDown, UserPlus,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { recruitingCandidates, type RecruitingCandidate } from "@/data/recruitingDashboard";
