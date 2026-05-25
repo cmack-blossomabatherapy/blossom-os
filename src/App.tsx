@@ -200,6 +200,7 @@ import OSRBTTrainingAcademy from "./pages/os/OSRBTTrainingAcademy";
 import OSRBTClients from "./pages/os/OSRBTClients";
 import OSRBTSchedule from "./pages/os/OSRBTSchedule";
 import OSRBTSessionSupport from "./pages/os/OSRBTSessionSupport";
+import OSRBTSupervision from "./pages/os/OSRBTSupervision";
 import OSPermissions from "./pages/os/OSPermissions";
 import OSMarketingDashboard from "./pages/os/OSMarketingDashboard";
 import OSComingSoon from "./pages/os/OSComingSoon";
@@ -371,7 +372,7 @@ const App = () => (
                   <Route path="/rbt/clients" element={<OSRBTClients />} />
                   <Route path="/rbt/schedule" element={<OSRBTSchedule />} />
                   <Route path="/rbt/session-support" element={<OSRBTSessionSupport />} />
-                  <Route path="/rbt/supervision" element={<OSPlaceholder title="Supervision" description="Upcoming supervision, recent touchpoints, and support from your assigned BCBA." icon={ClipboardCheck} />} />
+                  <Route path="/rbt/supervision" element={<OSRBTSupervision />} />
                   <Route path="/rbt/messages" element={<OSPlaceholder title="Messages & Updates" description="Updates from your BCBA, schedule changes, and announcements relevant to RBTs." icon={BellRing} />} />
                   <Route path="/rbt/help" element={<OSPlaceholder title="Need Help / Escalations" description="Fast, guided support for schedule, clinical, parent, tech, or safety concerns." icon={AlertTriangle} />} />
                   <Route path="/rbt/resources" element={<OSPlaceholder title="Resource Library" description="RBT SOPs, session guides, communication templates, and safety resources." icon={BookOpen} />} />
