@@ -190,6 +190,7 @@ import OSQATeam from "./pages/os/OSQATeam";
 import OSQAWorkspace from "./pages/os/OSQAWorkspace";
 import OSQAQueue from "./pages/os/OSQAQueue";
 import OSQAAuthReviews from "./pages/os/OSQAAuthReviews";
+import OSQAProgressReports from "./pages/os/OSQAProgressReports";
 import OSBCBA from "./pages/os/OSBCBA";
 import OSBCBAWorkspace from "./pages/os/OSBCBAWorkspace";
 import OSBCBAClients from "./pages/os/OSBCBAClients";
@@ -365,6 +366,7 @@ const App = () => (
                   <Route path="/qa-workspace" element={<OSQAWorkspace />} />
                   <Route path="/qa-queue" element={<OSQAQueue />} />
                   <Route path="/authorization-reviews" element={<OSQAAuthReviews />} />
+                  <Route path="/progress-reports" element={<OSQAProgressReports />} />
                   <Route path="/payroll-coordinator" element={<OSPlaceholder title="Payroll Coordinator" description="Payroll runs, timesheets, pay adjustments, and payroll exceptions." icon={Wallet} />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
