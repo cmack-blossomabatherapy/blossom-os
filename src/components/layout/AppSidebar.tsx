@@ -458,6 +458,55 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   ];
 
   const allSections: NavSection[] = isExecOnly
+  // (HR sections injected just above)
+  ;
+  const hrSections: NavSection[] = [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard",        icon: LayoutDashboard, path: "/hr-team",       perm: "" },
+        { label: "HR Workspace",     icon: Workflow,        path: "/hr/workspace",  perm: "" },
+        { label: "Training Academy", icon: GraduationCap,   path: "/academy",       perm: "" },
+      ],
+    },
+    {
+      title: "People",
+      items: [
+        { label: "New Hires",                 icon: UserPlus,       path: "/hr/new-hires",                perm: "" },
+        { label: "Employee Support",          icon: HeartHandshake, path: "/hr/employee-support",         perm: "" },
+        { label: "Training & Certifications", icon: GraduationCap,  path: "/hr/training-certifications",  perm: "" },
+        { label: "Evaluations & Growth",      icon: ClipboardCheck, path: "/hr/evaluations",              perm: "" },
+      ],
+    },
+    {
+      title: "Operations",
+      items: [
+        { label: "Orientation Queue",      icon: Clock,        path: "/hr/orientation-queue", perm: "" },
+        { label: "HR Requests",            icon: Inbox,        path: "/hr/requests",          perm: "" },
+        { label: "Compliance & Documents", icon: ShieldCheck,  path: "/hr/compliance",        perm: "" },
+      ],
+    },
+    {
+      title: "Communication",
+      items: [
+        { label: "Messages & Updates", icon: MessageSquare, path: "/hr/messages", perm: "" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { label: "Resource Library", icon: Library, path: "/hr/resources", perm: "" },
+      ],
+    },
+    {
+      title: "AI",
+      items: [
+        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+      ],
+    },
+  ];
+
+  const allSectionsResolved: NavSection[] = isExecOnly
     ? [
         execDashboardsSection,
         ...academySections,
