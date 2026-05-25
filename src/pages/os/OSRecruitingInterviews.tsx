@@ -16,6 +16,9 @@ import {
 import { useSlideout } from "@/hooks/useSlideout";
 import { cn } from "@/lib/utils";
 import { useInterviewChecklist } from "@/hooks/useInterviewChecklist";
+import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Recruiting → Candidates → Interviews
 // Calm operational interview coordination center. Wired to recruitingDashboard.ts
@@ -141,6 +144,54 @@ export default function OSRecruitingInterviews() {
   const [source, setSource] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { getArray: getChecks, toggleStep } = useInterviewChecklist(OUTCOME_STEPS);
+
+  // Ask Blossom AI panel state
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  async function askBlossom(question: string) {
+    if (!question.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiAnswer(null);
+    // Send a compact, AI-friendly view of the *currently filtered* candidates.
+    const payload = candidates.map((c) => ({
+      id: c.id,
+      name: c.name,
+      role: c.role,
+      state: c.state,
+      region: c.region,
+      recruiter: c.recruiter,
+      interviewer: c.interviewer,
+      candidateStatus: c.candidateStatus,
+      interviewStatus: c.interviewStatus,
+      interviewAt: c.interviewAt ?? null,
+      offerStatus: c.offerStatus,
+      onboardingStatus: c.onboardingStatus,
+      readinessStatus: c.readinessStatus,
+      daysInStage: c.daysInStage,
+      nextAction: c.nextAction,
+      stage: stageOf(c),
+      noShow: c.noShow,
+      eligibility: c.eligibility,
+      screeningOutcome: c.screeningOutcome,
+      blockers: c.blockers,
+    }));
+    try {
+      const { data, error } = await supabase.functions.invoke("ask-blossom-recruiting", {
+        body: { question, candidates: payload },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setAiAnswer((data as any)?.answer ?? "No response.");
+    } catch (e: any) {
+      const msg = e?.message ?? "Failed to reach Ask Blossom AI.";
+      toast.error(msg);
+      setAiAnswer(`**Error:** ${msg}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   const stageOf = (c: RecruitingCandidate) => stageMap[c.id] ?? classify(c);
 
@@ -394,7 +445,27 @@ export default function OSRecruitingInterviews() {
                   <div className="text-[11px] text-muted-foreground">Interview-aware copilot</div>
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <form
+                onSubmit={(e) => { e.preventDefault(); askBlossom(aiQuestion); }}
+                className="flex items-center gap-2 mb-3"
+              >
+                <input
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  placeholder="Ask about interviews, decisions, no-shows…"
+                  className="flex-1 h-9 px-3 rounded-lg bg-muted/50 border border-border/60 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  disabled={aiLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={aiLoading || !aiQuestion.trim()}
+                  className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-1.5"
+                >
+                  {aiLoading ? <RefreshCw className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+                  {aiLoading ? "Thinking" : "Ask"}
+                </button>
+              </form>
+              <div className="space-y-1.5 mb-3">
                 {[
                   "Who has interviews today?",
                   "Which interviews need decisions?",
@@ -402,12 +473,31 @@ export default function OSRecruitingInterviews() {
                   "Which candidates should receive offers?",
                   "Show completed interviews missing outcomes.",
                 ].map((q) => (
-                  <button key={q} className="w-full text-left text-xs px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted transition inline-flex items-center gap-2 text-foreground">
+                  <button
+                    key={q}
+                    onClick={() => { setAiQuestion(q); askBlossom(q); }}
+                    disabled={aiLoading}
+                    className="w-full text-left text-xs px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted transition inline-flex items-center gap-2 text-foreground disabled:opacity-50"
+                  >
                     <Brain className="size-3.5 text-muted-foreground shrink-0" />
                     <span>{q}</span>
                   </button>
                 ))}
               </div>
+              {(aiLoading || aiAnswer) && (
+                <div className="rounded-xl bg-muted/40 border border-border/60 p-3 text-xs text-foreground max-h-96 overflow-y-auto">
+                  {aiLoading && !aiAnswer ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <RefreshCw className="size-3.5 animate-spin" />
+                      Analyzing {candidates.length} candidate{candidates.length === 1 ? "" : "s"}…
+                    </div>
+                  ) : (
+                    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_li]:my-0.5 [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
+                      <ReactMarkdown>{aiAnswer ?? ""}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </aside>
         </div>
