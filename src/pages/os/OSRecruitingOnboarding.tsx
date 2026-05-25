@@ -41,13 +41,13 @@ function classify(c: RecruitingCandidate): StageKey {
   if (c.readinessStatus === "Ready for Staffing") return "orientationReady";
   if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Clear" && c.orientation !== "Complete") return "orientationReady";
   if (c.backgroundCheck === "Pending" || c.backgroundCheck === "Sent" || c.backgroundCheck === "Delayed") return "bgPending";
-  if (c.onboardingStatus === "Complete" && (c.backgroundCheck === "Not Started" || c.backgroundCheck === "Not Sent")) return "bgNeeded";
+  if (c.onboardingStatus === "Complete" && (c.backgroundCheck === "Not Sent" || c.backgroundCheck === "Not Sent")) return "bgNeeded";
   if (c.onboardingStatus === "Complete" && c.orientation === "Not Scheduled") return "addOrientationBoard";
   if (c.onboardingStatus === "Complete") return "onboardingComplete";
   if (c.blockers.some((b) => /missing|doc|i-?9|tax|direct deposit|cert/i.test(b))) return "missingDocs";
   if (c.viventium === "Sent" || c.onboardingStatus === "Viventium Sent" || c.onboardingStatus === "Training Assigned") return "onboardingProgress";
   if (c.viventium === "Complete") return "onboardingSent";
-  if (c.offerStatus === "Accepted" && c.viventium === "Not Sent") return "viventiumSetup";
+  if (c.offerStatus === "Accepted" && c.viventium === "Not Started") return "viventiumSetup";
   return "offerSigned";
 }
 
@@ -99,10 +99,10 @@ function onboardingPct(c: RecruitingCandidate): number {
 // Derive missing onboarding items from real candidate state.
 function missingItems(c: RecruitingCandidate): string[] {
   const items: string[] = [];
-  if (c.viventium === "Not Sent") items.push("Viventium setup");
+  if (c.viventium === "Not Started") items.push("Viventium setup");
   if (c.i9 !== "Complete") items.push("I-9");
   if (c.everify !== "Complete") items.push("E-Verify");
-  if (c.backgroundCheck === "Not Started" || c.backgroundCheck === "Not Sent") items.push("Background check consent");
+  if (c.backgroundCheck === "Not Sent" || c.backgroundCheck === "Not Sent") items.push("Background check consent");
   c.blockers.forEach((b) => { if (/missing|doc|tax|deposit|cert|id/i.test(b)) items.push(b); });
   return items;
 }
@@ -196,7 +196,7 @@ export default function OSRecruitingOnboarding() {
   const summary = useMemo(() => {
     const get = (pred: (c: RecruitingCandidate) => boolean) => pool.filter(pred).length;
     return {
-      notSent:        get((c) => c.viventium === "Not Sent" && c.offerStatus === "Accepted"),
+      notSent:        get((c) => c.viventium === "Not Started" && c.offerStatus === "Accepted"),
       inProgress:     get((c) => stageOf(c) === "onboardingProgress" || stageOf(c) === "onboardingSent"),
       missingDocs:    get((c) => missingItems(c).length > 0 && c.onboardingStatus !== "Complete"),
       complete:       get((c) => c.onboardingStatus === "Complete"),
@@ -227,7 +227,7 @@ export default function OSRecruitingOnboarding() {
       if (c.backgroundCheck === "Delayed") return true;
       if (c.viventium === "Sent" && c.onboardingStatus !== "Complete" && c.daysInStage >= 3) return true;
       if (c.onboardingStatus !== "Complete" && missingItems(c).length > 0 && c.daysInStage >= 2) return true;
-      if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Not Started") return true;
+      if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Not Sent") return true;
       if (c.onboardingStatus === "Complete" && c.orientation === "Not Scheduled") return true;
       if (c.daysInStage >= 5 && c.onboardingStatus !== "Complete") return true;
       return false;
@@ -637,7 +637,7 @@ function FollowUpCard({ c, onOpen }: { c: RecruitingCandidate; onOpen: () => voi
   if (!reason) {
     if (c.backgroundCheck === "Delayed") reason = "Background check delayed";
     else if (c.onboardingStatus !== "Complete" && c.viventium === "Sent") reason = "Onboarding incomplete in Viventium";
-    else if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Not Started") reason = "Background check not initiated";
+    else if (c.onboardingStatus === "Complete" && c.backgroundCheck === "Not Sent") reason = "Background check not initiated";
     else if (c.onboardingStatus === "Complete" && c.orientation === "Not Scheduled") reason = "Orientation not scheduled";
     else reason = c.nextAction;
   }
@@ -726,7 +726,7 @@ function CandidateSlideout({
           {/* Background check */}
           <Block title="Background Check">
             <Row k="Status" v={c.backgroundCheck} />
-            <Row k="Stellar Check" v={c.backgroundCheck === "Not Started" ? "Not sent" : "Sent"} />
+            <Row k="Stellar Check" v={c.backgroundCheck === "Not Sent" ? "Not sent" : "Sent"} />
           </Block>
 
           {/* Orientation */}
