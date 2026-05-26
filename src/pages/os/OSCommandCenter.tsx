@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 import { useStateOps } from "@/hooks/useStateOps";
 import { weeklySeries, quickStats } from "@/lib/analytics/stateOps";
 import { HoursVsClientsChart } from "@/components/state-director/HoursVsClientsChart";
+import { useStateWorkforce } from "@/hooks/useStateWorkforce";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import { daysUntil } from "@/data/authorizations";
 
 /* ---------- design atoms ---------- */
 
@@ -233,15 +236,6 @@ const ACTION_GROUPS: { id: string; label: string; icon: React.ComponentType<{ cl
   },
 ];
 
-type BCBA = { name: string; caseload: number; supervisionPct: number; overduePRs: number; risk: Urgency; region: string };
-const MOCK_BCBAS: BCBA[] = [
-  { name: "Jordan Mitchell", caseload: 14, supervisionPct: 11.2, overduePRs: 2, risk: "high", region: "Region A" },
-  { name: "Avery Lopez", caseload: 12, supervisionPct: 13.8, overduePRs: 0, risk: "watch", region: "Region B" },
-  { name: "Samira Patel", caseload: 16, supervisionPct: 9.4, overduePRs: 3, risk: "critical", region: "Region A" },
-  { name: "Marcus Greene", caseload: 10, supervisionPct: 14.1, overduePRs: 0, risk: "watch", region: "Region C" },
-  { name: "Elena Ruiz", caseload: 13, supervisionPct: 12.6, overduePRs: 1, risk: "watch", region: "Region D" },
-];
-
 const RECRUITING_SNAPSHOT = [
   { label: "Active applicants", value: 28, tone: "neutral" as const },
   { label: "Interviews today", value: 4, tone: "neutral" as const },
@@ -249,16 +243,6 @@ const RECRUITING_SNAPSHOT = [
   { label: "Orientation scheduled", value: 3, tone: "neutral" as const },
   { label: "BCBA pipeline", value: 5, tone: "ok" as const },
   { label: "RBT pipeline", value: 23, tone: "ok" as const },
-];
-
-type Risk = { client: string; bcba: string; type: string; daysRemaining: number; urgency: Urgency };
-const RISK_ITEMS: Risk[] = [
-  { client: "Liam K.", bcba: "Jordan M.", type: "Auth expires", daysRemaining: 6, urgency: "critical" },
-  { client: "Emma R.", bcba: "Samira P.", type: "PR overdue", daysRemaining: -7, urgency: "critical" },
-  { client: "Noah S.", bcba: "Avery L.", type: "Auth expires", daysRemaining: 12, urgency: "high" },
-  { client: "Olivia T.", bcba: "Elena R.", type: "97156 missing", daysRemaining: -3, urgency: "high" },
-  { client: "Mia D.", bcba: "Marcus G.", type: "Supervision gap", daysRemaining: -2, urgency: "watch" },
-  { client: "Ethan B.", bcba: "Samira P.", type: "Treatment plan missing", daysRemaining: 4, urgency: "high" },
 ];
 
 const FEED: { id: string; icon: React.ComponentType<{ className?: string }>; text: string; meta: string; tone: "ok" | "warn" | "neutral" }[] = [
@@ -300,6 +284,46 @@ export default function OSCommandCenter() {
   const { sessions, hasAnyData } = useStateOps(activeState, "4w");
   const series = useMemo(() => weeklySeries(sessions), [sessions]);
   const stats = useMemo(() => quickStats(sessions), [sessions]);
+
+  // Live BCBA roster + caseload signals for the active state.
+  const workforce = useStateWorkforce(activeState);
+  const liveBcbas = useMemo(() => {
+    const ranked = [...workforce.bcbas].sort((a, b) => {
+      const score = (x: typeof a) =>
+        (x.status === "Overloaded" ? 4 : x.status === "Near Capacity" ? 3 : x.status === "Needs Attention" ? 1 : 0) +
+        x.authRisks * 2 + x.staffingGaps;
+      return score(b) - score(a);
+    });
+    return ranked.slice(0, 6).map((b) => {
+      const risk: Urgency =
+        b.status === "Overloaded" || b.authRisks >= 2 ? "critical" :
+        b.status === "Near Capacity" || b.authRisks >= 1 || b.staffingGaps >= 2 ? "high" : "watch";
+      return { name: b.name, caseload: b.caseload, supervisionPct: b.supervisionPct, overduePRs: b.authRisks, risk, region: b.region };
+    });
+  }, [workforce.bcbas]);
+
+  // Live auth / PR risk items for the active state.
+  const liveAuths = useLiveAuthorizations();
+  const liveRisks = useMemo(() => {
+    const inState = liveAuths.items.filter((a) => !activeState || a.state === activeState);
+    const items = inState.flatMap((a) => {
+      const d = daysUntil(a.expirationDate);
+      const out: { client: string; bcba: string; type: string; daysRemaining: number; urgency: Urgency }[] = [];
+      if (d !== null && d <= 30) {
+        const urgency: Urgency = d < 0 || d <= 7 ? "critical" : d <= 14 ? "high" : "watch";
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "Auth expires", daysRemaining: d, urgency });
+      }
+      if (a.stage === "In QA Review" && a.daysInStage >= 3) {
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "QA stalled", daysRemaining: -a.daysInStage, urgency: a.daysInStage >= 7 ? "critical" : "high" });
+      }
+      if (a.missingInfo) {
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "Missing documentation", daysRemaining: 0, urgency: "high" });
+      }
+      return out;
+    });
+    const rank = (u: Urgency) => (u === "critical" ? 0 : u === "high" ? 1 : 2);
+    return items.sort((x, y) => rank(x.urgency) - rank(y.urgency) || x.daysRemaining - y.daysRemaining).slice(0, 6);
+  }, [liveAuths.items, liveAuths.bcbaById, activeState]);
 
   const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Director").split(" ")[0];
   const hour = new Date().getHours();
@@ -570,7 +594,10 @@ export default function OSCommandCenter() {
             <SectionHeader icon={ShieldAlert} title="BCBA Oversight" sub="Caseload, supervision, and overload signals" />
             <div className="px-5 pb-5 pt-4">
               <div className="space-y-2">
-                {MOCK_BCBAS.map((b) => {
+                {liveBcbas.length === 0 && (
+                  <p className="text-[12px] text-muted-foreground px-1 py-3">No BCBAs found in {stateName}.</p>
+                )}
+                {liveBcbas.map((b) => {
                   const tone = urgencyTone(b.risk);
                   return (
                     <div key={b.name} className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3">
@@ -619,7 +646,10 @@ export default function OSCommandCenter() {
             <SectionHeader icon={FileCheck2} title="Auth & PR Risk Center" sub="Expirations, overdue PRs, and supervision gaps" />
             <div className="px-5 pb-5 pt-4">
               <div className="divide-y divide-foreground/[0.06] rounded-xl border border-foreground/[0.06] bg-white/60">
-                {RISK_ITEMS.map((r) => {
+                {liveRisks.length === 0 && (
+                  <div className="px-3 py-4 text-[12px] text-muted-foreground">No auth or PR risks flagged right now.</div>
+                )}
+                {liveRisks.map((r) => {
                   const t = urgencyTone(r.urgency);
                   const overdue = r.daysRemaining < 0;
                   return (
