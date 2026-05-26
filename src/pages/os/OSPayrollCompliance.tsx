@@ -754,13 +754,7 @@ function ItemDrawer({
   const [noteCat, setNoteCat] = useState("compliance");
   const [busy, setBusy] = useState(false);
 
-  async function loadComms() {
-    if (!emp) return;
-    const { data } = await supabase.from("payroll_communications")
-      .select("*").eq("employee_id", emp.id).order("created_at", { ascending: false }).limit: 50 } as any);
-    setComms((data ?? []) as Comm[]);
-  }
-  useEffect(() => { loadCommsSafe(); }, [item.key, emp?.id]);
+  useEffect(() => { loadCommsSafe(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [item.key, emp?.id]);
 
   async function loadCommsSafe() {
     if (!emp) return;
