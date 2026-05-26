@@ -179,22 +179,22 @@ import { useOSRole } from "@/contexts/OSRoleContext";
      setParams(next, { replace: true });
    };
 
-   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
+  const states = Array.from(new Set(scopedClients.map((c) => c.state))).sort();
 
    // Header chip counts
    const counts = useMemo(() => {
      const uncovered = allSessions.filter((s) => s.status === "uncovered").length;
-     const coverageRisk = clients.filter((c) =>
+    const coverageRisk = scopedClients.filter((c) =>
        c.activeServiceStatus === "Services on Pause" ||
        c.activeServiceStatus === "Flaked" ||
        (c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined && c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8)
      ).length;
      const pending = allSessions.filter((s) => s.status === "pending").length;
      const conflicts = allSessions.filter((s) => s.status === "conflict").length;
-     const activePairs = clients.filter((c) => c.stage === "Active" && c.rbt && c.bcba).length;
-     const upcomingStarts = clients.filter((c) => c.stage === "Pending Start Date").length;
+    const activePairs = scopedClients.filter((c) => c.stage === "Active" && c.rbt && c.bcba).length;
+    const upcomingStarts = scopedClients.filter((c) => c.stage === "Pending Start Date").length;
      return { uncovered, coverageRisk, pending, conflicts, activePairs, upcomingStarts };
-   }, [allSessions, clients]);
+  }, [allSessions, scopedClients]);
 
    // Week grid grouping
    const grid = useMemo(() => {
