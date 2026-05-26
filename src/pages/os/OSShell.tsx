@@ -499,6 +499,44 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // Case Manager — warm, supportive, family-relationship oriented.
+  const CASE_MANAGER_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/case-manager", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/case-manager/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "family_relationships", label: "Family Relationships", items: [
+        { to: "/case-manager/families",      label: "Assigned Families",     icon: Users,          module: "clients" },
+        { to: "/case-manager/communication", label: "Parent Communication",  icon: BellRing,       module: "clients" },
+        { to: "/case-manager/family-support",label: "Family Support",        icon: HeartHandshake, module: "clients" },
+        { to: "/case-manager/follow-ups",    label: "Progress & Follow-Ups", icon: Activity,       module: "clients" },
+      ],
+    },
+    {
+      id: "operations", label: "Operations", items: [
+        { to: "/case-manager/scheduling",     label: "Scheduling Coordination",   icon: CalendarDays,  module: "scheduling" },
+        { to: "/case-manager/authorizations", label: "Authorizations Visibility", icon: FileCheck2,    module: "authorizations" },
+        { to: "/case-manager/staffing",       label: "Staffing Coordination",     icon: UserCog,       module: "staff" },
+        { to: "/case-manager/service-issues", label: "Service Issues",            icon: AlertTriangle, module: "clients" },
+        { to: "/case-manager/escalations",    label: "Escalations",               icon: ShieldAlert,   module: "clients" },
+      ],
+    },
+    {
+      id: "community_support", label: "Community & Support", items: [
+        { to: "/case-manager/community", label: "Community Referrals", icon: Globe,    module: "sop" },
+        { to: "/case-manager/resources", label: "Resource Library",    icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "ai", label: "AI & Automations", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "executive_leadership"
     ? EXEC_LEADERSHIP_SECTIONS
     : role === "marketing_team"
@@ -513,6 +551,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? PAYROLL_SECTIONS
     : role === "operations_leadership"
     ? OPS_LEADERSHIP_SECTIONS
+    : role === "case_manager"
+    ? CASE_MANAGER_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
