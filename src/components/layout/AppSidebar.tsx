@@ -622,6 +622,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? [
         execDashboardsSection,
         ...academySections,
+        intelligenceSection,
         ...(showAdmin ? adminSections : []),
       ]
     : isSchedulingOnly
@@ -635,7 +636,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     : isHrOnly
     ? hrSections
     : impersonating && osRole
-    ? buildGenericRoleSections(osRole)
+    ? [...buildGenericRoleSections(osRole), intelligenceSection]
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
