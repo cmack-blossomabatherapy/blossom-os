@@ -324,8 +324,8 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 
          {/* BOTTOM — operational insights */}
          <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-           <CoverageRisksCard clients={clients} onSelect={selectClient} />
-           <UpcomingStartsCard clients={clients} onSelect={selectClient} />
+          <CoverageRisksCard clients={scopedClients} onSelect={selectClient} />
+          <UpcomingStartsCard clients={scopedClients} onSelect={selectClient} />
            <ProviderLoadCard clients={clients} />
          </section>
        </div>
