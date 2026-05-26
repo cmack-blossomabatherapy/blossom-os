@@ -151,7 +151,7 @@ function deriveAuthStats(items: Authorization[]) {
   ];
 
   const blockers: BlockerRow[] = [
-    { icon: FileWarning,    label: "Missing information (flagged)", count: missing,    tone: missing > 5 ? "crit" : "warn" },
+    { icon: FileWarning,    label: "Missing information (flagged)", count: missing,    tone: (missing > 5 ? "crit" : "warn") as Tone },
     { icon: ClipboardCheck, label: "Treatment plan not received",   count: items.filter((a) => !a.treatmentPlanReceived).length, tone: "warn" },
     { icon: FileText,       label: "Awaiting submission",           count: awaiting,   tone: "warn" },
     { icon: ShieldAlert,    label: "Open denials",                  count: denied,     tone: "crit" },
