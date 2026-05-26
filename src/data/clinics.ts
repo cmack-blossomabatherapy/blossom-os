@@ -15,41 +15,7 @@ export interface Clinic {
   isPhysical: boolean;
 }
 
-export const mockClinics: Clinic[] = [
-  {
-    id: "peachtree-corners",
-    name: "Peachtree Corners",
-    state: "GA",
-    address: "5500 Peachtree Pkwy, Peachtree Corners, GA 30092",
-    manager: "Mordy Gobioff",
-    director: "Dr. Karen Lee",
-    status: "Expanding",
-    capacity: 60,
-    isPhysical: true,
-  },
-  {
-    id: "riverdale",
-    name: "Riverdale",
-    state: "GA",
-    address: "120 Main St, Riverdale, GA 30274",
-    manager: "Mordy Gobioff",
-    director: "Dr. Maya Kim",
-    status: "Open",
-    capacity: 45,
-    isPhysical: true,
-  },
-  {
-    id: "remote",
-    name: "In-Home Services",
-    state: "Multi-State",
-    address: "TX · AZ · GA",
-    manager: "Mordy Gobioff",
-    director: "—",
-    status: "Remote",
-    capacity: 200,
-    isPhysical: false,
-  },
-];
+export const mockClinics: Clinic[] = [];
 
 export interface ClinicMetrics {
   clinic: Clinic;
@@ -131,16 +97,7 @@ export const getClinicClients = (clinic: Clinic): Client[] => clientsForClinic(c
 export const getClinicRBTs = (clinic: Clinic): RBTProfile[] => rbtsForClinic(clinic.name);
 
 // Pipeline lanes scoped to a clinic — mirrors main lifecycle
-export const clinicPipelineStages = [
-  "Pending Initial Auth",
-  "Schedule Assessment",
-  "Assessment Scheduled",
-  "In QA",
-  "Pending Treatment Auth",
-  "Staffing Needed",
-  "Pending Start Date",
-  "Active",
-] as const;
+export const clinicPipelineStages = []as const;
 
 export const clinicStatusVariant = (
   s: ClinicStatus,

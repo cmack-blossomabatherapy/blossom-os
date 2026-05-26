@@ -108,10 +108,10 @@ export const recruitingCandidates: RecruitingCandidate[] = candidateSpecs.map((c
   timeline: makeTimeline(c),
 }));
 
-export const recruitingStages: CandidateStage[] = ["New Applicant", "Screening", "Interview Scheduled", "Interview Completed", "Offer Sent", "Offer Accepted", "Onboarding Handoff", "Background Check", "Orientation", "Training", "Ready for Staffing", "Not Qualified"];
-export const recruitingStates: RecruitingState[] = ["GA", "NC", "TN", "VA", "MD"];
-export const recruitingRoles: RecruitingRole[] = ["RBT", "BCBA"];
-export const recruitingSources: RecruitingSource[] = ["Apploi", "Indeed", "Website", "Email", "Phone", "Referral"];
+export const recruitingStages: CandidateStage[] = [];
+export const recruitingStates: RecruitingState[] = [];
+export const recruitingRoles: RecruitingRole[] = [];
+export const recruitingSources: RecruitingSource[] = [];
 export const recruitingRecruiters = recruiters;
 export const recruitingInterviewers = interviewers;
 
