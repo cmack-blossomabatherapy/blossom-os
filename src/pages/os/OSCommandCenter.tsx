@@ -17,6 +17,7 @@ import { HoursVsClientsChart } from "@/components/state-director/HoursVsClientsC
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { daysUntil } from "@/data/authorizations";
+import { useRecruitingCandidates } from "@/hooks/useRecruitingCandidates";
 
 /* ---------- design atoms ---------- */
 
@@ -124,7 +125,7 @@ function QuickAction({ icon: Icon, label, onClick }: { icon: React.ComponentType
   );
 }
 
-/* ---------- mock operational data (scoped by state) ---------- */
+/* ---------- live-derived operational data (scoped by state) ---------- */
 
 type AttentionItem = {
   id: string; urgency: Urgency; title: string; detail: string; owner: string;
@@ -132,141 +133,12 @@ type AttentionItem = {
   actions: { label: string; icon: React.ComponentType<{ className?: string }> }[];
 };
 
-function buildAttention(state: string): AttentionItem[] {
-  const r = REGIONS_BY_STATE[state] ?? REGIONS_BY_STATE.NC;
-  return [
-    {
-      id: "a1", urgency: "critical",
-      title: "3 unstaffed clients · approved for services",
-      detail: "Awaiting RBT assignment > 5 days. Auth clocks ticking.",
-      owner: "Scheduling Team", region: r[0], daysOverdue: 5,
-      impact: "Lost billable hours: ~62/wk",
-      actions: [
-        { label: "Open Scheduling", icon: CalendarDays },
-        { label: "Escalate", icon: ShieldAlert },
-      ],
-    },
-    {
-      id: "a2", urgency: "critical",
-      title: "2 authorizations expire in 7 days",
-      detail: "Treatment auths approaching cutoff without reauth packet started.",
-      owner: "Auth Coordinator", region: r[1], daysOverdue: 0,
-      impact: "Service interruption risk: 2 families",
-      actions: [
-        { label: "Open Auths", icon: FileCheck2 },
-        { label: "Assign", icon: UserCog },
-        { label: "Create Task", icon: PlusCircle },
-      ],
-    },
-    {
-      id: "a3", urgency: "high",
-      title: "5 progress reports overdue",
-      detail: "BCBA submissions past 48h SLA — 2 over 7 days.",
-      owner: "BCBA Team", region: r[2], daysOverdue: 7,
-      impact: "QA + billing held",
-      actions: [
-        { label: "Open QA Queue", icon: ClipboardCheck },
-        { label: "Escalate", icon: ShieldAlert },
-      ],
-    },
-    {
-      id: "a4", urgency: "high",
-      title: "4 candidates stalled in onboarding",
-      detail: "Background check + orientation incomplete > 10 days.",
-      owner: "Recruiting", region: r[0], daysOverdue: 10,
-      impact: "Pipeline pressure: 12 open client slots",
-      actions: [
-        { label: "Open Recruiting", icon: UserPlus },
-      ],
-    },
-    {
-      id: "a5", urgency: "watch",
-      title: "BCBA overload risk — 2 caseloads > 95% capacity",
-      detail: "Supervision quality at risk; coverage flexibility low.",
-      owner: "State Director", region: r[3], daysOverdue: 0,
-      impact: "Burnout + supervision gaps",
-      actions: [
-        { label: "Review Caseload", icon: Users },
-        { label: "Schedule 1:1", icon: CalendarDays },
-      ],
-    },
-    {
-      id: "a6", urgency: "watch",
-      title: "Scheduling conflict · 3 sessions double-booked",
-      detail: "RBT calendar overlap detected for Tue–Thu.",
-      owner: "Scheduling Team", region: r[4], daysOverdue: 0,
-      impact: "Family experience risk",
-      actions: [
-        { label: "Open Scheduling", icon: CalendarDays },
-        { label: "Resolve", icon: CheckCircle2 },
-      ],
-    },
-  ];
-}
-
 type Task = { id: string; title: string; meta: string; due: string; urgency: Urgency; category: string };
-const ACTION_GROUPS: { id: string; label: string; icon: React.ComponentType<{ className?: string }>; tasks: Task[] }[] = [
-  {
-    id: "today", label: "Due Today", icon: Clock,
-    tasks: [
-      { id: "t1", title: "Follow up with BCBA — Jordan M.", meta: "Re: Overdue PR for client Liam K.", due: "By 3:00 PM", urgency: "high", category: "Follow-up" },
-      { id: "t2", title: "Approve staffing — Greene household", meta: "RBT match #2 ready for sign-off", due: "By 5:00 PM", urgency: "critical", category: "Approval" },
-      { id: "t3", title: "Call parent — escalated complaint", meta: "Hernandez family · scheduling dispute", due: "Today", urgency: "high", category: "Escalation" },
-    ],
-  },
-  {
-    id: "waiting", label: "Waiting on Others", icon: Inbox,
-    tasks: [
-      { id: "t4", title: "Reauth packet from BCBA Avery L.", meta: "Requested 2 days ago", due: "Waiting 2d", urgency: "watch", category: "BCBA" },
-      { id: "t5", title: "Background check — candidate Riley P.", meta: "Vendor pending", due: "Waiting 4d", urgency: "watch", category: "Recruiting" },
-    ],
-  },
-  {
-    id: "approvals", label: "Approvals Needed", icon: CheckCircle2,
-    tasks: [
-      { id: "t6", title: "PTO request — RBT Casey W.", meta: "5 days · Mar 18–22", due: "Awaiting", urgency: "watch", category: "HR" },
-      { id: "t7", title: "Out-of-network exception — Patel client", meta: "Insurance escalation", due: "Awaiting", urgency: "high", category: "Auth" },
-    ],
-  },
-  {
-    id: "escalations", label: "Escalations", icon: Flame,
-    tasks: [
-      { id: "t8", title: "Caseload imbalance — Region East", meta: "2 BCBAs > 95% utilization", due: "Open", urgency: "high", category: "Operations" },
-    ],
-  },
-];
-
-const RECRUITING_SNAPSHOT = [
-  { label: "Active applicants", value: 28, tone: "neutral" as const },
-  { label: "Interviews today", value: 4, tone: "neutral" as const },
-  { label: "Onboarding pending", value: 7, tone: "warn" as const },
-  { label: "Orientation scheduled", value: 3, tone: "neutral" as const },
-  { label: "BCBA pipeline", value: 5, tone: "ok" as const },
-  { label: "RBT pipeline", value: 23, tone: "ok" as const },
-];
-
-const FEED: { id: string; icon: React.ComponentType<{ className?: string }>; text: string; meta: string; tone: "ok" | "warn" | "neutral" }[] = [
-  { id: "f1", icon: CheckCircle2, text: "Client Greene staffed — RBT Casey W. assigned", meta: "2m ago · Scheduling", tone: "ok" },
-  { id: "f2", icon: FileCheck2, text: "Auth approved — Patel family · 6 mo treatment", meta: "11m ago · Auth", tone: "ok" },
-  { id: "f3", icon: FileText, text: "PR uploaded — BCBA Avery L. for client Noah S.", meta: "27m ago · QA", tone: "neutral" },
-  { id: "f4", icon: UserPlus, text: "Candidate hired — RBT Morgan T. · start 4/02", meta: "1h ago · Recruiting", tone: "ok" },
-  { id: "f5", icon: ShieldAlert, text: "Escalation created — scheduling dispute Hernandez", meta: "2h ago · Director", tone: "warn" },
-  { id: "f6", icon: ClipboardCheck, text: "Orientation completed — 3 new RBTs", meta: "3h ago · Recruiting", tone: "ok" },
-];
-
 const MESSAGES = [
   { id: "m1", channel: "#state-leadership", from: "Director Ops", preview: "Reviewing Q2 staffing forecast — please confirm regional targets by EOD.", time: "9:14 AM", mentions: 1 },
   { id: "m2", channel: "#staffing", from: "Scheduling Lead", preview: "Greene match approved. Pairing email queued.", time: "8:51 AM", mentions: 0 },
   { id: "m3", channel: "DM · Recruiter", from: "Taylor B.", preview: "Two BCBA candidates onsite Thursday — need your interview slot.", time: "8:32 AM", mentions: 1 },
   { id: "m4", channel: "#escalations", from: "QA Lead", preview: "Patel PR rework needed before billing cycle.", time: "Yesterday", mentions: 0 },
-];
-
-const AI_INSIGHTS = [
-  { id: "ai1", icon: TrendingUp, text: "Staffing demand increasing in Region A — 3 new approvals this week." },
-  { id: "ai2", icon: AlertTriangle, text: "3 progress reports overdue > 7 days. Recommend escalation to BCBA leads." },
-  { id: "ai3", icon: Activity, text: "Cancellation trend up 8% vs prior 4 weeks. Mostly Tue/Thu afternoons." },
-  { id: "ai4", icon: UserPlus, text: "BCBA recruiting velocity slowing — pipeline 22% below 4w avg." },
-  { id: "ai5", icon: ShieldAlert, text: "Auth utilization risk: 2 clients < 60% of approved hours this period." },
 ];
 
 /* ---------- page ---------- */
@@ -279,7 +151,6 @@ export default function OSCommandCenter() {
 
   const stateName = STATE_NAMES[activeState] ?? activeState;
   const regions = REGIONS_BY_STATE[activeState] ?? REGIONS_BY_STATE.NC;
-  const attention = useMemo(() => buildAttention(activeState), [activeState]);
 
   const { sessions, hasAnyData } = useStateOps(activeState, "4w");
   const series = useMemo(() => weeklySeries(sessions), [sessions]);
@@ -325,6 +196,276 @@ export default function OSCommandCenter() {
     return items.sort((x, y) => rank(x.urgency) - rank(y.urgency) || x.daysRemaining - y.daysRemaining).slice(0, 6);
   }, [liveAuths.items, liveAuths.bcbaById, activeState]);
 
+  // Live recruiting candidates scoped to active state.
+  const { candidates: allCandidates } = useRecruitingCandidates();
+  const recruitingScoped = useMemo(
+    () => allCandidates.filter((c) => !activeState || c.state === activeState),
+    [allCandidates, activeState],
+  );
+  const recruitingStats = useMemo(() => {
+    const countStage = (...stages: string[]) =>
+      recruitingScoped.filter((c) => stages.includes(c.pipeline_stage)).length;
+    const activeApplicants = recruitingScoped.filter(
+      (c) => !["Staffed", "Withdrawn", "Rejected", "On Hold"].includes(c.pipeline_stage),
+    ).length;
+    const onboardingPending = countStage("Background Check", "Onboarding");
+    const orientationScheduled = countStage("Orientation Scheduled");
+    const interviewsActive = countStage("Interview Scheduled");
+    const bcbaPipeline = recruitingScoped.filter((c) => c.role === "BCBA" && !["Staffed", "Withdrawn", "Rejected"].includes(c.pipeline_stage)).length;
+    const rbtPipeline = recruitingScoped.filter((c) => (c.role === "RBT" || c.role === "BT") && !["Staffed", "Withdrawn", "Rejected"].includes(c.pipeline_stage)).length;
+    const stalled = recruitingScoped.filter((c) => {
+      const ms = Date.now() - new Date(c.stage_entered_at).getTime();
+      return ms / 86400000 > 10 && ["Background Check", "Onboarding", "Orientation Scheduled"].includes(c.pipeline_stage);
+    }).length;
+    return { activeApplicants, interviewsActive, onboardingPending, orientationScheduled, bcbaPipeline, rbtPipeline, stalled };
+  }, [recruitingScoped]);
+
+  // Staffing stats derived from workforce + auth signals.
+  const staffingStats = useMemo(() => {
+    const needs = workforce.staffingNeeds ?? [];
+    const unstaffed = needs.filter((n) => n.urgency === "critical").length;
+    const partial = needs.filter((n) => n.urgency === "high" || n.need === "Partial").length;
+    const totalClients = workforce.bcbas.reduce((sum, b) => sum + b.caseload, 0);
+    const staffed = Math.max(0, totalClients - unstaffed - partial);
+    const bcbaCap = workforce.bcbas.length === 0 ? 0 :
+      Math.round((workforce.bcbas.reduce((s, b) => s + b.caseload, 0) / (workforce.bcbas.length * 12)) * 100);
+    const rbtUtil = workforce.rbts.length === 0 ? 0 :
+      Math.round(workforce.rbts.reduce((s, r) => s + (r.utilization ?? 0), 0) / workforce.rbts.length);
+    const urgentPct = totalClients === 0 ? 0 : Math.round((unstaffed / totalClients) * 100);
+    return { staffed, partial, unstaffed, bcbaCap, rbtUtil, urgentPct };
+  }, [workforce.staffingNeeds, workforce.bcbas, workforce.rbts]);
+
+  // Live ATTENTION items derived from auths + workforce + recruiting.
+  const attention = useMemo<AttentionItem[]>(() => {
+    const items: AttentionItem[] = [];
+    const inState = liveAuths.items.filter((a) => !activeState || a.state === activeState);
+
+    const expiringSoon = inState.filter((a) => {
+      const d = daysUntil(a.expirationDate);
+      return d !== null && d <= 14 && d >= 0;
+    });
+    if (expiringSoon.length > 0) {
+      items.push({
+        id: "att-exp",
+        urgency: expiringSoon.some((a) => (daysUntil(a.expirationDate) ?? 99) <= 7) ? "critical" : "high",
+        title: `${expiringSoon.length} authorization${expiringSoon.length === 1 ? "" : "s"} expire in ≤14 days`,
+        detail: "Reauth packets not yet submitted — service interruption risk.",
+        owner: "Auth Coordinator", region: regions[0],
+        impact: `${expiringSoon.length} famil${expiringSoon.length === 1 ? "y" : "ies"} at risk`,
+        actions: [
+          { label: "Open Auths", icon: FileCheck2 },
+          { label: "Assign", icon: UserCog },
+        ],
+      });
+    }
+
+    const qaStalled = inState.filter((a) => a.stage === "In QA Review" && a.daysInStage >= 3);
+    if (qaStalled.length > 0) {
+      const worst = Math.max(...qaStalled.map((a) => a.daysInStage));
+      items.push({
+        id: "att-qa",
+        urgency: worst >= 7 ? "critical" : "high",
+        title: `${qaStalled.length} progress report${qaStalled.length === 1 ? "" : "s"} stalled in QA`,
+        detail: `Oldest in QA review ${worst} days. SLA past 48h.`,
+        owner: "QA Team", region: regions[1], daysOverdue: worst,
+        impact: "QA + billing held",
+        actions: [
+          { label: "Open QA Queue", icon: ClipboardCheck },
+          { label: "Escalate", icon: ShieldAlert },
+        ],
+      });
+    }
+
+    const missing = inState.filter((a) => a.missingInfo);
+    if (missing.length > 0) {
+      items.push({
+        id: "att-miss",
+        urgency: "high",
+        title: `${missing.length} auth${missing.length === 1 ? "" : "s"} missing documentation`,
+        detail: "Required documents not on file — blocks submission.",
+        owner: "Auth Coordinator", region: regions[2],
+        impact: "Submission blocked",
+        actions: [
+          { label: "Open Auths", icon: FileCheck2 },
+          { label: "Create Task", icon: PlusCircle },
+        ],
+      });
+    }
+
+    const overloaded = workforce.bcbas.filter((b) => b.status === "Overloaded" || b.status === "Near Capacity");
+    if (overloaded.length > 0) {
+      items.push({
+        id: "att-bcba",
+        urgency: overloaded.some((b) => b.status === "Overloaded") ? "high" : "watch",
+        title: `${overloaded.length} BCBA caseload${overloaded.length === 1 ? "" : "s"} at or above capacity`,
+        detail: "Supervision quality + coverage flexibility at risk.",
+        owner: "State Director", region: regions[3],
+        impact: "Burnout + supervision gaps",
+        actions: [
+          { label: "Review Caseload", icon: Users },
+          { label: "Schedule 1:1", icon: CalendarDays },
+        ],
+      });
+    }
+
+    const criticalStaffing = (workforce.staffingNeeds ?? []).filter((n) => n.urgency === "critical");
+    if (criticalStaffing.length > 0) {
+      items.push({
+        id: "att-staff",
+        urgency: "critical",
+        title: `${criticalStaffing.length} unstaffed client${criticalStaffing.length === 1 ? "" : "s"} · approved for services`,
+        detail: "Awaiting RBT assignment. Auth clocks ticking.",
+        owner: "Scheduling Team", region: criticalStaffing[0].region || regions[0],
+        impact: `~${criticalStaffing.reduce((s, n) => s + (n.hoursNeeded || 0), 0)} hrs/wk unbooked`,
+        actions: [
+          { label: "Open Scheduling", icon: CalendarDays },
+          { label: "Escalate", icon: ShieldAlert },
+        ],
+      });
+    }
+
+    if (recruitingStats.stalled > 0) {
+      items.push({
+        id: "att-rec",
+        urgency: "high",
+        title: `${recruitingStats.stalled} candidate${recruitingStats.stalled === 1 ? "" : "s"} stalled in onboarding`,
+        detail: "Background check or orientation incomplete > 10 days.",
+        owner: "Recruiting", region: regions[0], daysOverdue: 10,
+        impact: `${recruitingStats.bcbaPipeline + recruitingStats.rbtPipeline} active in pipeline`,
+        actions: [{ label: "Open Recruiting", icon: UserPlus }],
+      });
+    }
+
+    const rank = (u: Urgency) => (u === "critical" ? 0 : u === "high" ? 1 : 2);
+    return items.sort((a, b) => rank(a.urgency) - rank(b.urgency));
+  }, [liveAuths.items, workforce.bcbas, workforce.staffingNeeds, recruitingStats, activeState, regions]);
+
+  // Live AI insights derived from real counts.
+  const aiInsights = useMemo(() => {
+    const list: { id: string; icon: React.ComponentType<{ className?: string }>; text: string }[] = [];
+    const expiring = liveAuths.items.filter((a) => {
+      const d = daysUntil(a.expirationDate);
+      return d !== null && d >= 0 && d <= 14 && (!activeState || a.state === activeState);
+    }).length;
+    const qa = liveAuths.items.filter((a) => a.stage === "In QA Review" && a.daysInStage >= 3 && (!activeState || a.state === activeState)).length;
+    const missing = liveAuths.items.filter((a) => a.missingInfo && (!activeState || a.state === activeState)).length;
+    const overloaded = workforce.bcbas.filter((b) => b.status === "Overloaded").length;
+    if (expiring) list.push({ id: "ai-exp", icon: ShieldAlert, text: `Auth risk: ${expiring} authorization${expiring === 1 ? "" : "s"} expire within 14 days.` });
+    if (qa) list.push({ id: "ai-qa", icon: AlertTriangle, text: `${qa} progress report${qa === 1 ? "" : "s"} stalled in QA > 3 days. Recommend escalation.` });
+    if (overloaded) list.push({ id: "ai-bcba", icon: TrendingUp, text: `${overloaded} BCBA${overloaded === 1 ? "" : "s"} above capacity — caseload rebalance suggested.` });
+    if (recruitingStats.stalled) list.push({ id: "ai-rec", icon: UserPlus, text: `${recruitingStats.stalled} candidate${recruitingStats.stalled === 1 ? "" : "s"} stalled in onboarding > 10 days.` });
+    if (missing) list.push({ id: "ai-miss", icon: AlertTriangle, text: `${missing} auth${missing === 1 ? "" : "s"} blocked on missing documentation.` });
+    if (list.length === 0) list.push({ id: "ai-ok", icon: Activity, text: `Operations look healthy in ${stateName}. No critical risks detected.` });
+    return list.slice(0, 5);
+  }, [liveAuths.items, workforce.bcbas, recruitingStats, activeState, stateName]);
+
+  // Action Queue derived from live signals, grouped operationally.
+  const actionGroups = useMemo(() => {
+    const today: Task[] = [];
+    const waiting: Task[] = [];
+    const approvals: Task[] = [];
+    const escalations: Task[] = [];
+    const inState = liveAuths.items.filter((a) => !activeState || a.state === activeState);
+
+    inState.forEach((a) => {
+      const d = daysUntil(a.expirationDate);
+      if (d !== null && d >= 0 && d <= 7) {
+        today.push({
+          id: `tk-exp-${a.id}`,
+          title: `Reauth · ${a.clientName}`,
+          meta: `Auth expires in ${d}d · ${a.payor}`,
+          due: d === 0 ? "Today" : `In ${d}d`,
+          urgency: d <= 3 ? "critical" : "high",
+          category: "Auth",
+        });
+      }
+      if (a.stage === "In QA Review" && a.daysInStage >= 3) {
+        waiting.push({
+          id: `tk-qa-${a.id}`,
+          title: `PR in QA · ${a.clientName}`,
+          meta: `Waiting on ${a.qaOwner ?? "QA"} · ${a.daysInStage}d`,
+          due: `Waiting ${a.daysInStage}d`,
+          urgency: a.daysInStage >= 7 ? "high" : "watch",
+          category: "QA",
+        });
+      }
+      if (a.stage === "Awaiting Submission" && a.treatmentPlanReceived && !a.missingInfo) {
+        approvals.push({
+          id: `tk-app-${a.id}`,
+          title: `Approve submission · ${a.clientName}`,
+          meta: `${a.authType} · ${a.payor}`,
+          due: "Awaiting",
+          urgency: "high",
+          category: "Auth",
+        });
+      }
+    });
+
+    (workforce.staffingNeeds ?? []).filter((n) => n.urgency === "critical").slice(0, 3).forEach((n) => {
+      escalations.push({
+        id: `tk-staff-${n.id}`,
+        title: `Staff ${n.client}`,
+        meta: `${n.region} · ${n.hoursNeeded}h/wk · ${n.need} needed`,
+        due: "Open",
+        urgency: "critical",
+        category: "Staffing",
+      });
+    });
+
+    workforce.bcbas.filter((b) => b.status === "Overloaded").slice(0, 2).forEach((b) => {
+      escalations.push({
+        id: `tk-bcba-${b.id ?? b.name}`,
+        title: `Caseload overload · ${b.name}`,
+        meta: `${b.region} · ${b.caseload} clients`,
+        due: "Open",
+        urgency: "high",
+        category: "BCBA",
+      });
+    });
+
+    return [
+      { id: "today", label: "Due Today", icon: Clock, tasks: today.slice(0, 4) },
+      { id: "waiting", label: "Waiting on Others", icon: Inbox, tasks: waiting.slice(0, 4) },
+      { id: "approvals", label: "Approvals Needed", icon: CheckCircle2, tasks: approvals.slice(0, 4) },
+      { id: "escalations", label: "Escalations", icon: Flame, tasks: escalations.slice(0, 4) },
+    ];
+  }, [liveAuths.items, workforce.staffingNeeds, workforce.bcbas, activeState]);
+
+  // Recent operational feed from auths activity.
+  const feed = useMemo(() => {
+    const inState = liveAuths.items.filter((a) => !activeState || a.state === activeState);
+    const sorted = [...inState]
+      .filter((a) => a.lastActivity)
+      .sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime())
+      .slice(0, 6);
+    const fmt = (d: string) => {
+      const ms = Date.now() - new Date(d).getTime();
+      const m = Math.floor(ms / 60000);
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    };
+    return sorted.map((a) => {
+      const stage = a.stage;
+      const tone: "ok" | "warn" | "neutral" =
+        stage === "Approved" ? "ok" :
+        stage === "Denied" || stage === "Expiring Soon" ? "warn" : "neutral";
+      const icon =
+        stage === "Approved" ? CheckCircle2 :
+        stage === "Denied" ? ShieldAlert :
+        stage === "In QA Review" ? ClipboardCheck :
+        stage === "Submitted" ? Send : FileCheck2;
+      return {
+        id: `feed-${a.id}`,
+        icon,
+        text: `${stage} · ${a.clientName} · ${a.payor}`,
+        meta: `${fmt(a.lastActivity)} · Auth`,
+        tone,
+      };
+    });
+  }, [liveAuths.items, activeState]);
+
   const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Director").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -348,7 +489,7 @@ export default function OSCommandCenter() {
             </div>
           </div>
           <div className="mt-4 space-y-2.5">
-            {AI_INSIGHTS.map((i) => (
+            {aiInsights.map((i) => (
               <div key={i.id} className="flex items-start gap-2.5 rounded-xl border border-white/70 bg-white/70 p-2.5">
                 <i.icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(265_70%_55%)]" />
                 <p className="text-[12px] leading-snug text-foreground/85">{i.text}</p>
@@ -442,9 +583,9 @@ export default function OSCommandCenter() {
           <div className="grid gap-3 px-5 pt-4 sm:grid-cols-2 lg:grid-cols-5">
             <MiniStat label="Active clients" value={hasAnyData ? stats.clientsThisWeek : 47} tone="neutral" />
             <MiniStat label="Hours this week" value={hasAnyData ? stats.hoursThisWeek.toFixed(0) : 728} tone="ok" />
-            <MiniStat label="Staffed %" value="86%" tone="ok" />
-            <MiniStat label="Recruiting" value="28" tone="neutral" />
-            <MiniStat label="Auths at risk" value={5} tone="warn" />
+            <MiniStat label="Staffed %" value={`${staffingStats.staffed + staffingStats.partial + staffingStats.unstaffed === 0 ? 0 : Math.round((staffingStats.staffed / (staffingStats.staffed + staffingStats.partial + staffingStats.unstaffed)) * 100)}%`} tone="ok" />
+            <MiniStat label="Recruiting" value={recruitingStats.activeApplicants} tone="neutral" />
+            <MiniStat label="Auths at risk" value={liveRisks.length} tone="warn" />
           </div>
           <div className="px-5 pb-5 pt-4">
             <HoursVsClientsChart data={series} />
@@ -460,6 +601,9 @@ export default function OSCommandCenter() {
             action={<Pill tone="bad">{criticalCount} critical · {highCount} high</Pill>}
           />
           <div className="grid gap-3 px-5 pb-5 pt-4 md:grid-cols-2">
+            {attention.length === 0 && (
+              <p className="text-[12px] text-muted-foreground px-1 py-3 md:col-span-2">No operational risks flagged for {stateName}. All clear.</p>
+            )}
             {attention.map((a) => {
               const t = urgencyTone(a.urgency);
               const Icon = a.urgency === "critical" ? Flame : a.urgency === "high" ? AlertTriangle : Activity;
@@ -509,7 +653,7 @@ export default function OSCommandCenter() {
         <Card>
           <SectionHeader icon={ListChecks} title="My Action Queue" sub="Your daily operational workspace" />
           <div className="grid gap-4 px-5 pb-5 pt-4 md:grid-cols-2 xl:grid-cols-4">
-            {ACTION_GROUPS.map((g) => (
+            {actionGroups.map((g) => (
               <div key={g.id} className="rounded-2xl border border-foreground/[0.06] bg-white/60 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -519,6 +663,9 @@ export default function OSCommandCenter() {
                   <span className="rounded-full bg-foreground/[0.05] px-1.5 py-0.5 text-[10px] font-semibold text-foreground/70">{g.tasks.length}</span>
                 </div>
                 <div className="mt-2.5 space-y-2">
+                  {g.tasks.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground py-2">Nothing here.</p>
+                  )}
                   {g.tasks.map((t) => {
                     const tone = urgencyTone(t.urgency);
                     return (
@@ -554,16 +701,16 @@ export default function OSCommandCenter() {
               action={<button onClick={() => navigate("/scheduling")} className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold text-foreground/70 hover:text-foreground">Open <ChevronRight className="h-3 w-3" /></button>}
             />
             <div className="grid grid-cols-3 gap-3 px-5 pt-4">
-              <MiniStat label="Staffed" value={32} tone="ok" />
-              <MiniStat label="Partial" value={9} tone="warn" />
-              <MiniStat label="Unstaffed" value={6} tone="bad" />
+              <MiniStat label="Staffed" value={staffingStats.staffed} tone="ok" />
+              <MiniStat label="Partial" value={staffingStats.partial} tone="warn" />
+              <MiniStat label="Unstaffed" value={staffingStats.unstaffed} tone="bad" />
             </div>
             <div className="px-5 pb-5 pt-4">
               <div className="space-y-2">
                 {[
-                  { label: "BCBA capacity", pct: 82, tone: "warn" as const },
-                  { label: "RBT capacity", pct: 71, tone: "ok" as const },
-                  { label: "Urgent staffing", pct: 18, tone: "bad" as const },
+                  { label: "BCBA capacity", pct: staffingStats.bcbaCap, tone: (staffingStats.bcbaCap >= 90 ? "bad" : staffingStats.bcbaCap >= 75 ? "warn" : "ok") as "ok" | "warn" | "bad" },
+                  { label: "RBT utilization", pct: staffingStats.rbtUtil, tone: (staffingStats.rbtUtil >= 75 ? "ok" : staffingStats.rbtUtil >= 50 ? "warn" : "bad") as "ok" | "warn" | "bad" },
+                  { label: "Urgent staffing", pct: staffingStats.urgentPct, tone: (staffingStats.urgentPct >= 15 ? "bad" : staffingStats.urgentPct >= 5 ? "warn" : "ok") as "ok" | "warn" | "bad" },
                 ].map((b) => (
                   <div key={b.label}>
                     <div className="flex items-center justify-between text-[11.5px]">
@@ -632,9 +779,12 @@ export default function OSCommandCenter() {
               action={<button onClick={() => navigate("/recruiting")} className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold text-foreground/70 hover:text-foreground">Open <ChevronRight className="h-3 w-3" /></button>}
             />
             <div className="grid grid-cols-2 gap-3 px-5 pb-5 pt-4 sm:grid-cols-3">
-              {RECRUITING_SNAPSHOT.map((s) => (
-                <MiniStat key={s.label} label={s.label} value={s.value} tone={s.tone} />
-              ))}
+              <MiniStat label="Active applicants" value={recruitingStats.activeApplicants} tone="neutral" />
+              <MiniStat label="Interviews scheduled" value={recruitingStats.interviewsActive} tone="neutral" />
+              <MiniStat label="Onboarding pending" value={recruitingStats.onboardingPending} tone={recruitingStats.onboardingPending > 5 ? "warn" : "neutral"} />
+              <MiniStat label="Orientation scheduled" value={recruitingStats.orientationScheduled} tone="neutral" />
+              <MiniStat label="BCBA pipeline" value={recruitingStats.bcbaPipeline} tone={recruitingStats.bcbaPipeline > 0 ? "ok" : "warn"} />
+              <MiniStat label="RBT pipeline" value={recruitingStats.rbtPipeline} tone={recruitingStats.rbtPipeline > 0 ? "ok" : "warn"} />
             </div>
             <div className="flex flex-wrap gap-1.5 px-5 pb-5">
               <QuickAction icon={CalendarDays} label="Schedule Interview" />
@@ -676,7 +826,10 @@ export default function OSCommandCenter() {
           <SectionHeader icon={Radio} title="Live Operations Feed" sub="Everything that moved in your state" />
           <div className="px-5 pb-5 pt-4">
             <div className="space-y-2">
-              {FEED.map((f) => (
+              {feed.length === 0 && (
+                <p className="text-[12px] text-muted-foreground px-1 py-3">No recent activity.</p>
+              )}
+              {feed.map((f) => (
                 <div key={f.id} className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3">
                   <div className={cn(
                     "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
