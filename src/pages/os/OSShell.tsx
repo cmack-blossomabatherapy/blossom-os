@@ -407,6 +407,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
+      id: "intelligence", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
+      ],
+    },
+    {
       id: "resources", label: "Resources", items: [
         { to: "/operations/resources", label: "Resource Library", icon: BookOpen, module: "dashboard" },
       ],
@@ -443,6 +448,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "communication", label: "Communication", items: [
         { to: "/executive/updates", label: "Executive Updates", icon: BellRing, module: "dashboard" },
+      ],
+    },
+    {
+      id: "intelligence", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -485,6 +495,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       id: "intelligence", label: "Intelligence & ROI", items: [
         { to: "/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "dashboard" },
         { to: "/marketing/state-growth", label: "State Growth", icon: MapPin, module: "dashboard" },
+      ],
+    },
+    {
+      id: "ops_intelligence", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
