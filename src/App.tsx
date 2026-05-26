@@ -170,6 +170,7 @@ import OSPayrollAdjustments from "./pages/os/OSPayrollAdjustments";
 import OSPayrollTimeAttendance from "./pages/os/OSPayrollTimeAttendance";
 import OSPayrollProfiles from "./pages/os/OSPayrollProfiles";
 import OSPayrollPTO from "./pages/os/OSPayrollPTO";
+import OSPayrollBenefits from "./pages/os/OSPayrollBenefits";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
@@ -458,7 +459,7 @@ const App = () => (
                   <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
                   <Route path="/payroll/profiles" element={<OSPayrollProfiles />} />
                   <Route path="/payroll/pto" element={<OSPayrollPTO />} />
-                  <Route path="/payroll/benefits" element={<OSPlaceholder title="Benefits & Deductions" description="Benefits enrollment and recurring deductions. Built in phase 3." icon={Briefcase} />} />
+                  <Route path="/payroll/benefits" element={<OSPayrollBenefits />} />
                   <Route path="/payroll/compliance" element={<OSPlaceholder title="Payroll Compliance" description="Audit-ready payroll compliance tracking. Built in phase 3." icon={ShieldCheck} />} />
                   <Route path="/payroll/tax-documents" element={<OSPlaceholder title="Tax Documents & Records" description="W-2s, 1099s, tax filings. Built in phase 3." icon={FileCheck2} />} />
                   <Route path="/payroll/messages" element={<OSPlaceholder title="Payroll Messages & Updates" description="Centralized written payroll communication. Built in phase 4." icon={BellRing} />} />
