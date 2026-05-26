@@ -10,6 +10,7 @@ import CMParentCommunicationPage from "./ParentCommunication";
 import CMFamilySupportPage from "./FamilySupport";
 import CMProgressFollowUpsPage from "./ProgressFollowUps";
 import CMSchedulingCoordinationPage from "./SchedulingCoordination";
+import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
 
 /* ---------- HOME ---------- */
 
@@ -48,18 +49,7 @@ export function CMSchedulingCoordination() {
 }
 
 export function CMAuthorizationsVisibility() {
-  return (
-    <CaseManagerComingSoon
-      title="Authorizations Visibility"
-      icon={ShieldCheck}
-      description="A read-only window into authorizations for each of your families — so you're never surprised by an expiring auth."
-      features={[
-        { icon: ShieldCheck,  title: "Auth status per family", description: "Approved, pending, or expiring — at a glance." },
-        { icon: AlertTriangle,title: "Renewal alerts",         description: "Quiet alerts ahead of an auth running short." },
-        { icon: Activity,     title: "Utilization trends",     description: "Spot families burning hours faster than expected." },
-      ]}
-    />
-  );
+  return <CMAuthorizationsVisibilityPage />;
 }
 
 export function CMStaffingCoordination() {
