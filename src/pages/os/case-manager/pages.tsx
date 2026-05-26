@@ -9,6 +9,7 @@ import CMAssignedFamiliesPage from "./AssignedFamilies";
 import CMParentCommunicationPage from "./ParentCommunication";
 import CMFamilySupportPage from "./FamilySupport";
 import CMProgressFollowUpsPage from "./ProgressFollowUps";
+import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 
 /* ---------- HOME ---------- */
 
@@ -43,18 +44,7 @@ export function CMProgressFollowUps() {
 /* ---------- OPERATIONS ---------- */
 
 export function CMSchedulingCoordination() {
-  return (
-    <CaseManagerComingSoon
-      title="Scheduling Coordination"
-      icon={CalendarDays}
-      description="Visibility into your families' schedules so you can anticipate disruption and stay one step ahead with parents."
-      features={[
-        { icon: CalendarDays, title: "Schedule awareness",  description: "See your families' weekly cadence at a glance." },
-        { icon: AlertTriangle,title: "Cancellation signals",description: "Gentle alerts when patterns suggest a check-in." },
-        { icon: Activity,     title: "Coverage gaps",       description: "Spot where families may feel a service drop." },
-      ]}
-    />
-  );
+  return <CMSchedulingCoordinationPage />;
 }
 
 export function CMAuthorizationsVisibility() {
