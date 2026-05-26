@@ -12,6 +12,7 @@ import CMProgressFollowUpsPage from "./ProgressFollowUps";
 import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
 import CMStaffingCoordinationPage from "./StaffingCoordination";
+import CMServiceIssuesPage from "./ServiceIssues";
 
 /* ---------- HOME ---------- */
 
@@ -58,18 +59,7 @@ export function CMStaffingCoordination() {
 }
 
 export function CMServiceIssues() {
-  return (
-    <CaseManagerComingSoon
-      title="Service Issues"
-      icon={AlertTriangle}
-      description="A calm workspace for tracking and resolving the small frictions families experience — before they grow."
-      features={[
-        { icon: AlertTriangle, title: "Issue tracking",    description: "Lightweight log of every reported service issue." },
-        { icon: Activity,      title: "Resolution status", description: "Where each issue stands and who's on it." },
-        { icon: HeartHandshake,title: "Family impact",     description: "How each issue affects the family relationship." },
-      ]}
-    />
-  );
+  return <CMServiceIssuesPage />;
 }
 
 export function CMEscalations() {
