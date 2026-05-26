@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Users, UsersRound, UserPlus, Clock4, ShieldCheck, DollarSign,
   Plus, Filter, Download, Phone, Mail, FileText, StickyNote,
@@ -11,8 +11,10 @@ import {
 } from "recharts";
 import { OSShell } from "./OSShell";
 import { cn } from "@/lib/utils";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { supabase } from "@/integrations/supabase/client";
 
-/* ─────────── MOCK DATA ─────────── */
+/* ─────────── TYPES ─────────── */
 
 type Status = "active" | "waitlist" | "inactive" | "discharged";
 type AuthState = "active" | "pending" | "expired";
@@ -30,41 +32,157 @@ type Client = {
   service: "In-Home ABA" | "Center-Based ABA" | "School / Consult" | "Other";
 };
 
-const clients: Client[] = [
-  { id: "C-10234", name: "James Smith",  dob: "06/14/2019", age: "4 y/o", initials: "JS", status: "active", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "Amanda R.", rbt: "Maya P.", teamCount: 2, nextApptDate: "May 16, 2024", nextApptTime: "3:30 PM", nextApptWith: "Amanda R.", auth: "active", authExp: "07/16/24", authNumber: "AET123456789", authStart: "04/16/2024", authEnd: "07/16/2024", unitsApproved: 2400, unitsUsed: 1728, progress: 72, guardian: "Sarah Smith (Mother)", phone: "(561) 555-0123", email: "sarahsmith@email.com", address: "123 SW 2nd Ave, Boca Raton, FL 33432", insurance: "Aetna Better Health", preferredStart: "ASAP", service: "In-Home ABA" },
-  { id: "C-10235", name: "Olivia Johnson", dob: "09/22/2018", age: "5 y/o", initials: "OJ", status: "active", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "David L.", rbt: "Carmen V.", teamCount: 1, nextApptDate: "May 17, 2024", nextApptTime: "10:00 AM", nextApptWith: "Carmen V.", auth: "active", authExp: "07/20/24", authNumber: "BCB987654321", authStart: "04/20/2024", authEnd: "07/20/2024", unitsApproved: 1800, unitsUsed: 1224, progress: 68, guardian: "Marcus Johnson (Father)", phone: "(561) 555-0145", email: "mjohnson@email.com", address: "742 NE 5th St, Delray Beach, FL", insurance: "BCBS Florida", preferredStart: "Next month", service: "Center-Based ABA" },
-  { id: "C-10236", name: "Liam Williams", dob: "03/11/2020", age: "4 y/o", initials: "LW", status: "waitlist", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "—", rbt: "—", teamCount: 0, nextApptDate: "—", nextApptTime: "", nextApptWith: "Pending intake", auth: "pending", authExp: "Submitted 05/01", authNumber: "—", authStart: "—", authEnd: "—", unitsApproved: 0, unitsUsed: 0, progress: 0, guardian: "Tasha Williams (Mother)", phone: "(561) 555-0167", email: "twilliams@email.com", address: "98 Palmetto Park Rd, Boca Raton, FL", insurance: "Cigna", preferredStart: "ASAP", service: "In-Home ABA" },
-  { id: "C-10237", name: "Noah Brown",   dob: "07/30/2019", age: "4 y/o", initials: "NB", status: "active", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "Amanda R.", rbt: "Jordan T.", teamCount: 3, nextApptDate: "May 15, 2024", nextApptTime: "1:00 PM",  nextApptWith: "Jordan T.", auth: "active", authExp: "06/30/24", authNumber: "UHC774551020", authStart: "03/30/2024", authEnd: "06/30/2024", unitsApproved: 2200, unitsUsed: 1782, progress: 81, guardian: "Erica Brown (Mother)", phone: "(561) 555-0192", email: "ericabrown@email.com", address: "411 Yamato Rd, Boca Raton, FL", insurance: "United Healthcare", preferredStart: "ASAP", service: "In-Home ABA" },
-  { id: "C-10238", name: "Emma Davis",   dob: "11/05/2018", age: "5 y/o", initials: "ED", status: "active", diagnosis: "F84.1 Autism Spectrum Disorder", bcba: "Priya N.", rbt: "Sam K.", teamCount: 1, nextApptDate: "May 16, 2024", nextApptTime: "2:00 PM", nextApptWith: "Sam K.", auth: "active", authExp: "07/10/24", authNumber: "AET445520011", authStart: "04/10/2024", authEnd: "07/10/2024", unitsApproved: 2000, unitsUsed: 1300, progress: 65, guardian: "Hannah Davis (Mother)", phone: "(561) 555-0102", email: "hannahd@email.com", address: "210 Glades Rd, Boca Raton, FL", insurance: "Aetna", preferredStart: "ASAP", service: "Center-Based ABA" },
-  { id: "C-10239", name: "Elijah Martinez", dob: "01/18/2020", age: "4 y/o", initials: "EM", status: "inactive", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "David L.", rbt: "—", teamCount: 2, nextApptDate: "—", nextApptTime: "", nextApptWith: "On pause", auth: "expired", authExp: "Expired 04/20/24", authNumber: "BCB221100543", authStart: "01/20/2024", authEnd: "04/20/2024", unitsApproved: 1600, unitsUsed: 1480, progress: 92, guardian: "Carlos Martinez (Father)", phone: "(561) 555-0188", email: "carlosm@email.com", address: "55 Federal Hwy, Boynton Beach, FL", insurance: "BCBS", preferredStart: "On hold", service: "School / Consult" },
-  { id: "C-10240", name: "Ava Wilson",   dob: "05/27/2019", age: "4 y/o", initials: "AW", status: "active", diagnosis: "F84.0 Autism Spectrum Disorder", bcba: "Priya N.", rbt: "Maya P.", teamCount: 2, nextApptDate: "May 18, 2024", nextApptTime: "11:00 AM", nextApptWith: "Maya P.", auth: "active", authExp: "07/25/24", authNumber: "CIG998877665", authStart: "04/25/2024", authEnd: "07/25/2024", unitsApproved: 2400, unitsUsed: 1776, progress: 74, guardian: "Megan Wilson (Mother)", phone: "(561) 555-0151", email: "meganw@email.com", address: "318 Linton Blvd, Delray Beach, FL", insurance: "Cigna", preferredStart: "ASAP", service: "In-Home ABA" },
-];
+/* ─────────── DATA MAPPING ─────────── */
 
-const distribution = [
-  { name: "Active",   value: 712, pct: 85, color: "hsl(265 85% 65%)" },
-  { name: "Waitlist", value: 78,  pct: 9,  color: "hsl(30 90% 60%)" },
-  { name: "Inactive", value: 52,  pct: 6,  color: "hsl(220 15% 70%)" },
-];
+const SERVICE_COLORS: Record<Client["service"], string> = {
+  "In-Home ABA": "hsl(265 85% 65%)",
+  "Center-Based ABA": "hsl(210 85% 60%)",
+  "School / Consult": "hsl(330 75% 62%)",
+  "Other": "hsl(30 90% 60%)",
+};
 
-const ageBuckets = [
-  { age: "0-2",  v: 56 },  { age: "3-5",  v: 198 },
-  { age: "6-10", v: 264 }, { age: "11-14", v: 152 }, { age: "15+", v: 118 },
-];
+const STATUS_COLORS: Record<Status, string> = {
+  active: "hsl(265 85% 65%)",
+  waitlist: "hsl(30 90% 60%)",
+  inactive: "hsl(220 15% 70%)",
+  discharged: "hsl(355 75% 60%)",
+};
 
-const services = [
-  { name: "In-Home ABA",      value: 58, color: "hsl(265 85% 65%)" },
-  { name: "Center-Based ABA", value: 22, color: "hsl(210 85% 60%)" },
-  { name: "School / Consult", value: 12, color: "hsl(330 75% 62%)" },
-  { name: "Other",            value: 8,  color: "hsl(30 90% 60%)" },
-];
+function deriveInitials(name: string) {
+  return name.split(" ").filter(Boolean).map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
+}
 
-const tabs: { id: Status | "all"; label: string; count: number }[] = [
-  { id: "all",        label: "All Clients", count: 842 },
-  { id: "active",     label: "Active",      count: 712 },
-  { id: "inactive",   label: "Inactive",    count: 132 },
-  { id: "discharged", label: "Discharged",  count: 56 },
-  { id: "waitlist",   label: "Waitlist",    count: 78 },
-];
+function mapServiceLocation(loc?: string | null): Client["service"] {
+  if (!loc) return "Other";
+  const v = loc.toLowerCase();
+  if (v.includes("home")) return "In-Home ABA";
+  if (v.includes("clinic") || v.includes("center")) return "Center-Based ABA";
+  if (v.includes("school")) return "School / Consult";
+  return "Other";
+}
+
+function mapStatus(stage?: string | null, active?: string | null): Status {
+  const s = (active ?? "").toLowerCase();
+  if (s.includes("discharg")) return "discharged";
+  if (s.includes("inactive") || s.includes("pause")) return "inactive";
+  const st = (stage ?? "").toLowerCase();
+  if (st.includes("waitlist") || st.includes("intake") || st.includes("vob")) return "waitlist";
+  return "active";
+}
+
+function mapAuth(status?: string | null): AuthState {
+  const s = (status ?? "").toLowerCase();
+  if (s === "approved" || s === "active") return "active";
+  if (s === "expired" || s === "denied") return "expired";
+  return "pending";
+}
+
+function fmtDate(d?: string | null) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function fmtShort(d?: string | null) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString(undefined, { month: "2-digit", day: "2-digit", year: "2-digit" });
+}
+
+type DbClient = {
+  id: string; child_name: string; parent_name: string | null; child_age: string | null;
+  state: string; stage: string;
+  bcba: string | null; rbt: string | null;
+  auth_status: string | null;
+  payor: string | null;
+  next_task_due: string | null; start_date: string | null;
+  phone: string | null; email: string | null; insurance: string | null;
+  approved_weekly_hours: number | null; delivered_weekly_hours: number | null;
+  service_location: string | null;
+  active_service_status: string | null;
+  client_authorizations?: Array<{
+    id: string; status: string | null; expiration_date: string | null;
+    approved_date: string | null; hours: string | null;
+  }>;
+};
+
+function mapDbClient(d: DbClient): Client {
+  const approvedWeekly = d.approved_weekly_hours ?? 0;
+  const deliveredWeekly = d.delivered_weekly_hours ?? 0;
+  // Convert weekly hours to ~3-month "units approved" (industry standard ~4 units/hr)
+  const unitsApproved = Math.round(approvedWeekly * 13 * 4);
+  const unitsUsed = Math.round(deliveredWeekly * 13 * 4);
+  const progress = unitsApproved > 0 ? Math.min(100, Math.round((unitsUsed / unitsApproved) * 100)) : 0;
+
+  const latestAuth = (d.client_authorizations ?? [])
+    .slice()
+    .sort((a, b) => (b.expiration_date ?? "").localeCompare(a.expiration_date ?? ""))[0];
+
+  const bcba = d.bcba?.trim() || "—";
+  const rbt = d.rbt?.trim() || "—";
+  const teamCount = (bcba !== "—" ? 1 : 0) + (rbt !== "—" ? 1 : 0);
+
+  return {
+    id: d.id.slice(0, 8).toUpperCase(),
+    name: d.child_name,
+    dob: "—",
+    age: d.child_age?.trim() || "—",
+    initials: deriveInitials(d.child_name),
+    status: mapStatus(d.stage, d.active_service_status),
+    diagnosis: "F84.0 Autism Spectrum Disorder",
+    bcba, rbt, teamCount,
+    nextApptDate: d.next_task_due ? fmtDate(d.next_task_due) : "—",
+    nextApptTime: "",
+    nextApptWith: bcba !== "—" ? bcba : rbt !== "—" ? rbt : "Unassigned",
+    auth: mapAuth(latestAuth?.status ?? d.auth_status),
+    authExp: latestAuth?.expiration_date ? fmtShort(latestAuth.expiration_date) : "—",
+    authNumber: latestAuth ? latestAuth.id.slice(0, 12).toUpperCase() : "—",
+    authStart: latestAuth?.approved_date ? fmtShort(latestAuth.approved_date) : "—",
+    authEnd: latestAuth?.expiration_date ? fmtShort(latestAuth.expiration_date) : "—",
+    unitsApproved, unitsUsed, progress,
+    guardian: d.parent_name && d.parent_name !== "—" ? `${d.parent_name} (Parent)` : "—",
+    phone: d.phone || "—",
+    email: d.email || "—",
+    address: "—",
+    insurance: d.insurance || d.payor || "—",
+    preferredStart: d.start_date ? fmtDate(d.start_date) : "—",
+    service: mapServiceLocation(d.service_location),
+  };
+}
+
+function useStateClients(activeState: string | null) {
+  const [data, setData] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      let q = supabase.from("clients").select(`
+        id, child_name, parent_name, child_age, state, stage,
+        bcba, rbt, auth_status, payor, next_task_due, start_date,
+        phone, email, insurance, approved_weekly_hours, delivered_weekly_hours,
+        service_location, active_service_status,
+        client_authorizations ( id, status, expiration_date, approved_date, hours )
+      `).order("child_name");
+      if (activeState && activeState !== "ALL") q = q.eq("state", activeState);
+      const { data, error } = await q.limit(1000);
+      if (cancelled) return;
+      if (error) {
+        console.error("Clients fetch error", error);
+        setData([]);
+      } else {
+        setData(((data ?? []) as unknown as DbClient[]).map(mapDbClient));
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [activeState]);
+
+  return { clients: data, loading };
+}
 
 const quickActions = [
   { label: "Add New Client",    icon: UserPlus,       tone: "os-tone-violet" },
