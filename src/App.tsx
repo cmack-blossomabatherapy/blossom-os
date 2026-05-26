@@ -614,6 +614,7 @@ const App = () => (
                   <Route path="/marketing/reputation" element={<MarketingReputation />} />
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
+                  <Route path="/marketing/reports" element={<MarketingReports />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
