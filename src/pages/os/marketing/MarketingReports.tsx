@@ -278,10 +278,11 @@ export default function MarketingReports() {
       </div>
 
       {/* Primary visual: state momentum */}
-      <MktgCard
-        title="State momentum"
-        subtitle="Last 7 days vs the prior 7 days — the operational growth pulse by state."
-        right={
+      <MktgCard title="State momentum">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[12.5px] text-muted-foreground">
+            Last 7 days vs the prior 7 days — the operational growth pulse by state.
+          </p>
           <div className="flex items-center gap-2">
             <TrendBadge delta={momentumDelta} pct={momentumPct} />
             {stateFilter && (
@@ -294,8 +295,7 @@ export default function MarketingReports() {
               </button>
             )}
           </div>
-        }
-      >
+        </div>
         <div className="space-y-2">
           {visibleStates.length === 0 && (
             <div className="rounded-xl border border-dashed border-border/70 bg-muted/30 p-6 text-center text-[13px] text-muted-foreground">
@@ -332,18 +332,16 @@ export default function MarketingReports() {
 
       {/* Channel + referral row */}
       <div className="grid gap-3 md:grid-cols-2">
-        <MktgCard
-          title="Channel value"
-          subtitle="Share of pipeline by source · qualified rate"
-          right={
+        <MktgCard title="Channel value">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-[12.5px] text-muted-foreground">Share of pipeline by source · qualified rate</p>
             <Link
               to="/marketing/attribution"
               className="inline-flex items-center gap-1 text-[12px] text-primary/80 hover:text-primary"
             >
               Attribution <ArrowUpRight className="h-3 w-3" />
             </Link>
-          }
-        >
+          </div>
           <div className="space-y-2">
             {intel.bySource.length === 0 && (
               <div className="text-[13px] text-muted-foreground">No channel data yet.</div>
@@ -367,18 +365,16 @@ export default function MarketingReports() {
           </div>
         </MktgCard>
 
-        <MktgCard
-          title="Referral trust by state"
-          subtitle="Word-of-mouth growth signal"
-          right={
+        <MktgCard title="Referral trust by state">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-[12.5px] text-muted-foreground">Word-of-mouth growth signal</p>
             <Link
               to="/marketing/referrals"
               className="inline-flex items-center gap-1 text-[12px] text-primary/80 hover:text-primary"
             >
               Referrals <ArrowUpRight className="h-3 w-3" />
             </Link>
-          }
-        >
+          </div>
           <div className="space-y-2">
             {intel.referrals.byState.length === 0 && (
               <div className="text-[13px] text-muted-foreground">No referral activity yet.</div>
@@ -406,18 +402,16 @@ export default function MarketingReports() {
       </div>
 
       {/* Recruiting reach */}
-      <MktgCard
-        title="Recruiting reach"
-        subtitle="Candidate sources fueling state staffing capacity"
-        right={
+      <MktgCard title="Recruiting reach">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[12.5px] text-muted-foreground">Candidate sources fueling state staffing capacity</p>
           <Link
             to="/marketing/recruiting"
             className="inline-flex items-center gap-1 text-[12px] text-primary/80 hover:text-primary"
           >
             Recruiting Marketing <ArrowUpRight className="h-3 w-3" />
           </Link>
-        }
-      >
+        </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {intel.recruitingBySource.length === 0 && (
             <div className="text-[13px] text-muted-foreground">No candidate activity yet.</div>
@@ -434,11 +428,11 @@ export default function MarketingReports() {
       </MktgCard>
 
       {/* AI insights */}
-      <MktgCard
-        title="AI report insights"
-        subtitle="Ask Blossom for an executive read on this report."
-        right={<Sparkles className="h-4 w-4 text-primary/70" />}
-      >
+      <MktgCard title="AI report insights">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-[12.5px] text-muted-foreground">Ask Blossom for an executive read on this report.</p>
+          <Sparkles className="h-4 w-4 text-primary/70" />
+        </div>
         <div className="flex flex-wrap gap-2">
           <AIPrompt label="Summarize this report for L10" variant="card" />
           <AIPrompt label="Where is growth out of sync with staffing?" variant="card" />
@@ -449,7 +443,10 @@ export default function MarketingReports() {
       </MktgCard>
 
       {/* Jump to */}
-      <MktgCard title="Jump to a marketing area" subtitle="All operational reports across the marketing footprint.">
+      <MktgCard title="Jump to a marketing area">
+        <p className="mb-3 text-[12.5px] text-muted-foreground">
+          All operational reports across the marketing footprint.
+        </p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {SECTION_LINKS.map((s) => (
             <Link
