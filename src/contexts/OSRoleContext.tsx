@@ -96,12 +96,19 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
 
   const setRole = useCallback((r: OSRole) => setRoleState(r), []);
   const setActiveState = useCallback((s: OSState) => {
-    // Non-super-admins are locked to their profile state.
-    if (!isSuperAdmin && profileState) return;
+    // Only State Directors are locked to their profile state.
+    // Every other role operates company-wide, so the state selector is a no-op for them.
+    if (!isSuperAdmin && derivedRole === "state_director" && profileState) return;
     setActiveStateInternal(s);
-  }, [isSuperAdmin, profileState]);
+  }, [isSuperAdmin, derivedRole, profileState]);
 
-  const effectiveState: OSState = !isSuperAdmin && profileState ? profileState : activeState;
+  // Only State Directors get pinned to their profile state. Everyone else uses the
+  // currently-selected state (which they can change freely, or ignore — their scope
+  // is company-wide so it has no effect on the data they see).
+  const effectiveState: OSState =
+    !isSuperAdmin && derivedRole === "state_director" && profileState
+      ? profileState
+      : activeState;
 
   const value = useMemo<OSRoleContextValue>(() => ({
     role,
