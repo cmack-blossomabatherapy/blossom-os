@@ -12,7 +12,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare,
+  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, GraduationCap,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
@@ -176,12 +176,17 @@ export default function OSTraining() {
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
                 </Button>
               )}
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding")}>
+                <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Onboarding
+              </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
                 <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
-                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
-              </Button>
+              {role === "super_admin" && (
+                <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
+                  <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
+                </Button>
+              )}
             </div>
           </header>
 
@@ -265,16 +270,18 @@ export default function OSTraining() {
                     <BookOpen className="mx-auto h-6 w-6 text-muted-foreground/70" />
                     <p className="mt-2 text-[13px] font-medium">No modules in this journey yet</p>
                     <p className="mt-1 text-[12px] text-muted-foreground">
-                      Open Manage Journeys to add and edit modules for this role.
+                      Modules for this role will appear here once HR publishes them.
                     </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 rounded-full"
-                      onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
-                    >
-                      <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
-                    </Button>
+                    {role === "super_admin" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 rounded-full"
+                        onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
+                      >
+                        <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
+                      </Button>
+                    )}
                   </div>
                 )}
                 {journeyModules.map((m, idx) => {
