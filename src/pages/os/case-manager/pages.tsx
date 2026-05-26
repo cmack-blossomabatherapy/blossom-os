@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import CaseManagerComingSoon from "./CaseManagerComingSoon";
 import OSTraining from "../OSTraining";
+import CMAssignedFamiliesPage from "./AssignedFamilies";
 
 /* ---------- HOME ---------- */
 
@@ -21,23 +22,7 @@ export function CMTrainingAcademy() {
 /* ---------- FAMILY RELATIONSHIPS ---------- */
 
 export function CMAssignedFamilies() {
-  return (
-    <CaseManagerComingSoon
-      title="Assigned Families"
-      icon={Users}
-      description="Your caseload at a glance — calm, warm, and human-centered. See each family's profile, current care, and relationship health."
-      features={[
-        { icon: Users,         title: "Family profiles",         description: "A single warm view of each family you steward." },
-        { icon: HeartHandshake,title: "Relationship health",     description: "Gentle indicators across engagement, satisfaction, and care continuity." },
-        { icon: Activity,      title: "Engagement timeline",     description: "Touch-points across messages, calls, and visits." },
-      ]}
-      aiPreview={[
-        "Summarize this family's last 30 days",
-        "Draft a check-in message tailored to this parent",
-        "Surface the families I haven't touched this week",
-      ]}
-    />
-  );
+  return <CMAssignedFamiliesPage />;
 }
 
 export function CMParentCommunication() {
