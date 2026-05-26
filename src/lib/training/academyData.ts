@@ -421,6 +421,198 @@ const SEED_TRAININGS: Training[] = [
   },
 ];
 
+/* ===================== Case Manager Journey ===================== */
+const CASE_MANAGER_TRAININGS: Training[] = [
+  {
+    id: "cm-welcome",
+    title: "Welcome to the Case Manager Role",
+    description: "What the role is, what it isn't, and where Case Managers fit at Blossom.",
+    type: "Quick Guide", estimatedMinutes: 12, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "The Case Manager is the family-relationship and service-continuity layer at Blossom — the warm bridge between families and operations.",
+    sopMarkdown: "## What you own\n- Family relationships\n- Service continuity\n- Parent communication\n- Escalation clarity\n\n## What you support (not own)\n- Clinical decisions (BCBA)\n- Scheduling builds (Scheduling Team)\n- Auths (Authorization Coordinator)\n- HR / Payroll / Billing",
+    checklist: [
+      { id: "c1", item: "What a Case Manager Does at Blossom", required: true },
+      { id: "c2", item: "The Family Relationship Bridge", required: true },
+      { id: "c3", item: "What You Own vs. What You Support", required: true },
+      { id: "c4", item: "How Case Managers Use Blossom OS", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Case Manager Dashboard", url: "/case-manager" }],
+  },
+  {
+    id: "cm-assigned-families",
+    title: "Assigned Families",
+    description: "Read the family snapshot, understand status, and spot service continuity concerns.",
+    type: "Workflow", estimatedMinutes: 15, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "How to use the Assigned Families area to stay close to every family without creating noise.",
+    checklist: [
+      { id: "c1", item: "Understanding Your Assigned Families", required: true },
+      { id: "c2", item: "Reading the Family Snapshot", required: true },
+      { id: "c3", item: "Spotting Service Continuity Concerns", required: true },
+      { id: "c4", item: "Using Notes Without Creating Noise", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Assigned Families", url: "/case-manager/families" }],
+  },
+  {
+    id: "cm-parent-communication",
+    title: "Parent Communication",
+    description: "Tone, cadence, documentation, and when communication becomes an escalation.",
+    type: "SOP", estimatedMinutes: 18, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Warm, calm, and clear — without making promises you can't control.",
+    checklist: [
+      { id: "c1", item: "Communicating With Parents Clearly", required: true },
+      { id: "c2", item: "Follow-Up Expectations", required: true },
+      { id: "c3", item: "How to Document Parent Conversations", required: true },
+      { id: "c4", item: "What Not to Promise Families", required: true },
+      { id: "c5", item: "When Communication Becomes an Escalation", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Parent Communication", url: "/case-manager/communication" }],
+  },
+  {
+    id: "cm-family-support",
+    title: "Family Support & Relationship Health",
+    description: "Trust, frustration signals, and emotional intelligence in family support.",
+    type: "Quick Guide", estimatedMinutes: 14, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Support families beyond task tracking — recognize relationship risk early.",
+    checklist: [
+      { id: "c1", item: "Understanding Family Trust", required: true },
+      { id: "c2", item: "Recognizing Relationship Risk", required: true },
+      { id: "c3", item: "Supporting Families Through Delays", required: true },
+      { id: "c4", item: "Staying Calm During Difficult Conversations", required: true },
+    ],
+    resources: [],
+  },
+  {
+    id: "cm-followups",
+    title: "Progress & Follow-Ups",
+    description: "Close the loop. Keep issues from falling through the cracks.",
+    type: "Workflow", estimatedMinutes: 12, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "How to manage follow-through, handoffs, and recurring concerns.",
+    checklist: [
+      { id: "c1", item: "Managing Open Follow-Ups", required: true },
+      { id: "c2", item: "Keeping Issues From Falling Through the Cracks", required: true },
+      { id: "c3", item: "Internal Handoff Best Practices", required: true },
+      { id: "c4", item: "Closing the Loop With Families", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Follow-Ups", url: "/case-manager/follow-ups" }],
+  },
+  {
+    id: "cm-scheduling",
+    title: "Scheduling Coordination",
+    description: "Scheduling visibility — without becoming the scheduler.",
+    type: "Quick Guide", estimatedMinutes: 10, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "When to involve Scheduling, and how to talk to families about gaps.",
+    checklist: [
+      { id: "c1", item: "Understanding Scheduling Visibility", required: true },
+      { id: "c2", item: "When to Involve Scheduling", required: true },
+      { id: "c3", item: "Talking to Families About Schedule Gaps", required: true },
+      { id: "c4", item: "Monitoring Service Continuity", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Scheduling Coordination", url: "/case-manager/scheduling" }],
+  },
+  {
+    id: "cm-authorizations",
+    title: "Authorization Visibility",
+    description: "Auth status awareness — awaiting submission, submitted, approved, denied, expiring soon, QA review.",
+    type: "Quick Guide", estimatedMinutes: 12, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Awareness only — Case Managers know auth statuses but don't manage auths.",
+    sopMarkdown: "## Statuses you'll see\n- Awaiting Submission\n- Submitted\n- Approved\n- Denied\n- Expiring Soon\n- QA Review\n- Flaked Client",
+    checklist: [
+      { id: "c1", item: "Understanding Authorization Statuses", required: true },
+      { id: "c2", item: "What Expiring Soon Means", required: true },
+      { id: "c3", item: "Missing Information and Family Communication", required: true },
+      { id: "c4", item: "When to Loop in Authorizations", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Auth Visibility", url: "/case-manager/authorizations" }],
+  },
+  {
+    id: "cm-staffing",
+    title: "Staffing Coordination",
+    description: "Staffing visibility from Needs RBT → Pending Start Date → Active.",
+    type: "Quick Guide", estimatedMinutes: 10, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Recognize staffing concerns and how they impact family trust.",
+    sopMarkdown: "## Client flow\nPending Treatment Auth → Staffing Status → Staffing Needed → Pending Start Date → Active.",
+    checklist: [
+      { id: "c1", item: "Understanding Staffing Visibility", required: true },
+      { id: "c2", item: "Needs RBT vs. RBT Confirmed", required: true },
+      { id: "c3", item: "Communicating Staffing Delays", required: true },
+      { id: "c4", item: "When to Escalate Staffing Concerns", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Staffing Coordination", url: "/case-manager/staffing" }],
+  },
+  {
+    id: "cm-escalations",
+    title: "Service Issues & Escalations",
+    description: "Identify and escalate service issues calmly. Keep escalations actionable.",
+    type: "SOP", estimatedMinutes: 15, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Calm, clear, well-documented escalations protect families and operations.",
+    checklist: [
+      { id: "c1", item: "What Counts as a Service Issue", required: true },
+      { id: "c2", item: "Understanding Services on Pause", required: true },
+      { id: "c3", item: "Escalation Levels", required: true },
+      { id: "c4", item: "How to Write a Clear Escalation Note", required: true },
+      { id: "c5", item: "Keeping Escalations Calm and Actionable", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Escalations", url: "/case-manager/escalations" }],
+  },
+  {
+    id: "cm-resources",
+    title: "Community Referrals & Resources",
+    description: "Share approved resources. Stay within role boundaries.",
+    type: "Quick Guide", estimatedMinutes: 8,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "What you can recommend, what requires clinical or leadership approval.",
+    checklist: [
+      { id: "c1", item: "Using the Resource Library", required: true },
+      { id: "c2", item: "Sharing Approved Family Resources", required: true },
+      { id: "c3", item: "Community Referral Guidelines", required: true },
+      { id: "c4", item: "Staying Within Role Boundaries", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Resource Library", url: "/case-manager/resources" }],
+  },
+  {
+    id: "cm-ai",
+    title: "Ask Blossom AI for Case Managers",
+    description: "Use AI for summaries, drafts, and risk awareness — never for clinical decisions.",
+    type: "Quick Guide", estimatedMinutes: 10,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "AI is a calm co-pilot. Human review always comes first.",
+    checklist: [
+      { id: "c1", item: "Using Ask Blossom AI for Family Support", required: true },
+      { id: "c2", item: "AI Follow-Up Suggestions", required: true },
+      { id: "c3", item: "AI Escalation Summaries", required: true },
+      { id: "c4", item: "What Not to Ask AI", required: true },
+      { id: "c5", item: "Human Review Always Comes First", required: true },
+    ],
+    resources: [{ id: "r1", type: "Link", title: "Ask Blossom AI", url: "/case-manager/ai" }],
+  },
+  {
+    id: "cm-readiness",
+    title: "Case Manager Readiness Check",
+    description: "Final review — role understanding, communication, escalation, and family support mindset.",
+    type: "Checklist", estimatedMinutes: 15, required: true,
+    category: "role", department: "case_management", owner: "Case Manager Lead", lastUpdated: "2026-05-26",
+    overview: "Confirm you're ready to support families with confidence and calm.",
+    checklist: [
+      { id: "c1", item: "Case Manager Role Review", required: true },
+      { id: "c2", item: "Communication Readiness", required: true },
+      { id: "c3", item: "Escalation Readiness", required: true },
+      { id: "c4", item: "Final Acknowledgement", required: true },
+    ],
+    resources: [],
+  },
+];
+
+SEED_TRAININGS.push(...CASE_MANAGER_TRAININGS);
+
 /** Only Intake is seeded with modules. Other roles get empty journeys ready to edit. */
 const SEED_JOURNEYS: RoleJourney[] = [
   { id: "j-intake", role: "intake_coordinator", title: "Intake Coordinator Journey", tagline: "From first phone call to a happy active client.", icon: "ClipboardList", tone: "lilac", moduleIds: [
@@ -458,6 +650,22 @@ const SEED_JOURNEYS: RoleJourney[] = [
   { id: "j-billing", role: "billing_finance", title: "Billing & Finance Journey", tagline: "Keep revenue clean and predictable.", icon: "Wallet", tone: "lilac", moduleIds: [] },
   { id: "j-exec", role: "executive_leadership", title: "Executive Leadership Journey", tagline: "Lead Blossom with rhythm and clarity.", icon: "Crown", tone: "violet", moduleIds: [] },
   { id: "j-ops", role: "operations_leadership", title: "Operations Leadership Journey", tagline: "Keep all states pulling the same direction.", icon: "Workflow", tone: "violet", moduleIds: [] },
+  { id: "j-case-manager", role: "case_manager", title: "Case Manager Onboarding Journey",
+    tagline: "Learn how to support families, coordinate service continuity, and keep communication calm, clear, and consistent.",
+    icon: "Heart", tone: "rose", moduleIds: [
+      "cm-welcome",
+      "cm-assigned-families",
+      "cm-parent-communication",
+      "cm-family-support",
+      "cm-followups",
+      "cm-scheduling",
+      "cm-authorizations",
+      "cm-staffing",
+      "cm-escalations",
+      "cm-resources",
+      "cm-ai",
+      "cm-readiness",
+    ] },
 ];
 
 /* ---------------- Store ---------------- */
@@ -467,7 +675,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v4";
+const STORAGE_KEY = "blossom.training.academy.v5";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
