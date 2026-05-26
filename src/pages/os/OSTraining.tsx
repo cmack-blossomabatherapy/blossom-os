@@ -63,7 +63,15 @@ export default function OSTraining() {
 
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
-  const cont = useMemo(continueLearning, [trainings]);
+  // Continue Learning = next-up modules from the user's role journey that aren't completed.
+  // Falls back to in-progress/overdue items if the journey is empty.
+  const cont = useMemo(() => {
+    const fromJourney = journeyModules
+      .map((training) => ({ training, progress: getProgress(training.id) }))
+      .filter(({ progress }) => progress.status !== "completed");
+    if (fromJourney.length > 0) return fromJourney;
+    return continueLearning();
+  }, [journeyModules, trainings]);
   const department = ROLE_DEPARTMENT[role];
   const requiredRole = useMemo(
     () => (department ? requiredForDepartment(department) : requiredDue()),
