@@ -3,7 +3,7 @@ import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, type HealthTone } fro
 import { useOpsIntelligence, type OpsTone } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
-import { Sparkles, TrendingUp, TrendingDown, Minus, ArrowUpRight, CheckCircle2, Clock, AlertTriangle, Plus, X } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Minus, CheckCircle2, Clock, AlertTriangle, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
