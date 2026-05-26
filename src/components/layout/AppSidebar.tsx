@@ -191,6 +191,84 @@ const mobileItemDescriptions: Record<string, string> = {
   "Resource Hub": "Guides and internal tools",
 };
 
+/** Minimal icon/label catalog for OS modules — used when building a generic
+ *  sidebar for an impersonated role that does not have a curated section. */
+const MODULE_NAV_META: Partial<Record<OSModule, { label: string; icon: typeof LayoutDashboard }>> = {
+  dashboard: { label: "Dashboard", icon: LayoutDashboard },
+  command_center: { label: "Command Center", icon: Compass },
+  leads: { label: "Leads", icon: Users },
+  clients: { label: "Clients", icon: UserCheck },
+  staff: { label: "Staff", icon: UsersRound },
+  scheduling: { label: "Scheduling", icon: Calendar },
+  intake: { label: "Intake", icon: Users },
+  cases: { label: "Cases", icon: ClipboardCheck },
+  authorizations: { label: "Authorizations", icon: ShieldCheck },
+  recruiting: { label: "Recruiting", icon: Briefcase },
+  credentialing: { label: "Credentialing", icon: IdCard },
+  employee_ops: { label: "Employee Ops", icon: HeartHandshake },
+  evaluations: { label: "Evaluations", icon: Star },
+  billing: { label: "Billing", icon: Wallet },
+  payroll: { label: "Payroll", icon: Wallet },
+  revenue: { label: "Revenue", icon: BarChart3 },
+  insurance: { label: "Insurance", icon: ShieldCheck },
+  reports: { label: "Reports", icon: BarChart3 },
+  kpi: { label: "KPI Scorecards", icon: BarChart3 },
+  vob: { label: "VOB Decision Center", icon: ClipboardCheck },
+  workflows: { label: "Workflows", icon: Workflow },
+  sop: { label: "SOPs", icon: BookOpen },
+  marketing: { label: "Marketing", icon: Megaphone },
+  analytics_hub: { label: "Analytics", icon: BarChart3 },
+  marketing_dashboard: { label: "Marketing Dashboard", icon: Megaphone },
+  campaigns: { label: "Campaigns", icon: Megaphone },
+  lead_sources: { label: "Lead Sources", icon: Inbox },
+  seo_content: { label: "SEO & Content", icon: BookOpen },
+  referrals: { label: "Referrals", icon: HeartHandshake },
+  recruiting_marketing: { label: "Recruiting Marketing", icon: Briefcase },
+  state_growth: { label: "State Growth", icon: BarChart3 },
+  reputation: { label: "Reputation", icon: Star },
+  community_outreach: { label: "Community Outreach", icon: Megaphone },
+  marketing_reports: { label: "Marketing Reports", icon: BarChart3 },
+  web_analytics: { label: "Web Analytics", icon: BarChart3 },
+  call_tracking: { label: "Call Tracking", icon: Phone },
+  attribution_roi: { label: "Attribution & ROI", icon: BarChart3 },
+  ai_assistant: { label: "Ask Blossom AI", icon: Sparkles },
+  ai_insights: { label: "AI Insights", icon: Sparkles },
+  automation_center: { label: "Automation Center", icon: Zap },
+  predictive_alerts: { label: "Predictive Alerts", icon: AlertTriangle },
+  ai_workflows: { label: "AI Workflows", icon: Workflow },
+  training: { label: "Training", icon: GraduationCap },
+  hr: { label: "HR", icon: HeartHandshake },
+  user_management: { label: "User Management", icon: UsersRound },
+  state_management: { label: "State Management", icon: Network },
+  settings: { label: "Settings", icon: Settings },
+  permissions: { label: "Permissions", icon: Lock },
+  data_uploads: { label: "Data Uploads", icon: FileSpreadsheet },
+};
+
+/** Build a generic sidebar for an impersonated OS role that has no curated nav. */
+function buildGenericRoleSections(role: OSRole): NavSection[] {
+  const homePath = ROLE_HOME[role] ?? "/";
+  const modules = ROLE_PROFILES[role].modules;
+  const workspace: NavItem[] = modules
+    .filter((m) => m !== "dashboard")
+    .map((m) => {
+      const meta = MODULE_NAV_META[m];
+      if (!meta) return null;
+      return { label: meta.label, icon: meta.icon, path: MODULE_ROUTES[m], perm: "" };
+    })
+    .filter((x): x is NavItem => !!x);
+  return [
+    {
+      title: "Home",
+      items: [
+        { label: "Dashboard", icon: LayoutDashboard, path: homePath, perm: "" },
+        { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+      ],
+    },
+    ...(workspace.length ? [{ title: "Workspace", items: workspace }] : []),
+  ];
+}
+
 const roleLabels: Record<string, string> = {
   admin: "Super Admin / Systems",
   exec: "Executive",
