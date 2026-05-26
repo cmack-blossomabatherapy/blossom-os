@@ -11,6 +11,7 @@ import CMFamilySupportPage from "./FamilySupport";
 import CMProgressFollowUpsPage from "./ProgressFollowUps";
 import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
+import CMStaffingCoordinationPage from "./StaffingCoordination";
 
 /* ---------- HOME ---------- */
 
@@ -53,18 +54,7 @@ export function CMAuthorizationsVisibility() {
 }
 
 export function CMStaffingCoordination() {
-  return (
-    <CaseManagerComingSoon
-      title="Staffing Coordination"
-      icon={UserCog}
-      description="Read-only staffing visibility so you can warmly prepare families for any change in their team."
-      features={[
-        { icon: UserCog,       title: "Assigned team",      description: "Current BCBAs and RBTs for each of your families." },
-        { icon: AlertTriangle, title: "Staffing changes",   description: "Early signals when a family's team is shifting." },
-        { icon: HeartHandshake,title: "Family-impact view", description: "Understand the relationship implications of a change." },
-      ]}
-    />
-  );
+  return <CMStaffingCoordinationPage />;
 }
 
 export function CMServiceIssues() {
