@@ -252,13 +252,13 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   intake_coordinator: {
     modules: ["dashboard", "intake", "leads", "vob", "clients", "authorizations", "sop", "training", "ai_assistant"],
-    scope: "state",
+    scope: "company",
     actions: { dashboard: VIEW, leads: VIEW_EDIT, intake: VIEW_EDIT, clients: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
   authorization_coordinator: {
     modules: ["dashboard", "clients", "authorizations", "vob", "cases", "billing", "insurance", "sop", "ai_assistant"],
-    scope: "state",
+    scope: "company",
     actions: { dashboard: VIEW, clients: VIEW_EDIT, cases: VIEW_EDIT, billing: VIEW },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
   },
