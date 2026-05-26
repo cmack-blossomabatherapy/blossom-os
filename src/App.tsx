@@ -174,6 +174,7 @@ import OSPayrollBenefits from "./pages/os/OSPayrollBenefits";
 import OSPayrollCompliance from "./pages/os/OSPayrollCompliance";
 import OSPayrollTaxDocuments from "./pages/os/OSPayrollTaxDocuments";
 import OSPayrollMessages from "./pages/os/OSPayrollMessages";
+import OSPayrollResources from "./pages/os/OSPayrollResources";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
@@ -466,7 +467,7 @@ const App = () => (
                   <Route path="/payroll/compliance" element={<OSPayrollCompliance />} />
                   <Route path="/payroll/tax-documents" element={<OSPayrollTaxDocuments />} />
                   <Route path="/payroll/messages" element={<OSPayrollMessages />} />
-                  <Route path="/payroll/resources" element={<OSPlaceholder title="Payroll Resource Library" description="Payroll SOPs, Viventium guides, timelines. Built in phase 4." icon={BookOpen} />} />
+                  <Route path="/payroll/resources" element={<OSPayrollResources />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
