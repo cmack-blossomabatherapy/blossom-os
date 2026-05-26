@@ -1,61 +1,54 @@
-# HR Team Role — Full Audit Plan
+# Payroll Role — Full Audit & Wire-Up Plan
 
-12 pages, ~8,700 lines. I'll do this in **4 phases**, shipping each phase as a self-contained pass so we can verify before moving on.
+13 Payroll pages exist. Goal: every page renders from real Supabase data, every button does something real, one consistent new design, no mock arrays, no legacy placeholders.
 
-## Scope (every page in HR Team role)
+## Current state (from DB audit)
 
-```
-Workspace        Operations              Records              Comms / Resources
-─────────────    ───────────────────     ─────────────────    ──────────────────
-HR Workspace     Orientation Queue       New Hires            Messages & Updates
-Training Academy HR Requests             Employee Support     Resource Library
-                 Compliance & Documents  Training & Certs
-                                         Evaluations & Growth
-```
+Populated: `payroll_adjustments` (12), `payroll_issues` (19), `payroll_benefits` (20), `payroll_deductions` (22), `payroll_communications` (31), `pto_requests` (18), `employee_documents_hr` (56), `employees` (85).
 
-Plus: confirm `/hr-team` landing, sidebar entries, and remove links to any legacy `/hr/*` routes still referenced from HR Team views.
+**Empty (pages depend on these):** `payroll_runs`, `payroll_run_items`, `payroll_reminders`, `hours_timesheets`, `hours_timesheet_entries`, `employee_hours_snapshots`, `employee_hr_profiles`, `employee_pay_changes`.
 
-## Audit checklist applied to every page
+Also: `/payroll/issues` route is still an `OSPlaceholder`.
 
-1. **Real data only** — every list/KPI sourced from Supabase tables (`employees`, `employee_onboarding`, `employee_cases`, `employee_trainings`, `employee_certifications`, `employee_evaluations`, `hr_announcements`, `recruiting_orientation_slots`, `academy_*`, etc.). Remove any remaining mock arrays, placeholder counts, or hardcoded names.
-2. **Loading + empty states** — skeleton on load, calm empty state, no fake fillers.
-3. **Buttons work** — every CTA, row action, filter, tab, and detail-panel action either performs a real mutation (insert/update via supabase client) or navigates to a real OS route. No dead `onClick={() => {}}`.
-4. **Routes are new** — all internal links point to `/hr/workspace`, `/hr/new-hires`, `/hr/orientation-queue`, etc. — never to legacy `/hr/onboarding`, `/hr/directory`, `/hr/training`, `/hr/reviews`.
-5. **Design matches Blossom OS** — `OSShell` + semantic tokens + glass/hairline cards, one primary action per view, no raw color classes.
-6. **Permissions** — HR Team role only; sensitive payroll/financial actions hidden.
-7. **Mobile** — KPI grid + tables collapse cleanly.
+## Phase 1 — Data foundation
+- Seed realistic data into the 8 empty tables (2 recent payroll runs with run items per employee, 2 weeks of timesheets, hours snapshots, HR profiles for all 85 employees, recent pay changes, active reminders).
+- Verify FK integrity and that `employees` ids match across all payroll tables.
+- Add any missing columns/indexes the pages need.
 
-## Phase 1 — Foundation & data layer
+## Phase 2 — Shared atoms + design audit
+- Audit `_PayrollAtoms.tsx` and unify: KPI tile, status pill, drawer shell, empty state, AI prompt card — semantic tokens only.
+- Remove any remaining hardcoded colors / mock arrays across all 13 files.
+- Standardize page chrome (OSShell header, search, filter row, right rail).
 
-- Inventory all Supabase tables the pages need; for any that don't exist yet (e.g. `hr_requests`, evaluation cycles), create a migration with RLS.
-- Create `src/lib/os/hr/queries.ts` with shared typed query helpers (employees, onboarding, cases, trainings, evaluations, announcements, orientation slots) so all 12 pages use one source of truth.
-- Fix `/hr-team` landing (`OSHRTeam`) to use real KPIs from those queries.
+## Phase 3 — Wire each page to real data + working actions
+One pass per page. For each: replace mocks with Supabase queries, make every button perform a real insert/update (with toast + optimistic refresh), confirm drawers/detail panels load from DB.
 
-## Phase 2 — Records pages
+1. `OSPayrollWorkspace` — aggregate counts/KPIs from real tables, quick-action buttons navigate or open drawers.
+2. `OSPayrollQueue` — live `payroll_runs` + `payroll_run_items`; approve/hold/flag write to DB.
+3. `OSPayrollAdjustments` — `payroll_adjustments`; create/resolve/escalate actions.
+4. `OSPayrollTimeAttendance` — `hours_timesheets` + entries; approve/flag/adjust.
+5. **`OSPayrollIssues` (NEW)** — replace placeholder; reads `payroll_issues`, resolve/assign/escalate.
+6. `OSPayrollProfiles` — `employees` + `employee_hr_profiles` + `employee_pay_changes`; edit pay rate writes back.
+7. `OSPayrollPTO` — `pto_requests`; approve/deny/note actions.
+8. `OSPayrollBenefits` — `payroll_benefits` + `payroll_deductions`; toggle/edit deductions.
+9. `OSPayrollCompliance` — derived from documents + issues; mark-reviewed actions.
+10. `OSPayrollTaxDocuments` — `employee_documents_hr`; mark reviewed / request from employee.
+11. `OSPayrollMessages` — `payroll_communications` + `payroll_reminders`; send reminder writes real row.
+12. `OSPayrollResources` — confirm library wiring already on real resource tables.
+13. `OSPayrollTrainingAcademy` — confirm wiring to training tables.
+14. `OSPayrollCoordinator` (landing) — real aggregate counts across all of the above.
 
-- `OSHRNewHires` — wire to `employee_onboarding` + `employees`; row actions (advance stage, add blocker, message employee).
-- `OSHREmployeeSupport` — wire to `employee_cases`; resolve / reassign / escalate mutations.
-- `OSHRTrainingCerts` — wire to `employee_trainings` + `employee_certifications` + `academy_enrollments`; assign / mark complete / remind.
-- `OSHREvaluations` — wire to evaluation cycle tables; schedule / record outcome.
+## Phase 4 — QA pass
+- Click every primary button on every page; verify DB row changes and UI refresh.
+- Mobile responsive check.
+- Remove dead imports / unused mock files.
+- Confirm no `bg-white`, `text-black`, `bg-gray-*` etc. in payroll files.
 
-## Phase 3 — Operations pages
+## Technical notes
+- One migration in Phase 1 (additive only — new columns + seeds via separate insert calls).
+- Mutations use `supabase.from(...).insert/update` then refetch via React Query `invalidateQueries`.
+- Keep `_PayrollAtoms.tsx` as the single source of UI primitives.
+- No new routes besides replacing the `/payroll/issues` placeholder.
 
-- `OSHROrientationQueue` — wire to `recruiting_orientation_slots`; confirm / reschedule / mark attended.
-- `OSHRRequests` — wire to (new) `hr_requests` table; intake / assign / resolve.
-- `OSHRCompliance` — wire to `employee_certifications` + compliance documents; upload / verify / remind.
-
-## Phase 4 — Workspace, comms, resources, QA
-
-- `OSHRWorkspace` — top-level command center driven by Phase 1 queries.
-- `OSHRTrainingAcademy` — real `academy_tracks` + `academy_enrollments` data.
-- `OSHRMessages` — wire compose/reply/escalate to `employee_cases` + `hr_announcements` mutations.
-- `OSHRResources` — confirm category structure, persist saved/recent state per HR user.
-- Final QA pass per checklist on all 12 pages; mobile pass; verify no legacy `/hr/*` link remains in HR Team views; confirm build is clean.
-
-## Deliverable per phase
-
-Short report listing: tables touched, mutations added, dead buttons fixed, legacy routes removed, and any deferred items. Then we proceed to the next phase.
-
----
-
-**Reply "go" (or "start phase 1") and I'll begin with Phase 1.** If you want to reorder phases or add/remove pages from scope, tell me now.
+## Deliverable order
+I'll do Phase 1 in the next message (migration + seed), confirm with you, then proceed Phase 2 → 3 → 4. Each phase is a discrete, reviewable step.
