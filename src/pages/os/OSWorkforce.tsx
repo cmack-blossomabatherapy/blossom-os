@@ -13,9 +13,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   STATE_NAMES, REGIONS_BY_STATE,
-  buildBcbas, buildRbts,
   type BCBA, type RBT, type BCBAStatus, type RBTStatus,
 } from "@/lib/workforce/mockStaff";
+import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 
 /* ----------------- design atoms ----------------- */
 
@@ -123,27 +123,46 @@ function initials(name: string) {
   return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 }
 
-function buildStaffingNeeds(state: string) {
-  const r = REGIONS_BY_STATE[state] ?? REGIONS_BY_STATE.NC;
-  return [
-    { id: "s1", client: "J. Carter", region: r[0], hoursNeeded: 8, need: "RBT", urgency: "critical" as const, owner: "Scheduling" },
-    { id: "s2", client: "K. Wallace", region: r[3], hoursNeeded: 12, need: "RBT", urgency: "high" as const, owner: "Recruiting" },
-    { id: "s3", client: "T. Nguyen", region: r[0], hoursNeeded: 6, need: "Partial", urgency: "watch" as const, owner: "Scheduling" },
-    { id: "s4", client: "L. Kim", region: r[1], hoursNeeded: 20, need: "BCBA", urgency: "high" as const, owner: "Staffing" },
-    { id: "s5", client: "B. Cole", region: r[2], hoursNeeded: 4, need: "Partial", urgency: "watch" as const, owner: "Scheduling" },
-  ];
-}
-
-function buildRisks(state: string) {
-  const r = REGIONS_BY_STATE[state] ?? REGIONS_BY_STATE.NC;
-  return [
-    { id: "k1", kind: "Overdue PRs", staff: "Dr. Maya Patel", region: r[0], detail: "3 PRs > 7 days", tone: "bad" as Tone, icon: FileText },
-    { id: "k2", kind: "Missing Supervision", staff: "Sara Bennett", region: r[2], detail: "Supervision overdue by 5 days", tone: "warn" as Tone, icon: ClipboardCheck },
-    { id: "k3", kind: "BCBA Overload", staff: "Dr. Maya Patel", region: r[0], detail: "Caseload 14/12", tone: "bad" as Tone, icon: Flame },
-    { id: "k4", kind: "Underutilized RBT", staff: "Diego Ramirez", region: r[1], detail: "60% utilization · 12 hrs available", tone: "neutral" as Tone, icon: Clock },
-    { id: "k5", kind: "Onboarding Incomplete", staff: "Noah Kim", region: r[3], detail: "Orientation outstanding > 10 days", tone: "warn" as Tone, icon: Briefcase },
-    { id: "k6", kind: "Training Overdue", staff: "Sara Bennett", region: r[2], detail: "2 modules past due", tone: "warn" as Tone, icon: GraduationCap },
-  ];
+function buildRisksFrom(bcbas: BCBA[], rbts: RBT[]) {
+  const out: { id: string; kind: string; staff: string; region: string; detail: string; tone: Tone; icon: React.ComponentType<{ className?: string }> }[] = [];
+  bcbas
+    .filter((b) => b.status === "Overloaded")
+    .slice(0, 3)
+    .forEach((b) =>
+      out.push({
+        id: `ovr-${b.id}`, kind: "BCBA Overload", staff: b.name, region: b.region,
+        detail: `Caseload ${b.caseload}/${b.capacity}`, tone: "bad", icon: Flame,
+      }),
+    );
+  bcbas
+    .filter((b) => b.staffingGaps > 0)
+    .slice(0, 3)
+    .forEach((b) =>
+      out.push({
+        id: `gap-${b.id}`, kind: "Caseload Staffing Gap", staff: b.name, region: b.region,
+        detail: `${b.staffingGaps} client(s) under approved hours`, tone: "warn", icon: ShieldAlert,
+      }),
+    );
+  bcbas
+    .filter((b) => b.authRisks > 0)
+    .slice(0, 2)
+    .forEach((b) =>
+      out.push({
+        id: `auth-${b.id}`, kind: "Authorization Risk", staff: b.name, region: b.region,
+        detail: `${b.authRisks} client(s) with auth concerns`, tone: "warn", icon: FileText,
+      }),
+    );
+  rbts
+    .filter((r) => r.utilization < 60)
+    .slice(0, 2)
+    .forEach((r) =>
+      out.push({
+        id: `util-${r.id}`, kind: "Underutilized RBT", staff: r.name, region: r.region,
+        detail: `${r.utilization}% utilization · ${Math.max(0, r.targetHours - r.scheduledHours)} hrs available`,
+        tone: "neutral", icon: Clock,
+      }),
+    );
+  return out.slice(0, 8);
 }
 
 /* ----------------- main page ----------------- */
@@ -153,10 +172,8 @@ export default function OSWorkforce() {
   const state = activeState ?? "NC";
   const stateName = STATE_NAMES[state] ?? state;
 
-  const bcbas = useMemo(() => buildBcbas(state), [state]);
-  const rbts = useMemo(() => buildRbts(state), [state]);
-  const needs = useMemo(() => buildStaffingNeeds(state), [state]);
-  const risks = useMemo(() => buildRisks(state), [state]);
+  const { bcbas, rbts, staffingNeeds: needs } = useStateWorkforce(state);
+  const risks = useMemo(() => buildRisksFrom(bcbas, rbts), [bcbas, rbts]);
 
   const [query, setQuery] = useState("");
   const [selectedBcba, setSelectedBcba] = useState<BCBA | null>(null);
@@ -169,15 +186,15 @@ export default function OSWorkforce() {
   const filteredRbts = q ? rbts.filter(b => `${b.name} ${b.region} ${b.bcba}`.toLowerCase().includes(q)) : rbts;
 
   const kpis = useMemo(() => {
-    const overloaded = bcbas.filter(b => b.status === "Overloaded").length;
-    const supervisionRisks = rbts.filter(r => r.supervisionDue).length + bcbas.filter(b => b.supervisionPct < 80).length;
+    const overloaded = bcbas.filter((b) => b.status === "Overloaded").length;
+    const nearCap = bcbas.filter((b) => b.status === "Near Capacity").length;
     return {
       bcbas: bcbas.length,
       rbts: rbts.length,
       awaiting: needs.length,
       overloaded,
-      openRbtPositions: 4,
-      supervisionRisks,
+      nearCap,
+      authRisks: bcbas.reduce((s, b) => s + b.authRisks, 0),
     };
   }, [bcbas, rbts, needs]);
 
@@ -229,10 +246,10 @@ export default function OSWorkforce() {
           <div className="mt-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <KpiCard label="Active BCBAs" value={kpis.bcbas} hint={`${bcbas.filter(b=>b.status==="Healthy").length} healthy`} tone="ok" icon={UserCog} />
             <KpiCard label="Active RBTs" value={kpis.rbts} hint={`${rbts.filter(r=>r.status==="Healthy").length} healthy`} tone="ok" icon={Users} />
-            <KpiCard label="Clients Awaiting Staffing" value={kpis.awaiting} hint="12 clients awaiting RBT staffing" tone="warn" icon={Inbox} />
+            <KpiCard label="Clients Awaiting Staffing" value={kpis.awaiting} hint={`${kpis.awaiting} clients under approved hours`} tone="warn" icon={Inbox} />
             <KpiCard label="Overloaded BCBAs" value={kpis.overloaded} hint={`${kpis.overloaded} over target caseload`} tone="bad" icon={Flame} />
-            <KpiCard label="Open RBT Positions" value={kpis.openRbtPositions} hint="Recruiting in progress" tone="warn" icon={UserPlus} />
-            <KpiCard label="Supervision Risks" value={kpis.supervisionRisks} hint="Behind on cadence" tone="warn" icon={ShieldAlert} />
+            <KpiCard label="Near Capacity" value={kpis.nearCap} hint="At or 1 under target" tone="warn" icon={UserPlus} />
+            <KpiCard label="Authorization Risks" value={kpis.authRisks} hint="Expiring or pending auths" tone="warn" icon={ShieldAlert} />
           </div>
 
           {/* MAIN GRID */}
