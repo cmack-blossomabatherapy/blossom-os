@@ -327,6 +327,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // Load the user's roles for permission-scoped knowledge retrieval.
+    const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map((r: any) => String(r.role));
+
     let conversationId = incomingConvId;
     if (!conversationId) {
       const title = message.slice(0, 60);
@@ -353,9 +357,9 @@ Deno.serve(async (req) => {
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    const ctx = { admin, userId };
+    const ctx = { admin, userId, roles };
     const usedTools: string[] = [];
-    const sources: Array<{ title: string; url?: string; tool: string }> = [];
+    const sources: Array<{ title: string; url?: string; tool: string; snippet?: string; similarity?: number; category?: string }> = [];
     const startedAt = Date.now();
     let finalText = "";
 
@@ -407,11 +411,24 @@ Deno.serve(async (req) => {
           if (Array.isArray(items)) {
             if (fname === "search_knowledge_base") {
               for (const it of items.slice(0, 6)) {
-                if (it?.source_title) sources.push({ title: it.source_title, url: it.source_url ?? undefined, tool: fname });
+                if (it?.source_title) sources.push({
+                  title: it.source_title,
+                  url: it.source_url ?? undefined,
+                  tool: fname,
+                  snippet: typeof it.content === "string" ? it.content.slice(0, 260) : undefined,
+                  similarity: typeof it.similarity === "number" ? it.similarity : undefined,
+                  category: it.category ?? undefined,
+                });
               }
             } else if (fname === "search_hr_resources" || fname === "search_training_courses") {
               for (const it of items.slice(0, 6)) {
-                if (it?.title) sources.push({ title: it.title, url: it.url ?? it.external_url ?? undefined, tool: fname });
+                if (it?.title) sources.push({
+                  title: it.title,
+                  url: it.url ?? it.external_url ?? undefined,
+                  tool: fname,
+                  snippet: typeof it.description === "string" ? it.description.slice(0, 260) : undefined,
+                  category: it.category ?? undefined,
+                });
               }
             }
           }
