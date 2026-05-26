@@ -12,6 +12,7 @@ import CMProgressFollowUpsPage from "./ProgressFollowUps";
 import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
 import CMStaffingCoordinationPage from "./StaffingCoordination";
+import CMServiceIssuesPage from "./ServiceIssues";
 
 /* ---------- HOME ---------- */
 
