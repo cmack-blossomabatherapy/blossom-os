@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Settings as SettingsIcon, Save } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Settings as SettingsIcon, Save, GraduationCap, ArrowRight } from "lucide-react";
 import { PageShell } from "@/components/shared/PageShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,28 @@ export default function HRSettings() {
 
   return (
     <PageShell title="HR Settings" description="Configure HR module policies and behavior." icon={SettingsIcon}>
+      {/* Training — Role Journeys */}
+      <Card className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Manage Role Journeys</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                Edit the Training Academy learning journey for each role — add, remove, reorder, and deeply edit modules.
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/training/manage">
+              Open <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </Card>
+
       {/* PTO Accrual */}
       <SettingCard
         title="PTO Accrual Policy"
