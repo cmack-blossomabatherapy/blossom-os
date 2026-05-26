@@ -185,7 +185,6 @@ import OSClients from "./pages/os/OSClients";
 import OSClientsOperations from "./pages/os/OSClientsOperations";
 import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
-import OSExecutive from "./pages/os/OSExecutive";
 import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
 import ExecutiveOverview from "./pages/os/executive/ExecutiveOverview";
 import CompanyPulse from "./pages/os/executive/CompanyPulse";
@@ -435,7 +434,6 @@ const App = () => (
                   <Route path="/executive/operational-consistency" element={<OperationalConsistency />} />
                   <Route path="/executive/updates" element={<ExecutiveUpdates />} />
                   <Route path="/executive/resources" element={<ExecResourceLibrary />} />
-                  <Route path="/executive/legacy" element={<OSExecutive />} />
                   <Route path="/operations" element={<OpsExecutiveDashboard />} />
                   <Route path="/operations/command-center" element={<OpsCommandCenter />} />
                   <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
