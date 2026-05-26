@@ -155,7 +155,6 @@ export default function ExecutiveOverview() {
                   <span className="text-[13.5px] font-medium">{d.name}</span>
                   <HealthPill tone={d.tone}>{d.tone}</HealthPill>
                 </div>
-                {d.note && <p className="mt-1 text-[12px] text-muted-foreground line-clamp-2">{d.note}</p>}
               </Link>
             ))}
           </div>
