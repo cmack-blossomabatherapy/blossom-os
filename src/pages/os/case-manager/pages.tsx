@@ -7,6 +7,7 @@ import CaseManagerComingSoon from "./CaseManagerComingSoon";
 import OSTraining from "../OSTraining";
 import CMAssignedFamiliesPage from "./AssignedFamilies";
 import CMParentCommunicationPage from "./ParentCommunication";
+import CMFamilySupportPage from "./FamilySupport";
 
 /* ---------- HOME ---------- */
 
@@ -31,18 +32,7 @@ export function CMParentCommunication() {
 }
 
 export function CMFamilySupport() {
-  return (
-    <CaseManagerComingSoon
-      title="Family Support"
-      icon={HeartHandshake}
-      description="Coordinate every kind of support a family might need — from logistics to emotional check-ins — in one calm workspace."
-      features={[
-        { icon: HeartHandshake,title: "Support requests",     description: "Track and route family asks to the right person." },
-        { icon: Activity,      title: "Family engagement",    description: "Patterns of engagement across the relationship." },
-        { icon: AlertTriangle, title: "Continuity tracking",  description: "Early warning for any risk to a family's care." },
-      ]}
-    />
-  );
+  return <CMFamilySupportPage />;
 }
 
 export function CMProgressFollowUps() {
