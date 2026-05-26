@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Card, Pill, Empty, KpiCard, PageHeader, HeaderBtn, type Tone } from "./_PayrollAtoms";
 
 type ModuleType =
   | "training" | "video" | "sop" | "quiz"
@@ -24,38 +25,7 @@ interface ModuleRow {
 interface Certificate { id: string; track_id: string; code: string; name: string; description: string | null; position: number; awarded_after_phase_id: string | null; }
 interface Enrollment  { id: string; track_id: string; employee_id: string; status: string; current_week_id: string | null; }
 
-type Tone = "ok" | "warn" | "crit" | "muted";
-
-function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={cn(
-      "rounded-2xl border border-border/70 bg-card",
-      "shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]",
-      className,
-    )}>{children}</div>
-  );
-}
-function Pill({ tone = "muted", children }: { tone?: Tone; children: React.ReactNode }) {
-  const cls = tone === "crit"
-    ? "bg-destructive/10 text-destructive border-destructive/20"
-    : tone === "warn"
-    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
-    : tone === "ok"
-    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
-    : "bg-muted text-muted-foreground border-border/70";
-  return <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", cls)}>{children}</span>;
-}
-function Empty({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint?: string }) {
-  return (
-    <div className="py-12 text-center">
-      <div className="mx-auto mb-3 h-10 w-10 rounded-2xl bg-muted grid place-items-center">
-        <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-      </div>
-      <p className="text-sm font-medium tracking-tight">{title}</p>
-      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
-    </div>
-  );
-}
+// Card, Pill, Empty, KpiCard, PageHeader, HeaderBtn imported from _PayrollAtoms
 
 const TYPE_ICON: Record<ModuleType, React.ElementType> = {
   training: GraduationCap, video: PlayCircle, sop: FileText, quiz: ClipboardList,
@@ -358,14 +328,9 @@ export default function OSPayrollTrainingAcademy() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="text-2xl font-semibold tracking-tight mt-1">{value}</p>
-    </div>
-  );
-}
+const Kpi = ({ label, value }: { label: string; value: string | number }) => (
+  <KpiCard label={label} value={value} />
+);
 
 function JourneyCard({
   title, tagline, position, isPrimary, stats, onOpen, open,
