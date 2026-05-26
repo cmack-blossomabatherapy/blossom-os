@@ -240,8 +240,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
-      id: "performance", label: "Performance", items: [
-        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
+      id: "performance", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -275,8 +275,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
-      id: "performance", label: "Performance", items: [
-        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
+      id: "performance", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -315,8 +315,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
-      id: "performance", label: "Performance", items: [
-        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
+      id: "performance", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -367,8 +367,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
-      id: "performance", label: "Performance", items: [
-        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
+      id: "performance", label: "Operations & Intelligence", items: [
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
       ],
     },
     {
