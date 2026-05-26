@@ -10,6 +10,7 @@ import {
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
   LineChart, PhoneCall, Gauge, Database,
+  Plug,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -139,6 +140,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
       { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
       { to: "/admin/data-uploads", label: "Data Uploads", icon: Database, module: "data_uploads" },
+      { to: "/integrations", label: "Integrations", icon: Plug, module: "integrations" },
     ],
   },
 ];
