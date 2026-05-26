@@ -632,6 +632,7 @@ const App = () => (
                   <Route path="/admin/data-uploads" element={<OSDataUploads />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
+                  <Route path="/integrations" element={<Integrations />} />
                   {/* Marketing Team */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<MarketingDashboard />} />
