@@ -4,25 +4,18 @@ import {
   Globe2, BookOpen,
 } from "lucide-react";
 import CaseManagerComingSoon from "./CaseManagerComingSoon";
+import OSTraining from "../OSTraining";
 
 /* ---------- HOME ---------- */
 
+/**
+ * Case Manager → Training Academy
+ * Renders the global, role-aware Training Academy. The Case Manager journey
+ * is seeded in `src/lib/training/academyData.ts` and surfaces automatically
+ * via `useOSRole()` / `getJourneyForRole("case_manager")`.
+ */
 export function CMTrainingAcademy() {
-  return (
-    <CaseManagerComingSoon
-      title="Training Academy"
-      icon={GraduationCap}
-      description="Onboarding journeys, parent communication craft, escalation playbooks, and service coordination — designed to help every Case Manager grow with confidence."
-      features={[
-        { icon: GraduationCap, title: "Case Manager onboarding", description: "Guided journey for new Case Managers across regions." },
-        { icon: MessageSquare, title: "Parent communication craft", description: "Frameworks and templates for warm, clear conversations." },
-        { icon: Flame,         title: "Escalation management",     description: "How to recognize, route, and resolve sensitive situations." },
-        { icon: Activity,      title: "Service coordination",      description: "Coordinating care continuity across BCBAs, RBTs, and schedules." },
-        { icon: HeartHandshake,title: "Relationship management",   description: "Tools for building lasting family trust." },
-        { icon: Users,         title: "Family support workflows",  description: "Step-by-step support patterns for common family needs." },
-      ]}
-    />
-  );
+  return <OSTraining />;
 }
 
 /* ---------- FAMILY RELATIONSHIPS ---------- */
