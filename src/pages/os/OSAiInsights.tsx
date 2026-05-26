@@ -115,8 +115,8 @@ export default function OSAiInsights() {
 
     const stalledLeads = leads.filter((l) => {
       const created = days(l.created_at);
-      const stage = l.pipeline_stage;
-      const isOpen = stage !== "Converted to Client" && stage !== "Disqualified";
+      const stage = l.pipeline_stage as string;
+      const isOpen = stage !== "VOB Completed" && stage !== "Non-Qualified";
       return isOpen && created !== null && created < -14;
     });
     if (stalledLeads.length > 0) {
