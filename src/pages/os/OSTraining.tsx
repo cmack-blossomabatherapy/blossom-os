@@ -42,6 +42,7 @@ const ROLE_DEPARTMENT: Record<string, string> = {
   rbt: "clinical",
   hr_team: "hr",
   billing_finance: "billing",
+  case_manager: "case_management",
 };
 
 export default function OSTraining() {
