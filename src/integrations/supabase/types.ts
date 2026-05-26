@@ -8333,6 +8333,23 @@ export type Database = {
           source_url: string
         }[]
       }
+      match_knowledge_chunks_v2: {
+        Args: {
+          _roles?: string[]
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          category: string
+          content: string
+          document_id: string
+          id: string
+          similarity: number
+          source_title: string
+          source_url: string
+        }[]
+      }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
         Returns: boolean
