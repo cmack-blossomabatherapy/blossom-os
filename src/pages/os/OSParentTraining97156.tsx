@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { mockAuths, daysUntil, type Authorization } from "@/data/authorizations";
+import { daysUntil, type Authorization } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { cn } from "@/lib/utils";
 
 /* ───── tone palette (matches Auth Workspace / Supervision) ───── */
@@ -306,9 +307,10 @@ const VIEWS: { key: ViewKey; label: string }[] = [
 
 export default function OSParentTraining97156() {
   const [overlay, setOverlay] = useState<Record<string, EscalationOverlay>>({});
+  const live = useLiveAuthorizations();
 
   const items = useMemo<PT97156Item[]>(() => {
-    const base = mockAuths
+    const base = live.items
       .map(deriveItem)
       .filter((x): x is PT97156Item => x !== null);
     return base.map((it) => {
@@ -335,7 +337,7 @@ export default function OSParentTraining97156() {
         escalatedAt: o.escalatedAt,
       };
     });
-  }, [overlay]);
+  }, [overlay, live.items]);
 
   const [view, setView] = useState<ViewKey>("all");
   const [bucket, setBucket] = useState<Bucket | "all">("all");
