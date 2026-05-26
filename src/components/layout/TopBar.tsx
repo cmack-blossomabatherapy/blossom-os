@@ -1,4 +1,4 @@
-import { Search, User, UserPlus, LogOut, Shield, Menu } from "lucide-react";
+import { Search, User, UserPlus, LogOut, Shield, Menu, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertsPanel } from "@/components/alerts/AlertsPanel";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -95,6 +95,9 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/settings")}>
+              <Settings className="h-3.5 w-3.5 mr-2" /> Settings
+            </DropdownMenuItem>
             {isAdmin && (
               <DropdownMenuItem onClick={() => navigate("/team")}>
                 <UserPlus className="h-3.5 w-3.5 mr-2" /> Manage team
