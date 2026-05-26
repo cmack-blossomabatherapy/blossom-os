@@ -4460,6 +4460,8 @@ export type Database = {
           chunk_index: number
           content: string
           created_at: string
+          document_id: string | null
+          embedding: string | null
           id: string
           metadata: Json
           search: unknown
@@ -4472,6 +4474,8 @@ export type Database = {
           chunk_index?: number
           content: string
           created_at?: string
+          document_id?: string | null
+          embedding?: string | null
           id?: string
           metadata?: Json
           search?: unknown
@@ -4484,6 +4488,8 @@ export type Database = {
           chunk_index?: number
           content?: string
           created_at?: string
+          document_id?: string | null
+          embedding?: string | null
           id?: string
           metadata?: Json
           search?: unknown
@@ -4491,6 +4497,77 @@ export type Database = {
           source_title?: string
           source_type?: string
           source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_documents: {
+        Row: {
+          category: string
+          chunk_count: number
+          created_at: string
+          description: string | null
+          file_mime: string | null
+          file_path: string | null
+          file_size_bytes: number | null
+          id: string
+          ingest_error: string | null
+          ingest_status: string
+          raw_content: string | null
+          role_visibility: string[] | null
+          source_kind: string
+          source_url: string | null
+          status: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          chunk_count?: number
+          created_at?: string
+          description?: string | null
+          file_mime?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          ingest_error?: string | null
+          ingest_status?: string
+          raw_content?: string | null
+          role_visibility?: string[] | null
+          source_kind?: string
+          source_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          chunk_count?: number
+          created_at?: string
+          description?: string | null
+          file_mime?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          ingest_error?: string | null
+          ingest_status?: string
+          raw_content?: string | null
+          role_visibility?: string[] | null
+          source_kind?: string
+          source_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
         }
         Relationships: []
       }
@@ -8230,6 +8307,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_platform_admin: { Args: { _uid: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }
       log_employee_timeline_event: {
@@ -8240,6 +8318,20 @@ export type Database = {
           _metadata?: Json
         }
         Returns: undefined
+      }
+      match_knowledge_chunks: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          similarity: number
+          source_title: string
+          source_url: string
+        }[]
       }
       owns_stage: {
         Args: { _stage_kind: string; _stage_value: string; _user_id: string }
