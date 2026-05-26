@@ -117,8 +117,8 @@ const tools = [
   },
 ];
 
-async function runTool(name: string, args: any, ctx: { admin: any; userId: string }) {
-  const { admin, userId } = ctx;
+async function runTool(name: string, args: any, ctx: { admin: any; userId: string; roles: string[] }) {
+  const { admin, userId, roles } = ctx;
   try {
     if (name === "get_my_profile") {
       const { data: emp } = await admin
@@ -234,10 +234,11 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
             const eData = await eResp.json();
             const queryEmbedding = eData.data?.[0]?.embedding;
             if (Array.isArray(queryEmbedding)) {
-              const { data: matches } = await admin.rpc("match_knowledge_chunks", {
+              const { data: matches } = await admin.rpc("match_knowledge_chunks_v2", {
                 query_embedding: queryEmbedding,
                 match_count: limit * 2,
                 min_similarity: 0.4,
+                _roles: roles.length ? roles : null,
               });
               rows = matches ?? [];
             }
@@ -253,17 +254,41 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
         if (q) {
           const { data } = await admin
             .from("knowledge_chunks")
-            .select("source_title, source_url, content")
+            .select("source_title, source_url, content, document_id")
             .textSearch("search", q, { type: "websearch", config: "english" })
             .limit(limit * 2);
           rows = data ?? [];
+          // Filter by role visibility for the FTS fallback
+          if (rows.length && roles.length) {
+            const docIds = Array.from(new Set(rows.map((r: any) => r.document_id).filter(Boolean)));
+            if (docIds.length) {
+              const { data: docs } = await admin
+                .from("knowledge_documents")
+                .select("id, role_visibility, category")
+                .in("id", docIds);
+              const docMap = Object.fromEntries((docs ?? []).map((d: any) => [d.id, d]));
+              rows = rows.filter((r: any) => {
+                if (!r.document_id) return true; // legacy chunks without a parent doc
+                const d = docMap[r.document_id];
+                if (!d) return true;
+                if (!d.role_visibility) return true;
+                return d.role_visibility.some((rv: string) => roles.includes(rv));
+              }).map((r: any) => ({ ...r, category: docMap[r.document_id]?.category ?? "general" }));
+            }
+          }
         }
       }
 
       const filtered = rows
         .filter((r: any) => !DENY.test(r.source_title ?? "") && !DENY.test(r.content ?? ""))
         .slice(0, limit)
-        .map((r: any) => ({ source_title: r.source_title, source_url: r.source_url, content: r.content }));
+        .map((r: any) => ({
+          source_title: r.source_title,
+          source_url: r.source_url,
+          content: r.content,
+          similarity: typeof r.similarity === "number" ? r.similarity : undefined,
+          category: r.category ?? "general",
+        }));
       return { count: filtered.length, items: filtered };
     }
     return { error: `Unknown tool ${name}` };
