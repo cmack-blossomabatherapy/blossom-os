@@ -10,6 +10,7 @@
  import { useClients } from "@/contexts/ClientsContext";
  import { type Client, type ScheduleSlot } from "@/data/clients";
  import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
  /* ---------------- helpers ---------------- */
 
@@ -136,6 +137,7 @@
  export default function OSScheduling() {
    const { clients } = useClients();
    const cr = useCentralReachOps();
+  const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
 
    const [stateFilter, setStateFilter] = useState<string>(params.get("state") ?? "all");
@@ -144,10 +146,16 @@
    );
    const [query, setQuery] = useState(params.get("q") ?? "");
 
-   const allSessions = useMemo(
-     () => buildSessions(clients, cr.pairingsByClient),
-     [clients, cr.pairingsByClient],
-   );
+  // Scope clients by active state for State Director / state-scoped roles.
+  const scopedClients = useMemo(
+    () => (activeState ? clients.filter((c) => c.state === activeState) : clients),
+    [clients, activeState],
+  );
+
+  const allSessions = useMemo(
+    () => buildSessions(scopedClients, cr.pairingsByClient),
+    [scopedClients, cr.pairingsByClient],
+  );
 
    const filtered = useMemo(() => {
      return allSessions.filter((s) => {
@@ -171,22 +179,22 @@
      setParams(next, { replace: true });
    };
 
-   const states = Array.from(new Set(clients.map((c) => c.state))).sort();
+  const states = Array.from(new Set(scopedClients.map((c) => c.state))).sort();
 
    // Header chip counts
    const counts = useMemo(() => {
      const uncovered = allSessions.filter((s) => s.status === "uncovered").length;
-     const coverageRisk = clients.filter((c) =>
+    const coverageRisk = scopedClients.filter((c) =>
        c.activeServiceStatus === "Services on Pause" ||
        c.activeServiceStatus === "Flaked" ||
        (c.scheduledWeeklyHours !== undefined && c.approvedWeeklyHours !== undefined && c.scheduledWeeklyHours < c.approvedWeeklyHours * 0.8)
      ).length;
      const pending = allSessions.filter((s) => s.status === "pending").length;
      const conflicts = allSessions.filter((s) => s.status === "conflict").length;
-     const activePairs = clients.filter((c) => c.stage === "Active" && c.rbt && c.bcba).length;
-     const upcomingStarts = clients.filter((c) => c.stage === "Pending Start Date").length;
+    const activePairs = scopedClients.filter((c) => c.stage === "Active" && c.rbt && c.bcba).length;
+    const upcomingStarts = scopedClients.filter((c) => c.stage === "Pending Start Date").length;
      return { uncovered, coverageRisk, pending, conflicts, activePairs, upcomingStarts };
-   }, [allSessions, clients]);
+  }, [allSessions, scopedClients]);
 
    // Week grid grouping
    const grid = useMemo(() => {
@@ -316,8 +324,8 @@
 
          {/* BOTTOM — operational insights */}
          <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-           <CoverageRisksCard clients={clients} onSelect={selectClient} />
-           <UpcomingStartsCard clients={clients} onSelect={selectClient} />
+          <CoverageRisksCard clients={scopedClients} onSelect={selectClient} />
+          <UpcomingStartsCard clients={scopedClients} onSelect={selectClient} />
            <ProviderLoadCard clients={clients} />
          </section>
        </div>
