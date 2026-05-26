@@ -543,6 +543,7 @@ export default function OpsResourceLibrary() {
               category={c}
               favorites={favorites}
               toggleFav={toggleFav}
+              onViewAll={(id) => setActiveCat(id)}
             />
           ))}
         </div>
