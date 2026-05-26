@@ -545,6 +545,20 @@ const App = () => (
                   <Route path="/payroll/tax-documents" element={<OSPayrollTaxDocuments />} />
                   <Route path="/payroll/messages" element={<OSPayrollMessages />} />
                   <Route path="/payroll/resources" element={<OSPayrollResources />} />
+                  {/* Case Manager role */}
+                  <Route path="/case-manager" element={<OSCaseManager />} />
+                  <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
+                  <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
+                  <Route path="/case-manager/communication" element={<CMParentCommunication />} />
+                  <Route path="/case-manager/family-support" element={<CMFamilySupport />} />
+                  <Route path="/case-manager/follow-ups" element={<CMProgressFollowUps />} />
+                  <Route path="/case-manager/scheduling" element={<CMSchedulingCoordination />} />
+                  <Route path="/case-manager/authorizations" element={<CMAuthorizationsVisibility />} />
+                  <Route path="/case-manager/staffing" element={<CMStaffingCoordination />} />
+                  <Route path="/case-manager/service-issues" element={<CMServiceIssues />} />
+                  <Route path="/case-manager/escalations" element={<CMEscalations />} />
+                  <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
+                  <Route path="/case-manager/resources" element={<CMResources />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />
