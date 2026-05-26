@@ -469,6 +469,9 @@ export default function OSBillingFinance() {
             <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
             <h2 className="text-[15px] font-semibold tracking-tight">Revenue & Billing KPIs</h2>
             <Pill tone="default">{kpis.length} metrics</Pill>
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-[hsl(40_100%_92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(30_80%_42%)]">
+              Sample — claims/payer data not yet imported
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">MTD</button>
@@ -476,6 +479,27 @@ export default function OSBillingFinance() {
             <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">YTD</button>
           </div>
         </div>
+
+        {/* LIVE OPERATIONAL SIGNALS — real data */}
+        <div className="mb-4 rounded-3xl border border-white/70 bg-gradient-to-br from-[hsl(150_70%_98%)] via-white to-[hsl(220_100%_99%)] p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(150_70%_92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(155_55%_32%)]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[hsl(155_60%_50%)]" /> Live
+            </span>
+            <h3 className="text-[13px] font-semibold tracking-tight">Live Operational Signals</h3>
+            <span className="text-[10.5px] text-muted-foreground">Real data from authorizations & payroll</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            {liveSignals.map((s) => (
+              <div key={s.label} className={cn("rounded-2xl border border-white/70 bg-white/80 p-3", toneGlow(s.tone))}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{s.label}</p>
+                <p className={cn("mt-1 text-[22px] font-semibold tabular-nums leading-none", toneText(s.tone))}>{s.value}</p>
+                <p className="mt-1 text-[10.5px] text-muted-foreground">{s.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {kpis.map((k) => <KpiCard key={k.label} k={k} />)}
         </div>
