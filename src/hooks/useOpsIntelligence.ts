@@ -52,7 +52,8 @@ export function useOpsIntelligence() {
       const days = c.stage_entered_at
         ? Math.floor((Date.now() - new Date(c.stage_entered_at).getTime()) / 86400000)
         : 0;
-      return days >= 14 && !["hired", "rejected", "withdrawn"].includes(c.stage);
+      const terminal: string[] = ["Withdrawn", "Rejected", "Staffed", "On Hold"];
+      return days >= 14 && !terminal.includes(c.pipeline_stage);
     });
 
     // Department scoring (lightweight, derived from real signals)
