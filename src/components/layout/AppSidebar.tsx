@@ -104,6 +104,7 @@ const adminSections: NavSection[] = [
       { label: "Reporting", icon: BarChart3, path: "/reports", perm: "" },
       { label: "Academy Settings", icon: Settings, path: "/settings", perm: "", superAdminOnly: true },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "" },
+      { label: "AI Knowledge Base", icon: BookOpen, path: "/admin/knowledge-base", perm: "", superAdminOnly: true },
     ],
   },
 ];
