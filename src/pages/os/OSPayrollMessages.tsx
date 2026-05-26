@@ -10,6 +10,11 @@ import { OSShell } from "./OSShell";
 import { Card, HeaderBtn, PageHeader, Pill, Empty, KpiCard, fullName, fmtDate, type Tone } from "./_PayrollAtoms";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -115,6 +120,44 @@ export default function OSPayrollMessages() {
   const [noteDraft, setNoteDraft] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
 
+  // Compose dialog (Send Reminder / New Update)
+  const [composeMode, setComposeMode] = useState<null | "reminder" | "announcement">(null);
+  const [composeEmp, setComposeEmp] = useState<string>("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+
+  function openCompose(mode: "reminder" | "announcement") {
+    setComposeMode(mode);
+    setComposeEmp("");
+    setComposeSubject(mode === "reminder" ? "Payroll reminder" : "Payroll update");
+    setComposeBody("");
+  }
+
+  async function sendCompose() {
+    if (!composeMode) return;
+    if (!composeSubject.trim() || !composeBody.trim()) {
+      toast.error("Subject and message are required"); return;
+    }
+    if (composeMode === "reminder" && !composeEmp) {
+      toast.error("Choose an employee for this reminder"); return;
+    }
+    const payload: any = {
+      employee_id: composeMode === "reminder" ? composeEmp : null,
+      channel: "message",
+      direction: "outbound",
+      category: composeMode === "reminder" ? "reminder" : "payroll_announcement",
+      subject: composeSubject.trim(),
+      body: composeBody.trim(),
+      status: "sent",
+      created_by_name: "Payroll Team",
+    };
+    const { data, error } = await supabase.from("payroll_communications").insert(payload).select().single();
+    if (error || !data) { toast.error("Failed to send"); return; }
+    setComms(prev => [data as Comm, ...prev]);
+    setComposeMode(null);
+    toast.success(composeMode === "reminder" ? "Reminder sent" : "Update posted");
+  }
+
   useEffect(() => {
     (async () => {
       const [eRes, cRes] = await Promise.all([
@@ -203,8 +246,8 @@ export default function OSPayrollMessages() {
           title="Payroll Messages & Updates"
           subtitle="Centralized payroll communication, reminders, updates, and employee follow-up tracking."
         >
-          <HeaderBtn icon={Plus} primary>Send Reminder</HeaderBtn>
-          <HeaderBtn icon={Megaphone}>New Update</HeaderBtn>
+          <HeaderBtn icon={Plus} primary onClick={() => openCompose("reminder")}>Send Reminder</HeaderBtn>
+          <HeaderBtn icon={Megaphone} onClick={() => openCompose("announcement")}>New Update</HeaderBtn>
           <HeaderBtn icon={ListChecks} to="/payroll/queue">Payroll Queue</HeaderBtn>
         </PageHeader>
 
@@ -300,7 +343,7 @@ export default function OSPayrollMessages() {
                   </h2>
                   <p className="text-[12px] text-muted-foreground mt-0.5">Transitioning from biweekly → weekly reminder cadence.</p>
                 </div>
-                <HeaderBtn icon={Send} primary>Send Reminder</HeaderBtn>
+                <HeaderBtn icon={Send} primary onClick={() => openCompose("reminder")}>Send Reminder</HeaderBtn>
               </div>
               <div className="divide-y divide-border/60">
                 {reminders.length === 0 ? (
@@ -317,7 +360,7 @@ export default function OSPayrollMessages() {
                 <h2 className="text-[15px] font-semibold tracking-tight flex items-center gap-2">
                   <Megaphone className="h-4 w-4 text-muted-foreground" /> Payroll Announcements & Updates
                 </h2>
-                <HeaderBtn icon={Plus}>New Update</HeaderBtn>
+                <HeaderBtn icon={Plus} onClick={() => openCompose("announcement")}>New Update</HeaderBtn>
               </div>
               <div className="divide-y divide-border/60">
                 {announcements.length === 0 ? (
@@ -419,6 +462,50 @@ export default function OSPayrollMessages() {
           />}
         </SheetContent>
       </Sheet>
+
+      {/* Compose dialog */}
+      <Dialog open={!!composeMode} onOpenChange={(o) => !o && setComposeMode(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {composeMode === "reminder" ? "Send payroll reminder" : "New payroll announcement"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {composeMode === "reminder" && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Employee</Label>
+                <select value={composeEmp} onChange={e => setComposeEmp(e.target.value)}
+                  className="w-full h-9 px-3 rounded-md bg-background border border-input text-[13px]">
+                  <option value="">— Select employee —</option>
+                  {emps.map(e => (
+                    <option key={e.id} value={e.id}>{fullName(e)}{e.state ? ` · ${e.state}` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <Label className="text-xs text-muted-foreground">Subject</Label>
+              <Input value={composeSubject} onChange={e => setComposeSubject(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Message</Label>
+              <Textarea value={composeBody} onChange={e => setComposeBody(e.target.value)}
+                placeholder={composeMode === "reminder"
+                  ? "What needs to be submitted, when, and any follow-up context…"
+                  : "What's changing, who it affects, what they need to do…"}
+                className="min-h-[120px] text-[13px]" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setComposeMode(null)}>Cancel</Button>
+            <Button onClick={sendCompose}>
+              <Send className="h-3.5 w-3.5 mr-1" />
+              {composeMode === "reminder" ? "Send reminder" : "Post update"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </OSShell>
   );
 }
