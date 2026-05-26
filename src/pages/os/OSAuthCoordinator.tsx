@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import {
   Sparkles, ChevronRight, Inbox, Send, BadgeCheck, ShieldAlert, CalendarClock,
   FileWarning, ClipboardCheck, UserX, AlertTriangle, FileText, FileSignature,
@@ -8,6 +9,8 @@ import {
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
+import type { Authorization, AuthStage } from "@/data/authorizations";
 
 /* ─────────── tone helpers (calm, not loud) ─────────── */
 
@@ -31,77 +34,6 @@ const toneIcon: Record<Tone, string> = {
   warn: "bg-[hsl(38_100%_94%)] text-[hsl(30_75%_40%)]",
   crit: "bg-[hsl(355_90%_96%)] text-[hsl(355_65%_48%)]",
 };
-
-/* ─────────── mock visibility data ─────────── */
-
-const focusItems: {
-  icon: React.ElementType; label: string; detail: string; tone: Tone; cta: string; to: string;
-}[] = [
-  { icon: Inbox,        label: "7 authorizations awaiting submission", detail: "4 ready · 3 need final review",          tone: "warn", cta: "View Awaiting Submission", to: "/authorizations?stage=awaiting" },
-  { icon: FileText,     label: "4 progress reports overdue",           detail: "2 GA · 2 multi-state",                   tone: "crit", cta: "Review PR Needs",          to: "/authorizations?view=pr" },
-  { icon: CalendarClock,label: "3 treatment auths expiring ≤ 30 days", detail: "Walker · Pierce · Davis",                tone: "crit", cta: "Open Expiring Auths",      to: "/authorizations?stage=expiring" },
-  { icon: FileWarning,  label: "2 cases blocked by missing documents", detail: "Insurance card · parent signature",      tone: "warn", cta: "Resolve Missing Docs",     to: "/authorizations?stage=missing" },
-  { icon: ShieldAlert,  label: "1 denial needs follow-up",             detail: "Cigna VA · medical necessity",           tone: "warn", cta: "Review Denials",           to: "/authorizations?stage=denied" },
-];
-
-const lifecycle: { name: string; count: number; tone: Tone; to: string }[] = [
-  { name: "Awaiting Submission", count: 7,  tone: "warn", to: "/authorizations?stage=awaiting" },
-  { name: "Submitted",           count: 18, tone: "info", to: "/authorizations?stage=submitted" },
-  { name: "Approved",            count: 27, tone: "ok",   to: "/authorizations?stage=approved" },
-  { name: "Expiring Soon",       count: 6,  tone: "crit", to: "/authorizations?stage=expiring" },
-  { name: "In QA Review",        count: 5,  tone: "info", to: "/authorizations?stage=qa" },
-  { name: "Denied",              count: 3,  tone: "warn", to: "/authorizations?stage=denied" },
-  { name: "Missing Information", count: 4,  tone: "warn", to: "/authorizations?stage=missing" },
-  { name: "Flaked / Closed",     count: 2,  tone: "info", to: "/authorizations?stage=flaked" },
-];
-
-const expirationWindows: { label: string; count: number; example: string; tone: Tone }[] = [
-  { label: "Expired / Past Due", count: 1, example: "Walker · BCBS NC",      tone: "crit" },
-  { label: "0 – 14 days",        count: 3, example: "Pierce · Aetna GA",     tone: "crit" },
-  { label: "15 – 30 days",       count: 4, example: "Davis · UHC NC",        tone: "warn" },
-  { label: "31 – 60 days",       count: 6, example: "Ortiz · BCBS NC",       tone: "info" },
-  { label: "61 – 90 days",       count: 9, example: "Sharma · Cigna VA",     tone: "info" },
-];
-
-const prTracking: { label: string; count: number; tone: Tone }[] = [
-  { label: "Needs BCBA Follow-Up",          count: 3, tone: "warn" },
-  { label: "Needs State Director Escalation", count: 2, tone: "crit" },
-  { label: "Needs QA Review",               count: 4, tone: "info" },
-  { label: "Needs Parent Signature",        count: 2, tone: "warn" },
-];
-
-const qaItems: { label: string; count: number; tone: Tone }[] = [
-  { label: "Currently in QA Review",   count: 5, tone: "info" },
-  { label: "Treatment Plans Received", count: 8, tone: "ok"   },
-  { label: "Treatment Plans Missing",  count: 2, tone: "warn" },
-  { label: "QA Ready to Submit",       count: 3, tone: "ok"   },
-  { label: "QA Blockers",              count: 1, tone: "crit" },
-];
-
-const blockers: { icon: React.ElementType; label: string; count: number; tone: Tone }[] = [
-  { icon: ShieldCheck,    label: "Missing insurance card", count: 1, tone: "warn" },
-  { icon: FileText,       label: "Missing diagnosis",      count: 1, tone: "warn" },
-  { icon: FileSignature,  label: "Missing parent signature", count: 2, tone: "warn" },
-  { icon: ClipboardCheck, label: "Missing treatment plan", count: 2, tone: "crit" },
-  { icon: FileText,       label: "Missing progress report",count: 3, tone: "crit" },
-  { icon: FileWarning,    label: "Incomplete documents",   count: 1, tone: "warn" },
-];
-
-const denials: { label: string; count: number; tone: Tone }[] = [
-  { label: "Denied auths",              count: 3, tone: "warn" },
-  { label: "Awaiting follow-up",        count: 2, tone: "crit" },
-  { label: "Converted to approved (30d)", count: 4, tone: "ok"   },
-  { label: "Payer response pending",    count: 1, tone: "info" },
-];
-
-const states: { name: string; count: number; risk: number }[] = [
-  { name: "Georgia",        count: 14, risk: 3 },
-  { name: "North Carolina", count: 11, risk: 2 },
-  { name: "Tennessee",      count: 6,  risk: 1 },
-  { name: "Virginia",       count: 5,  risk: 2 },
-  { name: "Maryland",       count: 3,  risk: 0 },
-  { name: "Unassigned",     count: 2,  risk: 1 },
-];
 
 const aiPrompts = [
   "What auths are at risk this week?",
@@ -155,6 +87,13 @@ export default function OSAuthCoordinator() {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+  const { items, loading } = useLiveAuthorizations();
+
+  /** Derive every panel from real Monday-imported authorizations. */
+  const live = useMemo(() => deriveAuthStats(items), [items]);
+  const { focusItems, lifecycle, expirationWindows, qaItems, blockers, denials, states, prTracking } = live;
+  void loading;
 
   return (
     <OSShell
