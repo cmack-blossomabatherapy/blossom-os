@@ -184,8 +184,8 @@ export default function OSTraining() {
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding")}>
-                <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Onboarding
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate(`/training/${journeyModules[0]?.id}`)}>
+                <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
                 <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
