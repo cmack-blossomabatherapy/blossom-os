@@ -16,10 +16,11 @@ import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   resourceCategories, categoryById, resourcesByCategory,
-  visibleResources, pinnedFor, recentFor, searchResources,
+  isVisibleToRole, pinnedFor, recentFor, searchResources,
   formatRelative, aiSamplePrompts, TYPE_ICON, TYPE_TONE, roleLabel,
   type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
+import { useLibraryResources } from "@/hooks/useLibraryResources";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -35,6 +36,7 @@ const TONE_BG: Record<string, string> = {
 export default function OSResourceLibrary() {
   const { role, activeState } = useOSRole();
   const canManage = role === "super_admin" || role === "hr_team";
+  const { resources: libraryResources, loading } = useLibraryResources();
 
   const [query, setQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -43,8 +45,11 @@ export default function OSResourceLibrary() {
   const [selected, setSelected] = useState<Resource | null>(null);
   const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
 
-  // Role-aware scope: everything else flows from this list.
-  const scope = useMemo(() => visibleResources(role, activeState), [role, activeState]);
+  // Role-aware scope, pulled live from the operational library.
+  const scope = useMemo(
+    () => libraryResources.filter((r) => isVisibleToRole(r, role, activeState)),
+    [libraryResources, role, activeState],
+  );
   const filteredScope = useMemo(
     () => (typeFilter ? scope.filter((r) => r.type === typeFilter) : scope),
     [scope, typeFilter]
