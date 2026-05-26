@@ -48,7 +48,7 @@ const helpOptions = [
   { label: "Safety concern",    icon: ShieldAlert },
 ];
 
-const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+const DAY_KEYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 function parseTimeToMinutes(t: string): number {
   // Accept "9:00 AM" / "09:00" / "13:30" formats.
@@ -134,8 +134,8 @@ function useRbtLiveData(userId: string | undefined): RbtLiveData {
       // Published HR announcements.
       const { data: annRows } = await supabase
         .from("hr_announcements")
-        .select("id, title, body, publish_at, status")
-        .eq("status", "published")
+        .select("id, title, body, publish_at")
+        .lte("publish_at", new Date().toISOString())
         .order("publish_at", { ascending: false })
         .limit(3);
       const announcements = (annRows ?? []).map((a) => ({
