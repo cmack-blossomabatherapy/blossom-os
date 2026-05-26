@@ -2,6 +2,8 @@ import type { OSRole } from "@/lib/os/permissions";
 import { searchKnowledge } from "./knowledgeBase";
 import { getAiScope } from "./aiPermissions";
 import type { AiAction, AiSource, AskBlossomContext, AskBlossomResponse } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import type { KBCategory } from "./types";
 
 /**
  * Mock Ask Blossom AI adapter. Intent-routes the prompt to a canned operational
