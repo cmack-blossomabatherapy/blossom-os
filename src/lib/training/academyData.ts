@@ -624,12 +624,12 @@ const sd = (
   minutes: number,
   overview: string,
   items: string[],
-  opts: { required?: boolean; category?: "role" | "systems" | "shared"; sopMarkdown?: string; resources?: TrainingResource[] } = {},
+  opts: { required?: boolean; category?: "role" | "systems" | "shared"; sopMarkdown?: string; resources?: TrainingResource[]; videoUrl?: string; type?: TrainingType } = {},
 ): Training => ({
   id,
   title,
   description,
-  type,
+  type: opts.type ?? type,
   estimatedMinutes: minutes,
   required: opts.required ?? true,
   category: opts.category ?? "role",
@@ -638,17 +638,33 @@ const sd = (
   lastUpdated: SD_DATE,
   overview,
   sopMarkdown: opts.sopMarkdown,
+  videoUrl: opts.videoUrl,
   checklist: items.map((item, i) => ({ id: `${id}-c${i + 1}`, item, required: true })),
   resources: opts.resources ?? [],
 });
 
 const STATE_DIRECTOR_TRAININGS: Training[] = [
   // ---- 14 Required Modules ----
-  sd("sd-m1-welcome", "Welcome to Blossom ABA",
-    "Mission, philosophy, and the Blossom multi-state ecosystem.",
-    "Quick Guide", 12,
-    "How Blossom thinks about families, clinicians, and operations — the foundation every State Director leads from.",
-    ["Company mission", "ABA overview", "Family-first philosophy", "Multi-state operations", "Understanding the Blossom ecosystem"]),
+  sd("sd-m1-welcome", "Welcome to Blossom",
+    "Mission, philosophy, welcome video, and the Blossom multi-state ecosystem.",
+    "Video", 15,
+    "Welcome to Blossom ABA Therapy. We are so excited to have you here. Blossom Academy was created to help you feel confident, supported, and prepared as you begin your role. This module introduces you to who we are, what we believe, how we serve families, and how we work together as one team.",
+    [
+      "Watch the Welcome to Blossom video",
+      "Who we are — mission, vision, and values",
+      "How we work — families, clinical care, and operations",
+      "Your team — the people you'll work alongside and how to ask for help",
+      "Family-first philosophy",
+      "Multi-state operations overview",
+    ],
+    {
+      type: "Video",
+      videoUrl: "/videos/intro-welcome.mp4",
+      sopMarkdown: "## Welcome to Blossom\n\nWelcome to Blossom ABA Therapy. We are so excited to have you here. Blossom Academy was created to help you feel confident, supported, and prepared as you begin your role.\n\nThis journey will introduce you to who we are, what we believe, how we serve families, and how we work together as one team.\n\n### What to expect\n- **Who we are** — The mission, vision, and values that guide every decision at Blossom.\n- **How we work** — How families, clinical care, and operations all fit together.\n- **Your team** — The people you'll work alongside and how to ask for help.\n\n### The Blossom ecosystem\nWe are a multi-state ABA therapy provider serving Georgia, North Carolina, Tennessee, Virginia, Maryland, and future states. Every role — from RBT to State Director — exists to support families and clinical outcomes.",
+      resources: [
+        { id: "sd-m1-welcome-video", type: "Video", title: "Welcome to Blossom (Intro Video)", url: "/videos/intro-welcome.mp4" },
+      ],
+    }),
 
   sd("sd-m2-role", "Understanding the State Director Role",
     "Operational ownership, leadership, escalation, and accountability.",
@@ -1021,7 +1037,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v6";
+const STORAGE_KEY = "blossom.training.academy.v7";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
