@@ -13,6 +13,7 @@ import { VobQueueCard } from "@/components/vob/VobQueueCard";
 import { VobWorkspace } from "@/components/vob/VobWorkspace";
 import { VobAiPanel } from "@/components/vob/VobAiPanel";
 import { VOB_REVIEWS, STATUS_LABELS, type VobReview, type VobStatus } from "@/lib/vob/mockData";
+import { useVobReviews } from "@/hooks/useVobReviews";
 
 type KpiKey = "ready" | "finance_review" | "approved" | "payment_plan" | "no_oon" | "declined";
 
@@ -29,16 +30,17 @@ const STATUS_FILTERS: (VobStatus | "all")[] = ["all", "ready", "finance_review",
 
 export default function OSVobDecisionCenter() {
   const { activeState } = useOSRole();
+  const { reviews, loading, usingMock } = useVobReviews();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<VobStatus | "all">("all");
   const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
 
   const stateScoped: VobReview[] = useMemo(() => {
-    if (!activeState) return VOB_REVIEWS;
-    const matched = VOB_REVIEWS.filter(r => r.state === activeState);
+    if (!activeState) return reviews;
+    const matched = reviews.filter(r => r.state === activeState);
     // Fall back to all reviews when the active state has no cases (keeps the workspace useful).
-    return matched.length > 0 ? matched : VOB_REVIEWS;
-  }, [activeState]);
+    return matched.length > 0 ? matched : reviews;
+  }, [activeState, reviews]);
 
   const queue = useMemo(() => {
     let list = stateScoped;
@@ -59,8 +61,8 @@ export default function OSVobDecisionCenter() {
     return list;
   }, [stateScoped, statusFilter, kpiFilter, query]);
 
-  const [activeId, setActiveId] = useState<string>(VOB_REVIEWS[0].id);
-  const active = queue.find(r => r.id === activeId) ?? queue[0] ?? VOB_REVIEWS[0];
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const active = queue.find(r => r.id === activeId) ?? queue[0];
 
   const kpiCounts = useMemo(() => {
     const counts: Record<KpiKey, number> = { ready: 0, finance_review: 0, approved: 0, payment_plan: 0, no_oon: 0, declined: 0 };
@@ -99,6 +101,11 @@ export default function OSVobDecisionCenter() {
             <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
               Review insurance benefits, operational feasibility, and payment plan requirements — one guided workspace for every new case.
             </p>
+            {usingMock && !loading && (
+              <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 ring-1 ring-amber-200/70">
+                Sample data — no intake leads in pipeline yet
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col items-end gap-2">
