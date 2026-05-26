@@ -6,6 +6,7 @@ import {
 import CaseManagerComingSoon from "./CaseManagerComingSoon";
 import OSTraining from "../OSTraining";
 import CMAssignedFamiliesPage from "./AssignedFamilies";
+import CMParentCommunicationPage from "./ParentCommunication";
 
 /* ---------- HOME ---------- */
 
@@ -26,23 +27,7 @@ export function CMAssignedFamilies() {
 }
 
 export function CMParentCommunication() {
-  return (
-    <CaseManagerComingSoon
-      title="Parent Communication"
-      icon={MessageSquare}
-      description="One calm inbox for every family conversation — messages, voicemails, follow-ups — designed to feel human, not transactional."
-      features={[
-        { icon: MessageSquare, title: "Unified family inbox",   description: "All inbound parent messages in one warm thread." },
-        { icon: Activity,      title: "Communication timeline", description: "A complete history of touch-points per family." },
-        { icon: HeartHandshake,title: "Smart templates",        description: "Warm, on-brand templates for common conversations." },
-      ]}
-      aiPreview={[
-        "Draft a gentle response to this parent",
-        "Suggest the right tone for this conversation",
-        "Summarize this thread for a teammate",
-      ]}
-    />
-  );
+  return <CMParentCommunicationPage />;
 }
 
 export function CMFamilySupport() {
