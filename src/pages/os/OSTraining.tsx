@@ -270,16 +270,18 @@ export default function OSTraining() {
                     <BookOpen className="mx-auto h-6 w-6 text-muted-foreground/70" />
                     <p className="mt-2 text-[13px] font-medium">No modules in this journey yet</p>
                     <p className="mt-1 text-[12px] text-muted-foreground">
-                      Open Manage Journeys to add and edit modules for this role.
+                      Modules for this role will appear here once HR publishes them.
                     </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-3 rounded-full"
-                      onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
-                    >
-                      <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
-                    </Button>
+                    {role === "super_admin" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 rounded-full"
+                        onClick={() => navigate(`/training/manage?journey=${journey.id}`)}
+                      >
+                        <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Edit this journey
+                      </Button>
+                    )}
                   </div>
                 )}
                 {journeyModules.map((m, idx) => {
