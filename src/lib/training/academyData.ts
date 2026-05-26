@@ -1265,7 +1265,7 @@ export interface TrainingSection {
 export function getSectionsFor(id: string): TrainingSection[] {
   const t = getTraining(id);
   return [
-    { id: `${id}-ov`, trainingId: id, type: "Overview", title: "Overview", content: t?.overview || "Why this module matters and how it connects to your role." },
+    { id: `${id}-ov`, trainingId: id, type: "Overview", title: "Overview", content: t?.overview || "Why this module matters and how it connects to your role.", videoUrl: t?.videoUrl },
     { id: `${id}-sop`, trainingId: id, type: "SOP", title: "Standard Operating Procedure", content: t?.sopMarkdown || "## SOP\nThe written SOP for this module lives in the Resource Library and is linked here." },
     { id: `${id}-wt`, trainingId: id, type: "Walkthrough", title: "Tango Walkthrough", content: "Click-by-click walkthrough.", tangoUrl: t?.tangoUrl || "#", videoUrl: t?.videoUrl },
     { id: `${id}-ck`, trainingId: id, type: "Checklist", title: "Checklist" },
