@@ -5,6 +5,7 @@ import {
   EmptyRow,
   HealthPill,
   MetricTile,
+  AIPrompt,
   type HealthTone,
 } from "./_shared";
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
@@ -793,12 +794,7 @@ export default function OpsTrainingAdoption() {
           <p className="mt-3 text-[14px] leading-relaxed text-foreground/90">{aiSummary}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {prompts.map((p) => (
-              <button
-                key={p}
-                className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/80 transition hover:bg-muted"
-              >
-                {p}
-              </button>
+              <AIPrompt key={p} label={p} variant="card" />
             ))}
           </div>
         </div>
