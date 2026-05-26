@@ -641,6 +641,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         ...academySections,
         ...(showAdmin ? adminSections : []),
         ...(showOperations ? operationsSections : []),
+        intelligenceSection,
         ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
       ];
 
