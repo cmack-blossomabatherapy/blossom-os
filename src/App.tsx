@@ -455,7 +455,7 @@ const App = () => (
                   <Route path="/payroll/adjustments" element={<OSPayrollAdjustments />} />
                   <Route path="/payroll/time-attendance" element={<OSPayrollTimeAttendance />} />
                   <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
-                  <Route path="/payroll/profiles" element={<OSPlaceholder title="Employee Payroll Profiles" description="Per-employee payroll view. Built in phase 3." icon={Users2} />} />
+                  <Route path="/payroll/profiles" element={<OSPayrollProfiles />} />
                   <Route path="/payroll/pto" element={<OSPlaceholder title="PTO & Time Off" description="PTO requests, balances, payroll impact. Built in phase 3." icon={HeartHandshake} />} />
                   <Route path="/payroll/benefits" element={<OSPlaceholder title="Benefits & Deductions" description="Benefits enrollment and recurring deductions. Built in phase 3." icon={Briefcase} />} />
                   <Route path="/payroll/compliance" element={<OSPlaceholder title="Payroll Compliance" description="Audit-ready payroll compliance tracking. Built in phase 3." icon={ShieldCheck} />} />
