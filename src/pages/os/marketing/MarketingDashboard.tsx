@@ -339,6 +339,11 @@ export default function MarketingDashboard() {
               </div>
             </div>
           )}
+          <div className="pt-3">
+            <Link to="/marketing/referrals" className="inline-flex items-center gap-1 text-[12.5px] text-primary/80 hover:text-primary">
+              Open referrals <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
         </MktgCard>
       </section>
 
