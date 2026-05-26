@@ -613,7 +613,10 @@ export default function OSCommandCenter() {
             <SectionHeader icon={ShieldAlert} title="BCBA Oversight" sub="Caseload, supervision, and overload signals" />
             <div className="px-5 pb-5 pt-4">
               <div className="space-y-2">
-                {MOCK_BCBAS.map((b) => {
+                {liveBcbas.length === 0 && (
+                  <p className="text-[12px] text-muted-foreground px-1 py-3">No BCBAs found in {stateName}.</p>
+                )}
+                {liveBcbas.map((b) => {
                   const tone = urgencyTone(b.risk);
                   return (
                     <div key={b.name} className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-white/70 p-3">
@@ -662,7 +665,10 @@ export default function OSCommandCenter() {
             <SectionHeader icon={FileCheck2} title="Auth & PR Risk Center" sub="Expirations, overdue PRs, and supervision gaps" />
             <div className="px-5 pb-5 pt-4">
               <div className="divide-y divide-foreground/[0.06] rounded-xl border border-foreground/[0.06] bg-white/60">
-                {RISK_ITEMS.map((r) => {
+                {liveRisks.length === 0 && (
+                  <div className="px-3 py-4 text-[12px] text-muted-foreground">No auth or PR risks flagged right now.</div>
+                )}
+                {liveRisks.map((r) => {
                   const t = urgencyTone(r.urgency);
                   const overdue = r.daysRemaining < 0;
                   return (
