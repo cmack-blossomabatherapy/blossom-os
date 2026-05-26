@@ -378,6 +378,14 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ],
   };
 
+  // Reusable Operations & Intelligence section — surfaced in every curated role nav.
+  const intelligenceSection: NavSection = {
+    title: "Operations & Intelligence",
+    items: [
+      { label: "KPI Tracking", icon: Target, path: "/kpi", perm: "" },
+    ],
+  };
+
   // Scheduling Team curated sections.
   const schedulingSections: NavSection[] = [
     {
