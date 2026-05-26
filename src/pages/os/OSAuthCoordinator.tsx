@@ -12,6 +12,182 @@ import { cn } from "@/lib/utils";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization, AuthStage } from "@/data/authorizations";
 
+/* ─────────── live-data derivation ─────────── */
+
+type FocusItem = { icon: React.ElementType; label: string; detail: string; tone: Tone; cta: string; to: string };
+type LifecycleRow = { name: string; count: number; tone: Tone; to: string };
+type ExpirationWindow = { label: string; count: number; example: string; tone: Tone };
+type LabeledCount = { label: string; count: number; tone: Tone };
+type BlockerRow = { icon: React.ElementType; label: string; count: number; tone: Tone };
+type StateRow = { name: string; count: number; risk: number };
+
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((t - Date.now()) / 86_400_000);
+}
+
+const STATE_LABELS: Record<string, string> = {
+  GA: "Georgia", NC: "North Carolina", TN: "Tennessee", VA: "Virginia", MD: "Maryland",
+};
+
+const STAGE_TONE: Record<AuthStage, Tone> = {
+  "Awaiting Submission": "warn",
+  "Submitted": "info",
+  "Approved": "ok",
+  "Expiring Soon": "crit",
+  "In QA Review": "info",
+  "Denied": "warn",
+  "Flaked Client": "info",
+};
+
+const STAGE_LINK: Record<AuthStage, string> = {
+  "Awaiting Submission": "/authorizations?stage=awaiting",
+  "Submitted": "/authorizations?stage=submitted",
+  "Approved": "/authorizations?stage=approved",
+  "Expiring Soon": "/authorizations?stage=expiring",
+  "In QA Review": "/authorizations?stage=qa",
+  "Denied": "/authorizations?stage=denied",
+  "Flaked Client": "/authorizations?stage=flaked",
+};
+
+function deriveAuthStats(items: Authorization[]) {
+  const byStage = new Map<AuthStage, Authorization[]>();
+  for (const a of items) {
+    const arr = byStage.get(a.stage) ?? [];
+    arr.push(a);
+    byStage.set(a.stage, arr);
+  }
+  const countOf = (s: AuthStage) => byStage.get(s)?.length ?? 0;
+
+  const awaiting = countOf("Awaiting Submission");
+  const expiringSoon = countOf("Expiring Soon");
+  const denied = countOf("Denied");
+  const inQa = countOf("In QA Review");
+  const missing = items.filter((a) => a.missingInfo).length;
+
+  // Treatment-auth "expiring ≤ 30 days" based on real expiration_date
+  const expSoon30 = items.filter((a) => {
+    const d = daysUntil(a.expirationDate);
+    return d !== null && d >= 0 && d <= 30;
+  });
+  const expSoon30Names = expSoon30
+    .map((a) => a.clientName.split(",")[0])
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(" · ");
+
+  // PR overdue: auths with stage Expiring Soon + no PR yet (proxy)
+  const prOverdue = expiringSoon; // proxy: every expiring auth needs PR
+
+  const focusItems: FocusItem[] = [
+    awaiting > 0 && {
+      icon: Inbox, label: `${awaiting} authorizations awaiting submission`,
+      detail: "Open the queue to triage", tone: "warn" as Tone,
+      cta: "View Awaiting Submission", to: "/authorizations?stage=awaiting",
+    },
+    prOverdue > 0 && {
+      icon: FileText, label: `${prOverdue} progress reports needed`,
+      detail: "Expiring authorizations require a fresh PR", tone: "crit" as Tone,
+      cta: "Review PR Needs", to: "/authorizations?view=pr",
+    },
+    expSoon30.length > 0 && {
+      icon: CalendarClock, label: `${expSoon30.length} treatment auths expiring ≤ 30 days`,
+      detail: expSoon30Names || "Multiple clients", tone: "crit" as Tone,
+      cta: "Open Expiring Auths", to: "/authorizations?stage=expiring",
+    },
+    missing > 0 && {
+      icon: FileWarning, label: `${missing} cases blocked by missing information`,
+      detail: "Documents flagged in Monday import", tone: "warn" as Tone,
+      cta: "Resolve Missing Docs", to: "/authorizations?stage=missing",
+    },
+    denied > 0 && {
+      icon: ShieldAlert, label: `${denied} denials need follow-up`,
+      detail: "Review denial reasons and resubmit", tone: "warn" as Tone,
+      cta: "Review Denials", to: "/authorizations?stage=denied",
+    },
+  ].filter(Boolean) as FocusItem[];
+
+  const lifecycleOrder: AuthStage[] = [
+    "Awaiting Submission", "Submitted", "Approved", "Expiring Soon",
+    "In QA Review", "Denied", "Flaked Client",
+  ];
+  const lifecycle: LifecycleRow[] = lifecycleOrder.map((s) => ({
+    name: s === "Flaked Client" ? "Flaked / Closed" : s,
+    count: countOf(s),
+    tone: STAGE_TONE[s],
+    to: STAGE_LINK[s],
+  })).filter((r) => r.count > 0);
+  if (missing > 0) {
+    lifecycle.push({ name: "Missing Information", count: missing, tone: "warn", to: "/authorizations?stage=missing" });
+  }
+
+  // Expiration windows
+  const windows = [
+    { label: "Expired / Past Due", min: -10000, max: -1, tone: "crit" as Tone },
+    { label: "0 – 14 days",        min: 0,     max: 14, tone: "crit" as Tone },
+    { label: "15 – 30 days",       min: 15,    max: 30, tone: "warn" as Tone },
+    { label: "31 – 60 days",       min: 31,    max: 60, tone: "info" as Tone },
+    { label: "61 – 90 days",       min: 61,    max: 90, tone: "info" as Tone },
+  ];
+  const expirationWindows: ExpirationWindow[] = windows.map((w) => {
+    const matching = items.filter((a) => {
+      const d = daysUntil(a.expirationDate);
+      return d !== null && d >= w.min && d <= w.max;
+    });
+    const example = matching[0]
+      ? `${matching[0].clientName.split(",")[0]} · ${matching[0].payor}`
+      : "—";
+    return { label: w.label, count: matching.length, example, tone: w.tone };
+  });
+
+  const qaItems: LabeledCount[] = [
+    { label: "Currently in QA Review",   count: inQa, tone: "info" },
+    { label: "Treatment Plans Received", count: items.filter((a) => a.treatmentPlanReceived).length, tone: "ok" },
+    { label: "Treatment Plans Missing",  count: items.filter((a) => !a.treatmentPlanReceived && a.stage !== "Approved" && a.stage !== "Flaked Client").length, tone: "warn" },
+    { label: "QA Ready to Submit",       count: items.filter((a) => a.qaStatus === "Complete" && a.stage === "Awaiting Submission").length, tone: "ok" },
+    { label: "QA Blockers",              count: items.filter((a) => a.stage === "In QA Review" && a.missingInfo).length, tone: "crit" },
+  ];
+
+  const blockers: BlockerRow[] = [
+    { icon: FileWarning,    label: "Missing information (flagged)", count: missing,    tone: missing > 5 ? "crit" : "warn" },
+    { icon: ClipboardCheck, label: "Treatment plan not received",   count: items.filter((a) => !a.treatmentPlanReceived).length, tone: "warn" },
+    { icon: FileText,       label: "Awaiting submission",           count: awaiting,   tone: "warn" },
+    { icon: ShieldAlert,    label: "Open denials",                  count: denied,     tone: "crit" },
+    { icon: CalendarClock,  label: "Expiring within 30 days",       count: expSoon30.length, tone: "crit" },
+  ].filter((b) => b.count > 0);
+
+  const denials: LabeledCount[] = [
+    { label: "Denied auths",                 count: denied, tone: denied > 0 ? "warn" : "ok" },
+    { label: "Denials with reason on file",  count: items.filter((a) => a.stage === "Denied" && !!a.denialReason).length, tone: "info" },
+    { label: "Awaiting follow-up",           count: items.filter((a) => a.stage === "Denied" && !a.denialReason).length, tone: "crit" },
+    { label: "Partial approvals",            count: items.filter((a) => a.stage === "Approved" && /partial/i.test(a.nextAction ?? "")).length, tone: "info" },
+  ];
+
+  const stateCounts = new Map<string, { count: number; risk: number }>();
+  for (const a of items) {
+    const key = a.state || "Unassigned";
+    const cur = stateCounts.get(key) ?? { count: 0, risk: 0 };
+    cur.count += 1;
+    if (a.stage === "Expiring Soon" || a.stage === "Denied") cur.risk += 1;
+    stateCounts.set(key, cur);
+  }
+  const states: StateRow[] = Array.from(stateCounts.entries())
+    .map(([k, v]) => ({ name: STATE_LABELS[k] ?? k, ...v }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+
+  const prTracking: LabeledCount[] = [
+    { label: "Needs BCBA Follow-Up",            count: items.filter((a) => a.stage === "Expiring Soon" && !!a.coordinator).length, tone: "warn" },
+    { label: "Needs State Director Escalation", count: items.filter((a) => a.stage === "Denied").length, tone: "crit" },
+    { label: "Needs QA Review",                 count: inQa, tone: "info" },
+    { label: "Awaiting Submission",             count: awaiting, tone: "warn" },
+  ];
+
+  return { focusItems, lifecycle, expirationWindows, qaItems, blockers, denials, states, prTracking };
+}
+
 /* ─────────── tone helpers (calm, not loud) ─────────── */
 
 type Tone = "ok" | "info" | "warn" | "crit";
