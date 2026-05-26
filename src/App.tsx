@@ -166,6 +166,7 @@ import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
 import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
 import OSPayrollQueue from "./pages/os/OSPayrollQueue";
+import OSPayrollAdjustments from "./pages/os/OSPayrollAdjustments";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
@@ -449,7 +450,7 @@ const App = () => (
                   <Route path="/payroll/workspace" element={<OSPayrollWorkspace />} />
                   <Route path="/payroll/training-academy" element={<OSPayrollTrainingAcademy />} />
                   <Route path="/payroll/queue" element={<OSPayrollQueue />} />
-                  <Route path="/payroll/adjustments" element={<OSPlaceholder title="Payroll Adjustments" description="Bonuses, corrections, retro pay, reimbursements. Built in phase 2." icon={Wallet} />} />
+                  <Route path="/payroll/adjustments" element={<OSPayrollAdjustments />} />
                   <Route path="/payroll/time-attendance" element={<OSPlaceholder title="Time & Attendance" description="Timesheets, punches, exceptions. Built in phase 2." icon={CIcon} />} />
                   <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
                   <Route path="/payroll/profiles" element={<OSPlaceholder title="Employee Payroll Profiles" description="Per-employee payroll view. Built in phase 3." icon={Users2} />} />
