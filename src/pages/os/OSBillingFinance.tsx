@@ -256,9 +256,9 @@ export default function OSBillingFinance() {
     { label: "Denied authorizations",  value: authsLoading ? "…" : String(liveDenials),  tone: liveDenials > 20 ? "crit" : "warn", hint: "Affects reimbursement" },
     { label: "Expiring soon",          value: authsLoading ? "…" : String(liveExpiring), tone: liveExpiring > 0 ? "warn" : "ok",   hint: "Reauth pipeline" },
     { label: "Approved auths",         value: authsLoading ? "…" : String(liveApproved), tone: "ok",                                hint: "Billable coverage" },
-    { label: "In QA review",           value: authsLoading ? "…" : String(liveInQa),     tone: "warn",                              hint: "Pre-submission" },
+    { label: "In QA review",           value: authsLoading ? "…" : String(liveInQa),     tone: "warn" as Tone,                       hint: "Pre-submission" },
     { label: "Open payroll issues",    value: openPayrollIssues == null ? "…" : String(openPayrollIssues), tone: (openPayrollIssues ?? 0) > 0 ? "warn" : "ok", hint: "Needs resolution" },
-    { label: "Payroll runs in flight", value: openPayrollRuns == null ? "…" : String(openPayrollRuns),   tone: "info" as Tone,                              hint: "Awaiting finalization" },
+    { label: "Payroll runs in flight", value: openPayrollRuns == null ? "…" : String(openPayrollRuns),   tone: "ok" as Tone,                              hint: "Awaiting finalization" },
     { label: "Pending adjustments",    value: pendingAdjustments == null ? "…" : String(pendingAdjustments), tone: (pendingAdjustments ?? 0) > 0 ? "warn" : "ok", hint: "Bonuses / corrections" },
   ];
 
