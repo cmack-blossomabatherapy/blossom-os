@@ -106,7 +106,6 @@ export type OSModule =
   | "state_management"
   | "settings"
   | "permissions"
-  | "data_uploads"
   | "integrations";
 
 /** Map modules to route paths (single source of truth for nav filtering). */
@@ -163,7 +162,6 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   state_management: "/state-management",
   settings: "/settings",
   permissions: "/permissions",
-  data_uploads: "/admin/data-uploads",
   integrations: "/integrations",
 };
 

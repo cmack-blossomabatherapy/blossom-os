@@ -139,7 +139,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/state-management", label: "State Management", icon: MapPin, module: "state_management" },
       { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
       { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
-      { to: "/admin/data-uploads", label: "Data Uploads", icon: Database, module: "data_uploads" },
       { to: "/integrations", label: "Integrations", icon: Plug, module: "integrations" },
     ],
   },

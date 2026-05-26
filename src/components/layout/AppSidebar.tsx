@@ -242,7 +242,6 @@ const MODULE_NAV_META: Partial<Record<OSModule, { label: string; icon: typeof La
   state_management: { label: "State Management", icon: Network },
   settings: { label: "Settings", icon: Settings },
   permissions: { label: "Permissions", icon: Lock },
-  data_uploads: { label: "Data Uploads", icon: FileSpreadsheet },
 };
 
 /** Build a generic sidebar for an impersonated OS role that has no curated nav. */

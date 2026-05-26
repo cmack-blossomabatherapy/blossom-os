@@ -21,7 +21,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
   ai_assistant: "Ask Blossom AI", ai_insights: "AI Insights", automation_center: "Automation Center",
   predictive_alerts: "Predictive Alerts", ai_workflows: "AI Workflows",
   hr: "HR Suite", user_management: "User Management", state_management: "State Management",
-  settings: "Settings", permissions: "Permissions", data_uploads: "Data Uploads",
+  settings: "Settings", permissions: "Permissions",
   integrations: "Integrations",
   marketing_dashboard: "Marketing Dashboard",
   campaigns: "Campaign Center",
