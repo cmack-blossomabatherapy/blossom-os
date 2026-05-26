@@ -102,7 +102,7 @@ const adminSections: NavSection[] = [
       { label: "Training Statistics", icon: BarChart3, path: "/admin/training-statistics", perm: "" },
       { label: "Academy Editor", icon: Compass, path: "/training/academy/editor", perm: "" },
       { label: "Reporting", icon: BarChart3, path: "/reports", perm: "" },
-      { label: "Academy Settings", icon: Settings, path: "/settings", perm: "" },
+      { label: "Academy Settings", icon: Settings, path: "/settings", perm: "", superAdminOnly: true },
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "" },
     ],
   },
@@ -155,7 +155,7 @@ const legacyHrSection: { title: string; items: NavItem[] } = {
     { label: "Resource Hub", icon: BookOpen,       path: "/hr/resources", perm: "hr.resources.view" },
     { label: "HR Reports",   icon: BarChart3,      path: "/hr/reports",   perm: "hr.reports.view" },
     { label: "Notifications",icon: Bell,           path: "/hr/notifications", perm: "hr.settings.manage" },
-    { label: "HR Settings",  icon: Settings,       path: "/hr/settings",  perm: "hr.settings.manage" },
+    { label: "HR Settings",  icon: Settings,       path: "/hr/settings",  perm: "hr.settings.manage", superAdminOnly: true },
   ],
 };
 
@@ -533,9 +533,8 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         ...s,
         items: s.items
           .map((item) => {
-            const accessible =
-              true; // TEMP unlocked for system audit
-            void item.superAdminOnly; void item.perm; void item.allowedRoles;
+            const accessible = item.superAdminOnly ? isAdmin : true; // TEMP unlocked for system audit
+            void item.perm; void item.allowedRoles;
             void hasPerm; void roles;
             if (isEnterprise) {
               return { ...item, disabled: !accessible };
