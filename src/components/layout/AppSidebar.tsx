@@ -603,6 +603,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Messages & Updates", icon: MessageSquare, path: "/hr/messages", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
