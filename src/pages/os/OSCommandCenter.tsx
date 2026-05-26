@@ -304,6 +304,46 @@ export default function OSCommandCenter() {
   const series = useMemo(() => weeklySeries(sessions), [sessions]);
   const stats = useMemo(() => quickStats(sessions), [sessions]);
 
+  // Live BCBA roster + caseload signals for the active state.
+  const workforce = useStateWorkforce(activeState);
+  const liveBcbas = useMemo(() => {
+    const ranked = [...workforce.bcbas].sort((a, b) => {
+      const score = (x: typeof a) =>
+        (x.status === "Overloaded" ? 4 : x.status === "Near Capacity" ? 3 : x.status === "Needs Attention" ? 1 : 0) +
+        x.authRisks * 2 + x.staffingGaps;
+      return score(b) - score(a);
+    });
+    return ranked.slice(0, 6).map((b) => {
+      const risk: Urgency =
+        b.status === "Overloaded" || b.authRisks >= 2 ? "critical" :
+        b.status === "Near Capacity" || b.authRisks >= 1 || b.staffingGaps >= 2 ? "high" : "watch";
+      return { name: b.name, caseload: b.caseload, supervisionPct: b.supervisionPct, overduePRs: b.authRisks, risk, region: b.region };
+    });
+  }, [workforce.bcbas]);
+
+  // Live auth / PR risk items for the active state.
+  const liveAuths = useLiveAuthorizations();
+  const liveRisks = useMemo(() => {
+    const inState = liveAuths.items.filter((a) => !activeState || a.state === activeState);
+    const items = inState.flatMap((a) => {
+      const d = daysUntil(a.expirationDate);
+      const out: { client: string; bcba: string; type: string; daysRemaining: number; urgency: Urgency }[] = [];
+      if (d !== null && d <= 30) {
+        const urgency: Urgency = d < 0 || d <= 7 ? "critical" : d <= 14 ? "high" : "watch";
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "Auth expires", daysRemaining: d, urgency });
+      }
+      if (a.stage === "In QA Review" && a.daysInStage >= 3) {
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "QA stalled", daysRemaining: -a.daysInStage, urgency: a.daysInStage >= 7 ? "critical" : "high" });
+      }
+      if (a.missingInfo) {
+        out.push({ client: a.clientName, bcba: liveAuths.bcbaById.get(a.id) ?? a.coordinator ?? "—", type: "Missing documentation", daysRemaining: 0, urgency: "high" });
+      }
+      return out;
+    });
+    const rank = (u: Urgency) => (u === "critical" ? 0 : u === "high" ? 1 : 2);
+    return items.sort((x, y) => rank(x.urgency) - rank(y.urgency) || x.daysRemaining - y.daysRemaining).slice(0, 6);
+  }, [liveAuths.items, liveAuths.bcbaById, activeState]);
+
   const name = ((user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "Director").split(" ")[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
