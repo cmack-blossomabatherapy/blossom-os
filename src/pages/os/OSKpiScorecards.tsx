@@ -24,7 +24,7 @@ import { OS_ROLES } from "@/lib/os/permissions";
 const STATES = ["VA", "NC", "GA", "TN", "MD"];
 
 export default function OSKpiScorecards() {
-  const { activeState, role } = useOSRole();
+  const { role } = useOSRole();
 
   // Only the State Director scorecard is fully defined today. Every other role
   // gets a polished placeholder until leadership confirms their KPIs.
@@ -37,6 +37,11 @@ export default function OSKpiScorecards() {
     );
   }
 
+  return <StateDirectorScorecard />;
+}
+
+function StateDirectorScorecard() {
+  const { activeState } = useOSRole();
   const initialState = STATES.includes(activeState) ? activeState : "VA";
   const [state, setState] = useState<string>(initialState);
   const { sessions } = useStateOps(state, "12w");
