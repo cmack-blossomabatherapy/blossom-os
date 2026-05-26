@@ -224,6 +224,9 @@ interface ChatFnSource {
   title: string;
   url?: string;
   tool?: string;
+  snippet?: string;
+  similarity?: number;
+  category?: string;
 }
 
 interface ChatFnResponse {
@@ -255,6 +258,8 @@ function sourcesFromChat(items: ChatFnSource[] | undefined): AiSource[] {
     category: toolToCategory(s.tool),
     sourceType: s.tool ?? "knowledge",
     url: s.url,
+    snippet: s.snippet,
+    similarity: s.similarity,
   }));
 }
 

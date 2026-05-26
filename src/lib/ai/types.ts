@@ -20,6 +20,8 @@ export interface AiSource {
   sourceType: string;
   sourceId?: string;
   url?: string;
+  snippet?: string;
+  similarity?: number;
 }
 
 export type AiActionKind =
