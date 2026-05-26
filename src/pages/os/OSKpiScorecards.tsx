@@ -18,11 +18,25 @@ import { WeeklyScorecardTable } from "@/components/scorecards/WeeklyScorecardTab
 import { NotesPanel } from "@/components/scorecards/NotesPanel";
 import { AiInsightsPanel } from "@/components/scorecards/AiInsightsPanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { RoleScorecardPlaceholder } from "@/components/scorecards/RoleScorecardPlaceholder";
+import { OS_ROLES } from "@/lib/os/permissions";
 
 const STATES = ["VA", "NC", "GA", "TN", "MD"];
 
 export default function OSKpiScorecards() {
-  const { activeState } = useOSRole();
+  const { activeState, role } = useOSRole();
+
+  // Only the State Director scorecard is fully defined today. Every other role
+  // gets a polished placeholder until leadership confirms their KPIs.
+  if (role !== "state_director" && role !== "super_admin") {
+    const roleLabel = OS_ROLES.find((r) => r.id === role)?.label ?? "Your Role";
+    return (
+      <OSShell>
+        <RoleScorecardPlaceholder roleLabel={roleLabel} />
+      </OSShell>
+    );
+  }
+
   const initialState = STATES.includes(activeState) ? activeState : "VA";
   const [state, setState] = useState<string>(initialState);
   const { sessions } = useStateOps(state, "12w");
