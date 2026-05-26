@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { bucket, storage_path, source_type, source_id, source_title, source_url } = await req.json();
+    const { bucket, storage_path, source_type, source_id, source_title, source_url, document_id } = await req.json();
     if (!bucket || !storage_path || !source_type || !source_title) {
       return new Response(JSON.stringify({ error: "bucket, storage_path, source_type, source_title required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -66,20 +66,25 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unsupported file type. PDF, TXT, MD only." }), { status: 415, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (source_id) {
-      await admin.from("knowledge_chunks").delete().eq("source_type", source_type).eq("source_id", source_id);
+    if (!text.trim()) {
+      if (document_id) {
+        await admin.from("knowledge_documents").update({ ingest_status: "failed", ingest_error: "No text extracted" }).eq("id", document_id);
+      }
+      return new Response(JSON.stringify({ inserted: 0, warning: "No text extracted" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const chunks = chunk(text);
-    if (!chunks.length) return new Response(JSON.stringify({ inserted: 0, warning: "No text extracted" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const rows = chunks.map((c, i) => ({
-      source_type, source_id: source_id ?? null, source_title, source_url: source_url ?? null,
-      chunk_index: i, content: c, metadata: { storage_path, bucket },
-    }));
-    const { error } = await admin.from("knowledge_chunks").insert(rows);
-    if (error) throw error;
-
-    return new Response(JSON.stringify({ inserted: rows.length, chars: text.length }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Forward to ingest-knowledge for chunking + embeddings + status updates
+    const ingestResp = await fetch(`${supabaseUrl}/functions/v1/ingest-knowledge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: authHeader },
+      body: JSON.stringify({
+        source_type, source_id: source_id ?? null, source_title, source_url: source_url ?? null,
+        content: text, document_id: document_id ?? null,
+        metadata: { storage_path, bucket },
+      }),
+    });
+    const ingestBody = await ingestResp.json().catch(() => ({}));
+    return new Response(JSON.stringify({ ...ingestBody, chars: text.length }), { status: ingestResp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("extract-pdf-knowledge error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
