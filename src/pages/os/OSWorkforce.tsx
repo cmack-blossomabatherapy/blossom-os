@@ -172,7 +172,7 @@ export default function OSWorkforce() {
   const state = activeState ?? "NC";
   const stateName = STATE_NAMES[state] ?? state;
 
-  const { bcbas, rbts, staffingNeeds: needs, loading } = useStateWorkforce(state);
+  const { bcbas, rbts, staffingNeeds: needs } = useStateWorkforce(state);
   const risks = useMemo(() => buildRisksFrom(bcbas, rbts), [bcbas, rbts]);
 
   const [query, setQuery] = useState("");
