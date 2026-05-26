@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  mockAuths, type Authorization, type AuthStage,
+  type Authorization, type AuthStage,
   daysUntil, getAuthAlert,
 } from "@/data/authorizations";
 import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
