@@ -90,6 +90,15 @@ import TrackAssign from "./pages/hr/TrackAssign";
 import RoleAuditLog from "./pages/admin/RoleAuditLog";
 import KnowledgeBase from "./pages/admin/KnowledgeBase";
 import AiAuditLog from "./pages/admin/AiAuditLog";
+import { AiAdminShell } from "./components/admin/ai/AiAdminShell";
+import AiDashboard from "./pages/admin/ai/Dashboard";
+import AiKnowledgeHub from "./pages/admin/ai/KnowledgeHub";
+import AiPermissions from "./pages/admin/ai/Permissions";
+import AiTraining from "./pages/admin/ai/Training";
+import AiAuditLogPage from "./pages/admin/ai/AuditLog";
+import AiMemory from "./pages/admin/ai/Memory";
+import AiAnalytics from "./pages/admin/ai/Analytics";
+import AiAppearance from "./pages/admin/ai/Appearance";
 import Integrations from "./pages/admin/Integrations";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
@@ -731,6 +740,16 @@ const App = () => (
                   <Route path="/admin/knowledge-base" element={<PermissionRoute allowedRoles={["admin"]}><KnowledgeBase /></PermissionRoute>} />
                   <Route path="/admin/ai-audit" element={<PermissionRoute allowedRoles={["admin"]}><AiAuditLog /></PermissionRoute>} />
                   <Route path="/admin/integrations" element={<PermissionRoute allowedRoles={["admin"]}><Integrations /></PermissionRoute>} />
+                  <Route path="/admin/ai" element={<PermissionRoute allowedRoles={["admin"]}><AiAdminShell /></PermissionRoute>}>
+                    <Route index element={<AiDashboard />} />
+                    <Route path="knowledge" element={<AiKnowledgeHub />} />
+                    <Route path="permissions" element={<AiPermissions />} />
+                    <Route path="training" element={<AiTraining />} />
+                    <Route path="audit" element={<AiAuditLogPage />} />
+                    <Route path="memory" element={<AiMemory />} />
+                    <Route path="analytics" element={<AiAnalytics />} />
+                    <Route path="appearance" element={<AiAppearance />} />
+                  </Route>
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
