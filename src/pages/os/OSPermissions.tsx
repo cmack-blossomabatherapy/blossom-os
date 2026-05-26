@@ -22,6 +22,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
   predictive_alerts: "Predictive Alerts", ai_workflows: "AI Workflows",
   hr: "HR Suite", user_management: "User Management", state_management: "State Management",
   settings: "Settings", permissions: "Permissions", data_uploads: "Data Uploads",
+  integrations: "Integrations",
   marketing_dashboard: "Marketing Dashboard",
   campaigns: "Campaign Center",
   lead_sources: "Lead Source Analytics",
