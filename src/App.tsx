@@ -187,6 +187,17 @@ import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OSExecutive from "./pages/os/OSExecutive";
 import OSOperations from "./pages/os/OSOperations";
+import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
+import OpsCommandCenter from "./pages/os/operations/OpsCommandCenter";
+import OpsLeadershipBriefing from "./pages/os/operations/OpsLeadershipBriefing";
+import OpsDepartmentHealth from "./pages/os/operations/OpsDepartmentHealth";
+import OpsWorkflowRisks from "./pages/os/operations/OpsWorkflowRisks";
+import OpsEscalations from "./pages/os/operations/OpsEscalations";
+import OpsAccountability from "./pages/os/operations/OpsAccountability";
+import OpsStaffingCapacity from "./pages/os/operations/OpsStaffingCapacity";
+import OpsTrainingAdoption from "./pages/os/operations/OpsTrainingAdoption";
+import OpsLeadershipUpdates from "./pages/os/operations/OpsLeadershipUpdates";
+import OpsResourceLibrary from "./pages/os/operations/OpsResourceLibrary";
 import OSStateDirector from "./pages/os/OSStateDirector";
 import OSCommandCenter from "./pages/os/OSCommandCenter";
 import OSIntakeCoordinator from "./pages/os/OSIntakeCoordinator";
@@ -403,7 +414,18 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<OSExecutive />} />
-                  <Route path="/operations" element={<OSOperations />} />
+                  <Route path="/operations" element={<OpsExecutiveDashboard />} />
+                  <Route path="/operations/legacy" element={<OSOperations />} />
+                  <Route path="/operations/command-center" element={<OpsCommandCenter />} />
+                  <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
+                  <Route path="/operations/department-health" element={<OpsDepartmentHealth />} />
+                  <Route path="/operations/workflow-risks" element={<OpsWorkflowRisks />} />
+                  <Route path="/operations/escalations" element={<OpsEscalations />} />
+                  <Route path="/operations/accountability" element={<OpsAccountability />} />
+                  <Route path="/operations/staffing-capacity" element={<OpsStaffingCapacity />} />
+                  <Route path="/operations/training-adoption" element={<OpsTrainingAdoption />} />
+                  <Route path="/operations/updates" element={<OpsLeadershipUpdates />} />
+                  <Route path="/operations/resources" element={<OpsResourceLibrary />} />
                   <Route path="/state-director" element={<OSStateDirector />} />
                   <Route path="/intake-coordinator" element={<OSIntakeCoordinator />} />
                   <Route path="/auth-coordinator" element={<OSAuthCoordinator />} />

@@ -1,0 +1,129 @@
+import { ReactNode } from "react";
+import { OSShell } from "../OSShell";
+import { cn } from "@/lib/utils";
+
+export function OpsPage({
+  title,
+  subtitle,
+  actions,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <OSShell>
+      <div className="space-y-6 pb-12">
+        <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Operations Leadership
+            </div>
+            <h1 className="mt-1 text-2xl md:text-[28px] font-semibold tracking-tight text-foreground">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-1 text-[13.5px] text-muted-foreground max-w-2xl">{subtitle}</p>
+            )}
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </header>
+        {children}
+      </div>
+    </OSShell>
+  );
+}
+
+export function OpsCard({
+  title,
+  hint,
+  children,
+  className,
+}: {
+  title?: string;
+  hint?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-2xl bg-card border border-border/70 p-5 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-12px_hsl(220_15%_20%/0.08)]",
+        className,
+      )}
+    >
+      {(title || hint) && (
+        <div className="mb-4 flex items-baseline justify-between">
+          {title && (
+            <h2 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h2>
+          )}
+          {hint && <span className="text-[11px] text-muted-foreground">{hint}</span>}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+const TONE_STYLES = {
+  healthy: "bg-emerald-50 text-emerald-700 border-emerald-200/70",
+  attention: "bg-amber-50 text-amber-700 border-amber-200/70",
+  risk: "bg-orange-50 text-orange-700 border-orange-200/70",
+  blocked: "bg-rose-50 text-rose-700 border-rose-200/70",
+  neutral: "bg-muted text-muted-foreground border-border/60",
+} as const;
+
+export type HealthTone = keyof typeof TONE_STYLES;
+
+export function HealthPill({ tone, children }: { tone: HealthTone; children: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+        TONE_STYLES[tone],
+      )}
+    >
+      <span className={cn("h-1.5 w-1.5 rounded-full", {
+        "bg-emerald-500": tone === "healthy",
+        "bg-amber-500": tone === "attention",
+        "bg-orange-500": tone === "risk",
+        "bg-rose-500": tone === "blocked",
+        "bg-muted-foreground/50": tone === "neutral",
+      })} />
+      {children}
+    </span>
+  );
+}
+
+export function MetricTile({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone?: HealthTone;
+}) {
+  return (
+    <div className="rounded-2xl bg-card border border-border/70 p-4 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset]">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        <HealthPill tone={tone}>{tone}</HealthPill>
+      </div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
+      {hint && <div className="mt-1 text-[12px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+export function EmptyRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl bg-muted/40 border border-dashed border-border/60 p-5 text-center text-[13px] text-muted-foreground">
+      {children}
+    </div>
+  );
+}

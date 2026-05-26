@@ -378,6 +378,46 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // Operations Leadership gets a calm, executive-focused menu.
+  const OPS_LEADERSHIP_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/operations", label: "Executive Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/operations/command-center", label: "Operations Command Center", icon: Radio, module: "dashboard" },
+        { to: "/operations/briefing", label: "Leadership Briefing", icon: Sparkles, module: "dashboard" },
+      ],
+    },
+    {
+      id: "oversight", label: "Operations Oversight", items: [
+        { to: "/operations/department-health", label: "Department Health", icon: Activity, module: "dashboard" },
+        { to: "/operations/workflow-risks", label: "Workflow Risks", icon: ShieldAlert, module: "dashboard" },
+        { to: "/operations/escalations", label: "Escalations & Blockers", icon: AlertTriangle, module: "dashboard" },
+      ],
+    },
+    {
+      id: "people", label: "People & Performance", items: [
+        { to: "/operations/accountability", label: "Team Accountability", icon: ClipboardCheck, module: "dashboard" },
+        { to: "/operations/staffing-capacity", label: "Staffing & Capacity", icon: Users2, module: "dashboard" },
+        { to: "/operations/training-adoption", label: "Training & Adoption", icon: GraduationCap, module: "dashboard" },
+      ],
+    },
+    {
+      id: "communication", label: "Communication", items: [
+        { to: "/operations/updates", label: "Leadership Updates", icon: BellRing, module: "dashboard" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/operations/resources", label: "Resource Library", icon: BookOpen, module: "dashboard" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
     : role === "bcba"
@@ -386,6 +426,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? RBT_SECTIONS
     : role === "payroll_coordinator"
     ? PAYROLL_SECTIONS
+    : role === "operations_leadership"
+    ? OPS_LEADERSHIP_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
