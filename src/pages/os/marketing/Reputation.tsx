@@ -3,7 +3,6 @@ import {
   Sparkles,
   Heart,
   Star,
-  MessageCircle,
   Users,
   MapPin,
   TrendingUp,
