@@ -380,15 +380,12 @@ export default function Campaigns() {
 
       {/* ── RECRUITING + REFERRALS ───────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <MktgCard
-          title="Recruiting campaigns"
-          hint="Where hiring visibility is producing applicants"
-          action={
+        <MktgCard title="Recruiting campaigns" hint="Where hiring visibility is producing applicants">
+          <div className="-mt-2 mb-2 flex justify-end">
             <Link to="/marketing/recruiting" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
               View all <ArrowRight className="size-3" />
             </Link>
-          }
-        >
+          </div>
           {recruitingCampaigns.length === 0 ? (
             <EmptyRow>No active recruiting campaigns.</EmptyRow>
           ) : (
@@ -415,15 +412,12 @@ export default function Campaigns() {
           )}
         </MktgCard>
 
-        <MktgCard
-          title="Outreach & referrals"
-          hint="Relationship-driven growth"
-          action={
+        <MktgCard title="Outreach & referrals" hint="Relationship-driven growth">
+          <div className="-mt-2 mb-2 flex justify-end">
             <Link to="/marketing/referrals" className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
               View all <ArrowRight className="size-3" />
             </Link>
-          }
-        >
+          </div>
           {mi.referrals.byState.length === 0 ? (
             <EmptyRow>No referral activity yet.</EmptyRow>
           ) : (
