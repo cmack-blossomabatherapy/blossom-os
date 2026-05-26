@@ -565,23 +565,26 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       .filter((s) => s.items.length > 0);
   })();
 
-  // Default open: section that contains active route, plus first section.
   // Persist user toggles in localStorage so collapsed groups stay collapsed.
-  const SECTIONS_KEY = "os.sidebar.openSections";
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    const defaults: Record<string, boolean> = { home: true };
-    NAV_SECTIONS.forEach((s, idx) => {
+  // Storage is scoped per role so each role remembers its own layout.
+  const SECTIONS_KEY = `os.sidebar.openSections.${role}`;
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  // Seed/merge defaults whenever role or section list changes. Stored values win.
+  useEffect(() => {
+    const defaults: Record<string, boolean> = {};
+    sections.forEach((s, idx) => {
       const isActive = s.items.some((i) => i.end ? pathname === i.to : pathname.startsWith(i.to));
       defaults[s.id] = isActive || idx === 0;
     });
-    try {
-      const stored = JSON.parse(window.localStorage.getItem(SECTIONS_KEY) || "{}") as Record<string, boolean>;
-      return { ...defaults, ...stored };
-    } catch { return defaults; }
-  });
+    let stored: Record<string, boolean> = {};
+    try { stored = JSON.parse(window.localStorage.getItem(SECTIONS_KEY) || "{}"); } catch { /* ignore */ }
+    setOpenSections({ ...defaults, ...stored });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
   useEffect(() => {
+    if (Object.keys(openSections).length === 0) return;
     try { window.localStorage.setItem(SECTIONS_KEY, JSON.stringify(openSections)); } catch { /* ignore */ }
-  }, [openSections]);
+  }, [openSections, SECTIONS_KEY]);
   const toggleSection = (id: string) => setOpenSections((m) => ({ ...m, [id]: !m[id] }));
 
   const allItems = sections.flatMap((s) => s.items);
