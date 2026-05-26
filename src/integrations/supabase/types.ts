@@ -944,6 +944,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_audit_log: {
+        Row: {
+          active_state: string | null
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          kb_hits: Json
+          model: string | null
+          prompt: string
+          records_accessed: Json
+          response_preview: string | null
+          role: string | null
+          status: string
+          tools_called: Json
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active_state?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          kb_hits?: Json
+          model?: string | null
+          prompt: string
+          records_accessed?: Json
+          response_preview?: string | null
+          role?: string | null
+          status?: string
+          tools_called?: Json
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active_state?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          kb_hits?: Json
+          model?: string | null
+          prompt?: string
+          records_accessed?: Json
+          response_preview?: string | null
+          role?: string | null
+          status?: string
+          tools_called?: Json
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       alert_reads: {
         Row: {
           alert_id: string
