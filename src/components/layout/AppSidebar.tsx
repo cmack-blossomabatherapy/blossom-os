@@ -7,7 +7,7 @@ import {
   HeartHandshake, IdCard, Network, GraduationCap, Clock, Timer, FileSpreadsheet,
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
   History as HistoryIcon, Search, Compass, Lock, Bot, LogOut, Home, Library, User as UserIcon,
-  Inbox, AlertTriangle, MessageSquare, Flame, Eye,
+  Inbox, AlertTriangle, MessageSquare, Flame, Eye, Target,
   Plug,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -378,6 +378,14 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ],
   };
 
+  // Reusable Operations & Intelligence section — surfaced in every curated role nav.
+  const intelligenceSection: NavSection = {
+    title: "Operations & Intelligence",
+    items: [
+      { label: "KPI Tracking", icon: Target, path: "/kpi", perm: "" },
+    ],
+  };
+
   // Scheduling Team curated sections.
   const schedulingSections: NavSection[] = [
     {
@@ -398,6 +406,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
@@ -432,6 +441,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Scheduling", icon: Calendar, path: "/bcba/scheduling", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
@@ -453,13 +463,13 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Dashboard", icon: LayoutDashboard, path: "/qa-team", perm: "" },
         { label: "QA Workspace", icon: Workflow, path: "/qa-workspace", perm: "" },
-        { label: "QA Queue", icon: Inbox, path: "/qa-queue", perm: "" },
         { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
       ],
     },
     {
-      title: "Review Workflows",
+      title: "Reviews & Workflows",
       items: [
+        { label: "QA Queue", icon: Inbox, path: "/qa-queue", perm: "" },
         { label: "Authorization Reviews", icon: ShieldCheck, path: "/authorization-reviews", perm: "" },
         { label: "Progress Reports", icon: FileText, path: "/progress-reports", perm: "" },
         { label: "Treatment Plan Reviews", icon: ClipboardCheck, path: "/treatment-plan-reviews", perm: "" },
@@ -480,6 +490,18 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Messages & Updates", icon: MessageSquare, path: "/qa-messages", perm: "" },
         { label: "Escalations & Follow-Ups", icon: Flame, path: "/escalations-followups", perm: "" },
+      ],
+    },
+    {
+      title: "Reports",
+      items: [
+        { label: "BCBA Performance", icon: BarChart3, path: "/reports/bcba-performance", perm: "" },
+      ],
+    },
+    {
+      title: "Operations & Intelligence",
+      items: [
+        { label: "KPI Tracking", icon: Target, path: "/kpi", perm: "" },
       ],
     },
     {
@@ -534,6 +556,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Escalations & Follow-Ups", icon: Flame,         path: "/recruiting/escalations",  perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
@@ -580,6 +603,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Messages & Updates", icon: MessageSquare, path: "/hr/messages", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
@@ -598,6 +622,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     ? [
         execDashboardsSection,
         ...academySections,
+        intelligenceSection,
         ...(showAdmin ? adminSections : []),
       ]
     : isSchedulingOnly
@@ -611,11 +636,12 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     : isHrOnly
     ? hrSections
     : impersonating && osRole
-    ? buildGenericRoleSections(osRole)
+    ? [...buildGenericRoleSections(osRole), intelligenceSection]
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
         ...(showOperations ? operationsSections : []),
+        intelligenceSection,
         ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
       ];
 
