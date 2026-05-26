@@ -150,20 +150,20 @@ function deriveAuthStats(items: Authorization[]) {
     { label: "QA Blockers",              count: items.filter((a) => a.stage === "In QA Review" && a.missingInfo).length, tone: "crit" },
   ];
 
-  const blockers: BlockerRow[] = [
-    { icon: FileWarning,    label: "Missing information (flagged)", count: missing,    tone: (missing > 5 ? "crit" : "warn") as Tone },
+  const blockers: BlockerRow[] = ([
+    { icon: FileWarning,    label: "Missing information (flagged)", count: missing,    tone: missing > 5 ? "crit" : "warn" },
     { icon: ClipboardCheck, label: "Treatment plan not received",   count: items.filter((a) => !a.treatmentPlanReceived).length, tone: "warn" },
     { icon: FileText,       label: "Awaiting submission",           count: awaiting,   tone: "warn" },
     { icon: ShieldAlert,    label: "Open denials",                  count: denied,     tone: "crit" },
     { icon: CalendarClock,  label: "Expiring within 30 days",       count: expSoon30.length, tone: "crit" },
-  ].filter((b) => b.count > 0);
+  ] as BlockerRow[]).filter((b) => b.count > 0);
 
-  const denials: LabeledCount[] = [
+  const denials: LabeledCount[] = ([
     { label: "Denied auths",                 count: denied, tone: denied > 0 ? "warn" : "ok" },
     { label: "Denials with reason on file",  count: items.filter((a) => a.stage === "Denied" && !!a.denialReason).length, tone: "info" },
     { label: "Awaiting follow-up",           count: items.filter((a) => a.stage === "Denied" && !a.denialReason).length, tone: "crit" },
     { label: "Partial approvals",            count: items.filter((a) => a.stage === "Approved" && /partial/i.test(a.nextAction ?? "")).length, tone: "info" },
-  ];
+  ] as LabeledCount[]);
 
   const stateCounts = new Map<string, { count: number; risk: number }>();
   for (const a of items) {
