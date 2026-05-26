@@ -8,6 +8,7 @@ import OSTraining from "../OSTraining";
 import CMAssignedFamiliesPage from "./AssignedFamilies";
 import CMParentCommunicationPage from "./ParentCommunication";
 import CMFamilySupportPage from "./FamilySupport";
+import CMProgressFollowUpsPage from "./ProgressFollowUps";
 
 /* ---------- HOME ---------- */
 
@@ -36,22 +37,7 @@ export function CMFamilySupport() {
 }
 
 export function CMProgressFollowUps() {
-  return (
-    <CaseManagerComingSoon
-      title="Progress & Follow-Ups"
-      icon={Activity}
-      description="A focused list of follow-ups across your caseload — never miss a parent commitment, BCBA loop-back, or family check-in."
-      features={[
-        { icon: Activity,      title: "Follow-up queue",       description: "Today, this week, and overdue — calm and clear." },
-        { icon: HeartHandshake,title: "Progress check-ins",    description: "Lightweight prompts to deepen family relationships." },
-        { icon: MessageSquare, title: "Loop-back reminders",   description: "Stay current on every promise made to a parent." },
-      ]}
-      aiPreview={[
-        "Suggest the most important follow-ups for today",
-        "Draft check-ins for families approaching a milestone",
-      ]}
-    />
-  );
+  return <CMProgressFollowUpsPage />;
 }
 
 /* ---------- OPERATIONS ---------- */
