@@ -159,10 +159,44 @@ export default function OSTrainingDetail() {
           ) : (
             <div>
               <h2 className="text-[18px] font-semibold tracking-tight">{activeSection?.title}</h2>
+              {activeSection?.type === "Overview" && activeSection?.videoUrl && (
+                <section className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+                  <video
+                    src={activeSection.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster="/placeholder.svg"
+                    className="aspect-video w-full bg-black object-cover"
+                  />
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                      <Play className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+                      <span className="font-medium text-foreground">Welcome video</span>
+                      <span>· Watch before continuing</span>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">Required</Badge>
+                  </div>
+                </section>
+              )}
               {activeSection?.content && (
                 <div className="prose prose-sm mt-3 max-w-none text-[13.5px] text-foreground prose-headings:font-semibold prose-headings:tracking-tight prose-p:text-foreground/90 prose-li:text-foreground/90">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{activeSection.content}</ReactMarkdown>
                 </div>
+              )}
+              {activeSection?.type === "Overview" && (
+                <section className="mt-6 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { title: "Who we are", body: "The mission, vision, and values that guide every decision at Blossom." },
+                    { title: "How we work", body: "How families, clinical care, and operations all fit together." },
+                    { title: "Your team", body: "The people you'll work alongside and how to ask for help." },
+                  ].filter(() => training.id === "sd-m1-welcome").map((x) => (
+                    <div key={x.title} className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+                      <p className="text-[13px] font-semibold text-foreground">{x.title}</p>
+                      <p className="mt-1 text-[12px] text-muted-foreground">{x.body}</p>
+                    </div>
+                  ))}
+                </section>
               )}
             </div>
           )}
