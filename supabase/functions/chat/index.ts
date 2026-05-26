@@ -215,16 +215,55 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
       return { count: data?.length ?? 0, items: data ?? [] };
     }
     if (name === "search_knowledge_base") {
-      const q = String(args.query ?? "").replace(/[^\w\s]/g, " ").trim().split(/\s+/).slice(0, 8).join(" | ");
       const limit = Math.min(Number(args.limit ?? 6), 12);
-      if (!q) return { items: [] };
-      const { data } = await admin
-        .from("knowledge_chunks")
-        .select("source_title, source_url, content")
-        .textSearch("search", q, { type: "websearch", config: "english" })
-        .limit(limit * 2);
+      const raw = String(args.query ?? "").trim();
+      if (!raw) return { items: [] };
       const DENY = /(payroll|salary|compensation|comp\s*band|bonus|pay\s*rate|vault|credential|password|login|performance\s*review|discipline|write[-\s]?up|termination|ssn)/i;
-      const filtered = (data ?? []).filter((r: any) => !DENY.test(r.source_title ?? "") && !DENY.test(r.content ?? "")).slice(0, limit);
+
+      // 1. Try semantic vector search first
+      let rows: any[] = [];
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (LOVABLE_API_KEY) {
+        try {
+          const eResp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "openai/text-embedding-3-small", input: raw }),
+          });
+          if (eResp.ok) {
+            const eData = await eResp.json();
+            const queryEmbedding = eData.data?.[0]?.embedding;
+            if (Array.isArray(queryEmbedding)) {
+              const { data: matches } = await admin.rpc("match_knowledge_chunks", {
+                query_embedding: queryEmbedding,
+                match_count: limit * 2,
+                min_similarity: 0.4,
+              });
+              rows = matches ?? [];
+            }
+          }
+        } catch (e) {
+          console.warn("semantic search failed, falling back to FTS", e);
+        }
+      }
+
+      // 2. Fallback: keyword FTS if no semantic results
+      if (!rows.length) {
+        const q = raw.replace(/[^\w\s]/g, " ").trim().split(/\s+/).slice(0, 8).join(" | ");
+        if (q) {
+          const { data } = await admin
+            .from("knowledge_chunks")
+            .select("source_title, source_url, content")
+            .textSearch("search", q, { type: "websearch", config: "english" })
+            .limit(limit * 2);
+          rows = data ?? [];
+        }
+      }
+
+      const filtered = rows
+        .filter((r: any) => !DENY.test(r.source_title ?? "") && !DENY.test(r.content ?? ""))
+        .slice(0, limit)
+        .map((r: any) => ({ source_title: r.source_title, source_url: r.source_url, content: r.content }));
       return { count: filtered.length, items: filtered };
     }
     return { error: `Unknown tool ${name}` };
