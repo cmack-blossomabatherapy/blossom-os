@@ -600,19 +600,20 @@ const App = () => (
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
                   {/* Marketing Team */}
-                  <Route path="/marketing-dashboard" element={<OSMarketingDashboard />} />
-                  <Route path="/marketing/campaigns" element={<OSPlaceholder title="Campaign Center" description="Active and upcoming campaigns, performance, assets, ad spend, landing pages, and conversion metrics." icon={Megaphone} />} />
-                  <Route path="/marketing/lead-sources" element={<OSPlaceholder title="Lead Source Analytics" description="Where leads come from: website, Facebook, Google Ads, referrals, organic, recruiting — with source conversion rates." icon={TrendingUp} />} />
-                  <Route path="/marketing/seo" element={<OSPlaceholder title="SEO & Content" description="Blogs, SEO rankings, local SEO, state pages, content calendar, AI content ideas, keyword tracking, GEO/AEO." icon={Globe} />} />
-                  <Route path="/marketing/web-analytics" element={<OSPlaceholder title="Web Analytics" description="Traffic sources, landing pages, behavior paths, conversion points, geo trends, heatmaps, session recordings, and visitor identification — all UTM-tagged into the CRM." icon={TrendingUp} />} />
-                  <Route path="/marketing/call-tracking" element={<OSPlaceholder title="Call Tracking" description="Dynamic number insertion by campaign, source, and state. Call recordings, attribution, call-volume dashboards, qualified leads, and missed-call alerts." icon={Megaphone} />} />
-                  <Route path="/marketing/attribution" element={<OSPlaceholder title="Attribution & ROI" description="Cost per lead, qualified lead, assessment, and active client. ROAS, multi-touch attribution, channel/state/campaign profitability, and revenue by source." icon={BarChart3} />} />
-                  <Route path="/marketing/referrals" element={<OSPlaceholder title="Referrals" description="Referral partners, referral source tracking, partner performance, outreach pipeline, and referral-driven lead attribution." icon={HeartHandshake} />} />
-                  <Route path="/marketing/recruiting" element={<OSPlaceholder title="Recruiting Marketing" description="Recruiting campaigns, applicant sources, recruiting funnel analytics, employer-brand performance." icon={UserPlus} />} />
-                  <Route path="/marketing/state-growth" element={<OSPlaceholder title="State Growth Analytics" description="State-level growth: lead trends, staffing demand, recruiting trends, market saturation, conversion by state." icon={MapPin} />} />
-                  <Route path="/marketing/reputation" element={<OSPlaceholder title="Reputation Management" description="Google reviews, review requests and monitoring, sentiment tracking, escalation alerts." icon={Star} />} />
-                  <Route path="/marketing/outreach" element={<OSPlaceholder title="Community Outreach" description="Events, partnerships, outreach tracking, referral relationships, schools, providers, conferences." icon={HeartHandshake} />} />
-                  <Route path="/marketing/reports" element={<OSPlaceholder title="Marketing Reports" description="Lead generation, campaigns, conversion funnels, recruiting marketing, state growth, web traffic, SEO, engagement." icon={BarChart3} />} />
+                  <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
+                  <Route path="/marketing" element={<MarketingDashboard />} />
+                  <Route path="/marketing/training" element={<MarketingTraining />} />
+                  <Route path="/marketing/campaigns" element={<MarketingCampaigns />} />
+                  <Route path="/marketing/lead-sources" element={<MarketingLeadSources />} />
+                  <Route path="/marketing/seo" element={<MarketingSEO />} />
+                  <Route path="/marketing/web-analytics" element={<MarketingWebAnalytics />} />
+                  <Route path="/marketing/call-tracking" element={<MarketingCallTracking />} />
+                  <Route path="/marketing/referrals" element={<MarketingReferrals />} />
+                  <Route path="/marketing/recruiting" element={<MarketingRecruiting />} />
+                  <Route path="/marketing/outreach" element={<MarketingOutreach />} />
+                  <Route path="/marketing/reputation" element={<MarketingReputation />} />
+                  <Route path="/marketing/attribution" element={<MarketingAttribution />} />
+                  <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
