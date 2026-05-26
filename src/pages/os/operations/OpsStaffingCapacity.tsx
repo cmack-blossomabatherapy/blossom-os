@@ -19,7 +19,7 @@ export default function OpsStaffingCapacity() {
     const rbts = wf.flatMap((w) => w.rbts);
     const overloaded = bcbas.filter((b) => b.status === "Overloaded" || b.status === "Near Capacity").length;
     const needsAttention = bcbas.filter((b) => b.status === "Needs Attention").length;
-    const lowUtil = rbts.filter((r) => r.status === "Needs Attention" || r.status === "At Risk").length;
+    const lowUtil = rbts.filter((r) => r.status === "Underutilized" || r.status === "At Risk").length;
     return { bcbas: bcbas.length, rbts: rbts.length, overloaded, needsAttention, lowUtil };
   }, [wf]);
 
