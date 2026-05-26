@@ -165,6 +165,7 @@ import OSDashboard from "./pages/os/OSDashboard";
 import OSPlaceholder from "./pages/os/OSPlaceholder";
 import OSPayrollCoordinator from "./pages/os/OSPayrollCoordinator";
 import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
+import OSPayrollIssues from "./pages/os/OSPayrollIssues";
 import OSPayrollQueue from "./pages/os/OSPayrollQueue";
 import OSPayrollAdjustments from "./pages/os/OSPayrollAdjustments";
 import OSPayrollTimeAttendance from "./pages/os/OSPayrollTimeAttendance";
@@ -460,7 +461,7 @@ const App = () => (
                   <Route path="/payroll/queue" element={<OSPayrollQueue />} />
                   <Route path="/payroll/adjustments" element={<OSPayrollAdjustments />} />
                   <Route path="/payroll/time-attendance" element={<OSPayrollTimeAttendance />} />
-                  <Route path="/payroll/issues" element={<OSPlaceholder title="Payroll Issues" description="Unresolved payroll problems and history. Built in phase 2." icon={AlertTriangle} />} />
+                  <Route path="/payroll/issues" element={<OSPayrollIssues />} />
                   <Route path="/payroll/profiles" element={<OSPayrollProfiles />} />
                   <Route path="/payroll/pto" element={<OSPayrollPTO />} />
                   <Route path="/payroll/benefits" element={<OSPayrollBenefits />} />
