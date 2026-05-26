@@ -24,6 +24,7 @@ import {
   Clock,
 } from "lucide-react";
 import { OpsPage, OpsCard } from "./_shared";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Resource = {
@@ -622,10 +623,12 @@ function CategorySection({
   category,
   favorites,
   toggleFav,
+  onViewAll,
 }: {
   category: Category;
   favorites: Set<string>;
   toggleFav: (t: string) => void;
+  onViewAll: (id: string) => void;
 }) {
   const Icon = category.icon;
   return (
@@ -657,7 +660,11 @@ function CategorySection({
         ))}
       </div>
       {category.resources.length > 6 && (
-        <button className="mt-3 text-[12px] text-muted-foreground hover:text-foreground">
+        <button
+          type="button"
+          onClick={() => onViewAll(category.id)}
+          className="mt-3 text-[12px] text-muted-foreground hover:text-foreground"
+        >
           View all {category.resources.length} in {category.name} →
         </button>
       )}
