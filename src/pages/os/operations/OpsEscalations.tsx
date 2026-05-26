@@ -5,6 +5,7 @@ import {
   HealthPill,
   EmptyRow,
   MetricTile,
+  AIPrompt,
   type HealthTone,
 } from "./_shared";
 import { useOpsIntelligence, type OpsTone } from "@/hooks/useOpsIntelligence";
@@ -681,13 +682,7 @@ export default function OpsEscalations() {
                 "Identify Root Cause",
                 "Recommend Intervention",
               ].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className="rounded-full border border-border/70 bg-background px-3 py-1 text-[11.5px] font-medium text-foreground/80 transition hover:bg-muted"
-                >
-                  {p}
-                </button>
+                <AIPrompt key={p} label={p} />
               ))}
             </div>
           </div>
