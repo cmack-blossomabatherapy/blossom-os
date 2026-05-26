@@ -944,6 +944,72 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_appearance_settings: {
+        Row: {
+          greeting: string
+          id: number
+          suggested_prompts: Json
+          tone: string
+          updated_at: string
+          updated_by: string | null
+          widgets: Json
+        }
+        Insert: {
+          greeting?: string
+          id?: number
+          suggested_prompts?: Json
+          tone?: string
+          updated_at?: string
+          updated_by?: string | null
+          widgets?: Json
+        }
+        Update: {
+          greeting?: string
+          id?: number
+          suggested_prompts?: Json
+          tone?: string
+          updated_at?: string
+          updated_by?: string | null
+          widgets?: Json
+        }
+        Relationships: []
+      }
+      ai_approved_answers: {
+        Row: {
+          active: boolean
+          answer: string
+          citations: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          question: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          citations?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          citations?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          question?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_audit_log: {
         Row: {
           active_state: string | null
@@ -997,6 +1063,75 @@ export type Database = {
           status?: string
           tools_called?: Json
           user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_memory_entries: {
+        Row: {
+          active: boolean
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pinned: boolean
+          scope: string
+          scope_value: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          scope: string
+          scope_value?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          scope?: string
+          scope_value?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_message_feedback: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          note: string | null
+          rating: number
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          rating: number
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          rating?: number
           user_id?: string | null
         }
         Relationships: []
