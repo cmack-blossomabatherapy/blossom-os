@@ -8,6 +8,7 @@ import {
   Star, Wallet, Megaphone, BookOpen, ChevronDown, X, ChevronRight, Bell, Sparkles,
   History as HistoryIcon, Search, Compass, Lock, Bot, LogOut, Home, Library, User as UserIcon,
   Inbox, AlertTriangle, MessageSquare, Flame, Eye,
+  Plug,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import logo from "@/assets/blossom-logo-full.png";
@@ -106,6 +107,7 @@ const adminSections: NavSection[] = [
       { label: "Role Audit Log", icon: HistoryIcon, path: "/admin/role-audit", perm: "" },
       { label: "AI Knowledge Base", icon: BookOpen, path: "/admin/knowledge-base", perm: "", superAdminOnly: true },
       { label: "AI Audit Log", icon: ShieldCheck, path: "/admin/ai-audit", perm: "", superAdminOnly: true },
+      { label: "Integrations", icon: Plug, path: "/admin/integrations", perm: "", superAdminOnly: true },
     ],
   },
 ];
