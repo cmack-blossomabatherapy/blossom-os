@@ -214,3 +214,107 @@ export function mockInsightsFor(role: OSRole, state: string) {
   }
   return base;
 }
+
+/* ============================================================================
+ * Live Ask Blossom adapter — wires the UI to the `chat` edge function
+ * (Lovable AI Gateway with role-aware tool calling).
+ * ========================================================================== */
+
+interface ChatFnSource {
+  title: string;
+  url?: string;
+  tool?: string;
+}
+
+interface ChatFnResponse {
+  conversationId?: string;
+  messageId?: string;
+  content: string;
+  tools_used?: string[];
+  sources?: ChatFnSource[];
+  error?: string;
+}
+
+function toolToCategory(tool?: string): KBCategory {
+  switch (tool) {
+    case "search_hr_resources": return "policy";
+    case "search_training_courses": return "training";
+    case "search_employees": return "directory";
+    case "search_knowledge_base": return "sop";
+    case "get_my_trainings": return "training";
+    case "get_my_profile": return "directory";
+    default: return "faq";
+  }
+}
+
+function sourcesFromChat(items: ChatFnSource[] | undefined): AiSource[] {
+  if (!items?.length) return [];
+  return items.slice(0, 8).map((s, i) => ({
+    id: `src-${i}-${s.title.slice(0, 20)}`,
+    title: s.title,
+    category: toolToCategory(s.tool),
+    sourceType: s.tool ?? "knowledge",
+    url: s.url,
+  }));
+}
+
+/**
+ * Streaming adapter that calls the `chat` edge function and progressively
+ * reveals the returned answer to the UI. The edge function is non-streaming,
+ * so we simulate token reveal locally for a calm, responsive feel.
+ */
+export async function* streamAskBlossom(
+  prompt: string,
+  role: OSRole,
+  state: string,
+  conversationId?: string,
+): AsyncGenerator<string, AskBlossomResponse & { conversationId?: string }, void> {
+  try {
+    const { data, error } = await supabase.functions.invoke<ChatFnResponse>("chat", {
+      body: { message: prompt, conversationId },
+    });
+
+    if (error) {
+      const msg = error.message ?? "AI is unavailable right now.";
+      for (const w of msg.split(/(\s+)/)) {
+        yield w;
+        await new Promise((r) => setTimeout(r, 8));
+      }
+      return { content: msg, sources: [], suggestedActions: [], recordsAccessed: [] };
+    }
+
+    if (!data || data.error) {
+      const msg = data?.error ?? "AI returned an empty response.";
+      for (const w of msg.split(/(\s+)/)) {
+        yield w;
+        await new Promise((r) => setTimeout(r, 8));
+      }
+      return { content: msg, sources: [], suggestedActions: [], recordsAccessed: [] };
+    }
+
+    const content = data.content ?? "";
+    const sources = sourcesFromChat(data.sources);
+
+    // Word-by-word reveal so the chat feels alive even though the API is sync.
+    const words = content.split(/(\s+)/);
+    for (const w of words) {
+      yield w;
+      await new Promise((r) => setTimeout(r, 6));
+    }
+
+    return {
+      content,
+      sources,
+      suggestedActions: [],
+      recordsAccessed: (data.tools_used ?? []).map((t) => `tool:${t}`),
+      conversationId: data.conversationId,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "AI request failed.";
+    yield msg;
+    return { content: msg, sources: [], suggestedActions: [], recordsAccessed: [] };
+  }
+  // role/state are intentionally available for future scoping in the edge function.
+  void role;
+  void state;
+}
