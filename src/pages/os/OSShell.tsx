@@ -240,6 +240,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
+      id: "performance", label: "Performance", items: [
+        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
+      ],
+    },
+    {
       id: "ai", label: "AI", items: [
         { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
       ],
@@ -267,6 +272,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "resources", label: "Resources", items: [
         { to: "/bcba/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "performance", label: "Performance", items: [
+        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -302,6 +312,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "resources", label: "Resources", items: [
         { to: "/rbt/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "performance", label: "Performance", items: [
+        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
       ],
     },
     {
@@ -349,6 +364,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "resources", label: "Resources", items: [
         { to: "/payroll/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+    {
+      id: "performance", label: "Performance", items: [
+        { to: "/kpi", label: "KPI Scorecard", icon: Target, module: "dashboard" },
       ],
     },
     {
