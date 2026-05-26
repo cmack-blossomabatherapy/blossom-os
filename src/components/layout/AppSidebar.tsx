@@ -453,13 +453,13 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Dashboard", icon: LayoutDashboard, path: "/qa-team", perm: "" },
         { label: "QA Workspace", icon: Workflow, path: "/qa-workspace", perm: "" },
-        { label: "QA Queue", icon: Inbox, path: "/qa-queue", perm: "" },
         { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
       ],
     },
     {
-      title: "Review Workflows",
+      title: "Reviews & Workflows",
       items: [
+        { label: "QA Queue", icon: Inbox, path: "/qa-queue", perm: "" },
         { label: "Authorization Reviews", icon: ShieldCheck, path: "/authorization-reviews", perm: "" },
         { label: "Progress Reports", icon: FileText, path: "/progress-reports", perm: "" },
         { label: "Treatment Plan Reviews", icon: ClipboardCheck, path: "/treatment-plan-reviews", perm: "" },
@@ -480,6 +480,18 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
       items: [
         { label: "Messages & Updates", icon: MessageSquare, path: "/qa-messages", perm: "" },
         { label: "Escalations & Follow-Ups", icon: Flame, path: "/escalations-followups", perm: "" },
+      ],
+    },
+    {
+      title: "Reports",
+      items: [
+        { label: "BCBA Performance", icon: BarChart3, path: "/reports/bcba-performance", perm: "" },
+      ],
+    },
+    {
+      title: "Operations & Intelligence",
+      items: [
+        { label: "KPI Tracking", icon: Target, path: "/kpi", perm: "" },
       ],
     },
     {
