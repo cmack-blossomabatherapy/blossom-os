@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { streamMockAnswer, mockInsightsFor } from "@/lib/ai/askBlossomAdapter";
+import { streamAskBlossom, mockInsightsFor } from "@/lib/ai/askBlossomAdapter";
 import { quickPromptsFor } from "@/lib/ai/quickPrompts";
 import { listKnowledgeByCategory, searchKnowledge } from "@/lib/ai/knowledgeBase";
 import { getAiScope } from "@/lib/ai/aiPermissions";
@@ -36,6 +36,8 @@ export default function OSAskBlossom() {
   const [tab, setTab] = useState<Tab>("chat");
   const [convs, setConvs] = useState<AiConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  /** Maps local conversation id → server-side chat_conversations.id for multi-turn memory. */
+  const [serverConvIds, setServerConvIds] = useState<Record<string, string>>({});
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [kbSearch, setKbSearch] = useState("");
@@ -103,12 +105,13 @@ export default function OSAskBlossom() {
     setStreaming(true);
 
     try {
-      const stream = streamMockAnswer(text, role, activeState);
+      const serverConvId = serverConvIds[convId];
+      const stream = streamAskBlossom(text, role, activeState, serverConvId);
       let acc = "";
-      let result: AskBlossomResponse | undefined;
+      let result: (AskBlossomResponse & { conversationId?: string }) | undefined;
       while (true) {
         const next = await stream.next();
-        if (next.done) { result = next.value as AskBlossomResponse; break; }
+        if (next.done) { result = next.value as AskBlossomResponse & { conversationId?: string }; break; }
         acc += next.value;
         patchLastAssistant(convId, { content: acc });
       }
@@ -119,6 +122,9 @@ export default function OSAskBlossom() {
           suggestedActions: result.suggestedActions,
           recordsAccessed: result.recordsAccessed,
         });
+        if (result.conversationId && !serverConvIds[convId]) {
+          setServerConvIds((m) => ({ ...m, [convId!]: result!.conversationId! }));
+        }
         logAiQuery({
           userId: user?.id ?? null,
           role,
