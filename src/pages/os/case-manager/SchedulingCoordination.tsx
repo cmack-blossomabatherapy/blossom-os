@@ -169,7 +169,7 @@ const ATTENDANCE_TRENDS = [
 const FAMILY_IMPACT = [
   { icon: MessageSquare, title: "Parent frustration signals", desc: "1 family expressing concern after recent changes.", tone: "amber"  as Tone },
   { icon: PhoneCall,     title: "Reassurance outreach needed", desc: "2 families awaiting a warm schedule check-in.",     tone: "cool"  as Tone },
-  { icon: HeartLike,     title: "Service continuity reassurance", desc: "1 family needs continuity context after a gap.", tone: "violet" as Tone },
+  { icon: Heart,         title: "Service continuity reassurance", desc: "1 family needs continuity context after a gap.", tone: "violet" as Tone },
   { icon: Bell,          title: "Follow-up outreach due",     desc: "3 families on this week's follow-up list.",         tone: "amber"  as Tone },
 ];
 
@@ -564,6 +564,3 @@ export default function CMSchedulingCoordinationPage() {
     </div>
   );
 }
-
-/* lucide doesn't ship HeartLike — alias to Heart */
-const HeartLike = Heart;
