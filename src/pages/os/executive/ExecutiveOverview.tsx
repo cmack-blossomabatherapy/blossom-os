@@ -46,6 +46,7 @@ const TONE_DOT: Record<HealthTone, string> = {
   attention: "bg-amber-500",
   risk: "bg-orange-500",
   blocked: "bg-rose-500",
+  neutral: "bg-muted-foreground/50",
 };
 
 function worst(tones: HealthTone[]): HealthTone {
