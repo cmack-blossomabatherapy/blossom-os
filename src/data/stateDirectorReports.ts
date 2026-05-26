@@ -57,13 +57,7 @@ export const sdStaffing: SdReport = {
   ],
 };
 
-export const sdStaffingByBcba = [
-  { name: "Dr. Maya Patel", region: "Richmond", caseload: 14, capacity: 12, gap: 0, status: "Overloaded" },
-  { name: "Camila Ortiz", region: "Arlington", caseload: 12, capacity: 12, gap: 1, status: "Near Cap" },
-  { name: "Priya Shah", region: "Richmond", caseload: 13, capacity: 12, gap: 1, status: "Near Cap" },
-  { name: "Marcus Hill", region: "Roanoke", caseload: 9, capacity: 12, gap: 0, status: "Healthy" },
-  { name: "Jordan Lee", region: "Norfolk", caseload: 11, capacity: 12, gap: 0, status: "Healthy" },
-];
+export const sdStaffingByBcba = [];
 
 /* ---------- 3. BCBA Performance ---------- */
 export const sdBcbaPerf: SdReport = {
@@ -87,13 +81,7 @@ export const sdBcbaPerf: SdReport = {
   ],
 };
 
-export const sdBcbaRows = [
-  { name: "Jordan Lee", caseload: 11, supervision: 92, prs: 0, cancellations: 5.1, retention: 97 },
-  { name: "Priya Shah", caseload: 13, supervision: 88, prs: 0, cancellations: 6.4, retention: 94 },
-  { name: "Camila Ortiz", caseload: 12, supervision: 84, prs: 1, cancellations: 7.8, retention: 92 },
-  { name: "Marcus Hill", caseload: 9, supervision: 65, prs: 2, cancellations: 9.1, retention: 88 },
-  { name: "Dr. Maya Patel", caseload: 14, supervision: 78, prs: 3, cancellations: 8.2, retention: 90 },
-];
+export const sdBcbaRows = [];
 
 /* ---------- 4. Auth / PR Risk ---------- */
 export const sdAuthPrRisk: SdReport = {
@@ -117,12 +105,7 @@ export const sdAuthPrRisk: SdReport = {
   ],
 };
 
-export const sdAuthPrRiskAlerts: RiskAlert[] = [
-  { id: "x1", title: "Auths expiring < 10 days", count: 2, severity: "high", description: "Anthem, Aetna — start packets", drillTo: "/authorizations" },
-  { id: "x2", title: "Overdue PRs > 7 days", count: 3, severity: "high", description: "Held in QA", drillTo: "/qa" },
-  { id: "x3", title: "Missing supervision (97155)", count: 4, severity: "medium", description: "Below threshold this period", drillTo: "/clients" },
-  { id: "x4", title: "Missing parent training", count: 11, severity: "medium", description: "Authorized but undelivered", drillTo: "/authorizations" },
-];
+export const sdAuthPrRiskAlerts: RiskAlert[] = [];
 
 /* ---------- 5. Recruiting Pipeline ---------- */
 export const sdRecruiting: SdReport = {
@@ -253,13 +236,7 @@ export const sdBottlenecks: SdReport = {
 };
 
 /* ---------- 11. State Comparison ---------- */
-export const sdStateComparison = [
-  { state: "VA", clients: 83, hoursWk: 1284, retention: 94, cancellations: 8.1, recruiting: 27 },
-  { state: "NC", clients: 124, hoursWk: 1812, retention: 92, cancellations: 9.0, recruiting: 41 },
-  { state: "GA", clients: 76, hoursWk: 1112, retention: 90, cancellations: 10.4, recruiting: 18 },
-  { state: "TN", clients: 52, hoursWk: 822, retention: 91, cancellations: 8.6, recruiting: 12 },
-  { state: "MD", clients: 41, hoursWk: 612, retention: 93, cancellations: 7.9, recruiting: 9 },
-];
+export const sdStateComparison = [];
 export const sdComparison: SdReport = {
   kpis: [
     { id: "c1", label: "VA Rank: Retention", value: "#1", rawValue: 1, change: "↑ 1", trend: "up" },
@@ -281,14 +258,7 @@ export const sdComparison: SdReport = {
 };
 
 /* ---------- 12. Operational Action Report ---------- */
-export const sdActionAlerts: RiskAlert[] = [
-  { id: "ac1", title: "Unstaffed clients", count: 3, severity: "high", description: "Approved auths waiting > 5 days", drillTo: "/staffing" },
-  { id: "ac2", title: "Auths expiring < 10 days", count: 2, severity: "high", description: "Anthem, Aetna", drillTo: "/authorizations" },
-  { id: "ac3", title: "Overdue PRs > 7 days", count: 3, severity: "high", description: "Held in QA", drillTo: "/qa" },
-  { id: "ac4", title: "BCBA over capacity", count: 1, severity: "medium", description: "Dr. Maya Patel — 14/12", drillTo: "/staff" },
-  { id: "ac5", title: "Onboarding stalled", count: 3, severity: "medium", description: "> 10 days incomplete", drillTo: "/recruiting" },
-  { id: "ac6", title: "Underutilized RBTs", count: 2, severity: "low", description: "30 hrs available to redeploy", drillTo: "/staff" },
-];
+export const sdActionAlerts: RiskAlert[] = [];
 export const sdActionReport: SdReport = {
   kpis: [
     { id: "ar1", label: "Critical", value: "5", rawValue: 5, change: "+2", trend: "down" },

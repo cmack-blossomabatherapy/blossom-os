@@ -10,50 +10,7 @@ export interface OpsLane {
   stages: string[];
 }
 
-export const opsLanes: OpsLane[] = [
-  {
-    id: "intake",
-    title: "Intake",
-    description: "Lead capture through VOB",
-    stages: ["New Lead", "In Contact", "Sent Form", "Missing Information", "Form Received", "Sent to VOB", "VOB Completed"],
-  },
-  {
-    id: "initial-auth",
-    title: "Initial Auth",
-    description: "Initial authorization & consent",
-    stages: ["Pending Initial Auth", "Waiting on Consent Forms"],
-  },
-  {
-    id: "assessment",
-    title: "Assessment",
-    description: "Assessment scheduling",
-    stages: ["Schedule Assessment", "Assessment Scheduled"],
-  },
-  {
-    id: "qa",
-    title: "QA",
-    description: "Treatment plan review",
-    stages: ["Awaiting Treatment Plan", "In QA Review", "Ready to Submit", "Returned"],
-  },
-  {
-    id: "treatment-auth",
-    title: "Treatment Auth",
-    description: "Treatment authorization",
-    stages: ["Pending Treatment Auth"],
-  },
-  {
-    id: "staffing",
-    title: "Staffing",
-    description: "RBT assignment",
-    stages: ["Staffing Needed", "Restaffing Needed"],
-  },
-  {
-    id: "start",
-    title: "Start",
-    description: "Pending start through active",
-    stages: ["Pending Start Date", "Active"],
-  },
-];
+export const opsLanes: OpsLane[] = [];
 
 export type OpsItemKind = "lead" | "client" | "qa";
 
