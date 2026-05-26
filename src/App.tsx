@@ -90,6 +90,7 @@ import TrackAssign from "./pages/hr/TrackAssign";
 import RoleAuditLog from "./pages/admin/RoleAuditLog";
 import KnowledgeBase from "./pages/admin/KnowledgeBase";
 import AiAuditLog from "./pages/admin/AiAuditLog";
+import Integrations from "./pages/admin/Integrations";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
