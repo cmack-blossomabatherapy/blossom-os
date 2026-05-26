@@ -12,7 +12,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
-  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare,
+  MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, GraduationCap,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
@@ -176,12 +176,17 @@ export default function OSTraining() {
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
                 </Button>
               )}
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding")}>
+                <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Onboarding
+              </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
                 <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
-                <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
-              </Button>
+              {role === "super_admin" && (
+                <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
+                  <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Manage Journeys
+                </Button>
+              )}
             </div>
           </header>
 
