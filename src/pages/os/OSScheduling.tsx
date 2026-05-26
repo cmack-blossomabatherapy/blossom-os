@@ -10,6 +10,7 @@
  import { useClients } from "@/contexts/ClientsContext";
  import { type Client, type ScheduleSlot } from "@/data/clients";
  import { useCentralReachOps, type ClientPairing } from "@/hooks/useCentralReachOps";
+import { useOSRole } from "@/contexts/OSRoleContext";
 
  /* ---------------- helpers ---------------- */
 
@@ -136,6 +137,7 @@
  export default function OSScheduling() {
    const { clients } = useClients();
    const cr = useCentralReachOps();
+  const { activeState } = useOSRole();
    const [params, setParams] = useSearchParams();
 
    const [stateFilter, setStateFilter] = useState<string>(params.get("state") ?? "all");
@@ -144,10 +146,16 @@
    );
    const [query, setQuery] = useState(params.get("q") ?? "");
 
-   const allSessions = useMemo(
-     () => buildSessions(clients, cr.pairingsByClient),
-     [clients, cr.pairingsByClient],
-   );
+  // Scope clients by active state for State Director / state-scoped roles.
+  const scopedClients = useMemo(
+    () => (activeState ? clients.filter((c) => c.state === activeState) : clients),
+    [clients, activeState],
+  );
+
+  const allSessions = useMemo(
+    () => buildSessions(scopedClients, cr.pairingsByClient),
+    [scopedClients, cr.pairingsByClient],
+  );
 
    const filtered = useMemo(() => {
      return allSessions.filter((s) => {
