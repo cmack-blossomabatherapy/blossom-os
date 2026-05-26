@@ -16,7 +16,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   payroll_coordinator: "/payroll-coordinator",
   bcba: "/bcba",
   rbt: "/rbt",
-  marketing_team: "/marketing-dashboard",
+  marketing_team: "/marketing",
 };
 
 /** All role-specific dashboard routes (for super_admin overview). */
@@ -34,5 +34,5 @@ export const ALL_ROLE_DASHBOARDS: { to: string; label: string }[] = [
   { to: "/payroll-coordinator", label: "Payroll Coordinator" },
   { to: "/bcba", label: "BCBA" },
   { to: "/rbt", label: "RBT" },
-  { to: "/marketing-dashboard", label: "Marketing Team" },
+  { to: "/marketing", label: "Marketing Team" },
 ];

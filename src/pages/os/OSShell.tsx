@@ -457,8 +457,47 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  const MARKETING_TEAM_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/marketing", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/marketing/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+      ],
+    },
+    {
+      id: "growth", label: "Growth & Marketing", items: [
+        { to: "/marketing/campaigns", label: "Campaigns", icon: Megaphone, module: "dashboard" },
+        { to: "/marketing/lead-sources", label: "Lead Sources", icon: TrendingUp, module: "dashboard" },
+        { to: "/marketing/seo", label: "SEO & Content", icon: Globe, module: "dashboard" },
+        { to: "/marketing/web-analytics", label: "Web Analytics", icon: LineChart, module: "dashboard" },
+        { to: "/marketing/call-tracking", label: "Call Tracking", icon: PhoneCall, module: "dashboard" },
+      ],
+    },
+    {
+      id: "relationships", label: "Relationships", items: [
+        { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "dashboard" },
+        { to: "/marketing/recruiting", label: "Recruiting Marketing", icon: UserPlus, module: "dashboard" },
+        { to: "/marketing/outreach", label: "Community Outreach", icon: Users2, module: "dashboard" },
+        { to: "/marketing/reputation", label: "Reputation", icon: Star, module: "dashboard" },
+      ],
+    },
+    {
+      id: "intelligence", label: "Intelligence & ROI", items: [
+        { to: "/marketing/attribution", label: "Attribution & ROI", icon: Gauge, module: "dashboard" },
+        { to: "/marketing/state-growth", label: "State Growth", icon: MapPin, module: "dashboard" },
+      ],
+    },
+    {
+      id: "ai", label: "AI & Automations", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
   const sections = role === "executive_leadership"
     ? EXEC_LEADERSHIP_SECTIONS
+    : role === "marketing_team"
+    ? MARKETING_TEAM_SECTIONS
     : role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
     : role === "bcba"
