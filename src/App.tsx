@@ -189,6 +189,13 @@ import OSPayrollTaxDocuments from "./pages/os/OSPayrollTaxDocuments";
 import OSPayrollMessages from "./pages/os/OSPayrollMessages";
 import OSPayrollResources from "./pages/os/OSPayrollResources";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
+import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
+import {
+  CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
+  CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
+  CMStaffingCoordination, CMServiceIssues, CMEscalations, CMCommunityReferrals,
+  CMResources,
+} from "./pages/os/case-manager/pages";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
