@@ -22,6 +22,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
   if (appRoles.includes("bcba")) return "bcba";
   if (appRoles.includes("rbt")) return "rbt";
+  if (appRoles.includes("marketing")) return "marketing_team";
   return null;
 }
 

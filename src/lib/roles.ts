@@ -26,6 +26,7 @@ export type AppRole =
   | "bcba"
   | "staff"
   | "hr_admin_assistant"
+  | "marketing"
   | "viewer";
 
 export interface RoleMeta {
