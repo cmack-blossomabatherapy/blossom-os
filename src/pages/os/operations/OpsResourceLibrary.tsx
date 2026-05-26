@@ -730,12 +730,19 @@ function ResourceCard({
           )}
 
           <div className="mt-3 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-            <button className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[11px] text-foreground hover:bg-muted">
+            <button
+              type="button"
+              onClick={() => toast.info(`Preview: ${resource.title}`, { description: resource.desc })}
+              className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[11px] text-foreground hover:bg-muted"
+            >
               <Eye className="h-3 w-3" /> Preview
             </button>
-            <button className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[11px] text-foreground hover:bg-muted">
+            <Link
+              to={`/ai/assistant?q=${encodeURIComponent(`Summarize the SOP: ${resource.title}`)}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-border/70 bg-background px-2 py-1 text-[11px] text-foreground hover:bg-muted"
+            >
               <Sparkles className="h-3 w-3" /> AI summarize
-            </button>
+            </Link>
           </div>
         </div>
       </div>
