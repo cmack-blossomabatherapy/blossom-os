@@ -418,7 +418,48 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
-  const sections = role === "scheduling_team"
+  const EXEC_LEADERSHIP_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/executive", label: "Executive Overview", icon: LayoutDashboard, module: "dashboard", end: true },
+        { to: "/executive/pulse", label: "Company Pulse", icon: Activity, module: "dashboard" },
+        { to: "/executive/briefing", label: "Executive Briefing", icon: Sparkles, module: "dashboard" },
+      ],
+    },
+    {
+      id: "oversight", label: "Organizational Oversight", items: [
+        { to: "/executive/organizational-health", label: "Organizational Health", icon: Activity, module: "dashboard" },
+        { to: "/executive/strategic-risks", label: "Strategic Risks", icon: ShieldAlert, module: "dashboard" },
+        { to: "/executive/growth-readiness", label: "Growth & Readiness", icon: TrendingUp, module: "dashboard" },
+      ],
+    },
+    {
+      id: "people", label: "People & Operations", items: [
+        { to: "/executive/leadership-accountability", label: "Leadership Accountability", icon: ClipboardCheck, module: "dashboard" },
+        { to: "/executive/staffing-expansion", label: "Staffing & Expansion", icon: Users2, module: "dashboard" },
+        { to: "/executive/operational-consistency", label: "Operational Consistency", icon: Workflow, module: "dashboard" },
+      ],
+    },
+    {
+      id: "communication", label: "Communication", items: [
+        { to: "/executive/updates", label: "Executive Updates", icon: BellRing, module: "dashboard" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/executive/resources", label: "Resource Library", icon: BookOpen, module: "dashboard" },
+      ],
+    },
+    {
+      id: "ai", label: "AI", items: [
+        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+      ],
+    },
+  ];
+
+  const sections = role === "executive_leadership"
+    ? EXEC_LEADERSHIP_SECTIONS
+    : role === "scheduling_team"
     ? SCHEDULING_TEAM_SECTIONS
     : role === "bcba"
     ? BCBA_SECTIONS

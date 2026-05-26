@@ -187,6 +187,17 @@ import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OSExecutive from "./pages/os/OSExecutive";
 import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
+import ExecutiveOverview from "./pages/os/executive/ExecutiveOverview";
+import CompanyPulse from "./pages/os/executive/CompanyPulse";
+import ExecutiveBriefing from "./pages/os/executive/ExecutiveBriefing";
+import OrganizationalHealth from "./pages/os/executive/OrganizationalHealth";
+import StrategicRisks from "./pages/os/executive/StrategicRisks";
+import GrowthReadiness from "./pages/os/executive/GrowthReadiness";
+import LeadershipAccountability from "./pages/os/executive/LeadershipAccountability";
+import StaffingExpansion from "./pages/os/executive/StaffingExpansion";
+import OperationalConsistency from "./pages/os/executive/OperationalConsistency";
+import ExecutiveUpdates from "./pages/os/executive/ExecutiveUpdates";
+import ExecResourceLibrary from "./pages/os/executive/ExecResourceLibrary";
 import OpsCommandCenter from "./pages/os/operations/OpsCommandCenter";
 import OpsLeadershipBriefing from "./pages/os/operations/OpsLeadershipBriefing";
 import OpsDepartmentHealth from "./pages/os/operations/OpsDepartmentHealth";
@@ -412,7 +423,19 @@ const App = () => (
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
-                  <Route path="/executive" element={<OSExecutive />} />
+                  <Route path="/executive" element={<ExecutiveOverview />} />
+                  <Route path="/executive/overview" element={<ExecutiveOverview />} />
+                  <Route path="/executive/pulse" element={<CompanyPulse />} />
+                  <Route path="/executive/briefing" element={<ExecutiveBriefing />} />
+                  <Route path="/executive/organizational-health" element={<OrganizationalHealth />} />
+                  <Route path="/executive/strategic-risks" element={<StrategicRisks />} />
+                  <Route path="/executive/growth-readiness" element={<GrowthReadiness />} />
+                  <Route path="/executive/leadership-accountability" element={<LeadershipAccountability />} />
+                  <Route path="/executive/staffing-expansion" element={<StaffingExpansion />} />
+                  <Route path="/executive/operational-consistency" element={<OperationalConsistency />} />
+                  <Route path="/executive/updates" element={<ExecutiveUpdates />} />
+                  <Route path="/executive/resources" element={<ExecResourceLibrary />} />
+                  <Route path="/executive/legacy" element={<OSExecutive />} />
                   <Route path="/operations" element={<OpsExecutiveDashboard />} />
                   <Route path="/operations/command-center" element={<OpsCommandCenter />} />
                   <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
