@@ -330,7 +330,6 @@ import OSEvaluations from "./pages/os/OSEvaluations";
 import OSAiInsights from "./pages/os/OSAiInsights";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
-import OSDataUploads from "./pages/os/OSDataUploads";
 import OSWorkforce from "./pages/os/OSWorkforce";
 import OSStaffingQueue from "./pages/os/OSStaffingQueue";
 import OSScheduling from "./pages/os/OSScheduling";
@@ -629,7 +628,6 @@ const App = () => (
                   <Route path="/user-management" element={<OSUserManagement />} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
-                  <Route path="/admin/data-uploads" element={<OSDataUploads />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
                   <Route path="/permissions" element={<OSPermissions />} />
                   <Route path="/integrations" element={<Integrations />} />

@@ -391,9 +391,6 @@ function OSLeadsV2Inner() {
             <Button variant="outline" size="sm" onClick={exportCsv}>
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/data-uploads"><Upload className="mr-1.5 h-4 w-4" /> Import</Link>
-            </Button>
             <Button variant="outline" size="sm" onClick={() => { setView("followup"); toast("Showing follow-up queue"); }}>
               <PhoneCall className="mr-1.5 h-4 w-4" /> Create Follow-Up
             </Button>
