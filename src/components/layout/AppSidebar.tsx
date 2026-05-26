@@ -406,6 +406,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Authorizations", icon: ShieldCheck, path: "/authorizations", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
@@ -440,6 +441,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Scheduling", icon: Calendar, path: "/bcba/scheduling", perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
