@@ -84,7 +84,7 @@ const PRIORITY_TONE: Record<string, Tone> = {
   urgent: "crit", high: "warn", normal: "info", low: "muted",
 };
 
-const TIME_CATEGORIES = ["missing_time", "attendance_exception", "pto_review", "approval_needed"];
+const TIME_CATEGORIES = ["missing_time", "attendance_exception", "pto_review", "approval_needed"] as const;
 
 function today() { return new Date().toISOString().slice(0, 10); }
 function isOverdueIssue(i: IssueRow) {
