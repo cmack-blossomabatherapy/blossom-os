@@ -168,6 +168,7 @@ import OSPayrollWorkspace from "./pages/os/OSPayrollWorkspace";
 import OSPayrollQueue from "./pages/os/OSPayrollQueue";
 import OSPayrollAdjustments from "./pages/os/OSPayrollAdjustments";
 import OSPayrollTimeAttendance from "./pages/os/OSPayrollTimeAttendance";
+import OSPayrollProfiles from "./pages/os/OSPayrollProfiles";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
