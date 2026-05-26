@@ -14,6 +14,9 @@ import {
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 
 type Tone = "ok" | "warn" | "crit";
 type Kpi = {
@@ -222,6 +225,42 @@ export default function OSBillingFinance() {
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   const score = 87;
+
+  /* ────── live operational signals (real data) ────── */
+  const { items: authItems, loading: authsLoading } = useLiveAuthorizations();
+  const [openPayrollIssues, setOpenPayrollIssues] = useState<number | null>(null);
+  const [openPayrollRuns, setOpenPayrollRuns] = useState<number | null>(null);
+  const [pendingAdjustments, setPendingAdjustments] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [issues, runs, adj] = await Promise.all([
+        supabase.from("payroll_issues").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"] as never[]),
+        supabase.from("payroll_runs").select("id", { count: "exact", head: true }).in("status", ["draft", "in_review", "ready"] as never[]),
+        supabase.from("payroll_adjustments").select("id", { count: "exact", head: true }).in("status", ["pending", "submitted"] as never[]),
+      ]);
+      if (cancelled) return;
+      setOpenPayrollIssues(issues.count ?? 0);
+      setOpenPayrollRuns(runs.count ?? 0);
+      setPendingAdjustments(adj.count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const liveDenials = authItems.filter((a) => a.stage === "Denied").length;
+  const liveExpiring = authItems.filter((a) => a.stage === "Expiring Soon").length;
+  const liveApproved = authItems.filter((a) => a.stage === "Approved").length;
+  const liveInQa = authItems.filter((a) => a.stage === "In QA Review").length;
+
+  const liveSignals: { label: string; value: string; tone: Tone; hint: string }[] = [
+    { label: "Denied authorizations",  value: authsLoading ? "…" : String(liveDenials),  tone: liveDenials > 20 ? "crit" : "warn", hint: "Affects reimbursement" },
+    { label: "Expiring soon",          value: authsLoading ? "…" : String(liveExpiring), tone: liveExpiring > 0 ? "warn" : "ok",   hint: "Reauth pipeline" },
+    { label: "Approved auths",         value: authsLoading ? "…" : String(liveApproved), tone: "ok",                                hint: "Billable coverage" },
+    { label: "In QA review",           value: authsLoading ? "…" : String(liveInQa),     tone: "warn",                              hint: "Pre-submission" },
+    { label: "Open payroll issues",    value: openPayrollIssues == null ? "…" : String(openPayrollIssues), tone: (openPayrollIssues ?? 0) > 0 ? "warn" : "ok", hint: "Needs resolution" },
+    { label: "Payroll runs in flight", value: openPayrollRuns == null ? "…" : String(openPayrollRuns),   tone: "info" as Tone,                              hint: "Awaiting finalization" },
+    { label: "Pending adjustments",    value: pendingAdjustments == null ? "…" : String(pendingAdjustments), tone: (pendingAdjustments ?? 0) > 0 ? "warn" : "ok", hint: "Bonuses / corrections" },
+  ];
 
   return (
     <OSShell
