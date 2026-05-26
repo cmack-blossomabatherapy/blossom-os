@@ -236,14 +236,6 @@ export default function MarketingDashboard() {
         <MktgCard
           title="State growth"
           hint="Lead volume · 7d momentum · recruiting alignment"
-          actions={
-            <Link
-              to="/marketing/state-growth"
-              className="inline-flex items-center gap-1 text-[12.5px] text-primary/80 hover:text-primary"
-            >
-              Open state growth <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          }
         >
           {mi.stateTrend.length === 0 ? (
             <EmptyRow>No state data yet.</EmptyRow>
@@ -282,6 +274,14 @@ export default function MarketingDashboard() {
               ))}
             </div>
           )}
+          <div className="pt-3">
+            <Link
+              to="/marketing/state-growth"
+              className="inline-flex items-center gap-1 text-[12.5px] text-primary/80 hover:text-primary"
+            >
+              Open state growth <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
         </MktgCard>
       </section>
 
@@ -290,11 +290,6 @@ export default function MarketingDashboard() {
         <MktgCard
           title="Recruiting visibility"
           hint="Is marketing helping staffing growth?"
-          actions={
-            <Link to="/marketing/recruiting" className="text-[12.5px] text-primary/80 hover:text-primary inline-flex items-center gap-1">
-              Open <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          }
         >
           {mi.recruitingBySource.length === 0 ? (
             <EmptyRow>No recruiting source data yet.</EmptyRow>
@@ -316,16 +311,16 @@ export default function MarketingDashboard() {
               })}
             </div>
           )}
+          <div className="pt-3">
+            <Link to="/marketing/recruiting" className="inline-flex items-center gap-1 text-[12.5px] text-primary/80 hover:text-primary">
+              Open recruiting marketing <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
         </MktgCard>
 
         <MktgCard
           title="Referral & community pulse"
           hint="Where relationships are driving growth"
-          actions={
-            <Link to="/marketing/referrals" className="text-[12.5px] text-primary/80 hover:text-primary inline-flex items-center gap-1">
-              Open <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          }
         >
           {mi.referrals.total === 0 ? (
             <EmptyRow>No referral leads logged yet.</EmptyRow>
