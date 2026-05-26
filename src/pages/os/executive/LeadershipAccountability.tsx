@@ -10,7 +10,7 @@ export default function LeadershipAccountability() {
       const responsiveness = d.tone === "healthy" ? 92 : d.tone === "attention" ? 78 : d.tone === "risk" ? 64 : 52;
       const followthrough = Math.max(40, responsiveness - 6);
       const ownership: HealthTone = responsiveness >= 85 ? "healthy" : responsiveness >= 70 ? "attention" : responsiveness >= 55 ? "risk" : "blocked";
-      return { id: d.id, name: d.name, responsiveness, followthrough, ownership, note: d.note };
+      return { id: d.id, name: d.name, responsiveness, followthrough, ownership };
     });
   }, [ops]);
 
@@ -26,10 +26,7 @@ export default function LeadershipAccountability() {
           {leaders.map((l) => (
             <div key={l.id} className="rounded-xl border border-border/60 bg-background/40 p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[14px] font-medium">{l.name}</div>
-                  {l.note && <p className="mt-1 text-[12.5px] text-muted-foreground line-clamp-2">{l.note}</p>}
-                </div>
+                <div className="text-[14px] font-medium">{l.name}</div>
                 <HealthPill tone={l.ownership}>{l.ownership}</HealthPill>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-[12px] text-muted-foreground">
