@@ -321,7 +321,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       // Relationships
       "referrals", "recruiting_marketing", "community_outreach", "reputation",
       // Intelligence
-      "attribution_roi", "state_growth", "ai_assistant",
+      "attribution_roi", "state_growth", "marketing_reports", "ai_assistant",
       "settings",
     ],
     scope: "company",
@@ -339,6 +339,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       reputation: VIEW_EDIT,
       community_outreach: VIEW_EDIT,
       attribution_roi: ["view", "export"],
+      marketing_reports: ["view", "export"],
       training: VIEW,
     },
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: false, aiInsights: true },

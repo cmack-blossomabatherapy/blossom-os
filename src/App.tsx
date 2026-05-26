@@ -292,6 +292,7 @@ import MarketingOutreach from "./pages/os/marketing/CommunityOutreach";
 import MarketingReputation from "./pages/os/marketing/Reputation";
 import MarketingAttribution from "./pages/os/marketing/AttributionROI";
 import MarketingStateGrowth from "./pages/os/marketing/StateGrowth";
+import MarketingReports from "./pages/os/marketing/MarketingReports";
 import OSComingSoon from "./pages/os/OSComingSoon";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
@@ -613,6 +614,7 @@ const App = () => (
                   <Route path="/marketing/reputation" element={<MarketingReputation />} />
                   <Route path="/marketing/attribution" element={<MarketingAttribution />} />
                   <Route path="/marketing/state-growth" element={<MarketingStateGrowth />} />
+                  <Route path="/marketing/reports" element={<MarketingReports />} />
                 </Route>
                 {/* Legacy /os/* URLs redirect to root equivalents */}
                 <Route path="/os" element={<Navigate to="/" replace />} />
