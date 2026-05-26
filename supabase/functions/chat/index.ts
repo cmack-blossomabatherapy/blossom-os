@@ -470,6 +470,27 @@ Deno.serve(async (req) => {
       .single();
     await admin.from("chat_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
 
+    // ---- AI audit log (Phase 4) ------------------------------------------------
+    try {
+      const userEmail = (claims.claims as any)?.email ?? null;
+      await admin.from("ai_audit_log").insert({
+        user_id: userId,
+        user_email: userEmail,
+        role: roles[0] ?? null,
+        conversation_id: conversationId,
+        prompt: message.slice(0, 2000),
+        response_preview: finalText.slice(0, 500),
+        kb_hits: dedupedSources.map((s) => ({ title: s.title, similarity: s.similarity ?? null, category: s.category ?? null })),
+        tools_called: usedTools,
+        records_accessed: [],
+        model: "google/gemini-2.5-flash",
+        duration_ms: latencyMs,
+        status: success ? "ok" : "no_answer",
+      });
+    } catch (auditErr) {
+      console.error("ai_audit_log insert failed", auditErr);
+    }
+
     return new Response(JSON.stringify({
       conversationId,
       messageId: inserted?.id,

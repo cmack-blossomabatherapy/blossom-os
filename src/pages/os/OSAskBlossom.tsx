@@ -19,6 +19,7 @@ import { quickPromptsFor } from "@/lib/ai/quickPrompts";
 import { listKnowledgeByCategory, searchKnowledge } from "@/lib/ai/knowledgeBase";
 import { getAiScope } from "@/lib/ai/aiPermissions";
 import { logAiQuery } from "@/lib/ai/aiAudit";
+import { supabase } from "@/integrations/supabase/client";
 import type { AiMessage, AiConversation, AskBlossomResponse } from "@/lib/ai/types";
 
 type Tab = "chat" | "saved" | "knowledge" | "insights";
@@ -38,6 +39,9 @@ export default function OSAskBlossom() {
   const [activeId, setActiveId] = useState<string | null>(null);
   /** Maps local conversation id → server-side chat_conversations.id for multi-turn memory. */
   const [serverConvIds, setServerConvIds] = useState<Record<string, string>>({});
+  /** Reverse lookup: server id → local id (for hydrating server conversations). */
+  const [localByServer, setLocalByServer] = useState<Record<string, string>>({});
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [kbSearch, setKbSearch] = useState("");
@@ -46,6 +50,67 @@ export default function OSAskBlossom() {
 
   const active = activeId ? convs.find((c) => c.id === activeId) ?? null : null;
   const messages = active?.messages ?? [];
+
+  // Hydrate prior conversations from the server so history persists across sessions.
+  useEffect(() => {
+    if (!user?.id || historyLoaded) return;
+    let cancelled = false;
+    (async () => {
+      const { data: convRows } = await supabase
+        .from("chat_conversations")
+        .select("id,title,created_at,last_message_at")
+        .order("last_message_at", { ascending: false })
+        .limit(40);
+      if (cancelled || !convRows?.length) { setHistoryLoaded(true); return; }
+      const ids = convRows.map((c) => c.id);
+      const { data: msgRows } = await supabase
+        .from("chat_messages")
+        .select("id,conversation_id,role,content,created_at,metadata")
+        .in("conversation_id", ids)
+        .order("created_at", { ascending: true });
+      const grouped = new Map<string, AiMessage[]>();
+      for (const m of msgRows ?? []) {
+        const arr = grouped.get(m.conversation_id) ?? [];
+        const meta = (m.metadata as any) ?? {};
+        arr.push({
+          id: m.id,
+          role: m.role as AiMessage["role"],
+          content: m.content,
+          createdAt: m.created_at,
+          sources: Array.isArray(meta.sources) ? meta.sources.map((s: any, i: number) => ({
+            id: `${m.id}-s${i}`,
+            title: s.title,
+            category: s.category ?? "sop",
+            sourceType: s.tool ?? "knowledge",
+            url: s.url,
+            snippet: s.snippet,
+            similarity: s.similarity,
+          })) : undefined,
+        });
+        grouped.set(m.conversation_id, arr);
+      }
+      const nextConvs: AiConversation[] = [];
+      const sMap: Record<string, string> = {};
+      const lMap: Record<string, string> = {};
+      for (const c of convRows) {
+        const localId = newId();
+        sMap[localId] = c.id;
+        lMap[c.id] = localId;
+        nextConvs.push({
+          id: localId,
+          title: c.title || "New chat",
+          createdAt: c.created_at,
+          updatedAt: c.last_message_at,
+          messages: grouped.get(c.id) ?? [],
+        });
+      }
+      setConvs(nextConvs);
+      setServerConvIds(sMap);
+      setLocalByServer(lMap);
+      setHistoryLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, historyLoaded]);
 
   // Deep-link: ?q=...
   useEffect(() => {
