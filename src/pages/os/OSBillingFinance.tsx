@@ -14,6 +14,9 @@ import {
 import { OSShell } from "./OSShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 
 type Tone = "ok" | "warn" | "crit";
 type Kpi = {
@@ -223,6 +226,42 @@ export default function OSBillingFinance() {
   const todayLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   const score = 87;
 
+  /* ────── live operational signals (real data) ────── */
+  const { items: authItems, loading: authsLoading } = useLiveAuthorizations();
+  const [openPayrollIssues, setOpenPayrollIssues] = useState<number | null>(null);
+  const [openPayrollRuns, setOpenPayrollRuns] = useState<number | null>(null);
+  const [pendingAdjustments, setPendingAdjustments] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [issues, runs, adj] = await Promise.all([
+        supabase.from("payroll_issues").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"] as never[]),
+        supabase.from("payroll_runs").select("id", { count: "exact", head: true }).in("status", ["draft", "in_review", "ready"] as never[]),
+        supabase.from("payroll_adjustments").select("id", { count: "exact", head: true }).in("status", ["pending", "submitted"] as never[]),
+      ]);
+      if (cancelled) return;
+      setOpenPayrollIssues(issues.count ?? 0);
+      setOpenPayrollRuns(runs.count ?? 0);
+      setPendingAdjustments(adj.count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const liveDenials = authItems.filter((a) => a.stage === "Denied").length;
+  const liveExpiring = authItems.filter((a) => a.stage === "Expiring Soon").length;
+  const liveApproved = authItems.filter((a) => a.stage === "Approved").length;
+  const liveInQa = authItems.filter((a) => a.stage === "In QA Review").length;
+
+  const liveSignals: { label: string; value: string; tone: Tone; hint: string }[] = [
+    { label: "Denied authorizations",  value: authsLoading ? "…" : String(liveDenials),  tone: liveDenials > 20 ? "crit" : "warn", hint: "Affects reimbursement" },
+    { label: "Expiring soon",          value: authsLoading ? "…" : String(liveExpiring), tone: liveExpiring > 0 ? "warn" : "ok",   hint: "Reauth pipeline" },
+    { label: "Approved auths",         value: authsLoading ? "…" : String(liveApproved), tone: "ok",                                hint: "Billable coverage" },
+    { label: "In QA review",           value: authsLoading ? "…" : String(liveInQa),     tone: "warn" as Tone,                       hint: "Pre-submission" },
+    { label: "Open payroll issues",    value: openPayrollIssues == null ? "…" : String(openPayrollIssues), tone: (openPayrollIssues ?? 0) > 0 ? "warn" : "ok", hint: "Needs resolution" },
+    { label: "Payroll runs in flight", value: openPayrollRuns == null ? "…" : String(openPayrollRuns),   tone: "ok" as Tone,                              hint: "Awaiting finalization" },
+    { label: "Pending adjustments",    value: pendingAdjustments == null ? "…" : String(pendingAdjustments), tone: (pendingAdjustments ?? 0) > 0 ? "warn" : "ok", hint: "Bonuses / corrections" },
+  ];
+
   return (
     <OSShell
       rightRail={
@@ -430,6 +469,9 @@ export default function OSBillingFinance() {
             <Activity className="h-4 w-4 text-[hsl(265_70%_55%)]" />
             <h2 className="text-[15px] font-semibold tracking-tight">Revenue & Billing KPIs</h2>
             <Pill tone="default">{kpis.length} metrics</Pill>
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-[hsl(40_100%_92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(30_80%_42%)]">
+              Sample — claims/payer data not yet imported
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">MTD</button>
@@ -437,6 +479,27 @@ export default function OSBillingFinance() {
             <button className="os-glass-input rounded-xl px-3 py-1.5 text-[11.5px] font-medium">YTD</button>
           </div>
         </div>
+
+        {/* LIVE OPERATIONAL SIGNALS — real data */}
+        <div className="mb-4 rounded-3xl border border-white/70 bg-gradient-to-br from-[hsl(150_70%_98%)] via-white to-[hsl(220_100%_99%)] p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(150_70%_92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(155_55%_32%)]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[hsl(155_60%_50%)]" /> Live
+            </span>
+            <h3 className="text-[13px] font-semibold tracking-tight">Live Operational Signals</h3>
+            <span className="text-[10.5px] text-muted-foreground">Real data from authorizations & payroll</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            {liveSignals.map((s) => (
+              <div key={s.label} className={cn("rounded-2xl border border-white/70 bg-white/80 p-3", toneGlow(s.tone))}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{s.label}</p>
+                <p className={cn("mt-1 text-[22px] font-semibold tabular-nums leading-none", toneText(s.tone))}>{s.value}</p>
+                <p className="mt-1 text-[10.5px] text-muted-foreground">{s.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {kpis.map((k) => <KpiCard key={k.label} k={k} />)}
         </div>
