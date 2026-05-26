@@ -88,6 +88,7 @@ import TrainingStatistics from "./pages/hr/TrainingStatistics";
 import TrainingAssign from "./pages/hr/TrainingAssign";
 import TrackAssign from "./pages/hr/TrackAssign";
 import RoleAuditLog from "./pages/admin/RoleAuditLog";
+import KnowledgeBase from "./pages/admin/KnowledgeBase";
 import JourneyHub from "./pages/hr/JourneyHub";
 import JourneyDrive from "./pages/hr/JourneyDrive";
 import LeadershipDashboard from "./pages/LeadershipDashboard";
