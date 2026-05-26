@@ -25,7 +25,8 @@ export type OSRole =
   | "payroll_coordinator"
   | "bcba"
   | "rbt"
-  | "marketing_team";
+  | "marketing_team"
+  | "case_manager";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
   { id: "super_admin", label: "Super Admin", tier: "platform" },
@@ -43,6 +44,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },
   { id: "marketing_team", label: "Marketing Team", tier: "operations" },
+  { id: "case_manager", label: "Case Manager", tier: "operations" },
 ];
 
 export type OSAction = "view" | "create" | "edit" | "delete" | "approve" | "export" | "assign";
@@ -343,6 +345,20 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       training: VIEW,
     },
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: false, aiInsights: true },
+  },
+  case_manager: {
+    modules: [
+      "dashboard", "clients", "scheduling", "authorizations", "sop", "training", "ai_assistant",
+    ],
+    scope: "assigned",
+    actions: {
+      dashboard: VIEW,
+      clients: VIEW,
+      scheduling: VIEW,
+      authorizations: VIEW,
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
 };
 

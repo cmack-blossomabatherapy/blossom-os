@@ -209,6 +209,11 @@ export const ROLE_AI_SUMMARY: Record<OSRole, RoleAISummary> = {
     { icon: Sparkles, text: "Google Ads CAC down 12% — scale leader.", tone: "violet" },
     { icon: AlertTriangle, text: "GA local SEO ranking slipped on 4 terms.", tone: "amber" },
   ]},
+  case_manager:          { headline: "Family relationships calm. A few follow-ups need a gentle touch this week.", insights: [
+    { icon: HeartPulse, text: "Engagement strong across assigned families.", tone: "emerald" },
+    { icon: ClipboardCheck, text: "3 follow-ups scheduled in the next 48 hours.", tone: "violet" },
+    { icon: AlertTriangle, text: "1 service continuity risk worth a quick check-in.", tone: "amber" },
+  ]},
 };
 
 /* ---------- Request store (localStorage Phase 1) ---------- */

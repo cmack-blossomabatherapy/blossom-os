@@ -189,6 +189,13 @@ import OSPayrollTaxDocuments from "./pages/os/OSPayrollTaxDocuments";
 import OSPayrollMessages from "./pages/os/OSPayrollMessages";
 import OSPayrollResources from "./pages/os/OSPayrollResources";
 import OSPayrollTrainingAcademy from "./pages/os/OSPayrollTrainingAcademy";
+import OSCaseManager from "./pages/os/case-manager/OSCaseManager";
+import {
+  CMTrainingAcademy, CMAssignedFamilies, CMParentCommunication, CMFamilySupport,
+  CMProgressFollowUps, CMSchedulingCoordination, CMAuthorizationsVisibility,
+  CMStaffingCoordination, CMServiceIssues, CMEscalations, CMCommunityReferrals,
+  CMResources,
+} from "./pages/os/case-manager/pages";
 import OSLeads from "./pages/os/OSLeads";
 import OSLeadsV2 from "./pages/os/OSLeadsV2";
 import OSIntakeOperations from "./pages/os/OSIntakeOperations";
@@ -538,6 +545,20 @@ const App = () => (
                   <Route path="/payroll/tax-documents" element={<OSPayrollTaxDocuments />} />
                   <Route path="/payroll/messages" element={<OSPayrollMessages />} />
                   <Route path="/payroll/resources" element={<OSPayrollResources />} />
+                  {/* Case Manager role */}
+                  <Route path="/case-manager" element={<OSCaseManager />} />
+                  <Route path="/case-manager/training" element={<CMTrainingAcademy />} />
+                  <Route path="/case-manager/families" element={<CMAssignedFamilies />} />
+                  <Route path="/case-manager/communication" element={<CMParentCommunication />} />
+                  <Route path="/case-manager/family-support" element={<CMFamilySupport />} />
+                  <Route path="/case-manager/follow-ups" element={<CMProgressFollowUps />} />
+                  <Route path="/case-manager/scheduling" element={<CMSchedulingCoordination />} />
+                  <Route path="/case-manager/authorizations" element={<CMAuthorizationsVisibility />} />
+                  <Route path="/case-manager/staffing" element={<CMStaffingCoordination />} />
+                  <Route path="/case-manager/service-issues" element={<CMServiceIssues />} />
+                  <Route path="/case-manager/escalations" element={<CMEscalations />} />
+                  <Route path="/case-manager/community" element={<CMCommunityReferrals />} />
+                  <Route path="/case-manager/resources" element={<CMResources />} />
                   <Route path="/bcba" element={<OSBCBA />} />
                   <Route path="/bcba/workspace" element={<OSBCBAWorkspace />} />
                   <Route path="/bcba/clients" element={<OSBCBAClients />} />

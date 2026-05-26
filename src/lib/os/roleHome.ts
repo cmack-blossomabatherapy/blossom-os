@@ -17,6 +17,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   bcba: "/bcba",
   rbt: "/rbt",
   marketing_team: "/marketing",
+  case_manager: "/case-manager",
 };
 
 /** All role-specific dashboard routes (for super_admin overview). */
@@ -35,4 +36,5 @@ export const ALL_ROLE_DASHBOARDS: { to: string; label: string }[] = [
   { to: "/bcba", label: "BCBA" },
   { to: "/rbt", label: "RBT" },
   { to: "/marketing", label: "Marketing Team" },
+  { to: "/case-manager", label: "Case Manager" },
 ];
