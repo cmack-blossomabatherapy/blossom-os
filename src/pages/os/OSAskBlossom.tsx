@@ -284,14 +284,50 @@ export default function OSAskBlossom() {
                                 </div>
                               )}
                               {m.sources && m.sources.length > 0 && (
-                                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-foreground/[0.06] pt-2.5">
-                                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Sources</span>
-                                  {m.sources.map((s) => (
-                                    <span key={s.id} className="inline-flex items-center gap-1 rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-2 py-0.5 text-[10.5px] text-foreground/75">
-                                      <BookOpen className="h-2.5 w-2.5" />
-                                      {s.title}
+                                <div className="mt-3 border-t border-foreground/[0.06] pt-2.5">
+                                  <div className="mb-1.5 flex items-center gap-1.5">
+                                    <BookOpen className="h-3 w-3 text-[hsl(265_70%_55%)]" />
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                      Citations · {m.sources.length}
                                     </span>
-                                  ))}
+                                  </div>
+                                  <div className="grid gap-1.5 sm:grid-cols-2">
+                                    {m.sources.map((s, idx) => {
+                                      const sim = typeof s.similarity === "number" ? Math.round(s.similarity * 100) : null;
+                                      const inner = (
+                                        <div className="group rounded-xl border border-foreground/[0.08] bg-white/70 p-2.5 transition-all hover:border-[hsl(265_70%_75%)] hover:bg-white hover:shadow-[0_8px_22px_-18px_hsl(265_60%_50%/0.45)]">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex min-w-0 items-center gap-1.5">
+                                              <span className="grid h-4 w-4 shrink-0 place-items-center rounded-md bg-[hsl(265_85%_96%)] text-[9.5px] font-semibold text-[hsl(265_60%_45%)]">
+                                                {idx + 1}
+                                              </span>
+                                              <p className="truncate text-[11.5px] font-semibold text-foreground">{s.title}</p>
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1">
+                                              {sim !== null && (
+                                                <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9.5px] font-semibold text-emerald-600">
+                                                  {sim}%
+                                                </span>
+                                              )}
+                                              {s.url && <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />}
+                                            </div>
+                                          </div>
+                                          {s.snippet && (
+                                            <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                                              {s.snippet}
+                                            </p>
+                                          )}
+                                        </div>
+                                      );
+                                      return s.url ? (
+                                        <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" className="block">
+                                          {inner}
+                                        </a>
+                                      ) : (
+                                        <div key={s.id}>{inner}</div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               )}
                               {m.suggestedActions && m.suggestedActions.length > 0 && (

@@ -117,8 +117,8 @@ const tools = [
   },
 ];
 
-async function runTool(name: string, args: any, ctx: { admin: any; userId: string }) {
-  const { admin, userId } = ctx;
+async function runTool(name: string, args: any, ctx: { admin: any; userId: string; roles: string[] }) {
+  const { admin, userId, roles } = ctx;
   try {
     if (name === "get_my_profile") {
       const { data: emp } = await admin
@@ -234,10 +234,11 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
             const eData = await eResp.json();
             const queryEmbedding = eData.data?.[0]?.embedding;
             if (Array.isArray(queryEmbedding)) {
-              const { data: matches } = await admin.rpc("match_knowledge_chunks", {
+              const { data: matches } = await admin.rpc("match_knowledge_chunks_v2", {
                 query_embedding: queryEmbedding,
                 match_count: limit * 2,
                 min_similarity: 0.4,
+                _roles: roles.length ? roles : null,
               });
               rows = matches ?? [];
             }
@@ -253,17 +254,41 @@ async function runTool(name: string, args: any, ctx: { admin: any; userId: strin
         if (q) {
           const { data } = await admin
             .from("knowledge_chunks")
-            .select("source_title, source_url, content")
+            .select("source_title, source_url, content, document_id")
             .textSearch("search", q, { type: "websearch", config: "english" })
             .limit(limit * 2);
           rows = data ?? [];
+          // Filter by role visibility for the FTS fallback
+          if (rows.length && roles.length) {
+            const docIds = Array.from(new Set(rows.map((r: any) => r.document_id).filter(Boolean)));
+            if (docIds.length) {
+              const { data: docs } = await admin
+                .from("knowledge_documents")
+                .select("id, role_visibility, category")
+                .in("id", docIds);
+              const docMap = Object.fromEntries((docs ?? []).map((d: any) => [d.id, d]));
+              rows = rows.filter((r: any) => {
+                if (!r.document_id) return true; // legacy chunks without a parent doc
+                const d = docMap[r.document_id];
+                if (!d) return true;
+                if (!d.role_visibility) return true;
+                return d.role_visibility.some((rv: string) => roles.includes(rv));
+              }).map((r: any) => ({ ...r, category: docMap[r.document_id]?.category ?? "general" }));
+            }
+          }
         }
       }
 
       const filtered = rows
         .filter((r: any) => !DENY.test(r.source_title ?? "") && !DENY.test(r.content ?? ""))
         .slice(0, limit)
-        .map((r: any) => ({ source_title: r.source_title, source_url: r.source_url, content: r.content }));
+        .map((r: any) => ({
+          source_title: r.source_title,
+          source_url: r.source_url,
+          content: r.content,
+          similarity: typeof r.similarity === "number" ? r.similarity : undefined,
+          category: r.category ?? "general",
+        }));
       return { count: filtered.length, items: filtered };
     }
     return { error: `Unknown tool ${name}` };
@@ -302,6 +327,10 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // Load the user's roles for permission-scoped knowledge retrieval.
+    const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (roleRows ?? []).map((r: any) => String(r.role));
+
     let conversationId = incomingConvId;
     if (!conversationId) {
       const title = message.slice(0, 60);
@@ -328,9 +357,9 @@ Deno.serve(async (req) => {
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    const ctx = { admin, userId };
+    const ctx = { admin, userId, roles };
     const usedTools: string[] = [];
-    const sources: Array<{ title: string; url?: string; tool: string }> = [];
+    const sources: Array<{ title: string; url?: string; tool: string; snippet?: string; similarity?: number; category?: string }> = [];
     const startedAt = Date.now();
     let finalText = "";
 
@@ -382,11 +411,24 @@ Deno.serve(async (req) => {
           if (Array.isArray(items)) {
             if (fname === "search_knowledge_base") {
               for (const it of items.slice(0, 6)) {
-                if (it?.source_title) sources.push({ title: it.source_title, url: it.source_url ?? undefined, tool: fname });
+                if (it?.source_title) sources.push({
+                  title: it.source_title,
+                  url: it.source_url ?? undefined,
+                  tool: fname,
+                  snippet: typeof it.content === "string" ? it.content.slice(0, 260) : undefined,
+                  similarity: typeof it.similarity === "number" ? it.similarity : undefined,
+                  category: it.category ?? undefined,
+                });
               }
             } else if (fname === "search_hr_resources" || fname === "search_training_courses") {
               for (const it of items.slice(0, 6)) {
-                if (it?.title) sources.push({ title: it.title, url: it.url ?? it.external_url ?? undefined, tool: fname });
+                if (it?.title) sources.push({
+                  title: it.title,
+                  url: it.url ?? it.external_url ?? undefined,
+                  tool: fname,
+                  snippet: typeof it.description === "string" ? it.description.slice(0, 260) : undefined,
+                  category: it.category ?? undefined,
+                });
               }
             }
           }
