@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  mockAuths, type Authorization, daysUntil, getAuthAlert,
+  type Authorization, daysUntil, getAuthAlert,
 } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 
 /* ====================================================================== */
 /* Risk derivation — uses real authorization data only                    */
@@ -356,7 +357,8 @@ export default function OSAuthRiskCenter() {
     zone: "all", state: null, payor: null, kind: "all", coordinator: null,
   });
 
-  const all = useMemo(() => deriveRisks(mockAuths), []);
+  const live = useLiveAuthorizations();
+  const all = useMemo(() => deriveRisks(live.items), [live.items]);
 
   const visible = useMemo(() => {
     let arr = applyView(all, view);

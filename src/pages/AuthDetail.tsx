@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  mockAuths, stageVariant, qaVariant, riskVariant, daysUntil, expirationTone,
+  stageVariant, qaVariant, riskVariant, daysUntil, expirationTone,
   getAuthAlert, getLifecycleProgress, lifecycleStages,
 } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -29,7 +30,16 @@ const tlIcons: Record<string, React.ReactNode> = {
 export default function AuthDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const auth = mockAuths.find((a) => a.id === id);
+  const live = useLiveAuthorizations();
+  const auth = live.items.find((a) => a.id === id);
+
+  if (live.loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh] text-muted-foreground text-sm">
+        Loading authorization…
+      </div>
+    );
+  }
 
   if (!auth) {
     return (

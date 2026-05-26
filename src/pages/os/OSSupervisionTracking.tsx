@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { mockAuths, daysUntil, type Authorization } from "@/data/authorizations";
+import { daysUntil, type Authorization } from "@/data/authorizations";
+import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import { cn } from "@/lib/utils";
 
 /* ───── tone palette (matches Auth Workspace) ───── */
@@ -207,9 +208,10 @@ const VIEWS: { key: ViewKey; label: string }[] = [
 /* ───── page ───── */
 
 export default function OSSupervisionTracking() {
+  const live = useLiveAuthorizations();
   const items = useMemo<SupItem[]>(
-    () => mockAuths.map(deriveItem).filter((x): x is SupItem => x !== null),
-    [],
+    () => live.items.map(deriveItem).filter((x): x is SupItem => x !== null),
+    [live.items],
   );
 
   const [view, setView] = useState<ViewKey>("all");
