@@ -236,15 +236,6 @@ const ACTION_GROUPS: { id: string; label: string; icon: React.ComponentType<{ cl
   },
 ];
 
-type BCBA = { name: string; caseload: number; supervisionPct: number; overduePRs: number; risk: Urgency; region: string };
-const MOCK_BCBAS: BCBA[] = [
-  { name: "Jordan Mitchell", caseload: 14, supervisionPct: 11.2, overduePRs: 2, risk: "high", region: "Region A" },
-  { name: "Avery Lopez", caseload: 12, supervisionPct: 13.8, overduePRs: 0, risk: "watch", region: "Region B" },
-  { name: "Samira Patel", caseload: 16, supervisionPct: 9.4, overduePRs: 3, risk: "critical", region: "Region A" },
-  { name: "Marcus Greene", caseload: 10, supervisionPct: 14.1, overduePRs: 0, risk: "watch", region: "Region C" },
-  { name: "Elena Ruiz", caseload: 13, supervisionPct: 12.6, overduePRs: 1, risk: "watch", region: "Region D" },
-];
-
 const RECRUITING_SNAPSHOT = [
   { label: "Active applicants", value: 28, tone: "neutral" as const },
   { label: "Interviews today", value: 4, tone: "neutral" as const },
@@ -252,16 +243,6 @@ const RECRUITING_SNAPSHOT = [
   { label: "Orientation scheduled", value: 3, tone: "neutral" as const },
   { label: "BCBA pipeline", value: 5, tone: "ok" as const },
   { label: "RBT pipeline", value: 23, tone: "ok" as const },
-];
-
-type Risk = { client: string; bcba: string; type: string; daysRemaining: number; urgency: Urgency };
-const RISK_ITEMS: Risk[] = [
-  { client: "Liam K.", bcba: "Jordan M.", type: "Auth expires", daysRemaining: 6, urgency: "critical" },
-  { client: "Emma R.", bcba: "Samira P.", type: "PR overdue", daysRemaining: -7, urgency: "critical" },
-  { client: "Noah S.", bcba: "Avery L.", type: "Auth expires", daysRemaining: 12, urgency: "high" },
-  { client: "Olivia T.", bcba: "Elena R.", type: "97156 missing", daysRemaining: -3, urgency: "high" },
-  { client: "Mia D.", bcba: "Marcus G.", type: "Supervision gap", daysRemaining: -2, urgency: "watch" },
-  { client: "Ethan B.", bcba: "Samira P.", type: "Treatment plan missing", daysRemaining: 4, urgency: "high" },
 ];
 
 const FEED: { id: string; icon: React.ComponentType<{ className?: string }>; text: string; meta: string; tone: "ok" | "warn" | "neutral" }[] = [
