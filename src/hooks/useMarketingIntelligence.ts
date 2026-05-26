@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { mockLeads, type Lead, type LeadSource } from "@/data/leads";
+import { mockLeads, pipelineStages, type Lead, type LeadSource, type LeadStatus } from "@/data/leads";
 import { mockPhoneCalls } from "@/data/calls";
 import { mockCandidates } from "@/data/recruiting";
 
@@ -113,6 +113,37 @@ export function useMarketingIntelligence() {
       referralByState.set(l.state, (referralByState.get(l.state) ?? 0) + 1);
     });
 
+    // ---- pipeline ---------------------------------------------------------
+    const stageCounts = new Map<LeadStatus, number>();
+    leads.forEach((l) => stageCounts.set(l.status, (stageCounts.get(l.status) ?? 0) + 1));
+    const pipeline = pipelineStages.map((s) => ({
+      stage: s.name,
+      count: stageCounts.get(s.name) ?? 0,
+    }));
+    const stuckThreshold = 7;
+    const stuck = leads.filter((l) => l.daysInStage >= stuckThreshold);
+    const stuckByStage = new Map<LeadStatus, number>();
+    stuck.forEach((l) => stuckByStage.set(l.status, (stuckByStage.get(l.status) ?? 0) + 1));
+    const bottlenecks = Array.from(stuckByStage.entries())
+      .map(([stage, count]) => ({ stage, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // ---- state momentum (7d vs prior 7d) ----------------------------------
+    const stateMomentum = new Map<string, { recent: number; prior: number }>();
+    leads.forEach((l) => {
+      const ageDays = (now - new Date(l.createdAt).getTime()) / 86_400_000;
+      const m = stateMomentum.get(l.state) ?? { recent: 0, prior: 0 };
+      if (ageDays <= 7) m.recent += 1;
+      else if (ageDays <= 14) m.prior += 1;
+      stateMomentum.set(l.state, m);
+    });
+    const stateTrend = byState.map((s) => {
+      const m = stateMomentum.get(s.state) ?? { recent: 0, prior: 0 };
+      const delta = m.recent - m.prior;
+      const pct = m.prior ? Math.round((delta / m.prior) * 100) : m.recent > 0 ? 100 : 0;
+      return { ...s, recent: m.recent, prior: m.prior, delta, pct };
+    });
+
     return {
       totals: {
         leads: leads.length,
@@ -121,6 +152,9 @@ export function useMarketingIntelligence() {
       },
       bySource,
       byState,
+      stateTrend,
+      pipeline,
+      bottlenecks,
       velocity: {
         leadsLast7,
         leadsLast30,
