@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { OpsPage, OpsCard, HealthPill, EmptyRow, type HealthTone } from "./_shared";
+import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, ActionPill, type HealthTone } from "./_shared";
 import { useOpsIntelligence, type OpsTone } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
@@ -445,9 +445,12 @@ export default function OpsDepartmentHealth() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <HealthPill tone={toneToHealth(d.tone)}>{STATUS_LABEL[d.tone]}</HealthPill>
-                  <button className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[11.5px] text-foreground/90 hover:bg-muted transition">
-                    Coordinate <ArrowRight className="size-3" />
-                  </button>
+                  <ActionPill
+                    label="Coordinate"
+                    toastMessage={`Coordination ping sent for ${d.name}`}
+                    icon={<ArrowRight className="size-3" />}
+                    className="bg-card text-foreground/90 border-border/70"
+                  />
                 </div>
               </li>
             ))}
@@ -469,9 +472,7 @@ export default function OpsDepartmentHealth() {
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
             {["Generate department summary", "Explain department risk", "Predict operational strain", "Recommend leadership support"].map((a) => (
-              <button key={a} className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/90 hover:bg-muted transition">
-                {a}
-              </button>
+              <AIPrompt key={a} label={a} variant="card" />
             ))}
           </div>
         </div>
