@@ -43,7 +43,7 @@ export default function OSAiInsights() {
     const [clientsRes, authsRes, leadsRes, employeesRes] = await Promise.all([
       supabase.from("clients").select("id,state,bcba,rbt,staffing_status,qa_status,next_task_due,blockers,stage").limit(1500),
       supabase.from("client_authorizations").select("client_id,status,expiration_date,state").limit(2000),
-      supabase.from("intake_leads").select("id,state,status,created_at,stage").limit(1500),
+      supabase.from("intake_leads").select("id,state,pipeline_stage,created_at").limit(1500),
       supabase.from("employees").select("id,state,status,next_review_date").eq("status", "active").limit(1500),
     ]);
 
@@ -87,7 +87,7 @@ export default function OSAiInsights() {
       });
     }
 
-    const noRbt = clients.filter((c) => !c.rbt || c.staffing_status === "Open");
+    const noRbt = clients.filter((c) => !c.rbt || c.staffing_status === "Needed" || c.staffing_status === "In Progress");
     if (noRbt.length > 0) {
       results.push({
         id: "staffing-gap",
@@ -100,13 +100,13 @@ export default function OSAiInsights() {
       });
     }
 
-    const qaFlagged = clients.filter((c) => c.qa_status === "Flagged" || c.qa_status === "Needs Review");
+    const qaFlagged = clients.filter((c) => c.qa_status === "In Review");
     if (qaFlagged.length > 0) {
       results.push({
         id: "qa-flagged",
         severity: "warn",
-        title: "Clients flagged by QA",
-        detail: `${qaFlagged.length} active case${qaFlagged.length > 1 ? "s have" : " has"} an open QA flag. Address before next supervision cycle.`,
+        title: "Clients pending QA review",
+        detail: `${qaFlagged.length} active case${qaFlagged.length > 1 ? "s are" : " is"} in QA review. Resolve before next supervision cycle.`,
         metric: `${qaFlagged.length}`,
         cta: { label: "Open Case Management", to: "/cases" },
         icon: AlertTriangle,
@@ -115,7 +115,8 @@ export default function OSAiInsights() {
 
     const stalledLeads = leads.filter((l) => {
       const created = days(l.created_at);
-      const isOpen = l.status !== "converted" && l.status !== "lost" && l.status !== "closed";
+      const stage = l.pipeline_stage;
+      const isOpen = stage !== "Converted to Client" && stage !== "Disqualified";
       return isOpen && created !== null && created < -14;
     });
     if (stalledLeads.length > 0) {
