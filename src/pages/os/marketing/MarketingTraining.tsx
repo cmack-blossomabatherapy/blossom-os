@@ -367,8 +367,8 @@ export default function MarketingTraining() {
             Ask Blossom AI can pull any specific SOP on demand.
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <Link to="/marketing/resources" className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[12px] text-foreground hover:bg-muted">
-              Open resource library <ArrowUpRight className="h-3 w-3" />
+            <Link to="/training" className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[12px] text-foreground hover:bg-muted">
+              Open Academy library <ArrowUpRight className="h-3 w-3" />
             </Link>
             <AIPrompt label="Show the brand voice guide" />
             <AIPrompt label="Summarize our review-response standard" />
