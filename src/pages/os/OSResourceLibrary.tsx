@@ -189,6 +189,31 @@ export default function OSResourceLibrary() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           {/* CENTER COLUMN */}
           <div className="space-y-8 min-w-0">
+            {/* EMPTY LIBRARY STATE */}
+            {!loading && libraryResources.length === 0 && (
+              <section className="rounded-2xl border border-dashed border-border/60 bg-card p-8 text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <h3 className="mt-3 text-[15px] font-semibold text-foreground">
+                  Your resource library is empty
+                </h3>
+                <p className="mx-auto mt-1 max-w-md text-[12.5px] text-muted-foreground">
+                  No published resources yet.{" "}
+                  {canManage
+                    ? "Add SOPs, workflows, and quick links from Resource Management to get started."
+                    : "Check back soon — HR is preparing the operational library."}
+                </p>
+                {canManage && (
+                  <Button asChild className="mt-4">
+                    <Link to="/hr/resource-management">
+                      <Plus className="mr-2 h-4 w-4" /> Add your first resource
+                    </Link>
+                  </Button>
+                )}
+              </section>
+            )}
+
             {/* QUICK LINKS STRIP */}
             {!query && !activeCategory && !typeFilter && quickLinks.length > 0 && (
               <section>
