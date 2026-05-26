@@ -526,10 +526,19 @@ function EmptyTab({ icon: Icon, title, hint }: any) {
 /* ─────────── MAIN PAGE ─────────── */
 
 export default function OSClients() {
-  const [selected, setSelected] = useState<Client | null>(clients[0]);
+  const { activeState } = useOSRole();
+  const { clients, loading } = useStateClients(activeState);
+  const [selected, setSelected] = useState<Client | null>(null);
   const [tab, setTab] = useState<Status | "all">("all");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
+
+  useEffect(() => {
+    if (!selected && clients.length > 0) setSelected(clients[0]);
+    if (selected && !clients.some((c) => c.id === selected.id)) {
+      setSelected(clients[0] ?? null);
+    }
+  }, [clients, selected]);
 
   const filtered = useMemo(() => {
     return clients.filter((c) => {
@@ -537,7 +546,61 @@ export default function OSClients() {
       if (query && !`${c.name} ${c.id} ${c.guardian}`.toLowerCase().includes(query.toLowerCase())) return false;
       return true;
     });
-  }, [tab, query]);
+  }, [tab, query, clients]);
+
+  const counts = useMemo(() => {
+    const c = { all: clients.length, active: 0, waitlist: 0, inactive: 0, discharged: 0 } as Record<Status | "all", number>;
+    for (const cl of clients) c[cl.status]++;
+    return c;
+  }, [clients]);
+
+  const tabs: { id: Status | "all"; label: string; count: number }[] = [
+    { id: "all", label: "All Clients", count: counts.all },
+    { id: "active", label: "Active", count: counts.active },
+    { id: "inactive", label: "Inactive", count: counts.inactive },
+    { id: "discharged", label: "Discharged", count: counts.discharged },
+    { id: "waitlist", label: "Waitlist", count: counts.waitlist },
+  ];
+
+  const distribution = useMemo(() => {
+    const total = clients.length || 1;
+    return (["active", "waitlist", "inactive", "discharged"] as Status[])
+      .map((s) => ({
+        name: s.charAt(0).toUpperCase() + s.slice(1),
+        value: counts[s],
+        pct: Math.round((counts[s] / total) * 100),
+        color: STATUS_COLORS[s],
+      }))
+      .filter((d) => d.value > 0);
+  }, [clients, counts]);
+
+  const ageBuckets = useMemo(() => {
+    const buckets = { "0-2": 0, "3-5": 0, "6-10": 0, "11-14": 0, "15+": 0 } as Record<string, number>;
+    for (const c of clients) {
+      const m = c.age.match(/(\d+)/);
+      const yr = m ? parseInt(m[1], 10) : NaN;
+      if (Number.isNaN(yr)) continue;
+      if (yr <= 2) buckets["0-2"]++;
+      else if (yr <= 5) buckets["3-5"]++;
+      else if (yr <= 10) buckets["6-10"]++;
+      else if (yr <= 14) buckets["11-14"]++;
+      else buckets["15+"]++;
+    }
+    return Object.entries(buckets).map(([age, v]) => ({ age, v }));
+  }, [clients]);
+
+  const services = useMemo(() => {
+    const total = clients.length || 1;
+    const map: Record<Client["service"], number> = {
+      "In-Home ABA": 0, "Center-Based ABA": 0, "School / Consult": 0, "Other": 0,
+    };
+    for (const c of clients) map[c.service]++;
+    return (Object.keys(map) as Client["service"][])
+      .map((name) => ({ name, value: Math.round((map[name] / total) * 100), color: SERVICE_COLORS[name] }))
+      .filter((s) => s.value > 0);
+  }, [clients]);
+
+  const activeAuths = useMemo(() => clients.filter((c) => c.auth === "active").length, [clients]);
 
   return (
     <OSShell rightRail={selected ? <ClientPanel c={selected} onClose={() => setSelected(null)} /> : undefined}>
@@ -576,11 +639,11 @@ export default function OSClients() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Kpi icon={UsersRound}  tone="os-tone-violet" label="Active Clients"     value="842"    delta="12%" up   hint="vs last 7 days" />
-        <Kpi icon={Users}       tone="os-tone-lilac"  label="Total Clients"      value="1,024"  delta="8%"  up   hint="vs last 7 days" />
-        <Kpi icon={Clock4}      tone="os-tone-amber"  label="Clients on Waitlist" value="78"    delta="5%"  up   hint="vs last 7 days" />
-        <Kpi icon={ShieldCheck} tone="os-tone-mint"   label="Active Auths"       value="152"    delta="14%" up   hint="vs last 7 days" />
-        <Kpi icon={DollarSign}  tone="os-tone-sky"    label="Revenue (MTD)"      value="$1.24M" delta="9%"  up   hint="vs last month" />
+        <Kpi icon={UsersRound}  tone="os-tone-violet" label="Active Clients"     value={counts.active.toLocaleString()}    delta="Live" up   hint={`in ${activeState ?? "all states"}`} />
+        <Kpi icon={Users}       tone="os-tone-lilac"  label="Total Clients"      value={counts.all.toLocaleString()}  delta="Live"  up   hint="across statuses" />
+        <Kpi icon={Clock4}      tone="os-tone-amber"  label="Clients on Waitlist" value={counts.waitlist.toLocaleString()}    delta="Live"  up   hint="awaiting onboarding" />
+        <Kpi icon={ShieldCheck} tone="os-tone-mint"   label="Active Auths"       value={activeAuths.toLocaleString()}    delta="Live" up   hint="approved authorizations" />
+        <Kpi icon={DollarSign}  tone="os-tone-sky"    label="Discharged"      value={counts.discharged.toLocaleString()} delta="Live"  up   hint="historical" />
       </div>
 
       {/* Client Management */}
@@ -646,15 +709,8 @@ export default function OSClients() {
         </div>
 
         <footer className="mt-3 flex items-center justify-between text-[11.5px] text-muted-foreground">
-          <span>Showing 1–{filtered.length} of 842 clients</span>
-          <div className="flex items-center gap-1">
-            {["‹","1","2","3","…","121","›"].map((p, i) => (
-              <button key={i} className={cn("h-7 min-w-7 rounded-lg px-2 text-[11.5px] font-semibold transition",
-                p === "1" ? "bg-[hsl(265_100%_94%)] text-[hsl(265_70%_50%)]" : "text-muted-foreground hover:bg-foreground/5")}>
-                {p}
-              </button>
-            ))}
-          </div>
+          <span>{loading ? "Loading clients…" : `Showing ${filtered.length} of ${counts.all} clients`}</span>
+          <span className="text-[11px]">{activeState ? `Scoped to ${activeState}` : "All states"}</span>
         </footer>
       </section>
 
@@ -676,7 +732,7 @@ export default function OSClients() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-[18px] font-semibold tabular-nums">842</p>
+                <p className="text-[18px] font-semibold tabular-nums">{counts.all}</p>
                 <p className="text-[10px] text-muted-foreground">Total Clients</p>
               </div>
             </div>
