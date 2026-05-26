@@ -1021,7 +1021,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v5";
+const STORAGE_KEY = "blossom.training.academy.v6";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
