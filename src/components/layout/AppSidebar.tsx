@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 // AppSidebar can render outside OSRoleProvider (legacy routes); tolerate missing context.
 import { useOSRoleSafe } from "@/contexts/OSRoleContext";
+import { ROLE_PROFILES, MODULE_ROUTES, type OSModule, type OSRole } from "@/lib/os/permissions";
+import { ROLE_HOME } from "@/lib/os/roleHome";
 import { type DashboardKey } from "@/data/leadershipDashboard";
 import { getRoleNavigationExceptions, hasFullNavigationAccess, navPathToRoutePrefix, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, AUTOMATIONS_ROLES, COURSE_AUTHOR_ROLES } from "@/lib/navigationAccess";
 import { canAccessAdminHub } from "@/lib/adminAccess";
@@ -219,7 +221,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const location = useLocation();
   const navigate = useNavigate();
   const { hasPerm, isAdmin, user, roles, signOut } = useAuth();
-  const osRole = useOSRoleSafe()?.role ?? null;
+  const osCtx = useOSRoleSafe();
+  const osRole = osCtx?.role ?? null;
+  // Super admin is impersonating another role via the View-as-Role switcher.
+  const impersonating = !!(isAdmin && osRole && osRole !== "super_admin");
   const SIDEBAR_SECTIONS_KEY = "sidebar-open-sections";
   const DEFAULT_OPEN_SECTIONS = ["Dashboards", "Academy", "Admin"];
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
@@ -247,11 +252,16 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const [navQuery, setNavQuery] = useState("");
   const [mobileNavQuery, setMobileNavQuery] = useState("");
   // Admin roles see the Admin + Operations groups; everyone sees the Academy group.
-  const showAdmin = canAccessAdminHub(user, roles);
+  // When impersonating, the super admin's own admin/operations menus are hidden so
+  // the view is a true mirror of the selected role.
+  const showAdmin = !impersonating && canAccessAdminHub(user, roles);
   // Executives get a curated menu: Academy + Admin + only the BCBA Performance
   // dashboard. They do NOT see the legacy Operations/HR/Enterprise groups.
-  const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
-  const showOperations = !isExecOnly && roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
+  const isExecOnly =
+    osRole === "executive_leadership" ||
+    (!impersonating && roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager"));
+  const showOperations =
+    !impersonating && !isExecOnly && roles.some((r) => ["admin", "exec", "ops_manager"].includes(r));
   // Scheduling Team gets a curated operational menu focused on staffing & scheduling.
   // Match either the auth role or the demo OS role override (super admin impersonation).
   const isSchedulingOnly =
