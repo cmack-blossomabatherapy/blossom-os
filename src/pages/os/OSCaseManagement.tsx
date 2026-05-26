@@ -70,7 +70,7 @@ export default function OSCaseManagement() {
       const [{ data: cd }, { data: ad }] = await Promise.all([cQ, aQ]);
       if (!alive) return;
       const filteredClients = (cd ?? []).filter((c: ClientRow) =>
-        activeState === "ALL" || !activeState ? true : c.state === activeState,
+        !activeState ? true : c.state === activeState,
       );
       setClients(filteredClients);
       setAuths((ad ?? []) as AuthRow[]);
