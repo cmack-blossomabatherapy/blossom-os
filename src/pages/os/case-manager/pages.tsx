@@ -11,6 +11,7 @@ import CMFamilySupportPage from "./FamilySupport";
 import CMProgressFollowUpsPage from "./ProgressFollowUps";
 import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
+import CMStaffingCoordinationPage from "./StaffingCoordination";
 
 /* ---------- HOME ---------- */
 
