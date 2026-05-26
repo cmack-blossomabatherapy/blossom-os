@@ -273,6 +273,9 @@ import OSAuthorizationResources from "./pages/os/OSAuthorizationResources";
 import OSBCBAResources from "./pages/os/OSBCBAResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
+import OSCaseManagement from "./pages/os/OSCaseManagement";
+import OSEvaluations from "./pages/os/OSEvaluations";
+import OSAiInsights from "./pages/os/OSAiInsights";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
 import OSDataUploads from "./pages/os/OSDataUploads";
@@ -502,22 +505,12 @@ const App = () => (
                   <Route path="/scheduling/resources" element={<OSSchedulingResources />} />
                   <Route path="/scheduling/rbts" element={<OSSchedulingRosterRBTs />} />
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />
-                  <Route path="/cases" element={<OSComingSoon title="Case Management" tagline="Active case oversight with clinical, operational, and family risk indicators." icon={FolderKanban} features={[
-                    { title: "Active case board", description: "Every active client with risk flags, staffing status, and parent satisfaction." },
-                    { title: "Escalations & alerts", description: "Auto-escalate cases with cancellations, no-shows, or compliance issues." },
-                    { title: "Parent communication log", description: "Centralized record of every conversation, message, and follow-up." },
-                    { title: "Outcomes tracking", description: "Goal progress, program changes, and discharge readiness over time." },
-                  ]} />} />
+                  <Route path="/cases" element={<OSCaseManagement />} />
                   <Route path="/staff" element={<OSWorkforce />} />
                   <Route path="/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
                   <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
-                  <Route path="/evaluations" element={<OSComingSoon title="Evaluations" tagline="A modern performance review system built for clinical and operational teams." icon={ClipboardCheck} features={[
-                    { title: "Structured review cycles", description: "Quarterly and annual review templates by role, with owner assignments." },
-                    { title: "360° feedback", description: "Self, peer, and manager input rolled up into a single scorecard." },
-                    { title: "Coaching plans", description: "Action items, follow-ups, and progress tracking after each review." },
-                    { title: "Career growth ladders", description: "Visible competency milestones from new RBT through senior BCBA." },
-                  ]} />} />
+                  <Route path="/evaluations" element={<OSEvaluations />} />
                   <Route path="/training" element={<OSTraining />} />
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
@@ -541,7 +534,7 @@ const App = () => (
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
                   <Route path="/ai/assistant" element={<OSAskBlossom />} />
-                  <Route path="/ai/insights" element={<OSPlaceholder title="AI Insights" description="AI-generated operational recommendations." icon={Brain} />} />
+                  <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
