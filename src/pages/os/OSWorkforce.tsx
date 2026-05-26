@@ -246,10 +246,10 @@ export default function OSWorkforce() {
           <div className="mt-5 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <KpiCard label="Active BCBAs" value={kpis.bcbas} hint={`${bcbas.filter(b=>b.status==="Healthy").length} healthy`} tone="ok" icon={UserCog} />
             <KpiCard label="Active RBTs" value={kpis.rbts} hint={`${rbts.filter(r=>r.status==="Healthy").length} healthy`} tone="ok" icon={Users} />
-            <KpiCard label="Clients Awaiting Staffing" value={kpis.awaiting} hint="12 clients awaiting RBT staffing" tone="warn" icon={Inbox} />
+            <KpiCard label="Clients Awaiting Staffing" value={kpis.awaiting} hint={`${kpis.awaiting} clients under approved hours`} tone="warn" icon={Inbox} />
             <KpiCard label="Overloaded BCBAs" value={kpis.overloaded} hint={`${kpis.overloaded} over target caseload`} tone="bad" icon={Flame} />
-            <KpiCard label="Open RBT Positions" value={kpis.openRbtPositions} hint="Recruiting in progress" tone="warn" icon={UserPlus} />
-            <KpiCard label="Supervision Risks" value={kpis.supervisionRisks} hint="Behind on cadence" tone="warn" icon={ShieldAlert} />
+            <KpiCard label="Near Capacity" value={kpis.nearCap} hint="At or 1 under target" tone="warn" icon={UserPlus} />
+            <KpiCard label="Authorization Risks" value={kpis.authRisks} hint="Expiring or pending auths" tone="warn" icon={ShieldAlert} />
           </div>
 
           {/* MAIN GRID */}
