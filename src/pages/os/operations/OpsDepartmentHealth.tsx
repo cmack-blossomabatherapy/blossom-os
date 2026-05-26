@@ -1,10 +1,26 @@
 import { useMemo } from "react";
-import { OpsPage, OpsCard, HealthPill, EmptyRow, type HealthTone } from "./_shared";
+import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, ActionPill, type HealthTone } from "./_shared";
 import { useOpsIntelligence, type OpsTone } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { TrendingUp, TrendingDown, Minus, Sparkles, ArrowRight, ShieldAlert, Workflow, Users2, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+
+const DEPT_LINKS: Record<string, string> = {
+  staffing: "/operations/staffing-capacity",
+  clinics: "/operations/command-center",
+  "state-leadership": "/operations/department-health",
+  systems: "/operations/workflow-risks",
+  intake: "/operations/workflow-risks",
+  authorizations: "/operations/escalations",
+  scheduling: "/operations/staffing-capacity",
+  qa: "/operations/workflow-risks",
+  recruiting: "/operations/staffing-capacity",
+  hr: "/operations/accountability",
+  payroll: "/operations/escalations",
+  training: "/operations/training-adoption",
+};
 
 const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
 const toneToHealth = (t: OpsTone): HealthTone => t;
@@ -294,9 +310,10 @@ export default function OpsDepartmentHealth() {
             const tone = toneToHealth(d.tone);
             const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
             return (
-              <button
+              <Link
                 key={d.id}
-                className="group rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_hsl(220_15%_20%/0.12)] hover:border-border"
+                to={DEPT_LINKS[d.id] ?? "/operations/command-center"}
+                className="group rounded-2xl border border-border/70 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_hsl(220_15%_20%/0.12)] hover:border-border block"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -313,7 +330,7 @@ export default function OpsDepartmentHealth() {
                   <div className={cn("h-full rounded-full", barCls)} style={{ width: `${Math.min(100, Math.max(8, d.score))}%` }} />
                 </div>
                 <div className="mt-2 text-[11.5px] text-muted-foreground line-clamp-2">{d.signal}</div>
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -445,9 +462,12 @@ export default function OpsDepartmentHealth() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <HealthPill tone={toneToHealth(d.tone)}>{STATUS_LABEL[d.tone]}</HealthPill>
-                  <button className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[11.5px] text-foreground/90 hover:bg-muted transition">
-                    Coordinate <ArrowRight className="size-3" />
-                  </button>
+                  <ActionPill
+                    label="Coordinate"
+                    toastMessage={`Coordination ping sent for ${d.name}`}
+                    icon={<ArrowRight className="size-3" />}
+                    className="bg-card text-foreground/90 border-border/70"
+                  />
                 </div>
               </li>
             ))}
@@ -469,9 +489,7 @@ export default function OpsDepartmentHealth() {
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
             {["Generate department summary", "Explain department risk", "Predict operational strain", "Recommend leadership support"].map((a) => (
-              <button key={a} className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/90 hover:bg-muted transition">
-                {a}
-              </button>
+              <AIPrompt key={a} label={a} variant="card" />
             ))}
           </div>
         </div>

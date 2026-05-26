@@ -186,7 +186,6 @@ import OSClientsOperations from "./pages/os/OSClientsOperations";
 import OSIntakeClients from "./pages/os/OSIntakeClients";
 import OSIntakeAuthorizations from "./pages/os/OSIntakeAuthorizations";
 import OSExecutive from "./pages/os/OSExecutive";
-import OSOperations from "./pages/os/OSOperations";
 import OpsExecutiveDashboard from "./pages/os/operations/OpsExecutiveDashboard";
 import OpsCommandCenter from "./pages/os/operations/OpsCommandCenter";
 import OpsLeadershipBriefing from "./pages/os/operations/OpsLeadershipBriefing";
@@ -415,7 +414,6 @@ const App = () => (
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<OSExecutive />} />
                   <Route path="/operations" element={<OpsExecutiveDashboard />} />
-                  <Route path="/operations/legacy" element={<OSOperations />} />
                   <Route path="/operations/command-center" element={<OpsCommandCenter />} />
                   <Route path="/operations/briefing" element={<OpsLeadershipBriefing />} />
                   <Route path="/operations/department-health" element={<OpsDepartmentHealth />} />

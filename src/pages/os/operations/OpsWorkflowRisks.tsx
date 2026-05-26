@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { OpsPage, OpsCard, HealthPill, EmptyRow, type HealthTone } from "./_shared";
+import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, type HealthTone } from "./_shared";
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
@@ -486,9 +486,7 @@ export default function OpsWorkflowRisks() {
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
             {["Explain workflow risk", "Predict operational failure", "Generate risk summary", "Identify root cause", "Recommend leadership actions"].map((a) => (
-              <button key={a} className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/90 hover:bg-muted transition">
-                {a}
-              </button>
+              <AIPrompt key={a} label={a} variant="card" />
             ))}
           </div>
         </div>

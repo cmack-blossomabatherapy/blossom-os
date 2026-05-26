@@ -8,7 +8,7 @@ import {
   Layers,
   Workflow,
 } from "lucide-react";
-import { OpsPage, OpsCard, HealthPill, EmptyRow, type HealthTone } from "./_shared";
+import { OpsPage, OpsCard, HealthPill, EmptyRow, ActionPill, type HealthTone } from "./_shared";
 import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
@@ -667,8 +667,8 @@ export default function OpsCommandCenter() {
                       <div className="mt-0.5 text-[12px] text-muted-foreground">{e.detail}</div>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <button className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground">Assign</button>
-                      <button className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground">Follow up</button>
+                      <ActionPill label="Assign" toastMessage={`Assigned: ${e.title}`} />
+                      <ActionPill label="Follow up" toastMessage={`Follow-up logged for ${e.area}`} />
                       <Link to="/operations/escalations" className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-border hover:text-foreground">Open</Link>
                     </div>
                   </div>

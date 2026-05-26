@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 
 export function OpsPage({
   title,
@@ -125,5 +128,62 @@ export function EmptyRow({ children }: { children: ReactNode }) {
     <div className="rounded-xl bg-muted/40 border border-dashed border-border/60 p-5 text-center text-[13px] text-muted-foreground">
       {children}
     </div>
+  );
+}
+
+/**
+ * AIPrompt — pill button that deep-links into Ask Blossom AI with a prefilled prompt.
+ * Use anywhere we surface "AI suggestions" on Ops Leadership pages.
+ */
+export function AIPrompt({
+  label,
+  prompt,
+  variant = "subtle",
+}: {
+  label: string;
+  prompt?: string;
+  variant?: "subtle" | "card";
+}) {
+  const q = encodeURIComponent(prompt ?? label);
+  const className =
+    variant === "card"
+      ? "inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/80 transition hover:bg-muted"
+      : "inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-3 py-1 text-[11.5px] font-medium text-foreground/80 transition hover:bg-muted";
+  return (
+    <Link to={`/ai/assistant?q=${q}`} className={className}>
+      <Sparkles className="h-3 w-3 opacity-70" />
+      {label}
+    </Link>
+  );
+}
+
+/**
+ * ActionPill — small pill button that fires a toast confirmation.
+ * Used for inline operational actions (Assign, Follow up, Coordinate, etc.)
+ * until a full action backend is connected.
+ */
+export function ActionPill({
+  label,
+  toastMessage,
+  icon,
+  className,
+}: {
+  label: string;
+  toastMessage?: string;
+  icon?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => toast.success(toastMessage ?? `${label} sent`)}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] text-muted-foreground transition hover:border-border hover:text-foreground hover:bg-muted",
+        className,
+      )}
+    >
+      {label}
+      {icon}
+    </button>
   );
 }

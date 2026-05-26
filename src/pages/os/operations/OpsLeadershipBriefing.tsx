@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
-import { OpsPage, OpsCard, HealthPill, EmptyRow, type HealthTone } from "./_shared";
+import { OpsPage, OpsCard, HealthPill, EmptyRow, AIPrompt, type HealthTone } from "./_shared";
 import { useOpsIntelligence, type OpsTone } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
-import { Sparkles, TrendingUp, TrendingDown, Minus, ArrowUpRight, CheckCircle2, Clock, AlertTriangle, Plus, X } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Minus, CheckCircle2, Clock, AlertTriangle, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
@@ -228,9 +228,7 @@ export default function OpsLeadershipBriefing() {
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quick actions</div>
             <div className="flex flex-wrap gap-2">
               {["Generate executive summary", "Explain risk trend", "Recommend intervention", "Predict operational impact"].map((a) => (
-                <button key={a} className="rounded-full border border-border/70 bg-card px-3 py-1.5 text-[12px] text-foreground/90 hover:bg-muted transition">
-                  {a}
-                </button>
+                <AIPrompt key={a} label={a} variant="card" />
               ))}
             </div>
           </div>
@@ -415,9 +413,7 @@ export default function OpsLeadershipBriefing() {
                 <HealthPill tone={r.tone}>{r.tone}</HealthPill>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-1 text-[11.5px] text-foreground/90 hover:bg-muted transition">
-                  Generate leadership note <ArrowUpRight className="size-3" />
-                </button>
+                <AIPrompt label="Generate leadership note" prompt={`Generate a leadership note about: ${r.title}`} variant="card" />
               </div>
             </li>
           ))}
