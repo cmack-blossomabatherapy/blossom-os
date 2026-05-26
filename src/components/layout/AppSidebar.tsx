@@ -556,6 +556,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Escalations & Follow-Ups", icon: Flame,         path: "/recruiting/escalations",  perm: "" },
       ],
     },
+    intelligenceSection,
     {
       title: "Resources",
       items: [
