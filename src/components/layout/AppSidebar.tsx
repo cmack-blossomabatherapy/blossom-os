@@ -137,6 +137,20 @@ const operationsSections: NavSection[] = [
   },
 ];
 
+// PHONE SYSTEM — shared section reused by HR, Marketing, and Super Admin menus.
+const phoneSystemSection: NavSection = {
+  title: "Phone System",
+  items: [
+    { label: "Dashboard",          icon: PhoneForwarded, path: "/phone",              perm: "" },
+    { label: "Extension Lookup",   icon: Search,         path: "/phone/lookup",       perm: "" },
+    { label: "Shared Routing",     icon: Share2,         path: "/phone/shared",       perm: "" },
+    { label: "Request Tracker",    icon: ListChecks,     path: "/phone/requests",     perm: "" },
+    { label: "New Request",        icon: Plug,           path: "/phone/requests/new", perm: "" },
+    { label: "State Directory",    icon: MapPinIcon,     path: "/phone/directory",    perm: "" },
+    { label: "Admin Settings",     icon: Settings2,      path: "/phone/admin",        perm: "" },
+  ],
+};
+
 // HR / Enterprise legacy groups — kept reachable for admins under Operations area.
 const legacyHrSection: { title: string; items: NavItem[] } = {
   title: "HR Suite",
