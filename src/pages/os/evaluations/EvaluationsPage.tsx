@@ -16,6 +16,8 @@ import EmailQueueTab from "./tabs/EmailQueueTab";
 import ReportsTab from "./tabs/ReportsTab";
 import SettingsTab from "./tabs/SettingsTab";
 import ImportStaffDialog from "./ImportStaffDialog";
+import LaunchChecklistTab from "./tabs/LaunchChecklistTab";
+import { Rocket } from "lucide-react";
 import { permissionsForRole, filterStaffByScope, filterEvaluationsByScope } from "./permissions";
 import type { EvalStaff } from "./types";
 
@@ -102,6 +104,7 @@ export default function EvaluationsPage() {
             {perms.canManageForms && <TabsTrigger value="forms">Forms</TabsTrigger>}
             {perms.canManageEmails && <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Email Queue</TabsTrigger>}
             {perms.canViewReports && <TabsTrigger value="reports">Reports</TabsTrigger>}
+            {perms.canManageSettings && <TabsTrigger value="launch"><Rocket className="h-3.5 w-3.5 mr-1" />Launch</TabsTrigger>}
             <TabsTrigger value="settings"><SettingsIcon className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
           </TabsList>
 
@@ -115,6 +118,7 @@ export default function EvaluationsPage() {
           {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
           {perms.canManageEmails && <TabsContent value="emails"><EmailQueueTab data={data} /></TabsContent>}
           {perms.canViewReports && <TabsContent value="reports"><ReportsTab data={scopedData} /></TabsContent>}
+          {perms.canManageSettings && <TabsContent value="launch"><LaunchChecklistTab data={data} /></TabsContent>}
           <TabsContent value="settings"><SettingsTab data={data} canEdit={perms.canManageSettings} /></TabsContent>
         </Tabs>
       </div>
