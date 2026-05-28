@@ -333,6 +333,7 @@ import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSCaseManagement from "./pages/os/OSCaseManagement";
 import OSEvaluations from "./pages/os/OSEvaluations";
+import PublicEvalFormPage from "./pages/os/evaluations/PublicFormPage";
 import OSAiInsights from "./pages/os/OSAiInsights";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
@@ -457,6 +458,7 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/mfa/setup" element={<MfaSetup />} />
                 <Route path="/mfa/verify" element={<MfaVerify />} />
+                <Route path="/evaluations/form/:token" element={<PublicEvalFormPage />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
