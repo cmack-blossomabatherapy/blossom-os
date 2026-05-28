@@ -55,7 +55,6 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [cycleFilter, setCycleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -69,7 +68,6 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       if (stateFilter !== "all" && (s.state ?? "") !== stateFilter) return false;
       if (roleFilter !== "all" && s.role !== roleFilter) return false;
       if (typeFilter !== "all" && e.evaluation_type !== typeFilter) return false;
-      if (cycleFilter !== "all" && (e.cycle_id ?? "") !== cycleFilter) return false;
       if (statusFilter !== "all" && e.final_status !== statusFilter) return false;
       if (from && (!e.created_at || new Date(e.created_at) < new Date(from))) return false;
       if (to && (!e.created_at || new Date(e.created_at) > new Date(to))) return false;
