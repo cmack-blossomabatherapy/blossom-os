@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { OSShell } from "../OSShell";
 import { useOSRole } from "@/contexts/OSRoleContext";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   ClipboardCheck, Plus, CalendarPlus, Mail, Upload, Settings as SettingsIcon,
