@@ -20,13 +20,13 @@ export async function logAudit(args: {
   overrideReason?: string;
 }) {
   await supabase.from("evaluation_audit_log").insert({
-    evaluation_id: args.evaluationId ?? null,
-    staff_id: args.staffId ?? null,
+    evaluation_id: args.evaluationId ?? undefined,
+    staff_id: args.staffId ?? undefined,
     action: args.action,
     actor: args.actor ?? "system",
-    details_json: args.details ?? {},
-    override_reason: args.overrideReason ?? null,
-  });
+    details_json: (args.details ?? {}) as any,
+    override_reason: args.overrideReason ?? undefined,
+  } as any);
 }
 
 export const AUDIT_LABELS: Record<string, string> = {
