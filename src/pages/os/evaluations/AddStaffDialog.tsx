@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { EvalStaff } from "./types";
@@ -20,6 +24,14 @@ interface Props {
 
 const STATES = ["GA", "NC", "TN", "VA", "MD"];
 
+interface InternalStaffOption {
+  id: string;
+  name: string;
+  email: string | null;
+  job_title: string | null;
+  department: string | null;
+}
+
 export default function AddStaffDialog({ open, onOpenChange, supervisors, onCreated, initial }: Props) {
   const [first, setFirst] = useState(initial?.first_name ?? "");
   const [last, setLast] = useState(initial?.last_name ?? "");
@@ -33,6 +45,65 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
   const [frequency, setFrequency] = useState<"Quarterly" | "Annual" | "Both">((initial?.evaluation_frequency as any) ?? "Both");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [internalStaff, setInternalStaff] = useState<InternalStaffOption[]>([]);
+  const [supervisorName, setSupervisorName] = useState<string>(
+    initial?.supervisor_name ?? ""
+  );
+  const [supervisorPickerOpen, setSupervisorPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email, job_title, department, active")
+        .eq("active", true)
+        .order("display_name", { ascending: true });
+      if (cancelled) return;
+      setInternalStaff(
+        (data ?? []).map((p: any) => ({
+          id: p.user_id,
+          name: p.display_name || p.email || "Unnamed",
+          email: p.email,
+          job_title: p.job_title,
+          department: p.department,
+        }))
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const reviewerOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; meta: string }>();
+    internalStaff.forEach((s) => {
+      map.set(s.id, {
+        id: s.id,
+        name: s.name,
+        meta: [s.job_title, s.department, s.email].filter(Boolean).join(" · "),
+      });
+    });
+    supervisors.forEach((s) => {
+      if (!map.has(s.id)) {
+        map.set(s.id, {
+          id: s.id,
+          name: `${s.first_name} ${s.last_name}`,
+          meta: [s.role, s.email].filter(Boolean).join(" · "),
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [internalStaff, supervisors]);
+
+  const selectedReviewerLabel = useMemo(() => {
+    if (supervisorId) {
+      const found = reviewerOptions.find((o) => o.id === supervisorId);
+      if (found) return found.name;
+    }
+    return supervisorName || "";
+  }, [supervisorId, supervisorName, reviewerOptions]);
 
   async function submit() {
     if (!first.trim() || !last.trim() || !email.trim()) {
@@ -40,7 +111,11 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
       return;
     }
     setSaving(true);
-    const sup = supervisors.find((s) => s.id === supervisorId);
+    const supFromEval = supervisors.find((s) => s.id === supervisorId);
+    const supFromInternal = internalStaff.find((s) => s.id === supervisorId);
+    const resolvedSupervisorName = supFromEval
+      ? `${supFromEval.first_name} ${supFromEval.last_name}`
+      : supFromInternal?.name ?? supervisorName ?? null;
     const { error } = await supabase.from("evaluation_staff").insert({
       first_name: first.trim(),
       last_name: last.trim(),
@@ -48,8 +123,8 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
       phone: phone || null,
       role,
       state: state || null,
-      supervisor_id: supervisorId || null,
-      supervisor_name: sup ? `${sup.first_name} ${sup.last_name}` : null,
+      supervisor_id: supFromEval ? supervisorId : null,
+      supervisor_name: resolvedSupervisorName || null,
       hire_date: hireDate || null,
       active_status: active,
       evaluation_frequency: frequency,
@@ -63,7 +138,7 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
     toast({ title: "Staff added", description: `${first} ${last} added to evaluations.` });
     onCreated();
     onOpenChange(false);
-    setFirst(""); setLast(""); setEmail(""); setPhone(""); setSupervisorId(""); setHireDate(""); setNotes("");
+    setFirst(""); setLast(""); setEmail(""); setPhone(""); setSupervisorId(""); setSupervisorName(""); setHireDate(""); setNotes("");
   }
 
   return (
@@ -121,15 +196,74 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Supervisor / Reviewer</Label>
-              <Select value={supervisorId} onValueChange={setSupervisorId}>
-                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
-                  {supervisors.length === 0 && <SelectItem value="_none" disabled>No staff yet</SelectItem>}
-                  {supervisors.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name} · {s.role}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={supervisorPickerOpen} onOpenChange={setSupervisorPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-normal",
+                      !selectedReviewerLabel && "text-muted-foreground"
+                    )}
+                  >
+                    {selectedReviewerLabel || "Search internal staff…"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search by name, title, email…" />
+                    <CommandList>
+                      <CommandEmpty>No staff found.</CommandEmpty>
+                      <CommandGroup heading="Internal staff">
+                        {reviewerOptions.length === 0 && (
+                          <div className="px-2 py-3 text-xs text-muted-foreground">
+                            No internal staff available.
+                          </div>
+                        )}
+                        {reviewerOptions.map((o) => (
+                          <CommandItem
+                            key={o.id}
+                            value={`${o.name} ${o.meta}`}
+                            onSelect={() => {
+                              setSupervisorId(o.id);
+                              setSupervisorName(o.name);
+                              setSupervisorPickerOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                supervisorId === o.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm">{o.name}</span>
+                              {o.meta && (
+                                <span className="text-xs text-muted-foreground">{o.meta}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {supervisorId && (
+                        <CommandGroup heading="Actions">
+                          <CommandItem
+                            onSelect={() => {
+                              setSupervisorId("");
+                              setSupervisorName("");
+                              setSupervisorPickerOpen(false);
+                            }}
+                          >
+                            Clear selection
+                          </CommandItem>
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5">
               <Label>Evaluation frequency</Label>
