@@ -458,19 +458,103 @@ export function PhoneShared() {
 // ---------- /phone/directory ----------
 
 export function PhoneDirectory() {
-  const { queues, shared } = usePhoneSystem();
+  const { queues, shared, settings } = usePhoneSystem();
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const matches = (s: string) => !term || s.toLowerCase().includes(term);
+
+  const filteredQueues = queues.filter((row) =>
+    matches(row.queue) || matches(row.state) || matches(row.timeframe) ||
+    matches(row.voicemail) || matches(row.routing) || row.agents.some((a) => matches(a)),
+  );
+  const filteredShared = shared.filter((s) =>
+    matches(s.department) || matches(s.category) || matches(s.extension) ||
+    matches(s.businessHoursRouting) || matches(s.afterHoursRouting) ||
+    s.agents.some((a) => matches(a)),
+  );
+  const filteredStateIntake = STATE_INTAKE_ROUTING.filter((s) =>
+    matches(s.state) || matches(s.intakeExt) || matches(s.dayQueue) ||
+    matches(s.afternoonQueue) || matches(s.afterHours),
+  );
+
   return (
     <Shell>
-      <PageHeader title="Routing Directory" description="State phone numbers, main auto-attendants, and intake routing." />
-      <Card className="mb-6">
-        <CardContent className="pt-6">
+      <PageHeader
+        title="Routing Directory"
+        description="Corporate numbers, auto-attendant menu, state intake routing, and queue details."
+      />
+
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter by state, extension, queue, or number…"
+          className="pl-9 max-w-md"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Main Corporate Numbers</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Primary</span>
+              <span className="font-mono">{settings.mainNumberPrimary}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Secondary</span>
+              <span className="font-mono">{settings.mainNumberSecondary}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Auto Attendant</span>
+              <span className="font-mono">{CORPORATE_AUTO_ATTENDANT}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">After-Hours Forward</span>
+              <span className="font-mono">{settings.afterHoursNumber}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Corporate Menu ({CORPORATE_AUTO_ATTENDANT})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead className="w-16">Option</TableHead><TableHead>Department</TableHead><TableHead>Routes To</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {CORPORATE_MENU.map((m) => (
+                  <TableRow key={m.option}>
+                    <TableCell className="font-mono font-semibold">{m.option}</TableCell>
+                    <TableCell>{m.label}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{m.routesTo}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">State Direct Numbers</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>State</TableHead><TableHead>Direct Number</TableHead><TableHead>Main AA</TableHead><TableHead>Intake Routing</TableHead>
+                <TableHead>State</TableHead><TableHead>Direct Number</TableHead>
+                <TableHead>Auto Attendant</TableHead><TableHead>Intake Submenu</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {STATE_DIRECTORY.map((s) => (
+                {STATE_DIRECTORY.filter((s) => matches(s.state) || matches(s.direct) || matches(s.intakeRouting)).map((s) => (
                   <TableRow key={s.state}>
                     <TableCell className="font-medium">{s.state}</TableCell>
                     <TableCell className="font-mono">{s.direct}</TableCell>
@@ -484,24 +568,27 @@ export function PhoneDirectory() {
         </CardContent>
       </Card>
 
-      <PageHeader title="All Call Queues" />
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">State Intake Routing</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Queue</TableHead><TableHead>State</TableHead><TableHead>Timeframe</TableHead>
-                <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
+                <TableHead>State</TableHead><TableHead>Intake</TableHead>
+                <TableHead>Day Queue</TableHead><TableHead>Afternoon Queue</TableHead>
+                <TableHead>After-Hours</TableHead><TableHead>Voicemail Email</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {queues.map((q) => (
-                  <TableRow key={q.queue}>
-                    <TableCell className="font-medium">{q.queue}</TableCell>
-                    <TableCell>{q.state}</TableCell>
-                    <TableCell>{q.timeframe}</TableCell>
-                    <TableCell className="font-mono text-xs">{q.agents.join(", ")}</TableCell>
-                    <TableCell>{q.voicemail}</TableCell>
-                    <TableCell className="text-muted-foreground">{q.routing}</TableCell>
+                {filteredStateIntake.map((s) => (
+                  <TableRow key={s.state}>
+                    <TableCell className="font-medium">{s.state}</TableCell>
+                    <TableCell className="font-mono">{s.intakeExt}</TableCell>
+                    <TableCell className="font-mono">{s.dayQueue}</TableCell>
+                    <TableCell className="font-mono">{s.afternoonQueue}</TableCell>
+                    <TableCell className="font-mono">{s.afterHours}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{s.voicemailEmail}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -510,26 +597,54 @@ export function PhoneDirectory() {
         </CardContent>
       </Card>
 
-      <PageHeader title="Shared Department Routing" description="HR, Scheduling, General Inquiries, Overflow, and After-Hours paths." />
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">All Call Queues</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Department</TableHead><TableHead>Category</TableHead><TableHead>Extension</TableHead>
-                <TableHead>Business Hours</TableHead><TableHead>After Hours</TableHead>
-                <TableHead>Agents</TableHead><TableHead>Priority</TableHead><TableHead>Backup</TableHead>
+                <TableHead>Queue</TableHead><TableHead>State</TableHead><TableHead>Timeframe</TableHead>
+                <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {shared.map((s) => (
+                {filteredQueues.map((row) => (
+                  <TableRow key={row.queue}>
+                    <TableCell className="font-medium">{row.queue}</TableCell>
+                    <TableCell>{row.state}</TableCell>
+                    <TableCell>{row.timeframe}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.agents.join(", ")}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.voicemail}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{row.routing}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">Shared Department Routing</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Department</TableHead><TableHead>Extension</TableHead>
+                <TableHead>Business Hours</TableHead><TableHead>After Hours</TableHead>
+                <TableHead>Agents</TableHead><TableHead>Backup</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {filteredShared.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.department}</TableCell>
-                    <TableCell><Badge variant="secondary" className="text-[10px]">{s.category}</Badge></TableCell>
                     <TableCell className="font-mono">{s.extension}</TableCell>
                     <TableCell className="font-mono text-xs">{s.businessHoursRouting}</TableCell>
                     <TableCell className="font-mono text-xs">{s.afterHoursRouting}</TableCell>
                     <TableCell className="font-mono text-xs">{s.agents.join(", ")}</TableCell>
-                    <TableCell>{s.priority}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.backupPath ?? "—"}</TableCell>
                   </TableRow>
                 ))}
