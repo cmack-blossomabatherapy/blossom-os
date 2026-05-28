@@ -1,5 +1,5 @@
 export type StaffRole = "BCBA" | "RBT";
-export type EvalType = "Quarterly" | "Annual";
+export type EvalType = "Quarterly" | "Annual" | "30-Day";
 export type SelfStatus = "Not Sent" | "Sent" | "Opened" | "Completed" | "Overdue";
 export type LeadershipStatus = "Not Started" | "In Progress" | "Completed";
 export type MeetingStatus = "Not Scheduled" | "Scheduled" | "Completed";
@@ -52,6 +52,21 @@ export interface Evaluation {
   next_review_date: string | null;
   completed_at: string | null;
   created_at: string;
+  updated_at: string;
+  due_date?: string | null;
+  eval_label?: string | null;
+  assigned_reviewer_id?: string | null;
+  generated_from_hire_date?: boolean | null;
+}
+
+export interface EvalRule {
+  id: string;
+  role: StaffRole;
+  eval_type: EvalType;
+  enabled: boolean;
+  first_offset_days: number;
+  cadence_days: number | null;
+  reminder_days_before: number;
   updated_at: string;
 }
 
