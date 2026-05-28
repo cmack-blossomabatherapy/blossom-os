@@ -353,7 +353,7 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                   <Button size="sm" variant="ghost" onClick={reopenEvaluation} disabled={working}>
                     <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reopen
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => toast({ title: "PDF export coming soon" })}>
+                  <Button size="sm" variant="ghost" onClick={() => current && downloadSummary(current)}>
                     <FileDown className="h-3.5 w-3.5 mr-1" /> Download PDF
                   </Button>
                 </div>
@@ -378,6 +378,37 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          {current && (
+            <div className="mt-4 rounded-xl border border-border/70 p-4">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-3">Progress Timeline</p>
+              {(() => {
+                const today = new Date();
+                const overdue = !!current.next_review_date && new Date(current.next_review_date) < today && current.final_status !== "Complete";
+                const steps = [
+                  { label: "Self Evaluation", done: current.self_status === "Completed", active: current.self_status !== "Completed" && current.self_status !== "Not Sent" },
+                  { label: "Leadership Review", done: current.leadership_status === "Completed", active: current.self_status === "Completed" && current.leadership_status !== "Completed" },
+                  { label: "Meeting", done: current.meeting_status === "Completed", active: current.leadership_status === "Completed" && current.meeting_status !== "Completed" },
+                  { label: "Final Summary", done: current.final_status === "Complete", active: current.meeting_status === "Completed" && current.final_status !== "Complete" },
+                  { label: "Complete", done: current.final_status === "Complete", active: false },
+                ];
+                return (
+                  <ol className="flex items-center justify-between gap-1">
+                    {steps.map((st, i) => (
+                      <li key={i} className="flex-1 flex flex-col items-center text-center">
+                        <div className={`h-6 w-6 rounded-full grid place-items-center text-[10px] font-semibold ${st.done ? "bg-emerald-600 text-white" : st.active ? (overdue ? "bg-destructive text-white" : "bg-primary text-primary-foreground") : "bg-muted text-muted-foreground"}`}>
+                          {st.done ? "✓" : i + 1}
+                        </div>
+                        <p className="text-[10px] mt-1 leading-tight">{st.label}</p>
+                        {st.active && <p className="text-[9px] text-muted-foreground">{overdue ? "Overdue" : "Current"}</p>}
+                      </li>
+                    ))}
+                  </ol>
+                );
+              })()}
             </div>
           )}
         </section>
@@ -457,12 +488,39 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
           ) : (
             <ul className="divide-y divide-border/70 rounded-xl border border-border/70 overflow-hidden">
               {past.map((e) => (
-                <li key={e.id} className="px-3 py-2 flex items-center justify-between text-xs">
+                <li key={e.id} className="px-3 py-2 flex items-center justify-between text-xs gap-2">
                   <div>
                     <p className="font-medium">{e.evaluation_type} · {e.cycle_id && cycleById[e.cycle_id] ? cycleById[e.cycle_id].name : "Ad-hoc"}</p>
-                    <p className="text-muted-foreground">Completed {fmtDate(e.completed_at)}</p>
+                    <p className="text-muted-foreground">Reviewer: {staff.supervisor_name ?? "—"} · Completed {fmtDate(e.completed_at)}</p>
                   </div>
-                  <FinalBadge s={e.final_status} />
+                  <div className="flex items-center gap-2">
+                    <FinalBadge s={e.final_status} />
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => downloadSummary(e)}>
+                      <FileDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Audit History */}
+        <Separator className="my-4" />
+        <section>
+          <h3 className="text-sm font-semibold mb-2">Audit History</h3>
+          {staffAudit.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No activity yet.</p>
+          ) : (
+            <ul className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+              {staffAudit.slice(0, 50).map((a) => (
+                <li key={a.id} className="rounded-lg border border-border/70 px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{AUDIT_LABELS[a.action] ?? a.action}</span>
+                    <span className="text-muted-foreground text-[10px]">{fmtDate(a.created_at)}</span>
+                  </div>
+                  {a.override_reason && <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">Override: {a.override_reason}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{a.actor ?? "system"}</p>
                 </li>
               ))}
             </ul>
