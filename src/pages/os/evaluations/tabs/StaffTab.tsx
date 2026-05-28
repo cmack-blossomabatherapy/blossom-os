@@ -58,6 +58,7 @@ export default function StaffTab({
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<SavedView>(initialView ?? "all");
+  useEffect(() => { if (initialView) setView(initialView); }, [initialView]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
