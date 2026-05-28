@@ -927,7 +927,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
 
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 space-y-4 overflow-y-auto px-3 pt-6 pb-4">
         <div className="px-1">
           <ResumeOnboardingButton variant="sidebar" />
         </div>
