@@ -46,7 +46,7 @@ export default function PublicFormPage() {
       const { data, error } = await supabase.rpc("get_eval_form_by_token", { p_token: token });
       setLoading(false);
       if (error) return setError(error.message);
-      const p = data as { error?: string } & FormPayload;
+      const p = data as unknown as ({ error?: string } & FormPayload);
       if (p?.error) return setError(p.error);
       setPayload(p as FormPayload);
       if (p.used_at) setDone(true);
