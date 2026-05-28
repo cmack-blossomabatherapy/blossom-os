@@ -3747,51 +3747,6 @@ export type Database = {
           },
         ]
       }
-      evaluation_cycles: {
-        Row: {
-          created_at: string
-          evaluation_type: string
-          final_due_date: string | null
-          id: string
-          leadership_due_date: string | null
-          meeting_due_date: string | null
-          name: string
-          self_due_date: string | null
-          staff_type: string
-          start_date: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          evaluation_type: string
-          final_due_date?: string | null
-          id?: string
-          leadership_due_date?: string | null
-          meeting_due_date?: string | null
-          name: string
-          self_due_date?: string | null
-          staff_type: string
-          start_date?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          evaluation_type?: string
-          final_due_date?: string | null
-          id?: string
-          leadership_due_date?: string | null
-          meeting_due_date?: string | null
-          name?: string
-          self_due_date?: string | null
-          staff_type?: string
-          start_date?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       evaluation_email_templates: {
         Row: {
           active: boolean
@@ -3832,7 +3787,6 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
-          cycle_id: string | null
           email_type: string
           evaluation_id: string | null
           failed_reason: string | null
@@ -3849,7 +3803,6 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
-          cycle_id?: string | null
           email_type: string
           evaluation_id?: string | null
           failed_reason?: string | null
@@ -3866,7 +3819,6 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
-          cycle_id?: string | null
           email_type?: string
           evaluation_id?: string | null
           failed_reason?: string | null
@@ -3881,13 +3833,6 @@ export type Database = {
           template_key?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "evaluation_emails_cycle_id_fkey"
-            columns: ["cycle_id"]
-            isOneToOne: false
-            referencedRelation: "evaluation_cycles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "evaluation_emails_evaluation_id_fkey"
             columns: ["evaluation_id"]
@@ -4535,7 +4480,6 @@ export type Database = {
           assigned_reviewer_id: string | null
           completed_at: string | null
           created_at: string
-          cycle_id: string | null
           due_date: string | null
           eval_label: string | null
           evaluation_type: string
@@ -4553,7 +4497,6 @@ export type Database = {
           assigned_reviewer_id?: string | null
           completed_at?: string | null
           created_at?: string
-          cycle_id?: string | null
           due_date?: string | null
           eval_label?: string | null
           evaluation_type: string
@@ -4571,7 +4514,6 @@ export type Database = {
           assigned_reviewer_id?: string | null
           completed_at?: string | null
           created_at?: string
-          cycle_id?: string | null
           due_date?: string | null
           eval_label?: string | null
           evaluation_type?: string
@@ -4591,13 +4533,6 @@ export type Database = {
             columns: ["assigned_reviewer_id"]
             isOneToOne: false
             referencedRelation: "evaluation_staff"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "evaluations_cycle_id_fkey"
-            columns: ["cycle_id"]
-            isOneToOne: false
-            referencedRelation: "evaluation_cycles"
             referencedColumns: ["id"]
           },
           {
