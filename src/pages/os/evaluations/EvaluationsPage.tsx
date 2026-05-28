@@ -1,9 +1,16 @@
 import { useMemo, useState } from "react";
 import { OSShell } from "../OSShell";
 import { useOSRole } from "@/contexts/OSRoleContext";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, Plus, CalendarPlus, Mail, Upload, Settings as SettingsIcon } from "lucide-react";
+import {
+  ClipboardCheck, Plus, CalendarPlus, Mail, Upload, Settings as SettingsIcon,
+  MoreHorizontal, LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
+} from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { useEvaluationsData } from "./useEvaluationsData";
 import AddStaffDialog from "./AddStaffDialog";
 import CreateCycleDialog from "./CreateCycleDialog";
@@ -59,60 +66,147 @@ export default function EvaluationsPage() {
     [visibleStaff, openStaffId],
   );
 
+  // Tab definitions — split into primary (always visible) and overflow ("More")
+  type TabDef = { value: string; label: string; icon: React.ComponentType<{ className?: string }>; show: boolean };
+  const primaryTabs: TabDef[] = [
+    { value: "overview", label: "Overview", icon: LayoutGrid, show: true },
+    { value: "staff", label: "Staff", icon: UsersIcon, show: true },
+    { value: "cycles", label: "Cycles", icon: CalendarDays, show: perms.canManageCycles },
+    { value: "reports", label: "Reports", icon: BarChart3, show: perms.canViewReports },
+    { value: "insights", label: "AI Insights", icon: Sparkles, show: perms.canViewReports },
+  ].filter((t) => t.show);
+  const moreTabs: TabDef[] = [
+    { value: "forms", label: "Forms", icon: FileText, show: perms.canManageForms },
+    { value: "emails", label: "Email Queue", icon: Mail, show: perms.canManageEmails },
+    { value: "goals", label: "Goals & Coaching", icon: Target, show: perms.canManageStaff },
+    { value: "reviewers", label: "Reviewers", icon: Users, show: perms.canViewReports },
+    { value: "launch", label: "Launch", icon: Rocket, show: perms.canManageSettings },
+    { value: "settings", label: "Settings", icon: SettingsIcon, show: true },
+  ].filter((t) => t.show);
+  const activeMore = moreTabs.find((t) => t.value === tab);
+
   return (
     <OSShell>
       <div className="px-6 md:px-10 py-10 max-w-7xl mx-auto">
         {/* Header */}
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-start gap-4 min-w-0">
-            <div className="h-11 w-11 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
-              <ClipboardCheck className="h-5 w-5" strokeWidth={1.75} />
+        <header className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary grid place-items-center shrink-0">
+              <ClipboardCheck className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Evaluations</h1>
-                <span className="inline-flex items-center rounded-full border border-border/70 bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-[22px] md:text-[26px] font-semibold tracking-tight leading-none">Evaluations</h1>
+                <span className="hidden sm:inline-flex items-center rounded-full border border-border/70 bg-muted/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
                   {roleLabel(role, activeState)}
                 </span>
               </div>
-              <p className="text-[13px] text-muted-foreground mt-1 max-w-2xl">
-                Track BCBA and RBT quarterly and annual evaluations, self-evaluations, leadership reviews, meetings, and completion status.
+              <p className="text-[12.5px] text-muted-foreground mt-1.5 max-w-xl">
+                Quarterly and annual evaluations for BCBA and RBT staff.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {perms.canManageCycles && (
-              <Button variant="outline" size="sm" onClick={() => setCycleOpen(true)}>
-                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> New Cycle
-              </Button>
-            )}
-            {perms.canImportStaff && (
-              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-                <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
-              </Button>
+          <div className="flex items-center gap-1.5">
+            {(perms.canManageCycles || perms.canImportStaff) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-muted">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">Actions</DropdownMenuLabel>
+                  {perms.canManageCycles && (
+                    <DropdownMenuItem onClick={() => setCycleOpen(true)}>
+                      <CalendarPlus className="h-3.5 w-3.5 mr-2" /> New cycle
+                    </DropdownMenuItem>
+                  )}
+                  {perms.canImportStaff && (
+                    <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                      <Upload className="h-3.5 w-3.5 mr-2" /> Import staff
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {perms.canManageStaff && (
-              <Button size="sm" onClick={() => setAddOpen(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Staff Member
+              <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 rounded-full px-4 shadow-sm">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add staff
               </Button>
             )}
           </div>
         </header>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-            {perms.canManageCycles && <TabsTrigger value="cycles">Evaluation Cycles</TabsTrigger>}
-            {perms.canManageForms && <TabsTrigger value="forms">Forms</TabsTrigger>}
-            {perms.canManageEmails && <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Email Queue</TabsTrigger>}
-            {perms.canViewReports && <TabsTrigger value="reports">Reports</TabsTrigger>}
-            {perms.canViewReports && <TabsTrigger value="insights"><Sparkles className="h-3.5 w-3.5 mr-1" />AI Insights</TabsTrigger>}
-            {perms.canManageStaff && <TabsTrigger value="goals"><Target className="h-3.5 w-3.5 mr-1" />Goals & Coaching</TabsTrigger>}
-            {perms.canViewReports && <TabsTrigger value="reviewers"><Users className="h-3.5 w-3.5 mr-1" />Reviewers</TabsTrigger>}
-            {perms.canManageSettings && <TabsTrigger value="launch"><Rocket className="h-3.5 w-3.5 mr-1" />Launch</TabsTrigger>}
-            <TabsTrigger value="settings"><SettingsIcon className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
-          </TabsList>
+          {/* Segmented pill nav — calm, hairline, scrollable on overflow */}
+          <div className="mb-7 flex items-center gap-1.5 border-b border-border/60 pb-0">
+            <div className="flex items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mb-px">
+              {primaryTabs.map((t) => {
+                const active = tab === t.value;
+                const Icon = t.icon;
+                return (
+                  <button
+                    key={t.value}
+                    onClick={() => setTab(t.value)}
+                    className={cn(
+                      "group inline-flex items-center gap-1.5 whitespace-nowrap px-3 h-10 text-[13px] font-medium transition-colors relative",
+                      active
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Icon className={cn("h-3.5 w-3.5", active ? "text-primary" : "text-muted-foreground/80 group-hover:text-foreground")} />
+                    {t.label}
+                    <span
+                      className={cn(
+                        "absolute left-2 right-2 -bottom-px h-[2px] rounded-full transition-opacity",
+                        active ? "bg-primary opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </button>
+                );
+              })}
+              {moreTabs.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "group inline-flex items-center gap-1.5 whitespace-nowrap px-3 h-10 text-[13px] font-medium transition-colors relative",
+                        activeMore ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {activeMore ? (
+                        <>
+                          <activeMore.icon className="h-3.5 w-3.5 text-primary" />
+                          {activeMore.label}
+                        </>
+                      ) : (
+                        <>More</>
+                      )}
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                      <span
+                        className={cn(
+                          "absolute left-2 right-2 -bottom-px h-[2px] rounded-full transition-opacity",
+                          activeMore ? "bg-primary opacity-100" : "opacity-0",
+                        )}
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-52">
+                    {moreTabs.map((t) => {
+                      const Icon = t.icon;
+                      return (
+                        <DropdownMenuItem key={t.value} onClick={() => setTab(t.value)} className={cn(tab === t.value && "bg-muted")}>
+                          <Icon className="h-3.5 w-3.5 mr-2" />
+                          {t.label}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </div>
 
           <TabsContent value="overview">
             <OverviewTab data={scopedData} onGoToStaff={() => setTab("staff")} onGoToEmails={() => setTab("emails")} />
