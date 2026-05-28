@@ -250,7 +250,7 @@ export function PhoneLookup() {
               {matchingEmployees.map((e) => (
                 <div key={e.extension} className="border border-border rounded-md p-3 flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-sm">{e.name}</div>
+                    <div className="font-medium text-sm">{e.name ?? e.role ?? e.department ?? `Ext ${e.extension}`}</div>
                     <div className="text-xs text-muted-foreground">{e.department || "—"}</div>
                   </div>
                   <Badge variant="secondary">ext {e.extension}</Badge>
@@ -283,7 +283,8 @@ export function PhoneLookup() {
                           <div className="flex flex-wrap gap-1">
                             {row.agents.map((a) => {
                               const emp = employees.find((e) => e.extension === a);
-                              return <Badge key={a} variant="outline" className="font-mono">{a}{emp ? ` · ${emp.name.split(" ")[0]}` : ""}</Badge>;
+                              const label = emp?.role ?? emp?.name?.split(" ")[0] ?? emp?.department;
+                              return <Badge key={a} variant="outline" className="font-mono">{a}{label ? ` · ${label}` : ""}</Badge>;
                             })}
                           </div>
                         </TableCell>
@@ -414,7 +415,10 @@ export function PhoneShared() {
                     <TableCell>
                       <Input value={s.agents.join(", ")} onChange={(e) => update(s.id, { agents: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} className="h-8 font-mono text-xs w-32" />
                       <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {s.agents.map((a) => employees.find((e) => e.extension === a)?.name).filter(Boolean).join(", ")}
+                        {s.agents.map((a) => {
+                          const emp = employees.find((e) => e.extension === a);
+                          return emp?.name ?? emp?.role ?? null;
+                        }).filter(Boolean).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell><Input type="number" value={s.priority} onChange={(e) => update(s.id, { priority: Number(e.target.value) || 1 })} className="h-8 w-16" /></TableCell>
@@ -1141,7 +1145,7 @@ export function PhoneAdmin() {
   const [newQAgents, setNewQAgents] = useState("");
 
   const addEmployee = () => {
-    if (!newEmp.extension || !newEmp.name) return toast.error("Extension and name required");
+    if (!newEmp.extension) return toast.error("Extension required");
     if (employees.some((e) => e.extension === newEmp.extension)) return toast.error("Extension already exists");
     setEmployees([...employees, newEmp]);
     setNewEmp({ extension: "", name: "", department: "" });
