@@ -70,23 +70,26 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
   // Roles below get Intelligence + the listed paths/sections (no full nav).
   training_admin: { itemPaths: ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"] },
   hr: {
-    sectionTitles: ["HR Suite"],
+    sectionTitles: ["HR Suite", "Phone System"],
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
+      "Phone System": ["/phone-calls"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_admin: {
-    sectionTitles: ["HR Suite"],
+    sectionTitles: ["HR Suite", "Phone System"],
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
+      "Phone System": ["/phone-calls"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_manager: {
-    sectionTitles: ["HR Suite"],
+    sectionTitles: ["HR Suite", "Phone System"],
     sectionItemPaths: {
       "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
+      "Phone System": ["/phone-calls"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
@@ -125,6 +128,9 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Clinics", path: "/clinics", perm: "clinics.view" },
   ] },
   { title: "Pipeline", items: [{ label: "Pipeline", path: "/pipeline", perm: "clients.view" }] },
+  { title: "Phone System", items: [
+    { label: "Phone Calls", path: "/phone-calls", perm: "phone.view" },
+  ] },
   { title: "Records", items: [
     { label: "Phone Calls", path: "/phone-calls", perm: "phone.view" },
     { label: "Documents", path: "/documents", perm: "documents.view" },
@@ -180,6 +186,7 @@ const sectionRoutePrefixes: Record<string, string[]> = {
   ],
   Operate: ["/clients", "/leads", "/authorizations", "/scheduling", "/staffing", "/qa", "/recruiting", "/clinics"],
   Pipeline: ["/pipeline"],
+  "Phone System": ["/phone-calls"],
   Records: ["/phone-calls", "/documents", "/tasks"],
   Intelligence: intelligenceRoutePrefixes,
   "HR Suite": ["/hr"],
