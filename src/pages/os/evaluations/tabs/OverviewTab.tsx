@@ -128,17 +128,6 @@ export default function OverviewTab({ data, onDrill, onGoToEmails }: { data: Eva
         </div>
       </section>
 
-      {data.cycles.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border/70 bg-card p-6 text-center">
-          <p className="text-sm font-medium">No evaluation cycles created yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Create a quarterly or annual cycle to start the evaluation process.</p>
-        </div>
-      )}
-      {!data.settings?.email_connected && (
-        <div className="rounded-xl border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-          Email sending is not connected yet. You can still build forms, create cycles, and queue emails.
-        </div>
-      )}
     </div>
   );
 }
