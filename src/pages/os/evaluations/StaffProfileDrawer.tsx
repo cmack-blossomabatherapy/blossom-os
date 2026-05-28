@@ -330,47 +330,90 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
 
               <Separator />
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="outline" onClick={() => sendEmailFromTemplate("self_request", "Self")} disabled={working}>
-                    <Send className="h-3.5 w-3.5 mr-1" /> Send Self Eval
+              <div className="space-y-4">
+                {/* Primary Workflow Actions */}
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("self_request", "Self")} disabled={working}>
+                    <Send className="h-3.5 w-3.5 mr-1.5" /> Send Self Eval
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => sendEmailFromTemplate("leadership_request", "Leadership")} disabled={working}>
-                    <Send className="h-3.5 w-3.5 mr-1" /> Send Leadership
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => copyLink("Self")} disabled={working}>
-                    <Link2 className="h-3.5 w-3.5 mr-1" /> Copy Self Link
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => copyLink("Leadership")} disabled={working}>
-                    <Link2 className="h-3.5 w-3.5 mr-1" /> Copy Leadership Link
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => sendEmailFromTemplate("self_reminder", "Self")} disabled={working}>
-                    <BellRing className="h-3.5 w-3.5 mr-1" /> Self Reminder
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => sendEmailFromTemplate("leadership_reminder", "Leadership")} disabled={working}>
-                    <BellRing className="h-3.5 w-3.5 mr-1" /> Leadership Reminder
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={markMeetingComplete} disabled={working || current.meeting_status === "Completed"}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark Meeting Done
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={completeEvaluation} disabled={working}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Complete Evaluation
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={reopenEvaluation} disabled={working}>
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reopen
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => current && downloadSummary(current)}>
-                    <FileDown className="h-3.5 w-3.5 mr-1" /> Download PDF
+                  <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("leadership_request", "Leadership")} disabled={working}>
+                    <Send className="h-3.5 w-3.5 mr-1.5" /> Send Leadership
                   </Button>
                 </div>
 
-                <div className="pt-2 space-y-2">
+                {/* Secondary Actions Toolbar */}
+                <TooltipProvider delayDuration={200}>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => copyLink("Self")} disabled={working}>
+                          <Link2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Copy Self Link</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => copyLink("Leadership")} disabled={working}>
+                          <Link2 className="h-3.5 w-3.5 rotate-45" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Copy Leadership Link</p></TooltipContent>
+                    </Tooltip>
+                    <div className="w-px h-4 bg-border/70 mx-1" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => sendEmailFromTemplate("self_reminder", "Self")} disabled={working}>
+                          <BellRing className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Self Reminder</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => sendEmailFromTemplate("leadership_reminder", "Leadership")} disabled={working}>
+                          <BellRing className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Leadership Reminder</p></TooltipContent>
+                    </Tooltip>
+                    <div className="w-px h-4 bg-border/70 mx-1" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => current && downloadSummary(current)}>
+                          <FileDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Download PDF</p></TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={reopenEvaluation} disabled={working}>
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Reopen Evaluation</p></TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+
+                {/* Completion Actions */}
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" className="flex-1 h-9 rounded-xl" onClick={markMeetingComplete} disabled={working || current.meeting_status === "Completed"}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Mark Meeting Done
+                  </Button>
+                  <Button size="sm" variant="secondary" className="flex-1 h-9 rounded-xl" onClick={completeEvaluation} disabled={working}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Complete Eval
+                  </Button>
+                </div>
+
+                {/* Schedule Meeting */}
+                <div className="rounded-xl bg-muted/40 border border-border/60 p-3 space-y-2.5">
                   <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Schedule Meeting</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input type="datetime-local" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="h-9" />
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    <Input type="datetime-local" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="h-9 rounded-xl bg-card" />
                     <Select value={meetingType} onValueChange={setMeetingType}>
-                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 w-28 rounded-xl bg-card"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Phone">Phone</SelectItem>
                         <SelectItem value="Zoom">Zoom</SelectItem>
@@ -380,8 +423,8 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                     </Select>
                   </div>
                   <div className="flex gap-2">
-                    <Input placeholder="Meeting link (optional)" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} className="h-9" />
-                    <Button size="sm" onClick={scheduleMeeting} disabled={working || !meetingDate}>Schedule</Button>
+                    <Input placeholder="Meeting link (optional)" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} className="h-9 rounded-xl bg-card" />
+                    <Button size="sm" className="h-9 rounded-xl px-4" onClick={scheduleMeeting} disabled={working || !meetingDate}>Schedule</Button>
                   </div>
                 </div>
               </div>
