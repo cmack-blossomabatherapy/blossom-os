@@ -42,7 +42,7 @@ import { ROLE_HOME, ALL_ROLE_DASHBOARDS } from "@/lib/os/roleHome";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 
-type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean };
+type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean; disabled?: boolean };
 type NavSection = { id: string; label: string; items: NavEntry[] };
 
 const HOME_EXTRAS: NavEntry[] = [
