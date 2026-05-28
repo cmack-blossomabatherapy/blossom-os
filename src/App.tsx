@@ -302,6 +302,7 @@ import { PhoneSystemProvider } from "./contexts/PhoneSystemContext";
 import {
   PhoneDashboard, PhoneLookup, PhoneShared, PhoneDirectory,
   PhoneRequestList, PhoneRequestNew, PhoneRequestDetail, PhoneAdmin,
+  PhoneAfterHoursAI,
 } from "./pages/phone/PhonePages";
 import MarketingDashboard from "./pages/os/marketing/MarketingDashboard";
 import MarketingTraining from "./pages/os/marketing/MarketingTraining";
@@ -818,6 +819,7 @@ const App = () => (
                   <Route path="/phone/requests/new" element={<PhoneRequestNew />} />
                   <Route path="/phone/requests/:id" element={<PhoneRequestDetail />} />
                   <Route path="/phone/admin" element={<PhoneAdmin />} />
+                  <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
                   <Route path="/enterprise/*" element={<NotFound />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />

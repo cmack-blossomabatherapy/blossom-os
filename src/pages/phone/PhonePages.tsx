@@ -1,9 +1,9 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ReactNode, useMemo, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, CalendarClock, Download, History,
-  Layers, ListChecks, Mail, Moon, Phone, PhoneForwarded, Plus, RefreshCw,
-  Search, Send, Share2, Siren, Trash2, Undo2, Users,
+  ArrowLeft, ArrowRight, AlertTriangle, CalendarClock, Download, ExternalLink,
+  History, Layers, ListChecks, Mail, Moon, Phone, PhoneForwarded, PhoneIncoming,
+  Plus, RefreshCw, Search, Send, Share2, Siren, Sparkles, Trash2, Undo2, Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,9 @@ import {
 import {
   ChangeRequest, CallQueue, Employee, ImpactRow, RequestRoutingScope,
   RequestStatus, SharedDeptCategory, SharedRouting, SHARED_CATEGORIES, STATUSES,
-  STATE_DIRECTORY, appendAudit, buildRollbackItems, buildVendorEmail,
+  STATE_DIRECTORY, CORPORATE_AUTO_ATTENDANT, CORPORATE_MENU, STATE_INTAKE_ROUTING,
+  RetellCall, RetellCallStatus, RETELL_STATUSES,
+  appendAudit, buildRollbackItems, buildVendorEmail,
   computeImpacts, detectRequestConflicts,
 } from "@/data/phoneSystem";
 
@@ -112,90 +114,108 @@ function QuickLink({ to, label }: { to: string; label: string }) {
 // ---------- /phone — Dashboard ----------
 
 export function PhoneDashboard() {
-  const { queues, requests, employees, shared } = usePhoneSystem();
-  const active = requests.filter((r) => !["Closed", "Reverted", "Draft"].includes(r.status));
-  const draft = requests.filter((r) => r.status === "Draft");
+  const { queues, requests, shared, settings, retellCalls } = usePhoneSystem();
+  const openRequests = requests.filter((r) => !["Closed", "Reverted"].includes(r.status));
+  const followUpCalls = retellCalls.filter((c) => c.status === "New" || c.status === "Needs Follow-Up" || c.status === "Attempted");
   const recent = [...requests].slice(0, 5);
-  const sharedRequests = requests.filter((r) => r.routingScope === "Shared Department Routing" || r.routingScope === "Both");
-  const afterHoursChanges = requests.filter((r) => r.affectedRouting.some((a) => a.routingType === "After Hours" && a.selected));
-  const openRollbackTasks = requests
-    .filter((r) => !["Reverted", "Closed"].includes(r.status))
-    .reduce((sum, r) => sum + r.rollbackItems.filter((i) => !i.done).length, 0);
-  const sharedImpactCount = requests.reduce(
-    (sum, r) => sum + r.affectedRouting.filter((a) => a.selected && a.routingType !== "CQ").length, 0);
+  const stateCount = STATE_DIRECTORY.length;
 
   return (
     <Shell>
       <PageHeader
         title="Phone System"
-        description="Master telecom routing control for Blossom ABA Therapy."
+        description="Blossom routing, queues, and after-hours coverage — at a glance."
         actions={
           <Button asChild>
-            <Link to="/phone/requests/new">New Request <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link to="/phone/requests/new">New Change Request <ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Call Queues" value={queues.length} icon={PhoneForwarded} />
-        <StatCard label="Shared Routes" value={shared.length} icon={Share2} />
-        <StatCard label="Tracked Employees" value={employees.length} icon={Users} />
-        <StatCard label="Active Requests" value={active.length} icon={CalendarClock} />
+        <StatCard label="Main Numbers"           value={2}                    icon={Phone} />
+        <StatCard label="State Direct Numbers"   value={stateCount}           icon={PhoneIncoming} />
+        <StatCard label="Call Queues"            value={queues.length}        icon={PhoneForwarded} />
+        <StatCard label="Shared Routes"          value={shared.length}        icon={Share2} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4 mt-4">
-        <StatCard label="Shared Routing Requests" value={sharedRequests.length} icon={Share2} />
-        <StatCard label="After-Hours Changes" value={afterHoursChanges.length} icon={Moon} />
-        <StatCard label="Open Rollback Tasks" value={openRollbackTasks} icon={ListChecks} />
-        <StatCard label="Shared Routing Impacts" value={sharedImpactCount} icon={AlertTriangle} />
+      <div className="grid gap-4 md:grid-cols-3 mt-4">
+        <StatCard label="Open Change Requests"   value={openRequests.length}  icon={CalendarClock} />
+        <StatCard label="After-Hours AI Calls"   value={retellCalls.length}   icon={Moon} />
+        <StatCard label="Calls Needing Follow-Up" value={followUpCalls.length} icon={AlertTriangle} />
       </div>
-
-      <div className="mt-2 text-xs text-muted-foreground">Drafts: {draft.length}</div>
 
       <div className="grid gap-6 mt-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Recent Requests</CardTitle></CardHeader>
-          <CardContent>
-            {recent.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                No requests yet.{" "}
-                <Link to="/phone/requests/new" className="text-primary underline">Create one</Link>.
+          <CardHeader><CardTitle className="text-base">Today's Routing</CardTitle></CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Info label="Main Number"           value={settings.mainNumberPrimary} />
+              <Info label="Secondary Number"      value={settings.mainNumberSecondary} />
+              <Info label="Corporate Attendant"   value={CORPORATE_AUTO_ATTENDANT} />
+              <Info label="After-Hours Forward"   value={settings.afterHoursNumber} />
+              <Info label="Intake Hours"          value={`${settings.businessHours.adminWeekday} · ${settings.businessHours.adminFriday}`} />
+              <Info label="State Director Hours"  value={`${settings.businessHours.directorsWeekday} · ${settings.businessHours.directorsFriday}`} />
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="font-medium">Retell AI after-hours</span>
+                <Badge variant={settings.retellEnabled ? "default" : "secondary"}>
+                  {settings.retellEnabled ? "Enabled" : "Disabled"}
+                </Badge>
               </div>
-            ) : (
-              <div className="divide-y">
-                {recent.map((r) => (
-                  <Link
-                    key={r.id}
-                    to={`/phone/requests/${r.id}`}
-                    className="flex items-center justify-between py-3 hover:bg-muted/40 px-2 rounded-md"
-                  >
-                    <div>
-                      <div className="font-medium text-sm">
-                        {r.employeeOut || "Untitled"} · ext {r.currentExtension} → {r.newExtension}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.startDate} {r.startTime} – {r.endDate} {r.endTime}
-                      </div>
-                    </div>
-                    <StatusBadge status={r.status} />
-                  </Link>
-                ))}
-              </div>
-            )}
+              <Button size="sm" variant="ghost" asChild>
+                <Link to="/phone/ai-calls">View calls <ArrowRight className="ml-1 h-3 w-3" /></Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Quick Links</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Quick Links</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            <QuickLink to="/phone/lookup" label="Extension Lookup" />
-            <QuickLink to="/phone/shared" label="Shared Routing" />
-            <QuickLink to="/phone/requests" label="Request Tracker" />
-            <QuickLink to="/phone/directory" label="State Phone Directory" />
-            <QuickLink to="/phone/admin" label="Admin Settings" />
+            <QuickLink to="/phone/lookup"    label="Extension Lookup" />
+            <QuickLink to="/phone/directory" label="Routing Directory" />
+            <QuickLink to="/phone/shared"    label="Shared Routing" />
+            <QuickLink to="/phone/requests"  label="Change Requests" />
+            <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
+            <QuickLink to="/phone/admin"     label="Admin Settings" />
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle className="text-base">Recent Change Requests</CardTitle></CardHeader>
+        <CardContent>
+          {recent.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-8 text-center">
+              No change requests yet.{" "}
+              <Link to="/phone/requests/new" className="text-primary underline">Create one</Link>.
+            </div>
+          ) : (
+            <div className="divide-y">
+              {recent.map((r) => (
+                <Link
+                  key={r.id}
+                  to={`/phone/requests/${r.id}`}
+                  className="flex items-center justify-between py-3 hover:bg-muted/40 px-2 rounded-md"
+                >
+                  <div>
+                    <div className="font-medium text-sm">
+                      {r.employeeOut || "Untitled"} · ext {r.currentExtension} → {r.newExtension}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.startDate} {r.startTime} – {r.endDate} {r.endTime}
+                    </div>
+                  </div>
+                  <StatusBadge status={r.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </Shell>
   );
 }
@@ -250,7 +270,7 @@ export function PhoneLookup() {
               {matchingEmployees.map((e) => (
                 <div key={e.extension} className="border border-border rounded-md p-3 flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-sm">{e.name}</div>
+                    <div className="font-medium text-sm">{e.name ?? e.role ?? e.department ?? `Ext ${e.extension}`}</div>
                     <div className="text-xs text-muted-foreground">{e.department || "—"}</div>
                   </div>
                   <Badge variant="secondary">ext {e.extension}</Badge>
@@ -283,7 +303,8 @@ export function PhoneLookup() {
                           <div className="flex flex-wrap gap-1">
                             {row.agents.map((a) => {
                               const emp = employees.find((e) => e.extension === a);
-                              return <Badge key={a} variant="outline" className="font-mono">{a}{emp ? ` · ${emp.name.split(" ")[0]}` : ""}</Badge>;
+                              const label = emp?.role ?? emp?.name?.split(" ")[0] ?? emp?.department;
+                              return <Badge key={a} variant="outline" className="font-mono">{a}{label ? ` · ${label}` : ""}</Badge>;
                             })}
                           </div>
                         </TableCell>
@@ -414,7 +435,10 @@ export function PhoneShared() {
                     <TableCell>
                       <Input value={s.agents.join(", ")} onChange={(e) => update(s.id, { agents: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} className="h-8 font-mono text-xs w-32" />
                       <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {s.agents.map((a) => employees.find((e) => e.extension === a)?.name).filter(Boolean).join(", ")}
+                        {s.agents.map((a) => {
+                          const emp = employees.find((e) => e.extension === a);
+                          return emp?.name ?? emp?.role ?? null;
+                        }).filter(Boolean).join(", ")}
                       </div>
                     </TableCell>
                     <TableCell><Input type="number" value={s.priority} onChange={(e) => update(s.id, { priority: Number(e.target.value) || 1 })} className="h-8 w-16" /></TableCell>
@@ -434,19 +458,103 @@ export function PhoneShared() {
 // ---------- /phone/directory ----------
 
 export function PhoneDirectory() {
-  const { queues, shared } = usePhoneSystem();
+  const { queues, shared, settings } = usePhoneSystem();
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const matches = (s: string) => !term || s.toLowerCase().includes(term);
+
+  const filteredQueues = queues.filter((row) =>
+    matches(row.queue) || matches(row.state) || matches(row.timeframe) ||
+    matches(row.voicemail) || matches(row.routing) || row.agents.some((a) => matches(a)),
+  );
+  const filteredShared = shared.filter((s) =>
+    matches(s.department) || matches(s.category) || matches(s.extension) ||
+    matches(s.businessHoursRouting) || matches(s.afterHoursRouting) ||
+    s.agents.some((a) => matches(a)),
+  );
+  const filteredStateIntake = STATE_INTAKE_ROUTING.filter((s) =>
+    matches(s.state) || matches(s.intakeExt) || matches(s.dayQueue) ||
+    matches(s.afternoonQueue) || matches(s.afterHours),
+  );
+
   return (
     <Shell>
-      <PageHeader title="Routing Directory" description="State phone numbers, main auto-attendants, and intake routing." />
-      <Card className="mb-6">
-        <CardContent className="pt-6">
+      <PageHeader
+        title="Routing Directory"
+        description="Corporate numbers, auto-attendant menu, state intake routing, and queue details."
+      />
+
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter by state, extension, queue, or number…"
+          className="pl-9 max-w-md"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Main Corporate Numbers</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Primary</span>
+              <span className="font-mono">{settings.mainNumberPrimary}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Secondary</span>
+              <span className="font-mono">{settings.mainNumberSecondary}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Auto Attendant</span>
+              <span className="font-mono">{CORPORATE_AUTO_ATTENDANT}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">After-Hours Forward</span>
+              <span className="font-mono">{settings.afterHoursNumber}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Corporate Menu ({CORPORATE_AUTO_ATTENDANT})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead className="w-16">Option</TableHead><TableHead>Department</TableHead><TableHead>Routes To</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {CORPORATE_MENU.map((m) => (
+                  <TableRow key={m.option}>
+                    <TableCell className="font-mono font-semibold">{m.option}</TableCell>
+                    <TableCell>{m.label}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{m.routesTo}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">State Direct Numbers</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>State</TableHead><TableHead>Direct Number</TableHead><TableHead>Main AA</TableHead><TableHead>Intake Routing</TableHead>
+                <TableHead>State</TableHead><TableHead>Direct Number</TableHead>
+                <TableHead>Auto Attendant</TableHead><TableHead>Intake Submenu</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {STATE_DIRECTORY.map((s) => (
+                {STATE_DIRECTORY.filter((s) => matches(s.state) || matches(s.direct) || matches(s.intakeRouting)).map((s) => (
                   <TableRow key={s.state}>
                     <TableCell className="font-medium">{s.state}</TableCell>
                     <TableCell className="font-mono">{s.direct}</TableCell>
@@ -460,24 +568,27 @@ export function PhoneDirectory() {
         </CardContent>
       </Card>
 
-      <PageHeader title="All Call Queues" />
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">State Intake Routing</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Queue</TableHead><TableHead>State</TableHead><TableHead>Timeframe</TableHead>
-                <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
+                <TableHead>State</TableHead><TableHead>Intake</TableHead>
+                <TableHead>Day Queue</TableHead><TableHead>Afternoon Queue</TableHead>
+                <TableHead>After-Hours</TableHead><TableHead>Voicemail Email</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {queues.map((q) => (
-                  <TableRow key={q.queue}>
-                    <TableCell className="font-medium">{q.queue}</TableCell>
-                    <TableCell>{q.state}</TableCell>
-                    <TableCell>{q.timeframe}</TableCell>
-                    <TableCell className="font-mono text-xs">{q.agents.join(", ")}</TableCell>
-                    <TableCell>{q.voicemail}</TableCell>
-                    <TableCell className="text-muted-foreground">{q.routing}</TableCell>
+                {filteredStateIntake.map((s) => (
+                  <TableRow key={s.state}>
+                    <TableCell className="font-medium">{s.state}</TableCell>
+                    <TableCell className="font-mono">{s.intakeExt}</TableCell>
+                    <TableCell className="font-mono">{s.dayQueue}</TableCell>
+                    <TableCell className="font-mono">{s.afternoonQueue}</TableCell>
+                    <TableCell className="font-mono">{s.afterHours}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{s.voicemailEmail}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -486,26 +597,54 @@ export function PhoneDirectory() {
         </CardContent>
       </Card>
 
-      <PageHeader title="Shared Department Routing" description="HR, Scheduling, General Inquiries, Overflow, and After-Hours paths." />
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">All Call Queues</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Department</TableHead><TableHead>Category</TableHead><TableHead>Extension</TableHead>
-                <TableHead>Business Hours</TableHead><TableHead>After Hours</TableHead>
-                <TableHead>Agents</TableHead><TableHead>Priority</TableHead><TableHead>Backup</TableHead>
+                <TableHead>Queue</TableHead><TableHead>State</TableHead><TableHead>Timeframe</TableHead>
+                <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {shared.map((s) => (
+                {filteredQueues.map((row) => (
+                  <TableRow key={row.queue}>
+                    <TableCell className="font-medium">{row.queue}</TableCell>
+                    <TableCell>{row.state}</TableCell>
+                    <TableCell>{row.timeframe}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.agents.join(", ")}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.voicemail}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{row.routing}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">Shared Department Routing</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Department</TableHead><TableHead>Extension</TableHead>
+                <TableHead>Business Hours</TableHead><TableHead>After Hours</TableHead>
+                <TableHead>Agents</TableHead><TableHead>Backup</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {filteredShared.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.department}</TableCell>
-                    <TableCell><Badge variant="secondary" className="text-[10px]">{s.category}</Badge></TableCell>
                     <TableCell className="font-mono">{s.extension}</TableCell>
                     <TableCell className="font-mono text-xs">{s.businessHoursRouting}</TableCell>
                     <TableCell className="font-mono text-xs">{s.afterHoursRouting}</TableCell>
                     <TableCell className="font-mono text-xs">{s.agents.join(", ")}</TableCell>
-                    <TableCell>{s.priority}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.backupPath ?? "—"}</TableCell>
                   </TableRow>
                 ))}
@@ -1141,7 +1280,7 @@ export function PhoneAdmin() {
   const [newQAgents, setNewQAgents] = useState("");
 
   const addEmployee = () => {
-    if (!newEmp.extension || !newEmp.name) return toast.error("Extension and name required");
+    if (!newEmp.extension) return toast.error("Extension required");
     if (employees.some((e) => e.extension === newEmp.extension)) return toast.error("Extension already exists");
     setEmployees([...employees, newEmp]);
     setNewEmp({ extension: "", name: "", department: "" });
@@ -1248,13 +1387,36 @@ export function PhoneAdmin() {
       </div>
 
       <Card className="mt-6">
-        <CardHeader><CardTitle className="text-base">Telecom Vendor & Alerts</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Jivetel & System Settings</CardTitle></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div><Label className="text-xs">Vendor name</Label><Input value={settings.vendorName} onChange={(e) => setSettings({ ...settings, vendorName: e.target.value })} /></div>
           <div><Label className="text-xs">Vendor email</Label><Input value={settings.vendorEmail} onChange={(e) => setSettings({ ...settings, vendorEmail: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label className="text-xs">Jivetel support notes</Label><Textarea rows={2} value={settings.vendorSupportNotes} onChange={(e) => setSettings({ ...settings, vendorSupportNotes: e.target.value })} /></div>
+          <div><Label className="text-xs">Main number (primary)</Label><Input value={settings.mainNumberPrimary} onChange={(e) => setSettings({ ...settings, mainNumberPrimary: e.target.value })} /></div>
+          <div><Label className="text-xs">Main number (secondary)</Label><Input value={settings.mainNumberSecondary} onChange={(e) => setSettings({ ...settings, mainNumberSecondary: e.target.value })} /></div>
+          <div><Label className="text-xs">After-hours number</Label><Input value={settings.afterHoursNumber} onChange={(e) => setSettings({ ...settings, afterHoursNumber: e.target.value })} /></div>
           <div><Label className="text-xs">Ops reply-to email</Label><Input value={settings.opsEmail} onChange={(e) => setSettings({ ...settings, opsEmail: e.target.value })} /></div>
-          <div><Label className="text-xs">Teams webhook URL</Label><Input value={settings.teamsWebhookUrl} onChange={(e) => setSettings({ ...settings, teamsWebhookUrl: e.target.value })} placeholder="https://..." /></div>
-          <div><Label className="text-xs">Slack webhook URL</Label><Input value={settings.slackWebhookUrl} onChange={(e) => setSettings({ ...settings, slackWebhookUrl: e.target.value })} placeholder="https://..." /></div>
+          <div><Label className="text-xs">Monday board link</Label><Input value={settings.mondayBoardUrl} onChange={(e) => setSettings({ ...settings, mondayBoardUrl: e.target.value })} placeholder="https://monday.com/..." /></div>
+          <div><Label className="text-xs">Make scenario link</Label><Input value={settings.makeScenarioUrl} onChange={(e) => setSettings({ ...settings, makeScenarioUrl: e.target.value })} placeholder="https://make.com/..." /></div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox checked={settings.retellEnabled} onCheckedChange={(v) => setSettings({ ...settings, retellEnabled: !!v })} id="retell" />
+            <Label htmlFor="retell" className="text-sm">Retell AI enabled for after-hours</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle className="text-base">Voicemail Notification Emails</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2">
+          {(["GA","NC","TN","VA","MD","main"] as const).map((k) => (
+            <div key={k}>
+              <Label className="text-xs">{k === "main" ? "Main / No State" : k}</Label>
+              <Input
+                value={settings.voicemailEmails[k]}
+                onChange={(e) => setSettings({ ...settings, voicemailEmails: { ...settings.voicemailEmails, [k]: e.target.value } })}
+              />
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -1290,3 +1452,102 @@ export function PhoneAdmin() {
 
 // Re-export icon for sidebar convenience.
 export { Phone as PhoneIcon };
+
+// ---------- /phone/ai-calls ----------
+
+export function PhoneAfterHoursAI() {
+  const { retellCalls, upsertRetellCall, settings } = usePhoneSystem();
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RetellCallStatus | "All">("All");
+  const term = q.trim().toLowerCase();
+
+  const filtered = retellCalls.filter((c) => {
+    if (statusFilter !== "All" && c.status !== statusFilter) return false;
+    if (!term) return true;
+    return [c.callerName, c.phone, c.state, c.insuranceProvider, c.summary, c.callerType]
+      .filter(Boolean).join(" ").toLowerCase().includes(term);
+  });
+
+  const setStatus = (call: RetellCall, status: RetellCallStatus) => {
+    upsertRetellCall({ ...call, status });
+    toast.success(`Marked ${call.id} as ${status}`);
+  };
+
+  return (
+    <Shell>
+      <PageHeader
+        title="After-Hours AI Calls"
+        description="Retell AI captures inbound calls outside business hours. Intake follows up here."
+        actions={
+          <Badge variant={settings.retellEnabled ? "default" : "secondary"}>
+            Retell {settings.retellEnabled ? "Enabled" : "Disabled"}
+          </Badge>
+        }
+      />
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="relative flex-1 min-w-[240px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search caller, phone, state, summary…" className="pl-9" />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as RetellCallStatus | "All")}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All statuses</SelectItem>
+            {RETELL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          {filtered.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-12 text-center">No calls match the current filters.</div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map((c) => (
+                <div key={c.id} className="rounded-lg border border-border p-4 hover:bg-muted/30">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{c.callerName}</span>
+                        <Badge variant="outline" className="text-[10px]">{c.callerType}</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{c.state}</Badge>
+                        {c.urgency === "High" && <Badge className="text-[10px] bg-destructive text-destructive-foreground">High Urgency</Badge>}
+                        <Badge variant="outline" className="text-[10px]">{c.sentiment}</Badge>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        <span className="font-mono">{c.phone}</span>
+                        {c.childAge && <> · Child age {c.childAge}</>}
+                        {c.insuranceProvider && <> · {c.insuranceProvider} ({c.insuranceType ?? "Unknown"})</>}
+                        {" · "}Received {new Date(c.receivedAt).toLocaleString()}
+                      </div>
+                      <p className="mt-2 text-sm">{c.summary}</p>
+                      <div className="mt-2 text-xs text-muted-foreground">Preferred callback: <span className="font-medium text-foreground">{c.preferredCallbackTime}</span></div>
+                      {c.followUpNotes && (
+                        <div className="mt-2 text-xs rounded-md bg-muted/60 px-2 py-1.5">Follow-up: {c.followUpNotes}</div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 items-end min-w-[200px]">
+                      <Select value={c.status} onValueChange={(v) => setStatus(c, v as RetellCallStatus)}>
+                        <SelectTrigger className="w-[180px] h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {RETELL_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      {c.recordingUrl && (
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={c.recordingUrl} target="_blank" rel="noreferrer">Recording <ExternalLink className="ml-1 h-3 w-3" /></a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Shell>
+  );
+}
