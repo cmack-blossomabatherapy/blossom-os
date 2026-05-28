@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.send-access-request]
 verify_jwt = false
+
+[functions.generate-ai-report]
+verify_jwt = false
