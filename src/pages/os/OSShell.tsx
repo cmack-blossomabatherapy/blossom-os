@@ -633,6 +633,36 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const bottomNav = [bottomNavCandidates[0], ...bottomNavCandidates.slice(1).filter((n) => canSee(n.module))].slice(0, 4);
 
   const renderNavItem = (item: NavEntry, onClick?: () => void) => {
+    if (item.disabled) {
+      const disabledNode = (
+        <div
+          key={item.to}
+          className={cn(
+            "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
+            collapsed && "justify-center px-0",
+            "text-muted-foreground/40 cursor-not-allowed select-none",
+          )}
+        >
+          <item.icon className="h-[16px] w-[16px] shrink-0 opacity-40" />
+          {!collapsed && (
+            <>
+              <span className="truncate">{item.label}</span>
+              <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                Soon
+              </span>
+            </>
+          )}
+        </div>
+      );
+      if (!collapsed) return disabledNode;
+      return (
+        <Tooltip key={item.to} delayDuration={120}>
+          <TooltipTrigger asChild>{disabledNode}</TooltipTrigger>
+          <TooltipContent side="right" className="text-[12px] font-medium">{item.label} — Coming Soon</TooltipContent>
+        </Tooltip>
+      );
+    }
+
     const link = (
     <NavLink
       key={item.to}
