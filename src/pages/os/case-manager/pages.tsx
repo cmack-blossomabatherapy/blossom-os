@@ -13,6 +13,7 @@ import CMSchedulingCoordinationPage from "./SchedulingCoordination";
 import CMAuthorizationsVisibilityPage from "./AuthorizationsVisibility";
 import CMStaffingCoordinationPage from "./StaffingCoordination";
 import CMServiceIssuesPage from "./ServiceIssues";
+import CMEscalationsPage from "./Escalations";
 
 /* ---------- HOME ---------- */
 
@@ -63,22 +64,7 @@ export function CMServiceIssues() {
 }
 
 export function CMEscalations() {
-  return (
-    <CaseManagerComingSoon
-      title="Escalations"
-      icon={Flame}
-      description="Sensitive situations handled with calm, structure, and care — with the right people looped in at the right time."
-      features={[
-        { icon: Flame,         title: "Open escalations",  description: "All active escalations across your families." },
-        { icon: Activity,      title: "Routing & owners",  description: "Clear ownership across roles and regions." },
-        { icon: HeartHandshake,title: "Family-first tone", description: "Templates and prompts that keep the family at the center." },
-      ]}
-      aiPreview={[
-        "Summarize this escalation for a leader",
-        "Suggest the next, most caring action",
-      ]}
-    />
-  );
+  return <CMEscalationsPage />;
 }
 
 /* ---------- COMMUNITY & SUPPORT ---------- */
