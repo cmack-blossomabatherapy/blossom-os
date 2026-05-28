@@ -298,6 +298,11 @@ import OSRBTMessages from "./pages/os/OSRBTMessages";
 import OSRBTHelp from "./pages/os/OSRBTHelp";
 import OSRBTResources from "./pages/os/OSRBTResources";
 import OSPermissions from "./pages/os/OSPermissions";
+import { PhoneSystemProvider } from "./contexts/PhoneSystemContext";
+import {
+  PhoneDashboard, PhoneLookup, PhoneShared, PhoneDirectory,
+  PhoneRequestList, PhoneRequestNew, PhoneRequestDetail, PhoneAdmin,
+} from "./pages/phone/PhonePages";
 import MarketingDashboard from "./pages/os/marketing/MarketingDashboard";
 import MarketingTraining from "./pages/os/marketing/MarketingTraining";
 import MarketingCampaigns from "./pages/os/marketing/Campaigns";
@@ -444,6 +449,7 @@ const App = () => (
           <LeadsProvider>
             <ClientsProvider>
               <JourneyOverridesProvider>
+                <PhoneSystemProvider>
                 <PushNavigationListener />
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
@@ -803,10 +809,20 @@ const App = () => (
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                   <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
+                  {/* Phone System */}
+                  <Route path="/phone" element={<PhoneDashboard />} />
+                  <Route path="/phone/lookup" element={<PhoneLookup />} />
+                  <Route path="/phone/shared" element={<PhoneShared />} />
+                  <Route path="/phone/directory" element={<PhoneDirectory />} />
+                  <Route path="/phone/requests" element={<PhoneRequestList />} />
+                  <Route path="/phone/requests/new" element={<PhoneRequestNew />} />
+                  <Route path="/phone/requests/:id" element={<PhoneRequestDetail />} />
+                  <Route path="/phone/admin" element={<PhoneAdmin />} />
                   <Route path="/enterprise/*" element={<NotFound />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
                 </Routes>
+                </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
           </LeadsProvider>
