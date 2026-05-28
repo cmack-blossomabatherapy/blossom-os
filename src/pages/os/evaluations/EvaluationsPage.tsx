@@ -4,7 +4,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardCheck, Plus, CalendarPlus, Mail, Upload, Settings as SettingsIcon,
+  ClipboardCheck, Plus, Mail, Upload, Settings as SettingsIcon,
   MoreHorizontal, LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
 } from "lucide-react";
 import {
@@ -13,11 +13,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useEvaluationsData } from "./useEvaluationsData";
 import AddStaffDialog from "./AddStaffDialog";
-import CreateCycleDialog from "./CreateCycleDialog";
 import StaffProfileDrawer from "./StaffProfileDrawer";
 import OverviewTab from "./tabs/OverviewTab";
 import StaffTab from "./tabs/StaffTab";
-import CyclesTab from "./tabs/CyclesTab";
+import ScheduleTab from "./tabs/ScheduleTab";
 import FormsTab from "./tabs/FormsTab";
 import EmailQueueTab from "./tabs/EmailQueueTab";
 import ReportsTab from "./tabs/ReportsTab";
@@ -51,7 +50,6 @@ export default function EvaluationsPage() {
   const data = useEvaluationsData();
   const [tab, setTab] = useState("overview");
   const [addOpen, setAddOpen] = useState(false);
-  const [cycleOpen, setCycleOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [openStaffId, setOpenStaffId] = useState<string | null>(null);
 
@@ -71,7 +69,7 @@ export default function EvaluationsPage() {
   const primaryTabs: TabDef[] = [
     { value: "overview", label: "Overview", icon: LayoutGrid, show: true },
     { value: "staff", label: "Staff", icon: UsersIcon, show: true },
-    { value: "cycles", label: "Cycles", icon: CalendarDays, show: perms.canManageCycles },
+    { value: "schedule", label: "Schedule", icon: CalendarDays, show: true },
     { value: "reports", label: "Reports", icon: BarChart3, show: perms.canViewReports },
     { value: "insights", label: "AI Insights", icon: Sparkles, show: perms.canViewReports },
   ].filter((t) => t.show);
@@ -107,7 +105,7 @@ export default function EvaluationsPage() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {(perms.canManageCycles || perms.canImportStaff) && (
+            {perms.canImportStaff && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-muted">
@@ -116,16 +114,9 @@ export default function EvaluationsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">Actions</DropdownMenuLabel>
-                  {perms.canManageCycles && (
-                    <DropdownMenuItem onClick={() => setCycleOpen(true)}>
-                      <CalendarPlus className="h-3.5 w-3.5 mr-2" /> New cycle
-                    </DropdownMenuItem>
-                  )}
-                  {perms.canImportStaff && (
-                    <DropdownMenuItem onClick={() => setImportOpen(true)}>
-                      <Upload className="h-3.5 w-3.5 mr-2" /> Import staff
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                    <Upload className="h-3.5 w-3.5 mr-2" /> Import staff
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -214,7 +205,7 @@ export default function EvaluationsPage() {
           <TabsContent value="staff">
             <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} />
           </TabsContent>
-          {perms.canManageCycles && <TabsContent value="cycles"><CyclesTab data={data} onNewCycle={() => setCycleOpen(true)} /></TabsContent>}
+          <TabsContent value="schedule"><ScheduleTab data={scopedData} onOpenStaff={setOpenStaffId} /></TabsContent>
           {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
           {perms.canManageEmails && <TabsContent value="emails"><EmailQueueTab data={data} /></TabsContent>}
           {perms.canViewReports && <TabsContent value="reports"><ReportsTab data={scopedData} /></TabsContent>}
@@ -232,7 +223,6 @@ export default function EvaluationsPage() {
         supervisors={supervisors}
         onCreated={data.refresh}
       />
-      <CreateCycleDialog open={cycleOpen} onOpenChange={setCycleOpen} onCreated={data.refresh} />
       <ImportStaffDialog open={importOpen} onOpenChange={setImportOpen} existing={data.staff} onImported={data.refresh} />
       <StaffProfileDrawer
         staff={openStaff}
