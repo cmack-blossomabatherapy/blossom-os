@@ -3,7 +3,7 @@ import { OSShell } from "../OSShell";
 import { useOSRole } from "@/contexts/OSRoleContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, Plus, CalendarPlus, Mail } from "lucide-react";
+import { ClipboardCheck, Plus, CalendarPlus, Mail, Upload, Settings as SettingsIcon } from "lucide-react";
 import { useEvaluationsData } from "./useEvaluationsData";
 import AddStaffDialog from "./AddStaffDialog";
 import CreateCycleDialog from "./CreateCycleDialog";
@@ -14,6 +14,9 @@ import CyclesTab from "./tabs/CyclesTab";
 import FormsTab from "./tabs/FormsTab";
 import EmailQueueTab from "./tabs/EmailQueueTab";
 import ReportsTab from "./tabs/ReportsTab";
+import SettingsTab from "./tabs/SettingsTab";
+import ImportStaffDialog from "./ImportStaffDialog";
+import { permissionsForRole, filterStaffByScope, filterEvaluationsByScope } from "./permissions";
 import type { EvalStaff } from "./types";
 
 function roleLabel(role: string, state: string) {
@@ -32,16 +35,23 @@ function roleLabel(role: string, state: string) {
 
 export default function EvaluationsPage() {
   const { role, activeState } = useOSRole();
+  const perms = useMemo(() => permissionsForRole(role), [role]);
   const data = useEvaluationsData();
   const [tab, setTab] = useState("overview");
   const [addOpen, setAddOpen] = useState(false);
   const [cycleOpen, setCycleOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [openStaffId, setOpenStaffId] = useState<string | null>(null);
+
+  // Scope data by permissions
+  const visibleStaff = useMemo(() => filterStaffByScope(data.staff, perms, activeState), [data.staff, perms, activeState]);
+  const visibleEvals = useMemo(() => filterEvaluationsByScope(data.evaluations, visibleStaff), [data.evaluations, visibleStaff]);
+  const scopedData = useMemo(() => ({ ...data, staff: visibleStaff, evaluations: visibleEvals }), [data, visibleStaff, visibleEvals]);
 
   const supervisors = useMemo(() => data.staff.filter((s) => s.role === "BCBA"), [data.staff]);
   const openStaff: EvalStaff | null = useMemo(
-    () => data.staff.find((s) => s.id === openStaffId) ?? null,
-    [data.staff, openStaffId],
+    () => visibleStaff.find((s) => s.id === openStaffId) ?? null,
+    [visibleStaff, openStaffId],
   );
 
   return (
@@ -66,12 +76,21 @@ export default function EvaluationsPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setCycleOpen(true)}>
-              <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> New Cycle
-            </Button>
-            <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Staff Member
-            </Button>
+            {perms.canManageCycles && (
+              <Button variant="outline" size="sm" onClick={() => setCycleOpen(true)}>
+                <CalendarPlus className="h-3.5 w-3.5 mr-1.5" /> New Cycle
+              </Button>
+            )}
+            {perms.canImportStaff && (
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
+              </Button>
+            )}
+            {perms.canManageStaff && (
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Staff Member
+              </Button>
+            )}
           </div>
         </header>
 
@@ -79,20 +98,24 @@ export default function EvaluationsPage() {
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="staff">Staff</TabsTrigger>
-            <TabsTrigger value="cycles">Evaluation Cycles</TabsTrigger>
-            <TabsTrigger value="forms">Forms</TabsTrigger>
-            <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Email Queue</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            {perms.canManageCycles && <TabsTrigger value="cycles">Evaluation Cycles</TabsTrigger>}
+            {perms.canManageForms && <TabsTrigger value="forms">Forms</TabsTrigger>}
+            {perms.canManageEmails && <TabsTrigger value="emails"><Mail className="h-3.5 w-3.5 mr-1" />Email Queue</TabsTrigger>}
+            {perms.canViewReports && <TabsTrigger value="reports">Reports</TabsTrigger>}
+            <TabsTrigger value="settings"><SettingsIcon className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview"><OverviewTab data={data} /></TabsContent>
-          <TabsContent value="staff">
-            <StaffTab data={data} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} />
+          <TabsContent value="overview">
+            <OverviewTab data={scopedData} onGoToStaff={() => setTab("staff")} onGoToEmails={() => setTab("emails")} />
           </TabsContent>
-          <TabsContent value="cycles"><CyclesTab data={data} onNewCycle={() => setCycleOpen(true)} /></TabsContent>
-          <TabsContent value="forms"><FormsTab data={data} /></TabsContent>
-          <TabsContent value="emails"><EmailQueueTab data={data} /></TabsContent>
-          <TabsContent value="reports"><ReportsTab data={data} /></TabsContent>
+          <TabsContent value="staff">
+            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} />
+          </TabsContent>
+          {perms.canManageCycles && <TabsContent value="cycles"><CyclesTab data={data} onNewCycle={() => setCycleOpen(true)} /></TabsContent>}
+          {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
+          {perms.canManageEmails && <TabsContent value="emails"><EmailQueueTab data={data} /></TabsContent>}
+          {perms.canViewReports && <TabsContent value="reports"><ReportsTab data={scopedData} /></TabsContent>}
+          <TabsContent value="settings"><SettingsTab data={data} canEdit={perms.canManageSettings} /></TabsContent>
         </Tabs>
       </div>
 
@@ -103,6 +126,7 @@ export default function EvaluationsPage() {
         onCreated={data.refresh}
       />
       <CreateCycleDialog open={cycleOpen} onOpenChange={setCycleOpen} onCreated={data.refresh} />
+      <ImportStaffDialog open={importOpen} onOpenChange={setImportOpen} existing={data.staff} onImported={data.refresh} />
       <StaffProfileDrawer
         staff={openStaff}
         evaluations={data.evaluations}
@@ -112,6 +136,8 @@ export default function EvaluationsPage() {
         templates={data.templates}
         responses={data.responses}
         allStaff={data.staff}
+        audit={data.audit}
+        permissions={perms}
         onClose={() => setOpenStaffId(null)}
         onChanged={data.refresh}
       />
