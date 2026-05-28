@@ -3603,6 +3603,39 @@ export type Database = {
           },
         ]
       }
+      evaluation_audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          details_json: Json | null
+          evaluation_id: string | null
+          id: string
+          override_reason: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          details_json?: Json | null
+          evaluation_id?: string | null
+          id?: string
+          override_reason?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          details_json?: Json | null
+          evaluation_id?: string | null
+          id?: string
+          override_reason?: string | null
+          staff_id?: string | null
+        }
+        Relationships: []
+      }
       evaluation_cycles: {
         Row: {
           created_at: string
@@ -3979,6 +4012,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      evaluation_settings: {
+        Row: {
+          annual_enabled: boolean
+          auto_create_next: boolean
+          default_bcba_frequency: string
+          default_rbt_frequency: string
+          email_connected: boolean
+          finalize_due_days: number
+          hr_sees_all_states: boolean
+          id: number
+          leadership_due_days: number
+          meeting_due_days: number
+          quarterly_enabled: boolean
+          reminder_3_before: boolean
+          reminder_3_overdue: boolean
+          reminder_7_before: boolean
+          reminder_7_overdue: boolean
+          reminder_on_due: boolean
+          reminder_weekly_overdue: boolean
+          reply_to_email: string | null
+          reviewer_can_view_past: boolean
+          self_due_days: number
+          sender_email: string | null
+          sender_name: string | null
+          staff_can_download: boolean
+          staff_can_view_past: boolean
+          state_director_scope: boolean
+          updated_at: string
+        }
+        Insert: {
+          annual_enabled?: boolean
+          auto_create_next?: boolean
+          default_bcba_frequency?: string
+          default_rbt_frequency?: string
+          email_connected?: boolean
+          finalize_due_days?: number
+          hr_sees_all_states?: boolean
+          id?: number
+          leadership_due_days?: number
+          meeting_due_days?: number
+          quarterly_enabled?: boolean
+          reminder_3_before?: boolean
+          reminder_3_overdue?: boolean
+          reminder_7_before?: boolean
+          reminder_7_overdue?: boolean
+          reminder_on_due?: boolean
+          reminder_weekly_overdue?: boolean
+          reply_to_email?: string | null
+          reviewer_can_view_past?: boolean
+          self_due_days?: number
+          sender_email?: string | null
+          sender_name?: string | null
+          staff_can_download?: boolean
+          staff_can_view_past?: boolean
+          state_director_scope?: boolean
+          updated_at?: string
+        }
+        Update: {
+          annual_enabled?: boolean
+          auto_create_next?: boolean
+          default_bcba_frequency?: string
+          default_rbt_frequency?: string
+          email_connected?: boolean
+          finalize_due_days?: number
+          hr_sees_all_states?: boolean
+          id?: number
+          leadership_due_days?: number
+          meeting_due_days?: number
+          quarterly_enabled?: boolean
+          reminder_3_before?: boolean
+          reminder_3_overdue?: boolean
+          reminder_7_before?: boolean
+          reminder_7_overdue?: boolean
+          reminder_on_due?: boolean
+          reminder_weekly_overdue?: boolean
+          reply_to_email?: string | null
+          reviewer_can_view_past?: boolean
+          self_due_days?: number
+          sender_email?: string | null
+          sender_name?: string | null
+          staff_can_download?: boolean
+          staff_can_view_past?: boolean
+          state_director_scope?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       evaluation_staff: {
         Row: {
