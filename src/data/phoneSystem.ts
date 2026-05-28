@@ -459,3 +459,156 @@ export function buildVendorEmail(
 export function appendAudit(req: ChangeRequest, entry: Omit<AuditEntry, "at">): ChangeRequest {
   return { ...req, auditLog: [...(req.auditLog ?? []), { ...entry, at: new Date().toISOString() }] };
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Corporate routing reference (real Blossom phone system)
+// ────────────────────────────────────────────────────────────────────────────
+
+export type CorporateMenuOption = {
+  option: string;
+  label: string;
+  routesTo: string;
+  notes?: string;
+};
+
+export const CORPORATE_AUTO_ATTENDANT = "AA9000";
+
+export const CORPORATE_MENU: CorporateMenuOption[] = [
+  { option: "1", label: "State Intake Submenu", routesTo: "State submenu (5009–5013)" },
+  { option: "2", label: "HR",                   routesTo: "602" },
+  { option: "3", label: "Scheduling",           routesTo: "603" },
+  { option: "4", label: "General Inquiries",    routesTo: "604" },
+];
+
+export type StateIntakeRouting = {
+  state: "Georgia" | "North Carolina" | "Tennessee" | "Virginia" | "Maryland";
+  intakeExt: string;        // 5009–5013
+  dayQueue: string;         // e.g. 9106
+  afternoonQueue: string;   // e.g. 9107
+  afterHours: string;       // forwarding number
+  voicemailEmail: string;
+};
+
+export const STATE_INTAKE_ROUTING: StateIntakeRouting[] = [
+  { state: "Maryland",       intakeExt: "5009", dayQueue: "9106", afternoonQueue: "9107", afterHours: "732-612-0376", voicemailEmail: "mdintakes@blossomabatherapy.com" },
+  { state: "Georgia",        intakeExt: "5010", dayQueue: "9108", afternoonQueue: "9109", afterHours: "732-612-0376", voicemailEmail: "gaintakes@blossomabatherapy.com" },
+  { state: "North Carolina", intakeExt: "5011", dayQueue: "9112", afternoonQueue: "9113", afterHours: "732-612-0376", voicemailEmail: "ncintakes@blossomabatherapy.com" },
+  { state: "Tennessee",      intakeExt: "5012", dayQueue: "9116", afternoonQueue: "9117", afterHours: "732-612-0376", voicemailEmail: "tnintakes@blossomabatherapy.com" },
+  { state: "Virginia",       intakeExt: "5013", dayQueue: "9114", afternoonQueue: "9115", afterHours: "732-612-0376", voicemailEmail: "vaintakes@blossomabatherapy.com" },
+];
+
+// ────────────────────────────────────────────────────────────────────────────
+// Retell after-hours AI calls
+// ────────────────────────────────────────────────────────────────────────────
+
+export type RetellCallStatus =
+  | "New"
+  | "Needs Follow-Up"
+  | "Contacted"
+  | "Attempted"
+  | "Completed"
+  | "Escalated";
+
+export type RetellCall = {
+  id: string;
+  receivedAt: string;        // ISO
+  callerName: string;
+  callerType: "Parent" | "Provider" | "Referral" | "Other";
+  phone: string;
+  preferredCallbackTime: string;
+  state: "GA" | "NC" | "TN" | "VA" | "MD" | "Other";
+  childAge?: string;
+  insuranceProvider?: string;
+  insuranceType?: "Commercial" | "Medicaid" | "Tricare" | "Self-Pay" | "Unknown";
+  summary: string;
+  urgency: "Low" | "Normal" | "High";
+  sentiment: "Positive" | "Neutral" | "Frustrated" | "Distressed";
+  recordingUrl?: string;
+  status: RetellCallStatus;
+  followUpNotes?: string;
+};
+
+export const RETELL_STATUSES: RetellCallStatus[] = [
+  "New", "Needs Follow-Up", "Contacted", "Attempted", "Completed", "Escalated",
+];
+
+// Lightweight, realistic placeholder Retell calls — meant to be replaced by a
+// real feed. No fake employee names; only caller info Retell would surface.
+export const SEED_RETELL_CALLS: RetellCall[] = [
+  {
+    id: "RC-1042",
+    receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 9).toISOString(),
+    callerName: "Mom of new inquiry",
+    callerType: "Parent",
+    phone: "470-555-0142",
+    preferredCallbackTime: "Tomorrow 9–11 AM",
+    state: "GA",
+    childAge: "4",
+    insuranceProvider: "Aetna",
+    insuranceType: "Commercial",
+    summary: "Parent looking to start ABA services. Has diagnosis report ready. Asked about wait times in Atlanta area.",
+    urgency: "Normal",
+    sentiment: "Positive",
+    status: "Needs Follow-Up",
+  },
+  {
+    id: "RC-1041",
+    receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString(),
+    callerName: "Existing family",
+    callerType: "Parent",
+    phone: "704-555-0188",
+    preferredCallbackTime: "Morning, before 10 AM",
+    state: "NC",
+    childAge: "7",
+    summary: "Scheduling conflict for next week. Wants to swap Tuesday session to Thursday afternoon.",
+    urgency: "Normal",
+    sentiment: "Neutral",
+    status: "New",
+  },
+  {
+    id: "RC-1040",
+    receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+    callerName: "Referring pediatrician office",
+    callerType: "Referral",
+    phone: "615-555-0107",
+    preferredCallbackTime: "Anytime business hours",
+    state: "TN",
+    insuranceType: "Medicaid",
+    summary: "Pediatric office referring three families this week. Asked for fax intake packet.",
+    urgency: "Normal",
+    sentiment: "Positive",
+    status: "Contacted",
+  },
+  {
+    id: "RC-1039",
+    receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
+    callerName: "Frustrated parent",
+    callerType: "Parent",
+    phone: "703-555-0123",
+    preferredCallbackTime: "ASAP",
+    state: "VA",
+    childAge: "5",
+    insuranceProvider: "Anthem",
+    insuranceType: "Commercial",
+    summary: "RBT no-show for second time this week. Requesting case manager call back today.",
+    urgency: "High",
+    sentiment: "Frustrated",
+    status: "Escalated",
+  },
+  {
+    id: "RC-1038",
+    receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 38).toISOString(),
+    callerName: "Prospective family",
+    callerType: "Parent",
+    phone: "410-555-0166",
+    preferredCallbackTime: "Afternoons",
+    state: "MD",
+    childAge: "3",
+    insuranceType: "Unknown",
+    summary: "Just received autism diagnosis. Asked what's needed to begin intake and whether Medicaid is accepted.",
+    urgency: "Normal",
+    sentiment: "Neutral",
+    status: "Completed",
+    followUpNotes: "Intake packet emailed and VOB started.",
+  },
+];
