@@ -1387,13 +1387,36 @@ export function PhoneAdmin() {
       </div>
 
       <Card className="mt-6">
-        <CardHeader><CardTitle className="text-base">Telecom Vendor & Alerts</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Jivetel & System Settings</CardTitle></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div><Label className="text-xs">Vendor name</Label><Input value={settings.vendorName} onChange={(e) => setSettings({ ...settings, vendorName: e.target.value })} /></div>
           <div><Label className="text-xs">Vendor email</Label><Input value={settings.vendorEmail} onChange={(e) => setSettings({ ...settings, vendorEmail: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label className="text-xs">Jivetel support notes</Label><Textarea rows={2} value={settings.vendorSupportNotes} onChange={(e) => setSettings({ ...settings, vendorSupportNotes: e.target.value })} /></div>
+          <div><Label className="text-xs">Main number (primary)</Label><Input value={settings.mainNumberPrimary} onChange={(e) => setSettings({ ...settings, mainNumberPrimary: e.target.value })} /></div>
+          <div><Label className="text-xs">Main number (secondary)</Label><Input value={settings.mainNumberSecondary} onChange={(e) => setSettings({ ...settings, mainNumberSecondary: e.target.value })} /></div>
+          <div><Label className="text-xs">After-hours number</Label><Input value={settings.afterHoursNumber} onChange={(e) => setSettings({ ...settings, afterHoursNumber: e.target.value })} /></div>
           <div><Label className="text-xs">Ops reply-to email</Label><Input value={settings.opsEmail} onChange={(e) => setSettings({ ...settings, opsEmail: e.target.value })} /></div>
-          <div><Label className="text-xs">Teams webhook URL</Label><Input value={settings.teamsWebhookUrl} onChange={(e) => setSettings({ ...settings, teamsWebhookUrl: e.target.value })} placeholder="https://..." /></div>
-          <div><Label className="text-xs">Slack webhook URL</Label><Input value={settings.slackWebhookUrl} onChange={(e) => setSettings({ ...settings, slackWebhookUrl: e.target.value })} placeholder="https://..." /></div>
+          <div><Label className="text-xs">Monday board link</Label><Input value={settings.mondayBoardUrl} onChange={(e) => setSettings({ ...settings, mondayBoardUrl: e.target.value })} placeholder="https://monday.com/..." /></div>
+          <div><Label className="text-xs">Make scenario link</Label><Input value={settings.makeScenarioUrl} onChange={(e) => setSettings({ ...settings, makeScenarioUrl: e.target.value })} placeholder="https://make.com/..." /></div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox checked={settings.retellEnabled} onCheckedChange={(v) => setSettings({ ...settings, retellEnabled: !!v })} id="retell" />
+            <Label htmlFor="retell" className="text-sm">Retell AI enabled for after-hours</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle className="text-base">Voicemail Notification Emails</CardTitle></CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2">
+          {(["GA","NC","TN","VA","MD","main"] as const).map((k) => (
+            <div key={k}>
+              <Label className="text-xs">{k === "main" ? "Main / No State" : k}</Label>
+              <Input
+                value={settings.voicemailEmails[k]}
+                onChange={(e) => setSettings({ ...settings, voicemailEmails: { ...settings.voicemailEmails, [k]: e.target.value } })}
+              />
+            </div>
+          ))}
         </CardContent>
       </Card>
 
