@@ -2,7 +2,6 @@ import type { EvalStaff, Evaluation } from "./types";
 
 export type Permissions = {
   canManageStaff: boolean;
-  canManageCycles: boolean;
   canManageForms: boolean;
   canManageEmails: boolean;
   canManageSettings: boolean;
@@ -20,7 +19,7 @@ export function permissionsForRole(role: string): Permissions {
   switch (role) {
     case "super_admin":
       return {
-        canManageStaff: true, canManageCycles: true, canManageForms: true,
+        canManageStaff: true, canManageForms: true,
         canManageEmails: true, canManageSettings: true, canFinalize: true,
         canReopen: true, canDeleteCompleted: true, canViewAllStates: true,
         canViewReports: true, canImportStaff: true, canOverrideRules: true,
@@ -28,7 +27,7 @@ export function permissionsForRole(role: string): Permissions {
       };
     case "executive_leadership":
       return {
-        canManageStaff: false, canManageCycles: false, canManageForms: false,
+        canManageStaff: false, canManageForms: false,
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
@@ -36,7 +35,7 @@ export function permissionsForRole(role: string): Permissions {
       };
     case "hr_team":
       return {
-        canManageStaff: true, canManageCycles: true, canManageForms: true,
+        canManageStaff: true, canManageForms: true,
         canManageEmails: true, canManageSettings: true, canFinalize: true,
         canReopen: true, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: true, canOverrideRules: true,
@@ -46,7 +45,7 @@ export function permissionsForRole(role: string): Permissions {
     case "qa_team":
     case "bcba":
       return {
-        canManageStaff: false, canManageCycles: false, canManageForms: false,
+        canManageStaff: false, canManageForms: false,
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
@@ -54,7 +53,7 @@ export function permissionsForRole(role: string): Permissions {
       };
     case "state_director":
       return {
-        canManageStaff: false, canManageCycles: false, canManageForms: false,
+        canManageStaff: false, canManageForms: false,
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: false,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
@@ -62,7 +61,7 @@ export function permissionsForRole(role: string): Permissions {
       };
     default:
       return {
-        canManageStaff: false, canManageCycles: false, canManageForms: false,
+        canManageStaff: false, canManageForms: false,
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: false,
         canViewReports: false, canImportStaff: false, canOverrideRules: false,

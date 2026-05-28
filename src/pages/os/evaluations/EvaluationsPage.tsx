@@ -232,7 +232,6 @@ export default function EvaluationsPage() {
       <StaffProfileDrawer
         staff={openStaff}
         evaluations={data.evaluations}
-        cycles={data.cycles}
         meetings={data.meetings}
         notes={data.notes}
         templates={data.templates}
