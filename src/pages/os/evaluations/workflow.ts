@@ -23,7 +23,6 @@ export function templateVars(args: {
     role: staff.role,
     state: staff.state ?? "",
     evaluation_type: evaluation.evaluation_type,
-    cycle_name: cycle?.name ?? "Ad-hoc cycle",
     due_date: evaluation.next_review_date ?? cycle?.final_due_date ?? "TBD",
     form_link: formLink ?? "",
     reviewer_name: reviewer ? `${reviewer.first_name} ${reviewer.last_name}` : "",
