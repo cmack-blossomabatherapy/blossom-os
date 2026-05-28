@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -15,7 +16,7 @@ import type { EvaluationsData } from "../useEvaluationsData";
 import type { EvalStaff, Evaluation } from "../types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "../statusBadges";
 
-type SavedView =
+export type SavedView =
   | "all" | "overdue" | "due_this_month" | "self_pending" | "leadership_pending"
   | "meetings_needed" | "ready_to_finalize" | "complete" | "not_scheduled";
 
@@ -48,13 +49,16 @@ export default function StaffTab({
   data,
   onOpenStaff,
   onAddStaff,
+  initialView,
 }: {
   data: EvaluationsData;
   onOpenStaff: (id: string) => void;
   onAddStaff: () => void;
+  initialView?: SavedView;
 }) {
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<SavedView>("all");
+  const [view, setView] = useState<SavedView>(initialView ?? "all");
+  useEffect(() => { if (initialView) setView(initialView); }, [initialView]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
