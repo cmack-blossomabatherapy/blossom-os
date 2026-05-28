@@ -460,3 +460,55 @@ function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored
     </Link>
   );
 }
+
+function AiReportCard({ report, onDelete }: { report: AiReport; onDelete: () => void }) {
+  const isGenerating = report.status === "generating";
+  const isError = report.status === "error";
+  const when = new Date(report.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return (
+    <Link
+      to={`/reports/ai/${report.id}`}
+      className="group relative block overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]"
+    >
+      <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br from-[hsl(265_100%_92%)] to-[hsl(285_100%_94%)] opacity-60 blur-2xl transition group-hover:opacity-90" />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-2">
+          <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(265_70%_55%)]">
+            <Sparkles className="mr-1 h-2.5 w-2.5" /> AI Report
+          </Badge>
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
+            className="rounded-full p-1 text-muted-foreground/60 transition hover:bg-rose-50 hover:text-rose-500"
+            aria-label="Delete"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+        <h3 className="mt-2 line-clamp-2 text-[13.5px] font-semibold tracking-tight">{report.title}</h3>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
+          <FileSpreadsheet className="mr-1 inline h-3 w-3" />
+          {report.fileName} · {report.rowCount} rows
+        </p>
+        <div className="mt-3 flex items-center justify-between text-[10.5px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {when}</span>
+          {isGenerating ? (
+            <span className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(265_70%_55%)] opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(265_70%_55%)]" />
+              </span>
+              Generating
+            </span>
+          ) : isError ? (
+            <span className="font-medium text-rose-500">Failed</span>
+          ) : (
+            <span className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)] transition group-hover:translate-x-0.5">
+              Open <ArrowUpRight className="h-3 w-3" />
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
