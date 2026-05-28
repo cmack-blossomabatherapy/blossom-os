@@ -6,6 +6,7 @@ export type MeetingStatus = "Not Scheduled" | "Scheduled" | "Completed";
 export type FinalStatus = "Not Started" | "In Progress" | "Needs Meeting" | "Complete" | "Overdue";
 export type CycleStatus = "Draft" | "Active" | "Complete" | "Archived";
 export type EmailStatus = "Draft" | "Queued" | "Sent" | "Failed";
+// Note: "Cancelled" is also a valid backend value
 
 export interface EvalStaff {
   id: string;
