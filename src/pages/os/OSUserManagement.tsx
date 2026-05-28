@@ -14,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { allWorkforceUsers } from "@/lib/workforce/mockStaff";
 
 interface Row {
   user_id: string;
@@ -43,6 +42,7 @@ export default function OSUserManagement() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
+  const [evalStaff, setEvalStaff] = useState<Array<{ id: string; first_name: string; last_name: string; email: string; role: string; state: string | null; active_status: boolean; hire_date: string | null; }>>([]);
 
   const load = useCallback(async () => {
       setLoading(true);
@@ -84,34 +84,42 @@ export default function OSUserManagement() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("evaluation_staff")
+        .select("id, first_name, last_name, email, role, state, active_status, hire_date");
+      setEvalStaff((data ?? []) as any);
+    })();
+  }, []);
+
   const filtered = useMemo(() => {
-    const workforceRows: Row[] = allWorkforceUsers().map((w) => ({
-      user_id: `workforce:${w.id}`,
-      display_name: w.name,
+    const evalRows: Row[] = evalStaff.map((w) => ({
+      user_id: `eval:${w.id}`,
+      display_name: `${w.first_name} ${w.last_name}`.trim(),
       email: w.email,
       state: w.state,
       department: w.role === "BCBA" ? "Clinical · BCBA" : "Clinical · RBT",
       job_title: w.role === "BCBA" ? "Board Certified Behavior Analyst" : "Registered Behavior Technician",
       phone: null,
-      hire_date: null,
-      employment_type: "Full-time",
+      hire_date: w.hire_date,
+      employment_type: null,
       viventium_employee_id: null,
-      active: true,
+      active: w.active_status,
       roles: [w.role === "BCBA" ? "bcba" : "rbt"] as AppRole[],
       isWorkforce: true,
     }));
-    // Avoid duplicates with any DB rows that already share the same email
     const existingEmails = new Set(rows.map((r) => (r.email ?? "").toLowerCase()).filter(Boolean));
     const merged = [
       ...rows,
-      ...workforceRows.filter((w) => !existingEmails.has((w.email ?? "").toLowerCase())),
+      ...evalRows.filter((w) => !existingEmails.has((w.email ?? "").toLowerCase())),
     ];
     const needle = q.trim().toLowerCase();
     if (!needle) return merged;
     return merged.filter((r) =>
       [r.display_name, r.email, r.state, r.department, r.viventium_employee_id, r.roles.join(" ")].join(" ").toLowerCase().includes(needle),
     );
-  }, [rows, q]);
+  }, [rows, q, evalStaff]);
 
   return (
     <OSShell>
@@ -197,7 +205,7 @@ export default function OSUserManagement() {
                       </Button>
                     )}
                     {r.isWorkforce && (
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">Workforce roster</Badge>
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">From Evaluations</Badge>
                     )}
                   </td>
                 </tr>
