@@ -652,7 +652,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     : impersonating && osRole
     ? [
         ...buildGenericRoleSections(osRole),
-        ...(osRole === "marketing_team" || osRole === "hr_team" ? [phoneSystemSection] : []),
+        ...(osRole === "marketing_team" ? [phoneSystemSection] : []),
         intelligenceSection,
       ]
     : [
