@@ -1,66 +1,70 @@
 
-# Evaluation & Outreach Email Plan
+# Evaluations: Cycles → Rules Engine
 
-Two separate email lanes, each with the right tool for the job.
+Rip out the "Create Cycle" workflow. Generate every staff member's evaluation schedule automatically from their hire date + role + rules.
 
-## Lane 1 — Automated notifications via Resend (already connected)
+## Database
 
-Resend is linked. We just need to actually drain the `evaluation_emails` queue and send.
+1. **New table `evaluation_rules`** (one row per role)
+   - `role` ('BCBA' | 'RBT'), `eval_type` ('30-Day' | 'Quarterly' | 'Annual'), `enabled`, `cadence_days`, `first_offset_days`, `reminder_days_before`
+   - Seed defaults:
+     - BCBA: Quarterly every 90 days, Annual every 365 days
+     - RBT: 30-Day at day 30, Quarterly every 90 days, Annual every 365 days
 
-1. **New edge function `send-evaluation-emails`**
-   - Reads `evaluation_emails` rows where `status = 'Queued'` and `scheduled_send_at <= now()`
-   - Renders branded HTML per `template_key` (self-eval request, reviewer assignment, reminder, overdue, completion) using the Blossom email design system
-   - Sends via Resend gateway (same pattern as `send-training-assignment-email`)
-   - Updates row to `Sent` with `sent_at`, or `Failed` with `failed_reason`
-   - Idempotency by `evaluation_emails.id`
+2. **Modify `evaluations`**
+   - Make `cycle_id` nullable, stop using it for new rows
+   - Add `due_date date NOT NULL`, `generated_from_hire_date boolean default true`, `assigned_reviewer_id uuid`
+   - Widen `evaluation_type` check to include `'30-Day'`
+   - Index on `(staff_id, due_date)` and `(due_date) where final_status != 'Complete'`
 
-2. **Cron schedule** every 5 min via `pg_cron` + `pg_net` to invoke the function.
+3. **Database function `regenerate_staff_evaluations(staff_id)`**
+   - Reads staff hire_date + role, loads `evaluation_rules`, generates future evaluations up to 2 years out
+   - Idempotent: skips evals already created for the same `(staff_id, eval_type, due_date)`
+   - Never touches evals already In Progress / Complete
 
-3. **"Send now" button** in the existing `EmailQueueTab` to dispatch a single row on demand.
+4. **Triggers**
+   - On `evaluation_staff` INSERT or UPDATE of (hire_date, role, active) → call `regenerate_staff_evaluations`
+   - On `evaluation_rules` UPDATE → optional admin "Regenerate all schedules" button (manual, not auto, to avoid surprise)
 
-4. **From address**: `notifications@<your-resend-domain>` — confirm which Resend-verified domain we should use (the connection is "ABACommandCenter.com Resend", so likely `notifications@abacommandcenter.com`).
+5. **Deprecate (don't drop yet)** `evaluation_cycles` table — leave it in place but stop writing to it; remove all UI references.
 
-## Lane 2 — Reviewer outreach via personal Outlook (per-user OAuth)
+## UI changes
 
-This is the bigger piece. The Microsoft Outlook **workspace connector only authenticates one shared mailbox** — it cannot send "as" each reviewer. For each BCBA/HR person to send from their own Outlook (so replies land in their inbox and the message appears in their Sent folder), we need per-user Microsoft OAuth.
+1. **Delete** `CreateCycleDialog.tsx` and the **Cycles** tab.
 
-**What this requires:**
+2. **New "Schedule" tab** (replaces Cycles in the tab bar)
+   - Table of upcoming evaluations across all staff: Employee · Review Type · Due Date · Days Until Due · Status · Reviewer
+   - Filters: role, eval type, overdue only, next 30/60/90 days
+   - Row click → open staff drawer focused on that evaluation
 
-1. **Azure app registration** (one-time, done by you in Microsoft Entra)
-   - Redirect URI: `https://<project>.supabase.co/functions/v1/outlook-oauth-callback`
-   - Microsoft Graph delegated scopes: `Mail.Send`, `offline_access`, `User.Read`
-   - You provide `MS_CLIENT_ID` + `MS_CLIENT_SECRET` as secrets
+3. **Settings tab → "Evaluation Rules" section**
+   - Two cards (BCBA / RBT), each with toggles + cadence inputs for 30-Day / Quarterly / Annual
+   - "Save & regenerate future schedules" button
 
-2. **New table `outlook_connections`**
-   - `user_id`, `ms_email`, `access_token` (encrypted), `refresh_token` (encrypted), `expires_at`, `scope`
-   - RLS: each user reads/writes only their own row
+4. **Add Staff dialog** stays the same on input fields. On save it just inserts the staff row — the trigger auto-creates the schedule. Confirmation toast: "Scheduled X upcoming evaluations."
 
-3. **Edge functions**
-   - `outlook-oauth-start` → builds Microsoft consent URL, returns it to client
-   - `outlook-oauth-callback` → exchanges code for tokens, stores in `outlook_connections`
-   - `send-outlook-email` → loads caller's tokens, refreshes if expired, POSTs to `https://graph.microsoft.com/v1.0/me/sendMail`
-   - `outlook-disconnect` → revokes/removes the row
+5. **Staff profile drawer**
+   - Show "Upcoming Evaluations" list (next 4) with human names: "90-Day Quarterly Review · Due Jun 15"
+   - Keep current evaluation workflow (self-eval, leadership, meeting, complete) unchanged
 
-4. **UI**
-   - **Profile / Settings**: "Connect Outlook" button → after consent shows connected mailbox + Disconnect
-   - **Staff profile drawer** (1:1 outreach): "Email via Outlook" composer (To prefilled, Subject, Body, optional template); on send → `send-outlook-email`; log to `evaluation_emails` with `email_type='outreach'`, `template_key='outlook_manual'`
-   - **Cycle page** (bulk outreach): multi-select staff → compose once → loops `send-outlook-email` per recipient (sequential, 1/sec to respect Graph throttling), shows per-row success/fail, logs each to `evaluation_emails`
-   - Gracefully disabled with "Connect Outlook to send outreach" if the user has no `outlook_connections` row
+6. **Overview tab**
+   - KPI cards: Due this week / Due this month / Overdue (driven off the new `due_date`)
 
-5. **Reply handling**: replies go to the reviewer's real Outlook inbox — no app-side ingestion in v1.
+## What stays the same
 
-## Routing summary
+- `evaluations` lifecycle (self → leadership → meeting → complete)
+- Forms, responses, emails queue, AI insights, coaching plans — all keep working since they reference `evaluations.id`
+- Resend dispatcher already shipped
 
-| Email | Sender | How |
-|---|---|---|
-| Self-eval request to staff | Resend | Queue → cron dispatcher |
-| Reviewer assignment | Resend | Queue → cron dispatcher |
-| Reminder / overdue / completion | Resend | Queue → cron dispatcher |
-| 1:1 reviewer outreach from staff profile | Outlook (reviewer's mailbox) | On-demand `send-outlook-email` |
-| Bulk cycle outreach from HR | Outlook (HR user's mailbox) | Loop `send-outlook-email`, logged per-recipient |
+## Migration strategy
 
-## Open questions before I build
+Since the DB has 0 cycles and 0 evals, no data migration needed. Migration just:
+- creates `evaluation_rules` + seeds defaults
+- alters `evaluations` (nullable cycle_id, adds due_date + reviewer)
+- creates the regenerate function + triggers
+- backfills schedules for the 2 existing staff rows
 
-1. **Resend From address** — confirm the verified domain & sender (e.g. `notifications@abacommandcenter.com`).
-2. **Azure app** — do you already have an Entra/Azure AD app, or do I include step-by-step instructions for creating one and you'll provide `MS_CLIENT_ID` / `MS_CLIENT_SECRET`?
-3. **Scope of v1** — should I build both lanes in one pass, or ship Lane 1 (Resend dispatcher) first and add Lane 2 (Outlook OAuth) after you've created the Azure app?
+## Out of scope (for now)
+
+- No bulk regenerate when rules change → manual button only
+- Cycles table stays in DB but hidden; can drop in a future cleanup migration once we're sure nothing else queries it

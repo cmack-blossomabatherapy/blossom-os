@@ -12,6 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { EvaluationsData, EvalSettings } from "../useEvaluationsData";
+import EvaluationRulesSection from "../EvaluationRulesSection";
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -86,25 +87,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
     <div className="space-y-4">
       {!canEdit && <p className="text-xs text-muted-foreground rounded-xl border bg-muted px-3 py-2">Read-only view. HR or Super Admin can edit settings.</p>}
 
-      <Section title="Evaluation Frequencies">
-        <Toggle label="Quarterly evaluations enabled" value={s.quarterly_enabled} onChange={(v) => set("quarterly_enabled", v)} />
-        <Toggle label="Annual evaluations enabled" value={s.annual_enabled} onChange={(v) => set("annual_enabled", v)} />
-        <Toggle label="Auto-create next evaluation after completion" value={s.auto_create_next} onChange={(v) => set("auto_create_next", v)} />
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="space-y-1"><Label className="text-xs">Default BCBA frequency</Label>
-            <Select value={s.default_bcba_frequency} onValueChange={(v) => set("default_bcba_frequency", v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="Quarterly">Quarterly</SelectItem><SelectItem value="Annual">Annual</SelectItem><SelectItem value="Both">Both</SelectItem></SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1"><Label className="text-xs">Default RBT frequency</Label>
-            <Select value={s.default_rbt_frequency} onValueChange={(v) => set("default_rbt_frequency", v)}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="Quarterly">Quarterly</SelectItem><SelectItem value="Annual">Annual</SelectItem><SelectItem value="Both">Both</SelectItem></SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Section>
+      <EvaluationRulesSection data={data} canEdit={canEdit} />
 
       <Section title="Due Date Rules" description="Days from previous step completion.">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
