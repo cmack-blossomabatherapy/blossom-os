@@ -332,7 +332,7 @@ import OSBCBAResources from "./pages/os/OSBCBAResources";
 import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSCaseManagement from "./pages/os/OSCaseManagement";
-import OSEvaluations from "./pages/os/OSEvaluations";
+import OSEvaluations from "./pages/os/OSHREvaluations";
 import PublicEvalFormPage from "./pages/os/evaluations/PublicFormPage";
 import OSAiInsights from "./pages/os/OSAiInsights";
 import OSNotifications from "./pages/os/OSNotifications";
