@@ -273,8 +273,14 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{staff.email}</span>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <a
+              href={`mailto:${staff.email}?subject=${encodeURIComponent(`Blossom · ${staff.first_name} ${staff.last_name}`)}`}
+              title="Open in your email client (Outlook)"
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              <Mail className="h-3 w-3" />{staff.email}
+            </a>
             {staff.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{staff.phone}</span>}
             {staff.state && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{staff.state}</span>}
             <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />Hired {fmtDate(staff.hire_date)}</span>
