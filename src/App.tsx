@@ -298,6 +298,11 @@ import OSRBTMessages from "./pages/os/OSRBTMessages";
 import OSRBTHelp from "./pages/os/OSRBTHelp";
 import OSRBTResources from "./pages/os/OSRBTResources";
 import OSPermissions from "./pages/os/OSPermissions";
+import { PhoneSystemProvider } from "./contexts/PhoneSystemContext";
+import {
+  PhoneDashboard, PhoneLookup, PhoneShared, PhoneDirectory,
+  PhoneRequestList, PhoneRequestNew, PhoneRequestDetail, PhoneAdmin,
+} from "./pages/phone/PhonePages";
 import MarketingDashboard from "./pages/os/marketing/MarketingDashboard";
 import MarketingTraining from "./pages/os/marketing/MarketingTraining";
 import MarketingCampaigns from "./pages/os/marketing/Campaigns";
@@ -444,6 +449,7 @@ const App = () => (
           <LeadsProvider>
             <ClientsProvider>
               <JourneyOverridesProvider>
+                <PhoneSystemProvider>
                 <PushNavigationListener />
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
@@ -807,6 +813,7 @@ const App = () => (
                 </Route>
                 <Route path="*" element={<NotFound />} />
                 </Routes>
+                </PhoneSystemProvider>
               </JourneyOverridesProvider>
             </ClientsProvider>
           </LeadsProvider>
