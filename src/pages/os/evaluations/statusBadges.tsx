@@ -44,7 +44,7 @@ export function EmailBadge({ s }: { s: EmailStatus }) {
     s === "Sent" ? "ok" :
     s === "Failed" ? "crit" :
     s === "Queued" ? "info" :
-    s === ("Cancelled" as EmailStatus) ? "muted" : "muted";
+    "muted";
   return <StatusPill tone={tone}>{s}</StatusPill>;
 }
 export function CycleBadge({ s }: { s: CycleStatus }) {
