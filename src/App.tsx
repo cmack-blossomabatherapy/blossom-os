@@ -809,6 +809,15 @@ const App = () => (
                   <Route path="/hr/reports" element={<PermissionRoute permission="hr.reports.view"><HRReports /></PermissionRoute>} />
                   <Route path="/hr/settings" element={<PermissionRoute permission="hr.settings.manage"><HRSettings /></PermissionRoute>} />
                   <Route path="/hr/notifications" element={<PermissionRoute permission="hr.settings.manage"><NotificationSettings /></PermissionRoute>} />
+                  {/* Phone System */}
+                  <Route path="/phone" element={<PhoneDashboard />} />
+                  <Route path="/phone/lookup" element={<PhoneLookup />} />
+                  <Route path="/phone/shared" element={<PhoneShared />} />
+                  <Route path="/phone/directory" element={<PhoneDirectory />} />
+                  <Route path="/phone/requests" element={<PhoneRequestList />} />
+                  <Route path="/phone/requests/new" element={<PhoneRequestNew />} />
+                  <Route path="/phone/requests/:id" element={<PhoneRequestDetail />} />
+                  <Route path="/phone/admin" element={<PhoneAdmin />} />
                   <Route path="/enterprise/*" element={<NotFound />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
