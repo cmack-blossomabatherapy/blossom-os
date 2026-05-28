@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Row {
   user_id: string;
@@ -36,7 +35,6 @@ const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People"
 const EMPLOYEE_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
 
 export default function OSUserManagement() {
-  const { isAdmin } = useAuth();
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
