@@ -652,14 +652,18 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     : impersonating && osRole
     ? [
         ...buildGenericRoleSections(osRole),
-        ...(osRole === "marketing_team" ? [phoneSystemSection] : []),
+        ...(["hr_team", "marketing_team", "super_admin"].includes(osRole)
+          ? [phoneSystemSection]
+          : []),
         intelligenceSection,
       ]
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
         ...(showOperations ? operationsSections : []),
-        ...(showOperations || roles.includes("marketing") ? [phoneSystemSection] : []),
+        ...(isAdmin || showOperations || roles.includes("marketing")
+          ? [phoneSystemSection]
+          : []),
         intelligenceSection,
         ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
       ];
