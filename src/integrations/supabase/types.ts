@@ -4288,6 +4288,42 @@ export type Database = {
           },
         ]
       }
+      evaluation_rules: {
+        Row: {
+          cadence_days: number | null
+          created_at: string
+          enabled: boolean
+          eval_type: string
+          first_offset_days: number
+          id: string
+          reminder_days_before: number
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          cadence_days?: number | null
+          created_at?: string
+          enabled?: boolean
+          eval_type: string
+          first_offset_days?: number
+          id?: string
+          reminder_days_before?: number
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          cadence_days?: number | null
+          created_at?: string
+          enabled?: boolean
+          eval_type?: string
+          first_offset_days?: number
+          id?: string
+          reminder_days_before?: number
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evaluation_settings: {
         Row: {
           annual_enabled: boolean
@@ -4496,11 +4532,15 @@ export type Database = {
       }
       evaluations: {
         Row: {
+          assigned_reviewer_id: string | null
           completed_at: string | null
           created_at: string
           cycle_id: string | null
+          due_date: string | null
+          eval_label: string | null
           evaluation_type: string
           final_status: string
+          generated_from_hire_date: boolean
           id: string
           leadership_status: string
           meeting_status: string
@@ -4510,11 +4550,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_reviewer_id?: string | null
           completed_at?: string | null
           created_at?: string
           cycle_id?: string | null
+          due_date?: string | null
+          eval_label?: string | null
           evaluation_type: string
           final_status?: string
+          generated_from_hire_date?: boolean
           id?: string
           leadership_status?: string
           meeting_status?: string
@@ -4524,11 +4568,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_reviewer_id?: string | null
           completed_at?: string | null
           created_at?: string
           cycle_id?: string | null
+          due_date?: string | null
+          eval_label?: string | null
           evaluation_type?: string
           final_status?: string
+          generated_from_hire_date?: boolean
           id?: string
           leadership_status?: string
           meeting_status?: string
@@ -4538,6 +4586,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "evaluations_assigned_reviewer_id_fkey"
+            columns: ["assigned_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "evaluations_cycle_id_fkey"
             columns: ["cycle_id"]
@@ -9504,6 +9559,10 @@ export type Database = {
       }
       recruiting_can_write: { Args: { _user_id: string }; Returns: boolean }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
+      regenerate_staff_evaluations: {
+        Args: { _staff_id: string }
+        Returns: number
+      }
       resolve_alert_sla: {
         Args: { _alert_type: string; _payor: string; _state: string }
         Returns: {
