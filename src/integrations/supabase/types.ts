@@ -3603,6 +3603,400 @@ export type Database = {
           },
         ]
       }
+      evaluation_cycles: {
+        Row: {
+          created_at: string
+          evaluation_type: string
+          final_due_date: string | null
+          id: string
+          leadership_due_date: string | null
+          meeting_due_date: string | null
+          name: string
+          self_due_date: string | null
+          staff_type: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evaluation_type: string
+          final_due_date?: string | null
+          id?: string
+          leadership_due_date?: string | null
+          meeting_due_date?: string | null
+          name: string
+          self_due_date?: string | null
+          staff_type: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evaluation_type?: string
+          final_due_date?: string | null
+          id?: string
+          leadership_due_date?: string | null
+          meeting_due_date?: string | null
+          name?: string
+          self_due_date?: string | null
+          staff_type?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluation_emails: {
+        Row: {
+          body: string | null
+          created_at: string
+          cycle_id: string | null
+          email_type: string
+          evaluation_id: string | null
+          failed_reason: string | null
+          id: string
+          last_reminder_at: string | null
+          recipient_email: string
+          sent_at: string | null
+          staff_id: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          email_type: string
+          evaluation_id?: string | null
+          failed_reason?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          staff_id?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          email_type?: string
+          evaluation_id?: string | null
+          failed_reason?: string | null
+          id?: string
+          last_reminder_at?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          staff_id?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_emails_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_emails_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_emails_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_forms: {
+        Row: {
+          active_status: boolean
+          created_at: string
+          evaluation_type: string
+          form_type: string
+          id: string
+          name: string
+          questions_json: Json
+          staff_role: string
+          updated_at: string
+        }
+        Insert: {
+          active_status?: boolean
+          created_at?: string
+          evaluation_type: string
+          form_type: string
+          id?: string
+          name: string
+          questions_json?: Json
+          staff_role: string
+          updated_at?: string
+        }
+        Update: {
+          active_status?: boolean
+          created_at?: string
+          evaluation_type?: string
+          form_type?: string
+          id?: string
+          name?: string
+          questions_json?: Json
+          staff_role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluation_meetings: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          evaluation_id: string
+          id: string
+          meeting_date: string | null
+          meeting_status: string
+          notes: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          evaluation_id: string
+          id?: string
+          meeting_date?: string | null
+          meeting_status?: string
+          notes?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          evaluation_id?: string
+          id?: string
+          meeting_date?: string | null
+          meeting_status?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_meetings_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          evaluation_id: string
+          id: string
+          note: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          evaluation_id: string
+          id?: string
+          note: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          evaluation_id?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_notes_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_responses: {
+        Row: {
+          answers_json: Json
+          evaluation_id: string
+          form_id: string | null
+          id: string
+          respondent_email: string | null
+          respondent_id: string | null
+          response_type: string
+          submitted_at: string
+        }
+        Insert: {
+          answers_json?: Json
+          evaluation_id: string
+          form_id?: string | null
+          id?: string
+          respondent_email?: string | null
+          respondent_id?: string | null
+          response_type: string
+          submitted_at?: string
+        }
+        Update: {
+          answers_json?: Json
+          evaluation_id?: string
+          form_id?: string | null
+          id?: string
+          respondent_email?: string | null
+          respondent_id?: string | null
+          response_type?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_responses_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_staff: {
+        Row: {
+          active_status: boolean
+          created_at: string
+          email: string
+          evaluation_frequency: string
+          first_name: string
+          hire_date: string | null
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          role: string
+          state: string | null
+          supervisor_id: string | null
+          supervisor_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          active_status?: boolean
+          created_at?: string
+          email: string
+          evaluation_frequency?: string
+          first_name: string
+          hire_date?: string | null
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          role: string
+          state?: string | null
+          supervisor_id?: string | null
+          supervisor_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active_status?: boolean
+          created_at?: string
+          email?: string
+          evaluation_frequency?: string
+          first_name?: string
+          hire_date?: string | null
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string
+          state?: string | null
+          supervisor_id?: string | null
+          supervisor_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_staff_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          cycle_id: string | null
+          evaluation_type: string
+          final_status: string
+          id: string
+          leadership_status: string
+          meeting_status: string
+          next_review_date: string | null
+          self_status: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          evaluation_type: string
+          final_status?: string
+          id?: string
+          leadership_status?: string
+          meeting_status?: string
+          next_review_date?: string | null
+          self_status?: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          cycle_id?: string | null
+          evaluation_type?: string
+          final_status?: string
+          id?: string
+          leadership_status?: string
+          meeting_status?: string
+          next_review_date?: string | null
+          self_status?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hours_timesheet_entries: {
         Row: {
           category: string | null

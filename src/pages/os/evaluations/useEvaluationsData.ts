@@ -1,0 +1,47 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { EvalStaff, EvalCycle, Evaluation, EvalMeeting, EvalNote, EvalEmail } from "./types";
+
+export interface EvaluationsData {
+  staff: EvalStaff[];
+  cycles: EvalCycle[];
+  evaluations: Evaluation[];
+  meetings: EvalMeeting[];
+  notes: EvalNote[];
+  emails: EvalEmail[];
+  loading: boolean;
+  refresh: () => Promise<void>;
+}
+
+export function useEvaluationsData(): EvaluationsData {
+  const [staff, setStaff] = useState<EvalStaff[]>([]);
+  const [cycles, setCycles] = useState<EvalCycle[]>([]);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [meetings, setMeetings] = useState<EvalMeeting[]>([]);
+  const [notes, setNotes] = useState<EvalNote[]>([]);
+  const [emails, setEmails] = useState<EvalEmail[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const [s, c, e, m, n, em] = await Promise.all([
+      supabase.from("evaluation_staff").select("*").order("last_name"),
+      supabase.from("evaluation_cycles").select("*").order("start_date", { ascending: false }),
+      supabase.from("evaluations").select("*").order("created_at", { ascending: false }),
+      supabase.from("evaluation_meetings").select("*").order("meeting_date", { ascending: false }),
+      supabase.from("evaluation_notes").select("*").order("created_at", { ascending: false }),
+      supabase.from("evaluation_emails").select("*").order("created_at", { ascending: false }),
+    ]);
+    setStaff((s.data ?? []) as EvalStaff[]);
+    setCycles((c.data ?? []) as EvalCycle[]);
+    setEvaluations((e.data ?? []) as Evaluation[]);
+    setMeetings((m.data ?? []) as EvalMeeting[]);
+    setNotes((n.data ?? []) as EvalNote[]);
+    setEmails((em.data ?? []) as EvalEmail[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return { staff, cycles, evaluations, meetings, notes, emails, loading, refresh };
+}
