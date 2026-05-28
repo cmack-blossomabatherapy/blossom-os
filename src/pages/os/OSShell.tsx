@@ -538,6 +538,36 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // HR Team — focused workforce menu. Only Evaluations is active; everything
+  // else is disabled and shown as Coming Soon.
+  const HR_TEAM_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/hr", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
+      ],
+    },
+    {
+      id: "workforce", label: "Workforce", items: [
+        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff", disabled: true },
+        { to: "/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops", disabled: true },
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training", disabled: true },
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
+      ],
+    },
+    {
+      id: "hr_ops", label: "HR Operations", items: [
+        { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
+        { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", disabled: true },
+        { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr", disabled: true },
+      ],
+    },
+  ];
+
   let sections: NavSection[] = role === "executive_leadership"
     ? EXEC_LEADERSHIP_SECTIONS
     : role === "marketing_team"
@@ -554,22 +584,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? OPS_LEADERSHIP_SECTIONS
     : role === "case_manager"
     ? CASE_MANAGER_SECTIONS
+    : role === "hr_team"
+    ? HR_TEAM_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
-
-  // HR Team: hide the AI & Automations section and remove KPI Tracking from
-  // the Operations & Intelligence section.
-  if (role === "hr_team") {
-    sections = sections
-      .filter((s) => s.id !== "ai")
-      .map((s) =>
-        s.id === "operations"
-          ? { ...s, items: s.items.filter((i) => i.to !== "/kpi") }
-          : s,
-      )
-      .filter((s) => s.items.length > 0);
-  }
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
