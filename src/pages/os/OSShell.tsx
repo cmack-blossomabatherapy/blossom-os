@@ -558,6 +558,19 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
 
+  // HR Team: hide the AI & Automations section and remove KPI Tracking from
+  // Operations & Intelligence per product direction.
+  const finalSections = role === "hr_team"
+    ? sections
+        .filter((s) => s.id !== "ai")
+        .map((s) =>
+          s.id === "operations"
+            ? { ...s, items: s.items.filter((i) => i.to !== "/kpi") }
+            : s,
+        )
+        .filter((s) => s.items.length > 0)
+    : sections;
+
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
     if (!q) return sections;
