@@ -1,7 +1,8 @@
 export type Employee = {
   extension: string;
-  name: string;
+  name?: string;
   department?: string;
+  role?: string;
 };
 
 export type CallQueue = {
@@ -113,7 +114,28 @@ export type ChangeRequest = {
 export type AdminSettings = {
   vendorEmail: string;
   vendorName: string;
+  vendorSupportNotes: string;
   opsEmail: string;
+  mainNumberPrimary: string;
+  mainNumberSecondary: string;
+  afterHoursNumber: string;
+  retellEnabled: boolean;
+  mondayBoardUrl: string;
+  makeScenarioUrl: string;
+  voicemailEmails: {
+    GA: string;
+    NC: string;
+    TN: string;
+    VA: string;
+    MD: string;
+    main: string;
+  };
+  businessHours: {
+    adminWeekday: string;   // Mon–Thu
+    adminFriday: string;    // Fri
+    directorsWeekday: string;
+    directorsFriday: string;
+  };
   teamsWebhookUrl: string;
   slackWebhookUrl: string;
   autoRollbackEnabled: boolean;
@@ -137,9 +159,31 @@ export type HolidayProfile = {
 };
 
 export const DEFAULT_SETTINGS: AdminSettings = {
-  vendorEmail: "support@telecomvendor.com",
-  vendorName: "Telecom Vendor Support",
+  vendorEmail: "support@jivetel.com",
+  vendorName: "Jivetel Support",
+  vendorSupportNotes:
+    "Call Jivetel and choose Option 2 (Tech Support). Ask for Shane.",
   opsEmail: "ops@blossomabatherapy.com",
+  mainNumberPrimary: "1-877-315-1069",
+  mainNumberSecondary: "732-730-7505",
+  afterHoursNumber: "732-612-0376",
+  retellEnabled: true,
+  mondayBoardUrl: "",
+  makeScenarioUrl: "",
+  voicemailEmails: {
+    GA:   "gaintakes@blossomabatherapy.com",
+    NC:   "ncintakes@blossomabatherapy.com",
+    TN:   "tnintakes@blossomabatherapy.com",
+    VA:   "vaintakes@blossomabatherapy.com",
+    MD:   "mdintakes@blossomabatherapy.com",
+    main: "intake@blossomabatherapy.com",
+  },
+  businessHours: {
+    adminWeekday:     "Mon–Thu 9:00 AM – 2:00 PM",
+    adminFriday:      "Fri 9:00 AM – 12:00 PM",
+    directorsWeekday: "Mon–Thu 9:00 AM – 4:30 PM",
+    directorsFriday:  "Fri 9:00 AM – 12:00 PM",
+  },
   teamsWebhookUrl: "",
   slackWebhookUrl: "",
   autoRollbackEnabled: true,
@@ -181,16 +225,18 @@ export const SEED_HOLIDAY_PROFILES: HolidayProfile[] = [
   },
 ];
 
+// Real Blossom extensions. Names intentionally left blank — fill in via Admin
+// Settings as people are assigned. Departments/roles reflect actual routing.
 export const SEED_EMPLOYEES: Employee[] = [
-  { extension: "109", name: "Avery Johnson", department: "VA Intake" },
-  { extension: "111", name: "Morgan Lee", department: "Shared Intake" },
-  { extension: "112", name: "Jordan Patel", department: "TN Intake" },
-  { extension: "114", name: "Quinn Walker", department: "Scheduling" },
-  { extension: "125", name: "Riley Chen", department: "Shared Intake" },
-  { extension: "131", name: "Casey Brown", department: "VA Intake" },
-  { extension: "132", name: "Taylor Smith", department: "Afternoon Floater" },
-  { extension: "134", name: "Sam Rivera", department: "TN Intake" },
-  { extension: "146", name: "Drew Nguyen", department: "HR" },
+  { extension: "109", department: "VA Intake",          role: "Intake Agent" },
+  { extension: "111", department: "Shared Intake",      role: "Intake Agent (Day)" },
+  { extension: "112", department: "TN Intake",          role: "Intake Agent (Backup)" },
+  { extension: "114", department: "Scheduling",         role: "Scheduling" },
+  { extension: "125", department: "Shared Intake",      role: "Intake Agent (Day)" },
+  { extension: "131", department: "VA Intake",          role: "Intake Agent (Primary)" },
+  { extension: "132", department: "Afternoon Floater",  role: "Afternoon Coverage" },
+  { extension: "134", department: "TN Intake",          role: "Intake Agent (Primary)" },
+  { extension: "146", department: "HR",                 role: "HR" },
 ];
 
 export const SEED_QUEUES: CallQueue[] = [
@@ -214,11 +260,11 @@ export const SEED_SHARED: SharedRouting[] = [
 ];
 
 export const STATE_DIRECTORY: StateDirectoryEntry[] = [
-  { state: "Georgia", direct: "404-891-1880", mainAA: "AA9008", intakeRouting: "5010" },
-  { state: "North Carolina", direct: "704-703-6002", mainAA: "AA9009", intakeRouting: "5011" },
-  { state: "Tennessee", direct: "615-307-8057", mainAA: "AA9010", intakeRouting: "5012" },
-  { state: "Virginia", direct: "703-540-1020", mainAA: "AA9011", intakeRouting: "5013" },
-  { state: "Maryland", direct: "410-205-6266", mainAA: "AA9007", intakeRouting: "5009" },
+  { state: "Georgia",        direct: "404-891-1880", mainAA: "AA9000", intakeRouting: "5010" },
+  { state: "North Carolina", direct: "704-703-6002", mainAA: "AA9000", intakeRouting: "5011" },
+  { state: "Tennessee",      direct: "615-307-8057", mainAA: "AA9000", intakeRouting: "5012" },
+  { state: "Virginia",       direct: "703-540-1020", mainAA: "AA9000", intakeRouting: "5013" },
+  { state: "Maryland",       direct: "410-205-6266", mainAA: "AA9000", intakeRouting: "5009" },
 ];
 
 export const STATUSES: RequestStatus[] = [
