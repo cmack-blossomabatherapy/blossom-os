@@ -70,7 +70,7 @@ function BrandedFormPreview({ form }: { form: EvalForm }) {
             {[
               { l: "Employee", v: "Jordan Rivera" },
               { l: "Role", v: form.staff_role },
-              { l: "Reviewer", v: "Alex Chen, BCBA" },
+              { l: "Reviewer", v: form.form_type === "Leadership" ? "Selected at submission" : "Alex Chen, BCBA" },
               { l: "Due", v: "Sample preview" },
             ].map((m) => (
               <div key={m.l} className="rounded-xl border border-border/60 bg-background/60 px-3 py-2">

@@ -9514,10 +9514,24 @@ export type Database = {
           warning_offset_hours: number
         }[]
       }
-      submit_eval_form_response: {
-        Args: { p_answers: Json; p_signature?: string; p_token: string }
+      search_eval_reviewers: {
+        Args: { p_query: string; p_token: string }
         Returns: Json
       }
+      submit_eval_form_response:
+        | {
+            Args: { p_answers: Json; p_signature?: string; p_token: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_answers: Json
+              p_reviewer_id?: string
+              p_signature?: string
+              p_token: string
+            }
+            Returns: Json
+          }
       upsert_knowledge_chunk: {
         Args: {
           _content: string
