@@ -109,6 +109,9 @@ export default function EvaluationsPage() {
         cycles={data.cycles}
         meetings={data.meetings}
         notes={data.notes}
+        templates={data.templates}
+        responses={data.responses}
+        allStaff={data.staff}
         onClose={() => setOpenStaffId(null)}
         onChanged={data.refresh}
       />
