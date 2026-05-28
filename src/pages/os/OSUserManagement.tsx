@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Row {
   user_id: string;
@@ -36,7 +35,6 @@ const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People"
 const EMPLOYEE_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
 
 export default function OSUserManagement() {
-  const { isAdmin } = useAuth();
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +175,11 @@ export default function OSUserManagement() {
                 <tr><td colSpan={8} className="px-5 py-12 text-center text-muted-foreground">No users yet.</td></tr>
               )}
               {filtered.map((r) => (
-                <tr key={r.user_id} className="border-t border-foreground/[0.05] hover:bg-foreground/[0.02]">
+                <tr
+                  key={r.user_id}
+                  onClick={() => setEditing(r)}
+                  className="cursor-pointer border-t border-foreground/[0.05] transition hover:bg-foreground/[0.03]"
+                >
                   <td className="px-5 py-3 font-medium text-foreground">{r.display_name ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{r.email ?? "—"}</td>
                   <td className="px-5 py-3">
@@ -199,14 +201,14 @@ export default function OSUserManagement() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {isAdmin && !r.isWorkforce && (
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(r)} className="gap-1.5">
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </Button>
-                    )}
-                    {r.isWorkforce && (
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">From Evaluations</Badge>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                      className="gap-1.5"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -257,6 +259,26 @@ function EditUserSheet({
     if (!form) return;
     setSaving(true);
     try {
+      if (form.isWorkforce) {
+        const evalId = form.user_id.replace(/^eval:/, "");
+        const [firstName, ...rest] = (form.display_name ?? "").trim().split(/\s+/);
+        const lastName = rest.join(" ");
+        const { error: eErr } = await supabase
+          .from("evaluation_staff")
+          .update({
+            first_name: firstName || "",
+            last_name: lastName || "",
+            email: form.email ?? "",
+            phone: form.phone,
+            state: form.state,
+            hire_date: form.hire_date,
+            active_status: form.active,
+          })
+          .eq("id", evalId);
+        if (eErr) throw eErr;
+        onSaved();
+        return;
+      }
       const { error: pErr } = await supabase
         .from("profiles")
         .update({
@@ -302,7 +324,12 @@ function EditUserSheet({
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
           <SheetTitle>{form.display_name ?? form.email ?? "Edit user"}</SheetTitle>
-          <SheetDescription>{form.email}</SheetDescription>
+          <SheetDescription className="flex items-center gap-2">
+            <span>{form.email}</span>
+            {form.isWorkforce && (
+              <Badge variant="outline" className="text-[10px] font-normal">Evaluations record</Badge>
+            )}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
@@ -349,6 +376,7 @@ function EditUserSheet({
             </div>
           </section>
 
+          {!form.isWorkforce && (
           <section className="space-y-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -371,7 +399,9 @@ function EditUserSheet({
               className="font-mono"
             />
           </section>
+          )}
 
+          {!form.isWorkforce && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Roles & access</h3>
@@ -404,6 +434,7 @@ function EditUserSheet({
               ))}
             </div>
           </section>
+          )}
 
           <div className="sticky bottom-0 -mx-6 flex justify-end gap-2 border-t border-foreground/[0.06] bg-background/95 px-6 py-3 backdrop-blur">
             <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
