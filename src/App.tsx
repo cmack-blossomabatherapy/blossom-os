@@ -617,6 +617,8 @@ const App = () => (
                   <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
+                  <Route path="/reports/ai/new" element={<AiReportNew />} />
+                  <Route path="/reports/ai/:id" element={<AiReportView />} />
                   <Route path="/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
