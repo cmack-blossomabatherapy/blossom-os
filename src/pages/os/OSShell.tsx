@@ -538,7 +538,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
-  const sections = role === "executive_leadership"
+  let sections: NavSection[] = role === "executive_leadership"
     ? EXEC_LEADERSHIP_SECTIONS
     : role === "marketing_team"
     ? MARKETING_TEAM_SECTIONS
@@ -559,17 +559,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         .filter((s) => s.items.length > 0);
 
   // HR Team: hide the AI & Automations section and remove KPI Tracking from
-  // Operations & Intelligence per product direction.
-  const finalSections = role === "hr_team"
-    ? sections
-        .filter((s) => s.id !== "ai")
-        .map((s) =>
-          s.id === "operations"
-            ? { ...s, items: s.items.filter((i) => i.to !== "/kpi") }
-            : s,
-        )
-        .filter((s) => s.items.length > 0)
-    : sections;
+  // the Operations & Intelligence section.
+  if (role === "hr_team") {
+    sections = sections
+      .filter((s) => s.id !== "ai")
+      .map((s) =>
+        s.id === "operations"
+          ? { ...s, items: s.items.filter((i) => i.to !== "/kpi") }
+          : s,
+      )
+      .filter((s) => s.items.length > 0);
+  }
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
