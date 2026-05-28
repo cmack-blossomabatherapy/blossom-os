@@ -3603,6 +3603,48 @@ export type Database = {
           },
         ]
       }
+      evaluation_ai_insights: {
+        Row: {
+          body: string
+          created_at: string
+          dismissed: boolean
+          generated_at: string
+          id: string
+          recommended_action: string | null
+          scope: string
+          scope_id: string | null
+          severity: string
+          source_data: Json | null
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          recommended_action?: string | null
+          scope?: string
+          scope_id?: string | null
+          severity?: string
+          source_data?: Json | null
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          dismissed?: boolean
+          generated_at?: string
+          id?: string
+          recommended_action?: string | null
+          scope?: string
+          scope_id?: string | null
+          severity?: string
+          source_data?: Json | null
+          title?: string
+        }
+        Relationships: []
+      }
       evaluation_audit_log: {
         Row: {
           action: string
@@ -3635,6 +3677,75 @@ export type Database = {
           staff_id?: string | null
         }
         Relationships: []
+      }
+      evaluation_coaching_plans: {
+        Row: {
+          check_in_dates: Json
+          closed_at: string | null
+          concern_category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          evaluation_id: string | null
+          expectations: string | null
+          id: string
+          outcome: string | null
+          required_improvements: string | null
+          staff_id: string
+          status: string
+          support_resources: string | null
+          updated_at: string
+        }
+        Insert: {
+          check_in_dates?: Json
+          closed_at?: string | null
+          concern_category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          evaluation_id?: string | null
+          expectations?: string | null
+          id?: string
+          outcome?: string | null
+          required_improvements?: string | null
+          staff_id: string
+          status?: string
+          support_resources?: string | null
+          updated_at?: string
+        }
+        Update: {
+          check_in_dates?: Json
+          closed_at?: string | null
+          concern_category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          evaluation_id?: string | null
+          expectations?: string | null
+          id?: string
+          outcome?: string | null
+          required_improvements?: string | null
+          staff_id?: string
+          status?: string
+          support_resources?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_coaching_plans_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_coaching_plans_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       evaluation_cycles: {
         Row: {
@@ -3877,6 +3988,75 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluation_goals: {
+        Row: {
+          assigned_by: string | null
+          carry_over: boolean
+          category: string
+          completion_date: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          evaluation_id: string | null
+          id: string
+          notes: string | null
+          progress: number
+          staff_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          carry_over?: boolean
+          category?: string
+          completion_date?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          evaluation_id?: string | null
+          id?: string
+          notes?: string | null
+          progress?: number
+          staff_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          carry_over?: boolean
+          category?: string
+          completion_date?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          evaluation_id?: string | null
+          id?: string
+          notes?: string | null
+          progress?: number
+          staff_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_goals_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_goals_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_meetings: {
         Row: {
           attendees: string | null
@@ -3965,6 +4145,60 @@ export type Database = {
           },
         ]
       }
+      evaluation_performance_scores: {
+        Row: {
+          category: string | null
+          created_at: string
+          evaluation_id: string
+          goals_score: number | null
+          id: string
+          leadership_score: number | null
+          overall_score: number | null
+          self_score: number | null
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          evaluation_id: string
+          goals_score?: number | null
+          id?: string
+          leadership_score?: number | null
+          overall_score?: number | null
+          self_score?: number | null
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          evaluation_id?: string
+          goals_score?: number | null
+          id?: string
+          leadership_score?: number | null
+          overall_score?: number | null
+          self_score?: number | null
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_performance_scores_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_performance_scores_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_responses: {
         Row: {
           answers_json: Json
@@ -4009,6 +4243,47 @@ export type Database = {
             columns: ["form_id"]
             isOneToOne: false
             referencedRelation: "evaluation_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_risk_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          flag_type: string
+          id: string
+          resolved: boolean
+          resolved_at: string | null
+          severity: string
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          flag_type: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          staff_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          flag_type?: string
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          severity?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_risk_flags_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
             referencedColumns: ["id"]
           },
         ]
@@ -4156,6 +4431,63 @@ export type Database = {
           {
             foreignKeyName: "evaluation_staff_supervisor_id_fkey"
             columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_training_assignments: {
+        Row: {
+          assigned_by: string | null
+          completion_date: string | null
+          created_at: string
+          due_date: string | null
+          evaluation_id: string | null
+          id: string
+          reason: string | null
+          staff_id: string
+          status: string
+          training_topic: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          evaluation_id?: string | null
+          id?: string
+          reason?: string | null
+          staff_id: string
+          status?: string
+          training_topic: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          evaluation_id?: string | null
+          id?: string
+          reason?: string | null
+          staff_id?: string
+          status?: string
+          training_topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_training_assignments_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_training_assignments_staff_id_fkey"
+            columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "evaluation_staff"
             referencedColumns: ["id"]
