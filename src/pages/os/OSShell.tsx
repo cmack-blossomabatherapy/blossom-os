@@ -568,6 +568,36 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // QA Team — only Evaluations and Reports are active. Everything else is
+  // disabled and shown as Coming Soon.
+  const QA_TEAM_SECTIONS: NavSection[] = [
+    {
+      id: "home", label: "Home", items: [
+        { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
+      ],
+    },
+    {
+      id: "quality", label: "Quality & Compliance", items: [
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+      ],
+    },
+    {
+      id: "records", label: "Records", items: [
+        { to: "/clients", label: "Clients", icon: Heart, module: "clients", disabled: true },
+        { to: "/cases", label: "Cases", icon: FolderKanban, module: "cases", disabled: true },
+        { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations", disabled: true },
+        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff", disabled: true },
+      ],
+    },
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
+        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi", disabled: true },
+      ],
+    },
+  ];
+
   let sections: NavSection[] = role === "executive_leadership"
     ? EXEC_LEADERSHIP_SECTIONS
     : role === "marketing_team"
@@ -586,6 +616,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? CASE_MANAGER_SECTIONS
     : role === "hr_team"
     ? HR_TEAM_SECTIONS
+    : role === "qa_team"
+    ? QA_TEAM_SECTIONS
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
