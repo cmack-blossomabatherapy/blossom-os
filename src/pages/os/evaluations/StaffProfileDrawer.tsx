@@ -13,6 +13,9 @@ import { toast } from "@/hooks/use-toast";
 import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "./statusBadges";
 import { createFormToken, queueEvaluationEmail, templateVars, buildFormUrl } from "./workflow";
+import type { Permissions } from "./permissions";
+import { logAudit, AUDIT_LABELS, type AuditEntry } from "./audit";
+import { buildEvaluationSummaryHtml, openPrintableSummary } from "./pdf";
 
 interface Props {
   staff: EvalStaff | null;
@@ -23,6 +26,8 @@ interface Props {
   templates: EvalEmailTemplate[];
   responses: EvalResponse[];
   allStaff: EvalStaff[];
+  audit: AuditEntry[];
+  permissions: Permissions;
   onClose: () => void;
   onChanged: () => void;
 }
@@ -36,7 +41,7 @@ function completionPct(e: Evaluation): number {
   return Math.round((n / 4) * 100);
 }
 
-export default function StaffProfileDrawer({ staff, evaluations, cycles, meetings, notes, templates, responses, allStaff, onClose, onChanged }: Props) {
+export default function StaffProfileDrawer({ staff, evaluations, cycles, meetings, notes, templates, responses, allStaff, audit, permissions, onClose, onChanged }: Props) {
   const [noteText, setNoteText] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingType, setMeetingType] = useState("Zoom");
@@ -61,20 +66,22 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
   const currentResponses = current ? responses.filter((r) => r.evaluation_id === current.id) : [];
   const reviewer = staff?.supervisor_id ? allStaff.find((s) => s.id === staff.supervisor_id) ?? null : null;
   const tplByKey = useMemo(() => Object.fromEntries(templates.map((t) => [t.template_key, t])), [templates]);
+  const staffAudit = useMemo(() => (staff ? audit.filter((a) => a.staff_id === staff.id || (current && a.evaluation_id === current.id)) : []), [staff, audit, current]);
 
   async function startNewEvaluation(type: "Quarterly" | "Annual") {
     if (!staff) return;
     setWorking(true);
     const due = new Date();
     due.setDate(due.getDate() + (type === "Quarterly" ? 30 : 60));
-    const { error } = await supabase.from("evaluations").insert({
+    const { data: created, error } = await supabase.from("evaluations").insert({
       staff_id: staff.id,
       evaluation_type: type,
       next_review_date: due.toISOString().slice(0, 10),
       final_status: "In Progress",
-    });
+    }).select().maybeSingle();
     setWorking(false);
     if (error) return toast({ title: "Could not create evaluation", description: error.message, variant: "destructive" });
+    await logAudit({ evaluationId: created?.id, staffId: staff.id, action: "evaluation_created", details: { type } });
     toast({ title: "Evaluation started", description: `${type} evaluation created for ${staff.first_name}.` });
     onChanged();
   }
@@ -130,8 +137,17 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
     }
     if (templateKey === "self_request") {
       await supabase.from("evaluations").update({ self_status: "Sent", final_status: "In Progress" }).eq("id", current.id);
+      await logAudit({ evaluationId: current.id, staffId: staff.id, action: "self_eval_sent" });
     } else if (templateKey === "leadership_request") {
+      // Block leadership review before self complete unless override
+      if (current.self_status !== "Completed" && !permissions.canOverrideRules) {
+        setWorking(false);
+        return toast({ title: "Self evaluation not complete", description: "Wait for self evaluation, or ask HR to override.", variant: "destructive" });
+      }
       await supabase.from("evaluations").update({ leadership_status: "In Progress" }).eq("id", current.id);
+      await logAudit({ evaluationId: current.id, staffId: staff.id, action: "leadership_review_sent", overrideReason: current.self_status !== "Completed" ? "HR override: self not yet complete" : undefined });
+    } else if (templateKey === "self_reminder" || templateKey === "leadership_reminder" || templateKey === "overdue_notice") {
+      await logAudit({ evaluationId: current.id, staffId: staff.id, action: "reminder_sent", details: { template: templateKey } });
     }
     setWorking(false);
     toast({ title: "Email queued", description: "See Email Queue tab. Connect email provider to deliver live." });
@@ -149,6 +165,7 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
       meeting_link: meetingLink || null,
     });
     await supabase.from("evaluations").update({ meeting_status: "Scheduled" }).eq("id", current.id);
+    await logAudit({ evaluationId: current.id, staffId: staff.id, action: "meeting_scheduled", details: { date: meetingDate, type: meetingType } });
     setWorking(false);
     setMeetingDate("");
     setMeetingLink("");
@@ -164,6 +181,7 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
       await supabase.from("evaluation_meetings").update({ meeting_status: "Completed", completed_at: new Date().toISOString() }).eq("id", open.id);
     }
     await supabase.from("evaluations").update({ meeting_status: "Completed" }).eq("id", current.id);
+    await logAudit({ evaluationId: current.id, staffId: staff?.id, action: "meeting_completed" });
     setWorking(false);
     toast({ title: "Meeting marked complete" });
     onChanged();
@@ -171,11 +189,24 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
 
   async function completeEvaluation() {
     if (!current) return;
+    // Data quality: must have leadership review complete
+    if (current.leadership_status !== "Completed" && !permissions.canOverrideRules) {
+      return toast({ title: "Leadership review required", description: "Complete leadership review first, or ask HR to override.", variant: "destructive" });
+    }
+    if (current.meeting_status !== "Completed" && !permissions.canOverrideRules) {
+      const reason = window.prompt("Meeting not marked complete. Enter override reason (or cancel):");
+      if (!reason) return;
+      await logAudit({ evaluationId: current.id, staffId: staff?.id, action: "override_used", overrideReason: reason, details: { step: "finalize_without_meeting" } });
+    }
+    if (!permissions.canFinalize) {
+      return toast({ title: "Not authorized", description: "Your role cannot finalize evaluations.", variant: "destructive" });
+    }
     setWorking(true);
     await supabase.from("evaluations").update({
       final_status: "Complete",
       completed_at: new Date().toISOString(),
     }).eq("id", current.id);
+    await logAudit({ evaluationId: current.id, staffId: staff?.id, action: "evaluation_finalized" });
     // queue completion notice
     if (staff) {
       const tpl = tplByKey["completed_notice"];
@@ -195,8 +226,10 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
 
   async function reopenEvaluation() {
     if (!current) return;
+    if (!permissions.canReopen) return toast({ title: "Not authorized", variant: "destructive" });
     setWorking(true);
     await supabase.from("evaluations").update({ final_status: "In Progress", completed_at: null }).eq("id", current.id);
+    await logAudit({ evaluationId: current.id, staffId: staff?.id, action: "evaluation_reopened" });
     setWorking(false);
     toast({ title: "Evaluation reopened" });
     onChanged();
@@ -206,10 +239,21 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
     if (!current || !noteText.trim()) return;
     setWorking(true);
     await supabase.from("evaluation_notes").insert({ evaluation_id: current.id, note: noteText.trim() });
+    await logAudit({ evaluationId: current.id, staffId: staff?.id, action: "note_added" });
     setWorking(false);
     setNoteText("");
     toast({ title: "Note added" });
     onChanged();
+  }
+
+  function downloadSummary(evaluation: Evaluation) {
+    if (!staff) return;
+    const cycle = evaluation.cycle_id ? cycles.find((c) => c.id === evaluation.cycle_id) ?? null : null;
+    const evalMeetings = meetings.filter((m) => m.evaluation_id === evaluation.id);
+    const evalNotes = notes.filter((n) => n.evaluation_id === evaluation.id);
+    const evalResponses = responses.filter((r) => r.evaluation_id === evaluation.id);
+    const html = buildEvaluationSummaryHtml({ staff, evaluation, cycle, reviewer, meetings: evalMeetings, notes: evalNotes, responses: evalResponses });
+    openPrintableSummary(html);
   }
 
   if (!staff) return null;
