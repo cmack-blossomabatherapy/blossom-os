@@ -1,14 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  ClipboardCheck, Sparkles, Search, Plus, Filter, Calendar, MessageSquare,
-  Target, TrendingUp, Award, ChevronRight, X, CheckCircle2, Clock,
-  AlertCircle, Heart, ArrowRight, Send, FileText, Users,
-} from "lucide-react";
-import { OSShell } from "./OSShell";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
+import EvaluationsPage from "./evaluations/EvaluationsPage";
+export default EvaluationsPage;
 
 /* ---------------- types ---------------- */
 type ReviewType = "30_day" | "60_day" | "90_day" | "annual" | "probationary" | "ad_hoc";
