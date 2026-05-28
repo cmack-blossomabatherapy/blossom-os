@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
-  Employee, HolidayProfile, SharedRouting,
-  SEED_COVERAGE_TEMPLATES, SEED_EMPLOYEES, SEED_HOLIDAY_PROFILES, SEED_QUEUES, SEED_SHARED,
+  Employee, HolidayProfile, RetellCall, SharedRouting,
+  SEED_COVERAGE_TEMPLATES, SEED_EMPLOYEES, SEED_HOLIDAY_PROFILES, SEED_QUEUES,
+  SEED_RETELL_CALLS, SEED_SHARED,
 } from "@/data/phoneSystem";
 
 type PhoneSystemState = {
@@ -10,6 +11,7 @@ type PhoneSystemState = {
   employees: Employee[];
   shared: SharedRouting[];
   requests: ChangeRequest[];
+  retellCalls: RetellCall[];
   settings: AdminSettings;
   coverageTemplates: CoverageTemplate[];
   holidayProfiles: HolidayProfile[];
@@ -18,19 +20,21 @@ type PhoneSystemState = {
   setShared: (s: SharedRouting[]) => void;
   upsertRequest: (r: ChangeRequest) => void;
   deleteRequest: (id: string) => void;
+  upsertRetellCall: (c: RetellCall) => void;
   setSettings: (s: AdminSettings) => void;
   setCoverageTemplates: (t: CoverageTemplate[]) => void;
   setHolidayProfiles: (h: HolidayProfile[]) => void;
 };
 
 const Ctx = createContext<PhoneSystemState | null>(null);
-const KEY = "blossom.phone-system.v1";
+const KEY = "blossom.phone-system.v2";
 
 export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const [queues, setQueues] = useState<CallQueue[]>(SEED_QUEUES);
   const [employees, setEmployees] = useState<Employee[]>(SEED_EMPLOYEES);
   const [shared, setShared] = useState<SharedRouting[]>(SEED_SHARED);
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
+  const [retellCalls, setRetellCalls] = useState<RetellCall[]>(SEED_RETELL_CALLS);
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_SETTINGS);
   const [coverageTemplates, setCoverageTemplates] = useState<CoverageTemplate[]>(SEED_COVERAGE_TEMPLATES);
   const [holidayProfiles, setHolidayProfiles] = useState<HolidayProfile[]>(SEED_HOLIDAY_PROFILES);
@@ -45,6 +49,7 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
         if (data.employees) setEmployees(data.employees);
         if (data.shared) setShared(data.shared);
         if (data.requests) setRequests(data.requests);
+        if (data.retellCalls) setRetellCalls(data.retellCalls);
         if (data.settings) setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
         if (data.coverageTemplates) setCoverageTemplates(data.coverageTemplates);
         if (data.holidayProfiles) setHolidayProfiles(data.holidayProfiles);
@@ -57,13 +62,13 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     try {
       localStorage.setItem(KEY, JSON.stringify({
-        queues, employees, shared, requests, settings, coverageTemplates, holidayProfiles,
+        queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
       }));
     } catch { /* ignore */ }
-  }, [queues, employees, shared, requests, settings, coverageTemplates, holidayProfiles, hydrated]);
+  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, hydrated]);
 
   const value: PhoneSystemState = {
-    queues, employees, shared, requests, settings, coverageTemplates, holidayProfiles,
+    queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
     setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
     upsertRequest: (r) =>
       setRequests((prev) => {
@@ -74,6 +79,14 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
         return next;
       }),
     deleteRequest: (id) => setRequests((prev) => prev.filter((p) => p.id !== id)),
+    upsertRetellCall: (c) =>
+      setRetellCalls((prev) => {
+        const idx = prev.findIndex((p) => p.id === c.id);
+        if (idx === -1) return [c, ...prev];
+        const next = [...prev];
+        next[idx] = c;
+        return next;
+      }),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
