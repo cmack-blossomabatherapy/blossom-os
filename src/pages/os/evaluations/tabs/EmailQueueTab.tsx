@@ -36,9 +36,18 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
     toast({ title: "Re-queued" });
   }
   async function sendNow(id: string) {
-    // No live email integration — simulate as "Sent"
-    await updateEmail(id, { status: "Sent", sent_at: new Date().toISOString() });
-    toast({ title: "Sent", description: "Marked as sent. Connect an email provider to deliver live." });
+    const { data: res, error } = await supabase.functions.invoke("send-evaluation-emails", { body: { id } });
+    if (error) return toast({ title: "Send failed", description: error.message, variant: "destructive" });
+    if ((res as any)?.failed > 0) toast({ title: "Send failed", description: "Check Error column for details.", variant: "destructive" });
+    else toast({ title: "Sent", description: "Email delivered via Resend." });
+    data.refresh();
+  }
+  async function sendAllQueued() {
+    const { data: res, error } = await supabase.functions.invoke("send-evaluation-emails", { body: { limit: 100 } });
+    if (error) return toast({ title: "Batch send failed", description: error.message, variant: "destructive" });
+    const r = res as any;
+    toast({ title: "Batch processed", description: `Sent ${r?.sent ?? 0}, failed ${r?.failed ?? 0}.` });
+    data.refresh();
   }
 
   async function saveTemplate() {
@@ -54,17 +63,22 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2 text-xs">
-        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3 flex items-start gap-2 text-xs">
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
         <div>
-          <p className="font-medium text-amber-700 dark:text-amber-400">Email integration required</p>
-          <p className="text-muted-foreground mt-0.5">Emails are queued in the system with full subject + body rendered from templates. Connect the Blossom company email account to deliver automatically. Until then use Send Now / Mark Sent to track manual delivery.</p>
+          <p className="font-medium text-emerald-700 dark:text-emerald-400">Live email delivery enabled</p>
+          <p className="text-muted-foreground mt-0.5">Queued evaluation emails send automatically every 5 minutes from <strong>evaluations@blossom.abacommandcenter.com</strong>. Use <em>Send all queued</em> to dispatch immediately.</p>
         </div>
       </div>
 
       {/* QUEUE */}
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Email Queue</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Email Queue</h3>
+          <Button size="sm" variant="outline" onClick={sendAllQueued} className="gap-1.5">
+            <Send className="h-3.5 w-3.5" /> Send all queued now
+          </Button>
+        </div>
       {data.emails.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/70 p-10 text-center text-sm text-muted-foreground">
           No emails queued yet.
