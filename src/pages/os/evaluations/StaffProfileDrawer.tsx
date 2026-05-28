@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye, MoreHorizontal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
