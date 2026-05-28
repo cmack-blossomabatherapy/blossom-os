@@ -49,6 +49,7 @@ export default function EvaluationsPage() {
   const perms = useMemo(() => permissionsForRole(role), [role]);
   const data = useEvaluationsData();
   const [tab, setTab] = useState("overview");
+  const [staffView, setStaffView] = useState<import("./tabs/StaffTab").SavedView | undefined>(undefined);
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [openStaffId, setOpenStaffId] = useState<string | null>(null);
@@ -200,10 +201,14 @@ export default function EvaluationsPage() {
           </div>
 
           <TabsContent value="overview">
-            <OverviewTab data={scopedData} onGoToStaff={() => setTab("staff")} onGoToEmails={() => setTab("emails")} />
+            <OverviewTab
+              data={scopedData}
+              onDrill={(v) => { setStaffView(v); setTab("staff"); }}
+              onGoToEmails={() => setTab("emails")}
+            />
           </TabsContent>
           <TabsContent value="staff">
-            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} />
+            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} initialView={staffView} />
           </TabsContent>
           <TabsContent value="schedule"><ScheduleTab data={scopedData} onOpenStaff={setOpenStaffId} /></TabsContent>
           {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
