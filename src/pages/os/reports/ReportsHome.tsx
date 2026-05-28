@@ -33,6 +33,16 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [aiReports, setAiReports] = useState<AiReport[]>(() => listAiReports());
+  useEffect(() => {
+    const refresh = () => setAiReports(listAiReports());
+    window.addEventListener("blossom-ai-reports-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("blossom-ai-reports-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
   const filteredReports = search
     ? reports.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
     : reports;
