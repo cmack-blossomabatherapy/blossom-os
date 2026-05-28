@@ -311,8 +311,7 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                 <div>
                   <p className="text-sm font-medium">{current.evaluation_type} Evaluation</p>
                   <p className="text-xs text-muted-foreground">
-                    {current.cycle_id && cycleById[current.cycle_id] ? cycleById[current.cycle_id].name : "Ad-hoc cycle"}
-                    {" · Due "}{fmtDate(current.next_review_date)}
+                    Due {fmtDate(current.next_review_date)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -540,7 +539,7 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
               {past.map((e) => (
                 <li key={e.id} className="px-3 py-2 flex items-center justify-between text-xs gap-2">
                   <div>
-                    <p className="font-medium">{e.evaluation_type} · {e.cycle_id && cycleById[e.cycle_id] ? cycleById[e.cycle_id].name : "Ad-hoc"}</p>
+                    <p className="font-medium">{e.evaluation_type} Evaluation</p>
                     <p className="text-muted-foreground">Reviewer: {staff.supervisor_name ?? "—"} · Completed {fmtDate(e.completed_at)}</p>
                   </div>
                   <div className="flex items-center gap-2">

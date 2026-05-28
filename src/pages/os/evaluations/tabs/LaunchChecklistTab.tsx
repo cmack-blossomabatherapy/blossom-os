@@ -7,7 +7,6 @@ export default function LaunchChecklistTab({ data }: { data: EvaluationsData }) 
   const items = useMemo(() => {
     const activeStaff = data.staff.filter((s) => s.active_status && !(s.notes ?? "").startsWith("[TEST]"));
     const reviewersAssigned = activeStaff.filter((s) => s.supervisor_id).length;
-    const firstCycle = data.cycles.length > 0;
     const testEvalDone = data.evaluations.some((e) => e.final_status === "Complete");
     const formsReviewed = data.forms.length >= 8;
     const templatesReviewed = data.templates.length >= 7;
@@ -18,7 +17,6 @@ export default function LaunchChecklistTab({ data }: { data: EvaluationsData }) 
       { label: "Email integration connected", done: !!data.settings?.email_connected, detail: data.settings?.email_connected ? "Connected" : "Not connected — emails are queued only" },
       { label: "Form templates reviewed", done: formsReviewed, detail: `${data.forms.length} templates available` },
       { label: "Email templates reviewed", done: templatesReviewed, detail: `${data.templates.length} templates available` },
-      { label: "First evaluation cycle created", done: firstCycle, detail: firstCycle ? `${data.cycles.length} cycle(s)` : "No cycles yet" },
       { label: "At least one evaluation completed end-to-end", done: testEvalDone, detail: testEvalDone ? "Verified" : "Pending" },
       { label: "Reports reviewed", done: data.evaluations.length > 0, detail: data.evaluations.length > 0 ? "Data flowing" : "No evaluations yet" },
     ];
@@ -33,7 +31,7 @@ export default function LaunchChecklistTab({ data }: { data: EvaluationsData }) 
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-sm font-semibold">Launch readiness</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Confirm each item before using Evaluations for live cycles.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Confirm each item before going live with Evaluations.</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-semibold">{pct}%</div>

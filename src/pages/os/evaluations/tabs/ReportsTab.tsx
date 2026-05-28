@@ -55,7 +55,6 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [cycleFilter, setCycleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -69,13 +68,12 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       if (stateFilter !== "all" && (s.state ?? "") !== stateFilter) return false;
       if (roleFilter !== "all" && s.role !== roleFilter) return false;
       if (typeFilter !== "all" && e.evaluation_type !== typeFilter) return false;
-      if (cycleFilter !== "all" && (e.cycle_id ?? "") !== cycleFilter) return false;
       if (statusFilter !== "all" && e.final_status !== statusFilter) return false;
       if (from && (!e.created_at || new Date(e.created_at) < new Date(from))) return false;
       if (to && (!e.created_at || new Date(e.created_at) > new Date(to))) return false;
       return true;
     });
-  }, [data.evaluations, staffById, stateFilter, roleFilter, typeFilter, cycleFilter, statusFilter, from, to]);
+  }, [data.evaluations, staffById, stateFilter, roleFilter, typeFilter, statusFilter, from, to]);
 
   const today = new Date();
   const quarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
@@ -186,10 +184,6 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
           <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="Quarterly">Quarterly</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent>
-        </Select>
-        <Select value={cycleFilter} onValueChange={setCycleFilter}>
-          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Cycle" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Cycles</SelectItem>{data.cycles.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>

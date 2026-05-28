@@ -124,7 +124,6 @@ export default function PublicFormPage() {
           {payload.employee.state ? ` · ${payload.employee.state}` : ""}
         </p>
         <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground rounded-xl border bg-card p-3">
-          <div><span className="font-medium text-foreground">Cycle:</span> {payload.cycle_name}</div>
           <div><span className="font-medium text-foreground">Type:</span> {payload.evaluation.evaluation_type} {payload.response_type}</div>
           <div><span className="font-medium text-foreground">Reviewer:</span> {payload.reviewer_name ?? "—"}</div>
           <div><span className="font-medium text-foreground">Due:</span> {payload.due_date ?? "TBD"}</div>
