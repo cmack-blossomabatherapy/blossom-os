@@ -9415,10 +9415,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      alerts_can_read: { Args: { _user_id: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       can_read_all_states: { Args: never; Returns: boolean }
       current_user_state: { Args: never; Returns: string }
       derive_state_from_labels: { Args: { labels: string }; Returns: string }
+      eval_can_access: { Args: { _user_id: string }; Returns: boolean }
       evaluate_hr_admin_assistant_graduation: {
         Args: { _enrollment_id: string }
         Returns: undefined
@@ -9444,6 +9446,7 @@ export type Database = {
       is_platform_admin: { Args: { _uid: string }; Returns: boolean }
       is_vault_admin: { Args: { _user_id: string }; Returns: boolean }
       kpi_can_manage: { Args: { _user_id: string }; Returns: boolean }
+      kpi_can_read: { Args: { _user_id: string }; Returns: boolean }
       log_employee_timeline_event: {
         Args: {
           _description: string
@@ -9492,6 +9495,7 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: undefined
       }
+      recruiting_can_read: { Args: { _user_id: string }; Returns: boolean }
       recruiting_can_write: { Args: { _user_id: string }; Returns: boolean }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
       regenerate_staff_evaluations: {
