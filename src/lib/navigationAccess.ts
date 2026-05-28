@@ -72,21 +72,21 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
   hr: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_admin: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_manager: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
