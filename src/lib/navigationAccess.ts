@@ -144,6 +144,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Onboarding", path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews", path: "/hr/reviews", perm: "hr.reviews.view" },
     { label: "Training Admin", path: "/hr/training", perm: "hr.training.view" },
+    { label: "Training Academy", path: "/hr/training-academy", perm: "hr.training.view" },
     { label: "Time Clock", path: "/hr/time-clock", perm: "hr.timeclock.view" },
     { label: "Hours", path: "/hr/hours", perm: "hr.hours.view" },
     { label: "Payroll", path: "/hr/payroll", perm: "hr.payroll.runs.view" },
@@ -152,7 +153,6 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "HR Reports", path: "/hr/reports", perm: "hr.reports.view" },
     { label: "HR Settings", path: "/hr/settings", perm: "hr.settings.manage" },
   ] },
-  { title: "Admin", items: [
     { label: "Team", path: "/team", perm: "team.view" },
     { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
     { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
