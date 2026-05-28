@@ -132,11 +132,6 @@ export default function ReportsHome() {
         </div>
       </section>
 
-      {/* ============== FEATURED DASHBOARDS ============== */}
-      {featured.length > 0 && (
-        <></>
-      )}
-
       {/* ============== AI-GENERATED REPORTS ============== */}
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3">
