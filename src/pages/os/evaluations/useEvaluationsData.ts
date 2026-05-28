@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { EvalStaff, EvalCycle, Evaluation, EvalMeeting, EvalNote, EvalEmail } from "./types";
+import type {
+  EvalStaff, EvalCycle, Evaluation, EvalMeeting, EvalNote, EvalEmail,
+  EvalForm, EvalEmailTemplate, EvalResponse,
+} from "./types";
 
 export interface EvaluationsData {
   staff: EvalStaff[];
@@ -9,6 +12,9 @@ export interface EvaluationsData {
   meetings: EvalMeeting[];
   notes: EvalNote[];
   emails: EvalEmail[];
+  forms: EvalForm[];
+  templates: EvalEmailTemplate[];
+  responses: EvalResponse[];
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -20,17 +26,23 @@ export function useEvaluationsData(): EvaluationsData {
   const [meetings, setMeetings] = useState<EvalMeeting[]>([]);
   const [notes, setNotes] = useState<EvalNote[]>([]);
   const [emails, setEmails] = useState<EvalEmail[]>([]);
+  const [forms, setForms] = useState<EvalForm[]>([]);
+  const [templates, setTemplates] = useState<EvalEmailTemplate[]>([]);
+  const [responses, setResponses] = useState<EvalResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [s, c, e, m, n, em] = await Promise.all([
+    const [s, c, e, m, n, em, fr, tp, rs] = await Promise.all([
       supabase.from("evaluation_staff").select("*").order("last_name"),
       supabase.from("evaluation_cycles").select("*").order("start_date", { ascending: false }),
       supabase.from("evaluations").select("*").order("created_at", { ascending: false }),
       supabase.from("evaluation_meetings").select("*").order("meeting_date", { ascending: false }),
       supabase.from("evaluation_notes").select("*").order("created_at", { ascending: false }),
       supabase.from("evaluation_emails").select("*").order("created_at", { ascending: false }),
+      supabase.from("evaluation_forms").select("*").order("name"),
+      supabase.from("evaluation_email_templates").select("*").order("name"),
+      supabase.from("evaluation_responses").select("*").order("submitted_at", { ascending: false }),
     ]);
     setStaff((s.data ?? []) as EvalStaff[]);
     setCycles((c.data ?? []) as EvalCycle[]);
@@ -38,10 +50,13 @@ export function useEvaluationsData(): EvaluationsData {
     setMeetings((m.data ?? []) as EvalMeeting[]);
     setNotes((n.data ?? []) as EvalNote[]);
     setEmails((em.data ?? []) as EvalEmail[]);
+    setForms((fr.data ?? []) as unknown as EvalForm[]);
+    setTemplates((tp.data ?? []) as EvalEmailTemplate[]);
+    setResponses((rs.data ?? []) as unknown as EvalResponse[]);
     setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  return { staff, cycles, evaluations, meetings, notes, emails, loading, refresh };
+  return { staff, cycles, evaluations, meetings, notes, emails, forms, templates, responses, loading, refresh };
 }
