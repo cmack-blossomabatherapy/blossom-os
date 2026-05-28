@@ -34,6 +34,8 @@ import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportDetail from "./pages/os/reports/ReportDetail";
+import AiReportNew from "./pages/os/reports/AiReportNew";
+import AiReportView from "./pages/os/reports/AiReportView";
 import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
