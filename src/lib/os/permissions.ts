@@ -291,7 +291,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: true, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
   qa_team: {
-    modules: ["dashboard", "clients", "cases", "authorizations", "staff", "evaluations", "reports", "sop", "kpi", "ai_assistant"],
+    modules: ["dashboard", "clients", "cases", "authorizations", "staff", "evaluations", "reports", "sop", "kpi"],
     scope: "company",
     actions: { dashboard: VIEW, clients: VIEW, cases: VIEW_EDIT.concat("approve") as OSAction[], staff: VIEW, reports: ["view", "export"] },
     leadership: { kpis: false, operationalAnalytics: true, staffingAlerts: false, workflowBottlenecks: true, aiInsights: false },
