@@ -1,50 +1,66 @@
-# Fix: Phone System menu missing for HR Team and Super Admin
 
-## Problem
+# Evaluation & Outreach Email Plan
 
-`src/components/layout/AppSidebar.tsx` wires `phoneSystemSection` into:
+Two separate email lanes, each with the right tool for the job.
 
-1. `hrSections` (line 619) — works when a real HR user logs in (`isHrOnly === true`).
-2. The impersonation branch (line 655) — but **only** when `osRole === "marketing_team"`.
-3. The default branch (line 662) — gated on `showOperations || roles.includes("marketing")`.
+## Lane 1 — Automated notifications via Resend (already connected)
 
-This breaks the two most common viewing modes:
+Resend is linked. We just need to actually drain the `evaluation_emails` queue and send.
 
-- **Super Admin using "View as Role" → HR Team**: takes the impersonation branch, which uses `buildGenericRoleSections(osRole)` and does not inject the phone section for `hr_team`.
-- **Super Admin (not impersonating)**: `showOperations` requires `roles` to include `admin` / `exec` / `ops_manager`. Accounts that are admin via `isAdmin` only (not via the `roles` array) get the section dropped.
+1. **New edge function `send-evaluation-emails`**
+   - Reads `evaluation_emails` rows where `status = 'Queued'` and `scheduled_send_at <= now()`
+   - Renders branded HTML per `template_key` (self-eval request, reviewer assignment, reminder, overdue, completion) using the Blossom email design system
+   - Sends via Resend gateway (same pattern as `send-training-assignment-email`)
+   - Updates row to `Sent` with `sent_at`, or `Failed` with `failed_reason`
+   - Idempotency by `evaluation_emails.id`
 
-The Marketing impersonation path already works; real HR users also work. Everything else silently hides the menu.
+2. **Cron schedule** every 5 min via `pg_cron` + `pg_net` to invoke the function.
 
-## Fix
+3. **"Send now" button** in the existing `EmailQueueTab` to dispatch a single row on demand.
 
-Edit only `src/components/layout/AppSidebar.tsx`:
+4. **From address**: `notifications@<your-resend-domain>` — confirm which Resend-verified domain we should use (the connection is "ABACommandCenter.com Resend", so likely `notifications@abacommandcenter.com`).
 
-1. **Impersonation branch (around line 652-657)**: include `phoneSystemSection` for `osRole` in `["hr_team", "marketing_team", "super_admin"]` (covers HR + Marketing impersonation, and a defensive case for super_admin self-view).
+## Lane 2 — Reviewer outreach via personal Outlook (per-user OAuth)
 
-   ```ts
-   : impersonating && osRole
-   ? [
-       ...buildGenericRoleSections(osRole),
-       ...(["hr_team", "marketing_team", "super_admin"].includes(osRole)
-         ? [phoneSystemSection]
-         : []),
-       intelligenceSection,
-     ]
-   ```
+This is the bigger piece. The Microsoft Outlook **workspace connector only authenticates one shared mailbox** — it cannot send "as" each reviewer. For each BCBA/HR person to send from their own Outlook (so replies land in their inbox and the message appears in their Sent folder), we need per-user Microsoft OAuth.
 
-2. **Default (Super Admin / Ops) branch (around line 662)**: also include when `isAdmin` is true, so Super Admins always see it regardless of how their `roles` array is populated.
+**What this requires:**
 
-   ```ts
-   ...(isAdmin || showOperations || roles.includes("marketing")
-     ? [phoneSystemSection]
-     : []),
-   ```
+1. **Azure app registration** (one-time, done by you in Microsoft Entra)
+   - Redirect URI: `https://<project>.supabase.co/functions/v1/outlook-oauth-callback`
+   - Microsoft Graph delegated scopes: `Mail.Send`, `offline_access`, `User.Read`
+   - You provide `MS_CLIENT_ID` + `MS_CLIENT_SECRET` as secrets
 
-No other files change. Routes, provider, and pages are already wired correctly in `src/App.tsx` and the section/icons already exist in the sidebar — this is purely a visibility-gating bug.
+2. **New table `outlook_connections`**
+   - `user_id`, `ms_email`, `access_token` (encrypted), `refresh_token` (encrypted), `expires_at`, `scope`
+   - RLS: each user reads/writes only their own row
 
-## Verification
+3. **Edge functions**
+   - `outlook-oauth-start` → builds Microsoft consent URL, returns it to client
+   - `outlook-oauth-callback` → exchanges code for tokens, stores in `outlook_connections`
+   - `send-outlook-email` → loads caller's tokens, refreshes if expired, POSTs to `https://graph.microsoft.com/v1.0/me/sendMail`
+   - `outlook-disconnect` → revokes/removes the row
 
-- Log in as Super Admin → expect "Phone System" group with 7 items in the sidebar.
-- View as Role → HR Team → expect "Phone System" to appear.
-- View as Role → Marketing Team → still appears (unchanged).
-- Real HR user → still appears via `hrSections` (unchanged).
+4. **UI**
+   - **Profile / Settings**: "Connect Outlook" button → after consent shows connected mailbox + Disconnect
+   - **Staff profile drawer** (1:1 outreach): "Email via Outlook" composer (To prefilled, Subject, Body, optional template); on send → `send-outlook-email`; log to `evaluation_emails` with `email_type='outreach'`, `template_key='outlook_manual'`
+   - **Cycle page** (bulk outreach): multi-select staff → compose once → loops `send-outlook-email` per recipient (sequential, 1/sec to respect Graph throttling), shows per-row success/fail, logs each to `evaluation_emails`
+   - Gracefully disabled with "Connect Outlook to send outreach" if the user has no `outlook_connections` row
+
+5. **Reply handling**: replies go to the reviewer's real Outlook inbox — no app-side ingestion in v1.
+
+## Routing summary
+
+| Email | Sender | How |
+|---|---|---|
+| Self-eval request to staff | Resend | Queue → cron dispatcher |
+| Reviewer assignment | Resend | Queue → cron dispatcher |
+| Reminder / overdue / completion | Resend | Queue → cron dispatcher |
+| 1:1 reviewer outreach from staff profile | Outlook (reviewer's mailbox) | On-demand `send-outlook-email` |
+| Bulk cycle outreach from HR | Outlook (HR user's mailbox) | Loop `send-outlook-email`, logged per-recipient |
+
+## Open questions before I build
+
+1. **Resend From address** — confirm the verified domain & sender (e.g. `notifications@abacommandcenter.com`).
+2. **Azure app** — do you already have an Entra/Azure AD app, or do I include step-by-step instructions for creating one and you'll provide `MS_CLIENT_ID` / `MS_CLIENT_SECRET`?
+3. **Scope of v1** — should I build both lanes in one pass, or ship Lane 1 (Resend dispatcher) first and add Lane 2 (Outlook OAuth) after you've created the Azure app?
