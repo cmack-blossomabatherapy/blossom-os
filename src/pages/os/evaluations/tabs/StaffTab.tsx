@@ -194,7 +194,7 @@ export default function StaffTab({
   }
 
   const confirmCopy = bulkConfirm === "inactive"
-    ? { title: "Mark staff inactive?", body: `You are about to mark ${selected.size} staff inactive. They will be hidden from active filters and skipped on new cycles. This cannot be undone without admin support.`, action: bulkMarkInactive, label: "Mark inactive" }
+    ? { title: "Mark staff inactive?", body: `You are about to mark ${selected.size} staff inactive. They will be hidden from active filters and skipped on upcoming evaluations. This cannot be undone without admin support.`, action: bulkMarkInactive, label: "Mark inactive" }
     : bulkConfirm === "self"
     ? { title: "Send self evaluations?", body: `You are about to queue self evaluation emails for ${selected.size} staff. Emails will appear in the Email Queue.`, action: () => bulkQueueEmail("Self Eval Request"), label: "Queue emails" }
     : bulkConfirm === "reminder"

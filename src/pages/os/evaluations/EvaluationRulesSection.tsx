@@ -163,7 +163,7 @@ export default function EvaluationRulesSection({
           <h2 className="text-sm font-semibold">Evaluation Rules</h2>
           <p className="text-[11.5px] text-muted-foreground mt-1 max-w-xl">
             Every staff member's evaluation schedule is built automatically from their hire date and these rules.
-            No more manually creating cycles — when someone is hired, their reviews are scheduled instantly.
+            No more manually scheduling reviews — when someone is hired, their evaluations are scheduled instantly.
           </p>
         </div>
         <div className="flex items-center gap-2">
