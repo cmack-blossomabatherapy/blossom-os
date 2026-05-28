@@ -2,13 +2,12 @@
 
 export type CandidateRole = "RBT" | "BCBA";
 
-export const RBT_STAGES = []as const;
+export const RBT_STAGES: readonly string[] = [];
+export const BCBA_STAGES: readonly string[] = [];
 
-export const BCBA_STAGES = []as const;
-
-export type RBTStage = (typeof RBT_STAGES)[number];
-export type BCBAStage = (typeof BCBA_STAGES)[number];
-export type CandidateStage = RBTStage | BCBAStage;
+export type RBTStage = string;
+export type BCBAStage = string;
+export type CandidateStage = string;
 
 export type CandidateStatus = "Active" | "On Hold" | "Withdrawn" | "Hired" | "Rejected";
 export type Source = "Apploi" | "Referral" | "Direct" | "Indeed";
@@ -26,12 +25,9 @@ export interface InterviewResponse {
 }
 
 export type AvailabilityCell = "available" | "preferred" | "unavailable";
-export const DAYS = []as const;
-export const TIME_SLOTS = []as const;
-export type AvailabilityGrid = Record<
-  (typeof DAYS)[number],
-  Record<(typeof TIME_SLOTS)[number], AvailabilityCell>
->;
+export const DAYS: readonly string[] = [];
+export const TIME_SLOTS: readonly string[] = [];
+export type AvailabilityGrid = Record<string, Record<string, AvailabilityCell>>;
 
 export type OnboardingStepStatus = "Not Started" | "In Progress" | "Complete" | "Blocked";
 export interface OnboardingStep {
