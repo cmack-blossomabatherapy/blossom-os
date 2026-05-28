@@ -114,90 +114,108 @@ function QuickLink({ to, label }: { to: string; label: string }) {
 // ---------- /phone — Dashboard ----------
 
 export function PhoneDashboard() {
-  const { queues, requests, employees, shared } = usePhoneSystem();
-  const active = requests.filter((r) => !["Closed", "Reverted", "Draft"].includes(r.status));
-  const draft = requests.filter((r) => r.status === "Draft");
+  const { queues, requests, shared, settings, retellCalls } = usePhoneSystem();
+  const openRequests = requests.filter((r) => !["Closed", "Reverted"].includes(r.status));
+  const followUpCalls = retellCalls.filter((c) => c.status === "New" || c.status === "Needs Follow-Up" || c.status === "Attempted");
   const recent = [...requests].slice(0, 5);
-  const sharedRequests = requests.filter((r) => r.routingScope === "Shared Department Routing" || r.routingScope === "Both");
-  const afterHoursChanges = requests.filter((r) => r.affectedRouting.some((a) => a.routingType === "After Hours" && a.selected));
-  const openRollbackTasks = requests
-    .filter((r) => !["Reverted", "Closed"].includes(r.status))
-    .reduce((sum, r) => sum + r.rollbackItems.filter((i) => !i.done).length, 0);
-  const sharedImpactCount = requests.reduce(
-    (sum, r) => sum + r.affectedRouting.filter((a) => a.selected && a.routingType !== "CQ").length, 0);
+  const stateCount = STATE_DIRECTORY.length;
 
   return (
     <Shell>
       <PageHeader
         title="Phone System"
-        description="Master telecom routing control for Blossom ABA Therapy."
+        description="Blossom routing, queues, and after-hours coverage — at a glance."
         actions={
           <Button asChild>
-            <Link to="/phone/requests/new">New Request <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link to="/phone/requests/new">New Change Request <ArrowRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Call Queues" value={queues.length} icon={PhoneForwarded} />
-        <StatCard label="Shared Routes" value={shared.length} icon={Share2} />
-        <StatCard label="Tracked Employees" value={employees.length} icon={Users} />
-        <StatCard label="Active Requests" value={active.length} icon={CalendarClock} />
+        <StatCard label="Main Numbers"           value={2}                    icon={Phone} />
+        <StatCard label="State Direct Numbers"   value={stateCount}           icon={PhoneIncoming} />
+        <StatCard label="Call Queues"            value={queues.length}        icon={PhoneForwarded} />
+        <StatCard label="Shared Routes"          value={shared.length}        icon={Share2} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4 mt-4">
-        <StatCard label="Shared Routing Requests" value={sharedRequests.length} icon={Share2} />
-        <StatCard label="After-Hours Changes" value={afterHoursChanges.length} icon={Moon} />
-        <StatCard label="Open Rollback Tasks" value={openRollbackTasks} icon={ListChecks} />
-        <StatCard label="Shared Routing Impacts" value={sharedImpactCount} icon={AlertTriangle} />
+      <div className="grid gap-4 md:grid-cols-3 mt-4">
+        <StatCard label="Open Change Requests"   value={openRequests.length}  icon={CalendarClock} />
+        <StatCard label="After-Hours AI Calls"   value={retellCalls.length}   icon={Moon} />
+        <StatCard label="Calls Needing Follow-Up" value={followUpCalls.length} icon={AlertTriangle} />
       </div>
-
-      <div className="mt-2 text-xs text-muted-foreground">Drafts: {draft.length}</div>
 
       <div className="grid gap-6 mt-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Recent Requests</CardTitle></CardHeader>
-          <CardContent>
-            {recent.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                No requests yet.{" "}
-                <Link to="/phone/requests/new" className="text-primary underline">Create one</Link>.
+          <CardHeader><CardTitle className="text-base">Today's Routing</CardTitle></CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Info label="Main Number"           value={settings.mainNumberPrimary} />
+              <Info label="Secondary Number"      value={settings.mainNumberSecondary} />
+              <Info label="Corporate Attendant"   value={CORPORATE_AUTO_ATTENDANT} />
+              <Info label="After-Hours Forward"   value={settings.afterHoursNumber} />
+              <Info label="Intake Hours"          value={`${settings.businessHours.adminWeekday} · ${settings.businessHours.adminFriday}`} />
+              <Info label="State Director Hours"  value={`${settings.businessHours.directorsWeekday} · ${settings.businessHours.directorsFriday}`} />
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="font-medium">Retell AI after-hours</span>
+                <Badge variant={settings.retellEnabled ? "default" : "secondary"}>
+                  {settings.retellEnabled ? "Enabled" : "Disabled"}
+                </Badge>
               </div>
-            ) : (
-              <div className="divide-y">
-                {recent.map((r) => (
-                  <Link
-                    key={r.id}
-                    to={`/phone/requests/${r.id}`}
-                    className="flex items-center justify-between py-3 hover:bg-muted/40 px-2 rounded-md"
-                  >
-                    <div>
-                      <div className="font-medium text-sm">
-                        {r.employeeOut || "Untitled"} · ext {r.currentExtension} → {r.newExtension}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.startDate} {r.startTime} – {r.endDate} {r.endTime}
-                      </div>
-                    </div>
-                    <StatusBadge status={r.status} />
-                  </Link>
-                ))}
-              </div>
-            )}
+              <Button size="sm" variant="ghost" asChild>
+                <Link to="/phone/ai-calls">View calls <ArrowRight className="ml-1 h-3 w-3" /></Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Quick Links</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Quick Links</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            <QuickLink to="/phone/lookup" label="Extension Lookup" />
-            <QuickLink to="/phone/shared" label="Shared Routing" />
-            <QuickLink to="/phone/requests" label="Request Tracker" />
-            <QuickLink to="/phone/directory" label="State Phone Directory" />
-            <QuickLink to="/phone/admin" label="Admin Settings" />
+            <QuickLink to="/phone/lookup"    label="Extension Lookup" />
+            <QuickLink to="/phone/directory" label="Routing Directory" />
+            <QuickLink to="/phone/shared"    label="Shared Routing" />
+            <QuickLink to="/phone/requests"  label="Change Requests" />
+            <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
+            <QuickLink to="/phone/admin"     label="Admin Settings" />
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader><CardTitle className="text-base">Recent Change Requests</CardTitle></CardHeader>
+        <CardContent>
+          {recent.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-8 text-center">
+              No change requests yet.{" "}
+              <Link to="/phone/requests/new" className="text-primary underline">Create one</Link>.
+            </div>
+          ) : (
+            <div className="divide-y">
+              {recent.map((r) => (
+                <Link
+                  key={r.id}
+                  to={`/phone/requests/${r.id}`}
+                  className="flex items-center justify-between py-3 hover:bg-muted/40 px-2 rounded-md"
+                >
+                  <div>
+                    <div className="font-medium text-sm">
+                      {r.employeeOut || "Untitled"} · ext {r.currentExtension} → {r.newExtension}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.startDate} {r.startTime} – {r.endDate} {r.endTime}
+                    </div>
+                  </div>
+                  <StatusBadge status={r.status} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </Shell>
   );
 }
