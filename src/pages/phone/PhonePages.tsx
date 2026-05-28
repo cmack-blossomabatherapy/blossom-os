@@ -19,6 +19,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { OSShell } from "@/pages/os/OSShell";
 import {
   usePhoneSystem, downloadPhoneCsv, notifyPhoneWebhook,
 } from "@/contexts/PhoneSystemContext";
@@ -60,7 +61,11 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function Shell({ children }: { children: ReactNode }) {
-  return <div className="mx-auto w-full max-w-[1400px] p-6 md:p-8">{children}</div>;
+  return (
+    <OSShell>
+      <div className="mx-auto w-full max-w-[1400px] p-6 md:p-8">{children}</div>
+    </OSShell>
+  );
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

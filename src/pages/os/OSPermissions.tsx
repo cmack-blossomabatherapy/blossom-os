@@ -35,6 +35,7 @@ const MODULE_LABELS: Record<OSModule, string> = {
   marketing_reports: "Marketing Reports",
   web_analytics: "Web Analytics",
   call_tracking: "Call Tracking",
+  phone_system: "Phone System",
   attribution_roi: "Attribution & ROI",
 };
 
