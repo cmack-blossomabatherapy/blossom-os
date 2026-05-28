@@ -40,7 +40,11 @@ export function FinalBadge({ s }: { s: FinalStatus }) {
   return <StatusPill tone={tone}>{s}</StatusPill>;
 }
 export function EmailBadge({ s }: { s: EmailStatus }) {
-  const tone: Tone = s === "Sent" ? "ok" : s === "Failed" ? "crit" : s === "Queued" ? "info" : "muted";
+  const tone: Tone =
+    s === "Sent" ? "ok" :
+    s === "Failed" ? "crit" :
+    s === "Queued" ? "info" :
+    "muted";
   return <StatusPill tone={tone}>{s}</StatusPill>;
 }
 export function CycleBadge({ s }: { s: CycleStatus }) {

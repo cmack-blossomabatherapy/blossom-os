@@ -5,11 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus } from "lucide-react";
+import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote } from "./types";
+import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "./statusBadges";
+import { createFormToken, queueEvaluationEmail, templateVars, buildFormUrl } from "./workflow";
 
 interface Props {
   staff: EvalStaff | null;
@@ -17,6 +20,9 @@ interface Props {
   cycles: EvalCycle[];
   meetings: EvalMeeting[];
   notes: EvalNote[];
+  templates: EvalEmailTemplate[];
+  responses: EvalResponse[];
+  allStaff: EvalStaff[];
   onClose: () => void;
   onChanged: () => void;
 }
@@ -30,10 +36,13 @@ function completionPct(e: Evaluation): number {
   return Math.round((n / 4) * 100);
 }
 
-export default function StaffProfileDrawer({ staff, evaluations, cycles, meetings, notes, onClose, onChanged }: Props) {
+export default function StaffProfileDrawer({ staff, evaluations, cycles, meetings, notes, templates, responses, allStaff, onClose, onChanged }: Props) {
   const [noteText, setNoteText] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
+  const [meetingType, setMeetingType] = useState("Zoom");
+  const [meetingLink, setMeetingLink] = useState("");
   const [working, setWorking] = useState(false);
+  const [viewResponse, setViewResponse] = useState<EvalResponse | null>(null);
 
   const open = !!staff;
   const current = useMemo(() => {
@@ -49,6 +58,9 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
   const cycleById = useMemo(() => Object.fromEntries(cycles.map((c) => [c.id, c])), [cycles]);
   const currentMeetings = current ? meetings.filter((m) => m.evaluation_id === current.id) : [];
   const staffNotes = current ? notes.filter((n) => n.evaluation_id === current.id) : [];
+  const currentResponses = current ? responses.filter((r) => r.evaluation_id === current.id) : [];
+  const reviewer = staff?.supervisor_id ? allStaff.find((s) => s.id === staff.supervisor_id) ?? null : null;
+  const tplByKey = useMemo(() => Object.fromEntries(templates.map((t) => [t.template_key, t])), [templates]);
 
   async function startNewEvaluation(type: "Quarterly" | "Annual") {
     if (!staff) return;
@@ -67,32 +79,62 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
     onChanged();
   }
 
-  async function sendEmail(emailType: string, subject: string) {
-    if (!staff || !current) return;
-    setWorking(true);
-    const body = `Hi ${staff.first_name},\n\nIt is time to complete your ${current.evaluation_type} ${emailType.toLowerCase()} for Blossom ABA Therapy.\n\nThank you,\nBlossom ABA Therapy`;
-    const { error: emailErr } = await supabase.from("evaluation_emails").insert({
-      evaluation_id: current.id,
-      staff_id: staff.id,
-      cycle_id: current.cycle_id,
-      recipient_email: staff.email,
-      email_type: emailType,
-      subject,
-      body,
-      status: "Queued",
+  async function generateLink(responseType: "Self" | "Leadership"): Promise<{ url: string } | null> {
+    if (!staff || !current) return null;
+    const recipient = responseType === "Self" ? staff.email : reviewer?.email ?? staff.email;
+    const res = await createFormToken({
+      evaluationId: current.id,
+      responseType,
+      recipientEmail: recipient,
     });
-    if (emailErr) {
-      setWorking(false);
-      return toast({ title: "Failed to queue email", description: emailErr.message, variant: "destructive" });
+    if ("error" in res) {
+      toast({ title: "Could not create link", description: res.error, variant: "destructive" });
+      return null;
     }
-    // mark status
-    if (emailType === "Self Evaluation Request") {
-      await supabase.from("evaluations").update({ self_status: "Sent" }).eq("id", current.id);
-    } else if (emailType === "Leadership Evaluation Request") {
+    return { url: res.url };
+  }
+
+  async function copyLink(responseType: "Self" | "Leadership") {
+    const r = await generateLink(responseType);
+    if (!r) return;
+    await navigator.clipboard.writeText(r.url);
+    toast({ title: "Link copied", description: r.url });
+    onChanged();
+  }
+
+  async function sendEmailFromTemplate(templateKey: "self_request" | "self_reminder" | "leadership_request" | "leadership_reminder" | "overdue_notice", responseType?: "Self" | "Leadership") {
+    if (!staff || !current) return;
+    const tpl = tplByKey[templateKey];
+    if (!tpl) return toast({ title: "Template missing", variant: "destructive" });
+    setWorking(true);
+    let formLink: string | undefined;
+    if (responseType) {
+      const r = await generateLink(responseType);
+      if (!r) { setWorking(false); return; }
+      formLink = r.url;
+    }
+    const cycle = current.cycle_id ? cycles.find((c) => c.id === current.cycle_id) ?? null : null;
+    const recipient = responseType === "Leadership" ? (reviewer?.email ?? staff.email) : staff.email;
+    const vars = templateVars({ staff, reviewer, cycle, evaluation: current, formLink });
+    const { error } = await queueEvaluationEmail({
+      template: tpl,
+      recipientEmail: recipient,
+      evaluationId: current.id,
+      staffId: staff.id,
+      cycleId: current.cycle_id,
+      vars,
+    });
+    if (error) {
+      setWorking(false);
+      return toast({ title: "Failed to queue email", description: error, variant: "destructive" });
+    }
+    if (templateKey === "self_request") {
+      await supabase.from("evaluations").update({ self_status: "Sent", final_status: "In Progress" }).eq("id", current.id);
+    } else if (templateKey === "leadership_request") {
       await supabase.from("evaluations").update({ leadership_status: "In Progress" }).eq("id", current.id);
     }
     setWorking(false);
-    toast({ title: "Email queued", description: "Email integration required to send — see Email Queue tab." });
+    toast({ title: "Email queued", description: "See Email Queue tab. Connect email provider to deliver live." });
     onChanged();
   }
 
@@ -103,10 +145,13 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
       evaluation_id: current.id,
       meeting_date: new Date(meetingDate).toISOString(),
       meeting_status: "Scheduled",
+      meeting_type: meetingType,
+      meeting_link: meetingLink || null,
     });
     await supabase.from("evaluations").update({ meeting_status: "Scheduled" }).eq("id", current.id);
     setWorking(false);
     setMeetingDate("");
+    setMeetingLink("");
     toast({ title: "Meeting scheduled" });
     onChanged();
   }
@@ -131,6 +176,18 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
       final_status: "Complete",
       completed_at: new Date().toISOString(),
     }).eq("id", current.id);
+    // queue completion notice
+    if (staff) {
+      const tpl = tplByKey["completed_notice"];
+      if (tpl) {
+        const cycle = current.cycle_id ? cycles.find((c) => c.id === current.cycle_id) ?? null : null;
+        const vars = templateVars({ staff, reviewer, cycle, evaluation: current });
+        await queueEvaluationEmail({
+          template: tpl, recipientEmail: staff.email,
+          evaluationId: current.id, staffId: staff.id, cycleId: current.cycle_id, vars,
+        });
+      }
+    }
     setWorking(false);
     toast({ title: "Evaluation completed" });
     onChanged();
@@ -225,11 +282,23 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="outline" onClick={() => sendEmail("Self Evaluation Request", "Blossom ABA: Self Evaluation Needed")} disabled={working}>
+                  <Button size="sm" variant="outline" onClick={() => sendEmailFromTemplate("self_request", "Self")} disabled={working}>
                     <Send className="h-3.5 w-3.5 mr-1" /> Send Self Eval
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => sendEmail("Leadership Evaluation Request", "Blossom ABA: Leadership Review Needed")} disabled={working}>
+                  <Button size="sm" variant="outline" onClick={() => sendEmailFromTemplate("leadership_request", "Leadership")} disabled={working}>
                     <Send className="h-3.5 w-3.5 mr-1" /> Send Leadership
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => copyLink("Self")} disabled={working}>
+                    <Link2 className="h-3.5 w-3.5 mr-1" /> Copy Self Link
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => copyLink("Leadership")} disabled={working}>
+                    <Link2 className="h-3.5 w-3.5 mr-1" /> Copy Leadership Link
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => sendEmailFromTemplate("self_reminder", "Self")} disabled={working}>
+                    <BellRing className="h-3.5 w-3.5 mr-1" /> Self Reminder
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => sendEmailFromTemplate("leadership_reminder", "Leadership")} disabled={working}>
+                    <BellRing className="h-3.5 w-3.5 mr-1" /> Leadership Reminder
                   </Button>
                   <Button size="sm" variant="outline" onClick={markMeetingComplete} disabled={working || current.meeting_status === "Completed"}>
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark Meeting Done
@@ -245,14 +314,52 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                   </Button>
                 </div>
 
-                <div className="flex gap-2 pt-2">
-                  <Input type="datetime-local" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="h-9" />
-                  <Button size="sm" onClick={scheduleMeeting} disabled={working || !meetingDate}>Schedule Meeting</Button>
+                <div className="pt-2 space-y-2">
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Schedule Meeting</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input type="datetime-local" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="h-9" />
+                    <Select value={meetingType} onValueChange={setMeetingType}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Phone">Phone</SelectItem>
+                        <SelectItem value="Zoom">Zoom</SelectItem>
+                        <SelectItem value="Teams">Teams</SelectItem>
+                        <SelectItem value="In Person">In Person</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input placeholder="Meeting link (optional)" value={meetingLink} onChange={(e) => setMeetingLink(e.target.value)} className="h-9" />
+                    <Button size="sm" onClick={scheduleMeeting} disabled={working || !meetingDate}>Schedule</Button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </section>
+
+        {/* Responses */}
+        {current && currentResponses.length > 0 && (
+          <>
+            <Separator className="my-4" />
+            <section>
+              <h3 className="text-sm font-semibold mb-2">Evaluation Responses</h3>
+              <ul className="space-y-2">
+                {currentResponses.map((r) => (
+                  <li key={r.id} className="rounded-lg border border-border/70 p-3 text-xs flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{r.response_type} Evaluation</p>
+                      <p className="text-muted-foreground">Submitted {fmtDate(r.submitted_at)} by {r.respondent_email ?? "—"}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setViewResponse(r)}>
+                      <Eye className="h-3.5 w-3.5 mr-1" /> View
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        )}
 
         <Separator className="my-4" />
 
@@ -267,6 +374,9 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
                     <span className="font-medium">{fmtDate(m.meeting_date)}</span>
                     <MeetingBadge s={m.meeting_status as any} />
                   </div>
+                  {(m as any).meeting_type && (
+                    <p className="text-muted-foreground mt-1">{(m as any).meeting_type}{(m as any).meeting_link ? ` · ${(m as any).meeting_link}` : ""}</p>
+                  )}
                   {m.notes && <p className="text-muted-foreground mt-1">{m.notes}</p>}
                 </li>
               ))}
@@ -315,6 +425,20 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
           )}
         </section>
       </SheetContent>
+
+      <Dialog open={!!viewResponse} onOpenChange={(o) => !o && setViewResponse(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{viewResponse?.response_type} Evaluation Response</DialogTitle></DialogHeader>
+          <div className="space-y-2 text-sm">
+            {viewResponse && Object.entries(viewResponse.answers_json ?? {}).map(([k, v]) => (
+              <div key={k} className="rounded-lg border p-2">
+                <p className="text-[11px] text-muted-foreground">{k.replace(/^(rating|text)::/, "").replace(/::/g, " · ")}</p>
+                <p className="text-sm mt-0.5 whitespace-pre-wrap">{String(v)}</p>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }

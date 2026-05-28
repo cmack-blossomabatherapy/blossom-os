@@ -90,7 +90,7 @@ export default function EvaluationsPage() {
             <StaffTab data={data} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} />
           </TabsContent>
           <TabsContent value="cycles"><CyclesTab data={data} onNewCycle={() => setCycleOpen(true)} /></TabsContent>
-          <TabsContent value="forms"><FormsTab /></TabsContent>
+          <TabsContent value="forms"><FormsTab data={data} /></TabsContent>
           <TabsContent value="emails"><EmailQueueTab data={data} /></TabsContent>
           <TabsContent value="reports"><ReportsTab data={data} /></TabsContent>
         </Tabs>
@@ -109,6 +109,9 @@ export default function EvaluationsPage() {
         cycles={data.cycles}
         meetings={data.meetings}
         notes={data.notes}
+        templates={data.templates}
+        responses={data.responses}
+        allStaff={data.staff}
         onClose={() => setOpenStaffId(null)}
         onChanged={data.refresh}
       />

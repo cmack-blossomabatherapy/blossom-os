@@ -3648,6 +3648,42 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluation_email_templates: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          email_type: string
+          id: string
+          name: string
+          subject: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          created_at?: string
+          email_type: string
+          id?: string
+          name: string
+          subject: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          email_type?: string
+          id?: string
+          name?: string
+          subject?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       evaluation_emails: {
         Row: {
           body: string | null
@@ -3659,10 +3695,12 @@ export type Database = {
           id: string
           last_reminder_at: string | null
           recipient_email: string
+          scheduled_send_at: string | null
           sent_at: string | null
           staff_id: string | null
           status: string
           subject: string
+          template_key: string | null
         }
         Insert: {
           body?: string | null
@@ -3674,10 +3712,12 @@ export type Database = {
           id?: string
           last_reminder_at?: string | null
           recipient_email: string
+          scheduled_send_at?: string | null
           sent_at?: string | null
           staff_id?: string | null
           status?: string
           subject: string
+          template_key?: string | null
         }
         Update: {
           body?: string | null
@@ -3689,10 +3729,12 @@ export type Database = {
           id?: string
           last_reminder_at?: string | null
           recipient_email?: string
+          scheduled_send_at?: string | null
           sent_at?: string | null
           staff_id?: string | null
           status?: string
           subject?: string
+          template_key?: string | null
         }
         Relationships: [
           {
@@ -3714,6 +3756,54 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_form_tokens: {
+        Row: {
+          created_at: string
+          evaluation_id: string
+          expires_at: string
+          form_id: string | null
+          id: string
+          recipient_email: string
+          response_type: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          evaluation_id: string
+          expires_at?: string
+          form_id?: string | null
+          id?: string
+          recipient_email: string
+          response_type: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          evaluation_id?: string
+          expires_at?: string
+          form_id?: string | null
+          id?: string
+          recipient_email?: string
+          response_type?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_form_tokens_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_form_tokens_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_forms"
             referencedColumns: ["id"]
           },
         ]
@@ -3756,34 +3846,49 @@ export type Database = {
       }
       evaluation_meetings: {
         Row: {
+          attendees: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
           evaluation_id: string
+          follow_up_actions: string | null
           id: string
           meeting_date: string | null
+          meeting_link: string | null
           meeting_status: string
+          meeting_type: string | null
           notes: string | null
+          outcome: string | null
         }
         Insert: {
+          attendees?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           evaluation_id: string
+          follow_up_actions?: string | null
           id?: string
           meeting_date?: string | null
+          meeting_link?: string | null
           meeting_status?: string
+          meeting_type?: string | null
           notes?: string | null
+          outcome?: string | null
         }
         Update: {
+          attendees?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           evaluation_id?: string
+          follow_up_actions?: string | null
           id?: string
           meeting_date?: string | null
+          meeting_link?: string | null
           meeting_status?: string
+          meeting_type?: string | null
           notes?: string | null
+          outcome?: string | null
         }
         Relationships: [
           {
@@ -8876,6 +8981,7 @@ export type Database = {
         Args: { _enrollment_id: string }
         Returns: undefined
       }
+      get_eval_form_by_token: { Args: { p_token: string }; Returns: Json }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: { _perm: string; _user_id: string }
@@ -8957,6 +9063,10 @@ export type Database = {
           state: string
           warning_offset_hours: number
         }[]
+      }
+      submit_eval_form_response: {
+        Args: { p_answers: Json; p_signature?: string; p_token: string }
+        Returns: Json
       }
       upsert_knowledge_chunk: {
         Args: {

@@ -5,7 +5,7 @@ export type LeadershipStatus = "Not Started" | "In Progress" | "Completed";
 export type MeetingStatus = "Not Scheduled" | "Scheduled" | "Completed";
 export type FinalStatus = "Not Started" | "In Progress" | "Needs Meeting" | "Complete" | "Overdue";
 export type CycleStatus = "Draft" | "Active" | "Complete" | "Archived";
-export type EmailStatus = "Draft" | "Queued" | "Sent" | "Failed";
+export type EmailStatus = "Draft" | "Queued" | "Sent" | "Failed" | "Cancelled";
 
 export interface EvalStaff {
   id: string;
@@ -87,4 +87,43 @@ export interface EvalEmail {
   last_reminder_at: string | null;
   failed_reason: string | null;
   created_at: string;
+  template_key?: string | null;
+  scheduled_send_at?: string | null;
+}
+
+export interface EvalForm {
+  id: string;
+  name: string;
+  staff_role: StaffRole;
+  evaluation_type: EvalType;
+  form_type: "Self" | "Leadership";
+  questions_json: { sections: FormSection[] };
+  active_status: boolean;
+  updated_at: string;
+}
+
+export type FormSection =
+  | { title: string; type: "ratings"; description?: string; items: string[] }
+  | { title: string; type: "longtext"; items: string[] }
+  | { title: string; type: "acknowledgment" };
+
+export interface EvalEmailTemplate {
+  id: string;
+  template_key: string;
+  name: string;
+  email_type: string;
+  subject: string;
+  body: string;
+  active: boolean;
+  updated_at: string;
+}
+
+export interface EvalResponse {
+  id: string;
+  evaluation_id: string;
+  form_id: string | null;
+  respondent_email: string | null;
+  response_type: "Self" | "Leadership";
+  answers_json: Record<string, unknown>;
+  submitted_at: string;
 }
