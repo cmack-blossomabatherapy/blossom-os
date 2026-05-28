@@ -72,21 +72,21 @@ export const roleNavigationExceptions: Partial<Record<AppRole, RoleNavigationExc
   hr: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_admin: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
   hr_manager: {
     sectionTitles: ["HR Suite"],
     sectionItemPaths: {
-      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/resources"],
+      "HR Suite": ["/hr", "/hr/directory", "/hr/onboarding", "/hr/training", "/hr/training-academy", "/hr/resources"],
     },
     intelligenceItemPaths: ["/training", "/training/academy", "/resources"],
   },
@@ -144,6 +144,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "Onboarding", path: "/hr/onboarding", perm: "hr.onboarding.manage" },
     { label: "Reviews", path: "/hr/reviews", perm: "hr.reviews.view" },
     { label: "Training Admin", path: "/hr/training", perm: "hr.training.view" },
+    { label: "Training Academy", path: "/hr/training-academy", perm: "hr.training.view" },
     { label: "Time Clock", path: "/hr/time-clock", perm: "hr.timeclock.view" },
     { label: "Hours", path: "/hr/hours", perm: "hr.hours.view" },
     { label: "Payroll", path: "/hr/payroll", perm: "hr.payroll.runs.view" },
