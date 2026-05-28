@@ -1,9 +1,9 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ReactNode, useMemo, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, CalendarClock, Download, History,
-  Layers, ListChecks, Mail, Moon, Phone, PhoneForwarded, Plus, RefreshCw,
-  Search, Send, Share2, Siren, Trash2, Undo2, Users,
+  ArrowLeft, ArrowRight, AlertTriangle, CalendarClock, Download, ExternalLink,
+  History, Layers, ListChecks, Mail, Moon, Phone, PhoneForwarded, PhoneIncoming,
+  Plus, RefreshCw, Search, Send, Share2, Siren, Sparkles, Trash2, Undo2, Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,9 @@ import {
 import {
   ChangeRequest, CallQueue, Employee, ImpactRow, RequestRoutingScope,
   RequestStatus, SharedDeptCategory, SharedRouting, SHARED_CATEGORIES, STATUSES,
-  STATE_DIRECTORY, appendAudit, buildRollbackItems, buildVendorEmail,
+  STATE_DIRECTORY, CORPORATE_AUTO_ATTENDANT, CORPORATE_MENU, STATE_INTAKE_ROUTING,
+  RetellCall, RetellCallStatus, RETELL_STATUSES,
+  appendAudit, buildRollbackItems, buildVendorEmail,
   computeImpacts, detectRequestConflicts,
 } from "@/data/phoneSystem";
 
