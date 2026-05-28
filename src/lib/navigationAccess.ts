@@ -153,6 +153,7 @@ const navigationPreviewSections: NavigationPreviewSection[] = [
     { label: "HR Reports", path: "/hr/reports", perm: "hr.reports.view" },
     { label: "HR Settings", path: "/hr/settings", perm: "hr.settings.manage" },
   ] },
+  { title: "Admin", items: [
     { label: "Team", path: "/team", perm: "team.view" },
     { label: "Training Dashboard", path: "/admin/training-dashboard", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
     { label: "Training Statistics", path: "/admin/training-statistics", perm: "hr.training.view", allowedRoles: TRAINING_ADMIN_ROLES },
