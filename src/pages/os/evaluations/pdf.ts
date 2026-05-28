@@ -75,7 +75,6 @@ export function buildEvaluationSummaryHtml(args: {
     <div><span>Email</span>${staff.email}</div>
     <div><span>Hire Date</span>${fmtDate(staff.hire_date)}</div>
     <div><span>Evaluation Type</span>${evaluation.evaluation_type}</div>
-    <div><span>Cycle</span>${cycle?.name ?? "Ad-hoc"}</div>
     <div><span>Reviewer</span>${reviewer ? `${reviewer.first_name} ${reviewer.last_name}` : staff.supervisor_name ?? "—"}</div>
     <div><span>Final Status</span>${evaluation.final_status}</div>
     <div><span>Started</span>${fmtDate(evaluation.created_at)}</div>
