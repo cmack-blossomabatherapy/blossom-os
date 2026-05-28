@@ -954,11 +954,11 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
               <button
                 type="button"
                 onClick={() => toggleSection(section.title!)}
-                className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted/80 transition-colors hover:text-sidebar-foreground"
+                className="mb-1.5 flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/30 hover:text-sidebar-accent-foreground"
                 aria-expanded={sectionOpen}
               >
                 <span>{section.title}</span>
-                <ChevronDown className={cn("h-3 w-3 transition-transform opacity-60", !sectionOpen && "-rotate-90")} />
+                <ChevronDown className={cn("h-3.5 w-3.5 text-sidebar-foreground/80 transition-transform", !sectionOpen && "-rotate-90")} />
               </button>
             )}
             {sectionOpen && <div className="grid grid-cols-3 gap-1 md:block md:space-y-0.5 md:pl-1">
