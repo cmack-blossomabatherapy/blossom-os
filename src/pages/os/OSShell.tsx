@@ -639,11 +639,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           key={item.to}
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
-            collapsed && "justify-center px-0",
-            "text-muted-foreground/40 cursor-not-allowed select-none",
+            collapsed && "h-10 w-10 justify-center px-0",
+            "text-muted-foreground/50 cursor-not-allowed select-none",
           )}
         >
-          <item.icon className="h-[16px] w-[16px] shrink-0 opacity-40" />
+          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-70" : "opacity-40")} />
           {!collapsed && (
             <>
               <span className="truncate">{item.label}</span>
@@ -672,9 +672,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       className={({ isActive }) =>
         cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
-          collapsed && "justify-center px-0",
+          collapsed && "h-10 w-10 justify-center px-0",
           isActive
-            ? "bg-gradient-to-r from-[hsl(265_85%_65%)] to-[hsl(280_85%_70%)] text-white shadow-[0_10px_26px_-12px_hsl(265_85%_60%/0.6)]"
+            ? "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
+            : collapsed
+            ? "text-foreground/70 hover:bg-primary/10 hover:text-primary"
             : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
         )
       }
@@ -772,19 +774,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             )}
           >
             <img
-              key={collapsed ? "mark" : "full"}
               src={collapsed ? blossomMark : blossomLogo}
               alt={collapsed ? "Blossom" : "Blossom ABA Therapy"}
               className={cn(
-                "object-contain animate-scale-in transition-all duration-300",
+                "object-contain transition-all duration-300",
                 collapsed ? "h-9 w-9" : "h-11 w-auto",
               )}
             />
           </NavLink>
 
-          <nav className="os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3">
+          <nav className={cn("os-sidebar-scroll flex-1 overflow-y-auto px-3 pb-3", collapsed ? "pt-4" : "pt-2")}>
             {collapsed ? (
-              <div className="space-y-1">{allItems.map((item) => renderNavItem(item))}</div>
+              <div className="flex flex-col items-center gap-1.5">{allItems.map((item) => renderNavItem(item))}</div>
             ) : (
               <div className="space-y-2">
                 {sections.map((section) => (
