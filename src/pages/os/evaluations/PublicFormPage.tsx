@@ -90,7 +90,7 @@ export default function PublicFormPage() {
         p_query: reviewerQuery,
       });
       setReviewerLoading(false);
-      if (Array.isArray(data)) setReviewerResults(data as ReviewerOption[]);
+      if (Array.isArray(data)) setReviewerResults(data as unknown as ReviewerOption[]);
       else setReviewerResults([]);
     }, 180);
     return () => clearTimeout(handle);
