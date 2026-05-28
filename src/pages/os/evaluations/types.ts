@@ -127,3 +127,98 @@ export interface EvalResponse {
   answers_json: Record<string, unknown>;
   submitted_at: string;
 }
+
+export interface EvalGoal {
+  id: string;
+  staff_id: string;
+  evaluation_id: string | null;
+  title: string;
+  description: string | null;
+  category: string;
+  assigned_by: string | null;
+  due_date: string | null;
+  progress: number;
+  status: string;
+  notes: string | null;
+  completion_date: string | null;
+  carry_over: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvalCoachingPlan {
+  id: string;
+  staff_id: string;
+  evaluation_id: string | null;
+  concern_category: string;
+  description: string | null;
+  expectations: string | null;
+  required_improvements: string | null;
+  support_resources: string | null;
+  check_in_dates: unknown;
+  status: "Active" | "Monitoring" | "Improved" | "Escalated" | "Completed" | string;
+  outcome: string | null;
+  created_by: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvalAIInsight {
+  id: string;
+  scope: "company" | "state" | "staff" | "reviewer" | string;
+  scope_id: string | null;
+  severity: "info" | "warn" | "crit" | string;
+  title: string;
+  body: string;
+  recommended_action: string | null;
+  source_data: unknown;
+  dismissed: boolean;
+  generated_at: string;
+  created_at: string;
+}
+
+export interface EvalTrainingAssignment {
+  id: string;
+  staff_id: string;
+  evaluation_id: string | null;
+  training_topic: string;
+  reason: string | null;
+  status: string;
+  assigned_by: string | null;
+  due_date: string | null;
+  completion_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvalPerformanceScore {
+  id: string;
+  evaluation_id: string;
+  staff_id: string;
+  self_score: number | null;
+  leadership_score: number | null;
+  goals_score: number | null;
+  overall_score: number | null;
+  category: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EvalRiskFlag {
+  id: string;
+  staff_id: string;
+  flag_type: string;
+  severity: "low" | "medium" | "high" | string;
+  description: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export type StandingLevel =
+  | "Excellent Standing"
+  | "Good Standing"
+  | "Needs Coaching"
+  | "Performance Concern"
+  | "Improvement Plan Active";

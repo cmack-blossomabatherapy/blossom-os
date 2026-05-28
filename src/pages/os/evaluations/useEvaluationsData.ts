@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   EvalStaff, EvalCycle, Evaluation, EvalMeeting, EvalNote, EvalEmail,
   EvalForm, EvalEmailTemplate, EvalResponse,
+  EvalGoal, EvalCoachingPlan, EvalAIInsight, EvalTrainingAssignment,
+  EvalPerformanceScore, EvalRiskFlag,
 } from "./types";
 import type { AuditEntry } from "./audit";
 
@@ -46,6 +48,12 @@ export interface EvaluationsData {
   responses: EvalResponse[];
   audit: AuditEntry[];
   settings: EvalSettings | null;
+  goals: EvalGoal[];
+  coachingPlans: EvalCoachingPlan[];
+  insights: EvalAIInsight[];
+  trainings: EvalTrainingAssignment[];
+  scores: EvalPerformanceScore[];
+  riskFlags: EvalRiskFlag[];
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -62,11 +70,17 @@ export function useEvaluationsData(): EvaluationsData {
   const [responses, setResponses] = useState<EvalResponse[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [settings, setSettings] = useState<EvalSettings | null>(null);
+  const [goals, setGoals] = useState<EvalGoal[]>([]);
+  const [coachingPlans, setCoachingPlans] = useState<EvalCoachingPlan[]>([]);
+  const [insights, setInsights] = useState<EvalAIInsight[]>([]);
+  const [trainings, setTrainings] = useState<EvalTrainingAssignment[]>([]);
+  const [scores, setScores] = useState<EvalPerformanceScore[]>([]);
+  const [riskFlags, setRiskFlags] = useState<EvalRiskFlag[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [s, c, e, m, n, em, fr, tp, rs, au, st] = await Promise.all([
+    const [s, c, e, m, n, em, fr, tp, rs, au, st, gl, cp, ai, tr, ps, rf] = await Promise.all([
       supabase.from("evaluation_staff").select("*").order("last_name"),
       supabase.from("evaluation_cycles").select("*").order("start_date", { ascending: false }),
       supabase.from("evaluations").select("*").order("created_at", { ascending: false }),
@@ -78,6 +92,12 @@ export function useEvaluationsData(): EvaluationsData {
       supabase.from("evaluation_responses").select("*").order("submitted_at", { ascending: false }),
       (supabase.from as any)("evaluation_audit_log").select("*").order("created_at", { ascending: false }).limit(500),
       (supabase.from as any)("evaluation_settings").select("*").eq("id", 1).maybeSingle(),
+      (supabase.from as any)("evaluation_goals").select("*").order("created_at", { ascending: false }),
+      (supabase.from as any)("evaluation_coaching_plans").select("*").order("created_at", { ascending: false }),
+      (supabase.from as any)("evaluation_ai_insights").select("*").order("generated_at", { ascending: false }),
+      (supabase.from as any)("evaluation_training_assignments").select("*").order("created_at", { ascending: false }),
+      (supabase.from as any)("evaluation_performance_scores").select("*").order("created_at", { ascending: false }),
+      (supabase.from as any)("evaluation_risk_flags").select("*").order("created_at", { ascending: false }),
     ]);
     setStaff((s.data ?? []) as EvalStaff[]);
     setCycles((c.data ?? []) as EvalCycle[]);
@@ -90,10 +110,16 @@ export function useEvaluationsData(): EvaluationsData {
     setResponses((rs.data ?? []) as unknown as EvalResponse[]);
     setAudit(((au as any)?.data ?? []) as AuditEntry[]);
     setSettings(((st as any)?.data ?? null) as EvalSettings | null);
+    setGoals((((gl as any)?.data ?? []) as EvalGoal[]));
+    setCoachingPlans((((cp as any)?.data ?? []) as EvalCoachingPlan[]));
+    setInsights((((ai as any)?.data ?? []) as EvalAIInsight[]));
+    setTrainings((((tr as any)?.data ?? []) as EvalTrainingAssignment[]));
+    setScores((((ps as any)?.data ?? []) as EvalPerformanceScore[]));
+    setRiskFlags((((rf as any)?.data ?? []) as EvalRiskFlag[]));
     setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  return { staff, cycles, evaluations, meetings, notes, emails, forms, templates, responses, audit, settings, loading, refresh };
+  return { staff, cycles, evaluations, meetings, notes, emails, forms, templates, responses, audit, settings, goals, coachingPlans, insights, trainings, scores, riskFlags, loading, refresh };
 }
