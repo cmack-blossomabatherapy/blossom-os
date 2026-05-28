@@ -177,7 +177,11 @@ export default function OSUserManagement() {
                 <tr><td colSpan={8} className="px-5 py-12 text-center text-muted-foreground">No users yet.</td></tr>
               )}
               {filtered.map((r) => (
-                <tr key={r.user_id} className="border-t border-foreground/[0.05] hover:bg-foreground/[0.02]">
+                <tr
+                  key={r.user_id}
+                  onClick={() => setEditing(r)}
+                  className="cursor-pointer border-t border-foreground/[0.05] transition hover:bg-foreground/[0.03]"
+                >
                   <td className="px-5 py-3 font-medium text-foreground">{r.display_name ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{r.email ?? "—"}</td>
                   <td className="px-5 py-3">
@@ -199,14 +203,14 @@ export default function OSUserManagement() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    {isAdmin && !r.isWorkforce && (
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(r)} className="gap-1.5">
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </Button>
-                    )}
-                    {r.isWorkforce && (
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">From Evaluations</Badge>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); setEditing(r); }}
+                      className="gap-1.5"
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
                   </td>
                 </tr>
               ))}
