@@ -21,15 +21,29 @@ export function StatusPill({ tone, children }: { tone: Tone; children: React.Rea
 
 export function SelfBadge({ s }: { s: SelfStatus }) {
   const tone: Tone = s === "Completed" ? "ok" : s === "Overdue" ? "crit" : s === "Sent" || s === "Opened" ? "info" : "muted";
-  return <StatusPill tone={tone}>{s}</StatusPill>;
+  const label =
+    s === "Not Sent" ? "Not Sent" :
+    s === "Sent" ? "Waiting on Employee" :
+    s === "Opened" ? "Waiting on Employee" :
+    s === "Completed" ? "Complete" :
+    s === "Overdue" ? "Overdue" : s;
+  return <StatusPill tone={tone}>{label}</StatusPill>;
 }
 export function LeadershipBadge({ s }: { s: LeadershipStatus }) {
   const tone: Tone = s === "Completed" ? "ok" : s === "In Progress" ? "info" : "muted";
-  return <StatusPill tone={tone}>{s}</StatusPill>;
+  const label =
+    s === "Not Started" ? "Needs Review" :
+    s === "In Progress" ? "Waiting on Reviewer" :
+    s === "Completed" ? "Complete" : s;
+  return <StatusPill tone={tone}>{label}</StatusPill>;
 }
 export function MeetingBadge({ s }: { s: MeetingStatus }) {
   const tone: Tone = s === "Completed" ? "ok" : s === "Scheduled" ? "info" : "muted";
-  return <StatusPill tone={tone}>{s}</StatusPill>;
+  const label =
+    s === "Not Scheduled" ? "Meeting Needed" :
+    s === "Scheduled" ? "Scheduled" :
+    s === "Completed" ? "Complete" : s;
+  return <StatusPill tone={tone}>{label}</StatusPill>;
 }
 export function FinalBadge({ s }: { s: FinalStatus }) {
   const tone: Tone =
@@ -37,7 +51,13 @@ export function FinalBadge({ s }: { s: FinalStatus }) {
     s === "Overdue" ? "crit" :
     s === "Needs Meeting" ? "warn" :
     s === "In Progress" ? "info" : "muted";
-  return <StatusPill tone={tone}>{s}</StatusPill>;
+  const label =
+    s === "Not Started" ? "Not Started" :
+    s === "In Progress" ? "In Progress" :
+    s === "Needs Meeting" ? "Meeting Needed" :
+    s === "Complete" ? "Complete" :
+    s === "Overdue" ? "Overdue" : s;
+  return <StatusPill tone={tone}>{label}</StatusPill>;
 }
 export function EmailBadge({ s }: { s: EmailStatus }) {
   const tone: Tone =
