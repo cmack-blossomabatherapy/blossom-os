@@ -616,6 +616,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         { label: "Messages & Updates", icon: MessageSquare, path: "/hr/messages", perm: "" },
       ],
     },
+    phoneSystemSection,
     intelligenceSection,
     {
       title: "Resources",
@@ -649,11 +650,16 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     : isHrOnly
     ? hrSections
     : impersonating && osRole
-    ? [...buildGenericRoleSections(osRole), intelligenceSection]
+    ? [
+        ...buildGenericRoleSections(osRole),
+        ...(osRole === "marketing_team" || osRole === "hr_team" ? [phoneSystemSection] : []),
+        intelligenceSection,
+      ]
     : [
         ...academySections,
         ...(showAdmin ? adminSections : []),
         ...(showOperations ? operationsSections : []),
+        ...(showOperations || roles.includes("marketing") ? [phoneSystemSection] : []),
         intelligenceSection,
         ...(showOperations ? [legacyOperationsDashboards, legacyHrSection, legacyEnterpriseSection] : []),
       ];
