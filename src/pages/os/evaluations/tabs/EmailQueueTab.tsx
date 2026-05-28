@@ -16,7 +16,6 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
   const [editTpl, setEditTpl] = useState<EvalEmailTemplate | null>(null);
 
   const staffById = Object.fromEntries(data.staff.map((s) => [s.id, s]));
-  const cycleById = Object.fromEntries(data.cycles.map((c) => [c.id, c]));
 
   async function updateEmail(id: string, patch: Partial<EvalEmail>) {
     const { error } = await supabase.from("evaluation_emails").update(patch).eq("id", id);
@@ -90,7 +89,6 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
               <tr>
                 <th className="text-left font-medium px-4 py-3">Recipient</th>
                 <th className="text-left font-medium px-3 py-3">Employee</th>
-                <th className="text-left font-medium px-3 py-3">Cycle</th>
                 <th className="text-left font-medium px-3 py-3">Type</th>
                 <th className="text-left font-medium px-3 py-3">Subject</th>
                 <th className="text-left font-medium px-3 py-3">Status</th>
@@ -103,12 +101,10 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
             <tbody className="divide-y divide-border/70">
               {data.emails.map((e) => {
                 const st = e.staff_id ? staffById[e.staff_id] : undefined;
-                const cy = e.cycle_id ? cycleById[e.cycle_id] : undefined;
                 return (
                 <tr key={e.id}>
                   <td className="px-4 py-2.5 text-xs">{e.recipient_email}</td>
                   <td className="px-3 py-2.5 text-xs">{st ? `${st.first_name} ${st.last_name}` : "—"}</td>
-                  <td className="px-3 py-2.5 text-xs">{cy?.name ?? "—"}</td>
                   <td className="px-3 py-2.5 text-xs">{e.email_type}</td>
                   <td className="px-3 py-2.5 text-xs max-w-xs truncate">{e.subject}</td>
                   <td className="px-3 py-2.5"><EmailBadge s={e.status} /></td>
@@ -158,7 +154,7 @@ export default function EmailQueueTab({ data }: { data: EvaluationsData }) {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">Email Templates</h3>
           <span className="text-[11px] text-muted-foreground">
-            Variables: {"{{employee_first_name}} {{employee_full_name}} {{evaluation_type}} {{cycle_name}} {{due_date}} {{form_link}} {{reviewer_name}} {{meeting_link}}"}
+            Variables: {"{{employee_first_name}} {{employee_full_name}} {{evaluation_type}} {{due_date}} {{form_link}} {{reviewer_name}} {{meeting_link}}"}
           </span>
         </div>
         <div className="rounded-2xl border border-border/70 bg-card overflow-hidden">
