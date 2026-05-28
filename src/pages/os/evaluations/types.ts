@@ -4,7 +4,6 @@ export type SelfStatus = "Not Sent" | "Sent" | "Opened" | "Completed" | "Overdue
 export type LeadershipStatus = "Not Started" | "In Progress" | "Completed";
 export type MeetingStatus = "Not Scheduled" | "Scheduled" | "Completed";
 export type FinalStatus = "Not Started" | "In Progress" | "Needs Meeting" | "Complete" | "Overdue";
-export type CycleStatus = "Draft" | "Active" | "Complete" | "Archived";
 export type EmailStatus = "Draft" | "Queued" | "Sent" | "Failed" | "Cancelled";
 
 export interface EvalStaff {
@@ -25,25 +24,9 @@ export interface EvalStaff {
   updated_at: string;
 }
 
-export interface EvalCycle {
-  id: string;
-  name: string;
-  evaluation_type: EvalType;
-  staff_type: "BCBA" | "RBT" | "Both";
-  start_date: string | null;
-  self_due_date: string | null;
-  leadership_due_date: string | null;
-  meeting_due_date: string | null;
-  final_due_date: string | null;
-  status: CycleStatus;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Evaluation {
   id: string;
   staff_id: string;
-  cycle_id: string | null;
   evaluation_type: EvalType;
   self_status: SelfStatus;
   leadership_status: LeadershipStatus;
@@ -92,7 +75,6 @@ export interface EvalEmail {
   id: string;
   evaluation_id: string | null;
   staff_id: string | null;
-  cycle_id: string | null;
   recipient_email: string;
   email_type: string;
   subject: string;

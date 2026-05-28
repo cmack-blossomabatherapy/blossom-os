@@ -173,7 +173,6 @@ export default function StaffTab({
       .map((r) => ({
         evaluation_id: r.cur?.id ?? null,
         staff_id: r.s.id,
-        cycle_id: r.cur?.cycle_id ?? null,
         recipient_email: r.s.email,
         email_type: template.email_type,
         subject: template.subject.replace(/\{\{employee_first_name\}\}/g, r.s.first_name),

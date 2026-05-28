@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { EvalStaff, Evaluation, EvalCycle, EvalEmailTemplate } from "./types";
+import type { EvalStaff, Evaluation, EvalEmailTemplate } from "./types";
 
 /**
  * Render a template string by replacing {{tokens}} with values.
@@ -11,19 +11,18 @@ export function renderTemplate(s: string, vars: Record<string, string | null | u
 export function templateVars(args: {
   staff: EvalStaff;
   reviewer?: { first_name: string; last_name: string } | null;
-  cycle?: EvalCycle | null;
   evaluation: Evaluation;
   formLink?: string;
   meetingLink?: string;
 }): Record<string, string> {
-  const { staff, reviewer, cycle, evaluation, formLink, meetingLink } = args;
+  const { staff, reviewer, evaluation, formLink, meetingLink } = args;
   return {
     employee_first_name: staff.first_name,
     employee_full_name: `${staff.first_name} ${staff.last_name}`,
     role: staff.role,
     state: staff.state ?? "",
     evaluation_type: evaluation.evaluation_type,
-    due_date: evaluation.next_review_date ?? cycle?.final_due_date ?? "TBD",
+    due_date: evaluation.next_review_date ?? "TBD",
     form_link: formLink ?? "",
     reviewer_name: reviewer ? `${reviewer.first_name} ${reviewer.last_name}` : "",
     meeting_link: meetingLink ?? "",
@@ -67,7 +66,6 @@ export async function queueEvaluationEmail(opts: {
   recipientEmail: string;
   evaluationId: string;
   staffId: string;
-  cycleId: string | null;
   vars: Record<string, string>;
   scheduledFor?: string | null;
 }): Promise<{ error?: string }> {
@@ -76,7 +74,6 @@ export async function queueEvaluationEmail(opts: {
   const { error } = await supabase.from("evaluation_emails").insert({
     evaluation_id: opts.evaluationId,
     staff_id: opts.staffId,
-    cycle_id: opts.cycleId,
     recipient_email: opts.recipientEmail,
     email_type: opts.template.email_type,
     subject,

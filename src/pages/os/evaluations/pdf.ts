@@ -1,4 +1,4 @@
-import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote, EvalResponse } from "./types";
+import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalResponse } from "./types";
 import { fmtDate } from "./statusBadges";
 
 function ratingsTable(responses: EvalResponse[]): string {
@@ -41,13 +41,12 @@ function escapeHtml(s: string) {
 export function buildEvaluationSummaryHtml(args: {
   staff: EvalStaff;
   evaluation: Evaluation;
-  cycle?: EvalCycle | null;
   reviewer?: { first_name: string; last_name: string } | null;
   meetings: EvalMeeting[];
   notes: EvalNote[];
   responses: EvalResponse[];
 }): string {
-  const { staff, evaluation, cycle, reviewer, meetings, notes, responses } = args;
+  const { staff, evaluation, reviewer, meetings, notes, responses } = args;
   const latestMeeting = meetings[0];
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Evaluation Summary - ${staff.first_name} ${staff.last_name}</title>

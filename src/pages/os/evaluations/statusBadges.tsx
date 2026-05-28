@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { SelfStatus, LeadershipStatus, MeetingStatus, FinalStatus, EmailStatus, CycleStatus } from "./types";
+import type { SelfStatus, LeadershipStatus, MeetingStatus, FinalStatus, EmailStatus } from "./types";
 
 type Tone = "ok" | "warn" | "crit" | "info" | "muted";
 
@@ -65,10 +65,6 @@ export function EmailBadge({ s }: { s: EmailStatus }) {
     s === "Failed" ? "crit" :
     s === "Queued" ? "info" :
     "muted";
-  return <StatusPill tone={tone}>{s}</StatusPill>;
-}
-export function CycleBadge({ s }: { s: CycleStatus }) {
-  const tone: Tone = s === "Active" ? "info" : s === "Complete" ? "ok" : s === "Archived" ? "muted" : "warn";
   return <StatusPill tone={tone}>{s}</StatusPill>;
 }
 

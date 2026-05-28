@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { EvalStaff, Evaluation, EvalCycle, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
+import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "./statusBadges";
 import { createFormToken, queueEvaluationEmail, templateVars, buildFormUrl } from "./workflow";
 import type { Permissions } from "./permissions";
@@ -21,7 +21,6 @@ import { buildEvaluationSummaryHtml, openPrintableSummary } from "./pdf";
 interface Props {
   staff: EvalStaff | null;
   evaluations: Evaluation[];
-  cycles: EvalCycle[];
   meetings: EvalMeeting[];
   notes: EvalNote[];
   templates: EvalEmailTemplate[];
@@ -42,7 +41,7 @@ function completionPct(e: Evaluation): number {
   return Math.round((n / 4) * 100);
 }
 
-export default function StaffProfileDrawer({ staff, evaluations, cycles, meetings, notes, templates, responses, allStaff, audit, permissions, onClose, onChanged }: Props) {
+export default function StaffProfileDrawer({ staff, evaluations, meetings, notes, templates, responses, allStaff, audit, permissions, onClose, onChanged }: Props) {
   const [noteText, setNoteText] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingType, setMeetingType] = useState("Zoom");
@@ -61,7 +60,6 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
     if (!staff) return [];
     return evaluations.filter((e) => e.staff_id === staff.id && e.final_status === "Complete");
   }, [staff, evaluations]);
-  const cycleById = useMemo(() => Object.fromEntries(cycles.map((c) => [c.id, c])), [cycles]);
   const currentMeetings = current ? meetings.filter((m) => m.evaluation_id === current.id) : [];
   const staffNotes = current ? notes.filter((n) => n.evaluation_id === current.id) : [];
   const currentResponses = current ? responses.filter((r) => r.evaluation_id === current.id) : [];
@@ -121,15 +119,13 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
       if (!r) { setWorking(false); return; }
       formLink = r.url;
     }
-    const cycle = current.cycle_id ? cycles.find((c) => c.id === current.cycle_id) ?? null : null;
     const recipient = responseType === "Leadership" ? (reviewer?.email ?? staff.email) : staff.email;
-    const vars = templateVars({ staff, reviewer, cycle, evaluation: current, formLink });
+    const vars = templateVars({ staff, reviewer, evaluation: current, formLink });
     const { error } = await queueEvaluationEmail({
       template: tpl,
       recipientEmail: recipient,
       evaluationId: current.id,
       staffId: staff.id,
-      cycleId: current.cycle_id,
       vars,
     });
     if (error) {
@@ -212,11 +208,10 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
     if (staff) {
       const tpl = tplByKey["completed_notice"];
       if (tpl) {
-        const cycle = current.cycle_id ? cycles.find((c) => c.id === current.cycle_id) ?? null : null;
-        const vars = templateVars({ staff, reviewer, cycle, evaluation: current });
+        const vars = templateVars({ staff, reviewer, evaluation: current });
         await queueEvaluationEmail({
           template: tpl, recipientEmail: staff.email,
-          evaluationId: current.id, staffId: staff.id, cycleId: current.cycle_id, vars,
+          evaluationId: current.id, staffId: staff.id, vars,
         });
       }
     }
@@ -249,11 +244,10 @@ export default function StaffProfileDrawer({ staff, evaluations, cycles, meeting
 
   function downloadSummary(evaluation: Evaluation) {
     if (!staff) return;
-    const cycle = evaluation.cycle_id ? cycles.find((c) => c.id === evaluation.cycle_id) ?? null : null;
     const evalMeetings = meetings.filter((m) => m.evaluation_id === evaluation.id);
     const evalNotes = notes.filter((n) => n.evaluation_id === evaluation.id);
     const evalResponses = responses.filter((r) => r.evaluation_id === evaluation.id);
-    const html = buildEvaluationSummaryHtml({ staff, evaluation, cycle, reviewer, meetings: evalMeetings, notes: evalNotes, responses: evalResponses });
+    const html = buildEvaluationSummaryHtml({ staff, evaluation, reviewer, meetings: evalMeetings, notes: evalNotes, responses: evalResponses });
     openPrintableSummary(html);
   }
 
