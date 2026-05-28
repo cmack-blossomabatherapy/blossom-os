@@ -258,6 +258,7 @@ import OSRecruitingResources from "./pages/os/OSRecruitingResources";
 import OSHRTeam from "./pages/os/OSHRTeam";
 import OSHRWorkspace from "./pages/os/OSHRWorkspace";
 import OSHRTrainingAcademy from "./pages/os/OSHRTrainingAcademy";
+import OSOnboarding from "./pages/os/OSOnboarding";
 import OSHRNewHires from "./pages/os/OSHRNewHires";
 import OSHREmployeeSupport from "./pages/os/OSHREmployeeSupport";
 import OSHRTrainingCerts from "./pages/os/OSHRTrainingCerts";
@@ -517,6 +518,8 @@ const App = () => (
                   <Route path="/hr-team" element={<OSHRTeam />} />
                   <Route path="/hr/workspace" element={<OSHRWorkspace />} />
                   <Route path="/hr/training-academy" element={<OSHRTrainingAcademy />} />
+                  <Route path="/os/onboarding" element={<OSOnboarding />} />
+                  <Route path="/hr/onboarding-journey" element={<OSOnboarding />} />
                   <Route path="/hr/new-hires" element={<OSHRNewHires />} />
                   <Route path="/hr/employee-support" element={<OSHREmployeeSupport />} />
                   <Route path="/hr/training-certifications" element={<OSHRTrainingCerts />} />
@@ -690,7 +693,8 @@ const App = () => (
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
-                  <Route path="/onboarding/roadmap" element={<OnboardingRoadmap />} />
+                  {/* Legacy flat-roadmap removed — Journey is the canonical onboarding. */}
+                  <Route path="/onboarding/roadmap" element={<Navigate to="/onboarding" replace />} />
                   <Route path="/onboarding/phase/welcome" element={<PhaseWelcome />} />
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
                   <Route path="/onboarding/week/2" element={<WeekTwo />} />
