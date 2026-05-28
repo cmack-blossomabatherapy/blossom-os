@@ -280,7 +280,7 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
           <div className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-2">
             <div>
               <p className="text-sm font-medium">Active</p>
-              <p className="text-xs text-muted-foreground">Inactive staff are hidden from evaluation cycles.</p>
+              <p className="text-xs text-muted-foreground">Inactive staff are excluded from upcoming evaluations.</p>
             </div>
             <Switch checked={active} onCheckedChange={setActive} />
           </div>
