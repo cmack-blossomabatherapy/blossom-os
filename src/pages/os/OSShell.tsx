@@ -9,7 +9,7 @@ import {
   Workflow, BookOpen, Megaphone, PieChart, LifeBuoy, Inbox, AlertTriangle,
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
-  LineChart, PhoneCall, Gauge, Database,
+  LineChart, PhoneCall, Gauge, Database, Moon,
   Plug,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
@@ -43,6 +43,18 @@ import blossomLogo from "@/assets/blossom-logo-color.png";
 import blossomMark from "@/assets/blossom-flower-mark.png";
 
 type NavEntry = { to: string; label: string; icon: typeof LayoutDashboard; module: OSModule; end?: boolean; disabled?: boolean };
+
+const PHONE_SYSTEM_SECTION: NavSection = {
+  id: "phone_system",
+  label: "Phone System",
+  items: [
+    { to: "/phone", label: "Phone Dashboard", icon: PhoneCall, module: "phone_system", end: true },
+    { to: "/phone/lookup", label: "Extension Lookup", icon: Search, module: "phone_system" },
+    { to: "/phone/directory", label: "Routing Directory", icon: Headphones, module: "phone_system" },
+    { to: "/phone/requests", label: "Change Requests", icon: ClipboardList, module: "phone_system" },
+    { to: "/phone/ai-calls", label: "After-Hours AI Calls", icon: Moon, module: "phone_system" },
+  ],
+};
 type NavSection = { id: string; label: string; items: NavEntry[] };
 
 const HOME_EXTRAS: NavEntry[] = [
@@ -130,6 +142,9 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/ai/predictive", label: "Predictive Alerts", icon: Activity, module: "predictive_alerts" },
       { to: "/ai/workflows", label: "AI Workflows", icon: Wand2, module: "ai_workflows" },
     ],
+  },
+  {
+    id: "phone_system", label: "Phone System", items: PHONE_SYSTEM_SECTION.items,
   },
   {
     id: "system", label: "System", items: [
@@ -559,6 +574,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
       ],
     },
+    PHONE_SYSTEM_SECTION,
     {
       id: "hr_ops", label: "HR Operations", items: [
         { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },

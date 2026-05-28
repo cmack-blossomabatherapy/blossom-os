@@ -90,6 +90,7 @@ export type OSModule =
   | "marketing_reports"
   | "web_analytics"
   | "call_tracking"
+  | "phone_system"
   | "attribution_roi"
   | "tech_requests"
   | "internal_requests"
@@ -146,6 +147,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   marketing_reports: "/marketing/reports",
   web_analytics: "/marketing/web-analytics",
   call_tracking: "/marketing/call-tracking",
+  phone_system: "/phone",
   attribution_roi: "/marketing/attribution",
   tech_requests: "/tech-requests",
   internal_requests: "/internal-requests",
@@ -277,9 +279,9 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   hr_team: {
-    modules: ["dashboard", "hr", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "kpi", "ai_assistant"],
+    modules: ["dashboard", "hr", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "kpi", "phone_system", "ai_assistant"],
     scope: "company",
-    actions: { dashboard: VIEW, hr: FULL, staff: VIEW_EDIT, training: VIEW_EDIT },
+    actions: { dashboard: VIEW, hr: FULL, staff: VIEW_EDIT, training: VIEW_EDIT, phone_system: VIEW_EDIT },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   billing_finance: {
