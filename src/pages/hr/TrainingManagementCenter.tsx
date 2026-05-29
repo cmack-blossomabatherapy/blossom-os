@@ -262,6 +262,7 @@ export default function TrainingManagementCenter() {
             />
           )}
           {nav === "modules" && <ModulesGrid modules={filteredModules} />}
+          {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "tangos" && <TangosGrid />}
           {nav === "assignments" && <AssignmentsTable />}
