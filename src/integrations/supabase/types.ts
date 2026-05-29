@@ -2486,6 +2486,39 @@ export type Database = {
         }
         Relationships: []
       }
+      device_inventory: {
+        Row: {
+          created_at: string
+          device_type: string
+          id: string
+          name: string
+          notes: string | null
+          serial: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_type: string
+          id?: string
+          name: string
+          notes?: string | null
+          serial?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          serial?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_bonuses: {
         Row: {
           amount: number
@@ -2638,6 +2671,7 @@ export type Database = {
           device_type: string
           employee_id: string
           id: string
+          inventory_id: string | null
           name: string
           notes: string | null
           returned_at: string | null
@@ -2652,6 +2686,7 @@ export type Database = {
           device_type?: string
           employee_id: string
           id?: string
+          inventory_id?: string | null
           name: string
           notes?: string | null
           returned_at?: string | null
@@ -2666,6 +2701,7 @@ export type Database = {
           device_type?: string
           employee_id?: string
           id?: string
+          inventory_id?: string | null
           name?: string
           notes?: string | null
           returned_at?: string | null
@@ -2686,6 +2722,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_devices_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "device_inventory"
             referencedColumns: ["id"]
           },
         ]
