@@ -583,6 +583,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     PHONE_SYSTEM_SECTION,
     {
       id: "hr_ops", label: "HR Operations", items: [
+        { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
         { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
         { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", disabled: true },
         { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
