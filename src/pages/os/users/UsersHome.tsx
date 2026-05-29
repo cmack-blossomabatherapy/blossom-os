@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, Users2, MapPin, Building2, ChevronRight, Filter, Plus, BadgeCheck,
+  Search, Users2, MapPin, Building2, ChevronRight, Filter, Plus, BadgeCheck, Sparkles,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
 }
 
-function EmployeeCard({ m }: { m: DirectoryEmployee }) {
+function EmployeeCard({ m, completion }: { m: DirectoryEmployee; completion?: number }) {
   return (
     <Link
       to={`/user-management/${m.id}`}
@@ -49,6 +49,22 @@ function EmployeeCard({ m }: { m: DirectoryEmployee }) {
             <span className="inline-flex items-center gap-1"><MapPin className="size-3" />{m.states?.[0] ?? "—"}</span>
             <span className="opacity-40">·</span>
             <span className="inline-flex items-center gap-1"><Building2 className="size-3" />{m.departmentName ?? "Unassigned"}</span>
+            {typeof completion === "number" && (
+              <>
+                <span className="opacity-40">·</span>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5",
+                    completion >= 80 ? "text-emerald-600 bg-emerald-500/10" :
+                    completion >= 40 ? "text-amber-600 bg-amber-500/10" :
+                                       "text-muted-foreground bg-muted",
+                  )}
+                  title="Profile completion"
+                >
+                  <Sparkles className="size-3" /> {completion}%
+                </span>
+              </>
+            )}
           </div>
           {m.email && (
             <p className="mt-2 truncate text-[11px] text-muted-foreground">{m.email}</p>
@@ -68,12 +84,30 @@ export default function UsersHome() {
   const [status, setStatus] = useState<string>("All");
   const [openAdd, setOpenAdd] = useState(false);
   const [hrDepartments, setHrDepartments] = useState<Department[]>([]);
+  const [completion, setCompletion] = useState<Record<string, number>>({});
 
   useEffect(() => {
     void supabase.from("hr_departments").select("*").order("name").then(({ data }) => {
       if (data) setHrDepartments(data as Department[]);
     });
   }, []);
+
+  // Live profile-completion percentages from the Identity System view.
+  useEffect(() => {
+    let cancelled = false;
+    void supabase
+      .from("employee_profile_completion")
+      .select("employee_id,score")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const next: Record<string, number> = {};
+        (data as Array<{ employee_id: string; score: number | null }>).forEach((r) => {
+          if (r.employee_id) next[r.employee_id] = Math.round(Number(r.score ?? 0));
+        });
+        setCompletion(next);
+      });
+    return () => { cancelled = true; };
+  }, [members.length]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -151,7 +185,9 @@ export default function UsersHome() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((m) => <EmployeeCard key={m.id} m={m} />)}
+            {filtered.map((m) => (
+              <EmployeeCard key={m.id} m={m} completion={m.uuid ? completion[m.uuid] : undefined} />
+            ))}
           </div>
         )}
       </div>

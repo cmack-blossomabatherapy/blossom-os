@@ -9858,14 +9858,27 @@ export type Database = {
       get_nfc_badge: {
         Args: { _code: string }
         Returns: {
+          about_me: string
           badge_style: string
+          bio: string
+          credential: string
           department_name: string
           display_name: string
           email: string
+          emergency_contact: Json
           employee_id: string
+          expertise: string[]
+          extension: string
           job_title: string
+          languages: string[]
+          leadership_level: string
+          nfc_settings: Json
           phone: string
           photo_url: string
+          preferred_name: string
+          pronouns: string
+          role_key: string
+          skills: string[]
           state: string
           states: string[]
         }[]

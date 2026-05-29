@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BadgeCheck, ShieldAlert, PhoneCall, MapPin, Building2, Mail, Phone, UserPlus, Globe } from "lucide-react";
+import { BadgeCheck, MapPin, Building2, Languages, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import blossomLogo from "@/assets/blossom-logo-color.png";
+import { variantFor, ACTION_META, type NfcActionKind, type RoleKey } from "./roleVariants";
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
@@ -31,14 +32,27 @@ function setLink(rel: string, href: string) {
 type Badge = {
   employee_id: string;
   display_name: string;
+  preferred_name: string | null;
   job_title: string | null;
+  credential: string | null;
+  pronouns: string | null;
   photo_url: string | null;
   email: string | null;
   phone: string | null;
+  extension: string | null;
   department_name: string | null;
   states: string[] | null;
   state: string | null;
+  bio: string | null;
+  about_me: string | null;
+  expertise: string[] | null;
+  skills: string[] | null;
+  languages: string[] | null;
+  leadership_level: string | null;
+  emergency_contact: { name?: string; relationship?: string; phone?: string; email?: string } | null;
+  nfc_settings: { enabled?: boolean; public?: boolean; internal?: boolean; business_card?: boolean; emergency?: boolean } | null;
   badge_style: "parent_safety" | "business_card";
+  role_key: RoleKey | null;
 };
 
 function buildVCard(b: Badge) {
@@ -111,7 +125,63 @@ export default function NfcPublicProfile() {
   }, [m?.display_name]);
 
   const statesLabel = (m?.states && m.states.length ? m.states : m?.state ? [m.state] : []).join(", ");
-  const isParentSafety = m?.badge_style === "parent_safety";
+  const variant = variantFor(m?.role_key);
+  // Honor admin-controlled visibility from the Identity tab.
+  const settings = m?.nfc_settings ?? {};
+  const publicAllowed = settings.public !== false;
+  const businessCardAllowed = settings.business_card !== false;
+  // Parent-safety fallback when admin hasn't opted into the business-card view.
+  const isParentSafety = variant.parentSafety || !businessCardAllowed;
+
+  const hrefFor = (kind: NfcActionKind): string | undefined => {
+    if (!m) return undefined;
+    switch (kind) {
+      case "email":           return m.email ? `mailto:${m.email}` : undefined;
+      case "call":            return m.phone ? `tel:${m.phone}` : undefined;
+      case "website":         return "https://blossomabatherapy.com";
+      case "support_line":    return "tel:+18445566256";
+      case "report_concern":  return "mailto:concerns@blossomabatherapy.com";
+      case "schedule":        return m.email ? `mailto:${m.email}?subject=Schedule%20request` : undefined;
+      case "message":         return m.phone ? `sms:${m.phone}` : undefined;
+      default:                return undefined;
+    }
+  };
+
+  const renderActions = (kinds: NfcActionKind[]) => {
+    const items = kinds
+      .map((kind) => {
+        const meta = ACTION_META[kind];
+        const href = hrefFor(kind);
+        const isSave = kind === "save_contact";
+        if (!isSave && !href) return null;
+        return { kind, meta, href, isSave };
+      })
+      .filter(Boolean) as { kind: NfcActionKind; meta: typeof ACTION_META[NfcActionKind]; href?: string; isSave: boolean }[];
+    if (items.length === 0) return null;
+    const cols = items.length === 1 ? "grid-cols-1" : "grid-cols-2";
+    return (
+      <div className={`grid ${cols} gap-px bg-border/60`}>
+        {items.map(({ kind, meta, href, isSave }) => {
+          const cls = `flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium transition hover:bg-muted ${
+            meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-foreground"
+          }`;
+          const Icon = meta.icon;
+          if (isSave) {
+            return (
+              <button key={kind} onClick={() => m && downloadVCard(m)} className={cls}>
+                <Icon className="size-4" /> {meta.label}
+              </button>
+            );
+          }
+          return (
+            <a key={kind} href={href} className={cls}>
+              <Icon className="size-4" /> {meta.label}
+            </a>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-5 py-10">
@@ -141,8 +211,21 @@ export default function NfcPublicProfile() {
               </div>
             )}
           </div>
+        ) : !publicAllowed ? (
+          <div className="rounded-3xl border border-border/70 bg-card p-10 text-center shadow-sm space-y-3">
+            <p className="text-sm font-medium text-foreground">This badge is private</p>
+            <p className="text-xs text-muted-foreground">
+              {m.display_name} hasn't enabled the public profile for their Blossom badge. If you need to reach them, please contact Blossom directly.
+            </p>
+            <a href="tel:+18445566256" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+              Call Blossom support
+            </a>
+          </div>
         ) : (
           <article className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
+            <div className="flex items-center justify-center gap-1.5 px-8 pt-6 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <variant.icon className="size-3" /> {variant.eyebrow}
+            </div>
             <div className="flex flex-col items-center gap-3 px-8 pt-10 pb-6">
               {m.photo_url ? (
                 <img src={m.photo_url} alt="" className="size-28 rounded-full object-cover ring-2 ring-primary/30" />
@@ -152,12 +235,19 @@ export default function NfcPublicProfile() {
                 </div>
               )}
               <div className="text-center">
-                <h1 className="text-xl font-semibold tracking-tight">{m.display_name}</h1>
+                <h1 className="text-xl font-semibold tracking-tight">
+                  {m.display_name}
+                  {m.credential ? <span className="ml-1.5 text-sm font-normal text-muted-foreground">{m.credential}</span> : null}
+                </h1>
                 {m.job_title && <p className="text-sm text-muted-foreground">{m.job_title}</p>}
+                {m.pronouns && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.pronouns}</p>}
               </div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                 <BadgeCheck className="size-3.5" /> Verified Blossom employee
               </span>
+              <p className="max-w-xs text-center text-[13px] leading-relaxed text-muted-foreground">
+                {m.about_me || m.bio || variant.tagline}
+              </p>
             </div>
 
             <div className="border-t border-border/60 px-8 py-5 text-sm">
@@ -168,50 +258,31 @@ export default function NfcPublicProfile() {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="size-3.5" /> {statesLabel || "Multi-state"}
                 </div>
+                {m.languages && m.languages.length > 0 && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Languages className="size-3.5" /> {m.languages.join(", ")}
+                  </div>
+                )}
               </dl>
+              {(m.expertise?.length || m.skills?.length) ? (
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {[...(m.expertise ?? []), ...(m.skills ?? [])].slice(0, 6).map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+                      <Sparkles className="size-3 opacity-60" /> {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
-            {isParentSafety ? (
-              <>
-                <div className="grid grid-cols-2 gap-px bg-border/60">
-                  <a href="tel:+18445566256" className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-foreground hover:bg-muted transition">
-                    <PhoneCall className="size-4" /> Contact Blossom
-                  </a>
-                  <a href="mailto:concerns@blossomabatherapy.com" className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-destructive hover:bg-muted transition">
-                    <ShieldAlert className="size-4" /> Report concern
-                  </a>
-                </div>
-                <p className="border-t border-border/60 px-8 py-4 text-center text-[11px] text-muted-foreground">
-                  Verified {new Date().toLocaleDateString()} · Personal contact info is never shown
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 gap-px bg-border/60 sm:grid-cols-2">
-                  {m.email && (
-                    <a href={`mailto:${m.email}`} className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-foreground hover:bg-muted transition">
-                      <Mail className="size-4" /> Email
-                    </a>
-                  )}
-                  {m.phone && (
-                    <a href={`tel:${m.phone}`} className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-foreground hover:bg-muted transition">
-                      <Phone className="size-4" /> Call
-                    </a>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 gap-px bg-border/60 sm:grid-cols-2 border-t border-border/60">
-                  <button onClick={() => downloadVCard(m)} className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-primary hover:bg-muted transition">
-                    <UserPlus className="size-4" /> Save to Contacts
-                  </button>
-                  <a href="https://blossomabatherapy.com" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium text-foreground hover:bg-muted transition">
-                    <Globe className="size-4" /> Visit Blossom
-                  </a>
-                </div>
-                <p className="border-t border-border/60 px-8 py-4 text-center text-[11px] text-muted-foreground">
-                  Verified Blossom ABA Therapy team member · Tap Save to Contacts to add to your phone
-                </p>
-              </>
-            )}
+            <div className="border-t border-border/60">
+              {renderActions(variant.actions)}
+            </div>
+            <p className="border-t border-border/60 px-8 py-4 text-center text-[11px] text-muted-foreground">
+              {isParentSafety
+                ? `Verified ${new Date().toLocaleDateString()} · Personal contact info is never shown`
+                : "Verified Blossom team member · Tap Save to Contacts to add to your phone"}
+            </p>
           </article>
         )}
 

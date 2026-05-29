@@ -804,6 +804,8 @@ const App = () => (
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
+                  {/* Blossom Identity System — top-level Operations route alias */}
+                  <Route path="/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
                   <Route path="/hr/time-clock" element={<PermissionRoute permission="hr.timeclock.view"><TimeClock /></PermissionRoute>} />
                   <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
