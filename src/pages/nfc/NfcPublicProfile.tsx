@@ -9,6 +9,26 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
 }
 
+function setMeta(attr: "name" | "property", key: string, value: string) {
+  let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", value);
+}
+
+function setLink(rel: string, href: string) {
+  let el = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+  if (!el) {
+    el = document.createElement("link");
+    el.setAttribute("rel", rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("href", href);
+}
+
 export default function NfcPublicProfile() {
   const { code } = useParams<{ code: string }>();
   const { members, loading } = useEmployeeDirectory();
@@ -34,6 +54,21 @@ export default function NfcPublicProfile() {
   const m = direct ?? (resolvedUuid ? members.find((x) => x.uuid === resolvedUuid) ?? null : null);
   const isLoading = loading || (!direct && !lookupDone);
 
+  // Brand the OS tap prompt, page title, and social previews.
+  useEffect(() => {
+    const personLabel = m?.name ? ` — ${m.name}` : "";
+    document.title = `Blossom Smart Badge${personLabel}`;
+    setMeta("name", "description", "Blossom Smart Badge — verify your Blossom ABA Therapy provider.");
+    setMeta("name", "theme-color", "#2B7BD5");
+    setMeta("property", "og:title", `Blossom Smart Badge${personLabel}`);
+    setMeta("property", "og:description", "Verified Blossom ABA Therapy provider badge.");
+    setMeta("property", "og:type", "website");
+    setMeta("property", "og:image", `${window.location.origin}${blossomLogo}`);
+    setMeta("name", "twitter:card", "summary");
+    setMeta("name", "twitter:title", `Blossom Smart Badge${personLabel}`);
+    setLink("apple-touch-icon", blossomLogo);
+  }, [m?.name]);
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-5 py-10">
       <div className="mx-auto max-w-md">
@@ -43,7 +78,9 @@ export default function NfcPublicProfile() {
 
         {isLoading || !m ? (
           <div className="rounded-3xl border border-border/70 bg-card p-10 text-center shadow-sm">
-            <p className="text-sm text-muted-foreground">{isLoading ? "Verifying…" : "This employee tag is not recognized or has been revoked."}</p>
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? "Opening Blossom Smart Badge…" : "This badge isn't recognized or has been revoked. Please contact Blossom if you scanned a current employee card."}
+            </p>
           </div>
         ) : (
           <article className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
