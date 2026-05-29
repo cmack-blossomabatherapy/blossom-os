@@ -1511,7 +1511,7 @@ export default function EmployeeProfilePage() {
         {/* Header */}
         <Card className="mb-8 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-5">
+            <div id="badge-photo" className="flex items-center gap-5 scroll-mt-24">
               {member.uuid && user?.id ? (
                 <AvatarUploader
                   ownerUserId={user.id}
