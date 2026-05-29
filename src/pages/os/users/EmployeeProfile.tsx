@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { nfcBadgeUrl } from "@/lib/publicUrl";
 import { variantFor, ACTION_META, type RoleKey, type NfcActionKind } from "@/pages/nfc/roleVariants";
+import type { Database } from "@/integrations/supabase/types";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -126,46 +127,134 @@ function fmtRel(iso?: string | null) {
 // EMPLOYMENT
 // ============================================================================
 
+type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
+type EmploymentType = Database["public"]["Enums"]["employment_type"];
+type PayType = Database["public"]["Enums"]["pay_type"];
+type WorkSetting = Database["public"]["Enums"]["work_setting"];
+
+type EmploymentRow = {
+  employee_code: string | null;
+  hire_date: string | null;
+  start_date: string | null;
+  status: EmployeeStatus;
+  employment_type: EmploymentType;
+  pay_type: PayType;
+  work_setting: WorkSetting;
+  manager_id: string | null;
+  viventium_employee_id: string | null;
+  viventium_sync_status: string | null;
+  viventium_last_sync: string | null;
+  job_title: string;
+  department_id: string | null;
+  state: string;
+  email: string | null;
+  phone: string | null;
+  credential: string | null;
+  pronouns: string | null;
+};
+
+const EMPLOYEE_STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
+  { value: "pending_start", label: "Pending Start" },
+  { value: "active", label: "Active" },
+  { value: "on_leave", label: "On Leave" },
+  { value: "on_hold", label: "On Hold" },
+  { value: "terminated", label: "Terminated" },
+  { value: "resigned", label: "Resigned" },
+];
+
+const EMPLOYMENT_TYPE_OPTIONS: { value: EmploymentType; label: string }[] = [
+  { value: "full_time", label: "Full-time" },
+  { value: "part_time", label: "Part-time" },
+  { value: "contractor", label: "Contractor" },
+  { value: "prn", label: "PRN" },
+];
+
+const PAY_TYPE_OPTIONS: { value: PayType; label: string }[] = [
+  { value: "hourly", label: "Hourly" },
+  { value: "salaried", label: "Salaried" },
+];
+
+const WORK_SETTING_OPTIONS: { value: WorkSetting; label: string }[] = [
+  { value: "clinic", label: "Clinic" },
+  { value: "home", label: "Home-based" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "admin", label: "Admin" },
+  { value: "field", label: "Field" },
+  { value: "office", label: "Office Staff" },
+  { value: "leadership", label: "Leadership" },
+  { value: "intake", label: "Intake" },
+  { value: "recruiting", label: "Recruiting" },
+  { value: "scheduling", label: "Scheduling" },
+  { value: "state_director", label: "State Director" },
+  { value: "operations", label: "Operations" },
+  { value: "systems", label: "Systems / IT" },
+];
+
+const STATE_OPTIONS = ["GA", "NC", "TN", "VA", "MD", "NJ"];
+
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
+  const { hasPerm } = useAuth();
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
-  const [row, setRow] = useState<any | null>(null);
+  const canEditEmployment = hasPerm("hr.employees.edit");
+  const [row, setRow] = useState<EmploymentRow | null>(null);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [manager, setManager] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>(m.title ?? "");
+  const [departmentId, setDepartmentId] = useState<string>(m.departmentId ?? "unassigned");
+  const [state, setState] = useState<string>(m.states?.[0] ?? "GA");
+  const [status, setStatus] = useState<EmployeeStatus>("active");
+  const [employmentType, setEmploymentType] = useState<EmploymentType>("full_time");
+  const [payType, setPayType] = useState<PayType>("hourly");
+  const [workSetting, setWorkSetting] = useState<WorkSetting>("office");
   const [email, setEmail] = useState<string>(m.email ?? "");
   const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [credential, setCredential] = useState<string>(m.credential ?? "");
   const [pronouns, setPronouns] = useState<string>("");
-  const [savingContact, setSavingContact] = useState(false);
+  const [savingEmployment, setSavingEmployment] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
     employee.name?.toLowerCase() === m.name.toLowerCase(),
   ), [phoneEmployees, m.uuid, m.email, m.name]);
-  useEffect(() => {
+
+  const loadEmployment = useCallback(async () => {
     if (!m.uuid) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
+    const [{ data }, { data: deptRows }] = await Promise.all([
+      supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone,pronouns")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns")
         .eq("id", m.uuid)
+        .maybeSingle(),
+      supabase.from("hr_departments").select("id,name").order("name"),
+    ]);
+    setDepartments(deptRows ?? []);
+    if (!data) return;
+    setRow(data);
+    setTitle(data.job_title ?? "");
+    setDepartmentId(data.department_id ?? "unassigned");
+    setState(data.state ?? "GA");
+    setStatus(data.status ?? "active");
+    setEmploymentType(data.employment_type ?? "full_time");
+    setPayType(data.pay_type ?? "hourly");
+    setWorkSetting(data.work_setting ?? "office");
+    setEmail(data.email ?? "");
+    setPhone(data.phone ?? "");
+    setCredential(data.credential ?? "");
+    setPronouns(data.pronouns ?? "");
+    setManager(null);
+    if (data.manager_id) {
+      const { data: mgr } = await supabase
+        .from("employees")
+        .select("first_name,last_name,preferred_name")
+        .eq("id", data.manager_id)
         .maybeSingle();
-      if (cancelled) return;
-      setRow(data);
-      if (data?.email != null) setEmail(data.email);
-      if (data?.phone != null) setPhone(data.phone);
-      if (data?.pronouns != null) setPronouns(data.pronouns);
-      if (data?.manager_id) {
-        const { data: mgr } = await supabase
-          .from("employees")
-          .select("first_name,last_name,preferred_name")
-          .eq("id", data.manager_id)
-          .maybeSingle();
-        if (!cancelled && mgr) {
-          setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
-        }
-      }
-    })();
-    return () => { cancelled = true; };
+      if (mgr) setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
+    }
   }, [m.uuid]);
+
+  useEffect(() => {
+    void loadEmployment();
+  }, [loadEmployment]);
 
   const connected = !!row?.viventium_employee_id && row?.viventium_sync_status !== "not_connected";
   const sourceBadge = (owned: boolean) => (
@@ -173,23 +262,34 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
       {owned && connected ? "Viventium" : "Manual"}
     </StatusBadge>
   );
-  const statusLabel = row?.status ? row.status.replace(/_/g, " ") : "Active";
-  const statusTone: "ok" | "warn" | "crit" | "muted" =
-    row?.status === "active" ? "ok"
-    : row?.status === "on_leave" ? "warn"
-    : row?.status === "terminated" ? "crit"
-    : "muted";
-
-  const saveContact = async () => {
+  const saveEmployment = async () => {
     if (!m.uuid) return;
-    setSavingContact(true);
+    if (!canEditEmployment) { toast.error("You don't have permission to edit employment records."); return; }
+    const cleanTitle = title.trim();
+    if (!cleanTitle) { toast.error("Title is required."); return; }
+    setSavingEmployment(true);
     const { error } = await supabase
       .from("employees")
-      .update({ email: email.trim() || null, phone: phone.trim() || null, pronouns: pronouns.trim() || null })
+      .update({
+        job_title: cleanTitle,
+        department_id: departmentId === "unassigned" ? null : departmentId,
+        state,
+        status,
+        employment_type: employmentType,
+        pay_type: payType,
+        work_setting: workSetting,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        credential: credential.trim() || null,
+        pronouns: pronouns.trim() || null,
+      })
       .eq("id", m.uuid);
-    setSavingContact(false);
+    setSavingEmployment(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Saved");
+    toast.success("Employment updated");
+    await loadEmployment();
+    window.dispatchEvent(new Event("employee-directory:refresh"));
+    window.dispatchEvent(new Event("team-directory:refresh"));
   };
 
   return (
@@ -206,64 +306,78 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             <StatusBadge tone="muted">Manual entry</StatusBadge>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FieldWithSource label="Employee ID" value={row?.employee_code ?? m.uuid?.slice(0, 8).toUpperCase() ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Viventium ID" value={row?.viventium_employee_id ?? "Not linked"} source={sourceBadge(true)} />
           <FieldWithSource label="Hire Date" value={fmtDate(row?.hire_date ?? row?.start_date)} source={sourceBadge(true)} />
-          <FieldWithSource label="Employment Status" value={<StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>} source={sourceBadge(true)} />
-          <FieldWithSource label="Employment Type" value={row?.employment_type?.replace(/_/g, " ") ?? "—"} source={sourceBadge(true)} />
-          <FieldWithSource label="Pay Type" value={row?.pay_type ?? "—"} source={sourceBadge(true)} />
-          <FieldWithSource label="Department" value={m.departmentName ?? "Unassigned"} source={sourceBadge(false)} />
+          <div id="employment-title" className="scroll-mt-24">
+            <EditableLabel label="Title" source={sourceBadge(false)} />
+            <Input value={title} disabled={!canEditEmployment} onChange={(e) => setTitle(e.target.value)} placeholder="Employee title" className="mt-1 h-9" />
+          </div>
+          <div id="employment-department" className="scroll-mt-24">
+            <EditableLabel label="Department" source={sourceBadge(false)} />
+            <Select value={departmentId} onValueChange={setDepartmentId} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div id="employment-status" className="scroll-mt-24">
+            <EditableLabel label="Status" source={sourceBadge(true)} />
+            <Select value={status} onValueChange={(value) => setStatus(value as EmployeeStatus)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{EMPLOYEE_STATUS_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-state" className="scroll-mt-24">
+            <EditableLabel label="State" source={sourceBadge(false)} />
+            <Select value={state} onValueChange={setState} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATE_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-type" className="scroll-mt-24">
+            <EditableLabel label="Employment Type" source={sourceBadge(true)} />
+            <Select value={employmentType} onValueChange={(value) => setEmploymentType(value as EmploymentType)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{EMPLOYMENT_TYPE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-pay-type" className="scroll-mt-24">
+            <EditableLabel label="Pay Type" source={sourceBadge(true)} />
+            <Select value={payType} onValueChange={(value) => setPayType(value as PayType)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{PAY_TYPE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-work-setting" className="scroll-mt-24">
+            <EditableLabel label="Work Setting" source={sourceBadge(false)} />
+            <Select value={workSetting} onValueChange={(value) => setWorkSetting(value as WorkSetting)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{WORK_SETTING_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="State" value={m.states?.[0] ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
           <div id="employment-email" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email</p>
-              {sourceBadge(false)}
-            </div>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={saveContact}
-              placeholder="name@blossomabatherapy.com"
-              type="email"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Email" source={sourceBadge(false)} />
+            <Input value={email} disabled={!canEditEmployment} onChange={(e) => setEmail(e.target.value)} placeholder="name@blossomabatherapy.com" type="email" className="mt-1 h-9" />
           </div>
           <div id="employment-phone" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone</p>
-              {sourceBadge(false)}
-            </div>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onBlur={saveContact}
-              placeholder="(555) 555-5555"
-              type="tel"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Phone" source={sourceBadge(false)} />
+            <Input value={phone} disabled={!canEditEmployment} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" type="tel" className="mt-1 h-9" />
+          </div>
+          <div id="employment-credential" className="scroll-mt-24">
+            <EditableLabel label="Credential" source={<StatusBadge tone="muted">Optional</StatusBadge>} />
+            <Input value={credential} disabled={!canEditEmployment} onChange={(e) => setCredential(e.target.value)} placeholder="BCBA, RBT, LBA" className="mt-1 h-9" />
           </div>
           <div id="employment-pronouns" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pronouns</p>
-              <StatusBadge tone="muted">Optional</StatusBadge>
-            </div>
-            <input
-              value={pronouns}
-              onChange={(e) => setPronouns(e.target.value)}
-              onBlur={saveContact}
-              placeholder="she/her, he/him, they/them"
-              type="text"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Pronouns" source={<StatusBadge tone="muted">Optional</StatusBadge>} />
+            <Input value={pronouns} disabled={!canEditEmployment} onChange={(e) => setPronouns(e.target.value)} placeholder="she/her, he/him, they/them" className="mt-1 h-9" />
           </div>
           <div>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
-              <StatusBadge tone={phoneRecord?.extension ? "ok" : "muted"}>Phone System</StatusBadge>
-            </div>
+            <EditableLabel label="Phone Extension" source={<StatusBadge tone={phoneRecord?.extension ? "ok" : "muted"}>Phone System</StatusBadge>} />
             <input
               value={phoneRecord?.extension ?? ""}
               onChange={(event) => saveEmployeeExtension(phoneRecord?.extension ?? "", {
@@ -280,7 +394,12 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
         </div>
-        {savingContact && <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p>}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+          <p className="text-xs text-muted-foreground">{canEditEmployment ? "Update title, department, status, contact details, and badge readiness from one place." : "You can view employment details, but editing requires HR employee edit access."}</p>
+          <Button size="sm" onClick={saveEmployment} disabled={!canEditEmployment || savingEmployment}>
+            {savingEmployment ? "Saving…" : "Save employment"}
+          </Button>
+        </div>
       </Card>
       <Card>
         <div className="flex items-center justify-between gap-4">
@@ -309,6 +428,15 @@ function FieldWithSource({ label, value, source }: { label: string; value: React
         {source}
       </div>
       <p className="mt-1 text-sm text-foreground">{value ?? "—"}</p>
+    </div>
+  );
+}
+
+function EditableLabel({ label, source }: { label: string; source: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      {source}
     </div>
   );
 }
@@ -1291,7 +1419,6 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const openHr = () => jumpToEmployment();
 
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
@@ -1304,10 +1431,10 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
       hint: photoUploaded ? "Uploaded" : m.photo ? "Using brochure fallback — upload a real photo" : "Missing — initials only",
       onFix: () => scrollTo("badge-photo"),
     },
-    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: openHr },
-    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: openHr },
-    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: openHr },
-    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: openHr },
+    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: () => jumpToEmployment("employment-title") },
+    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: () => jumpToEmployment("employment-department") },
+    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: () => jumpToEmployment("employment-state") },
+    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: () => jumpToEmployment("employment-credential") },
     { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => jumpToEmployment("employment-pronouns") },
     { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => scrollTo("badge-about") },
     { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => scrollTo("badge-tags") },
