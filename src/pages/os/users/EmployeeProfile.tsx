@@ -850,6 +850,76 @@ function roleKeyFromTitle(title: string | null | undefined): RoleKey {
   return "employee";
 }
 
+/**
+ * Compact preview of what `/nfc/:code` actually renders for this employee.
+ * Presentation-only — no fetches; mirrors the public shell at a small scale
+ * so admins know exactly which template their team will see.
+ */
+function NfcCardPreview({ m, variant }: { m: DirectoryEmployee; variant: ReturnType<typeof variantFor> }) {
+  const VariantIcon = variant.icon;
+  const tags = (m as DirectoryEmployee & { expertise?: string[]; skills?: string[] });
+  const chips = [...(tags.expertise ?? []), ...(tags.skills ?? [])].slice(0, 3);
+  return (
+    <div className="w-[260px] overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_30px_-18px_oklch(0.2_0.02_260/0.18)]">
+      <p className="bg-muted/40 px-3 py-1.5 text-center text-[9px] uppercase tracking-widest text-muted-foreground">
+        What others see · {variant.eyebrow}
+      </p>
+      <div className="flex flex-col items-center gap-2 px-4 pt-4 pb-3">
+        <div className="inline-flex items-center gap-1 text-[9px] font-medium uppercase tracking-widest text-muted-foreground">
+          <VariantIcon className="size-2.5" /> {variant.eyebrow}
+        </div>
+        {m.photo ? (
+          <img src={m.photo} alt="" className="size-14 rounded-full object-cover ring-2 ring-primary/30" />
+        ) : (
+          <div className="grid size-14 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-primary/30">
+            {initials(m.name)}
+          </div>
+        )}
+        <div className="text-center">
+          <p className="text-sm font-semibold leading-tight">
+            {m.name}
+            {m.credential ? <span className="ml-1 text-[10px] font-normal text-muted-foreground">{m.credential}</span> : null}
+          </p>
+          {m.title && <p className="text-[10px] text-muted-foreground">{m.title}</p>}
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
+          <BadgeCheck className="size-2.5" /> Verified
+        </span>
+        <p className="line-clamp-2 max-w-[220px] text-center text-[10px] leading-snug text-muted-foreground">
+          {m.blurb || variant.tagline}
+        </p>
+      </div>
+      <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5"><Building2 className="size-2.5" /> {m.departmentName ?? "Blossom ABA Therapy"}</div>
+        <div className="mt-1 flex items-center gap-1.5"><MapPin className="size-2.5" /> {(m.states ?? []).join(", ") || "Multi-state"}</div>
+        {chips.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {chips.map((c) => (
+              <span key={c} className="rounded-full bg-muted px-1.5 py-0.5 text-[9px]">{c}</span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-px border-t border-border/60 bg-border/60">
+        {variant.actions.slice(0, 4).map((kind: NfcActionKind) => {
+          const meta = ACTION_META[kind];
+          const Icon = meta.icon;
+          return (
+            <div
+              key={kind}
+              className={`flex items-center justify-center gap-1 bg-card px-2 py-2 text-[10px] font-medium ${
+                meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-foreground"
+              }`}
+            >
+              <Icon className="size-3" /> {meta.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
