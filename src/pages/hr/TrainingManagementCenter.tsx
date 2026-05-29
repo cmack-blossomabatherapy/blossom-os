@@ -55,10 +55,15 @@ import {
   type TrainingModule,
   type TrainingJourney,
 } from "@/lib/hr/trainingCenterData";
+import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
+import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
+import { Link } from "react-router-dom";
+import { Heart } from "lucide-react";
 
 type NavId =
   | "journeys"
   | "modules"
+  | "onboarding"
   | "sops"
   | "tangos"
   | "assignments"
@@ -70,6 +75,7 @@ type NavId =
 const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "journeys", label: "Journeys", icon: Compass },
   { id: "modules", label: "Modules", icon: Layers },
+  { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
   { id: "tangos", label: "Tango Walkthroughs", icon: PlayCircle },
   { id: "assignments", label: "Assignments", icon: Users },
