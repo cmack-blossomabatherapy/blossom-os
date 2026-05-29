@@ -826,6 +826,30 @@ declare global {
   interface Window { NDEFReader?: new () => { write: (msg: { records: NDEFRecordInit[] }, opts?: NDEFWriteOptions) => Promise<void> } }
 }
 
+/**
+ * Client-side mirror of the role-key CASE in `get_nfc_badge()`. Keep these
+ * regexes in the same order as the SQL so the OS preview matches what a
+ * tapped card actually renders.
+ */
+function roleKeyFromTitle(title: string | null | undefined): RoleKey {
+  const t = (title ?? "").toLowerCase();
+  if (/rbt|registered behavior|behavior tech/.test(t)) return "rbt";
+  if (/bcba|bcaba|behavior analyst/.test(t)) return "bcba";
+  if (/state director/.test(t)) return "state_director";
+  if (/intake/.test(t)) return "intake";
+  if (/authoriz/.test(t)) return "authorizations";
+  if (/schedul/.test(t)) return "scheduling";
+  if (/recruit/.test(t)) return "recruiting";
+  if (/hr|human resources|people/.test(t)) return "hr";
+  if (/billing|rcm|revenue|finance|payroll/.test(t)) return "finance";
+  if (/qa|quality/.test(t)) return "qa";
+  if (/marketing|growth|content/.test(t)) return "marketing";
+  if (/case manager|family/.test(t)) return "case_manager";
+  if (/ceo|coo|cfo|chief|president|executive|vp /.test(t)) return "executive";
+  if (/director/.test(t)) return "leadership";
+  return "employee";
+}
+
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
