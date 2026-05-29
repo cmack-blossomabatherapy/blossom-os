@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Network, Search, Save, X as XIcon, Plus, UserCog, Crown,
-  CornerDownRight, Trash2, Loader2, Info,
+  CornerDownRight, Loader2,
 } from "lucide-react";
 import {
   DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent,
