@@ -279,9 +279,9 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   hr_team: {
-    modules: ["dashboard", "hr", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "kpi", "phone_system", "ai_assistant"],
+    modules: ["dashboard", "hr", "user_management", "staff", "employee_ops", "evaluations", "training", "payroll", "sop", "kpi", "phone_system", "ai_assistant"],
     scope: "company",
-    actions: { dashboard: VIEW, hr: FULL, staff: VIEW_EDIT, training: VIEW_EDIT, phone_system: VIEW_EDIT },
+    actions: { dashboard: VIEW, hr: FULL, user_management: FULL, staff: VIEW_EDIT, training: VIEW_EDIT, phone_system: VIEW_EDIT },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: false, aiInsights: false },
   },
   billing_finance: {
