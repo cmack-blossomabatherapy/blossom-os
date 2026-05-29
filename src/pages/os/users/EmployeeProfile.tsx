@@ -1010,6 +1010,11 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               <p className="mt-1">
                 Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so parents recognize it as safe.
               </p>
+              {active && (
+                <p className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5 text-foreground">
+                  Already tapped a card and got "badge isn't recognized"? The physical tag is still programmed with the old URL. Tap <span className="font-medium">Write to NFC tag</span> above (or rewrite it from NXP TagWriter) so it points at the URL shown here.
+                </p>
+              )}
               {!isProductionUrl && (
                 <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-amber-700 dark:text-amber-400">
                   Heads up: this URL points at the preview environment. Republish to the production domain before programming real cards, or parents will see a Lovable login screen.
