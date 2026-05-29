@@ -144,13 +144,19 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: "hr_operations",
+    label: "HR Operations",
+    items: [
+      { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
+      { to: "/hr", label: "HR Suite", icon: Building2, module: "hr" },
+      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
+    ],
+  },
+  {
     id: "phone_system", label: "Phone System", items: PHONE_SYSTEM_SECTION.items,
   },
   {
     id: "system", label: "System", items: [
-      { to: "/hr", label: "HR Suite", icon: Building2, module: "hr" },
-      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
-      { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
       { to: "/state-management", label: "State Management", icon: MapPin, module: "state_management" },
       { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
       { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
