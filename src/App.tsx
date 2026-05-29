@@ -329,6 +329,8 @@ import OSUserManagement from "./pages/os/OSUserManagement";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
 import NfcPublicProfile from "./pages/nfc/NfcPublicProfile";
+import IdentityDashboard from "./pages/admin/IdentityDashboard";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
@@ -695,6 +697,7 @@ const App = () => (
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
                   <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
                   <Route path="/admin/journey-editor" element={<JourneyEditor />} />
+                  <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
