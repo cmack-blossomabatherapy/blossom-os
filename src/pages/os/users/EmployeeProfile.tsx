@@ -17,6 +17,7 @@ import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { nfcBadgeUrl } from "@/lib/publicUrl";
+import { variantFor, ACTION_META, type RoleKey, type NfcActionKind } from "@/pages/nfc/roleVariants";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
