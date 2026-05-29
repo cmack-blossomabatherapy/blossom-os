@@ -965,7 +965,7 @@ function NfcCardPreview({ m, variant }: { m: DirectoryEmployee; variant: ReturnT
   );
 }
 
-function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
+function NfcTab({ m, openAssign, setOpenAssign, jumpToEmployment }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void; jumpToEmployment: (fieldId?: string) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
   const [tagInput, setTagInput] = useState("");
@@ -1221,7 +1221,7 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
         </Card>
       </div>
 
-      <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} />
+      <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} jumpToEmployment={jumpToEmployment} />
 
       {/* Identity editor — bio, expertise/skills/languages, emergency contact, badge visibility.
           Lives inside the Smart Badge tab so everything that powers the public badge is in one place. */}
