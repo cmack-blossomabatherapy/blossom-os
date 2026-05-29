@@ -551,6 +551,9 @@ function deviceIcon(type: string) {
 
 function DevicesTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const [rows, setRows] = useState<DeviceRow[]>([]);
+  const [inventory, setInventory] = useState<Array<{ id: string; device_type: string; name: string; serial: string | null; status: string }>>([]);
+  const [mode, setMode] = useState<"inventory" | "manual">("inventory");
+  const [pickId, setPickId] = useState<string>("");
   const [type, setType] = useState("tablet");
   const [name, setName] = useState("");
   const [serial, setSerial] = useState("");
@@ -565,16 +568,32 @@ function DevicesTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; op
   }, [m.uuid]);
   useEffect(() => { void load(); }, [load]);
 
+  useEffect(() => {
+    if (!openAssign) return;
+    void supabase.from("device_inventory")
+      .select("id,device_type,name,serial,status")
+      .eq("status", "available")
+      .order("device_type").order("name")
+      .then(({ data }) => setInventory((data ?? []) as any));
+  }, [openAssign]);
+
   async function assign() {
-    if (!m.uuid || !name.trim()) return;
+    if (!m.uuid) return;
     setBusy(true);
-    const { error } = await supabase.from("employee_devices").insert({
-      employee_id: m.uuid, device_type: type, name: name.trim(), serial: serial.trim() || null,
-    });
+    let payload: any;
+    if (mode === "inventory") {
+      const item = inventory.find((i) => i.id === pickId);
+      if (!item) { setBusy(false); return toast.error("Pick a device from inventory"); }
+      payload = { employee_id: m.uuid, inventory_id: item.id, device_type: item.device_type, name: item.name, serial: item.serial };
+    } else {
+      if (!name.trim()) { setBusy(false); return toast.error("Device name required"); }
+      payload = { employee_id: m.uuid, device_type: type, name: name.trim(), serial: serial.trim() || null };
+    }
+    const { error } = await supabase.from("employee_devices").insert(payload);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Device assigned");
-    setOpenAssign(false); setName(""); setSerial(""); void load();
+    setOpenAssign(false); setName(""); setSerial(""); setPickId(""); void load();
   }
   async function markReturned(id: string) {
     const { error } = await supabase.from("employee_devices").update({
@@ -598,31 +617,65 @@ function DevicesTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; op
             <DialogDescription>Track a tablet, hotspot, or other asset issued to {m.name}.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Type</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tablet">Tablet</SelectItem>
-                  <SelectItem value="hotspot">Hotspot</SelectItem>
-                  <SelectItem value="laptop">Laptop</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex gap-1 rounded-lg border border-border/60 bg-muted/40 p-1 text-xs">
+              <button onClick={() => setMode("inventory")}
+                className={cn("flex-1 rounded-md py-1.5 font-medium transition", mode === "inventory" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>
+                From inventory ({inventory.length})
+              </button>
+              <button onClick={() => setMode("manual")}
+                className={cn("flex-1 rounded-md py-1.5 font-medium transition", mode === "manual" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>
+                Manual entry
+              </button>
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Device name</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. iPad Air 11"`} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Serial number (optional)</label>
-              <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="e.g. FK2X9P3Q1A" />
-            </div>
+            {mode === "inventory" ? (
+              inventory.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+                  No available devices in inventory. Add one in Admin → Device Inventory, or switch to manual entry.
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Available devices</label>
+                  <Select value={pickId} onValueChange={setPickId}>
+                    <SelectTrigger><SelectValue placeholder="Select a device" /></SelectTrigger>
+                    <SelectContent>
+                      {inventory.map((i) => (
+                        <SelectItem key={i.id} value={i.id}>
+                          {i.name}{i.serial ? ` · SN ${i.serial}` : ""} ({i.device_type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
+            ) : (
+              <>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Type</label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tablet">Tablet</SelectItem>
+                      <SelectItem value="hotspot">Hotspot</SelectItem>
+                      <SelectItem value="laptop">Laptop</SelectItem>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Device name</label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. iPad Air 11"`} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Serial number (optional)</label>
+                  <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="e.g. FK2X9P3Q1A" />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
-            <Button onClick={assign} disabled={!name.trim() || busy}>Assign</Button>
+            <Button onClick={assign} disabled={busy || (mode === "inventory" ? !pickId : !name.trim())}>Assign</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
