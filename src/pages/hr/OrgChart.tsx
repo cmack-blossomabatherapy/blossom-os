@@ -138,6 +138,42 @@ function buildTree(emps: Employee[], depts: DeptRow[]): { roots: Node[]; nodeByI
       : deptHeads;
 
   const nodeById = new Map(all.map((n) => [n.emp.id, n]));
+
+  // ---- Apply manager_id overrides (set via Org Chart Settings) ----
+  // Any employee with an explicit manager_id wins over the title-derived
+  // structure. We detach them from their current parent and re-parent under
+  // the chosen manager. Cycles are skipped silently.
+  const overrides = all.filter((n) => n.emp.manager_id && nodeById.has(n.emp.manager_id));
+  if (overrides.length > 0) {
+    const parentOf = new Map<string, Node>();
+    const walk = (n: Node) => n.reports.forEach((c) => { parentOf.set(c.emp.id, n); walk(c); });
+    roots.forEach(walk);
+
+    overrides.forEach((node) => {
+      const newParent = nodeById.get(node.emp.manager_id!);
+      if (!newParent || newParent === node) return;
+      // Prevent cycle: walk up newParent's ancestors; bail if node is one of them.
+      let cur: Node | undefined = newParent;
+      while (cur) {
+        if (cur === node) return;
+        cur = parentOf.get(cur.emp.id);
+      }
+      // Detach from current parent
+      const oldParent = parentOf.get(node.emp.id);
+      if (oldParent) {
+        oldParent.reports = oldParent.reports.filter((c) => c !== node);
+      } else {
+        // It was a root — drop from roots
+        const idx = roots.indexOf(node);
+        if (idx >= 0) roots.splice(idx, 1);
+      }
+      // Attach to new parent
+      if (!newParent.reports.includes(node)) newParent.reports.push(node);
+      newParent.reports.sort(sortNodes);
+      parentOf.set(node.emp.id, newParent);
+    });
+  }
+
   return { roots, nodeById };
 }
 
