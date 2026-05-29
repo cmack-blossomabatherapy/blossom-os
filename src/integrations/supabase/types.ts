@@ -3705,6 +3705,7 @@ export type Database = {
       employees: {
         Row: {
           about_me: string | null
+          address: string | null
           avatar_url: string | null
           bio: string | null
           certifications: string[]
@@ -3738,6 +3739,7 @@ export type Database = {
           leadership_level: Database["public"]["Enums"]["leadership_level"]
           linkedin_url: string | null
           manager_id: string | null
+          meeting_link: string | null
           next_review_date: string | null
           nfc_settings: Json
           notes: string | null
@@ -3768,6 +3770,7 @@ export type Database = {
         }
         Insert: {
           about_me?: string | null
+          address?: string | null
           avatar_url?: string | null
           bio?: string | null
           certifications?: string[]
@@ -3801,6 +3804,7 @@ export type Database = {
           leadership_level?: Database["public"]["Enums"]["leadership_level"]
           linkedin_url?: string | null
           manager_id?: string | null
+          meeting_link?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
           notes?: string | null
@@ -3831,6 +3835,7 @@ export type Database = {
         }
         Update: {
           about_me?: string | null
+          address?: string | null
           avatar_url?: string | null
           bio?: string | null
           certifications?: string[]
@@ -3864,6 +3869,7 @@ export type Database = {
           leadership_level?: Database["public"]["Enums"]["leadership_level"]
           linkedin_url?: string | null
           manager_id?: string | null
+          meeting_link?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
           notes?: string | null
@@ -9884,6 +9890,7 @@ export type Database = {
           languages: string[]
           leadership_level: string
           linkedin_url: string
+          meeting_link: string
           nfc_settings: Json
           phone: string
           photo_url: string

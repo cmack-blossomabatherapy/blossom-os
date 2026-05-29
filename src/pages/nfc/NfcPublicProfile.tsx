@@ -48,6 +48,7 @@ type Badge = {
   email: string | null;
   phone: string | null;
   extension: string | null;
+  meeting_link: string | null;
   department_name: string | null;
   states: string[] | null;
   state: string | null;
@@ -183,7 +184,7 @@ export default function NfcPublicProfile() {
       case "website":         return "https://blossomabatherapy.com";
       case "support_line":    return "tel:+18445566256";
       case "report_concern":  return "mailto:concerns@blossomabatherapy.com";
-      case "schedule":        return m.email ? `mailto:${m.email}?subject=Schedule%20request` : undefined;
+      case "schedule":        return m.meeting_link || (m.email ? `mailto:${m.email}?subject=Schedule%20request` : undefined);
       case "message":         return m.phone ? `sms:${m.phone}` : undefined;
       default:                return undefined;
     }

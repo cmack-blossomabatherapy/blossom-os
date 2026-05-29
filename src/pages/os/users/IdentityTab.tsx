@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   CheckCircle2, Circle, Sparkles, Save, X, Plus, UserSquare2,
-  Users2, ShieldAlert, Mail, Phone, Building2, MapPin, Linkedin, HelpCircle,
+  Users2, ShieldAlert, Mail, Phone, Building2, MapPin, Linkedin, HelpCircle, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ type IdentityRow = {
   languages: string[] | null;
   help_with: string[] | null;
   linkedin_url: string | null;
+  meeting_link: string | null;
   emergency_contact: { name?: string; relationship?: string; phone?: string; email?: string } | null;
   nfc_settings: { enabled?: boolean; public?: boolean; internal?: boolean; business_card?: boolean; emergency?: boolean } | null;
   photo_url: string | null;
@@ -172,7 +173,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const [empRes, compRes] = await Promise.all([
         supabase.from("employees")
-          .select("bio,about_me,expertise,skills,languages,help_with,linkedin_url,emergency_contact,nfc_settings,photo_url,avatar_url,email,phone")
+          .select("bio,about_me,expertise,skills,languages,help_with,linkedin_url,meeting_link,emergency_contact,nfc_settings,photo_url,avatar_url,email,phone")
           .eq("id", m.uuid!).maybeSingle(),
         supabase.from("employee_profile_completion")
           .select("score,has_photo,has_bio,has_skills,has_contact,has_emergency")
@@ -199,6 +200,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
       languages: row.languages ?? [],
       help_with: row.help_with ?? [],
       linkedin_url: row.linkedin_url,
+      meeting_link: row.meeting_link,
       emergency_contact: row.emergency_contact ?? null,
       nfc_settings: row.nfc_settings ?? {},
     }).eq("id", m.uuid);
@@ -316,6 +318,17 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
                   placeholder="https://www.linkedin.com/in/your-handle"
                 />
                 <p className="mt-1 text-[10px] text-muted-foreground">Only LinkedIn is shown publicly — no other social links.</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground inline-flex items-center gap-1.5">
+                  <Calendar className="size-3.5" /> Meeting / scheduling link <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={row.meeting_link ?? ""}
+                  onChange={(e) => updateRow({ meeting_link: e.target.value })}
+                  placeholder="https://calendly.com/your-handle  or  Microsoft Bookings URL"
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">Used by the "Schedule" button on the digital business card.</p>
               </div>
             </div>
           </div>

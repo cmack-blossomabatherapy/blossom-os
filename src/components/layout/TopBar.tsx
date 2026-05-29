@@ -95,7 +95,7 @@ export function TopBar({ title, onOpenMobileMenu, mobileMenuFloating = false }: 
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/settings")}>
+            <DropdownMenuItem onClick={() => navigate("/account/settings")}>
               <Settings className="h-3.5 w-3.5 mr-2" /> Settings
             </DropdownMenuItem>
             {isAdmin && (

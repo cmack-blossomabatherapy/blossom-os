@@ -145,6 +145,7 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import AccountSettings from "./pages/account/AccountSettings";
 import MfaSetup from "./pages/MfaSetup";
 import MfaVerify from "./pages/MfaVerify";
 import NotificationPreferences from "./pages/NotificationPreferences";
@@ -693,6 +694,7 @@ const App = () => (
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
+                  <Route path="/account/settings" element={<AccountSettings />} />
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
