@@ -270,6 +270,19 @@ export default function NfcPublicProfile() {
                   </div>
                 )}
               </dl>
+              {!isParentSafety && m.help_with && m.help_with.length > 0 ? (
+                <div className="mt-5">
+                  <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">How I can help</p>
+                  <ul className="space-y-1.5">
+                    {m.help_with.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-[13px] text-foreground">
+                        <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {(m.expertise?.length || m.skills?.length) ? (
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {[...(m.expertise ?? []), ...(m.skills ?? [])].slice(0, 6).map((tag) => (
@@ -278,6 +291,16 @@ export default function NfcPublicProfile() {
                     </span>
                   ))}
                 </div>
+              ) : null}
+              {!isParentSafety && m.linkedin_url ? (
+                <a
+                  href={m.linkedin_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-primary hover:underline"
+                >
+                  <Linkedin className="size-3.5" /> Connect on LinkedIn
+                </a>
               ) : null}
             </div>
 
