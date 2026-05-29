@@ -216,32 +216,44 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
     employee.name?.toLowerCase() === m.name.toLowerCase(),
   ), [phoneEmployees, m.uuid, m.email, m.name]);
-  useEffect(() => {
+
+  const loadEmployment = useCallback(async () => {
     if (!m.uuid) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
+    const [{ data }, { data: deptRows }] = await Promise.all([
+      supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone,pronouns")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,job_title,department_id,state,email,phone,credential,pronouns")
         .eq("id", m.uuid)
+        .maybeSingle(),
+      supabase.from("hr_departments").select("id,name").order("name"),
+    ]);
+    setDepartments(deptRows ?? []);
+    if (!data) return;
+    setRow(data);
+    setTitle(data.job_title ?? "");
+    setDepartmentId(data.department_id ?? "unassigned");
+    setState(data.state ?? "GA");
+    setStatus(data.status ?? "active");
+    setEmploymentType(data.employment_type ?? "full_time");
+    setPayType(data.pay_type ?? "hourly");
+    setWorkSetting(data.work_setting ?? "office");
+    setEmail(data.email ?? "");
+    setPhone(data.phone ?? "");
+    setCredential(data.credential ?? "");
+    setPronouns(data.pronouns ?? "");
+    setManager(null);
+    if (data.manager_id) {
+      const { data: mgr } = await supabase
+        .from("employees")
+        .select("first_name,last_name,preferred_name")
+        .eq("id", data.manager_id)
         .maybeSingle();
-      if (cancelled) return;
-      setRow(data);
-      if (data?.email != null) setEmail(data.email);
-      if (data?.phone != null) setPhone(data.phone);
-      if (data?.pronouns != null) setPronouns(data.pronouns);
-      if (data?.manager_id) {
-        const { data: mgr } = await supabase
-          .from("employees")
-          .select("first_name,last_name,preferred_name")
-          .eq("id", data.manager_id)
-          .maybeSingle();
-        if (!cancelled && mgr) {
-          setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
-        }
-      }
-    })();
-    return () => { cancelled = true; };
+      if (mgr) setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
+    }
+  }, [m.uuid]);
+
+  useEffect(() => {
+    void loadEmployment();
   }, [m.uuid]);
 
   const connected = !!row?.viventium_employee_id && row?.viventium_sync_status !== "not_connected";
@@ -250,23 +262,33 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
       {owned && connected ? "Viventium" : "Manual"}
     </StatusBadge>
   );
-  const statusLabel = row?.status ? row.status.replace(/_/g, " ") : "Active";
-  const statusTone: "ok" | "warn" | "crit" | "muted" =
-    row?.status === "active" ? "ok"
-    : row?.status === "on_leave" ? "warn"
-    : row?.status === "terminated" ? "crit"
-    : "muted";
-
-  const saveContact = async () => {
+  const saveEmployment = async () => {
     if (!m.uuid) return;
-    setSavingContact(true);
+    if (!canEditEmployment) { toast.error("You don't have permission to edit employment records."); return; }
+    const cleanTitle = title.trim();
+    if (!cleanTitle) { toast.error("Title is required."); return; }
+    setSavingEmployment(true);
     const { error } = await supabase
       .from("employees")
-      .update({ email: email.trim() || null, phone: phone.trim() || null, pronouns: pronouns.trim() || null })
+      .update({
+        job_title: cleanTitle,
+        department_id: departmentId === "unassigned" ? null : departmentId,
+        state,
+        status,
+        employment_type: employmentType,
+        pay_type: payType,
+        work_setting: workSetting,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        credential: credential.trim() || null,
+        pronouns: pronouns.trim() || null,
+      })
       .eq("id", m.uuid);
-    setSavingContact(false);
+    setSavingEmployment(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Saved");
+    toast.success("Employment updated");
+    await loadEmployment();
+    window.dispatchEvent(new Event("team-directory:refresh"));
   };
 
   return (
