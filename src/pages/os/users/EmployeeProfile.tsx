@@ -422,7 +422,9 @@ function DevicesTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Devices assigned to this employee.</p>
-        <Button size="sm" variant="outline" className="text-xs"><Plus className="size-3.5" /> Assign device</Button>
+        <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success("Device assignment request opened", { description: "IT will reach out to coordinate shipment." })}>
+          <Plus className="size-3.5" /> Assign device
+        </Button>
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {[
@@ -474,7 +476,9 @@ function LoginsTab() {
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge tone={s.status}>{s.status === "ok" ? "Active" : "Pending"}</StatusBadge>
-                <Button variant="ghost" size="sm" className="text-xs"><RefreshCw className="size-3.5" /> Reset</Button>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => toast.success(`Reset link sent for ${s.name}`, { description: `Sent to ${s.user}` })}>
+                  <RefreshCw className="size-3.5" /> Reset
+                </Button>
               </div>
             </li>
           ))}
