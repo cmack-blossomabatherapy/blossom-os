@@ -19,6 +19,12 @@ interface Props {
   className?: string;
   /** Show the small camera badge / hover overlay. Defaults to true. */
   editable?: boolean;
+  /**
+   * Visual variant. "dark" (default) is the translucent-white shell used on
+   * the gradient profile hero. "light" is for use on white/neutral cards
+   * (e.g. the OS user-management header).
+   */
+  appearance?: "dark" | "light";
 }
 
 const SIZE = {
@@ -36,6 +42,7 @@ export function AvatarUploader({
   onChange,
   className,
   editable = true,
+  appearance = "dark",
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -104,7 +111,10 @@ export function AvatarUploader({
     <div className={cn("relative shrink-0", className)}>
       <div
         className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-2xl bg-white/10 font-semibold text-white ring-1 ring-white/20 backdrop-blur-xl shadow-md",
+          "relative flex items-center justify-center overflow-hidden rounded-2xl font-semibold backdrop-blur-xl shadow-md",
+          appearance === "dark"
+            ? "bg-white/10 text-white ring-1 ring-white/20"
+            : "bg-muted text-muted-foreground ring-1 ring-border/60",
           SIZE[size],
         )}
       >
