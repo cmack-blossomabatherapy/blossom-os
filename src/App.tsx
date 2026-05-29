@@ -326,6 +326,9 @@ import OSTraining from "./pages/os/OSTraining";
 import OSTrainingDetail from "./pages/os/OSTrainingDetail";
 import OSTrainingManage from "./pages/os/OSTrainingManage";
 import OSUserManagement from "./pages/os/OSUserManagement";
+import UsersHome from "./pages/os/users/UsersHome";
+import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
+import NfcPublicProfile from "./pages/nfc/NfcPublicProfile";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
 import OSAskBlossom from "./pages/os/OSAskBlossom";
 import OSResourceLibrary from "./pages/os/OSResourceLibrary";
@@ -461,6 +464,7 @@ const App = () => (
                 <Route path="/mfa/setup" element={<MfaSetup />} />
                 <Route path="/mfa/verify" element={<MfaVerify />} />
                 <Route path="/evaluations/form/:token" element={<PublicEvalFormPage />} />
+                <Route path="/nfc/:code" element={<NfcPublicProfile />} />
                 <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
@@ -640,7 +644,9 @@ const App = () => (
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/hr" element={<HRSuiteHome />} />
                   <Route path="/hr/training-center" element={<TrainingManagementCenter />} />
-                  <Route path="/user-management" element={<OSUserManagement />} />
+                  <Route path="/user-management" element={<UsersHome />} />
+                  <Route path="/user-management/admin" element={<OSUserManagement />} />
+                  <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
