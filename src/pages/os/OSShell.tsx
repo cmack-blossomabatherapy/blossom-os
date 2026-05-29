@@ -352,50 +352,41 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const PAYROLL_SECTIONS: NavSection[] = [
     {
       id: "home", label: "Home", items: [
-        { to: "/payroll-coordinator", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/payroll/workspace", label: "Payroll Workspace", icon: Workflow, module: "payroll" },
-        { to: "/payroll/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/payroll-coordinator", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
+        { to: "/payroll/workspace", label: "Payroll Workspace", icon: Workflow, module: "payroll", disabled: true },
+        { to: "/payroll/training-academy", label: "Training Academy", icon: GraduationCap, module: "training", disabled: true },
       ],
     },
     {
       id: "payroll_operations", label: "Payroll Operations", items: [
-        { to: "/payroll/queue", label: "Payroll Queue", icon: KanbanSquare, module: "payroll" },
-        { to: "/payroll/adjustments", label: "Payroll Adjustments", icon: Wallet, module: "payroll" },
-        { to: "/payroll/time-attendance", label: "Time & Attendance", icon: CalendarDays, module: "payroll" },
-        { to: "/payroll/issues", label: "Payroll Issues", icon: AlertTriangle, module: "payroll" },
+        { to: "/payroll/queue", label: "Payroll Queue", icon: KanbanSquare, module: "payroll", disabled: true },
+        { to: "/payroll/adjustments", label: "Payroll Adjustments", icon: Wallet, module: "payroll", disabled: true },
+        { to: "/payroll/time-attendance", label: "Time & Attendance", icon: CalendarDays, module: "payroll", disabled: true },
+        { to: "/payroll/issues", label: "Payroll Issues", icon: AlertTriangle, module: "payroll", disabled: true },
       ],
     },
     {
       id: "employees", label: "Employees", items: [
-        { to: "/payroll/profiles", label: "Employee Payroll Profiles", icon: Users, module: "payroll" },
-        { to: "/payroll/pto", label: "PTO & Time Off", icon: Heart, module: "payroll" },
-        { to: "/payroll/benefits", label: "Benefits & Deductions", icon: Briefcase, module: "payroll" },
+        { to: "/payroll/profiles", label: "Employee Payroll Profiles", icon: Users, module: "payroll", disabled: true },
+        { to: "/payroll/pto", label: "PTO & Time Off", icon: Heart, module: "payroll", disabled: true },
+        { to: "/payroll/benefits", label: "Benefits & Deductions", icon: Briefcase, module: "payroll", disabled: true },
       ],
     },
     {
       id: "compliance", label: "Compliance", items: [
-        { to: "/payroll/compliance", label: "Payroll Compliance", icon: ShieldCheck, module: "payroll" },
-        { to: "/payroll/tax-documents", label: "Tax Documents & Records", icon: FileCheck2, module: "payroll" },
+        { to: "/payroll/compliance", label: "Payroll Compliance", icon: ShieldCheck, module: "payroll", disabled: true },
+        { to: "/payroll/tax-documents", label: "Tax Documents & Records", icon: FileCheck2, module: "payroll", disabled: true },
       ],
     },
     {
       id: "communication", label: "Communication", items: [
-        { to: "/payroll/messages", label: "Payroll Messages & Updates", icon: BellRing, module: "payroll" },
+        { to: "/payroll/messages", label: "Payroll Messages & Updates", icon: BellRing, module: "payroll", disabled: true },
       ],
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/payroll/resources", label: "Resource Library", icon: BookOpen, module: "sop" },
-      ],
-    },
-    {
-      id: "performance", label: "Operations & Intelligence", items: [
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "/payroll/resources", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
       ],
     },
   ];
