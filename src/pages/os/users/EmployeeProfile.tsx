@@ -17,6 +17,7 @@ import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { nfcBadgeUrl } from "@/lib/publicUrl";
+import { variantFor, ACTION_META, type RoleKey, type NfcActionKind } from "@/pages/nfc/roleVariants";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -825,6 +826,100 @@ declare global {
   interface Window { NDEFReader?: new () => { write: (msg: { records: NDEFRecordInit[] }, opts?: NDEFWriteOptions) => Promise<void> } }
 }
 
+/**
+ * Client-side mirror of the role-key CASE in `get_nfc_badge()`. Keep these
+ * regexes in the same order as the SQL so the OS preview matches what a
+ * tapped card actually renders.
+ */
+function roleKeyFromTitle(title: string | null | undefined): RoleKey {
+  const t = (title ?? "").toLowerCase();
+  if (/rbt|registered behavior|behavior tech/.test(t)) return "rbt";
+  if (/bcba|bcaba|behavior analyst/.test(t)) return "bcba";
+  if (/state director/.test(t)) return "state_director";
+  if (/intake/.test(t)) return "intake";
+  if (/authoriz/.test(t)) return "authorizations";
+  if (/schedul/.test(t)) return "scheduling";
+  if (/recruit/.test(t)) return "recruiting";
+  if (/hr|human resources|people/.test(t)) return "hr";
+  if (/billing|rcm|revenue|finance|payroll/.test(t)) return "finance";
+  if (/qa|quality/.test(t)) return "qa";
+  if (/marketing|growth|content/.test(t)) return "marketing";
+  if (/case manager|family/.test(t)) return "case_manager";
+  if (/ceo|coo|cfo|chief|president|executive|vp /.test(t)) return "executive";
+  if (/director/.test(t)) return "leadership";
+  return "employee";
+}
+
+/**
+ * Compact preview of what `/nfc/:code` actually renders for this employee.
+ * Presentation-only — no fetches; mirrors the public shell at a small scale
+ * so admins know exactly which template their team will see.
+ */
+function NfcCardPreview({ m, variant }: { m: DirectoryEmployee; variant: ReturnType<typeof variantFor> }) {
+  const VariantIcon = variant.icon;
+  const tags = (m as DirectoryEmployee & { expertise?: string[]; skills?: string[] });
+  const chips = [...(tags.expertise ?? []), ...(tags.skills ?? [])].slice(0, 3);
+  return (
+    <div className="w-[260px] overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_30px_-18px_oklch(0.2_0.02_260/0.18)]">
+      <p className="bg-muted/40 px-3 py-1.5 text-center text-[9px] uppercase tracking-widest text-muted-foreground">
+        What others see · {variant.eyebrow}
+      </p>
+      <div className="flex flex-col items-center gap-2 px-4 pt-4 pb-3">
+        <div className="inline-flex items-center gap-1 text-[9px] font-medium uppercase tracking-widest text-muted-foreground">
+          <VariantIcon className="size-2.5" /> {variant.eyebrow}
+        </div>
+        {m.photo ? (
+          <img src={m.photo} alt="" className="size-14 rounded-full object-cover ring-2 ring-primary/30" />
+        ) : (
+          <div className="grid size-14 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-primary/30">
+            {initials(m.name)}
+          </div>
+        )}
+        <div className="text-center">
+          <p className="text-sm font-semibold leading-tight">
+            {m.name}
+            {m.credential ? <span className="ml-1 text-[10px] font-normal text-muted-foreground">{m.credential}</span> : null}
+          </p>
+          {m.title && <p className="text-[10px] text-muted-foreground">{m.title}</p>}
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
+          <BadgeCheck className="size-2.5" /> Verified
+        </span>
+        <p className="line-clamp-2 max-w-[220px] text-center text-[10px] leading-snug text-muted-foreground">
+          {m.blurb || variant.tagline}
+        </p>
+      </div>
+      <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5"><Building2 className="size-2.5" /> {m.departmentName ?? "Blossom ABA Therapy"}</div>
+        <div className="mt-1 flex items-center gap-1.5"><MapPin className="size-2.5" /> {(m.states ?? []).join(", ") || "Multi-state"}</div>
+        {chips.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {chips.map((c) => (
+              <span key={c} className="rounded-full bg-muted px-1.5 py-0.5 text-[9px]">{c}</span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-px border-t border-border/60 bg-border/60">
+        {variant.actions.slice(0, 4).map((kind: NfcActionKind) => {
+          const meta = ACTION_META[kind];
+          const Icon = meta.icon;
+          return (
+            <div
+              key={kind}
+              className={`flex items-center justify-center gap-1 bg-card px-2 py-2 text-[10px] font-medium ${
+                meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-foreground"
+              }`}
+            >
+              <Icon className="size-3" /> {meta.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
@@ -837,6 +932,15 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
   // Prefer the short tag code for a friendlier, brand-safe URL on the phone's tap prompt.
   const nfcUrl = nfcBadgeUrl(active?.tag_code ?? m.uuid ?? m.id);
   const isProductionUrl = nfcUrl.startsWith("https://blossom.");
+
+  // Role-aware preview — mirrors what /nfc/:code actually renders for this person.
+  const roleKey = roleKeyFromTitle(m.title);
+  const variant = variantFor(roleKey);
+  const VariantIcon = variant.icon;
+  const isParentSafety = variant.parentSafety;
+  const tapBlurb = isParentSafety
+    ? "When a parent taps this tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info."
+    : "When someone taps this tag, they'll see a verified Blossom business card with role, department, and the contact actions you've enabled in the Identity tab.";
 
   const load = useCallback(async () => {
     if (!m.uuid) return;
@@ -962,7 +1066,10 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
       <Card>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_auto]">
           <div>
-            <SectionTitle hint="Branded, parent-safe view">Profile URL</SectionTitle>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/50 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <VariantIcon className="size-3" /> {variant.eyebrow}
+            </div>
+            <SectionTitle hint={isParentSafety ? "Branded, parent-safe view" : "Branded business-card view"}>Profile URL</SectionTitle>
             <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-xs">
               <span className="truncate text-muted-foreground">{nfcUrl}</span>
               <Button variant="ghost" size="sm" className="ml-auto text-xs"
@@ -1005,12 +1112,12 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               </p>
             )}
             <p className="mt-3 text-xs text-muted-foreground">
-              When a parent taps the tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info.
+              {tapBlurb}
             </p>
             <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-3 text-[11px] leading-relaxed text-muted-foreground">
               <p className="font-medium text-foreground">Write this URL to the physical tag</p>
               <p className="mt-1">
-                Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so parents recognize it as safe.
+                Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so the person tapping recognizes it as safe.
               </p>
               {active && (
                 <p className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5 text-foreground">
@@ -1024,23 +1131,39 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               )}
             </div>
           </div>
-          <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-6">
-            <div className="rounded-lg bg-white p-3">
-              <QRCodeSVG value={nfcUrl} size={128} level="M" includeMargin={false} />
+          <div className="flex flex-col items-center gap-4">
+            <NfcCardPreview m={m} variant={variant} />
+            <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-4">
+              <div className="rounded-lg bg-white p-2">
+                <QRCodeSVG value={nfcUrl} size={96} level="M" includeMargin={false} />
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">QR backup</p>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">QR backup</p>
           </div>
         </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
-          <SectionTitle>Parent tap experience</SectionTitle>
+          <SectionTitle hint={variant.tagline}>{isParentSafety ? "Parent tap experience" : "Tap experience"}</SectionTitle>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Branded Blossom verification</li>
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Photo, name, role, department</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Report concern · Emergency contact</li>
-            <li className="flex items-center gap-2"><EyeOff className="size-3.5 text-muted-foreground" /> Personal contact info hidden</li>
+            {variant.actions.map((kind) => {
+              const meta = ACTION_META[kind];
+              const Icon = meta.icon;
+              return (
+                <li key={kind} className="flex items-center gap-2">
+                  <Icon className={`size-3.5 ${meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-emerald-600"}`} />
+                  {meta.label}
+                </li>
+              );
+            })}
+            {isParentSafety ? (
+              <li className="flex items-center gap-2"><EyeOff className="size-3.5 text-muted-foreground" /> Personal contact info hidden</li>
+            ) : (
+              <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Save to Contacts adds to phone</li>
+            )}
           </ul>
         </Card>
         <Card>
