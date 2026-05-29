@@ -15,7 +15,7 @@ import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmploye
 import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { nfcBadgeUrl, PUBLIC_BASE_URL } from "@/lib/publicUrl";
+import { nfcBadgeUrl } from "@/lib/publicUrl";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
