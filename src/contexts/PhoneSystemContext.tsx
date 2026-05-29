@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
   Employee, HolidayProfile, RetellCall, SharedRouting,
@@ -29,7 +30,57 @@ type PhoneSystemState = {
 const Ctx = createContext<PhoneSystemState | null>(null);
 const KEY = "blossom.phone-system.v2";
 
+const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? "";
+
+function syncDirectoryEmployees(phoneEmployees: Employee[], directoryEmployees: ReturnType<typeof useEmployeeDirectory>["members"]): Employee[] {
+  const next = [...phoneEmployees];
+  const byEmail = new Map(directoryEmployees.filter((m) => m.email).map((m) => [normalize(m.email), m]));
+
+  next.forEach((employee, index) => {
+    const linked = employee.userId
+      ? directoryEmployees.find((m) => m.uuid === employee.userId || m.id === employee.userId)
+      : employee.email
+        ? byEmail.get(normalize(employee.email))
+        : undefined;
+
+    if (linked) {
+      next[index] = {
+        ...employee,
+        userId: linked.uuid ?? linked.id,
+        email: linked.email ?? employee.email,
+        name: linked.name,
+        department: linked.departmentName ?? employee.department,
+        role: linked.title ?? employee.role,
+        source: "directory",
+      };
+    }
+  });
+
+  directoryEmployees.forEach((member) => {
+    const hasLink = next.some((employee) =>
+      (member.uuid && employee.userId === member.uuid) ||
+      (member.email && normalize(employee.email) === normalize(member.email)) ||
+      normalize(employee.name) === normalize(member.name),
+    );
+
+    if (!hasLink) {
+      next.push({
+        extension: "",
+        userId: member.uuid ?? member.id,
+        email: member.email ?? undefined,
+        name: member.name,
+        department: member.departmentName ?? undefined,
+        role: member.title,
+        source: "directory",
+      });
+    }
+  });
+
+  return next;
+}
+
 export function PhoneSystemProvider({ children }: { children: ReactNode }) {
+  const { members: directoryMembers, loading: directoryLoading } = useEmployeeDirectory();
   const [queues, setQueues] = useState<CallQueue[]>(SEED_QUEUES);
   const [employees, setEmployees] = useState<Employee[]>(SEED_EMPLOYEES);
   const [shared, setShared] = useState<SharedRouting[]>(SEED_SHARED);
@@ -57,6 +108,11 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || directoryLoading || directoryMembers.length === 0) return;
+    setEmployees((current) => syncDirectoryEmployees(current, directoryMembers));
+  }, [directoryMembers, directoryLoading, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
