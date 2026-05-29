@@ -1419,7 +1419,6 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const openHr = () => jumpToEmployment();
 
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
