@@ -60,6 +60,7 @@ import TrackAnalytics from "./pages/hr/TrackAnalytics";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
+import OrgChartManage from "./pages/hr/OrgChartManage";
 import OnboardingCenter from "./pages/hr/OnboardingCenter";
 import TimeClock from "./pages/hr/TimeClock";
 import Hours from "./pages/hr/Hours";
