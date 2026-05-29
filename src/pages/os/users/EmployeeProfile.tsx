@@ -1340,6 +1340,7 @@ export default function EmployeeProfilePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
   const { members, loading } = useEmployeeDirectory();
+  const { user } = useAuth();
   const [tab, setTab] = useState<TabId>("overview");
   const [openAssignNfc, setOpenAssignNfc] = useState(false);
   const [openAssignTraining, setOpenAssignTraining] = useState(false);
@@ -1378,7 +1379,16 @@ export default function EmployeeProfilePage() {
         <Card className="mb-8 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-5">
-              {member.photo ? (
+              {member.uuid && user?.id ? (
+                <AvatarUploader
+                  ownerUserId={user.id}
+                  employeeId={member.uuid}
+                  currentUrl={member.photo ?? null}
+                  initials={initials(member.name)}
+                  size="xl"
+                  className="text-foreground"
+                />
+              ) : member.photo ? (
                 <img src={member.photo} alt="" className="size-20 rounded-full object-cover ring-1 ring-border/60" />
               ) : (
                 <div className="size-20 rounded-full bg-muted grid place-items-center text-lg font-semibold text-muted-foreground ring-1 ring-border/60">
