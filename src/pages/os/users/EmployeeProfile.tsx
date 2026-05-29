@@ -7,13 +7,19 @@ import {
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, ChevronRight, Eye, EyeOff, Copy, QrCode, UserCircle2,
+  RefreshCw, ChevronRight, Eye, EyeOff, Copy, QrCode, UserCircle2, Trash2,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
+import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type TabId =
   | "overview" | "employment" | "training" | "evaluations" | "devices"
