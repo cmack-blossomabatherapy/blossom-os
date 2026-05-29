@@ -18,6 +18,7 @@ type PhoneSystemState = {
   holidayProfiles: HolidayProfile[];
   setQueues: (q: CallQueue[]) => void;
   setEmployees: (e: Employee[]) => void;
+  saveEmployeeExtension: (previousExtension: string, employee: Employee) => void;
   setShared: (s: SharedRouting[]) => void;
   upsertRequest: (r: ChangeRequest) => void;
   deleteRequest: (id: string) => void;
@@ -126,6 +127,26 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const value: PhoneSystemState = {
     queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
     setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
+    saveEmployeeExtension: (previousExtension, employee) => {
+      const nextExtension = employee.extension.trim();
+      setEmployees((prev) => {
+        const match = (row: Employee) =>
+          (previousExtension && row.extension === previousExtension) ||
+          (employee.userId && row.userId === employee.userId) ||
+          (employee.email && normalize(row.email) === normalize(employee.email));
+        const exists = prev.some(match);
+        const next = exists ? prev.map((row) => (match(row) ? { ...row, ...employee, extension: nextExtension } : row)) : [{ ...employee, extension: nextExtension }, ...prev];
+        return next.filter((row, index, all) => all.findIndex((other) => other.extension && other.extension === row.extension) === index || !row.extension);
+      });
+      if (previousExtension && previousExtension !== nextExtension) {
+        setQueues((prev) => prev.map((queue) => ({ ...queue, agents: queue.agents.map((agent) => agent === previousExtension ? nextExtension : agent) })));
+        setShared((prev) => prev.map((route) => ({
+          ...route,
+          agents: route.agents.map((agent) => agent === previousExtension ? nextExtension : agent),
+          businessHoursRouting: route.businessHoursRouting === previousExtension ? nextExtension : route.businessHoursRouting,
+        })));
+      }
+    },
     upsertRequest: (r) =>
       setRequests((prev) => {
         const idx = prev.findIndex((p) => p.id === r.id);
