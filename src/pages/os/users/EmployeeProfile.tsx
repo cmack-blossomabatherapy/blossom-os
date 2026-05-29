@@ -996,7 +996,10 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
       <Card>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_auto]">
           <div>
-            <SectionTitle hint="Branded, parent-safe view">Profile URL</SectionTitle>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/50 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <VariantIcon className="size-3" /> {variant.eyebrow}
+            </div>
+            <SectionTitle hint={isParentSafety ? "Branded, parent-safe view" : "Branded business-card view"}>Profile URL</SectionTitle>
             <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-xs">
               <span className="truncate text-muted-foreground">{nfcUrl}</span>
               <Button variant="ghost" size="sm" className="ml-auto text-xs"
@@ -1039,12 +1042,12 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               </p>
             )}
             <p className="mt-3 text-xs text-muted-foreground">
-              When a parent taps the tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info.
+              {tapBlurb}
             </p>
             <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-3 text-[11px] leading-relaxed text-muted-foreground">
               <p className="font-medium text-foreground">Write this URL to the physical tag</p>
               <p className="mt-1">
-                Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so parents recognize it as safe.
+                Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so the person tapping recognizes it as safe.
               </p>
               {active && (
                 <p className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5 text-foreground">
@@ -1058,23 +1061,39 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               )}
             </div>
           </div>
-          <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-6">
-            <div className="rounded-lg bg-white p-3">
-              <QRCodeSVG value={nfcUrl} size={128} level="M" includeMargin={false} />
+          <div className="flex flex-col items-center gap-4">
+            <NfcCardPreview m={m} variant={variant} />
+            <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-4">
+              <div className="rounded-lg bg-white p-2">
+                <QRCodeSVG value={nfcUrl} size={96} level="M" includeMargin={false} />
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">QR backup</p>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">QR backup</p>
           </div>
         </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
-          <SectionTitle>Parent tap experience</SectionTitle>
+          <SectionTitle hint={variant.tagline}>{isParentSafety ? "Parent tap experience" : "Tap experience"}</SectionTitle>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Branded Blossom verification</li>
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Photo, name, role, department</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Report concern · Emergency contact</li>
-            <li className="flex items-center gap-2"><EyeOff className="size-3.5 text-muted-foreground" /> Personal contact info hidden</li>
+            {variant.actions.map((kind) => {
+              const meta = ACTION_META[kind];
+              const Icon = meta.icon;
+              return (
+                <li key={kind} className="flex items-center gap-2">
+                  <Icon className={`size-3.5 ${meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-emerald-600"}`} />
+                  {meta.label}
+                </li>
+              );
+            })}
+            {isParentSafety ? (
+              <li className="flex items-center gap-2"><EyeOff className="size-3.5 text-muted-foreground" /> Personal contact info hidden</li>
+            ) : (
+              <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Save to Contacts adds to phone</li>
+            )}
           </ul>
         </Card>
         <Card>
