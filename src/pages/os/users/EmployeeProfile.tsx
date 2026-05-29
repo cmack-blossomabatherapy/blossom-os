@@ -130,6 +130,9 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
   const [row, setRow] = useState<any | null>(null);
   const [manager, setManager] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>(m.email ?? "");
+  const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [savingContact, setSavingContact] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
@@ -141,11 +144,13 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone")
         .eq("id", m.uuid)
         .maybeSingle();
       if (cancelled) return;
       setRow(data);
+      if (data?.email != null) setEmail(data.email);
+      if (data?.phone != null) setPhone(data.phone);
       if (data?.manager_id) {
         const { data: mgr } = await supabase
           .from("employees")
@@ -173,6 +178,18 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     : row?.status === "terminated" ? "crit"
     : "muted";
 
+  const saveContact = async () => {
+    if (!m.uuid) return;
+    setSavingContact(true);
+    const { error } = await supabase
+      .from("employees")
+      .update({ email: email.trim() || null, phone: phone.trim() || null })
+      .eq("id", m.uuid);
+    setSavingContact(false);
+    if (error) { toast.error?.(error.message) ?? toast(error.message); return; }
+    toast.success?.("Contact info saved") ?? toast("Contact info saved");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -198,8 +215,34 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
           <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="State" value={m.states?.[0] ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Email" value={m.email ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Phone" value={m.phone ?? "—"} source={sourceBadge(false)} />
+          <div id="employment-email" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email</p>
+              {sourceBadge(false)}
+            </div>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={saveContact}
+              placeholder="name@blossomabatherapy.com"
+              type="email"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+          <div id="employment-phone" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone</p>
+              {sourceBadge(false)}
+            </div>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onBlur={saveContact}
+              placeholder="(555) 555-5555"
+              type="tel"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
           <div>
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
@@ -221,6 +264,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
         </div>
+        {savingContact && <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p>}
       </Card>
       <Card>
         <div className="flex items-center justify-between gap-4">
