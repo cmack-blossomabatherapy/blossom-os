@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BadgeCheck, MapPin, Building2, Languages, Sparkles, Check, Linkedin } from "lucide-react";
+import { BadgeCheck, MapPin, Building2, Languages, Sparkles, Check, Linkedin, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { variantFor, ACTION_META, type NfcActionKind, type RoleKey } from "./roleVariants";
@@ -166,22 +166,30 @@ export default function NfcPublicProfile() {
     if (items.length === 0) return null;
     const cols = items.length === 1 ? "grid-cols-1" : "grid-cols-2";
     return (
-      <div className={`grid ${cols} gap-px bg-border/60`}>
-        {items.map(({ kind, meta, href, isSave }) => {
-          const cls = `flex items-center justify-center gap-2 bg-card px-4 py-4 text-sm font-medium transition hover:bg-muted ${
-            meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-foreground"
-          }`;
+      <div className={`grid ${cols} gap-3`}>
+        {items.map(({ kind, meta, href, isSave }, idx) => {
           const Icon = meta.icon;
+          // First action = primary filled; second = dark/foreground; rest = muted.
+          const isPrimary = idx === 0 && !meta.destructive;
+          const isDark = idx === 1 && !meta.destructive;
+          const tone = meta.destructive
+            ? "bg-destructive/10 text-destructive hover:bg-destructive/15"
+            : isPrimary
+            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-95"
+            : isDark
+            ? "bg-foreground text-background hover:opacity-95"
+            : "bg-muted text-foreground hover:bg-muted/80";
+          const cls = `flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-4 text-[12px] font-semibold transition-all active:scale-[0.98] ${tone}`;
           if (isSave) {
             return (
               <button key={kind} onClick={() => m && downloadVCard(m)} className={cls}>
-                <Icon className="size-4" /> {meta.label}
+                <Icon className="size-5" /> {meta.label}
               </button>
             );
           }
           return (
             <a key={kind} href={href} className={cls}>
-              <Icon className="size-4" /> {meta.label}
+              <Icon className="size-5" /> {meta.label}
             </a>
           );
         })}
@@ -228,90 +236,154 @@ export default function NfcPublicProfile() {
             </a>
           </div>
         ) : (
-          <article className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
-            <div className="flex items-center justify-center gap-1.5 px-8 pt-6 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <article className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
+            {/* Eyebrow */}
+            <div className="flex items-center justify-center gap-1.5 px-8 pt-6 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               <variant.icon className="size-3" /> {variant.eyebrow}
             </div>
-            <div className="flex flex-col items-center gap-3 px-8 pt-10 pb-6">
-              {resolvedPhoto ? (
-                <img src={resolvedPhoto} alt="" className="size-28 rounded-full object-cover ring-2 ring-primary/30" />
-              ) : (
-                <div className="size-28 rounded-full bg-muted grid place-items-center text-xl font-semibold text-muted-foreground ring-2 ring-primary/30">
-                  {initials(m.display_name)}
+
+            {/* Hero */}
+            <div className="flex flex-col items-center px-8 pt-4 pb-6 text-center">
+              <div className="relative inline-block">
+                {resolvedPhoto ? (
+                  <img
+                    src={resolvedPhoto}
+                    alt=""
+                    className="size-28 rounded-full object-cover border-4 border-card shadow-md ring-1 ring-border/60"
+                  />
+                ) : (
+                  <div className="size-28 rounded-full bg-muted grid place-items-center text-2xl font-semibold text-muted-foreground border-4 border-card shadow-md ring-1 ring-border/60">
+                    {initials(m.display_name)}
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-card p-1 shadow-sm">
+                  <div className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="size-3.5" strokeWidth={3} />
+                  </div>
                 </div>
-              )}
-              <div className="text-center">
-                <h1 className="text-xl font-semibold tracking-tight">
-                  {m.display_name}
-                  {m.credential ? <span className="ml-1.5 text-sm font-normal text-muted-foreground">{m.credential}</span> : null}
-                </h1>
-                {m.job_title && <p className="text-sm text-muted-foreground">{m.job_title}</p>}
-                {m.pronouns && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.pronouns}</p>}
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                <BadgeCheck className="size-3.5" /> Verified Blossom employee
+
+              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+                {m.display_name}
+                {m.credential ? (
+                  <span className="ml-1.5 text-base font-normal text-muted-foreground">{m.credential}</span>
+                ) : null}
+              </h1>
+              {m.job_title && <p className="text-sm font-medium text-muted-foreground">{m.job_title}</p>}
+              {m.pronouns && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.pronouns}</p>}
+
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                <BadgeCheck className="size-3.5" /> Verified Blossom Employee
               </span>
-              <p className="max-w-xs text-center text-[13px] leading-relaxed text-muted-foreground">
+
+              <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
                 {m.about_me || m.bio || variant.tagline}
               </p>
             </div>
 
-            <div className="border-t border-border/60 px-8 py-5 text-sm">
-              <dl className="grid grid-cols-1 gap-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Building2 className="size-3.5" /> {m.department_name ?? "Blossom ABA Therapy"}
+            {/* Sectioned content */}
+            <div className="space-y-7 px-6 pb-2">
+              {/* Core info grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-muted/60 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Department</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                    {m.department_name ?? "Blossom ABA"}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="size-3.5" /> {statesLabel || "Multi-state"}
+                <div className="rounded-2xl bg-muted/60 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Location</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                    {statesLabel || "Multi-state"}
+                  </p>
                 </div>
                 {m.languages && m.languages.length > 0 && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Languages className="size-3.5" /> {m.languages.join(", ")}
+                  <div className="col-span-2 rounded-2xl bg-muted/60 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Languages</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                      <Languages className="size-3.5 text-muted-foreground" />
+                      {m.languages.join(", ")}
+                    </p>
                   </div>
                 )}
-              </dl>
+              </div>
+
+              {/* How I can help */}
               {!isParentSafety && m.help_with && m.help_with.length > 0 ? (
-                <div className="mt-5">
-                  <p className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">How I can help</p>
-                  <ul className="space-y-1.5">
+                <div>
+                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    How I can help
+                  </h3>
+                  <ul className="space-y-2.5">
                     {m.help_with.map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-[13px] text-foreground">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                        <span>{item}</span>
+                      <li key={item} className="flex items-start gap-3 text-[13px] font-medium text-foreground">
+                        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                          <Check className="size-3" strokeWidth={3} />
+                        </span>
+                        <span className="leading-snug">{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : null}
+
+              {/* Expertise tags */}
               {(m.expertise?.length || m.skills?.length) ? (
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {[...(m.expertise ?? []), ...(m.skills ?? [])].slice(0, 6).map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-                      <Sparkles className="size-3 opacity-60" /> {tag}
-                    </span>
-                  ))}
+                <div>
+                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Expertise
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {[...(m.expertise ?? []), ...(m.skills ?? [])].slice(0, 6).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+                      >
+                        <Sparkles className="size-3 opacity-60" /> {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               ) : null}
+
+              {/* LinkedIn callout */}
               {!isParentSafety && m.linkedin_url ? (
                 <a
                   href={m.linkedin_url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-primary hover:underline"
+                  className="group flex items-center justify-between rounded-2xl border border-primary/15 bg-primary/5 p-3.5 transition hover:bg-primary/10"
                 >
-                  <Linkedin className="size-3.5" /> Connect on LinkedIn
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-8 place-items-center rounded-lg bg-[#0077B5] text-white">
+                      <Linkedin className="size-4" />
+                    </span>
+                    <span className="text-sm font-semibold text-primary">Connect on LinkedIn</span>
+                  </div>
+                  <span className="text-primary transition-transform group-hover:translate-x-0.5">→</span>
                 </a>
               ) : null}
             </div>
 
-            <div className="border-t border-border/60">
+            {/* Contact actions */}
+            <div className="px-6 pt-6 pb-6">
               {renderActions(variant.actions)}
             </div>
-            <p className="border-t border-border/60 px-8 py-4 text-center text-[11px] text-muted-foreground">
-              {isParentSafety
-                ? `Verified ${new Date().toLocaleDateString()} · Personal contact info is never shown`
-                : "Verified Blossom team member · Tap Save to Contacts to add to your phone"}
-            </p>
+
+            {/* Verified footer */}
+            <div className="border-t border-border/60 bg-muted/40 px-6 py-4">
+              <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                <ShieldCheck className="size-3.5 text-primary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Verified Blossom Member
+                </span>
+              </div>
+              <p className="mt-1.5 text-center text-[10px] leading-tight text-muted-foreground/80">
+                {isParentSafety
+                  ? `Verified ${new Date().toLocaleDateString()} · Personal contact info is never shown`
+                  : "Tap Save to Contacts to add this professional to your phone"}
+              </p>
+            </div>
           </article>
         )}
 
