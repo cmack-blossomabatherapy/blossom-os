@@ -1228,6 +1228,15 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
   const has = (v: unknown) =>
     Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : Boolean(v);
 
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const openHr = () => {
+    if (m.uuid) navigate(`/hr/directory/${m.uuid}`);
+    else toast("No linked HR record");
+  };
+
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
   // public badge isn't relying on the generic brochure asset forever.
@@ -1237,26 +1246,22 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
       label: "Profile photo",
       ok: photoUploaded,
       hint: photoUploaded ? "Uploaded" : m.photo ? "Using brochure fallback — upload a real photo" : "Missing — initials only",
-      onFix: () => {
-        document.querySelector<HTMLElement>("main")?.scrollTo({ top: 0, behavior: "smooth" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        toast("Use the camera icon on the photo at the top to upload");
-      },
+      onFix: () => scrollTo("badge-photo"),
     },
-    { label: "Job title", ok: has(m.title), hint: m.title || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => toast("Open the Identity tab to edit About me") },
-    { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => toast("Open the Identity tab to add expertise") },
-    { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => toast("Open the Identity tab to add skills") },
-    { label: "Languages", ok: (row?.languages ?? []).length > 0, hint: (row?.languages ?? []).join(", ") || "Optional", onFix: () => toast("Open the Identity tab to add languages") },
+    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: openHr },
+    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: openHr },
+    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: openHr },
+    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: openHr },
+    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: openHr },
+    { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => scrollTo("badge-about") },
+    { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => scrollTo("badge-tags") },
+    { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => scrollTo("badge-tags") },
+    { label: "Languages", ok: (row?.languages ?? []).length > 0, hint: (row?.languages ?? []).join(", ") || "Optional", onFix: () => scrollTo("badge-tags") },
   ];
   if (!isParentSafety) {
     items.push(
-      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: openHr },
+      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: openHr },
     );
   }
 
