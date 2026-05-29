@@ -1,74 +1,25 @@
-## Make Smart Badge work for every employee — two badge styles
+I checked the current backend and the new lookup works for the active tag code `NFC-IAZHR5`, so the problem is likely the physical NFC tag still has an old/wrong URL written to it, or the public NFC page is calling the wrong route format from that old URL.
 
-### Root cause
+Plan:
 
-The public `/nfc/:code` page calls `useEmployeeDirectory`, which selects from `v_employee_directory`. The view is granted to `anon`, but the underlying tables (`employees`, `hr_departments`) are not — Postgres views run with the **invoker's** privileges by default, so anon gets an empty result. The tag lookup succeeds, but the employee record never resolves → "This badge isn't recognized."
+1. Make the NFC admin tab clearer
+   - Show the exact current URL that should be on the tag.
+   - Add a stronger warning/status if the active tag exists but the physical tag may still need to be rewritten.
+   - Keep the existing “Write to NFC tag” button as the primary action.
 
-### Fix in two parts
+2. Add backward-compatible lookup support
+   - Update the public badge page to normalize common scanned values so old links still resolve when possible:
+     - `/nfc/NFC-IAZHR5`
+     - `/nfc/0f7e72d1-2f0f-4509-9095-f3f420abb24d`
+     - older employee codes like `dir-corey-mack`
+   - Keep revoked/inactive tag codes blocked.
 
-### Part 1 — Secure public lookup (one migration)
+3. Improve the “not recognized” state
+   - Replace the generic error with a clearer message that explains the tag may need to be rewritten.
+   - Add a visible support fallback for current employees.
 
-Create a small, security-definer SQL function that returns ONLY the safe public fields:
+4. Verify with the current active tag
+   - Confirm the active database tag resolves through the public lookup.
+   - Confirm the generated URL format matches what the NFC writer writes.
 
-```sql
-create or replace function public.get_nfc_badge(_code text)
-returns table (
-  employee_id uuid,
-  display_name text,
-  job_title text,
-  credential text,
-  photo_url text,
-  department_name text,
-  states text[],
-  badge_style text   -- 'parent_safety' | 'business_card'
-)
-language sql stable security definer set search_path = public as $$
-  select e.id, ..., 
-    case
-      when lower(coalesce(e.job_title,'')) ~ '(rbt|bcba|bcaba|behavior tech|therapist|behavior analyst)'
-        then 'parent_safety'
-      else 'business_card'
-    end as badge_style
-  from public.employee_nfc_tags t
-  join public.employees e on e.id = t.employee_id
-  left join public.hr_departments d on d.id = e.department_id
-  where t.is_active = true
-    and (t.tag_code = _code or e.id::text = _code or e.employee_code = _code);
-$$;
-grant execute on function public.get_nfc_badge(text) to anon, authenticated;
-```
-
-Replaces the directory-hook dependency on the public page with a single RPC call that works for both `NFC-XXXX` codes and direct uuid/slug fallbacks. No PHI exposed — only badge-safe fields.
-
-### Part 2 — Two badge layouts (one file)
-
-`src/pages/nfc/NfcPublicProfile.tsx` — switch on `badge_style` returned by the RPC:
-
-**Parent Safety badge (RBTs, BCBAs, Behavior Techs, Therapists)** — current layout:
-- Photo + name + role
-- "Verified Blossom employee" pill
-- Department + state
-- **Contact Blossom** button (tel)
-- **Report concern** button (mailto)
-- Footer: "Personal contact info is never shown"
-
-**Business Card badge (everyone else — admin, ops, leadership, intake, recruiting, marketing, etc.)** — new layout:
-- Photo + name + title + credential
-- Department + state
-- **Email** button (mailto: their work email)
-- **Call** button (tel: their work phone, if present)
-- **Save to Contacts** button — generates a vCard (.vcf) inline with name, title, email, phone, org "Blossom ABA Therapy"
-- **Visit Blossom** link to `blossomabatherapy.com`
-- Same Blossom branding header + verified pill
-
-Both share: brand header, verified pill, identical card chrome, OG tags, "Opening Blossom Smart Badge…" loading state.
-
-### Override (optional, low risk)
-
-Add a `badge_style` text column to `employees` (nullable). If set, it overrides the auto-classification. Surfaced as a small toggle in the NFC tab on the employee profile: "Badge style: Parent Safety / Business Card / Auto". Not required for v1 — auto-classification covers it.
-
-### Out of scope
-
-- Photo upload changes
-- New auth or login flow
-- Per-tag custom URLs or vanity slugs
+Important: you do not need a brand-new link if the active URL is `https://blossom.abacommandcenter.com/nfc/NFC-IAZHR5`; you likely need to rewrite the physical NFC tag so it stops opening the old URL.
