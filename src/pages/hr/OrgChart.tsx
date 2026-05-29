@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
+  Network, Search, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, GitBranch, LayoutGrid, Globe2, Crown,
-  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, ExternalLink,
+  ZoomIn, ZoomOut, Maximize2, RotateCcw, Download, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { PageShell } from "@/components/shared/PageShell";
