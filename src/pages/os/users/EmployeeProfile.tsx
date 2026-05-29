@@ -1029,13 +1029,14 @@ function OverviewTab({ m, jump }: { m: DirectoryEmployee; jump: (t: TabId) => vo
 
   const pct = stats.trainingTotal ? Math.round((stats.trainingDone / stats.trainingTotal) * 100) : 0;
 
-  const snapshot = [
-    { icon: GraduationCap, label: "Training", value: stats.trainingTotal ? `${pct}%` : "—", sub: `${stats.trainingDone} of ${stats.trainingTotal}`, tone: (stats.trainingTotal && pct === 100 ? "ok" : stats.trainingTotal ? "warn" : "muted") as const, tab: "training" as TabId },
-    { icon: ClipboardCheck, label: "Evaluation", value: stats.reviewCurrent ?? "None", sub: stats.reviewCurrent ? "Most recent" : "Not scheduled", tone: stats.reviewCurrent ? "ok" as const : "muted" as const, tab: "evaluations" as TabId },
-    { icon: MonitorSmartphone, label: "Devices", value: String(stats.devices), sub: stats.devices ? "Assigned" : "None on file", tone: stats.devices ? "ok" as const : "muted" as const, tab: "devices" as TabId },
-    { icon: KeyRound, label: "Logins", value: String(stats.logins), sub: stats.logins ? "Systems linked" : "Vault empty", tone: stats.logins ? "ok" as const : "muted" as const, tab: "logins" as TabId },
-    { icon: ScanLine, label: "NFC ID", value: stats.nfcActive ? "Active" : "Inactive", sub: stats.nfcActive ? "Tag live" : "Not assigned", tone: stats.nfcActive ? "ok" as const : "muted" as const, tab: "nfc" as TabId },
-    { icon: Clock, label: "Last activity", value: fmtRel(stats.lastActivity), sub: stats.lastActivity ? fmtDate(stats.lastActivity) : "—", tone: stats.lastActivity ? "ok" as const : "muted" as const, tab: "activity" as TabId },
+  type Tone = "ok" | "warn" | "muted";
+  const snapshot: { icon: React.ElementType; label: string; value: string; sub: string; tone: Tone; tab: TabId }[] = [
+    { icon: GraduationCap, label: "Training", value: stats.trainingTotal ? `${pct}%` : "—", sub: `${stats.trainingDone} of ${stats.trainingTotal}`, tone: stats.trainingTotal && pct === 100 ? "ok" : stats.trainingTotal ? "warn" : "muted", tab: "training" },
+    { icon: ClipboardCheck, label: "Evaluation", value: stats.reviewCurrent ?? "None", sub: stats.reviewCurrent ? "Most recent" : "Not scheduled", tone: stats.reviewCurrent ? "ok" : "muted", tab: "evaluations" },
+    { icon: MonitorSmartphone, label: "Devices", value: String(stats.devices), sub: stats.devices ? "Assigned" : "None on file", tone: stats.devices ? "ok" : "muted", tab: "devices" },
+    { icon: KeyRound, label: "Logins", value: String(stats.logins), sub: stats.logins ? "Systems linked" : "Vault empty", tone: stats.logins ? "ok" : "muted", tab: "logins" },
+    { icon: ScanLine, label: "NFC ID", value: stats.nfcActive ? "Active" : "Inactive", sub: stats.nfcActive ? "Tag live" : "Not assigned", tone: stats.nfcActive ? "ok" : "muted", tab: "nfc" },
+    { icon: Clock, label: "Last activity", value: fmtRel(stats.lastActivity), sub: stats.lastActivity ? fmtDate(stats.lastActivity) : "—", tone: stats.lastActivity ? "ok" : "muted", tab: "activity" },
   ];
 
   return (
