@@ -1177,6 +1177,8 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
           </ul>
         </Card>
       </div>
+
+      <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} />
     </div>
   );
 }
