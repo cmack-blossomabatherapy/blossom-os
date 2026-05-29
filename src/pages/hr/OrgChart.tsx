@@ -338,48 +338,14 @@ export default function OrgChart() {
       ) : (
         <Card className="overflow-hidden rounded-2xl border-border/70">
           {view === "hierarchy" && (
-            <div className="relative h-[68vh] min-h-[520px] w-full bg-muted/30">
-              <TransformWrapper
-                ref={zoomRef}
-                initialScale={1}
-                minScale={0.3}
-                maxScale={2.5}
-                limitToBounds={false}
-                wheel={{ step: 0.1 }}
-                doubleClick={{ disabled: true }}
-                panning={{ excluded: ["button", "a", "input"] }}
-              >
-                {({ zoomIn, zoomOut, resetTransform, centerView }) => (
-                  <>
-                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-0.5 rounded-xl border border-border/70 bg-card/90 backdrop-blur p-1 shadow-sm">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in"><ZoomIn className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomOut()} title="Zoom out"><ZoomOut className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => centerView(1)} title="Fit"><Maximize className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => resetTransform()} title="Reset"><RotateCcw className="h-3.5 w-3.5" /></Button>
-                    </div>
-                    <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur border border-border/60 px-2.5 py-1 rounded-lg">
-                      Drag to pan · scroll to zoom · click any card
-                    </div>
-                    <TransformComponent wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing" contentClass="!p-6">
-                      <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit p-2">
-                        {tree.roots.map((root) => (
-                          <TreeNode
-                            key={root.emp.id}
-                            node={root}
-                            depth={0}
-                            collapsed={collapsed}
-                            onToggle={toggle}
-                            selectedId={selectedId}
-                            onSelect={setSelectedId}
-                            matches={matches}
-                          />
-                        ))}
-                      </div>
-                    </TransformComponent>
-                  </>
-                )}
-              </TransformWrapper>
-            </div>
+            <HierarchyCanvas
+              roots={tree.roots}
+              exportRef={exportRef}
+              zoomRef={zoomRef}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              matches={matches}
+            />
           )}
 
           {view === "department" && (
