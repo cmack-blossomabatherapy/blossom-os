@@ -1591,7 +1591,7 @@ export default function EmployeeProfilePage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("No linked HR record")}>
+                onClick={() => setTab("employment")}>
                 <Pencil className="size-3.5" /> Edit
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
