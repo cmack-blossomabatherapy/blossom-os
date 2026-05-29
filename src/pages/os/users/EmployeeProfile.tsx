@@ -1292,26 +1292,27 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
       </div>
       <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {items.map((i) => (
-          <li
-            key={i.label}
-            className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2"
-          >
-            <div className="flex items-start gap-2">
-              {i.ok ? (
-                <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="mt-0.5 size-4 text-amber-500" />
-              )}
-              <div>
-                <p className="text-xs font-medium text-foreground">{i.label}</p>
-                <p className="text-[11px] text-muted-foreground line-clamp-1">{i.hint}</p>
+          <li key={i.label}>
+            <button
+              type="button"
+              onClick={i.onFix}
+              className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40"
+            >
+              <div className="flex items-start gap-2">
+                {i.ok ? (
+                  <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 size-4 text-amber-500" />
+                )}
+                <div>
+                  <p className="text-xs font-medium text-foreground">{i.label}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{i.hint}</p>
+                </div>
               </div>
-            </div>
-            {!i.ok && (
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={i.onFix}>
-                <Pencil className="size-3" /> Fix
-              </Button>
-            )}
+              <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                {i.ok ? "View" : <><Pencil className="size-3" /> Fix</>}
+              </span>
+            </button>
           </li>
         ))}
       </ul>
