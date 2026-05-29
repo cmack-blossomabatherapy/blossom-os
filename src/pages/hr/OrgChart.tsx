@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Network, Search, ChevronDown, ChevronRight, Mail, Phone, MapPin,
+  Network, Search, ChevronRight, Mail, Phone, MapPin,
   Building2, Users, X, GitBranch, LayoutGrid, Globe2, Crown,
-  ZoomIn, ZoomOut, Maximize, RotateCcw, Download, ExternalLink,
+  ZoomIn, ZoomOut, Maximize2, RotateCcw, Download, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { PageShell } from "@/components/shared/PageShell";
@@ -137,6 +137,45 @@ function descendantsOf(node: Node): Node[] {
   return out;
 }
 
+// ---------- Canvas layout (matches Org Chart Settings) ----------
+const NODE_W = 240;
+const NODE_H = 92;
+const GAP_X = 32;
+const GAP_Y = 64;
+
+interface Pos { x: number; y: number }
+
+function layoutCanvas(roots: Node[]): { pos: Map<string, Pos>; width: number; height: number } {
+  const pos = new Map<string, Pos>();
+  let cursor = 0;
+  let maxDepth = 0;
+  const place = (n: Node, depth: number): { left: number; right: number } => {
+    maxDepth = Math.max(maxDepth, depth);
+    const y = depth * (NODE_H + GAP_Y);
+    if (n.reports.length === 0) {
+      const x = cursor * (NODE_W + GAP_X);
+      cursor++;
+      pos.set(n.emp.id, { x, y });
+      return { left: x, right: x };
+    }
+    let left = Infinity, right = -Infinity;
+    n.reports.forEach((c) => {
+      const r = place(c, depth + 1);
+      left = Math.min(left, r.left);
+      right = Math.max(right, r.right);
+    });
+    const x = (left + right) / 2;
+    pos.set(n.emp.id, { x, y });
+    return { left, right };
+  };
+  roots.forEach((r, i) => { if (i > 0) cursor += 1; place(r, 0); });
+  return {
+    pos,
+    width: Math.max(NODE_W, cursor * (NODE_W + GAP_X)),
+    height: (maxDepth + 1) * (NODE_H + GAP_Y),
+  };
+}
+
 // ---------- Component ----------
 export default function OrgChart() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -144,7 +183,6 @@ export default function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [leadershipOnly, setLeadershipOnly] = useState(false);
@@ -189,12 +227,6 @@ export default function OrgChart() {
     tree.roots.forEach((r) => visit(r, []));
     return { matched, ancestors };
   }, [search, stateFilter, leadershipOnly, tree]);
-
-  const toggle = (id: string) => setCollapsed((prev) => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
 
   const counts = useMemo(() => {
     const byLevel: Record<Level, number> = { ceo: 0, c_suite: 0, director: 0, manager: 0, lead: 0, ic: 0 };
@@ -299,48 +331,14 @@ export default function OrgChart() {
       ) : (
         <Card className="overflow-hidden rounded-2xl border-border/70">
           {view === "hierarchy" && (
-            <div className="relative h-[68vh] min-h-[520px] w-full bg-muted/30">
-              <TransformWrapper
-                ref={zoomRef}
-                initialScale={1}
-                minScale={0.3}
-                maxScale={2.5}
-                limitToBounds={false}
-                wheel={{ step: 0.1 }}
-                doubleClick={{ disabled: true }}
-                panning={{ excluded: ["button", "a", "input"] }}
-              >
-                {({ zoomIn, zoomOut, resetTransform, centerView }) => (
-                  <>
-                    <div className="absolute top-3 right-3 z-10 flex flex-col gap-0.5 rounded-xl border border-border/70 bg-card/90 backdrop-blur p-1 shadow-sm">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in"><ZoomIn className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => zoomOut()} title="Zoom out"><ZoomOut className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => centerView(1)} title="Fit"><Maximize className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => resetTransform()} title="Reset"><RotateCcw className="h-3.5 w-3.5" /></Button>
-                    </div>
-                    <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur border border-border/60 px-2.5 py-1 rounded-lg">
-                      Drag to pan · scroll to zoom · click any card
-                    </div>
-                    <TransformComponent wrapperClass="!w-full !h-full cursor-grab active:cursor-grabbing" contentClass="!p-6">
-                      <div ref={view === "hierarchy" ? exportRef : undefined} className="min-w-fit p-2">
-                        {tree.roots.map((root) => (
-                          <TreeNode
-                            key={root.emp.id}
-                            node={root}
-                            depth={0}
-                            collapsed={collapsed}
-                            onToggle={toggle}
-                            selectedId={selectedId}
-                            onSelect={setSelectedId}
-                            matches={matches}
-                          />
-                        ))}
-                      </div>
-                    </TransformComponent>
-                  </>
-                )}
-              </TransformWrapper>
-            </div>
+            <HierarchyCanvas
+              roots={tree.roots}
+              exportRef={exportRef}
+              zoomRef={zoomRef}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              matches={matches}
+            />
           )}
 
           {view === "department" && (
@@ -379,68 +377,115 @@ function Kpi({ label, value }: { label: string; value: number }) {
   );
 }
 
-// ---------- Tree node ----------
-function TreeNode({
-  node, depth, collapsed, onToggle, selectedId, onSelect, matches,
+// ---------- Read-only hierarchy canvas (matches Org Chart Settings) ----------
+function HierarchyCanvas({
+  roots, exportRef, zoomRef, selectedId, onSelect, matches,
 }: {
-  node: Node;
-  depth: number;
-  collapsed: Set<string>;
-  onToggle: (id: string) => void;
+  roots: Node[];
+  exportRef: React.MutableRefObject<HTMLDivElement | null>;
+  zoomRef: React.MutableRefObject<ReactZoomPanPinchRef | null>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   matches: { matched: Set<string>; ancestors: Set<string> } | null;
 }) {
-  const isCollapsed = collapsed.has(node.emp.id);
-  const hasReports = node.reports.length > 0;
-  const isSelected = selectedId === node.emp.id;
-  const isMatch = matches?.matched.has(node.emp.id);
-  const isOnPath = matches?.ancestors.has(node.emp.id);
-  const dimmed = matches && !isMatch && !isOnPath;
+  const layout = useMemo(() => layoutCanvas(roots), [roots]);
+
+  // Flatten all visible nodes (id + node).
+  const flat = useMemo(() => {
+    const out: Node[] = [];
+    const walk = (n: Node) => { out.push(n); n.reports.forEach(walk); };
+    roots.forEach(walk);
+    return out;
+  }, [roots]);
+
+  // Edges (parent -> child).
+  const edges: Array<{ from: Pos; to: Pos; key: string }> = [];
+  flat.forEach((n) => {
+    n.reports.forEach((c) => {
+      const p = layout.pos.get(n.emp.id);
+      const cp = layout.pos.get(c.emp.id);
+      if (!p || !cp) return;
+      edges.push({
+        key: `${n.emp.id}->${c.emp.id}`,
+        from: { x: p.x + NODE_W / 2, y: p.y + NODE_H },
+        to: { x: cp.x + NODE_W / 2, y: cp.y },
+      });
+    });
+  });
 
   return (
-    <div className={cn("relative", depth > 0 && "ml-6 pl-6 border-l border-border/60")}>
-      {depth > 0 && <span className="absolute left-0 top-5 h-px w-6 bg-border/60" />}
-      <div className="flex items-start gap-1 py-1.5">
-        <button
-          onClick={() => hasReports && onToggle(node.emp.id)}
-          className={cn(
-            "h-5 w-5 rounded grid place-items-center mt-2.5 shrink-0 transition-colors",
-            hasReports ? "hover:bg-muted text-muted-foreground" : "opacity-0 pointer-events-none",
-          )}
-          aria-label={isCollapsed ? "Expand" : "Collapse"}
-        >
-          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-        </button>
-        <NodeCard node={node} selected={isSelected} highlighted={!!isMatch} dimmed={!!dimmed} onSelect={onSelect} />
-      </div>
-      {hasReports && !isCollapsed && (
-        <div className="space-y-0.5">
-          {node.reports.map((child) => (
-            <TreeNode
-              key={child.emp.id}
-              node={child}
-              depth={depth + 1}
-              collapsed={collapsed}
-              onToggle={onToggle}
-              selectedId={selectedId}
-              onSelect={onSelect}
-              matches={matches}
-            />
-          ))}
-        </div>
-      )}
+    <div className="relative h-[68vh] min-h-[520px] w-full overflow-hidden bg-gradient-to-b from-muted/30 to-background">
+      <TransformWrapper
+        ref={zoomRef}
+        initialScale={0.85}
+        minScale={0.3}
+        maxScale={2}
+        limitToBounds={false}
+        centerOnInit
+        wheel={{ step: 0.12 }}
+        doubleClick={{ disabled: true }}
+        panning={{ velocityDisabled: true, excluded: ["seat-card", "canvas-toolbar"] }}
+      >
+        {({ zoomIn, zoomOut, resetTransform, centerView }) => (
+          <>
+            <div className="canvas-toolbar absolute right-3 top-3 z-20 flex items-center gap-1 rounded-xl border border-border/70 bg-background/95 p-1 shadow-sm backdrop-blur">
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => zoomOut()} title="Zoom out"><ZoomOut className="h-3.5 w-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => zoomIn()} title="Zoom in"><ZoomIn className="h-3.5 w-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => centerView()} title="Center"><Maximize2 className="h-3.5 w-3.5" /></Button>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { resetTransform(); setTimeout(() => centerView(), 0); }} title="Reset"><RotateCcw className="h-3.5 w-3.5" /></Button>
+            </div>
+            <div className="absolute bottom-3 left-3 z-10 text-[10px] text-muted-foreground bg-card/80 backdrop-blur border border-border/60 px-2.5 py-1 rounded-lg">
+              Drag to pan · scroll to zoom · click any card
+            </div>
+            <TransformComponent
+              wrapperStyle={{ width: "100%", height: "100%" }}
+              contentStyle={{ width: layout.width + 80, height: layout.height + 80 }}
+            >
+              <div
+                ref={exportRef}
+                className="relative"
+                style={{ width: layout.width + 80, height: layout.height + 80, padding: 40 }}
+              >
+                <svg className="pointer-events-none absolute inset-0" width={layout.width + 80} height={layout.height + 80}>
+                  {edges.map(({ from, to, key }) => {
+                    const midY = (from.y + to.y) / 2;
+                    const d = `M ${from.x + 40} ${from.y + 40} C ${from.x + 40} ${midY + 40}, ${to.x + 40} ${midY + 40}, ${to.x + 40} ${to.y + 40}`;
+                    return <path key={key} d={d} fill="none" stroke="hsl(var(--border))" strokeWidth={1.5} />;
+                  })}
+                </svg>
+                {flat.map((n) => {
+                  const p = layout.pos.get(n.emp.id);
+                  if (!p) return null;
+                  const isMatch = matches?.matched.has(n.emp.id);
+                  const isOnPath = matches?.ancestors.has(n.emp.id);
+                  const dimmed = !!matches && !isMatch && !isOnPath;
+                  return (
+                    <SeatCard
+                      key={n.emp.id}
+                      node={n}
+                      x={p.x + 40}
+                      y={p.y + 40}
+                      selected={selectedId === n.emp.id}
+                      highlighted={!!isMatch}
+                      dimmed={dimmed}
+                      onSelect={onSelect}
+                    />
+                  );
+                })}
+              </div>
+            </TransformComponent>
+          </>
+        )}
+      </TransformWrapper>
     </div>
   );
 }
 
-function NodeCard({
-  node, selected, highlighted, dimmed, onSelect,
+function SeatCard({
+  node, x, y, selected, highlighted, dimmed, onSelect,
 }: {
-  node: Node;
-  selected: boolean;
-  highlighted: boolean;
-  dimmed: boolean;
+  node: Node; x: number; y: number;
+  selected: boolean; highlighted: boolean; dimmed: boolean;
   onSelect: (id: string) => void;
 }) {
   const reportsCount = node.reports.length;
@@ -448,31 +493,37 @@ function NodeCard({
   return (
     <button
       onClick={() => onSelect(node.emp.id)}
-      data-node-id={node.emp.id}
       className={cn(
-        "group flex items-center gap-2.5 px-3 py-2 rounded-xl border bg-card transition-all duration-200 min-w-[260px] text-left hover:-translate-y-0.5 hover:shadow-sm",
-        "border-border/70",
+        "seat-card absolute select-none rounded-2xl border bg-card p-3 text-left shadow-sm transition-all",
+        "hover:-translate-y-0.5 hover:shadow-md",
+        isLeader ? "border-primary/40" : "border-border/70",
         selected && "ring-2 ring-primary border-primary",
         highlighted && !selected && "ring-2 ring-primary/40",
         dimmed && "opacity-40",
       )}
+      style={{ left: x, top: y, width: NODE_W, height: NODE_H }}
     >
-      <EmployeeAvatar employee={node.emp} size="md" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground truncate">{employeeFullName(node.emp)}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{node.emp.job_title}</p>
-      </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        {isLeader && (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-foreground">
-            {LEVEL_LABEL[node.level]}
-          </span>
-        )}
-        {reportsCount > 0 && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Users className="h-2.5 w-2.5" /> {reportsCount}
-          </span>
-        )}
+      <div className="flex items-start gap-2.5 h-full">
+        <EmployeeAvatar employee={node.emp} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[13px] font-semibold text-foreground truncate">{employeeFullName(node.emp)}</p>
+            {isLeader && (
+              <span className="inline-flex items-center px-1 py-0 h-3.5 rounded text-[9px] font-medium bg-muted text-foreground">
+                {LEVEL_LABEL[node.level]}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">{node.emp.job_title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-[10px] text-muted-foreground/80 truncate">{node.deptName}</p>
+            {reportsCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Users className="h-2.5 w-2.5" /> {reportsCount}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </button>
   );
