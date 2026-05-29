@@ -938,16 +938,6 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
           </DialogFooter>
         </DialogContent>
       </Dialog>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Tag code</label>
-            <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. NFC-1A2B3C" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
-            <Button onClick={assign} disabled={busy}><ScanLine className="size-3.5" /> Assign</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
