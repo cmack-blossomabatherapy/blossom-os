@@ -28,9 +28,9 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
 }
 
-function Card({ className, children }: { className?: string; children: React.ReactNode }) {
+function Card({ id, className, children }: { id?: string; className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("rounded-2xl border border-border/70 bg-card", className)}>
+    <div id={id} className={cn("rounded-2xl border border-border/70 bg-card", className)}>
       {children}
     </div>
   );
