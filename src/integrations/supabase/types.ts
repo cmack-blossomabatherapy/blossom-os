@@ -9583,6 +9583,21 @@ export type Database = {
         Returns: undefined
       }
       get_eval_form_by_token: { Args: { p_token: string }; Returns: Json }
+      get_nfc_badge: {
+        Args: { _code: string }
+        Returns: {
+          badge_style: string
+          department_name: string
+          display_name: string
+          email: string
+          employee_id: string
+          job_title: string
+          phone: string
+          photo_url: string
+          state: string
+          states: string[]
+        }[]
+      }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: { _perm: string; _user_id: string }
