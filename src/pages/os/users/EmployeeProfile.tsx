@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { nfcBadgeUrl } from "@/lib/publicUrl";
 import { variantFor, ACTION_META, type RoleKey, type NfcActionKind } from "@/pages/nfc/roleVariants";
+import type { Database } from "@/integrations/supabase/types";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -126,14 +127,90 @@ function fmtRel(iso?: string | null) {
 // EMPLOYMENT
 // ============================================================================
 
+type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
+type EmploymentType = Database["public"]["Enums"]["employment_type"];
+type PayType = Database["public"]["Enums"]["pay_type"];
+type WorkSetting = Database["public"]["Enums"]["work_setting"];
+
+type EmploymentRow = {
+  employee_code: string | null;
+  hire_date: string | null;
+  start_date: string | null;
+  status: EmployeeStatus;
+  employment_type: EmploymentType;
+  pay_type: PayType;
+  work_setting: WorkSetting;
+  manager_id: string | null;
+  viventium_employee_id: string | null;
+  viventium_sync_status: string | null;
+  viventium_last_sync: string | null;
+  job_title: string;
+  department_id: string | null;
+  state: string;
+  email: string | null;
+  phone: string | null;
+  credential: string | null;
+  pronouns: string | null;
+};
+
+const EMPLOYEE_STATUS_OPTIONS: { value: EmployeeStatus; label: string }[] = [
+  { value: "pending_start", label: "Pending Start" },
+  { value: "active", label: "Active" },
+  { value: "on_leave", label: "On Leave" },
+  { value: "on_hold", label: "On Hold" },
+  { value: "terminated", label: "Terminated" },
+  { value: "resigned", label: "Resigned" },
+];
+
+const EMPLOYMENT_TYPE_OPTIONS: { value: EmploymentType; label: string }[] = [
+  { value: "full_time", label: "Full-time" },
+  { value: "part_time", label: "Part-time" },
+  { value: "contractor", label: "Contractor" },
+  { value: "prn", label: "PRN" },
+];
+
+const PAY_TYPE_OPTIONS: { value: PayType; label: string }[] = [
+  { value: "hourly", label: "Hourly" },
+  { value: "salaried", label: "Salaried" },
+];
+
+const WORK_SETTING_OPTIONS: { value: WorkSetting; label: string }[] = [
+  { value: "clinic", label: "Clinic" },
+  { value: "home", label: "Home-based" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "admin", label: "Admin" },
+  { value: "field", label: "Field" },
+  { value: "office", label: "Office Staff" },
+  { value: "leadership", label: "Leadership" },
+  { value: "intake", label: "Intake" },
+  { value: "recruiting", label: "Recruiting" },
+  { value: "scheduling", label: "Scheduling" },
+  { value: "state_director", label: "State Director" },
+  { value: "operations", label: "Operations" },
+  { value: "systems", label: "Systems / IT" },
+];
+
+const STATE_OPTIONS = ["GA", "NC", "TN", "VA", "MD", "NJ"];
+
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
+  const { hasPerm } = useAuth();
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
-  const [row, setRow] = useState<any | null>(null);
+  const canEditEmployment = hasPerm("hr.employees.edit");
+  const [row, setRow] = useState<EmploymentRow | null>(null);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   const [manager, setManager] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>(m.title ?? "");
+  const [departmentId, setDepartmentId] = useState<string>(m.departmentId ?? "unassigned");
+  const [state, setState] = useState<string>(m.states?.[0] ?? "GA");
+  const [status, setStatus] = useState<EmployeeStatus>("active");
+  const [employmentType, setEmploymentType] = useState<EmploymentType>("full_time");
+  const [payType, setPayType] = useState<PayType>("hourly");
+  const [workSetting, setWorkSetting] = useState<WorkSetting>("office");
   const [email, setEmail] = useState<string>(m.email ?? "");
   const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [credential, setCredential] = useState<string>(m.credential ?? "");
   const [pronouns, setPronouns] = useState<string>("");
-  const [savingContact, setSavingContact] = useState(false);
+  const [savingEmployment, setSavingEmployment] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
