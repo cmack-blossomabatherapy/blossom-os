@@ -696,6 +696,7 @@ const App = () => (
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
                   <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
                   <Route path="/admin/journey-editor" element={<JourneyEditor />} />
+                  <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
                   <Route path="/onboarding" element={<Journey />} />
