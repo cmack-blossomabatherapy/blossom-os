@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BadgeCheck, MapPin, Building2, Languages, Sparkles, Check, Linkedin, ShieldCheck } from "lucide-react";
+import {
+  BadgeCheck, Languages, Sparkles, Check, Linkedin, ShieldCheck,
+  Bot, Workflow, BarChart3, Stethoscope, Cpu, TrendingUp, Wrench,
+  GraduationCap, ShieldCheck as Shield, Heart, Users as UsersIcon,
+  Building2, MapPin,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { variantFor, ACTION_META, type NfcActionKind, type RoleKey } from "./roleVariants";
 import { photoForCode } from "@/hooks/useEmployeeDirectory";
+import type { LucideIcon } from "lucide-react";
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
@@ -85,6 +91,35 @@ function downloadVCard(b: Badge) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+// Map an expertise / skill keyword to a recognizable icon.
+function iconForTag(tag: string): LucideIcon {
+  const t = tag.toLowerCase();
+  if (/ai|automation|bot|gpt/.test(t)) return Bot;
+  if (/workflow|process|operation/.test(t)) return Workflow;
+  if (/report|analytic|dashboard|data/.test(t)) return BarChart3;
+  if (/aba|clinical|therap|behavior/.test(t)) return Stethoscope;
+  if (/system|software|tech|integration|api/.test(t)) return Cpu;
+  if (/growth|improve|optim/.test(t)) return TrendingUp;
+  if (/training|academy|learn|onboard/.test(t)) return GraduationCap;
+  if (/quality|compliance|qa|hipaa/.test(t)) return Shield;
+  if (/care|family|parent|support/.test(t)) return Heart;
+  if (/team|people|hr|recruit/.test(t)) return UsersIcon;
+  if (/tool|build|fix/.test(t)) return Wrench;
+  return Sparkles;
+}
+
+// Split a single bio into two short paragraphs at the nearest sentence break.
+function splitBio(text: string): [string, string?] {
+  const clean = text.trim();
+  if (clean.length < 180) return [clean];
+  const half = Math.floor(clean.length / 2);
+  const breakAt = clean.indexOf(". ", half - 40);
+  if (breakAt > 0 && breakAt < clean.length - 20) {
+    return [clean.slice(0, breakAt + 1), clean.slice(breakAt + 2)];
+  }
+  return [clean];
+}
+
 export default function NfcPublicProfile() {
   const { code } = useParams<{ code: string }>();
   const [badge, setBadge] = useState<Badge | null>(null);
@@ -129,6 +164,7 @@ export default function NfcPublicProfile() {
   }, [m?.display_name]);
 
   const statesLabel = (m?.states && m.states.length ? m.states : m?.state ? [m.state] : []).join(", ");
+  const stateList = m?.states && m.states.length ? m.states : m?.state ? [m.state] : [];
   const variant = variantFor(m?.role_key);
   // Fallback to a bundled brochure photo when no upload exists yet.
   const resolvedPhoto = m?.photo_url || photoForCode(m?.employee_code) || null;
@@ -164,32 +200,27 @@ export default function NfcPublicProfile() {
       })
       .filter(Boolean) as { kind: NfcActionKind; meta: typeof ACTION_META[NfcActionKind]; href?: string; isSave: boolean }[];
     if (items.length === 0) return null;
-    const cols = items.length === 1 ? "grid-cols-1" : "grid-cols-2";
     return (
-      <div className={`grid ${cols} gap-3`}>
+      <div className="grid grid-cols-2 gap-2.5">
         {items.map(({ kind, meta, href, isSave }, idx) => {
           const Icon = meta.icon;
-          // First action = primary filled; second = dark/foreground; rest = muted.
           const isPrimary = idx === 0 && !meta.destructive;
-          const isDark = idx === 1 && !meta.destructive;
           const tone = meta.destructive
-            ? "bg-destructive/10 text-destructive hover:bg-destructive/15"
+            ? "bg-destructive/10 text-destructive hover:bg-destructive/15 border border-destructive/20"
             : isPrimary
-            ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-95"
-            : isDark
-            ? "bg-foreground text-background hover:opacity-95"
-            : "bg-muted text-foreground hover:bg-muted/80";
-          const cls = `flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-4 text-[12px] font-semibold transition-all active:scale-[0.98] ${tone}`;
+            ? "bg-foreground text-background shadow-sm hover:opacity-90 border border-transparent"
+            : "bg-card text-foreground hover:bg-muted border border-border/70";
+          const cls = `flex items-center justify-center gap-2 rounded-2xl px-4 h-12 text-[13px] font-semibold transition-all active:scale-[0.98] ${tone}`;
           if (isSave) {
             return (
               <button key={kind} onClick={() => m && downloadVCard(m)} className={cls}>
-                <Icon className="size-5" /> {meta.label}
+                <Icon className="size-4" /> {meta.label}
               </button>
             );
           }
           return (
             <a key={kind} href={href} className={cls}>
-              <Icon className="size-5" /> {meta.label}
+              <Icon className="size-4" /> {meta.label}
             </a>
           );
         })}
@@ -197,11 +228,17 @@ export default function NfcPublicProfile() {
     );
   };
 
+  // Layout state for the rich content sections.
+  const aboutText = m?.about_me || m?.bio || "";
+  const aboutParas = aboutText ? splitBio(aboutText) : [];
+  const expertiseTags = [...(m?.expertise ?? []), ...(m?.skills ?? [])].slice(0, 6);
+  const showOrg = !isParentSafety && !!m?.department_name;
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-5 py-10">
-      <div className="mx-auto max-w-md">
-        <div className="mb-6 flex items-center justify-center">
-          <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-8 w-auto" />
+    <main className="min-h-screen bg-[oklch(0.985_0.003_100)] dark:bg-background">
+      <div className="mx-auto max-w-lg px-4 pb-12 pt-6 sm:px-6">
+        <div className="mb-5 flex items-center justify-center">
+          <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-7 w-auto opacity-90" />
         </div>
 
         {isLoading || !m ? (
@@ -236,161 +273,214 @@ export default function NfcPublicProfile() {
             </a>
           </div>
         ) : (
-          <article className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
-            {/* Eyebrow */}
-            <div className="flex items-center justify-center gap-1.5 px-8 pt-6 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <variant.icon className="size-3" /> {variant.eyebrow}
-            </div>
+          <div className="space-y-5">
+            {/* HERO — animated gradient with large photo */}
+            <section className="relative overflow-hidden rounded-[2rem] border border-border/60 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_30px_80px_-40px_oklch(0.2_0.02_260/0.35)]">
+              {/* Gradient + animated blobs */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-primary/10 to-background" />
+              <div className="pointer-events-none absolute -left-16 -top-16 size-64 rounded-full bg-primary/30 blur-3xl animate-[pulse_8s_ease-in-out_infinite]" />
+              <div className="pointer-events-none absolute -right-20 top-20 size-72 rounded-full bg-[oklch(0.78_0.12_320/0.25)] blur-3xl animate-[pulse_10s_ease-in-out_infinite]" />
+              <div className="pointer-events-none absolute -bottom-24 left-1/3 size-72 rounded-full bg-[oklch(0.85_0.1_220/0.25)] blur-3xl animate-[pulse_12s_ease-in-out_infinite]" />
 
-            {/* Hero */}
-            <div className="flex flex-col items-center px-8 pt-4 pb-6 text-center">
-              <div className="relative inline-block">
-                {resolvedPhoto ? (
-                  <img
-                    src={resolvedPhoto}
-                    alt=""
-                    className="size-28 rounded-full object-cover border-4 border-card shadow-md ring-1 ring-border/60"
-                  />
-                ) : (
-                  <div className="size-28 rounded-full bg-muted grid place-items-center text-2xl font-semibold text-muted-foreground border-4 border-card shadow-md ring-1 ring-border/60">
-                    {initials(m.display_name)}
+              <div className="relative flex flex-col items-center px-6 pb-7 pt-10 text-center">
+                <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-foreground/80 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+                  <variant.icon className="size-3" /> {variant.eyebrow}
+                </span>
+
+                <div className="relative inline-block">
+                  {resolvedPhoto ? (
+                    <img
+                      src={resolvedPhoto}
+                      alt={m.display_name}
+                      className="size-32 rounded-full object-cover ring-4 ring-white/70 shadow-[0_20px_50px_-20px_oklch(0.2_0.02_260/0.55)] dark:ring-white/10 sm:size-36"
+                    />
+                  ) : (
+                    <div className="grid size-32 place-items-center rounded-full bg-card text-3xl font-semibold text-muted-foreground ring-4 ring-white/70 shadow-[0_20px_50px_-20px_oklch(0.2_0.02_260/0.55)] dark:ring-white/10 sm:size-36">
+                      {initials(m.display_name)}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 rounded-full bg-card p-1 shadow-sm">
+                    <div className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground">
+                      <Check className="size-4" strokeWidth={3} />
+                    </div>
                   </div>
+                </div>
+
+                <h1 className="mt-5 text-[28px] font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+                  {m.display_name}
+                  {m.credential ? (
+                    <span className="ml-1.5 text-lg font-normal text-muted-foreground">{m.credential}</span>
+                  ) : null}
+                </h1>
+                {m.job_title && (
+                  <p className="mt-1 text-[15px] font-medium text-foreground/80">{m.job_title}</p>
                 )}
-                <div className="absolute -bottom-1 -right-1 rounded-full bg-card p-1 shadow-sm">
-                  <div className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3.5" strokeWidth={3} />
-                  </div>
+                {(statesLabel || m.department_name) && (
+                  <p className="mt-0.5 text-[13px] text-muted-foreground">
+                    {statesLabel ? (stateList.length > 1 ? "Multi-State Operations" : statesLabel) : m.department_name}
+                  </p>
+                )}
+                {m.pronouns && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.pronouns}</p>}
+
+                <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-background">
+                  <BadgeCheck className="size-3.5" /> Verified Blossom Team Member
+                </span>
+
+                {/* Quick contact row */}
+                <div className="mt-6 w-full">
+                  {renderActions(variant.actions.slice(0, 2).concat(variant.actions.includes("save_contact") ? [] : ["save_contact"]).slice(0, 2) as NfcActionKind[])}
                 </div>
               </div>
+            </section>
 
-              <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
-                {m.display_name}
-                {m.credential ? (
-                  <span className="ml-1.5 text-base font-normal text-muted-foreground">{m.credential}</span>
-                ) : null}
-              </h1>
-              {m.job_title && <p className="text-sm font-medium text-muted-foreground">{m.job_title}</p>}
-              {m.pronouns && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.pronouns}</p>}
+            {/* STAT ROW */}
+            <section className="grid grid-cols-3 gap-3">
+              <StatCard label="Department" value={m.department_name ?? "Blossom ABA"} icon={Building2} />
+              <StatCard
+                label={stateList.length > 1 ? "Coverage" : "Location"}
+                value={stateList.length ? stateList.join(" · ") : "Multi-state"}
+                icon={MapPin}
+              />
+              <StatCard
+                label="Expertise"
+                value={expertiseTags.length ? `${expertiseTags.length}+` : "—"}
+                icon={Sparkles}
+              />
+            </section>
 
-              <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-                <BadgeCheck className="size-3.5" /> Verified Blossom Employee
-              </span>
-
-              <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-                {m.about_me || m.bio || variant.tagline}
-              </p>
-            </div>
-
-            {/* Sectioned content */}
-            <div className="space-y-7 px-6 pb-2">
-              {/* Core info grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-muted/60 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Department</p>
-                  <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
-                    {m.department_name ?? "Blossom ABA"}
-                  </p>
+            {/* ABOUT */}
+            {aboutParas.length > 0 && (
+              <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  About {m.preferred_name || m.display_name.split(" ")[0]}
+                </h3>
+                <div className="mt-3 space-y-3">
+                  {aboutParas.map((p, i) => (
+                    <p key={i} className="text-[14px] leading-relaxed text-foreground/85">{p}</p>
+                  ))}
                 </div>
-                <div className="rounded-2xl bg-muted/60 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Location</p>
-                  <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
-                    {statesLabel || "Multi-state"}
-                  </p>
-                </div>
-                {m.languages && m.languages.length > 0 && (
-                  <div className="col-span-2 rounded-2xl bg-muted/60 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Languages</p>
-                    <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <Languages className="size-3.5 text-muted-foreground" />
-                      {m.languages.join(", ")}
-                    </p>
-                  </div>
-                )}
-              </div>
+              </section>
+            )}
 
-              {/* How I can help */}
-              {!isParentSafety && m.help_with && m.help_with.length > 0 ? (
-                <div>
-                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {/* HOW I CAN HELP — centerpiece */}
+            {!isParentSafety && m.help_with && m.help_with.length > 0 && (
+              <section>
+                <div className="mb-3 flex items-end justify-between">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     How I can help
                   </h3>
-                  <ul className="space-y-2.5">
-                    {m.help_with.map((item) => (
-                      <li key={item} className="flex items-start gap-3 text-[13px] font-medium text-foreground">
-                        <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                          <Check className="size-3" strokeWidth={3} />
-                        </span>
-                        <span className="leading-snug">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <span className="text-[10px] text-muted-foreground/80">Reach out anytime</span>
                 </div>
-              ) : null}
-
-              {/* Expertise tags */}
-              {(m.expertise?.length || m.skills?.length) ? (
-                <div>
-                  <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Expertise
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {[...(m.expertise ?? []), ...(m.skills ?? [])].slice(0, 6).map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-                      >
-                        <Sparkles className="size-3 opacity-60" /> {tag}
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {m.help_with.map((item) => (
+                    <div
+                      key={item}
+                      className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card p-3.5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_oklch(0.2_0.02_260/0.15)]"
+                    >
+                      <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                        <Check className="size-3.5" strokeWidth={3} />
                       </span>
-                    ))}
-                  </div>
+                      <span className="text-[13px] font-medium leading-snug text-foreground">{item}</span>
+                    </div>
+                  ))}
                 </div>
-              ) : null}
+              </section>
+            )}
 
-              {/* LinkedIn callout */}
-              {!isParentSafety && m.linkedin_url ? (
+            {/* EXPERTISE — icon cards */}
+            {expertiseTags.length > 0 && (
+              <section>
+                <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Expertise
+                </h3>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {expertiseTags.map((tag) => {
+                    const Icon = iconForTag(tag);
+                    return (
+                      <div
+                        key={tag}
+                        className="group relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-3.5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_oklch(0.2_0.02_260/0.15)]"
+                      >
+                        <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                          <Icon className="size-4" />
+                        </span>
+                        <p className="mt-2.5 text-[13px] font-semibold leading-tight text-foreground">{tag}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ORG — Part of */}
+            {showOrg && (
+              <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Organization
+                </h3>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">Part of</p>
+                    <p className="mt-0.5 text-[14px] font-semibold text-foreground">{m.department_name}</p>
+                  </div>
+                  {stateList.length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">Operating in</p>
+                      <p className="mt-0.5 text-[14px] font-semibold text-foreground">{stateList.join(" · ")}</p>
+                    </div>
+                  )}
+                  {m.languages && m.languages.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] text-muted-foreground">Languages</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[14px] font-semibold text-foreground">
+                        <Languages className="size-3.5 text-muted-foreground" />
+                        {m.languages.join(", ")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* CONTACT — full CTA grid */}
+            <section className="rounded-3xl border border-border/70 bg-card p-6 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+              <div className="mb-4 flex items-end justify-between">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Get in touch
+                </h3>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <ShieldCheck className="size-3 text-primary" /> Verified contact
+                </div>
+              </div>
+              {renderActions(variant.actions)}
+              {!isParentSafety && m.linkedin_url && (
                 <a
                   href={m.linkedin_url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="group flex items-center justify-between rounded-2xl border border-primary/15 bg-primary/5 p-3.5 transition hover:bg-primary/10"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border/70 bg-muted/40 px-4 h-11 text-[12px] font-semibold text-foreground transition hover:bg-muted"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-8 place-items-center rounded-lg bg-[#0077B5] text-white">
-                      <Linkedin className="size-4" />
-                    </span>
-                    <span className="text-sm font-semibold text-primary">Connect on LinkedIn</span>
-                  </div>
-                  <span className="text-primary transition-transform group-hover:translate-x-0.5">→</span>
+                  <Linkedin className="size-4 text-[#0077B5]" /> View LinkedIn
                 </a>
-              ) : null}
-            </div>
-
-            {/* Contact actions */}
-            <div className="px-6 pt-6 pb-6">
-              {renderActions(variant.actions)}
-            </div>
-
-            {/* Verified footer */}
-            <div className="border-t border-border/60 bg-muted/40 px-6 py-4">
-              <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-                <ShieldCheck className="size-3.5 text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
-                  Verified Blossom Member
-                </span>
-              </div>
-              <p className="mt-1.5 text-center text-[10px] leading-tight text-muted-foreground/80">
-                {isParentSafety
-                  ? `Verified ${new Date().toLocaleDateString()} · Personal contact info is never shown`
-                  : "Tap Save to Contacts to add this professional to your phone"}
-              </p>
-            </div>
-          </article>
+              )}
+            </section>
+          </div>
         )}
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          © Blossom ABA Therapy
+          Powered by Blossom OS · © Blossom ABA Therapy
         </p>
       </div>
     </main>
+  );
+}
+
+function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: LucideIcon }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-3 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset]">
+      <Icon className="size-3.5 text-muted-foreground" />
+      <p className="mt-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-tight text-foreground">{value}</p>
+    </div>
   );
 }
