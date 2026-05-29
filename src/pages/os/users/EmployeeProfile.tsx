@@ -816,11 +816,21 @@ function LoginsTab({ m }: { m: DirectoryEmployee }) {
 
 type NfcRow = { id: string; tag_code: string; is_active: boolean; assigned_at: string; last_test_at: string | null; revoked_at: string | null };
 
+// Minimal Web NFC typings (Chrome on Android only — not in lib.dom)
+type NDEFRecordInit = { recordType: string; data?: string | BufferSource; lang?: string; encoding?: string; mediaType?: string };
+type NDEFWriteOptions = { overwrite?: boolean; signal?: AbortSignal };
+declare global {
+  interface Window { NDEFReader?: new () => { write: (msg: { records: NDEFRecordInit[] }, opts?: NDEFWriteOptions) => Promise<void> } }
+}
+
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [writing, setWriting] = useState(false);
+  const [writeAbort, setWriteAbort] = useState<AbortController | null>(null);
+  const nfcSupported = typeof window !== "undefined" && "NDEFReader" in window;
 
   // Prefer the short tag code for a friendlier, brand-safe URL on the phone's tap prompt.
   const nfcUrl = nfcBadgeUrl(active?.tag_code ?? m.uuid ?? m.id);
@@ -863,6 +873,32 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
     toast("Tag revoked"); void load();
   }
 
+  async function writeToTag() {
+    if (!active) return;
+    if (!nfcSupported || !window.NDEFReader) {
+      toast.error("This device can't write NFC tags", {
+        description: "Open this page in Chrome on an Android phone, or use NXP TagWriter / NFC Tools to program the URL above.",
+      });
+      return;
+    }
+    try {
+      const ndef = new window.NDEFReader();
+      const ctrl = new AbortController();
+      setWriteAbort(ctrl);
+      setWriting(true);
+      await ndef.write({ records: [{ recordType: "url", data: nfcUrl }] }, { signal: ctrl.signal });
+      toast.success("Tag written", { description: "Tap any phone to the tag to verify the Smart Badge opens." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/abort/i.test(msg)) toast("Write cancelled");
+      else if (/permission|NotAllowed/i.test(msg)) toast.error("NFC permission denied", { description: "Allow NFC access in the browser prompt and try again." });
+      else toast.error("Couldn't write to tag", { description: msg });
+    } finally {
+      setWriting(false);
+      setWriteAbort(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Dialog open={openAssign} onOpenChange={setOpenAssign}>
@@ -878,6 +914,27 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
             <Button onClick={assign} disabled={busy}><ScanLine className="size-3.5" /> Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={writing} onOpenChange={(o) => { if (!o) writeAbort?.abort(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hold an NFC tag to your phone</DialogTitle>
+            <DialogDescription>
+              Touch a blank NFC tag to the back of your phone. We'll program it with the Smart Badge URL.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="relative grid size-20 place-items-center rounded-full bg-primary/10">
+              <Smartphone className="size-9 text-primary animate-pulse" />
+              <span className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
+            </div>
+            <p className="text-xs text-muted-foreground">Waiting for tag…</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => writeAbort?.abort()}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -925,6 +982,14 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               ) : (
                 <>
                   <Button size="sm" variant="outline" onClick={testTap}><Sparkles className="size-3.5" /> Test tap</Button>
+                  <Button
+                    size="sm"
+                    onClick={writeToTag}
+                    disabled={!nfcSupported || writing}
+                    title={nfcSupported ? "Hold a blank NFC tag to the back of your phone" : "Web NFC works in Chrome on Android. On iPhone or desktop, use NXP TagWriter with the URL above."}
+                  >
+                    <Smartphone className="size-3.5" /> {writing ? "Writing…" : "Write to NFC tag"}
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setOpenAssign(true)}><RefreshCw className="size-3.5" /> Reassign</Button>
                   <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revoke}>
                     <Trash2 className="size-3.5" /> Revoke
@@ -932,6 +997,11 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
                 </>
               )}
             </div>
+            {!nfcSupported && active && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                One-tap writing requires Chrome on Android. On other devices, copy the URL above into NXP TagWriter or NFC Tools.
+              </p>
+            )}
             <p className="mt-3 text-xs text-muted-foreground">
               When a parent taps the tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info.
             </p>
