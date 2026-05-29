@@ -488,25 +488,83 @@ function LoginsTab() {
   );
 }
 
-function NfcTab({ m }: { m: DirectoryEmployee }) {
+type NfcState = { tagId: string | null; assignedAt: string | null; lastTestAt: string | null };
+
+function readNfcState(empId: string): NfcState {
+  if (typeof window === "undefined") return { tagId: null, assignedAt: null, lastTestAt: null };
+  try {
+    const raw = localStorage.getItem(`nfc:${empId}`);
+    if (!raw) return { tagId: null, assignedAt: null, lastTestAt: null };
+    return JSON.parse(raw) as NfcState;
+  } catch { return { tagId: null, assignedAt: null, lastTestAt: null }; }
+}
+function writeNfcState(empId: string, state: NfcState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`nfc:${empId}`, JSON.stringify(state));
+  window.dispatchEvent(new CustomEvent("nfc:changed", { detail: { empId } }));
+}
+
+function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const nfcUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/nfc/${m.id}`;
   const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<NfcState>(() => readNfcState(m.id));
+  const [tagInput, setTagInput] = useState("");
+  useEffect(() => { setState(readNfcState(m.id)); }, [m.id]);
+
+  const active = !!state.tagId;
+  const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString() : "Never";
+
+  function assign() {
+    const id = tagInput.trim() || `NFC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const next: NfcState = { tagId: id, assignedAt: new Date().toISOString(), lastTestAt: state.lastTestAt };
+    writeNfcState(m.id, next); setState(next); setTagInput(""); setOpenAssign(false);
+    toast.success("NFC tag assigned", { description: `Tag ${id} linked to ${m.name}` });
+  }
+  function testTap() {
+    const next: NfcState = { ...state, lastTestAt: new Date().toISOString() };
+    writeNfcState(m.id, next); setState(next);
+    window.open(`/nfc/${m.id}`, "_blank");
+    toast.success("Test tap recorded");
+  }
+  function revoke() {
+    writeNfcState(m.id, { tagId: null, assignedAt: null, lastTestAt: state.lastTestAt });
+    setState(readNfcState(m.id));
+    toast("NFC tag revoked", { description: "The tag will no longer resolve to this profile." });
+  }
+
   return (
     <div className="space-y-6">
+      <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign NFC tag</DialogTitle>
+            <DialogDescription>Enter the printed tag ID, or leave blank to auto-generate a code.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Tag ID</label>
+            <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. NFC-1A2B3C" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
+            <Button onClick={assign}><ScanLine className="size-3.5" /> Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">NFC status</p>
-          <p className="mt-1 text-lg font-semibold">Not assigned</p>
-          <StatusBadge tone="muted">Inactive</StatusBadge>
+          <p className="mt-1 text-lg font-semibold">{active ? "Active" : "Not assigned"}</p>
+          <StatusBadge tone={active ? "ok" : "muted"}>{active ? "Live" : "Inactive"}</StatusBadge>
         </Card>
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Tag ID</p>
-          <p className="mt-1 text-lg font-semibold">—</p>
-          <p className="text-xs text-muted-foreground">Assign a tag to begin</p>
+          <p className="mt-1 text-lg font-semibold">{state.tagId ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{state.assignedAt ? `Assigned ${fmt(state.assignedAt)}` : "Assign a tag to begin"}</p>
         </Card>
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Last test</p>
-          <p className="mt-1 text-lg font-semibold">Never</p>
+          <p className="mt-1 text-lg font-semibold">{state.lastTestAt ? fmt(state.lastTestAt) : "Never"}</p>
           <p className="text-xs text-muted-foreground">Tap to verify after assignment</p>
         </Card>
       </div>
@@ -522,21 +580,35 @@ function NfcTab({ m }: { m: DirectoryEmployee }) {
                 onClick={() => {
                   void navigator.clipboard?.writeText(nfcUrl);
                   setCopied(true);
+                  toast.success("Profile URL copied");
                   setTimeout(() => setCopied(false), 1500);
                 }}
               >
                 <Copy className="size-3.5" /> {copied ? "Copied" : "Copy"}
               </Button>
-              <Link to={`/nfc/${m.id}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <a href={`/nfc/${m.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                 Preview <ExternalLink className="size-3" />
-              </Link>
+              </a>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {!active ? (
+                <Button size="sm" onClick={() => setOpenAssign(true)}><ScanLine className="size-3.5" /> Assign tag</Button>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" onClick={testTap}><Sparkles className="size-3.5" /> Test tap</Button>
+                  <Button size="sm" variant="outline" onClick={() => setOpenAssign(true)}><RefreshCw className="size-3.5" /> Reassign tag</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revoke}><Trash2 className="size-3.5" /> Revoke</Button>
+                </>
+              )}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               When a parent taps the tag, they'll see a verified employee badge with photo, role, and a way to report a concern — never personal contact info.
             </p>
           </div>
           <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-6">
-            <QrCode className="size-24 text-foreground/80" strokeWidth={1.25} />
+            <div className="rounded-lg bg-white p-3">
+              <QRCodeSVG value={nfcUrl} size={128} level="M" includeMargin={false} />
+            </div>
             <p className="mt-2 text-[11px] text-muted-foreground">QR backup</p>
           </div>
         </div>
