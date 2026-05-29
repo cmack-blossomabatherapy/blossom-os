@@ -145,6 +145,7 @@ import WelcomeHome from "./pages/WelcomeHome";
 import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
+import AccountSettings from "./pages/account/AccountSettings";
 import MfaSetup from "./pages/MfaSetup";
 import MfaVerify from "./pages/MfaVerify";
 import NotificationPreferences from "./pages/NotificationPreferences";
