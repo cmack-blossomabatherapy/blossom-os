@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BadgeCheck, MapPin, Building2, Languages, Sparkles } from "lucide-react";
+import { BadgeCheck, MapPin, Building2, Languages, Sparkles, Check, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { variantFor, ACTION_META, type NfcActionKind, type RoleKey } from "./roleVariants";
@@ -50,6 +50,8 @@ type Badge = {
   expertise: string[] | null;
   skills: string[] | null;
   languages: string[] | null;
+  help_with: string[] | null;
+  linkedin_url: string | null;
   leadership_level: string | null;
   emergency_contact: { name?: string; relationship?: string; phone?: string; email?: string } | null;
   nfc_settings: { enabled?: boolean; public?: boolean; internal?: boolean; business_card?: boolean; emergency?: boolean } | null;
