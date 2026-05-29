@@ -258,7 +258,7 @@ export default function OrgChartManage() {
               wheel={{ step: 0.12 }}
               doubleClick={{ disabled: true }}
               panning={{ velocityDisabled: true, excluded: ["org-card", "org-toolbar"] }}
-              onTransformed={(_ref, state) => { scaleRef.current = state.scale; }}
+              onTransform={(ref) => { scaleRef.current = ref.state.scale; }}
               onZoom={(ref) => { scaleRef.current = ref.state.scale; }}
             >
               {({ zoomIn, zoomOut, resetTransform, centerView }) => (
