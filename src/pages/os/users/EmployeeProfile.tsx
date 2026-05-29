@@ -1386,7 +1386,7 @@ export default function EmployeeProfilePage() {
                   currentUrl={member.photo ?? null}
                   initials={initials(member.name)}
                   size="xl"
-                  className="text-foreground"
+                  appearance="light"
                 />
               ) : member.photo ? (
                 <img src={member.photo} alt="" className="size-20 rounded-full object-cover ring-1 ring-border/60" />
