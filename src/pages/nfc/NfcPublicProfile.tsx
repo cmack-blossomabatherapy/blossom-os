@@ -122,9 +122,24 @@ export default function NfcPublicProfile() {
 
         {isLoading || !m ? (
           <div className="rounded-3xl border border-border/70 bg-card p-10 text-center shadow-sm">
-            <p className="text-sm text-muted-foreground">
-              {isLoading ? "Opening Blossom Smart Badge…" : "This badge isn't recognized or has been revoked. Please contact Blossom if you scanned a current employee card."}
-            </p>
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">Opening Blossom Smart Badge…</p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-foreground">This badge isn't recognized</p>
+                <p className="text-xs text-muted-foreground">
+                  The card you tapped may have been revoked, or it was programmed with an old URL before this badge system launched. If you're a Blossom team member, reprogram the tag from your employee profile.
+                </p>
+                {code && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Scanned code: <span className="font-mono">{code}</span>
+                  </p>
+                )}
+                <a href="mailto:support@blossomabatherapy.com" className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                  Contact Blossom support
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <article className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_24px_60px_-30px_oklch(0.2_0.02_260/0.25)]">
