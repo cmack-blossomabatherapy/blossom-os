@@ -466,21 +466,67 @@ export function PhoneShared() {
 // ---------- /phone/directory ----------
 
 export function PhoneDirectory() {
-  const { queues, shared, settings } = usePhoneSystem();
+  const {
+    queues, shared, settings,
+    stateDirectory, corporateMenu, stateIntakeRouting,
+    setQueues, setShared, setSettings,
+    setStateDirectory, setCorporateMenu, setStateIntakeRouting,
+  } = usePhoneSystem();
+  const { role } = useOSRole();
+  const canEdit = role === "super_admin" || role === "hr_team" || role === "marketing_team";
+  const [editing, setEditing] = useState(false);
+  const [draftSettings, setDraftSettings] = useState(settings);
+  const [draftMenu, setDraftMenu] = useState(corporateMenu);
+  const [draftStateDir, setDraftStateDir] = useState(stateDirectory);
+  const [draftIntake, setDraftIntake] = useState(stateIntakeRouting);
+  const [draftQueues, setDraftQueues] = useState(queues);
+  const [draftShared, setDraftShared] = useState(shared);
   const [q, setQ] = useState("");
+
+  const startEdit = () => {
+    setDraftSettings(settings);
+    setDraftMenu(corporateMenu);
+    setDraftStateDir(stateDirectory);
+    setDraftIntake(stateIntakeRouting);
+    setDraftQueues(queues);
+    setDraftShared(shared);
+    setEditing(true);
+  };
+  const cancelEdit = () => setEditing(false);
+  const saveEdit = () => {
+    setSettings(draftSettings);
+    setCorporateMenu(draftMenu);
+    setStateDirectory(draftStateDir);
+    setStateIntakeRouting(draftIntake);
+    setQueues(draftQueues);
+    setShared(draftShared);
+    setEditing(false);
+    toast.success("Routing directory updated");
+  };
+
+  const updateAt = <T,>(arr: T[], idx: number, patch: Partial<T>): T[] =>
+    arr.map((row, i) => (i === idx ? { ...row, ...patch } : row));
+
   const term = q.trim().toLowerCase();
   const matches = (s: string) => !term || s.toLowerCase().includes(term);
 
-  const filteredQueues = queues.filter((row) =>
+  const queuesView = editing ? draftQueues : queues;
+  const sharedView = editing ? draftShared : shared;
+  const stateDirView = editing ? draftStateDir : stateDirectory;
+  const intakeView = editing ? draftIntake : stateIntakeRouting;
+  const menuView = editing ? draftMenu : corporateMenu;
+  const settingsView = editing ? draftSettings : settings;
+
+  const filteredQueues = queuesView.filter((row) =>
     matches(row.queue) || matches(row.state) || matches(row.timeframe) ||
     matches(row.voicemail) || matches(row.routing) || row.agents.some((a) => matches(a)),
   );
-  const filteredShared = shared.filter((s) =>
+  const filteredShared = sharedView.filter((s) =>
     matches(s.department) || matches(s.category) || matches(s.extension) ||
     matches(s.businessHoursRouting) || matches(s.afterHoursRouting) ||
     s.agents.some((a) => matches(a)),
   );
-  const filteredStateIntake = STATE_INTAKE_ROUTING.filter((s) =>
+  const filteredStateIntake = intakeView.filter((s) =>
     matches(s.state) || matches(s.intakeExt) || matches(s.dayQueue) ||
     matches(s.afternoonQueue) || matches(s.afterHours),
   );
@@ -490,6 +536,16 @@ export function PhoneDirectory() {
       <PageHeader
         title="Routing Directory"
         description="Corporate numbers, auto-attendant menu, state intake routing, and queue details."
+        actions={canEdit ? (
+          editing ? (
+            <>
+              <Button variant="outline" onClick={cancelEdit}><X className="h-4 w-4 mr-2" /> Cancel</Button>
+              <Button onClick={saveEdit}><Check className="h-4 w-4 mr-2" /> Save changes</Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={startEdit}><Pencil className="h-4 w-4 mr-2" /> Edit directory</Button>
+          )
+        ) : undefined}
       />
 
       <div className="relative mb-6">
@@ -499,6 +555,7 @@ export function PhoneDirectory() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Filter by state, extension, queue, or number…"
           className="pl-9 max-w-md"
+          disabled={editing}
         />
       </div>
 
@@ -510,11 +567,21 @@ export function PhoneDirectory() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Primary</span>
-              <span className="font-mono">{settings.mainNumberPrimary}</span>
+              {editing ? (
+                <Input className="h-8 w-44 font-mono text-xs" value={draftSettings.mainNumberPrimary}
+                  onChange={(e) => setDraftSettings({ ...draftSettings, mainNumberPrimary: e.target.value })} />
+              ) : (
+                <span className="font-mono">{settingsView.mainNumberPrimary}</span>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Secondary</span>
-              <span className="font-mono">{settings.mainNumberSecondary}</span>
+              {editing ? (
+                <Input className="h-8 w-44 font-mono text-xs" value={draftSettings.mainNumberSecondary}
+                  onChange={(e) => setDraftSettings({ ...draftSettings, mainNumberSecondary: e.target.value })} />
+              ) : (
+                <span className="font-mono">{settingsView.mainNumberSecondary}</span>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Auto Attendant</span>
@@ -522,7 +589,12 @@ export function PhoneDirectory() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">After-Hours Forward</span>
-              <span className="font-mono">{settings.afterHoursNumber}</span>
+              {editing ? (
+                <Input className="h-8 w-44 font-mono text-xs" value={draftSettings.afterHoursNumber}
+                  onChange={(e) => setDraftSettings({ ...draftSettings, afterHoursNumber: e.target.value })} />
+              ) : (
+                <span className="font-mono">{settingsView.afterHoursNumber}</span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -537,11 +609,26 @@ export function PhoneDirectory() {
                 <TableHead className="w-16">Option</TableHead><TableHead>Department</TableHead><TableHead>Routes To</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {CORPORATE_MENU.map((m) => (
-                  <TableRow key={m.option}>
-                    <TableCell className="font-mono font-semibold">{m.option}</TableCell>
-                    <TableCell>{m.label}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{m.routesTo}</TableCell>
+                {menuView.map((m, idx) => (
+                  <TableRow key={`${m.option}-${idx}`}>
+                    <TableCell className="font-mono font-semibold">
+                      {editing ? (
+                        <Input className="h-8 w-14 font-mono text-xs" value={m.option}
+                          onChange={(e) => setDraftMenu(updateAt(draftMenu, idx, { option: e.target.value }))} />
+                      ) : m.option}
+                    </TableCell>
+                    <TableCell>
+                      {editing ? (
+                        <Input className="h-8 text-xs" value={m.label}
+                          onChange={(e) => setDraftMenu(updateAt(draftMenu, idx, { label: e.target.value }))} />
+                      ) : m.label}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {editing ? (
+                        <Input className="h-8 font-mono text-xs" value={m.routesTo}
+                          onChange={(e) => setDraftMenu(updateAt(draftMenu, idx, { routesTo: e.target.value }))} />
+                      ) : m.routesTo}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -562,14 +649,26 @@ export function PhoneDirectory() {
                 <TableHead>Auto Attendant</TableHead><TableHead>Intake Submenu</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {STATE_DIRECTORY.filter((s) => matches(s.state) || matches(s.direct) || matches(s.intakeRouting)).map((s) => (
+                {stateDirView.map((s, idx) => {
+                  if (!editing && !(matches(s.state) || matches(s.direct) || matches(s.intakeRouting))) return null;
+                  return (
                   <TableRow key={s.state}>
                     <TableCell className="font-medium">{s.state}</TableCell>
-                    <TableCell className="font-mono">{s.direct}</TableCell>
-                    <TableCell className="font-mono">{s.mainAA}</TableCell>
-                    <TableCell className="font-mono">{s.intakeRouting}</TableCell>
+                    <TableCell className="font-mono">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={s.direct}
+                        onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { direct: e.target.value }))} />
+                    ) : s.direct}</TableCell>
+                    <TableCell className="font-mono">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={s.mainAA}
+                        onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { mainAA: e.target.value }))} />
+                    ) : s.mainAA}</TableCell>
+                    <TableCell className="font-mono">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={s.intakeRouting}
+                        onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { intakeRouting: e.target.value }))} />
+                    ) : s.intakeRouting}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -589,16 +688,24 @@ export function PhoneDirectory() {
                 <TableHead>After-Hours</TableHead><TableHead>Voicemail Email</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {filteredStateIntake.map((s) => (
+                {intakeView.map((s, idx) => {
+                  if (!editing && !filteredStateIntake.includes(s)) return null;
+                  return (
                   <TableRow key={s.state}>
                     <TableCell className="font-medium">{s.state}</TableCell>
-                    <TableCell className="font-mono">{s.intakeExt}</TableCell>
-                    <TableCell className="font-mono">{s.dayQueue}</TableCell>
-                    <TableCell className="font-mono">{s.afternoonQueue}</TableCell>
-                    <TableCell className="font-mono">{s.afterHours}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{s.voicemailEmail}</TableCell>
+                    {(["intakeExt","dayQueue","afternoonQueue","afterHours"] as const).map((k) => (
+                      <TableCell key={k} className="font-mono">{editing ? (
+                        <Input className="h-8 font-mono text-xs" value={s[k]}
+                          onChange={(e) => setDraftIntake(updateAt(draftIntake, idx, { [k]: e.target.value } as Partial<typeof s>))} />
+                      ) : s[k]}</TableCell>
+                    ))}
+                    <TableCell className="text-xs text-muted-foreground">{editing ? (
+                      <Input className="h-8 text-xs" value={s.voicemailEmail}
+                        onChange={(e) => setDraftIntake(updateAt(draftIntake, idx, { voicemailEmail: e.target.value }))} />
+                    ) : s.voicemailEmail}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -617,16 +724,34 @@ export function PhoneDirectory() {
                 <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {filteredQueues.map((row) => (
+                {queuesView.map((row, idx) => {
+                  if (!editing && !filteredQueues.includes(row)) return null;
+                  return (
                   <TableRow key={row.queue}>
                     <TableCell className="font-medium">{row.queue}</TableCell>
-                    <TableCell>{row.state}</TableCell>
-                    <TableCell>{row.timeframe}</TableCell>
-                    <TableCell className="font-mono text-xs">{row.agents.join(", ")}</TableCell>
-                    <TableCell className="font-mono text-xs">{row.voicemail}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{row.routing}</TableCell>
+                    <TableCell>{editing ? (
+                      <Input className="h-8 text-xs w-24" value={row.state}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { state: e.target.value }))} />
+                    ) : row.state}</TableCell>
+                    <TableCell>{editing ? (
+                      <Input className="h-8 text-xs" value={row.timeframe}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { timeframe: e.target.value }))} />
+                    ) : row.timeframe}</TableCell>
+                    <TableCell className="font-mono text-xs">{editing ? (
+                      <Input className="h-8 font-mono text-xs min-w-[180px]" value={row.agents.join(", ")}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { agents: e.target.value.split(",").map((a) => a.trim()).filter(Boolean) }))} />
+                    ) : row.agents.join(", ")}</TableCell>
+                    <TableCell className="font-mono text-xs">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={row.voicemail}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { voicemail: e.target.value }))} />
+                    ) : row.voicemail}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{editing ? (
+                      <Input className="h-8 text-xs min-w-[160px]" value={row.routing}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { routing: e.target.value }))} />
+                    ) : row.routing}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -646,16 +771,37 @@ export function PhoneDirectory() {
                 <TableHead>Agents</TableHead><TableHead>Backup</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {filteredShared.map((s) => (
+                {sharedView.map((s, idx) => {
+                  if (!editing && !filteredShared.includes(s)) return null;
+                  return (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.department}</TableCell>
-                    <TableCell className="font-mono">{s.extension}</TableCell>
-                    <TableCell className="font-mono text-xs">{s.businessHoursRouting}</TableCell>
-                    <TableCell className="font-mono text-xs">{s.afterHoursRouting}</TableCell>
-                    <TableCell className="font-mono text-xs">{s.agents.join(", ")}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{s.backupPath ?? "—"}</TableCell>
+                    <TableCell className="font-medium">{editing ? (
+                      <Input className="h-8 text-xs" value={s.department}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { department: e.target.value }))} />
+                    ) : s.department}</TableCell>
+                    <TableCell className="font-mono">{editing ? (
+                      <Input className="h-8 font-mono text-xs w-24" value={s.extension}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { extension: e.target.value }))} />
+                    ) : s.extension}</TableCell>
+                    <TableCell className="font-mono text-xs">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={s.businessHoursRouting}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { businessHoursRouting: e.target.value }))} />
+                    ) : s.businessHoursRouting}</TableCell>
+                    <TableCell className="font-mono text-xs">{editing ? (
+                      <Input className="h-8 font-mono text-xs" value={s.afterHoursRouting}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { afterHoursRouting: e.target.value }))} />
+                    ) : s.afterHoursRouting}</TableCell>
+                    <TableCell className="font-mono text-xs">{editing ? (
+                      <Input className="h-8 font-mono text-xs min-w-[180px]" value={s.agents.join(", ")}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { agents: e.target.value.split(",").map((a) => a.trim()).filter(Boolean) }))} />
+                    ) : s.agents.join(", ")}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{editing ? (
+                      <Input className="h-8 text-xs" value={s.backupPath ?? ""}
+                        onChange={(e) => setDraftShared(updateAt(draftShared, idx, { backupPath: e.target.value }))} />
+                    ) : (s.backupPath ?? "—")}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
