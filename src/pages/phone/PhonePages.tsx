@@ -24,6 +24,8 @@ import {
   usePhoneSystem, downloadPhoneCsv, notifyPhoneWebhook,
 } from "@/contexts/PhoneSystemContext";
 import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { Pencil, Check, X } from "lucide-react";
 import {
   ChangeRequest, CallQueue, Employee, ImpactRow, RequestRoutingScope,
   RequestStatus, SharedDeptCategory, SharedRouting, SHARED_CATEGORIES, STATUSES,
