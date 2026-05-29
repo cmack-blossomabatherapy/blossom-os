@@ -9866,6 +9866,7 @@ export type Database = {
           display_name: string
           email: string
           emergency_contact: Json
+          employee_code: string
           employee_id: string
           expertise: string[]
           extension: string

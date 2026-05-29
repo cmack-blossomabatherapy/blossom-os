@@ -1,42 +1,39 @@
-## Make the OS profile NFC tab role-aware
+## Goal
+Make the public NFC / Smart Badge page show the same profile picture you see in OS user management, give admins a way to upload/replace that picture from the OS profile, and surface a clear "what's missing" checklist so every employee can ship a complete digital business card.
 
-The public `/nfc/:code` page is already role-aware (RPC returns `role_key`, shell renders the right variant). The stale-feeling surface is the **NFC tab inside the OS employee profile** — its copy and side panels are hardcoded to the RBT/BCBA "parent safety" framing for everyone.
+## Why the public badge looks empty today
+- The OS user-management profile renders `m.photo` from `useEmployeeDirectory`, which falls back to bundled brochure photos (`PHOTO_BY_CODE`) when the DB column is empty — so it always looks populated.
+- The public NFC page (`/nfc/:code`) calls the `get_nfc_badge` RPC and uses the raw `employees.photo_url` column, which is `null` for every current employee. No fallback → initials circle.
+- There is no UI in the OS profile to upload/replace `employees.photo_url`. The existing `AvatarUploader` only exists on `/profile` (self-serve). Storage RLS already permits HR admins to write to any path in the `avatars` bucket, so no policy change is needed.
 
-### What to change
+## What we'll build
 
-Single file: `src/pages/os/users/EmployeeProfile.tsx` (NfcTab component, ~lines 828–1060).
+### 1. Inline photo uploader on the OS Employee profile
+- Add a Blossom-styled photo block to the top of `src/pages/os/users/EmployeeProfile.tsx` (header card) that reuses `AvatarUploader`.
+- Wire it to the live `employees` row (lookup by `m.uuid`): on save it writes `photo_url` + `avatar_url` and refreshes the directory cache so the badge preview, org chart, and Team Directory all reflect it instantly.
+- Editable only for HR/admin roles (reuse existing role helpers); read-only avatar for others.
 
-1. **Derive the role variant in the tab**
-   - Pull the same role-key logic used by the RPC into a small client helper (`roleKeyFromTitle(job_title)`) and reuse `variantFor()` + `ROLE_VARIANTS` from `src/pages/nfc/roleVariants.ts`.
-   - Compute `variant = variantFor(roleKeyFromTitle(m.job_title))` once per render.
+### 2. Public Smart Badge picks up the same photo
+- Extend `get_nfc_badge` RPC to also return `employee_code` so the public page can resolve the brochure fallback the same way the directory does.
+- In `NfcPublicProfile.tsx`, when `photo_url` is null, look up `PHOTO_BY_CODE[employee_code]` (small helper imported from `teamDirectory`) before falling back to initials. This means existing seeded employees show their brochure photo immediately, and any uploaded photo wins over it.
 
-2. **Role-aware status copy** (replaces the hardcoded "parent tap" sentence on line 1007–1009)
-   - `parentSafety: true` (RBT) → keep current "parents see a verified badge, never personal info" wording.
-   - `parentSafety: false` (everyone else) → "When someone taps this tag, they'll see a verified Blossom business card with role, department, and the contact actions you've enabled."
-   - Eyebrow chip above the URL row: `<variant.icon /> {variant.eyebrow}` so it's obvious which template is active.
+### 3. "Smart Badge readiness" panel in the NFC tab
+- New section in the NFC tab of `EmployeeProfile.tsx` that shows a checklist of fields the badge actually uses: photo, credential, job title, department, states, about-me/bio, expertise, skills, languages, email/phone (if business-card variant), pronouns.
+- Each row shows a status pill (Complete / Missing) and a one-click "Edit" affordance that jumps to the right editor (Identity tab, HR editor, or opens the photo picker). A header progress bar shows "X of N fields complete — ready to print badge".
+- The existing `NfcCardPreview` stays; the checklist sits next to it so admins immediately see the cause of any sparse-looking preview.
 
-3. **Role-aware "tap experience" card** (replaces lines 1036–1044)
-   - Render the variant's `actions` list as the bullets ("Email", "Schedule", "Save to Contacts", etc.) using `ACTION_META` labels/icons.
-   - Show the variant's `tagline` as the subhead.
-   - For parent-safety roles, keep the "Personal contact info hidden" line; for business-card roles, replace it with "Tap Save to Contacts adds to phone."
+### 4. Light polish
+- When the badge preview shows the initials state, add a subtle "Add a photo to finish this card" caption that opens the new uploader.
+- After upload success, invalidate the directory query so the OS user list, org chart, and NFC preview repaint without a manual refresh.
 
-4. **Inline live preview**
-   - Add a right-column card (next to the QR) that renders a scaled-down mock of the public card using the same variant + the employee's existing fields (photo, name, credential, job title, department, expertise chips, action row).
-   - This is presentation-only — no new data fetches, just reuse `m` (DirectoryEmployee) and the variant.
-   - Include a small "What [role] looks like to others" label.
+## Technical notes
+- Files touched:
+  - `src/pages/os/users/EmployeeProfile.tsx` — add header uploader, readiness panel, caption.
+  - `src/pages/nfc/NfcPublicProfile.tsx` — consume `employee_code`, brochure-photo fallback.
+  - `src/hooks/useEmployeeDirectory.ts` — export `PHOTO_BY_CODE` (or a small `photoForCode()` helper) for reuse.
+  - One migration: `CREATE OR REPLACE FUNCTION public.get_nfc_badge(...)` to add `employee_code text` to the returned columns. No table changes, no new policies (avatars RLS already covers HR admin uploads).
+- No new bucket, no new table, no new edge function. All data flows through existing RLS.
 
-5. **Keep everything else as-is**
-   - Tag assignment, write-to-tag, revoke, QR, and the production-URL warning all stay untouched.
-   - No backend, RPC, or routing changes.
-
-### Out of scope
-
-- The public `/nfc/:code` page (already role-aware).
-- The RPC `get_nfc_badge` (already returns `role_key`).
-- The admin `/admin/identity` dashboard.
-
-### Technical notes
-
-- Import: `import { variantFor, ACTION_META, type RoleKey } from "@/pages/nfc/roleVariants";`
-- Client-side role-key derivation must match the SQL CASE in `get_nfc_badge` — same regex order, same fallback to `"employee"`.
-- All colors via semantic tokens (no hex). Preview card uses `bg-card`, `border-border/70`, `text-primary` etc., matching the public shell.
+## Out of scope
+- Bulk-backfilling `employees.photo_url` from brochure assets (the fallback covers display; uploader is the path to a "real" stored photo).
+- Re-skinning the public `/nfc/:code` page beyond the photo fix.

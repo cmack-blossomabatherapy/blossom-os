@@ -4,6 +4,7 @@ import { BadgeCheck, MapPin, Building2, Languages, Sparkles } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import blossomLogo from "@/assets/blossom-logo-color.png";
 import { variantFor, ACTION_META, type NfcActionKind, type RoleKey } from "./roleVariants";
+import { photoForCode } from "@/hooks/useEmployeeDirectory";
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
@@ -31,6 +32,7 @@ function setLink(rel: string, href: string) {
 
 type Badge = {
   employee_id: string;
+  employee_code: string | null;
   display_name: string;
   preferred_name: string | null;
   job_title: string | null;
@@ -126,6 +128,8 @@ export default function NfcPublicProfile() {
 
   const statesLabel = (m?.states && m.states.length ? m.states : m?.state ? [m.state] : []).join(", ");
   const variant = variantFor(m?.role_key);
+  // Fallback to a bundled brochure photo when no upload exists yet.
+  const resolvedPhoto = m?.photo_url || photoForCode(m?.employee_code) || null;
   // Honor admin-controlled visibility from the Identity tab.
   const settings = m?.nfc_settings ?? {};
   const publicAllowed = settings.public !== false;
@@ -227,8 +231,8 @@ export default function NfcPublicProfile() {
               <variant.icon className="size-3" /> {variant.eyebrow}
             </div>
             <div className="flex flex-col items-center gap-3 px-8 pt-10 pb-6">
-              {m.photo_url ? (
-                <img src={m.photo_url} alt="" className="size-28 rounded-full object-cover ring-2 ring-primary/30" />
+              {resolvedPhoto ? (
+                <img src={resolvedPhoto} alt="" className="size-28 rounded-full object-cover ring-2 ring-primary/30" />
               ) : (
                 <div className="size-28 rounded-full bg-muted grid place-items-center text-xl font-semibold text-muted-foreground ring-2 ring-primary/30">
                   {initials(m.display_name)}
