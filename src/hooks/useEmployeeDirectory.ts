@@ -138,12 +138,15 @@ export function useEmployeeDirectory(): DirectoryResult {
 
   useEffect(() => {
     void load();
+    const onRefresh = () => void load();
+    window.addEventListener("employee-directory:refresh", onRefresh);
     const ch = supabase
       .channel(`employee-directory-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "hr_departments" }, () => void load())
       .subscribe();
     return () => {
+      window.removeEventListener("employee-directory:refresh", onRefresh);
       void supabase.removeChannel(ch);
     };
   }, []);
