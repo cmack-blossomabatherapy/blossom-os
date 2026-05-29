@@ -254,7 +254,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
 
   useEffect(() => {
     void loadEmployment();
-  }, [m.uuid]);
+  }, [loadEmployment]);
 
   const connected = !!row?.viventium_employee_id && row?.viventium_sync_status !== "not_connected";
   const sourceBadge = (owned: boolean) => (
@@ -1431,10 +1431,10 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
       hint: photoUploaded ? "Uploaded" : m.photo ? "Using brochure fallback — upload a real photo" : "Missing — initials only",
       onFix: () => scrollTo("badge-photo"),
     },
-    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: openHr },
-    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: openHr },
-    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: openHr },
-    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: openHr },
+    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: () => jumpToEmployment("employment-title") },
+    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: () => jumpToEmployment("employment-department") },
+    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: () => jumpToEmployment("employment-state") },
+    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: () => jumpToEmployment("employment-credential") },
     { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => jumpToEmployment("employment-pronouns") },
     { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => scrollTo("badge-about") },
     { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => scrollTo("badge-tags") },
