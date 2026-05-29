@@ -2630,6 +2630,66 @@ export type Database = {
           },
         ]
       }
+      employee_devices: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          device_type: string
+          employee_id: string
+          id: string
+          name: string
+          notes: string | null
+          returned_at: string | null
+          serial: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          device_type?: string
+          employee_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          returned_at?: string | null
+          serial?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          device_type?: string
+          employee_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          returned_at?: string | null
+          serial?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_devices_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_devices_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_documents_hr: {
         Row: {
           created_at: string
@@ -2836,6 +2896,60 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      employee_nfc_tags: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          is_active: boolean
+          last_test_at: string | null
+          revoked_at: string | null
+          tag_code: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_active?: boolean
+          last_test_at?: string | null
+          revoked_at?: string | null
+          tag_code: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_active?: boolean
+          last_test_at?: string | null
+          revoked_at?: string | null
+          tag_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_nfc_tags_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_nfc_tags_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_notes: {
         Row: {
