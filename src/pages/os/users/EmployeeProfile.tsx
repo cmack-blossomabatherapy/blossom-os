@@ -1300,8 +1300,8 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
   ];
   if (!isParentSafety) {
     items.push(
-      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: openHr },
-      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: openHr },
+      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: () => jumpToEmployment("employment-email") },
+      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: () => jumpToEmployment("employment-phone") },
     );
   }
 
