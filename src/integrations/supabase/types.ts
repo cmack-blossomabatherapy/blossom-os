@@ -3725,6 +3725,7 @@ export type Database = {
           featured: boolean
           first_name: string
           grandfathered: boolean
+          help_with: string[]
           hire_date: string | null
           id: string
           job_title: string
@@ -3735,6 +3736,7 @@ export type Database = {
           last_review_date: string | null
           leadership_badge: string | null
           leadership_level: Database["public"]["Enums"]["leadership_level"]
+          linkedin_url: string | null
           manager_id: string | null
           next_review_date: string | null
           nfc_settings: Json
@@ -3785,6 +3787,7 @@ export type Database = {
           featured?: boolean
           first_name: string
           grandfathered?: boolean
+          help_with?: string[]
           hire_date?: string | null
           id?: string
           job_title: string
@@ -3795,6 +3798,7 @@ export type Database = {
           last_review_date?: string | null
           leadership_badge?: string | null
           leadership_level?: Database["public"]["Enums"]["leadership_level"]
+          linkedin_url?: string | null
           manager_id?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
@@ -3845,6 +3849,7 @@ export type Database = {
           featured?: boolean
           first_name?: string
           grandfathered?: boolean
+          help_with?: string[]
           hire_date?: string | null
           id?: string
           job_title?: string
@@ -3855,6 +3860,7 @@ export type Database = {
           last_review_date?: string | null
           leadership_badge?: string | null
           leadership_level?: Database["public"]["Enums"]["leadership_level"]
+          linkedin_url?: string | null
           manager_id?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
@@ -9870,9 +9876,11 @@ export type Database = {
           employee_id: string
           expertise: string[]
           extension: string
+          help_with: string[]
           job_title: string
           languages: string[]
           leadership_level: string
+          linkedin_url: string
           nfc_settings: Json
           phone: string
           photo_url: string
