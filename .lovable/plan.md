@@ -1,71 +1,64 @@
+# User Management Rebuild — Blossom OS
 
-## Goal
-Whenever an evaluation is marked complete, automatically save a PDF copy of the evaluation summary to a SharePoint document library, so the team has an offline/archived copy outside the app.
+Build a polished, Apple-inspired User Management module with a redesigned directory page and a 9-tab employee profile (Overview, Employment, Training Academy, Evaluations, Devices, Logins, NFC ID, Permissions, Activity).
 
-## How it will work
+## Scope
 
-```text
-Evaluation completed
-   │
-   ▼
-Client builds summary HTML (existing pdf.ts)
-   │
-   ▼
-Client renders HTML → PDF (html2pdf.js in browser)
-   │
-   ▼
-POST PDF (base64) + metadata to edge function
-   │
-   ▼
-Edge function → Microsoft Graph (via Lovable connector gateway)
-   │
-   ▼
-File lands in SharePoint:
-  /sites/{BlossomSite}/Shared Documents/Evaluations/{State}/{Employee} - {Type} - {Date}.pdf
-```
+**In scope (frontend/presentation):**
+- Redesigned User Management directory at `/os/users` (or refresh existing Team/Users page) with hero header, global search, filter rail, modern employee cards.
+- New `EmployeeProfile` page with 9 tabs following the spec exactly.
+- All tabs built as polished, calm, card-based UIs using existing design tokens.
+- Wire to existing data sources where available (`useEmployeeDirectory`, `useLiveTeam`, training/evaluation/onboarding hooks). Where no data exists yet (Devices, Logins, NFC, Activity), render with realistic placeholder structures + empty states clearly marked, ready for backend wiring later.
+- NFC public parent-facing view at `/nfc/:employeeCode` (branded, minimal, safe fields only) + employee-tap quick links view (when authenticated).
 
-We will also store a small `evaluation_archives` row (path, sharepoint URL, uploaded_at, status) so the UI can show "Archived to SharePoint ✓" and we can retry failures.
+**Out of scope:**
+- Backend tables for Devices/Logins/NFC/Activity (placeholder data only — user said "build this now" for NFC but didn't request schema; I'll stub data structures so we can layer DB later).
+- Changes to permissions logic, role definitions, Training Academy journeys themselves, or evaluation engine.
+- Viventium/CentralReach integrations (informational only).
 
-## Steps
+## Files
 
-1. **Connect SharePoint**
-   - Link the Microsoft SharePoint connector to the project (OAuth as a Blossom admin account that has write access to the target site).
-   - Ask the user which SharePoint **site** and **folder path** to use (e.g. `HR / Evaluations`). Store as edge-function secrets: `SHAREPOINT_SITE_ID`, `SHAREPOINT_FOLDER_PATH`.
+**New:**
+- `src/pages/os/users/UsersHome.tsx` — directory homepage
+- `src/pages/os/users/EmployeeProfile.tsx` — profile shell + tab router
+- `src/pages/os/users/tabs/OverviewTab.tsx`
+- `src/pages/os/users/tabs/EmploymentTab.tsx`
+- `src/pages/os/users/tabs/TrainingTab.tsx`
+- `src/pages/os/users/tabs/EvaluationsTab.tsx`
+- `src/pages/os/users/tabs/DevicesTab.tsx`
+- `src/pages/os/users/tabs/LoginsTab.tsx`
+- `src/pages/os/users/tabs/NfcTab.tsx`
+- `src/pages/os/users/tabs/PermissionsTab.tsx`
+- `src/pages/os/users/tabs/ActivityTab.tsx`
+- `src/pages/nfc/NfcPublicProfile.tsx` — parent-tap view
+- `src/components/os/users/EmployeeCard.tsx`
+- `src/components/os/users/SetupChecklist.tsx`
+- `src/components/os/users/SnapshotCards.tsx`
 
-2. **PDF generation (client)**
-   - Add `html2pdf.js` (or `jspdf` + `html2canvas`).
-   - Refactor `pdf.ts`:
-     - Keep `buildEvaluationSummaryHtml` as-is.
-     - Add `renderEvaluationPdfBlob(html)` that returns a `Blob`.
-     - Keep `openPrintableSummary` for the manual "Print" action.
+**Edited:**
+- `src/App.tsx` — add routes: `/os/users`, `/os/users/:employeeId`, `/nfc/:code`
+- Sidebar nav (`OSShell.tsx`) — point "Users" to new `/os/users`
 
-3. **New edge function: `archive-evaluation-pdf`**
-   - Validates JWT + caller role (HR/admin/exec).
-   - Input (Zod): `{ evaluation_id, staff_id, filename, pdf_base64 }`.
-   - Calls Microsoft Graph via gateway:
-     `PUT https://connector-gateway.lovable.dev/microsoft_sharepoint/sites/{SITE_ID}/drive/root:/{FOLDER}/{filename}:/content`
-     with headers `Authorization: Bearer $LOVABLE_API_KEY`, `X-Connection-Api-Key: $MICROSOFT_SHAREPOINT_API_KEY`, `Content-Type: application/pdf`.
-   - On success, inserts an `evaluation_archives` row with the returned `webUrl` + `driveItem.id`.
-   - Returns `{ url, archived_at }`.
+## Design
 
-4. **Trigger on completion**
-   - In `StaffProfileDrawer.tsx` (and any other place that sets `final_status = 'Complete'`), after the status update succeeds:
-     - Build HTML → render PDF blob → base64 → invoke `archive-evaluation-pdf`.
-     - Show toast: "Saved to SharePoint" or "Saved locally — SharePoint upload failed, will retry".
-   - Add a small "Re-archive to SharePoint" button on completed evaluations for manual retry.
+- White/near-white surfaces, hairline borders (`border-border/70`), `rounded-2xl`, soft shadows.
+- Single primary accent for CTAs only.
+- 40px between major sections, 24px inside cards.
+- Status badges use semantic tone (success/warning/destructive).
+- Tabs use a sticky pill nav; profile header stays fixed at top with avatar + name + role + quick actions.
+- Empty states are friendly single-line messages with one ghost action.
 
-5. **Database migration**
-   - New table `evaluation_archives` (`evaluation_id`, `staff_id`, `sharepoint_url`, `sharepoint_item_id`, `filename`, `status`, `error`, `uploaded_by`, timestamps).
-   - GRANTs + RLS scoped via existing `eval_can_access()` helper. Service role full access (used by the edge function).
+## Data wiring
 
-6. **Backfill (optional, ask user)**
-   - Optional script/button to upload PDFs for already-completed evaluations.
+- Pull employees via `useEmployeeDirectory` (existing hook).
+- Training: hook into `useOnboardingStatus` / journey overrides for progress %.
+- Evaluations: link to existing evaluation tables if reachable; otherwise show "No evaluations yet" empty state.
+- Devices/Logins/NFC/Activity: render with typed placeholder arrays + "Coming soon — connect device inventory" hint where appropriate. NFC tab generates a profile URL pattern (`/nfc/{employeeCode}`) and shows QR placeholder.
 
-## What I need from you before building
+## Acceptance
 
-1. Which SharePoint **site** should we use? (e.g. `https://blossomaba.sharepoint.com/sites/HR`)
-2. Which **folder** inside that site? (suggested: `Shared Documents/Evaluations/{State}/{Employee}`)
-3. Confirm you want me to link the **Microsoft SharePoint** connector now (you'll be prompted to sign in with a Blossom admin Microsoft account that has write access to that site).
-4. Should we **backfill** PDFs for evaluations already marked complete, or only new ones from this point forward?
-
-Once you answer those, I'll connect SharePoint, run the migration, ship the edge function, and wire the auto-upload into the completion flow.
+- `/os/users` shows polished employee grid with working search + filters.
+- Clicking a card opens `/os/users/:id` with all 9 tabs rendering without errors.
+- NFC public URL renders a branded, safe-fields-only parent view.
+- No raw color classes; uses semantic tokens only.
+- Responsive down to mobile.
