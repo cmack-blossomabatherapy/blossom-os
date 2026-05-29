@@ -1251,8 +1251,7 @@ type ReadinessRow = {
   phone: string | null;
 };
 
-function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isParentSafety: boolean }) {
-  const navigate = useNavigate();
+function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: DirectoryEmployee; isParentSafety: boolean; jumpToEmployment: (fieldId?: string) => void }) {
   const [row, setRow] = useState<ReadinessRow | null>(null);
 
   useEffect(() => {
@@ -1276,10 +1275,7 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const openHr = () => {
-    if (m.uuid) navigate(`/hr/directory/${m.uuid}`);
-    else toast("No linked HR record");
-  };
+  const openHr = () => jumpToEmployment();
 
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
