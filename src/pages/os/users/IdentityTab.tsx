@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   CheckCircle2, Circle, Sparkles, Save, X, Plus, UserSquare2,
-  Users2, ShieldAlert, Mail, Phone, Building2, MapPin,
+  Users2, ShieldAlert, Mail, Phone, Building2, MapPin, Linkedin, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,8 @@ type IdentityRow = {
   expertise: string[] | null;
   skills: string[] | null;
   languages: string[] | null;
+  help_with: string[] | null;
+  linkedin_url: string | null;
   emergency_contact: { name?: string; relationship?: string; phone?: string; email?: string } | null;
   nfc_settings: { enabled?: boolean; public?: boolean; internal?: boolean; business_card?: boolean; emergency?: boolean } | null;
   photo_url: string | null;
@@ -138,6 +140,12 @@ const SUGGESTED_EXPERTISE = [
   "Monday.com", "SharePoint", "Data Analytics",
 ];
 const SUGGESTED_LANGUAGES = ["English", "Spanish", "Hebrew", "Russian", "ASL"];
+const SUGGESTED_HELP = [
+  "Software Support", "System Access", "Process Improvements", "Automation Requests",
+  "Benefits Questions", "Employment Verification", "Employee Support",
+  "Authorization Questions", "Insurance Requests", "Coverage Assistance",
+  "Scheduling Help", "Onboarding Help", "Training Questions",
+];
 
 function CompletionRow({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -164,7 +172,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const [empRes, compRes] = await Promise.all([
         supabase.from("employees")
-          .select("bio,about_me,expertise,skills,languages,emergency_contact,nfc_settings,photo_url,avatar_url,email,phone")
+          .select("bio,about_me,expertise,skills,languages,help_with,linkedin_url,emergency_contact,nfc_settings,photo_url,avatar_url,email,phone")
           .eq("id", m.uuid!).maybeSingle(),
         supabase.from("employee_profile_completion")
           .select("score,has_photo,has_bio,has_skills,has_contact,has_emergency")
@@ -189,6 +197,8 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
       expertise: row.expertise ?? [],
       skills: row.skills ?? [],
       languages: row.languages ?? [],
+      help_with: row.help_with ?? [],
+      linkedin_url: row.linkedin_url,
       emergency_contact: row.emergency_contact ?? null,
       nfc_settings: row.nfc_settings ?? {},
     }).eq("id", m.uuid);
@@ -282,6 +292,32 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
               onChange={(v) => updateRow({ languages: v })}
               suggestions={SUGGESTED_LANGUAGES}
             />
+          </div>
+
+          <div id="badge-help" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
+            <SectionTitle hint="The most important section on the public business card — what people can come to you for">
+              How I can help
+            </SectionTitle>
+            <ChipEditor
+              label="Services you can help with"
+              hint="Each item shows as a checkmark on the public profile"
+              values={row.help_with ?? []}
+              onChange={(v) => updateRow({ help_with: v })}
+              suggestions={SUGGESTED_HELP}
+            />
+            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-foreground inline-flex items-center gap-1.5">
+                  <Linkedin className="size-3.5" /> LinkedIn URL <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <Input
+                  value={row.linkedin_url ?? ""}
+                  onChange={(e) => updateRow({ linkedin_url: e.target.value })}
+                  placeholder="https://www.linkedin.com/in/your-handle"
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">Only LinkedIn is shown publicly — no other social links.</p>
+              </div>
+            </div>
           </div>
 
           <div id="badge-emergency" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
