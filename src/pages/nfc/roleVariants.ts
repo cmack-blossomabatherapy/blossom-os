@@ -139,7 +139,7 @@ export const ROLE_VARIANTS: Record<RoleKey, RoleVariant> = {
     eyebrow: "Team Member",
     icon: BadgeCheck,
     tagline: "Verified Blossom ABA Therapy team member.",
-    actions: ["email", "call", "schedule", "message"],
+    actions: ["email", "call", "save_contact", "message"],
     parentSafety: false,
   },
 };
