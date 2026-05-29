@@ -863,6 +863,15 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
   const nfcUrl = nfcBadgeUrl(active?.tag_code ?? m.uuid ?? m.id);
   const isProductionUrl = nfcUrl.startsWith("https://blossom.");
 
+  // Role-aware preview — mirrors what /nfc/:code actually renders for this person.
+  const roleKey = roleKeyFromTitle(m.title);
+  const variant = variantFor(roleKey);
+  const VariantIcon = variant.icon;
+  const isParentSafety = variant.parentSafety;
+  const tapBlurb = isParentSafety
+    ? "When a parent taps this tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info."
+    : "When someone taps this tag, they'll see a verified Blossom business card with role, department, and the contact actions you've enabled in the Identity tab.";
+
   const load = useCallback(async () => {
     if (!m.uuid) return;
     const { data } = await supabase.from("employee_nfc_tags")
