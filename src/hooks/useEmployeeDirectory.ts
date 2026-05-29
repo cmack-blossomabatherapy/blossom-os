@@ -51,6 +51,16 @@ const PHOTO_BY_CODE: Record<string, string | undefined> = Object.fromEntries(
   STATIC_TEAM_MEMBERS.map((m) => [`dir-${m.id}`, m.photo]),
 );
 
+/**
+ * Resolve a fallback brochure photo for a given `employees.employee_code`.
+ * Used by the public Smart Badge page so seeded employees show a real face
+ * before anyone uploads a custom photo.
+ */
+export function photoForCode(code: string | null | undefined): string | undefined {
+  if (!code) return undefined;
+  return PHOTO_BY_CODE[code];
+}
+
 interface ViewRow {
   id: string;
   employee_code: string | null;
