@@ -245,6 +245,20 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
               className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
             />
           </div>
+          <div id="employment-pronouns" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pronouns</p>
+              <StatusBadge tone="muted">Optional</StatusBadge>
+            </div>
+            <input
+              value={pronouns}
+              onChange={(e) => setPronouns(e.target.value)}
+              onBlur={saveContact}
+              placeholder="she/her, he/him, they/them"
+              type="text"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
           <div>
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
