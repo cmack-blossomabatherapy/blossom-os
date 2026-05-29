@@ -1,75 +1,42 @@
+## Make the OS profile NFC tab role-aware
 
-# Blossom Identity System (BIS)
+The public `/nfc/:code` page is already role-aware (RPC returns `role_key`, shell renders the right variant). The stale-feeling surface is the **NFC tab inside the OS employee profile** — its copy and side panels are hardcoded to the RBT/BCBA "parent safety" framing for everyone.
 
-Goal: Turn the existing employee profile, directory, org chart, NFC badge, and business card pieces into **one connected identity ecosystem** — driven by the May 2026 org chart, with role-aware NFC profiles and a profile completion score.
+### What to change
 
-This is large. I'll deliver it in **four phases** so you see progress fast and can course-correct between phases. Each phase ships working UI.
+Single file: `src/pages/os/users/EmployeeProfile.tsx` (NfcTab component, ~lines 828–1060).
 
----
+1. **Derive the role variant in the tab**
+   - Pull the same role-key logic used by the RPC into a small client helper (`roleKeyFromTitle(job_title)`) and reuse `variantFor()` + `ROLE_VARIANTS` from `src/pages/nfc/roleVariants.ts`.
+   - Compute `variant = variantFor(roleKeyFromTitle(m.job_title))` once per render.
 
-## Phase 1 — Identity data model + org-chart sync (foundation)
+2. **Role-aware status copy** (replaces the hardcoded "parent tap" sentence on line 1007–1009)
+   - `parentSafety: true` (RBT) → keep current "parents see a verified badge, never personal info" wording.
+   - `parentSafety: false` (everyone else) → "When someone taps this tag, they'll see a verified Blossom business card with role, department, and the contact actions you've enabled."
+   - Eyebrow chip above the URL row: `<variant.icon /> {variant.eyebrow}` so it's obvious which template is active.
 
-**Schema additions** (migration) to the existing `employees` table:
-- `preferred_name`, `extension`, `bio`, `about_me`, `expertise` (text[]), `skills` (text[]), `certifications` (text[]), `languages` (text[])
-- `manager_employee_id` (FK → employees), `leadership_chain` cached
-- `nfc_settings` jsonb: `{ public, internal, business_card, emergency, enabled }`
-- `profile_completion_score` (computed view)
+3. **Role-aware "tap experience" card** (replaces lines 1036–1044)
+   - Render the variant's `actions` list as the bullets ("Email", "Schedule", "Save to Contacts", etc.) using `ACTION_META` labels/icons.
+   - Show the variant's `tagline` as the subhead.
+   - For parent-safety roles, keep the "Personal contact info hidden" line; for business-card roles, replace it with "Tap Save to Contacts adds to phone."
 
-**Org-chart sync seed**: a one-time migration that updates every existing employee to match the **May 2026 chart** (department, role, job title, manager, state assignment). Includes Chad Kaufman → CEO/COO, Mordy Gobioff → Asst State Director (VA), Corey Mack → Systems & Software, etc. Fills in the new people (Elie Mintz, Gabi Kaweblum / Director of RCM, Lauren Dawson, Rochell Coulson, Julia Pinder/Behavioral, Cymbre Brumbeloe/Clinic, Jaz Scarponi, Kaylynne Baker).
+4. **Inline live preview**
+   - Add a right-column card (next to the QR) that renders a scaled-down mock of the public card using the same variant + the employee's existing fields (photo, name, credential, job title, department, expertise chips, action row).
+   - This is presentation-only — no new data fetches, just reuse `m` (DirectoryEmployee) and the variant.
+   - Include a small "What [role] looks like to others" label.
 
-**Profile completion view**: percentage out of 5 buckets — photo, bio, skills, contact methods, emergency info.
+5. **Keep everything else as-is**
+   - Tag assignment, write-to-tag, revoke, QR, and the production-URL warning all stay untouched.
+   - No backend, RPC, or routing changes.
 
----
+### Out of scope
 
-## Phase 2 — Employee profile page (the hero surface)
+- The public `/nfc/:code` page (already role-aware).
+- The RPC `get_nfc_badge` (already returns `role_key`).
+- The admin `/admin/identity` dashboard.
 
-Rebuild `/os/users/:id` (EmployeeProfile.tsx) as the canonical identity surface:
-- **Hero**: photo, name, role, dept, state, bio + actions (Email · Call · Teams · Book Meeting · Share · Download vCard)
-- **Org section**: Reports To, Direct Reports, Department, Leadership chain (mini interactive org chart slice)
-- **Expertise & Skills**: tag cloud
-- **NFC settings tile**: toggle public / internal / business card / emergency profiles, with the current NFC URL and "Write to tag" action (keeps existing flow)
-- **Profile Completion Score** card with checklist
-- **Internal-only panel** (gated): employee #, manager, training status, equipment, PTO, system access
+### Technical notes
 
----
-
-## Phase 3 — Directory + Org Chart sync
-
-- `/user-management` directory: Apple-style search + filters (Department, Role, State, Manager, Status). Card shows photo, name, role, dept, state, contact pop, "View Profile".
-- Interactive **org chart** page mirroring the May 2026 chart, clickable nodes → profile.
-- Admin **Identity Dashboard**: totals by dept/state/role, NFC activated, cards activated, profiles completed, missing photos / managers / departments.
-
----
-
-## Phase 4 — NFC Smart Profile (role-aware) + Digital Business Card
-
-Replace `NfcPublicProfile.tsx` with a **router** that picks one of 15 role layouts:
-
-| Role | Layout focus |
-|---|---|
-| Super Admin / Exec / Ops Leadership | Leadership card + meeting scheduler |
-| State Director | State + escalation contact |
-| Intake / Auth / Scheduling | Service-specific support CTAs |
-| Recruiting | Apply Now + careers |
-| HR / Payroll / Billing / QA | Department support requests |
-| BCBA (public) | Credentials + parent contact; (internal) caseload |
-| RBT (public) | Parent safety badge (existing) + assigned BCBA |
-| Marketing | Partnership / referral CTAs |
-
-**Digital Business Card** view shared across all roles: photo, title, dept, email/phone/Teams/website, QR, Download vCard, Share. Apple/Google Wallet shape kept ready (not generated yet — flagged future).
-
-Public vs Internal view is decided by auth state at scan time.
-
----
-
-## What I need from you before I start
-
-This plan touches a lot of files and adds a migration. To keep momentum, **I'll start Phase 1 immediately** unless you say otherwise. After Phase 1's migration applies, I'll continue straight into Phase 2 in the same turn-loop, then check in before Phase 3/4 (since those are the most opinionated UI).
-
-Three quick confirmations would help:
-
-1. **Org-chart authority** — Treat the attached May 2026 chart as the *truth* and overwrite any conflicting current employee fields (department, manager, job title)? Or merge-only (fill blanks, never overwrite)?
-2. **Public profile default** — When NFC is enabled for a new employee, default `public` profile = **ON** for clinical (BCBA/RBT) and **business card** = ON for everyone else? (Matches what we built last round.)
-3. **Org chart page** — OK to add it as a new route `/org-chart` under HR/Operations, or do you want it embedded inside the existing directory page?
-
-If you just say "go", I'll assume: **overwrite from chart**, **defaults as above**, **new `/org-chart` route**.
+- Import: `import { variantFor, ACTION_META, type RoleKey } from "@/pages/nfc/roleVariants";`
+- Client-side role-key derivation must match the SQL CASE in `get_nfc_badge` — same regex order, same fallback to `"employee"`.
+- All colors via semantic tokens (no hex). Preview card uses `bg-card`, `border-border/70`, `text-primary` etc., matching the public shell.
