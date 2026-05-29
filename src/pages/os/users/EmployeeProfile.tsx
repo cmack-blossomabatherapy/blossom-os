@@ -688,6 +688,7 @@ export default function EmployeeProfilePage() {
   const navigate = useNavigate();
   const { members, loading } = useEmployeeDirectory();
   const [tab, setTab] = useState<TabId>("overview");
+  const [openAssignNfc, setOpenAssignNfc] = useState(false);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
@@ -745,11 +746,26 @@ export default function EmployeeProfilePage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" className="text-xs"><Pencil className="size-3.5" /> Edit</Button>
-              <Button size="sm" variant="outline" className="text-xs"><GraduationCap className="size-3.5" /> Assign training</Button>
-              <Button size="sm" variant="outline" className="text-xs"><ClipboardCheck className="size-3.5" /> Assign evaluation</Button>
-              <Button size="sm" variant="outline" className="text-xs"><Smartphone className="size-3.5" /> Assign device</Button>
-              <Button size="sm" className="text-xs"><ScanLine className="size-3.5" /> Generate NFC</Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("Edit unavailable — no HR record linked")}>
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("training"); toast.success("Open training assignment", { description: "Pick modules from the Training tab." }); }}>
+                <GraduationCap className="size-3.5" /> Assign training
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("evaluations"); toast.success("Evaluation cycle ready", { description: "Configure reviewer in the Evaluations tab." }); }}>
+                <ClipboardCheck className="size-3.5" /> Assign evaluation
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("devices"); toast.success("Device assignment opened"); }}>
+                <Smartphone className="size-3.5" /> Assign device
+              </Button>
+              <Button size="sm" className="text-xs"
+                onClick={() => { setTab("nfc"); setOpenAssignNfc(true); }}>
+                <ScanLine className="size-3.5" /> Generate NFC
+              </Button>
             </div>
           </div>
         </Card>
@@ -783,7 +799,7 @@ export default function EmployeeProfilePage() {
           {tab === "evaluations" && <EvaluationsTab />}
           {tab === "devices" && <DevicesTab />}
           {tab === "logins" && <LoginsTab />}
-          {tab === "nfc" && <NfcTab m={member} />}
+          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} />}
           {tab === "permissions" && <PermissionsTab m={member} />}
           {tab === "activity" && <ActivityTab />}
         </div>
