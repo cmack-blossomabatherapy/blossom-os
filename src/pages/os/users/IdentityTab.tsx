@@ -28,9 +28,9 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
 }
 
-function Card({ className, children }: { className?: string; children: React.ReactNode }) {
+function Card({ id, className, children }: { id?: string; className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("rounded-2xl border border-border/70 bg-card", className)}>
+    <div id={id} className={cn("rounded-2xl border border-border/70 bg-card", className)}>
       {children}
     </div>
   );
@@ -234,7 +234,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
 
       {/* Identity editor */}
       {row && (
-        <Card className="p-6">
+        <Card id="badge-about" className="p-6 scroll-mt-24">
           <div className="mb-4 flex items-center justify-between">
             <SectionTitle hint="Shown on directory, NFC badge, and digital business card">About</SectionTitle>
             <Button size="sm" onClick={save} disabled={saving} className="text-xs">
@@ -263,7 +263,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div id="badge-tags" className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 scroll-mt-24">
             <ChipEditor
               label="Expertise"
               hint="Operational"
@@ -284,7 +284,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
 
-          <div className="mt-6 border-t border-border/60 pt-5">
+          <div id="badge-emergency" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
             <SectionTitle hint="Used for emergency contact only — never shown publicly">Emergency contact</SectionTitle>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               <Input placeholder="Name" value={row.emergency_contact?.name ?? ""}
@@ -298,7 +298,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             </div>
           </div>
 
-          <div className="mt-6 border-t border-border/60 pt-5">
+          <div id="badge-visibility" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
             <SectionTitle hint="Controls what shows when this employee's NFC badge is tapped">Smart Badge visibility</SectionTitle>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {(["public", "internal", "business_card", "emergency"] as const).map((k) => {

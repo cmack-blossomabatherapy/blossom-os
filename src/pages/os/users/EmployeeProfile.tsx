@@ -33,18 +33,17 @@ import { useAuth } from "@/contexts/AuthContext";
 // ============================================================================
 
 type TabId =
-  | "overview" | "identity" | "employment" | "training" | "evaluations" | "devices"
+  | "overview" | "employment" | "training" | "evaluations" | "devices"
   | "logins" | "nfc" | "permissions" | "activity";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: Sparkles },
-  { id: "identity", label: "Identity", icon: UserCircle2 },
   { id: "employment", label: "Employment", icon: Briefcase },
   { id: "training", label: "Training Academy", icon: GraduationCap },
   { id: "evaluations", label: "Evaluations", icon: ClipboardCheck },
   { id: "devices", label: "Devices", icon: MonitorSmartphone },
   { id: "logins", label: "Logins", icon: KeyRound },
-  { id: "nfc", label: "NFC ID", icon: ScanLine },
+  { id: "nfc", label: "Smart Badge", icon: ScanLine },
   { id: "permissions", label: "Permissions", icon: ShieldCheck },
   { id: "activity", label: "Activity", icon: History },
 ];
@@ -1179,6 +1178,10 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
       </div>
 
       <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} />
+
+      {/* Identity editor — bio, expertise/skills/languages, emergency contact, badge visibility.
+          Lives inside the Smart Badge tab so everything that powers the public badge is in one place. */}
+      <IdentityTab m={m} />
     </div>
   );
 }
@@ -1225,6 +1228,15 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
   const has = (v: unknown) =>
     Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : Boolean(v);
 
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const openHr = () => {
+    if (m.uuid) navigate(`/hr/directory/${m.uuid}`);
+    else toast("No linked HR record");
+  };
+
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
   // public badge isn't relying on the generic brochure asset forever.
@@ -1234,26 +1246,22 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
       label: "Profile photo",
       ok: photoUploaded,
       hint: photoUploaded ? "Uploaded" : m.photo ? "Using brochure fallback — upload a real photo" : "Missing — initials only",
-      onFix: () => {
-        document.querySelector<HTMLElement>("main")?.scrollTo({ top: 0, behavior: "smooth" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        toast("Use the camera icon on the photo at the top to upload");
-      },
+      onFix: () => scrollTo("badge-photo"),
     },
-    { label: "Job title", ok: has(m.title), hint: m.title || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-    { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => toast("Open the Identity tab to edit About me") },
-    { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => toast("Open the Identity tab to add expertise") },
-    { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => toast("Open the Identity tab to add skills") },
-    { label: "Languages", ok: (row?.languages ?? []).length > 0, hint: (row?.languages ?? []).join(", ") || "Optional", onFix: () => toast("Open the Identity tab to add languages") },
+    { label: "Job title", ok: has(m.title), hint: m.title || "Missing — edit in HR", onFix: openHr },
+    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: openHr },
+    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: openHr },
+    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: openHr },
+    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: openHr },
+    { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => scrollTo("badge-about") },
+    { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => scrollTo("badge-tags") },
+    { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => scrollTo("badge-tags") },
+    { label: "Languages", ok: (row?.languages ?? []).length > 0, hint: (row?.languages ?? []).join(", ") || "Optional", onFix: () => scrollTo("badge-tags") },
   ];
   if (!isParentSafety) {
     items.push(
-      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
-      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: openHr },
+      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: openHr },
     );
   }
 
@@ -1284,26 +1292,27 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
       </div>
       <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {items.map((i) => (
-          <li
-            key={i.label}
-            className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2"
-          >
-            <div className="flex items-start gap-2">
-              {i.ok ? (
-                <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="mt-0.5 size-4 text-amber-500" />
-              )}
-              <div>
-                <p className="text-xs font-medium text-foreground">{i.label}</p>
-                <p className="text-[11px] text-muted-foreground line-clamp-1">{i.hint}</p>
+          <li key={i.label}>
+            <button
+              type="button"
+              onClick={i.onFix}
+              className="flex w-full items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted/40"
+            >
+              <div className="flex items-start gap-2">
+                {i.ok ? (
+                  <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 size-4 text-amber-500" />
+                )}
+                <div>
+                  <p className="text-xs font-medium text-foreground">{i.label}</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">{i.hint}</p>
+                </div>
               </div>
-            </div>
-            {!i.ok && (
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={i.onFix}>
-                <Pencil className="size-3" /> Fix
-              </Button>
-            )}
+              <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                {i.ok ? "View" : <><Pencil className="size-3" /> Fix</>}
+              </span>
+            </button>
           </li>
         ))}
       </ul>
@@ -1508,7 +1517,7 @@ export default function EmployeeProfilePage() {
         {/* Header */}
         <Card className="mb-8 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-5">
+            <div id="badge-photo" className="flex items-center gap-5 scroll-mt-24">
               {member.uuid && user?.id ? (
                 <AvatarUploader
                   ownerUserId={user.id}
@@ -1585,7 +1594,6 @@ export default function EmployeeProfilePage() {
 
         <div className="pb-16">
           {tab === "overview" && <OverviewTab m={member} jump={setTab} />}
-          {tab === "identity" && <IdentityTab m={member} />}
           {tab === "employment" && <EmploymentTab m={member} />}
           {tab === "training" && <TrainingTab m={member} openAssign={openAssignTraining} setOpenAssign={setOpenAssignTraining} />}
           {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
