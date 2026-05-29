@@ -186,8 +186,8 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
       .update({ email: email.trim() || null, phone: phone.trim() || null })
       .eq("id", m.uuid);
     setSavingContact(false);
-    if (error) { toast.error?.(error.message) ?? toast(error.message); return; }
-    toast.success?.("Contact info saved") ?? toast("Contact info saved");
+    if (error) { toast.error(error.message); return; }
+    toast.success("Contact info saved");
   };
 
   return (
