@@ -431,6 +431,15 @@ function FieldWithSource({ label, value, source }: { label: string; value: React
   );
 }
 
+function EditableLabel({ label, source }: { label: string; source: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      {source}
+    </div>
+  );
+}
+
 // ============================================================================
 // TRAINING (real: employee_trainings × training_courses)
 // ============================================================================
