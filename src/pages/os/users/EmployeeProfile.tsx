@@ -15,6 +15,7 @@ import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmploye
 import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+import { nfcBadgeUrl, PUBLIC_BASE_URL } from "@/lib/publicUrl";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -816,11 +817,14 @@ function LoginsTab({ m }: { m: DirectoryEmployee }) {
 type NfcRow = { id: string; tag_code: string; is_active: boolean; assigned_at: string; last_test_at: string | null; revoked_at: string | null };
 
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
-  const nfcUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/nfc/${m.uuid ?? m.id}`;
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Prefer the short tag code for a friendlier, brand-safe URL on the phone's tap prompt.
+  const nfcUrl = nfcBadgeUrl(active?.tag_code ?? m.uuid ?? m.id);
+  const isProductionUrl = nfcUrl.startsWith("https://blossom.");
 
   const load = useCallback(async () => {
     if (!m.uuid) return;
@@ -929,8 +933,19 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               )}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              When a parent taps the tag, they'll see a verified employee badge with photo, role, and a way to report a concern — never personal contact info.
+              When a parent taps the tag, they'll see a verified Blossom Smart Badge with photo, role, and a way to report a concern — never personal contact info.
             </p>
+            <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-3 text-[11px] leading-relaxed text-muted-foreground">
+              <p className="font-medium text-foreground">Write this URL to the physical tag</p>
+              <p className="mt-1">
+                Use any NFC writer app (NXP TagWriter, NFC Tools, etc.) and program the tag with the exact URL above. The phone tap prompt will show <span className="font-medium text-foreground">{new URL(nfcUrl).host}</span>, so parents recognize it as safe.
+              </p>
+              {!isProductionUrl && (
+                <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-amber-700 dark:text-amber-400">
+                  Heads up: this URL points at the preview environment. Republish to the production domain before programming real cards, or parents will see a Lovable login screen.
+                </p>
+              )}
+            </div>
           </div>
           <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-6">
             <div className="rounded-lg bg-white p-3">
