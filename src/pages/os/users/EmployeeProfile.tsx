@@ -132,6 +132,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const [manager, setManager] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(m.email ?? "");
   const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [pronouns, setPronouns] = useState<string>("");
   const [savingContact, setSavingContact] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
@@ -144,13 +145,14 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone,pronouns")
         .eq("id", m.uuid)
         .maybeSingle();
       if (cancelled) return;
       setRow(data);
       if (data?.email != null) setEmail(data.email);
       if (data?.phone != null) setPhone(data.phone);
+      if (data?.pronouns != null) setPronouns(data.pronouns);
       if (data?.manager_id) {
         const { data: mgr } = await supabase
           .from("employees")
@@ -183,11 +185,11 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     setSavingContact(true);
     const { error } = await supabase
       .from("employees")
-      .update({ email: email.trim() || null, phone: phone.trim() || null })
+      .update({ email: email.trim() || null, phone: phone.trim() || null, pronouns: pronouns.trim() || null })
       .eq("id", m.uuid);
     setSavingContact(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Contact info saved");
+    toast.success("Saved");
   };
 
   return (
@@ -240,6 +242,20 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
               onBlur={saveContact}
               placeholder="(555) 555-5555"
               type="tel"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+          <div id="employment-pronouns" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pronouns</p>
+              <StatusBadge tone="muted">Optional</StatusBadge>
+            </div>
+            <input
+              value={pronouns}
+              onChange={(e) => setPronouns(e.target.value)}
+              onBlur={saveContact}
+              placeholder="she/her, he/him, they/them"
+              type="text"
               className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
             />
           </div>
@@ -1292,7 +1308,7 @@ function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: Direc
     { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned — edit in HR", onFix: openHr },
     { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing — edit in HR", onFix: openHr },
     { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: openHr },
-    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: openHr },
+    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => jumpToEmployment("employment-pronouns") },
     { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => scrollTo("badge-about") },
     { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => scrollTo("badge-tags") },
     { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => scrollTo("badge-tags") },
