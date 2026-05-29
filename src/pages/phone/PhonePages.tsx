@@ -1362,7 +1362,7 @@ export function PhoneAdmin() {
                 <TableHeader><TableRow><TableHead>Ext</TableHead><TableHead>User</TableHead><TableHead>Department</TableHead><TableHead></TableHead></TableRow></TableHeader>
                 <TableBody>
                   {employees.map((e) => (
-                    <TableRow key={e.extension}>
+                    <TableRow key={e.userId ?? e.email ?? e.extension}>
                       <TableCell><Input value={e.extension} onChange={(ev) => updateEmployee(e.extension, { extension: ev.target.value })} className="h-8 font-mono" /></TableCell>
                       <TableCell><Input value={e.name} onChange={(ev) => updateEmployee(e.extension, { name: ev.target.value })} className="h-8" /></TableCell>
                       <TableCell><Input value={e.department ?? ""} onChange={(ev) => updateEmployee(e.extension, { department: ev.target.value })} className="h-8" /></TableCell>
