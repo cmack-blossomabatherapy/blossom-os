@@ -145,10 +145,14 @@ export default function OrgChartManage() {
     return roots;
   }, [groups]);
 
+  const totalEmployees = rows.length;
+  const managerCount = useMemo(() => new Set(rows.map((r) => r.manager_id).filter(Boolean) as string[]).size, [rows]);
+  const topLevel = (groups.get(TOP_OF_TREE) ?? []).length;
+
   return (
     <PageShell
       title="Org Chart Settings"
-      description="Drag any employee onto a manager to change who they report to. Click a card to edit job title and responsibilities."
+      description="Drag any person onto a manager to change reporting. Click a card to edit title or responsibilities."
       icon={Network}
       actions={
         <div className="flex items-center gap-2">
@@ -158,7 +162,7 @@ export default function OrgChartManage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search people…"
-              className="h-8 pl-8 w-64 text-xs"
+              className="h-8 pl-8 w-56 text-xs"
             />
           </div>
           <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => void load()}>
@@ -167,27 +171,22 @@ export default function OrgChartManage() {
         </div>
       }
     >
-      <Card className="mb-4 border-info/30 bg-info/5 p-4">
-        <div className="flex items-start gap-3 text-sm text-foreground">
-          <Info className="h-4 w-4 mt-0.5 text-info shrink-0" />
-          <div>
-            <p className="font-medium">How this works</p>
-            <p className="mt-1 text-muted-foreground text-xs leading-relaxed">
-              Drag any person card by the handle and drop it on the manager you want them to report to. To move someone to the top of the tree, drop them on the <span className="font-medium text-foreground">Top of organization</span> zone. Edits sync instantly to the public Org Chart in Resources.
-            </p>
-          </div>
-        </div>
-      </Card>
+      {/* Compact stat strip */}
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="People" value={totalEmployees} />
+        <Stat label="Managers" value={managerCount} />
+        <Stat label="Top-level" value={topLevel} />
+      </div>
 
       {loading ? (
-        <div className="space-y-4">
-          {[0,1,2].map((i) => <Skeleton key={i} className="h-40 w-full" />)}
+        <div className="grid md:grid-cols-2 gap-3">
+          {[0,1,2,3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
         </div>
       ) : (
         <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-          <div className="space-y-5">
-            <TopZone />
+          <TopZone />
 
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mt-3">
             {rootEntries.map((root) => (
               <ManagerBranch
                 key={root.id}
@@ -200,16 +199,25 @@ export default function OrgChartManage() {
                 depth={0}
               />
             ))}
-
-            {rootEntries.length === 0 && (
-              <Card className="p-10 text-center text-sm text-muted-foreground">
-                No employees yet — add people in User Management to start mapping the org.
-              </Card>
-            )}
           </div>
+
+          {rootEntries.length === 0 && (
+            <Card className="p-8 text-center text-sm text-muted-foreground rounded-2xl">
+              No employees yet — add people in User Management to start mapping the org.
+            </Card>
+          )}
         </DndContext>
       )}
     </PageShell>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
+      <p className="text-xl font-semibold tracking-tight mt-0.5 tabular-nums">{value}</p>
+    </div>
   );
 }
 
@@ -220,12 +228,12 @@ function TopZone() {
     <div
       ref={setNodeRef}
       className={cn(
-        "rounded-2xl border-2 border-dashed px-5 py-3 text-xs uppercase tracking-widest font-semibold transition-colors flex items-center gap-2",
-        isOver ? "border-primary bg-primary/10 text-primary" : "border-border/60 text-muted-foreground",
+        "rounded-xl border border-dashed px-4 py-2 text-[11px] font-medium transition-colors flex items-center gap-2",
+        isOver ? "border-primary bg-primary/10 text-primary" : "border-border/70 text-muted-foreground",
       )}
     >
       <Crown className="h-3.5 w-3.5" />
-      Top of organization — drop here to remove manager
+      Top of organization — drop a card here to remove its manager
     </div>
   );
 }
@@ -247,10 +255,10 @@ function ManagerBranch({
 
   return (
     <div
-      style={{ marginLeft: depth * 28 }}
+      style={{ marginLeft: depth * 20 }}
       ref={setNodeRef}
       className={cn(
-        "rounded-3xl border bg-card p-4 transition-colors",
+        "rounded-2xl border bg-card p-3 transition-colors",
         isOver ? "border-primary bg-primary/5" : "border-border/70",
       )}
     >
@@ -265,7 +273,7 @@ function ManagerBranch({
       />
 
       {reports.length > 0 && (
-        <div className="mt-4 pl-4 border-l border-border/60 space-y-3">
+        <div className="mt-3 pl-3 border-l border-border/60 space-y-2">
           {reports.map((r) => {
             const hasGrandkids = (groups.get(r.id) ?? []).length > 0;
             if (hasGrandkids) {
