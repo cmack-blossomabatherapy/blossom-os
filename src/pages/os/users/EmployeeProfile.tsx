@@ -1584,7 +1584,6 @@ export default function EmployeeProfilePage() {
 
         <div className="pb-16">
           {tab === "overview" && <OverviewTab m={member} jump={setTab} />}
-          {tab === "identity" && <IdentityTab m={member} />}
           {tab === "employment" && <EmploymentTab m={member} />}
           {tab === "training" && <TrainingTab m={member} openAssign={openAssignTraining} setOpenAssign={setOpenAssignTraining} />}
           {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
