@@ -132,7 +132,7 @@ export default function OSTraining() {
                 ? "You're nearly there — finish your remaining modules to complete your role journey."
                 : overall.avg > 0
                 ? `You're ${overall.avg}% through your training. Let's keep moving.`
-                : "Welcome to the Intake Academy. Start with your role journey below."}
+                : "Welcome to the Blossom Academy. Start with your role journey below."}
             </p>
 
             <div className="relative mt-5 max-w-xl">
@@ -184,7 +184,7 @@ export default function OSTraining() {
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate(`/training/${journeyModules[0]?.id}`)}>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
