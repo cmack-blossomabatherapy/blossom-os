@@ -288,6 +288,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     if (error) { toast.error(error.message); return; }
     toast.success("Employment updated");
     await loadEmployment();
+    window.dispatchEvent(new Event("employee-directory:refresh"));
     window.dispatchEvent(new Event("team-directory:refresh"));
   };
 
