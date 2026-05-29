@@ -1,13 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, Users2, MapPin, Building2, ShieldCheck, GraduationCap,
-  ClipboardCheck, Activity, ChevronRight, Filter,
+  ClipboardCheck, Activity, ChevronRight, Filter, Plus,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import { AddEmployeeDialog } from "@/components/hr/AddEmployeeDialog";
+import { supabase } from "@/integrations/supabase/client";
+import type { Department } from "@/lib/hr/types";
 
 const STATES = ["All", "GA", "NC", "VA", "TN", "MD", "FL"] as const;
 const STATUSES = ["All", "Active", "Inactive"] as const;
@@ -88,6 +92,14 @@ export default function UsersHome() {
   const [state, setState] = useState<string>("All");
   const [dept, setDept] = useState<string>("All");
   const [status, setStatus] = useState<string>("All");
+  const [openAdd, setOpenAdd] = useState(false);
+  const [hrDepartments, setHrDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    void supabase.from("hr_departments").select("*").order("name").then(({ data }) => {
+      if (data) setHrDepartments(data as Department[]);
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -111,13 +123,20 @@ export default function UsersHome() {
       <div className="mx-auto w-full max-w-7xl px-1 md:px-2">
         {/* Header */}
         <header className="mb-10">
-          <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            <Users2 className="size-3.5" /> User Management
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <Users2 className="size-3.5" /> User Management
+              </div>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">Everyone at Blossom, in one place.</h1>
+              <p className="mt-2 max-w-2xl text-[15px] text-muted-foreground">
+                Manage employees, training, evaluations, devices, permissions, and system access — the calm command center for your people.
+              </p>
+            </div>
+            <Button onClick={() => setOpenAdd(true)} className="shrink-0 rounded-xl">
+              <Plus className="size-4" /> Add Employee
+            </Button>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">Everyone at Blossom, in one place.</h1>
-          <p className="mt-2 max-w-2xl text-[15px] text-muted-foreground">
-            Manage employees, training, evaluations, devices, permissions, and system access — the calm command center for your people.
-          </p>
         </header>
 
         {/* Search + filters */}
@@ -162,6 +181,15 @@ export default function UsersHome() {
           </div>
         )}
       </div>
+      <AddEmployeeDialog
+        open={openAdd}
+        onOpenChange={setOpenAdd}
+        departments={hrDepartments}
+        onCreated={() => {
+          setOpenAdd(false);
+          window.dispatchEvent(new Event("team-directory:refresh"));
+        }}
+      />
     </OSShell>
   );
 }

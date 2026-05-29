@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, ShieldCheck, Pencil, GraduationCap, ClipboardCheck, Smartphone,
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
@@ -159,37 +161,104 @@ function OverviewTab({ m }: { m: DirectoryEmployee }) {
 }
 
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
+  const [row, setRow] = useState<any | null>(null);
+  const [manager, setManager] = useState<string | null>(null);
+  useEffect(() => {
+    if (!m.uuid) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync")
+        .eq("id", m.uuid)
+        .maybeSingle();
+      if (cancelled) return;
+      setRow(data);
+      if (data?.manager_id) {
+        const { data: mgr } = await supabase
+          .from("employees")
+          .select("first_name,last_name,preferred_name")
+          .eq("id", data.manager_id)
+          .maybeSingle();
+        if (!cancelled && mgr) {
+          setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [m.uuid]);
+
+  const connected = !!row?.viventium_employee_id && row?.viventium_sync_status !== "not_connected";
+  const sourceBadge = (owned: boolean) => (
+    <StatusBadge tone={owned && connected ? "ok" : "muted"}>
+      {owned && connected ? "Viventium" : "Manual"}
+    </StatusBadge>
+  );
+  const fmtDate = (d?: string | null) =>
+    d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
+  const statusLabel = row?.status ? row.status.replace(/_/g, " ") : "Active";
+  const statusTone: "ok" | "warn" | "crit" | "muted" =
+    row?.status === "active" ? "ok"
+    : row?.status === "on_leave" ? "warn"
+    : row?.status === "terminated" ? "crit"
+    : "muted";
+
   return (
     <div className="space-y-6">
       <Card>
         <div className="mb-4 flex items-center justify-between">
           <SectionTitle>Employment record</SectionTitle>
-          <a href="https://viventium.com" target="_blank" rel="noreferrer"
-             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            View in Viventium <ExternalLink className="size-3" />
-          </a>
+          {connected ? (
+            <a href="https://viventium.com" target="_blank" rel="noreferrer"
+               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              View in Viventium <ExternalLink className="size-3" />
+            </a>
+          ) : (
+            <StatusBadge tone="muted">Manual entry</StatusBadge>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
-          <Field label="Employee ID" value={m.uuid?.slice(0, 8).toUpperCase() ?? "—"} />
-          <Field label="Hire Date" value="—" />
-          <Field label="Employment Status" value={<StatusBadge tone="ok">Active</StatusBadge>} />
-          <Field label="Department" value={m.departmentName ?? "Unassigned"} />
-          <Field label="Manager" value="—" />
-          <Field label="State" value={m.states?.[0] ?? "—"} />
-          <Field label="Email" value={m.email ?? "—"} />
-          <Field label="Phone" value={m.phone ?? "—"} />
-          <Field label="Role" value={m.title} />
+          <FieldWithSource label="Employee ID" value={row?.employee_code ?? m.uuid?.slice(0, 8).toUpperCase() ?? "—"} source={sourceBadge(false)} />
+          <FieldWithSource label="Viventium ID" value={row?.viventium_employee_id ?? "Not linked"} source={sourceBadge(true)} />
+          <FieldWithSource label="Hire Date" value={fmtDate(row?.hire_date ?? row?.start_date)} source={sourceBadge(true)} />
+          <FieldWithSource label="Employment Status" value={<StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>} source={sourceBadge(true)} />
+          <FieldWithSource label="Employment Type" value={row?.employment_type?.replace(/_/g, " ") ?? "—"} source={sourceBadge(true)} />
+          <FieldWithSource label="Pay Type" value={row?.pay_type ?? "—"} source={sourceBadge(true)} />
+          <FieldWithSource label="Department" value={m.departmentName ?? "Unassigned"} source={sourceBadge(false)} />
+          <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
+          <FieldWithSource label="State" value={m.states?.[0] ?? "—"} source={sourceBadge(false)} />
+          <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
+          <FieldWithSource label="Email" value={m.email ?? "—"} source={sourceBadge(false)} />
+          <FieldWithSource label="Phone" value={m.phone ?? "—"} source={sourceBadge(false)} />
         </div>
       </Card>
       <Card>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold">Viventium sync</p>
-            <p className="text-xs text-muted-foreground">Last sync — Today at 6:00 AM</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {connected
+                ? `Last sync — ${row?.viventium_last_sync ? new Date(row.viventium_last_sync).toLocaleString() : "—"}`
+                : "Payroll details will populate automatically once Viventium is connected. Manual entries are preserved."}
+            </p>
           </div>
-          <StatusBadge tone="ok"><RefreshCw className="size-3" />Healthy</StatusBadge>
+          <StatusBadge tone={connected ? "ok" : "muted"}>
+            <RefreshCw className="size-3" />{connected ? "Healthy" : "Not connected"}
+          </StatusBadge>
         </div>
       </Card>
+    </div>
+  );
+}
+
+function FieldWithSource({ label, value, source }: { label: string; value: React.ReactNode; source: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        {source}
+      </div>
+      <p className="mt-1 text-sm text-foreground">{value ?? "—"}</p>
     </div>
   );
 }

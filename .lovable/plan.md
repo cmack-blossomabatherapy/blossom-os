@@ -1,64 +1,43 @@
-# User Management Rebuild — Blossom OS
+# Keep existing staff, prepare for Viventium sync
 
-Build a polished, Apple-inspired User Management module with a redesigned directory page and a 9-tab employee profile (Overview, Employment, Training Academy, Evaluations, Devices, Logins, NFC ID, Permissions, Activity).
+## What's already true (no work needed)
+- All current office staff live in the `employees` table and surface through the `v_employee_directory` view.
+- The new User Management module (`/user-management` + `/user-management/:employeeId`) reads from `useEmployeeDirectory`, which queries that same view in realtime.
+- That means **every employee you've already entered is automatically visible** in the new directory, profile tabs, and NFC public page. Nothing migrates, nothing is dropped.
 
-## Scope
+## What I'll add so Viventium can append cleanly later
 
-**In scope (frontend/presentation):**
-- Redesigned User Management directory at `/os/users` (or refresh existing Team/Users page) with hero header, global search, filter rail, modern employee cards.
-- New `EmployeeProfile` page with 9 tabs following the spec exactly.
-- All tabs built as polished, calm, card-based UIs using existing design tokens.
-- Wire to existing data sources where available (`useEmployeeDirectory`, `useLiveTeam`, training/evaluation/onboarding hooks). Where no data exists yet (Devices, Logins, NFC, Activity), render with realistic placeholder structures + empty states clearly marked, ready for backend wiring later.
-- NFC public parent-facing view at `/nfc/:employeeCode` (branded, minimal, safe fields only) + employee-tap quick links view (when authenticated).
+1. **Confirm the Viventium-ready fields exist on `employees`**
+   - `viventium_employee_id` (text, unique, nullable)
+   - `viventium_last_synced_at` (timestamptz, nullable)
+   - `viventium_sync_source` (text: `manual` | `viventium`, default `manual`)
+   - Add any missing columns via migration; existing rows stay intact.
 
-**Out of scope:**
-- Backend tables for Devices/Logins/NFC/Activity (placeholder data only — user said "build this now" for NFC but didn't request schema; I'll stub data structures so we can layer DB later).
-- Changes to permissions logic, role definitions, Training Academy journeys themselves, or evaluation engine.
-- Viventium/CentralReach integrations (informational only).
+2. **Surface "source of truth" badge in the Employment tab**
+   - Each field (hire date, job title, department, status, pay group, etc.) shows a small badge: `Manual` or `Viventium`.
+   - Until Viventium is connected, everything reads `Manual`. After sync, Viventium-owned fields flip to `Viventium` and become read-only in the UI.
 
-## Files
+3. **Define the append/merge rule (documented, not enforced yet)**
+   - Match key: `viventium_employee_id` first, then `email` (case-insensitive), then `first_name + last_name + hire_date` fallback.
+   - On match: Viventium fields **append/overwrite** payroll-owned fields only (employment status, hire date, job title, department, pay group, employee #). Manual-only fields (photo, bio, NFC code, permissions, training, evaluations, devices, logins) are **never touched**.
+   - On no match: create a new `employees` row sourced from Viventium.
+   - No deletes — Viventium terminations only flip `status` to `Inactive`.
 
-**New:**
-- `src/pages/os/users/UsersHome.tsx` — directory homepage
-- `src/pages/os/users/EmployeeProfile.tsx` — profile shell + tab router
-- `src/pages/os/users/tabs/OverviewTab.tsx`
-- `src/pages/os/users/tabs/EmploymentTab.tsx`
-- `src/pages/os/users/tabs/TrainingTab.tsx`
-- `src/pages/os/users/tabs/EvaluationsTab.tsx`
-- `src/pages/os/users/tabs/DevicesTab.tsx`
-- `src/pages/os/users/tabs/LoginsTab.tsx`
-- `src/pages/os/users/tabs/NfcTab.tsx`
-- `src/pages/os/users/tabs/PermissionsTab.tsx`
-- `src/pages/os/users/tabs/ActivityTab.tsx`
-- `src/pages/nfc/NfcPublicProfile.tsx` — parent-tap view
-- `src/components/os/users/EmployeeCard.tsx`
-- `src/components/os/users/SetupChecklist.tsx`
-- `src/components/os/users/SnapshotCards.tsx`
+4. **Tiny UI affordances now**
+   - "Add Employee" button on `/user-management` for manual entry before Viventium is live.
+   - Empty-state hint on Employment tab: "Payroll details will populate automatically once Viventium is connected."
 
-**Edited:**
-- `src/App.tsx` — add routes: `/os/users`, `/os/users/:employeeId`, `/nfc/:code`
-- Sidebar nav (`OSShell.tsx`) — point "Users" to new `/os/users`
+## Out of scope for this pass
+- Building the actual Viventium edge function / OAuth (separate task once credentials are ready).
+- Changing Training, Evaluations, Devices, Logins, NFC, Permissions, or Activity tabs.
+- Touching `v_employee_directory` shape.
 
-## Design
+## Files touched
+- `supabase/migrations/<new>.sql` — add the 3 Viventium columns if missing.
+- `src/pages/os/users/EmployeeProfile.tsx` — Employment tab source badges + empty-state hint.
+- `src/pages/os/users/UsersHome.tsx` — "Add Employee" entry point (opens existing employee create flow).
 
-- White/near-white surfaces, hairline borders (`border-border/70`), `rounded-2xl`, soft shadows.
-- Single primary accent for CTAs only.
-- 40px between major sections, 24px inside cards.
-- Status badges use semantic tone (success/warning/destructive).
-- Tabs use a sticky pill nav; profile header stays fixed at top with avatar + name + role + quick actions.
-- Empty states are friendly single-line messages with one ghost action.
-
-## Data wiring
-
-- Pull employees via `useEmployeeDirectory` (existing hook).
-- Training: hook into `useOnboardingStatus` / journey overrides for progress %.
-- Evaluations: link to existing evaluation tables if reachable; otherwise show "No evaluations yet" empty state.
-- Devices/Logins/NFC/Activity: render with typed placeholder arrays + "Coming soon — connect device inventory" hint where appropriate. NFC tab generates a profile URL pattern (`/nfc/{employeeCode}`) and shows QR placeholder.
-
-## Acceptance
-
-- `/os/users` shows polished employee grid with working search + filters.
-- Clicking a card opens `/os/users/:id` with all 9 tabs rendering without errors.
-- NFC public URL renders a branded, safe-fields-only parent view.
-- No raw color classes; uses semantic tokens only.
-- Responsive down to mobile.
+## Technical notes
+- No data migration script needed; existing rows already conform.
+- `useEmployeeDirectory` and the view need no changes — new columns are additive.
+- When Viventium is wired up later, the edge function will use the match rules above and write through `service_role` so RLS stays strict for the app.
