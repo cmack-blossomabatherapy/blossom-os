@@ -12,6 +12,7 @@ import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import { IdentityTab } from "./IdentityTab";
 import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
@@ -29,11 +30,12 @@ import {
 // ============================================================================
 
 type TabId =
-  | "overview" | "employment" | "training" | "evaluations" | "devices"
+  | "overview" | "identity" | "employment" | "training" | "evaluations" | "devices"
   | "logins" | "nfc" | "permissions" | "activity";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: Sparkles },
+  { id: "identity", label: "Identity", icon: UserCircle2 },
   { id: "employment", label: "Employment", icon: Briefcase },
   { id: "training", label: "Training Academy", icon: GraduationCap },
   { id: "evaluations", label: "Evaluations", icon: ClipboardCheck },
@@ -1318,6 +1320,7 @@ export default function EmployeeProfilePage() {
 
         <div className="pb-16">
           {tab === "overview" && <OverviewTab m={member} jump={setTab} />}
+          {tab === "identity" && <IdentityTab m={member} />}
           {tab === "employment" && <EmploymentTab m={member} />}
           {tab === "training" && <TrainingTab m={member} openAssign={openAssignTraining} setOpenAssign={setOpenAssignTraining} />}
           {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
