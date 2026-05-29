@@ -130,6 +130,9 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
   const [row, setRow] = useState<any | null>(null);
   const [manager, setManager] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>(m.email ?? "");
+  const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [savingContact, setSavingContact] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
     (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
@@ -141,11 +144,13 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone")
         .eq("id", m.uuid)
         .maybeSingle();
       if (cancelled) return;
       setRow(data);
+      if (data?.email != null) setEmail(data.email);
+      if (data?.phone != null) setPhone(data.phone);
       if (data?.manager_id) {
         const { data: mgr } = await supabase
           .from("employees")
@@ -173,6 +178,18 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     : row?.status === "terminated" ? "crit"
     : "muted";
 
+  const saveContact = async () => {
+    if (!m.uuid) return;
+    setSavingContact(true);
+    const { error } = await supabase
+      .from("employees")
+      .update({ email: email.trim() || null, phone: phone.trim() || null })
+      .eq("id", m.uuid);
+    setSavingContact(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Contact info saved");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -198,8 +215,34 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
           <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="State" value={m.states?.[0] ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Email" value={m.email ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Phone" value={m.phone ?? "—"} source={sourceBadge(false)} />
+          <div id="employment-email" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email</p>
+              {sourceBadge(false)}
+            </div>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={saveContact}
+              placeholder="name@blossomabatherapy.com"
+              type="email"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+          <div id="employment-phone" className="scroll-mt-24">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone</p>
+              {sourceBadge(false)}
+            </div>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onBlur={saveContact}
+              placeholder="(555) 555-5555"
+              type="tel"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
           <div>
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
@@ -221,6 +264,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
         </div>
+        {savingContact && <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p>}
       </Card>
       <Card>
         <div className="flex items-center justify-between gap-4">
@@ -921,7 +965,7 @@ function NfcCardPreview({ m, variant }: { m: DirectoryEmployee; variant: ReturnT
   );
 }
 
-function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
+function NfcTab({ m, openAssign, setOpenAssign, jumpToEmployment }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void; jumpToEmployment: (fieldId?: string) => void }) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<NfcRow | null>(null);
   const [tagInput, setTagInput] = useState("");
@@ -1177,7 +1221,7 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
         </Card>
       </div>
 
-      <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} />
+      <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} jumpToEmployment={jumpToEmployment} />
 
       {/* Identity editor — bio, expertise/skills/languages, emergency contact, badge visibility.
           Lives inside the Smart Badge tab so everything that powers the public badge is in one place. */}
@@ -1207,8 +1251,7 @@ type ReadinessRow = {
   phone: string | null;
 };
 
-function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isParentSafety: boolean }) {
-  const navigate = useNavigate();
+function SmartBadgeReadiness({ m, isParentSafety, jumpToEmployment }: { m: DirectoryEmployee; isParentSafety: boolean; jumpToEmployment: (fieldId?: string) => void }) {
   const [row, setRow] = useState<ReadinessRow | null>(null);
 
   useEffect(() => {
@@ -1232,10 +1275,7 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const openHr = () => {
-    if (m.uuid) navigate(`/hr/directory/${m.uuid}`);
-    else toast("No linked HR record");
-  };
+  const openHr = () => jumpToEmployment();
 
   // `m.photo` is the resolved display photo (uploaded or brochure fallback).
   // We still flag it as "Add a photo" until a real one is uploaded so the
@@ -1260,8 +1300,8 @@ function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isPa
   ];
   if (!isParentSafety) {
     items.push(
-      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: openHr },
-      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: openHr },
+      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: () => jumpToEmployment("employment-email") },
+      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: () => jumpToEmployment("employment-phone") },
     );
   }
 
@@ -1551,7 +1591,7 @@ export default function EmployeeProfilePage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("No linked HR record")}>
+                onClick={() => setTab("employment")}>
                 <Pencil className="size-3.5" /> Edit
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
@@ -1599,7 +1639,16 @@ export default function EmployeeProfilePage() {
           {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
           {tab === "devices" && <DevicesTab m={member} openAssign={openAssignDevice} setOpenAssign={setOpenAssignDevice} />}
           {tab === "logins" && <LoginsTab m={member} />}
-          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} />}
+          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} jumpToEmployment={(fieldId) => {
+            setTab("employment");
+            setTimeout(() => {
+              const el = document.getElementById(fieldId ?? "employment-email");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.querySelector("input")?.focus();
+              }
+            }, 60);
+          }} />}
           {tab === "permissions" && <PermissionsTab m={member} />}
           {tab === "activity" && <ActivityTab m={member} />}
         </div>
