@@ -307,27 +307,6 @@ function TrainingTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; o
 
   return (
     <div className="space-y-6">
-      <Dialog open={writing} onOpenChange={(o) => { if (!o) { writeAbort?.abort(); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Hold an NFC tag to your phone</DialogTitle>
-            <DialogDescription>
-              Touch a blank NFC tag to the back of your phone. We'll program it with the Smart Badge URL.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-3 py-4">
-            <div className="relative grid size-20 place-items-center rounded-full bg-primary/10">
-              <Smartphone className="size-9 text-primary animate-pulse" />
-              <span className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping" />
-            </div>
-            <p className="text-xs text-muted-foreground">Waiting for tag…</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => writeAbort?.abort()}>Cancel</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={openAssign} onOpenChange={setOpenAssign}>
         <DialogContent>
           <DialogHeader>
