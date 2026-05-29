@@ -1184,6 +1184,134 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
 }
 
 // ============================================================================
+// SMART BADGE READINESS
+// ----------------------------------------------------------------------------
+// A checklist that mirrors the public Smart Badge surface. Tells the admin
+// exactly which fields are missing so the printed NFC card / digital business
+// card looks complete instead of "sparse".
+// ============================================================================
+
+type ReadinessRow = {
+  bio: string | null;
+  about_me: string | null;
+  expertise: string[] | null;
+  skills: string[] | null;
+  languages: string[] | null;
+  pronouns: string | null;
+  credential: string | null;
+  photo_url: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+function SmartBadgeReadiness({ m, isParentSafety }: { m: DirectoryEmployee; isParentSafety: boolean }) {
+  const navigate = useNavigate();
+  const [row, setRow] = useState<ReadinessRow | null>(null);
+
+  useEffect(() => {
+    if (!m.uuid) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("employees")
+        .select("bio,about_me,expertise,skills,languages,pronouns,credential,photo_url,email,phone")
+        .eq("id", m.uuid!)
+        .maybeSingle();
+      if (!cancelled && data) setRow(data as ReadinessRow);
+    })();
+    return () => { cancelled = true; };
+  }, [m.uuid]);
+
+  const has = (v: unknown) =>
+    Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim().length > 0 : Boolean(v);
+
+  // `m.photo` is the resolved display photo (uploaded or brochure fallback).
+  // We still flag it as "Add a photo" until a real one is uploaded so the
+  // public badge isn't relying on the generic brochure asset forever.
+  const photoUploaded = has(row?.photo_url);
+  const items: { label: string; ok: boolean; hint: string; onFix: () => void }[] = [
+    {
+      label: "Profile photo",
+      ok: photoUploaded,
+      hint: photoUploaded ? "Uploaded" : m.photo ? "Using brochure fallback — upload a real photo" : "Missing — initials only",
+      onFix: () => {
+        document.querySelector<HTMLElement>("main")?.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        toast("Use the camera icon on the photo at the top to upload");
+      },
+    },
+    { label: "Job title", ok: has(m.title), hint: m.title || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    { label: "Department", ok: has(m.departmentName), hint: m.departmentName || "Unassigned", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    { label: "States served", ok: (m.states ?? []).length > 0, hint: (m.states ?? []).join(", ") || "Missing", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    { label: "Credential", ok: has(row?.credential), hint: row?.credential || "Optional — e.g. BCBA, RBT", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    { label: "Pronouns", ok: has(row?.pronouns), hint: row?.pronouns || "Optional", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    { label: "About me / bio", ok: has(row?.about_me) || has(row?.bio), hint: has(row?.about_me) || has(row?.bio) ? "Set" : "Missing — shown under the photo", onFix: () => navigate(`#identity`) },
+    { label: "Expertise tags", ok: (row?.expertise ?? []).length > 0, hint: (row?.expertise ?? []).slice(0, 3).join(", ") || "Missing — adds chips to the card", onFix: () => navigate(`#identity`) },
+    { label: "Skills", ok: (row?.skills ?? []).length > 0, hint: (row?.skills ?? []).slice(0, 3).join(", ") || "Optional", onFix: () => navigate(`#identity`) },
+    { label: "Languages", ok: (row?.languages ?? []).length > 0, hint: (row?.languages ?? []).join(", ") || "Optional", onFix: () => navigate(`#identity`) },
+  ];
+  if (!isParentSafety) {
+    items.push(
+      { label: "Work email", ok: has(row?.email ?? m.email), hint: row?.email ?? m.email ?? "Required for Save to Contacts", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+      { label: "Work phone", ok: has(row?.phone ?? m.phone), hint: row?.phone ?? m.phone ?? "Required for Call / Message buttons", onFix: () => m.uuid && navigate(`/hr/directory/${m.uuid}`) },
+    );
+  }
+
+  const complete = items.filter((i) => i.ok).length;
+  const total = items.length;
+  const pct = Math.round((complete / total) * 100);
+  const tone = pct >= 90 ? "ok" : pct >= 60 ? "warn" : "crit";
+
+  return (
+    <Card>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <SectionTitle hint={isParentSafety ? "Parent-safety variant" : "Business-card variant"}>Smart Badge readiness</SectionTitle>
+          <p className="text-xs text-muted-foreground">
+            {complete} of {total} fields complete — {pct >= 90 ? "ready to print" : pct >= 60 ? "almost there" : "needs more info"}
+          </p>
+        </div>
+        <StatusBadge tone={tone}>{pct}%</StatusBadge>
+      </div>
+      <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all",
+            tone === "ok" ? "bg-emerald-500" : tone === "warn" ? "bg-amber-500" : "bg-destructive",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        {items.map((i) => (
+          <li
+            key={i.label}
+            className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2"
+          >
+            <div className="flex items-start gap-2">
+              {i.ok ? (
+                <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="mt-0.5 size-4 text-amber-500" />
+              )}
+              <div>
+                <p className="text-xs font-medium text-foreground">{i.label}</p>
+                <p className="text-[11px] text-muted-foreground line-clamp-1">{i.hint}</p>
+              </div>
+            </div>
+            {!i.ok && (
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={i.onFix}>
+                <Pencil className="size-3" /> Fix
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+// ============================================================================
 // PERMISSIONS
 // ============================================================================
 
