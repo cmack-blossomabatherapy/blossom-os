@@ -33,18 +33,17 @@ import { useAuth } from "@/contexts/AuthContext";
 // ============================================================================
 
 type TabId =
-  | "overview" | "identity" | "employment" | "training" | "evaluations" | "devices"
+  | "overview" | "employment" | "training" | "evaluations" | "devices"
   | "logins" | "nfc" | "permissions" | "activity";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: Sparkles },
-  { id: "identity", label: "Identity", icon: UserCircle2 },
   { id: "employment", label: "Employment", icon: Briefcase },
   { id: "training", label: "Training Academy", icon: GraduationCap },
   { id: "evaluations", label: "Evaluations", icon: ClipboardCheck },
   { id: "devices", label: "Devices", icon: MonitorSmartphone },
   { id: "logins", label: "Logins", icon: KeyRound },
-  { id: "nfc", label: "NFC ID", icon: ScanLine },
+  { id: "nfc", label: "Smart Badge", icon: ScanLine },
   { id: "permissions", label: "Permissions", icon: ShieldCheck },
   { id: "activity", label: "Activity", icon: History },
 ];
