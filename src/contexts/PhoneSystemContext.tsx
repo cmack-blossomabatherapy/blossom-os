@@ -3,6 +3,8 @@ import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
   Employee, HolidayProfile, RetellCall, SharedRouting,
+  StateDirectoryEntry, CorporateMenuOption, StateIntakeRouting,
+  STATE_DIRECTORY, CORPORATE_MENU, STATE_INTAKE_ROUTING,
   SEED_COVERAGE_TEMPLATES, SEED_EMPLOYEES, SEED_HOLIDAY_PROFILES, SEED_QUEUES,
   SEED_RETELL_CALLS, SEED_SHARED,
 } from "@/data/phoneSystem";
@@ -16,6 +18,9 @@ type PhoneSystemState = {
   settings: AdminSettings;
   coverageTemplates: CoverageTemplate[];
   holidayProfiles: HolidayProfile[];
+  stateDirectory: StateDirectoryEntry[];
+  corporateMenu: CorporateMenuOption[];
+  stateIntakeRouting: StateIntakeRouting[];
   setQueues: (q: CallQueue[]) => void;
   setEmployees: (e: Employee[]) => void;
   saveEmployeeExtension: (previousExtension: string, employee: Employee) => void;
@@ -26,6 +31,9 @@ type PhoneSystemState = {
   setSettings: (s: AdminSettings) => void;
   setCoverageTemplates: (t: CoverageTemplate[]) => void;
   setHolidayProfiles: (h: HolidayProfile[]) => void;
+  setStateDirectory: (d: StateDirectoryEntry[]) => void;
+  setCorporateMenu: (m: CorporateMenuOption[]) => void;
+  setStateIntakeRouting: (r: StateIntakeRouting[]) => void;
 };
 
 const Ctx = createContext<PhoneSystemState | null>(null);
@@ -90,6 +98,9 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AdminSettings>(DEFAULT_SETTINGS);
   const [coverageTemplates, setCoverageTemplates] = useState<CoverageTemplate[]>(SEED_COVERAGE_TEMPLATES);
   const [holidayProfiles, setHolidayProfiles] = useState<HolidayProfile[]>(SEED_HOLIDAY_PROFILES);
+  const [stateDirectory, setStateDirectory] = useState<StateDirectoryEntry[]>(STATE_DIRECTORY);
+  const [corporateMenu, setCorporateMenu] = useState<CorporateMenuOption[]>(CORPORATE_MENU);
+  const [stateIntakeRouting, setStateIntakeRouting] = useState<StateIntakeRouting[]>(STATE_INTAKE_ROUTING);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -105,6 +116,9 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
         if (data.settings) setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
         if (data.coverageTemplates) setCoverageTemplates(data.coverageTemplates);
         if (data.holidayProfiles) setHolidayProfiles(data.holidayProfiles);
+        if (data.stateDirectory) setStateDirectory(data.stateDirectory);
+        if (data.corporateMenu) setCorporateMenu(data.corporateMenu);
+        if (data.stateIntakeRouting) setStateIntakeRouting(data.stateIntakeRouting);
       }
     } catch { /* ignore */ }
     setHydrated(true);
@@ -120,13 +134,16 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
+        stateDirectory, corporateMenu, stateIntakeRouting,
       }));
     } catch { /* ignore */ }
-  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, hydrated]);
+  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, stateDirectory, corporateMenu, stateIntakeRouting, hydrated]);
 
   const value: PhoneSystemState = {
     queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
+    stateDirectory, corporateMenu, stateIntakeRouting,
     setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
+    setStateDirectory, setCorporateMenu, setStateIntakeRouting,
     saveEmployeeExtension: (previousExtension, employee) => {
       const nextExtension = employee.extension.trim();
       setEmployees((prev) => {
