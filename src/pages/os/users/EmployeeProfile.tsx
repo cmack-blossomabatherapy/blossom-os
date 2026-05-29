@@ -132,6 +132,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const [manager, setManager] = useState<string | null>(null);
   const [email, setEmail] = useState<string>(m.email ?? "");
   const [phone, setPhone] = useState<string>(m.phone ?? "");
+  const [pronouns, setPronouns] = useState<string>("");
   const [savingContact, setSavingContact] = useState(false);
   const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
     (m.uuid && employee.userId === m.uuid) ||
@@ -144,13 +145,14 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     (async () => {
       const { data } = await supabase
         .from("employees")
-        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone")
+        .select("employee_code,hire_date,start_date,status,employment_type,pay_type,work_setting,manager_id,viventium_employee_id,viventium_sync_status,viventium_last_sync,email,phone,pronouns")
         .eq("id", m.uuid)
         .maybeSingle();
       if (cancelled) return;
       setRow(data);
       if (data?.email != null) setEmail(data.email);
       if (data?.phone != null) setPhone(data.phone);
+      if (data?.pronouns != null) setPronouns(data.pronouns);
       if (data?.manager_id) {
         const { data: mgr } = await supabase
           .from("employees")
@@ -183,11 +185,11 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     setSavingContact(true);
     const { error } = await supabase
       .from("employees")
-      .update({ email: email.trim() || null, phone: phone.trim() || null })
+      .update({ email: email.trim() || null, phone: phone.trim() || null, pronouns: pronouns.trim() || null })
       .eq("id", m.uuid);
     setSavingContact(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Contact info saved");
+    toast.success("Saved");
   };
 
   return (
