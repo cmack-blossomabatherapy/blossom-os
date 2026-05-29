@@ -1178,6 +1178,10 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
       </div>
 
       <SmartBadgeReadiness m={m} isParentSafety={isParentSafety} />
+
+      {/* Identity editor — bio, expertise/skills/languages, emergency contact, badge visibility.
+          Lives inside the Smart Badge tab so everything that powers the public badge is in one place. */}
+      <IdentityTab m={m} />
     </div>
   );
 }
