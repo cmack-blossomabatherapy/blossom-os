@@ -129,7 +129,7 @@ export function useEmployeeDirectory(): DirectoryResult {
   useEffect(() => {
     void load();
     const ch = supabase
-      .channel("employee-directory")
+      .channel(`employee-directory-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "employees" }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "hr_departments" }, () => void load())
       .subscribe();
