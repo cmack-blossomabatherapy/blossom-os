@@ -137,6 +137,45 @@ function descendantsOf(node: Node): Node[] {
   return out;
 }
 
+// ---------- Canvas layout (matches Org Chart Settings) ----------
+const NODE_W = 240;
+const NODE_H = 92;
+const GAP_X = 32;
+const GAP_Y = 64;
+
+interface Pos { x: number; y: number }
+
+function layoutCanvas(roots: Node[]): { pos: Map<string, Pos>; width: number; height: number } {
+  const pos = new Map<string, Pos>();
+  let cursor = 0;
+  let maxDepth = 0;
+  const place = (n: Node, depth: number): { left: number; right: number } => {
+    maxDepth = Math.max(maxDepth, depth);
+    const y = depth * (NODE_H + GAP_Y);
+    if (n.reports.length === 0) {
+      const x = cursor * (NODE_W + GAP_X);
+      cursor++;
+      pos.set(n.emp.id, { x, y });
+      return { left: x, right: x };
+    }
+    let left = Infinity, right = -Infinity;
+    n.reports.forEach((c) => {
+      const r = place(c, depth + 1);
+      left = Math.min(left, r.left);
+      right = Math.max(right, r.right);
+    });
+    const x = (left + right) / 2;
+    pos.set(n.emp.id, { x, y });
+    return { left, right };
+  };
+  roots.forEach((r, i) => { if (i > 0) cursor += 1; place(r, 0); });
+  return {
+    pos,
+    width: Math.max(NODE_W, cursor * (NODE_W + GAP_X)),
+    height: (maxDepth + 1) * (NODE_H + GAP_Y),
+  };
+}
+
 // ---------- Component ----------
 export default function OrgChart() {
   const [employees, setEmployees] = useState<Employee[]>([]);
