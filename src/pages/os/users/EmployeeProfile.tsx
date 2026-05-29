@@ -13,6 +13,7 @@ import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
 
 type TabId =
   | "overview" | "employment" | "training" | "evaluations" | "devices"
@@ -161,8 +162,14 @@ function OverviewTab({ m }: { m: DirectoryEmployee }) {
 }
 
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
+  const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
   const [row, setRow] = useState<any | null>(null);
   const [manager, setManager] = useState<string | null>(null);
+  const phoneRecord = useMemo(() => phoneEmployees.find((employee) =>
+    (m.uuid && employee.userId === m.uuid) ||
+    (m.email && employee.email?.toLowerCase() === m.email.toLowerCase()) ||
+    employee.name?.toLowerCase() === m.name.toLowerCase(),
+  ), [phoneEmployees, m.uuid, m.email, m.name]);
   useEffect(() => {
     if (!m.uuid) return;
     let cancelled = false;
@@ -230,6 +237,26 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
           <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Email" value={m.email ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Phone" value={m.phone ?? "—"} source={sourceBadge(false)} />
+          <div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
+              <StatusBadge tone={phoneRecord?.extension ? "ok" : "muted"}>Phone System</StatusBadge>
+            </div>
+            <input
+              value={phoneRecord?.extension ?? ""}
+              onChange={(event) => saveEmployeeExtension(phoneRecord?.extension ?? "", {
+                extension: event.target.value,
+                userId: m.uuid ?? m.id,
+                email: m.email ?? undefined,
+                name: m.name,
+                department: m.departmentName ?? undefined,
+                role: m.title,
+                source: "directory",
+              })}
+              placeholder="Assign extension"
+              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
         </div>
       </Card>
       <Card>

@@ -23,6 +23,7 @@ import { OSShell } from "@/pages/os/OSShell";
 import {
   usePhoneSystem, downloadPhoneCsv, notifyPhoneWebhook,
 } from "@/contexts/PhoneSystemContext";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import {
   ChangeRequest, CallQueue, Employee, ImpactRow, RequestRoutingScope,
   RequestStatus, SharedDeptCategory, SharedRouting, SHARED_CATEGORIES, STATUSES,
@@ -1279,7 +1280,8 @@ export function PhoneRequestDetail() {
 // ---------- /phone/admin ----------
 
 export function PhoneAdmin() {
-  const { queues, setQueues, employees, setEmployees, requests, settings, setSettings, coverageTemplates, holidayProfiles } = usePhoneSystem();
+  const { queues, setQueues, employees, setEmployees, saveEmployeeExtension, requests, settings, setSettings, coverageTemplates, holidayProfiles } = usePhoneSystem();
+  const { members } = useEmployeeDirectory();
   const [newEmp, setNewEmp] = useState<Employee>({ extension: "", name: "", department: "" });
   const [newQ, setNewQ] = useState<CallQueue>({ queue: "", state: "", timeframe: "", agents: [], voicemail: "", routing: "" });
   const [newQAgents, setNewQAgents] = useState("");
@@ -1287,13 +1289,25 @@ export function PhoneAdmin() {
   const addEmployee = () => {
     if (!newEmp.extension) return toast.error("Extension required");
     if (employees.some((e) => e.extension === newEmp.extension)) return toast.error("Extension already exists");
-    setEmployees([...employees, newEmp]);
+    const linked = newEmp.userId ? members.find((m) => (m.uuid ?? m.id) === newEmp.userId) : null;
+    setEmployees([...employees, linked ? {
+      ...newEmp,
+      userId: linked.uuid ?? linked.id,
+      email: linked.email ?? undefined,
+      name: linked.name,
+      department: linked.departmentName ?? newEmp.department,
+      role: linked.title,
+      source: "directory",
+    } : newEmp]);
     setNewEmp({ extension: "", name: "", department: "" });
     toast.success("Employee added");
   };
   const removeEmployee = (ext: string) => setEmployees(employees.filter((e) => e.extension !== ext));
-  const updateEmployee = (ext: string, patch: Partial<Employee>) =>
-    setEmployees(employees.map((e) => (e.extension === ext ? { ...e, ...patch } : e)));
+  const updateEmployee = (ext: string, patch: Partial<Employee>) => {
+    const current = employees.find((e) => e.extension === ext);
+    if (!current) return;
+    saveEmployeeExtension(ext, { ...current, ...patch });
+  };
   const addQueue = () => {
     if (!newQ.queue || !newQ.state) return toast.error("Queue and state required");
     if (queues.some((q) => q.queue === newQ.queue)) return toast.error("Queue already exists");
@@ -1336,17 +1350,20 @@ export function PhoneAdmin() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-12 gap-2 items-end">
               <div className="col-span-3"><Label className="text-xs">Extension</Label><Input value={newEmp.extension} onChange={(e) => setNewEmp({ ...newEmp, extension: e.target.value })} /></div>
-              <div className="col-span-4"><Label className="text-xs">Name</Label><Input value={newEmp.name} onChange={(e) => setNewEmp({ ...newEmp, name: e.target.value })} /></div>
-              <div className="col-span-3"><Label className="text-xs">Dept</Label><Input value={newEmp.department} onChange={(e) => setNewEmp({ ...newEmp, department: e.target.value })} /></div>
+              <div className="col-span-4"><Label className="text-xs">Linked user</Label><Select value={newEmp.userId ?? "manual"} onValueChange={(value) => {
+                const linked = members.find((m) => (m.uuid ?? m.id) === value);
+                setNewEmp(linked ? { ...newEmp, userId: linked.uuid ?? linked.id, email: linked.email ?? undefined, name: linked.name, department: linked.departmentName ?? "", role: linked.title, source: "directory" } : { extension: newEmp.extension, name: "", department: "" });
+              }}><SelectTrigger className="h-10"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual / unlinked</SelectItem>{members.map((m) => <SelectItem key={m.uuid ?? m.id} value={m.uuid ?? m.id}>{m.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="col-span-3"><Label className="text-xs">Dept</Label><Input value={newEmp.department ?? ""} onChange={(e) => setNewEmp({ ...newEmp, department: e.target.value })} /></div>
               <div className="col-span-2"><Button onClick={addEmployee} className="w-full"><Plus className="h-4 w-4" /></Button></div>
             </div>
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader><TableRow><TableHead>Ext</TableHead><TableHead>Name</TableHead><TableHead>Department</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Ext</TableHead><TableHead>User</TableHead><TableHead>Department</TableHead><TableHead></TableHead></TableRow></TableHeader>
                 <TableBody>
                   {employees.map((e) => (
-                    <TableRow key={e.extension}>
-                      <TableCell className="font-mono">{e.extension}</TableCell>
+                    <TableRow key={e.userId ?? e.email ?? e.extension}>
+                      <TableCell><Input value={e.extension} onChange={(ev) => updateEmployee(e.extension, { extension: ev.target.value })} className="h-8 font-mono" /></TableCell>
                       <TableCell><Input value={e.name} onChange={(ev) => updateEmployee(e.extension, { name: ev.target.value })} className="h-8" /></TableCell>
                       <TableCell><Input value={e.department ?? ""} onChange={(ev) => updateEmployee(e.extension, { department: ev.target.value })} className="h-8" /></TableCell>
                       <TableCell><Button size="icon" variant="ghost" onClick={() => removeEmployee(e.extension)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>

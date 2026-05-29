@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useEmployeeDirectory } from "@/hooks/useEmployeeDirectory";
 import {
   AdminSettings, CallQueue, ChangeRequest, CoverageTemplate, DEFAULT_SETTINGS,
   Employee, HolidayProfile, RetellCall, SharedRouting,
@@ -17,6 +18,7 @@ type PhoneSystemState = {
   holidayProfiles: HolidayProfile[];
   setQueues: (q: CallQueue[]) => void;
   setEmployees: (e: Employee[]) => void;
+  saveEmployeeExtension: (previousExtension: string, employee: Employee) => void;
   setShared: (s: SharedRouting[]) => void;
   upsertRequest: (r: ChangeRequest) => void;
   deleteRequest: (id: string) => void;
@@ -29,7 +31,57 @@ type PhoneSystemState = {
 const Ctx = createContext<PhoneSystemState | null>(null);
 const KEY = "blossom.phone-system.v2";
 
+const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? "";
+
+function syncDirectoryEmployees(phoneEmployees: Employee[], directoryEmployees: ReturnType<typeof useEmployeeDirectory>["members"]): Employee[] {
+  const next = [...phoneEmployees];
+  const byEmail = new Map(directoryEmployees.filter((m) => m.email).map((m) => [normalize(m.email), m]));
+
+  next.forEach((employee, index) => {
+    const linked = employee.userId
+      ? directoryEmployees.find((m) => m.uuid === employee.userId || m.id === employee.userId)
+      : employee.email
+        ? byEmail.get(normalize(employee.email))
+        : undefined;
+
+    if (linked) {
+      next[index] = {
+        ...employee,
+        userId: linked.uuid ?? linked.id,
+        email: linked.email ?? employee.email,
+        name: linked.name,
+        department: linked.departmentName ?? employee.department,
+        role: linked.title ?? employee.role,
+        source: "directory",
+      };
+    }
+  });
+
+  directoryEmployees.forEach((member) => {
+    const hasLink = next.some((employee) =>
+      (member.uuid && employee.userId === member.uuid) ||
+      (member.email && normalize(employee.email) === normalize(member.email)) ||
+      normalize(employee.name) === normalize(member.name),
+    );
+
+    if (!hasLink) {
+      next.push({
+        extension: "",
+        userId: member.uuid ?? member.id,
+        email: member.email ?? undefined,
+        name: member.name,
+        department: member.departmentName ?? undefined,
+        role: member.title,
+        source: "directory",
+      });
+    }
+  });
+
+  return next;
+}
+
 export function PhoneSystemProvider({ children }: { children: ReactNode }) {
+  const { members: directoryMembers, loading: directoryLoading } = useEmployeeDirectory();
   const [queues, setQueues] = useState<CallQueue[]>(SEED_QUEUES);
   const [employees, setEmployees] = useState<Employee[]>(SEED_EMPLOYEES);
   const [shared, setShared] = useState<SharedRouting[]>(SEED_SHARED);
@@ -59,6 +111,11 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!hydrated || directoryLoading || directoryMembers.length === 0) return;
+    setEmployees((current) => syncDirectoryEmployees(current, directoryMembers));
+  }, [directoryMembers, directoryLoading, hydrated]);
+
+  useEffect(() => {
     if (!hydrated) return;
     try {
       localStorage.setItem(KEY, JSON.stringify({
@@ -70,6 +127,26 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const value: PhoneSystemState = {
     queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
     setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
+    saveEmployeeExtension: (previousExtension, employee) => {
+      const nextExtension = employee.extension.trim();
+      setEmployees((prev) => {
+        const match = (row: Employee) =>
+          (previousExtension && row.extension === previousExtension) ||
+          (employee.userId && row.userId === employee.userId) ||
+          (employee.email && normalize(row.email) === normalize(employee.email));
+        const exists = prev.some(match);
+        const next = exists ? prev.map((row) => (match(row) ? { ...row, ...employee, extension: nextExtension } : row)) : [{ ...employee, extension: nextExtension }, ...prev];
+        return next.filter((row, index, all) => all.findIndex((other) => other.extension && other.extension === row.extension) === index || !row.extension);
+      });
+      if (previousExtension && previousExtension !== nextExtension) {
+        setQueues((prev) => prev.map((queue) => ({ ...queue, agents: queue.agents.map((agent) => agent === previousExtension ? nextExtension : agent) })));
+        setShared((prev) => prev.map((route) => ({
+          ...route,
+          agents: route.agents.map((agent) => agent === previousExtension ? nextExtension : agent),
+          businessHoursRouting: route.businessHoursRouting === previousExtension ? nextExtension : route.businessHoursRouting,
+        })));
+      }
+    },
     upsertRequest: (r) =>
       setRequests((prev) => {
         const idx = prev.findIndex((p) => p.id === r.id);

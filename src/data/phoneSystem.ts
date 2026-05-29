@@ -1,8 +1,11 @@
 export type Employee = {
   extension: string;
+  userId?: string;
+  email?: string;
   name?: string;
   department?: string;
   role?: string;
+  source?: "phone" | "directory";
 };
 
 export type CallQueue = {
