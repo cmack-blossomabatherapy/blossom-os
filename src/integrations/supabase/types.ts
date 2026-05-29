@@ -3748,6 +3748,7 @@ export type Database = {
           preferred_name: string | null
           pronouns: string | null
           resource_hub_access: boolean
+          responsibilities: string[]
           show_in_directory: boolean
           show_in_org_chart: boolean
           skills: string[]
@@ -3810,6 +3811,7 @@ export type Database = {
           preferred_name?: string | null
           pronouns?: string | null
           resource_hub_access?: boolean
+          responsibilities?: string[]
           show_in_directory?: boolean
           show_in_org_chart?: boolean
           skills?: string[]
@@ -3872,6 +3874,7 @@ export type Database = {
           preferred_name?: string | null
           pronouns?: string | null
           resource_hub_access?: boolean
+          responsibilities?: string[]
           show_in_directory?: boolean
           show_in_org_chart?: boolean
           skills?: string[]

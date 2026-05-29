@@ -60,6 +60,7 @@ import TrackAnalytics from "./pages/hr/TrackAnalytics";
 import EmployeeDirectory from "./pages/hr/EmployeeDirectory";
 import EmployeeProfile from "./pages/hr/EmployeeProfile";
 import OrgChart from "./pages/hr/OrgChart";
+import OrgChartManage from "./pages/hr/OrgChartManage";
 import OnboardingCenter from "./pages/hr/OnboardingCenter";
 import TimeClock from "./pages/hr/TimeClock";
 import Hours from "./pages/hr/Hours";
@@ -807,6 +808,7 @@ const App = () => (
                   <Route path="/hr/directory" element={<PermissionRoute permission="hr.employees.view"><EmployeeDirectory /></PermissionRoute>} />
                   <Route path="/hr/employees/:id" element={<PermissionRoute permission="hr.employees.view"><EmployeeProfile /></PermissionRoute>} />
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
+                  <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />
                   {/* Blossom Identity System — top-level Operations route alias */}
                   <Route path="/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
