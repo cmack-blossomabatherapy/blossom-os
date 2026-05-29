@@ -305,64 +305,78 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             <StatusBadge tone="muted">Manual entry</StatusBadge>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FieldWithSource label="Employee ID" value={row?.employee_code ?? m.uuid?.slice(0, 8).toUpperCase() ?? "—"} source={sourceBadge(false)} />
           <FieldWithSource label="Viventium ID" value={row?.viventium_employee_id ?? "Not linked"} source={sourceBadge(true)} />
           <FieldWithSource label="Hire Date" value={fmtDate(row?.hire_date ?? row?.start_date)} source={sourceBadge(true)} />
-          <FieldWithSource label="Employment Status" value={<StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>} source={sourceBadge(true)} />
-          <FieldWithSource label="Employment Type" value={row?.employment_type?.replace(/_/g, " ") ?? "—"} source={sourceBadge(true)} />
-          <FieldWithSource label="Pay Type" value={row?.pay_type ?? "—"} source={sourceBadge(true)} />
-          <FieldWithSource label="Department" value={m.departmentName ?? "Unassigned"} source={sourceBadge(false)} />
+          <div id="employment-title" className="scroll-mt-24">
+            <EditableLabel label="Title" source={sourceBadge(false)} />
+            <Input value={title} disabled={!canEditEmployment} onChange={(e) => setTitle(e.target.value)} placeholder="Employee title" className="mt-1 h-9" />
+          </div>
+          <div id="employment-department" className="scroll-mt-24">
+            <EditableLabel label="Department" source={sourceBadge(false)} />
+            <Select value={departmentId} onValueChange={setDepartmentId} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {departments.map((dept) => <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div id="employment-status" className="scroll-mt-24">
+            <EditableLabel label="Status" source={sourceBadge(true)} />
+            <Select value={status} onValueChange={(value) => setStatus(value as EmployeeStatus)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{EMPLOYEE_STATUS_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-state" className="scroll-mt-24">
+            <EditableLabel label="State" source={sourceBadge(false)} />
+            <Select value={state} onValueChange={setState} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATE_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-type" className="scroll-mt-24">
+            <EditableLabel label="Employment Type" source={sourceBadge(true)} />
+            <Select value={employmentType} onValueChange={(value) => setEmploymentType(value as EmploymentType)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{EMPLOYMENT_TYPE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-pay-type" className="scroll-mt-24">
+            <EditableLabel label="Pay Type" source={sourceBadge(true)} />
+            <Select value={payType} onValueChange={(value) => setPayType(value as PayType)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{PAY_TYPE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div id="employment-work-setting" className="scroll-mt-24">
+            <EditableLabel label="Work Setting" source={sourceBadge(false)} />
+            <Select value={workSetting} onValueChange={(value) => setWorkSetting(value as WorkSetting)} disabled={!canEditEmployment}>
+              <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{WORK_SETTING_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
           <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="State" value={m.states?.[0] ?? "—"} source={sourceBadge(false)} />
-          <FieldWithSource label="Work Setting" value={row?.work_setting?.replace(/_/g, " ") ?? "—"} source={sourceBadge(false)} />
           <div id="employment-email" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Email</p>
-              {sourceBadge(false)}
-            </div>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={saveContact}
-              placeholder="name@blossomabatherapy.com"
-              type="email"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Email" source={sourceBadge(false)} />
+            <Input value={email} disabled={!canEditEmployment} onChange={(e) => setEmail(e.target.value)} placeholder="name@blossomabatherapy.com" type="email" className="mt-1 h-9" />
           </div>
           <div id="employment-phone" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone</p>
-              {sourceBadge(false)}
-            </div>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              onBlur={saveContact}
-              placeholder="(555) 555-5555"
-              type="tel"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Phone" source={sourceBadge(false)} />
+            <Input value={phone} disabled={!canEditEmployment} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" type="tel" className="mt-1 h-9" />
+          </div>
+          <div id="employment-credential" className="scroll-mt-24">
+            <EditableLabel label="Credential" source={<StatusBadge tone="muted">Optional</StatusBadge>} />
+            <Input value={credential} disabled={!canEditEmployment} onChange={(e) => setCredential(e.target.value)} placeholder="BCBA, RBT, LBA" className="mt-1 h-9" />
           </div>
           <div id="employment-pronouns" className="scroll-mt-24">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Pronouns</p>
-              <StatusBadge tone="muted">Optional</StatusBadge>
-            </div>
-            <input
-              value={pronouns}
-              onChange={(e) => setPronouns(e.target.value)}
-              onBlur={saveContact}
-              placeholder="she/her, he/him, they/them"
-              type="text"
-              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary"
-            />
+            <EditableLabel label="Pronouns" source={<StatusBadge tone="muted">Optional</StatusBadge>} />
+            <Input value={pronouns} disabled={!canEditEmployment} onChange={(e) => setPronouns(e.target.value)} placeholder="she/her, he/him, they/them" className="mt-1 h-9" />
           </div>
           <div>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone Extension</p>
-              <StatusBadge tone={phoneRecord?.extension ? "ok" : "muted"}>Phone System</StatusBadge>
-            </div>
+            <EditableLabel label="Phone Extension" source={<StatusBadge tone={phoneRecord?.extension ? "ok" : "muted"}>Phone System</StatusBadge>} />
             <input
               value={phoneRecord?.extension ?? ""}
               onChange={(event) => saveEmployeeExtension(phoneRecord?.extension ?? "", {
@@ -379,7 +393,12 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
         </div>
-        {savingContact && <p className="mt-2 text-[11px] text-muted-foreground">Saving…</p>}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+          <p className="text-xs text-muted-foreground">{canEditEmployment ? "Update title, department, status, contact details, and badge readiness from one place." : "You can view employment details, but editing requires HR employee edit access."}</p>
+          <Button size="sm" onClick={saveEmployment} disabled={!canEditEmployment || savingEmployment}>
+            {savingEmployment ? "Saving…" : "Save employment"}
+          </Button>
+        </div>
       </Card>
       <Card>
         <div className="flex items-center justify-between gap-4">
