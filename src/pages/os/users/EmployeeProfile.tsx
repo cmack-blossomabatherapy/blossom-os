@@ -7,13 +7,19 @@ import {
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, ChevronRight, Eye, EyeOff, Copy, QrCode, UserCircle2,
+  RefreshCw, ChevronRight, Eye, EyeOff, Copy, QrCode, UserCircle2, Trash2,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { usePhoneSystem } from "@/contexts/PhoneSystemContext";
+import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type TabId =
   | "overview" | "employment" | "training" | "evaluations" | "devices"
@@ -416,7 +422,9 @@ function DevicesTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Devices assigned to this employee.</p>
-        <Button size="sm" variant="outline" className="text-xs"><Plus className="size-3.5" /> Assign device</Button>
+        <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success("Device assignment request opened", { description: "IT will reach out to coordinate shipment." })}>
+          <Plus className="size-3.5" /> Assign device
+        </Button>
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {[
@@ -468,7 +476,9 @@ function LoginsTab() {
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge tone={s.status}>{s.status === "ok" ? "Active" : "Pending"}</StatusBadge>
-                <Button variant="ghost" size="sm" className="text-xs"><RefreshCw className="size-3.5" /> Reset</Button>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => toast.success(`Reset link sent for ${s.name}`, { description: `Sent to ${s.user}` })}>
+                  <RefreshCw className="size-3.5" /> Reset
+                </Button>
               </div>
             </li>
           ))}
@@ -478,25 +488,83 @@ function LoginsTab() {
   );
 }
 
-function NfcTab({ m }: { m: DirectoryEmployee }) {
+type NfcState = { tagId: string | null; assignedAt: string | null; lastTestAt: string | null };
+
+function readNfcState(empId: string): NfcState {
+  if (typeof window === "undefined") return { tagId: null, assignedAt: null, lastTestAt: null };
+  try {
+    const raw = localStorage.getItem(`nfc:${empId}`);
+    if (!raw) return { tagId: null, assignedAt: null, lastTestAt: null };
+    return JSON.parse(raw) as NfcState;
+  } catch { return { tagId: null, assignedAt: null, lastTestAt: null }; }
+}
+function writeNfcState(empId: string, state: NfcState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`nfc:${empId}`, JSON.stringify(state));
+  window.dispatchEvent(new CustomEvent("nfc:changed", { detail: { empId } }));
+}
+
+function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
   const nfcUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/nfc/${m.id}`;
   const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<NfcState>(() => readNfcState(m.id));
+  const [tagInput, setTagInput] = useState("");
+  useEffect(() => { setState(readNfcState(m.id)); }, [m.id]);
+
+  const active = !!state.tagId;
+  const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString() : "Never";
+
+  function assign() {
+    const id = tagInput.trim() || `NFC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const next: NfcState = { tagId: id, assignedAt: new Date().toISOString(), lastTestAt: state.lastTestAt };
+    writeNfcState(m.id, next); setState(next); setTagInput(""); setOpenAssign(false);
+    toast.success("NFC tag assigned", { description: `Tag ${id} linked to ${m.name}` });
+  }
+  function testTap() {
+    const next: NfcState = { ...state, lastTestAt: new Date().toISOString() };
+    writeNfcState(m.id, next); setState(next);
+    window.open(`/nfc/${m.id}`, "_blank");
+    toast.success("Test tap recorded");
+  }
+  function revoke() {
+    writeNfcState(m.id, { tagId: null, assignedAt: null, lastTestAt: state.lastTestAt });
+    setState(readNfcState(m.id));
+    toast("NFC tag revoked", { description: "The tag will no longer resolve to this profile." });
+  }
+
   return (
     <div className="space-y-6">
+      <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign NFC tag</DialogTitle>
+            <DialogDescription>Enter the printed tag ID, or leave blank to auto-generate a code.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Tag ID</label>
+            <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. NFC-1A2B3C" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
+            <Button onClick={assign}><ScanLine className="size-3.5" /> Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">NFC status</p>
-          <p className="mt-1 text-lg font-semibold">Not assigned</p>
-          <StatusBadge tone="muted">Inactive</StatusBadge>
+          <p className="mt-1 text-lg font-semibold">{active ? "Active" : "Not assigned"}</p>
+          <StatusBadge tone={active ? "ok" : "muted"}>{active ? "Live" : "Inactive"}</StatusBadge>
         </Card>
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Tag ID</p>
-          <p className="mt-1 text-lg font-semibold">—</p>
-          <p className="text-xs text-muted-foreground">Assign a tag to begin</p>
+          <p className="mt-1 text-lg font-semibold">{state.tagId ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{state.assignedAt ? `Assigned ${fmt(state.assignedAt)}` : "Assign a tag to begin"}</p>
         </Card>
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Last test</p>
-          <p className="mt-1 text-lg font-semibold">Never</p>
+          <p className="mt-1 text-lg font-semibold">{state.lastTestAt ? fmt(state.lastTestAt) : "Never"}</p>
           <p className="text-xs text-muted-foreground">Tap to verify after assignment</p>
         </Card>
       </div>
@@ -512,21 +580,35 @@ function NfcTab({ m }: { m: DirectoryEmployee }) {
                 onClick={() => {
                   void navigator.clipboard?.writeText(nfcUrl);
                   setCopied(true);
+                  toast.success("Profile URL copied");
                   setTimeout(() => setCopied(false), 1500);
                 }}
               >
                 <Copy className="size-3.5" /> {copied ? "Copied" : "Copy"}
               </Button>
-              <Link to={`/nfc/${m.id}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <a href={`/nfc/${m.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                 Preview <ExternalLink className="size-3" />
-              </Link>
+              </a>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {!active ? (
+                <Button size="sm" onClick={() => setOpenAssign(true)}><ScanLine className="size-3.5" /> Assign tag</Button>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" onClick={testTap}><Sparkles className="size-3.5" /> Test tap</Button>
+                  <Button size="sm" variant="outline" onClick={() => setOpenAssign(true)}><RefreshCw className="size-3.5" /> Reassign tag</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revoke}><Trash2 className="size-3.5" /> Revoke</Button>
+                </>
+              )}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               When a parent taps the tag, they'll see a verified employee badge with photo, role, and a way to report a concern — never personal contact info.
             </p>
           </div>
           <div className="grid place-items-center rounded-2xl border border-border/70 bg-muted/30 p-6">
-            <QrCode className="size-24 text-foreground/80" strokeWidth={1.25} />
+            <div className="rounded-lg bg-white p-3">
+              <QRCodeSVG value={nfcUrl} size={128} level="M" includeMargin={false} />
+            </div>
             <p className="mt-2 text-[11px] text-muted-foreground">QR backup</p>
           </div>
         </div>
@@ -606,6 +688,7 @@ export default function EmployeeProfilePage() {
   const navigate = useNavigate();
   const { members, loading } = useEmployeeDirectory();
   const [tab, setTab] = useState<TabId>("overview");
+  const [openAssignNfc, setOpenAssignNfc] = useState(false);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
@@ -663,11 +746,26 @@ export default function EmployeeProfilePage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" className="text-xs"><Pencil className="size-3.5" /> Edit</Button>
-              <Button size="sm" variant="outline" className="text-xs"><GraduationCap className="size-3.5" /> Assign training</Button>
-              <Button size="sm" variant="outline" className="text-xs"><ClipboardCheck className="size-3.5" /> Assign evaluation</Button>
-              <Button size="sm" variant="outline" className="text-xs"><Smartphone className="size-3.5" /> Assign device</Button>
-              <Button size="sm" className="text-xs"><ScanLine className="size-3.5" /> Generate NFC</Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("Edit unavailable — no HR record linked")}>
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("training"); toast.success("Open training assignment", { description: "Pick modules from the Training tab." }); }}>
+                <GraduationCap className="size-3.5" /> Assign training
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("evaluations"); toast.success("Evaluation cycle ready", { description: "Configure reviewer in the Evaluations tab." }); }}>
+                <ClipboardCheck className="size-3.5" /> Assign evaluation
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs"
+                onClick={() => { setTab("devices"); toast.success("Device assignment opened"); }}>
+                <Smartphone className="size-3.5" /> Assign device
+              </Button>
+              <Button size="sm" className="text-xs"
+                onClick={() => { setTab("nfc"); setOpenAssignNfc(true); }}>
+                <ScanLine className="size-3.5" /> Generate NFC
+              </Button>
             </div>
           </div>
         </Card>
@@ -701,7 +799,7 @@ export default function EmployeeProfilePage() {
           {tab === "evaluations" && <EvaluationsTab />}
           {tab === "devices" && <DevicesTab />}
           {tab === "logins" && <LoginsTab />}
-          {tab === "nfc" && <NfcTab m={member} />}
+          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} />}
           {tab === "permissions" && <PermissionsTab m={member} />}
           {tab === "activity" && <ActivityTab />}
         </div>
