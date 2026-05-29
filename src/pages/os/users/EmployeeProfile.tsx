@@ -1639,7 +1639,16 @@ export default function EmployeeProfilePage() {
           {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
           {tab === "devices" && <DevicesTab m={member} openAssign={openAssignDevice} setOpenAssign={setOpenAssignDevice} />}
           {tab === "logins" && <LoginsTab m={member} />}
-          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} />}
+          {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} jumpToEmployment={(fieldId) => {
+            setTab("employment");
+            setTimeout(() => {
+              const el = document.getElementById(fieldId ?? "employment-email");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.querySelector("input")?.focus();
+              }
+            }, 60);
+          }} />}
           {tab === "permissions" && <PermissionsTab m={member} />}
           {tab === "activity" && <ActivityTab m={member} />}
         </div>
