@@ -693,6 +693,7 @@ const App = () => (
                   <Route path="/announcements" element={<AnnouncementsFeed />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
+                  <Route path="/account/settings" element={<AccountSettings />} />
                   <Route path="/admin" element={<AdminHub />} />
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
