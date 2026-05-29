@@ -183,7 +183,6 @@ export default function OrgChart() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"hierarchy" | "department" | "state">("hierarchy");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [leadershipOnly, setLeadershipOnly] = useState(false);
@@ -228,12 +227,6 @@ export default function OrgChart() {
     tree.roots.forEach((r) => visit(r, []));
     return { matched, ancestors };
   }, [search, stateFilter, leadershipOnly, tree]);
-
-  const toggle = (id: string) => setCollapsed((prev) => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
 
   const counts = useMemo(() => {
     const byLevel: Record<Level, number> = { ceo: 0, c_suite: 0, director: 0, manager: 0, lead: 0, ic: 0 };
