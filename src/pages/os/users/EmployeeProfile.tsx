@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, ShieldCheck, Pencil, GraduationCap, ClipboardCheck, Smartphone,
   KeyRound, ScanLine, Mail, Phone, Building2, MapPin, CalendarDays, Briefcase,
   CheckCircle2, Clock, AlertTriangle, Download, ExternalLink, Plus, Lock,
   Sparkles, History, BadgeCheck, MonitorSmartphone, Wifi, Tablet, Laptop,
-  RefreshCw, ChevronRight, Eye, EyeOff, Copy, QrCode, UserCircle2, Trash2,
+  RefreshCw, Copy, EyeOff, UserCircle2, Trash2,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { cn } from "@/lib/utils";
@@ -20,6 +19,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+// ============================================================================
+// SHARED PRIMITIVES
+// ============================================================================
 
 type TabId =
   | "overview" | "employment" | "training" | "evaluations" | "devices"
@@ -84,7 +90,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function Empty({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint?: string }) {
+function Empty({ icon: Icon, title, hint, action }: { icon: React.ElementType; title: string; hint?: string; action?: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-10 text-center">
       <div className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-muted">
@@ -92,80 +98,28 @@ function Empty({ icon: Icon, title, hint }: { icon: React.ElementType; title: st
       </div>
       <p className="text-sm font-medium text-foreground">{title}</p>
       {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
 }
 
-// ============================================================================
-// TABS
-// ============================================================================
-
-function OverviewTab({ m }: { m: DirectoryEmployee }) {
-  const setup = [
-    { label: "Employment", state: "ok" as const, hint: "Synced from Viventium" },
-    { label: "Training Academy", state: "warn" as const, hint: "62% complete" },
-    { label: "Evaluations", state: "ok" as const, hint: "Current cycle on track" },
-    { label: "Devices", state: "warn" as const, hint: "No device assigned" },
-    { label: "Logins", state: "ok" as const, hint: "5 systems linked" },
-    { label: "Permissions", state: "ok" as const, hint: "Role-based" },
-    { label: "NFC", state: "muted" as const, hint: "Not assigned" },
-  ];
-  const snapshot = [
-    { icon: GraduationCap, label: "Training Progress", value: "62%", tone: "warn" as const, sub: "8 of 13 modules" },
-    { icon: ClipboardCheck, label: "Evaluation Status", value: "Current", tone: "ok" as const, sub: "Next: Mar 14" },
-    { icon: MonitorSmartphone, label: "Devices Assigned", value: "0", tone: "muted" as const, sub: "Request a device" },
-    { icon: Clock, label: "Last Login", value: "2h ago", tone: "ok" as const, sub: "Blossom OS · Web" },
-    { icon: ScanLine, label: "NFC Status", value: "Inactive", tone: "muted" as const, sub: "Not yet assigned" },
-    { icon: ShieldCheck, label: "Permissions", value: "Standard", tone: "ok" as const, sub: m.leadershipLevel ?? "individual" },
-  ];
-  return (
-    <div className="space-y-10">
-      {/* Snapshot */}
-      <section>
-        <SectionTitle>Operational snapshot</SectionTitle>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {snapshot.map((s) => (
-            <Card key={s.label} className="p-4">
-              <div className="mb-2 grid size-8 place-items-center rounded-full bg-muted">
-                <s.icon className="size-4 text-muted-foreground" />
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</p>
-              <p className="mt-1 text-base font-semibold text-foreground">{s.value}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{s.sub}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Setup checklist */}
-      <section>
-        <SectionTitle hint="Each step represents a connected system">Employee setup</SectionTitle>
-        <Card className="p-0">
-          <ul className="divide-y divide-border/60">
-            {setup.map((s) => (
-              <li key={s.label} className="flex items-center justify-between gap-4 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  {s.state === "ok"
-                    ? <CheckCircle2 className="size-4 text-emerald-600" />
-                    : s.state === "warn"
-                    ? <AlertTriangle className="size-4 text-amber-600" />
-                    : <Clock className="size-4 text-muted-foreground" />}
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{s.label}</p>
-                    <p className="text-xs text-muted-foreground">{s.hint}</p>
-                  </div>
-                </div>
-                <StatusBadge tone={s.state}>
-                  {s.state === "ok" ? "Complete" : s.state === "warn" ? "In progress" : "Needs attention"}
-                </StatusBadge>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </section>
-    </div>
-  );
+function fmtDate(iso?: string | null, opts?: Intl.DateTimeFormatOptions) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, opts ?? { month: "short", day: "numeric", year: "numeric" });
 }
+function fmtRel(iso?: string | null) {
+  if (!iso) return "Never";
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.round(ms / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24); if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+// ============================================================================
+// EMPLOYMENT
+// ============================================================================
 
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
@@ -207,8 +161,6 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
       {owned && connected ? "Viventium" : "Manual"}
     </StatusBadge>
   );
-  const fmtDate = (d?: string | null) =>
-    d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "—";
   const statusLabel = row?.status ? row.status.replace(/_/g, " ") : "Active";
   const statusTone: "ok" | "warn" | "crit" | "muted" =
     row?.status === "active" ? "ok"
@@ -296,240 +248,562 @@ function FieldWithSource({ label, value, source }: { label: string; value: React
   );
 }
 
-function TrainingTab({ m }: { m: DirectoryEmployee }) {
-  const journey = `${m.title?.split(" ")[0] ?? "Employee"} Journey`;
-  const modules = [
-    { name: "Welcome to Blossom", state: "ok" as const },
-    { name: "Our Mission & Values", state: "ok" as const },
-    { name: "HIPAA Foundations", state: "ok" as const },
-    { name: "Role-specific Onboarding", state: "warn" as const },
-    { name: "Field Readiness", state: "warn" as const },
-    { name: "Graduation", state: "muted" as const },
-  ];
+// ============================================================================
+// TRAINING (real: employee_trainings × training_courses)
+// ============================================================================
+
+type TrainingRow = {
+  id: string; status: string; assigned_at: string; due_date: string | null;
+  completed_at: string | null; score: number | null; certificate_url: string | null;
+  course: { id: string; title: string; category: string | null; duration_minutes: number | null } | null;
+};
+
+function TrainingTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<TrainingRow[]>([]);
+  const [courses, setCourses] = useState<{ id: string; title: string }[]>([]);
+  const [pick, setPick] = useState<string>("");
+  const [due, setDue] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!m.uuid) return;
+    const { data } = await supabase
+      .from("employee_trainings")
+      .select("id,status,assigned_at,due_date,completed_at,score,certificate_url,course:training_courses(id,title,category,duration_minutes)")
+      .eq("employee_id", m.uuid)
+      .order("assigned_at", { ascending: false });
+    setRows((data ?? []) as any);
+  }, [m.uuid]);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (!openAssign) return;
+    void supabase.from("training_courses").select("id,title").eq("status", "active").order("title")
+      .then(({ data }) => setCourses((data ?? []) as any));
+  }, [openAssign]);
+
+  const total = rows.length;
+  const completed = rows.filter((r) => r.status === "completed").length;
+  const pct = total ? Math.round((completed / total) * 100) : 0;
+
+  async function assign() {
+    if (!m.uuid || !pick) return;
+    setBusy(true);
+    const { error } = await supabase.from("employee_trainings").insert({
+      employee_id: m.uuid, course_id: pick, due_date: due || null,
+    });
+    setBusy(false);
+    if (error) return toast.error("Could not assign training", { description: error.message });
+    toast.success("Training assigned");
+    setOpenAssign(false); setPick(""); setDue(""); void load();
+  }
+  async function markComplete(id: string) {
+    const { error } = await supabase.from("employee_trainings")
+      .update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Marked complete"); void load();
+  }
+
   return (
     <div className="space-y-6">
+      <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign training</DialogTitle>
+            <DialogDescription>Pick a course and optional due date for {m.name}.</DialogDescription>
+          </DialogHeader>
+          {courses.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+              No active courses yet. Create one in <Link to="/hr/training-center" className="text-primary underline">Training Management</Link>.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Course</label>
+                <Select value={pick} onValueChange={setPick}>
+                  <SelectTrigger><SelectValue placeholder="Select a course" /></SelectTrigger>
+                  <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Due date (optional)</label>
+                <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
+            <Button onClick={assign} disabled={!pick || busy}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Assigned journey</p>
-            <p className="mt-1 text-lg font-semibold tracking-tight">{journey}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Started Feb 1 · Last activity Yesterday</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Assigned training</p>
+            <p className="mt-1 text-lg font-semibold tracking-tight">{m.title} journey</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {total === 0 ? "No courses assigned yet." : `${completed} of ${total} complete`}
+            </p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-semibold tracking-tight">62%</p>
-            <p className="text-[11px] text-muted-foreground">8 of 13 modules</p>
+            <p className="text-3xl font-semibold tracking-tight">{pct}%</p>
+            <p className="text-[11px] text-muted-foreground">Overall completion</p>
           </div>
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-primary" style={{ width: "62%" }} />
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Button size="sm" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Assign training</Button>
+          <Button size="sm" variant="outline" onClick={() => navigate("/hr/training-center")}>Open Training Management</Button>
         </div>
       </Card>
 
-      <section>
-        <SectionTitle>Modules</SectionTitle>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((mod) => (
-            <Card key={mod.name} className="p-5">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">{mod.name}</p>
-                <StatusBadge tone={mod.state}>
-                  {mod.state === "ok" ? "Complete" : mod.state === "warn" ? "In progress" : "Not started"}
-                </StatusBadge>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn("h-full rounded-full",
-                    mod.state === "ok" ? "bg-emerald-500 w-full"
-                    : mod.state === "warn" ? "bg-amber-500 w-1/2"
-                    : "bg-muted-foreground/30 w-0")}
-                />
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <SectionTitle>Certificates</SectionTitle>
+      {rows.length === 0 ? (
+        <Empty icon={GraduationCap} title="No training assigned" hint="Pick from the active catalog to start this employee's journey."
+               action={<Button size="sm" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Assign first course</Button>} />
+      ) : (
         <Card className="p-0">
           <ul className="divide-y divide-border/60">
-            {[{ name: "HIPAA Foundations", date: "Feb 12, 2026" }, { name: "Safety & Crisis", date: "Feb 18, 2026" }].map((c) => (
-              <li key={c.name} className="flex items-center justify-between gap-4 px-6 py-4">
-                <div>
-                  <p className="text-sm font-medium">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">Completed {c.date}</p>
-                </div>
-                <Button variant="ghost" size="sm" className="text-xs"><Download className="size-3.5" /> Download</Button>
-              </li>
-            ))}
+            {rows.map((r) => {
+              const tone: "ok" | "warn" | "muted" = r.status === "completed" ? "ok"
+                : r.status === "in_progress" ? "warn" : "muted";
+              const label = r.status.replace(/_/g, " ");
+              return (
+                <li key={r.id} className="flex items-center justify-between gap-4 px-6 py-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{r.course?.title ?? "—"}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Assigned {fmtDate(r.assigned_at)}
+                      {r.due_date && ` · Due ${fmtDate(r.due_date)}`}
+                      {r.completed_at && ` · Completed ${fmtDate(r.completed_at)}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge tone={tone}>{label}</StatusBadge>
+                    {r.certificate_url && (
+                      <a href={r.certificate_url} target="_blank" rel="noreferrer"
+                         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                        <Download className="size-3.5" /> Cert
+                      </a>
+                    )}
+                    {r.status !== "completed" && (
+                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => markComplete(r.id)}>
+                        <CheckCircle2 className="size-3.5" /> Mark complete
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </Card>
-      </section>
+      )}
     </div>
   );
 }
 
-function EvaluationsTab() {
+// ============================================================================
+// EVALUATIONS (real: employee_reviews)
+// ============================================================================
+
+type ReviewRow = {
+  id: string; review_type: string; status: string; overall_rating: string | null;
+  period_start: string | null; period_end: string | null; due_date: string | null;
+  scheduled_for: string | null; reviewer_name: string | null; created_at: string;
+};
+
+function EvaluationsTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
+  const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [type, setType] = useState<string>("annual");
+  const [dueDate, setDueDate] = useState<string>("");
+  const [reviewer, setReviewer] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!m.uuid) return;
+    const { data } = await supabase.from("employee_reviews")
+      .select("id,review_type,status,overall_rating,period_start,period_end,due_date,scheduled_for,reviewer_name,created_at")
+      .eq("employee_id", m.uuid).order("created_at", { ascending: false });
+    setRows((data ?? []) as any);
+  }, [m.uuid]);
+  useEffect(() => { void load(); }, [load]);
+
+  async function create() {
+    if (!m.uuid) return;
+    setBusy(true);
+    const { error } = await supabase.from("employee_reviews").insert({
+      employee_id: m.uuid,
+      review_type: type as any,
+      status: "scheduled" as any,
+      due_date: dueDate || null,
+      reviewer_name: reviewer || null,
+    });
+    setBusy(false);
+    if (error) return toast.error("Could not create review", { description: error.message });
+    toast.success("Evaluation scheduled");
+    setOpenAssign(false); setReviewer(""); setDueDate(""); void load();
+  }
+
+  const current = rows[0];
+  const history = rows.slice(1);
+
   return (
     <div className="space-y-6">
+      <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule evaluation</DialogTitle>
+            <DialogDescription>Start a review cycle for {m.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Type</label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                  <SelectItem value="probation">Probation</SelectItem>
+                  <SelectItem value="performance_improvement">Performance improvement</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Reviewer</label>
+              <Input value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder="Reviewer name" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Due date</label>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
+            <Button onClick={create} disabled={busy}>Schedule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Current cycle</p>
-          <p className="mt-1 text-lg font-semibold">Q1 2026</p>
-          <StatusBadge tone="warn"><Clock className="size-3" />In progress</StatusBadge>
+          <p className="mt-1 text-lg font-semibold">{current?.review_type ? current.review_type.replace(/_/g, " ") : "None"}</p>
+          {current ? <StatusBadge tone={current.status === "completed" ? "ok" : "warn"}>{current.status}</StatusBadge>
+                   : <StatusBadge tone="muted">No active review</StatusBadge>}
         </Card>
         <Card>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Self evaluation</p>
-          <p className="mt-1 text-lg font-semibold">Submitted</p>
-          <p className="text-xs text-muted-foreground">Feb 22, 2026</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Reviewer</p>
+          <p className="mt-1 text-lg font-semibold">{current?.reviewer_name ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{current?.due_date ? `Due ${fmtDate(current.due_date)}` : "Not scheduled"}</p>
         </Card>
         <Card>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Leadership evaluation</p>
-          <p className="mt-1 text-lg font-semibold">Awaiting reviewer</p>
-          <p className="text-xs text-muted-foreground">Due Mar 14, 2026</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Last rating</p>
+          <p className="mt-1 text-lg font-semibold">{rows.find((r) => r.overall_rating)?.overall_rating ?? "—"}</p>
+          <Button size="sm" className="mt-2" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Schedule</Button>
         </Card>
       </div>
 
-      <section>
-        <SectionTitle>Evaluation history</SectionTitle>
+      {history.length === 0 && !current ? (
+        <Empty icon={ClipboardCheck} title="No evaluations yet"
+               hint="Schedule the first cycle to begin tracking ratings and goals."
+               action={<Button size="sm" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Schedule evaluation</Button>} />
+      ) : (
+        <section>
+          <SectionTitle>Evaluation history</SectionTitle>
+          <Card className="p-0">
+            <ul className="divide-y divide-border/60">
+              {rows.map((r) => (
+                <li key={r.id} className="grid grid-cols-5 items-center gap-3 px-6 py-4 text-sm">
+                  <span className="font-medium capitalize">{r.review_type.replace(/_/g, " ")}</span>
+                  <span className="text-muted-foreground">{r.reviewer_name ?? "—"}</span>
+                  <span><StatusBadge tone={r.status === "completed" ? "ok" : r.status === "draft" ? "muted" : "warn"}>{r.status}</StatusBadge></span>
+                  <span>{r.overall_rating ?? "—"}</span>
+                  <span className="text-right text-xs text-muted-foreground">{fmtDate(r.due_date ?? r.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// DEVICES (real: employee_devices)
+// ============================================================================
+
+type DeviceRow = {
+  id: string; device_type: string; name: string; serial: string | null;
+  status: string; assigned_at: string; returned_at: string | null; notes: string | null;
+};
+
+function deviceIcon(type: string) {
+  if (type === "tablet") return Tablet;
+  if (type === "hotspot") return Wifi;
+  if (type === "laptop") return Laptop;
+  if (type === "phone") return Smartphone;
+  return MonitorSmartphone;
+}
+
+function DevicesTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
+  const [rows, setRows] = useState<DeviceRow[]>([]);
+  const [type, setType] = useState("tablet");
+  const [name, setName] = useState("");
+  const [serial, setSerial] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!m.uuid) return;
+    const { data } = await supabase.from("employee_devices")
+      .select("id,device_type,name,serial,status,assigned_at,returned_at,notes")
+      .eq("employee_id", m.uuid).order("assigned_at", { ascending: false });
+    setRows((data ?? []) as any);
+  }, [m.uuid]);
+  useEffect(() => { void load(); }, [load]);
+
+  async function assign() {
+    if (!m.uuid || !name.trim()) return;
+    setBusy(true);
+    const { error } = await supabase.from("employee_devices").insert({
+      employee_id: m.uuid, device_type: type, name: name.trim(), serial: serial.trim() || null,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Device assigned");
+    setOpenAssign(false); setName(""); setSerial(""); void load();
+  }
+  async function markReturned(id: string) {
+    const { error } = await supabase.from("employee_devices").update({
+      status: "returned", returned_at: new Date().toISOString(),
+    }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Marked returned"); void load();
+  }
+  async function remove(id: string) {
+    const { error } = await supabase.from("employee_devices").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast("Device record removed"); void load();
+  }
+
+  return (
+    <div className="space-y-6">
+      <Dialog open={openAssign} onOpenChange={setOpenAssign}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign device</DialogTitle>
+            <DialogDescription>Track a tablet, hotspot, or other asset issued to {m.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Type</label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tablet">Tablet</SelectItem>
+                  <SelectItem value="hotspot">Hotspot</SelectItem>
+                  <SelectItem value="laptop">Laptop</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Device name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. iPad Air 11"`} />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Serial number (optional)</label>
+              <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="e.g. FK2X9P3Q1A" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
+            <Button onClick={assign} disabled={!name.trim() || busy}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{rows.length} {rows.length === 1 ? "device" : "devices"} on file.</p>
+        <Button size="sm" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Assign device</Button>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty icon={MonitorSmartphone} title="No devices assigned" hint="Track tablets, hotspots, and laptops issued to this employee."
+               action={<Button size="sm" onClick={() => setOpenAssign(true)}><Plus className="size-3.5" /> Assign first device</Button>} />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {rows.map((d) => {
+            const Icon = deviceIcon(d.device_type);
+            const tone: "ok" | "warn" | "muted" =
+              d.status === "assigned" ? "ok" : d.status === "in_transit" ? "warn" : "muted";
+            return (
+              <Card key={d.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="grid size-10 place-items-center rounded-xl bg-muted">
+                      <Icon className="size-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{d.name}</p>
+                      <p className="text-[11px] text-muted-foreground capitalize">
+                        {d.device_type}{d.serial && ` · SN ${d.serial}`}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusBadge tone={tone}>{d.status.replace(/_/g, " ")}</StatusBadge>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Assigned {fmtDate(d.assigned_at)}
+                  {d.returned_at && ` · Returned ${fmtDate(d.returned_at)}`}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  {d.status !== "returned" && (
+                    <Button size="sm" variant="outline" onClick={() => markReturned(d.id)}>
+                      <CheckCircle2 className="size-3.5" /> Mark returned
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => remove(d.id)}>
+                    <Trash2 className="size-3.5" /> Remove
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// LOGINS (real: employee_logins) — names + reset-required flag only; passwords never read
+// ============================================================================
+
+type LoginRow = {
+  id: string; system_name: string; system_category: string | null; username: string | null;
+  login_url: string | null; is_active: boolean; password_reset_required: boolean; last_updated_at: string;
+};
+
+function LoginsTab({ m }: { m: DirectoryEmployee }) {
+  const [rows, setRows] = useState<LoginRow[]>([]);
+  const navigate = useNavigate();
+
+  const load = useCallback(async () => {
+    if (!m.uuid) return;
+    // user_id on employee_logins is auth user id, not employee id; employees table has user_id
+    const { data: emp } = await supabase.from("employees").select("user_id").eq("id", m.uuid).maybeSingle();
+    if (!emp?.user_id) { setRows([]); return; }
+    const { data } = await supabase.from("employee_logins")
+      .select("id,system_name,system_category,username,login_url,is_active,password_reset_required,last_updated_at")
+      .eq("user_id", emp.user_id).order("system_name");
+    setRows((data ?? []) as any);
+  }, [m.uuid]);
+  useEffect(() => { void load(); }, [load]);
+
+  async function requestReset(id: string, name: string) {
+    const { error } = await supabase.from("employee_logins")
+      .update({ password_reset_required: true }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Reset flagged for ${name}`, { description: "User will be prompted on next login." });
+    void load();
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+        <Lock className="size-3.5" /> Passwords are never displayed. Manage credentials in the Login Vault.
+      </div>
+      {rows.length === 0 ? (
+        <Empty icon={KeyRound} title="No system logins on file"
+               hint="Add credentials in the Login Vault to centrally manage access."
+               action={<Button size="sm" onClick={() => navigate("/admin/login-vault")}>Open Login Vault</Button>} />
+      ) : (
         <Card className="p-0">
           <ul className="divide-y divide-border/60">
-            {[
-              { cycle: "Q4 2025", reviewer: "C. Kaufman", score: "4.6 / 5", date: "Dec 18, 2025" },
-              { cycle: "Q3 2025", reviewer: "C. Kaufman", score: "4.4 / 5", date: "Sep 22, 2025" },
-            ].map((e) => (
-              <li key={e.cycle} className="grid grid-cols-4 items-center gap-3 px-6 py-4 text-sm">
-                <span className="font-medium">{e.cycle}</span>
-                <span className="text-muted-foreground">{e.reviewer}</span>
-                <span>{e.score}</span>
-                <span className="text-right text-xs text-muted-foreground">{e.date}</span>
+            {rows.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{s.system_name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {s.username ?? "—"} · updated {fmtRel(s.last_updated_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge tone={!s.is_active ? "muted" : s.password_reset_required ? "warn" : "ok"}>
+                    {!s.is_active ? "Inactive" : s.password_reset_required ? "Reset needed" : "Active"}
+                  </StatusBadge>
+                  {s.login_url && (
+                    <a href={s.login_url} target="_blank" rel="noreferrer"
+                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                      Open <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => requestReset(s.id, s.system_name)}>
+                    <RefreshCw className="size-3.5" /> Reset
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
         </Card>
-      </section>
-
-      <section>
-        <SectionTitle>Coaching plans</SectionTitle>
-        <Empty icon={Sparkles} title="No active coaching plans" hint="Assign one from the leadership evaluation review." />
-      </section>
+      )}
     </div>
   );
 }
 
-function DevicesTab() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Devices assigned to this employee.</p>
-        <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success("Device assignment request opened", { description: "IT will reach out to coordinate shipment." })}>
-          <Plus className="size-3.5" /> Assign device
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {[
-          { icon: Tablet, type: "Tablet", name: "iPad Air 11\"", serial: "FK2X9P3Q1A", status: "ok" as const, statusLabel: "Assigned", date: "Jan 14, 2026" },
-          { icon: Wifi, type: "Hotspot", name: "T-Mobile 5G", serial: "TMO-882-441", status: "warn" as const, statusLabel: "In transit", date: "Feb 26, 2026" },
-        ].map((d) => (
-          <Card key={d.serial}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="grid size-10 place-items-center rounded-xl bg-muted">
-                  <d.icon className="size-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{d.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{d.type} · SN {d.serial}</p>
-                </div>
-              </div>
-              <StatusBadge tone={d.status}>{d.statusLabel}</StatusBadge>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">Assigned {d.date}</p>
-          </Card>
-        ))}
-      </div>
-      <Empty icon={MonitorSmartphone} title="Device inventory module connects soon" hint="Full asset tracking, shipments, and returns will live here." />
-    </div>
-  );
-}
+// ============================================================================
+// NFC (real: employee_nfc_tags)
+// ============================================================================
 
-function LoginsTab() {
-  const systems = [
-    { name: "Microsoft 365", user: "first.last@blossomaba.com", assigned: "Feb 1, 2026", status: "ok" as const },
-    { name: "Blossom OS", user: "first.last@blossomaba.com", assigned: "Feb 1, 2026", status: "ok" as const },
-    { name: "Viventium", user: "VIV-44821", assigned: "Feb 1, 2026", status: "ok" as const },
-    { name: "CentralReach", user: "flast", assigned: "Feb 3, 2026", status: "ok" as const },
-    { name: "Jivetel", user: "ext. 412", assigned: "Feb 6, 2026", status: "warn" as const },
-  ];
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-        <Lock className="size-3.5" /> Passwords are never displayed. Use the reset workflow to issue new credentials.
-      </div>
-      <Card className="p-0">
-        <ul className="divide-y divide-border/60">
-          {systems.map((s) => (
-            <li key={s.name} className="flex items-center justify-between gap-4 px-6 py-4">
-              <div>
-                <p className="text-sm font-semibold">{s.name}</p>
-                <p className="text-[11px] text-muted-foreground">{s.user} · assigned {s.assigned}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <StatusBadge tone={s.status}>{s.status === "ok" ? "Active" : "Pending"}</StatusBadge>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => toast.success(`Reset link sent for ${s.name}`, { description: `Sent to ${s.user}` })}>
-                  <RefreshCw className="size-3.5" /> Reset
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Card>
-    </div>
-  );
-}
-
-type NfcState = { tagId: string | null; assignedAt: string | null; lastTestAt: string | null };
-
-function readNfcState(empId: string): NfcState {
-  if (typeof window === "undefined") return { tagId: null, assignedAt: null, lastTestAt: null };
-  try {
-    const raw = localStorage.getItem(`nfc:${empId}`);
-    if (!raw) return { tagId: null, assignedAt: null, lastTestAt: null };
-    return JSON.parse(raw) as NfcState;
-  } catch { return { tagId: null, assignedAt: null, lastTestAt: null }; }
-}
-function writeNfcState(empId: string, state: NfcState) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(`nfc:${empId}`, JSON.stringify(state));
-  window.dispatchEvent(new CustomEvent("nfc:changed", { detail: { empId } }));
-}
+type NfcRow = { id: string; tag_code: string; is_active: boolean; assigned_at: string; last_test_at: string | null; revoked_at: string | null };
 
 function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAssign: boolean; setOpenAssign: (v: boolean) => void }) {
-  const nfcUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/nfc/${m.id}`;
+  const nfcUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/nfc/${m.uuid ?? m.id}`;
   const [copied, setCopied] = useState(false);
-  const [state, setState] = useState<NfcState>(() => readNfcState(m.id));
+  const [active, setActive] = useState<NfcRow | null>(null);
   const [tagInput, setTagInput] = useState("");
-  useEffect(() => { setState(readNfcState(m.id)); }, [m.id]);
+  const [busy, setBusy] = useState(false);
 
-  const active = !!state.tagId;
-  const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString() : "Never";
+  const load = useCallback(async () => {
+    if (!m.uuid) return;
+    const { data } = await supabase.from("employee_nfc_tags")
+      .select("id,tag_code,is_active,assigned_at,last_test_at,revoked_at")
+      .eq("employee_id", m.uuid).eq("is_active", true)
+      .order("assigned_at", { ascending: false }).limit(1).maybeSingle();
+    setActive((data as NfcRow | null) ?? null);
+  }, [m.uuid]);
+  useEffect(() => { void load(); }, [load]);
 
-  function assign() {
-    const id = tagInput.trim() || `NFC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const next: NfcState = { tagId: id, assignedAt: new Date().toISOString(), lastTestAt: state.lastTestAt };
-    writeNfcState(m.id, next); setState(next); setTagInput(""); setOpenAssign(false);
-    toast.success("NFC tag assigned", { description: `Tag ${id} linked to ${m.name}` });
+  async function assign() {
+    if (!m.uuid) return;
+    const code = (tagInput.trim() || `NFC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`);
+    setBusy(true);
+    // Deactivate prior active tag(s)
+    await supabase.from("employee_nfc_tags").update({ is_active: false, revoked_at: new Date().toISOString() })
+      .eq("employee_id", m.uuid).eq("is_active", true);
+    const { error } = await supabase.from("employee_nfc_tags").insert({
+      employee_id: m.uuid, tag_code: code, is_active: true,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("NFC tag assigned", { description: `Tag ${code} linked to ${m.name}` });
+    setOpenAssign(false); setTagInput(""); void load();
   }
-  function testTap() {
-    const next: NfcState = { ...state, lastTestAt: new Date().toISOString() };
-    writeNfcState(m.id, next); setState(next);
-    window.open(`/nfc/${m.id}`, "_blank");
-    toast.success("Test tap recorded");
+  async function testTap() {
+    if (!active) return;
+    await supabase.from("employee_nfc_tags").update({ last_test_at: new Date().toISOString() }).eq("id", active.id);
+    window.open(nfcUrl, "_blank");
+    toast.success("Test tap recorded"); void load();
   }
-  function revoke() {
-    writeNfcState(m.id, { tagId: null, assignedAt: null, lastTestAt: state.lastTestAt });
-    setState(readNfcState(m.id));
-    toast("NFC tag revoked", { description: "The tag will no longer resolve to this profile." });
+  async function revoke() {
+    if (!active) return;
+    await supabase.from("employee_nfc_tags").update({ is_active: false, revoked_at: new Date().toISOString() }).eq("id", active.id);
+    toast("Tag revoked"); void load();
   }
 
   return (
@@ -538,15 +812,15 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign NFC tag</DialogTitle>
-            <DialogDescription>Enter the printed tag ID, or leave blank to auto-generate a code.</DialogDescription>
+            <DialogDescription>Enter the printed tag ID or leave blank to auto-generate.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Tag ID</label>
+            <label className="text-xs font-medium text-muted-foreground">Tag code</label>
             <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. NFC-1A2B3C" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAssign(false)}>Cancel</Button>
-            <Button onClick={assign}><ScanLine className="size-3.5" /> Assign</Button>
+            <Button onClick={assign} disabled={busy}><ScanLine className="size-3.5" /> Assign</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -558,13 +832,13 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
           <StatusBadge tone={active ? "ok" : "muted"}>{active ? "Live" : "Inactive"}</StatusBadge>
         </Card>
         <Card>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Tag ID</p>
-          <p className="mt-1 text-lg font-semibold">{state.tagId ?? "—"}</p>
-          <p className="text-xs text-muted-foreground">{state.assignedAt ? `Assigned ${fmt(state.assignedAt)}` : "Assign a tag to begin"}</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Tag code</p>
+          <p className="mt-1 text-lg font-semibold">{active?.tag_code ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{active?.assigned_at ? `Assigned ${fmtDate(active.assigned_at)}` : "Assign a tag to begin"}</p>
         </Card>
         <Card>
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Last test</p>
-          <p className="mt-1 text-lg font-semibold">{state.lastTestAt ? fmt(state.lastTestAt) : "Never"}</p>
+          <p className="mt-1 text-lg font-semibold">{active?.last_test_at ? fmtRel(active.last_test_at) : "Never"}</p>
           <p className="text-xs text-muted-foreground">Tap to verify after assignment</p>
         </Card>
       </div>
@@ -575,18 +849,16 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
             <SectionTitle hint="Branded, parent-safe view">Profile URL</SectionTitle>
             <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-xs">
               <span className="truncate text-muted-foreground">{nfcUrl}</span>
-              <Button
-                variant="ghost" size="sm" className="ml-auto text-xs"
+              <Button variant="ghost" size="sm" className="ml-auto text-xs"
                 onClick={() => {
                   void navigator.clipboard?.writeText(nfcUrl);
-                  setCopied(true);
-                  toast.success("Profile URL copied");
+                  setCopied(true); toast.success("Profile URL copied");
                   setTimeout(() => setCopied(false), 1500);
-                }}
-              >
+                }}>
                 <Copy className="size-3.5" /> {copied ? "Copied" : "Copy"}
               </Button>
-              <a href={`/nfc/${m.id}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <a href={nfcUrl} target="_blank" rel="noreferrer"
+                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                 Preview <ExternalLink className="size-3" />
               </a>
             </div>
@@ -596,8 +868,10 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
               ) : (
                 <>
                   <Button size="sm" variant="outline" onClick={testTap}><Sparkles className="size-3.5" /> Test tap</Button>
-                  <Button size="sm" variant="outline" onClick={() => setOpenAssign(true)}><RefreshCw className="size-3.5" /> Reassign tag</Button>
-                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revoke}><Trash2 className="size-3.5" /> Revoke</Button>
+                  <Button size="sm" variant="outline" onClick={() => setOpenAssign(true)}><RefreshCw className="size-3.5" /> Reassign</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={revoke}>
+                    <Trash2 className="size-3.5" /> Revoke
+                  </Button>
                 </>
               )}
             </div>
@@ -619,17 +893,17 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
           <SectionTitle>Parent tap experience</SectionTitle>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Branded Blossom verification</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Photo, name, role, supervisor</li>
+            <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Photo, name, role, department</li>
             <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-600" /> Report concern · Emergency contact</li>
             <li className="flex items-center gap-2"><EyeOff className="size-3.5 text-muted-foreground" /> Personal contact info hidden</li>
           </ul>
         </Card>
         <Card>
-          <SectionTitle>Employee tap experience</SectionTitle>
+          <SectionTitle>Tag lifecycle</SectionTitle>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Quick links to My Profile, Training, Evaluations</li>
-            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> My devices and schedule</li>
-            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> CentralReach, Viventium, Phone System</li>
+            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Assign once — tag follows employee</li>
+            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Revoke instantly on offboarding</li>
+            <li className="flex items-center gap-2"><Sparkles className="size-3.5 text-primary" /> Reassign printed tags between employees</li>
           </ul>
         </Card>
       </div>
@@ -637,50 +911,159 @@ function NfcTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; openAs
   );
 }
 
+// ============================================================================
+// PERMISSIONS
+// ============================================================================
+
 function PermissionsTab({ m }: { m: DirectoryEmployee }) {
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
       <Card>
         <div className="grid grid-cols-2 gap-x-8 gap-y-5 md:grid-cols-3">
           <Field label="Role" value={m.title} />
-          <Field label="Permission group" value="Standard" />
           <Field label="Leadership level" value={m.leadershipLevel ?? "individual"} />
+          <Field label="Department" value={m.departmentName ?? "—"} />
           <Field label="State access" value={(m.states ?? []).join(", ") || "—"} />
           <Field label="Module access" value="Role-derived" />
-          <Field label="Administrative access" value="None" />
+          <Field label="Administrative access" value={m.leadershipLevel === "executive" ? "Yes" : "None"} />
         </div>
       </Card>
-      <Empty icon={ShieldCheck} title="Granular controls open in the Permissions module" hint="Use the dedicated Permissions screen to adjust module and feature access." />
+      <Empty icon={ShieldCheck} title="Open the Permissions module for granular controls"
+             hint="Module + feature gates live in the dedicated Permissions screen."
+             action={<Button size="sm" onClick={() => navigate("/admin/permissions")}>Open Permissions</Button>} />
     </div>
   );
 }
 
-function ActivityTab() {
-  const events = [
-    { icon: KeyRound, label: "Signed in to Blossom OS", when: "2h ago" },
-    { icon: GraduationCap, label: "Completed module: Safety & Crisis", when: "Yesterday" },
-    { icon: ClipboardCheck, label: "Submitted self-evaluation", when: "Feb 22" },
-    { icon: ShieldCheck, label: "Permission group set to Standard", when: "Feb 14" },
-    { icon: MonitorSmartphone, label: "iPad Air assigned", when: "Jan 14" },
-    { icon: UserCircle2, label: "Profile created", when: "Feb 1" },
-  ];
+// ============================================================================
+// ACTIVITY (real: employee_timeline)
+// ============================================================================
+
+type TimelineRow = { id: string; event_type: string; description: string; created_at: string; created_by_name: string | null };
+
+function timelineIcon(t: string) {
+  if (t.includes("training")) return GraduationCap;
+  if (t.includes("review") || t.includes("evaluation")) return ClipboardCheck;
+  if (t.includes("login") || t.includes("signin")) return KeyRound;
+  if (t.includes("device")) return MonitorSmartphone;
+  if (t.includes("permission")) return ShieldCheck;
+  if (t.includes("hired") || t.includes("created")) return UserCircle2;
+  return Sparkles;
+}
+
+function ActivityTab({ m }: { m: DirectoryEmployee }) {
+  const [rows, setRows] = useState<TimelineRow[]>([]);
+  useEffect(() => {
+    if (!m.uuid) return;
+    void supabase.from("employee_timeline")
+      .select("id,event_type,description,created_at,created_by_name")
+      .eq("employee_id", m.uuid).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => setRows((data ?? []) as any));
+  }, [m.uuid]);
+
+  if (rows.length === 0) {
+    return <Empty icon={History} title="No activity yet" hint="Training, evaluation, and access changes will be recorded here automatically." />;
+  }
+
   return (
     <Card className="p-0">
       <ol className="divide-y divide-border/60">
-        {events.map((e, i) => (
-          <li key={i} className="flex items-center gap-4 px-6 py-4">
-            <div className="grid size-9 place-items-center rounded-full bg-muted">
-              <e.icon className="size-4 text-muted-foreground" />
-            </div>
-            <p className="flex-1 text-sm text-foreground">{e.label}</p>
-            <span className="text-xs text-muted-foreground">{e.when}</span>
-          </li>
-        ))}
+        {rows.map((e) => {
+          const Icon = timelineIcon(e.event_type);
+          return (
+            <li key={e.id} className="flex items-center gap-4 px-6 py-4">
+              <div className="grid size-9 place-items-center rounded-full bg-muted">
+                <Icon className="size-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-sm text-foreground">{e.description}</p>
+                {e.created_by_name && <p className="text-[11px] text-muted-foreground">by {e.created_by_name}</p>}
+              </div>
+              <span className="text-xs text-muted-foreground">{fmtRel(e.created_at)}</span>
+            </li>
+          );
+        })}
       </ol>
     </Card>
   );
 }
 
+// ============================================================================
+// OVERVIEW (computed from real tabs)
+// ============================================================================
+
+function OverviewTab({ m, jump }: { m: DirectoryEmployee; jump: (t: TabId) => void }) {
+  const [stats, setStats] = useState({
+    trainingTotal: 0, trainingDone: 0, reviewCurrent: null as string | null,
+    devices: 0, logins: 0, nfcActive: false, lastActivity: null as string | null,
+  });
+  useEffect(() => {
+    if (!m.uuid) return;
+    (async () => {
+      const [{ data: emp }] = await Promise.all([
+        supabase.from("employees").select("user_id").eq("id", m.uuid).maybeSingle(),
+      ]);
+      const [tr, rv, dv, nfc, tl] = await Promise.all([
+        supabase.from("employee_trainings").select("status").eq("employee_id", m.uuid!),
+        supabase.from("employee_reviews").select("status").eq("employee_id", m.uuid!).order("created_at", { ascending: false }).limit(1),
+        supabase.from("employee_devices").select("id").eq("employee_id", m.uuid!).neq("status", "returned"),
+        supabase.from("employee_nfc_tags").select("id").eq("employee_id", m.uuid!).eq("is_active", true).limit(1),
+        supabase.from("employee_timeline").select("created_at").eq("employee_id", m.uuid!).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      const loginsRes = emp?.user_id
+        ? await supabase.from("employee_logins").select("id", { count: "exact", head: true }).eq("user_id", emp.user_id)
+        : { count: 0 } as any;
+      const tRows = (tr.data ?? []) as Array<{ status: string }>;
+      setStats({
+        trainingTotal: tRows.length,
+        trainingDone: tRows.filter((r) => r.status === "completed").length,
+        reviewCurrent: (rv.data?.[0] as any)?.status ?? null,
+        devices: (dv.data ?? []).length,
+        logins: (loginsRes as any).count ?? 0,
+        nfcActive: ((nfc.data ?? []).length) > 0,
+        lastActivity: (tl.data as any)?.created_at ?? null,
+      });
+    })();
+  }, [m.uuid]);
+
+  const pct = stats.trainingTotal ? Math.round((stats.trainingDone / stats.trainingTotal) * 100) : 0;
+
+  type Tone = "ok" | "warn" | "muted";
+  const snapshot: { icon: React.ElementType; label: string; value: string; sub: string; tone: Tone; tab: TabId }[] = [
+    { icon: GraduationCap, label: "Training", value: stats.trainingTotal ? `${pct}%` : "—", sub: `${stats.trainingDone} of ${stats.trainingTotal}`, tone: stats.trainingTotal && pct === 100 ? "ok" : stats.trainingTotal ? "warn" : "muted", tab: "training" },
+    { icon: ClipboardCheck, label: "Evaluation", value: stats.reviewCurrent ?? "None", sub: stats.reviewCurrent ? "Most recent" : "Not scheduled", tone: stats.reviewCurrent ? "ok" : "muted", tab: "evaluations" },
+    { icon: MonitorSmartphone, label: "Devices", value: String(stats.devices), sub: stats.devices ? "Assigned" : "None on file", tone: stats.devices ? "ok" : "muted", tab: "devices" },
+    { icon: KeyRound, label: "Logins", value: String(stats.logins), sub: stats.logins ? "Systems linked" : "Vault empty", tone: stats.logins ? "ok" : "muted", tab: "logins" },
+    { icon: ScanLine, label: "NFC ID", value: stats.nfcActive ? "Active" : "Inactive", sub: stats.nfcActive ? "Tag live" : "Not assigned", tone: stats.nfcActive ? "ok" : "muted", tab: "nfc" },
+    { icon: Clock, label: "Last activity", value: fmtRel(stats.lastActivity), sub: stats.lastActivity ? fmtDate(stats.lastActivity) : "—", tone: stats.lastActivity ? "ok" : "muted", tab: "activity" },
+  ];
+
+  return (
+    <div className="space-y-10">
+      <section>
+        <SectionTitle>Operational snapshot</SectionTitle>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          {snapshot.map((s) => (
+            <button key={s.label} onClick={() => jump(s.tab)} className="text-left">
+              <Card className="p-4 transition hover:border-border">
+                <div className="mb-2 grid size-8 place-items-center rounded-full bg-muted">
+                  <s.icon className="size-4 text-muted-foreground" />
+                </div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</p>
+                <p className="mt-1 text-base font-semibold text-foreground">{s.value}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{s.sub}</p>
+              </Card>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE
 // ============================================================================
 
 export default function EmployeeProfilePage() {
@@ -689,6 +1072,9 @@ export default function EmployeeProfilePage() {
   const { members, loading } = useEmployeeDirectory();
   const [tab, setTab] = useState<TabId>("overview");
   const [openAssignNfc, setOpenAssignNfc] = useState(false);
+  const [openAssignTraining, setOpenAssignTraining] = useState(false);
+  const [openAssignEval, setOpenAssignEval] = useState(false);
+  const [openAssignDevice, setOpenAssignDevice] = useState(false);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
@@ -714,12 +1100,11 @@ export default function EmployeeProfilePage() {
   return (
     <OSShell>
       <div className="mx-auto w-full max-w-6xl px-1 md:px-2">
-        {/* Top breadcrumb */}
         <Link to="/user-management" className="mb-6 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-3.5" /> All users
         </Link>
 
-        {/* Profile header */}
+        {/* Header */}
         <Card className="mb-8 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-5">
@@ -747,19 +1132,19 @@ export default function EmployeeProfilePage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("Edit unavailable — no HR record linked")}>
+                onClick={() => member.uuid ? navigate(`/hr/directory/${member.uuid}`) : toast("No linked HR record")}>
                 <Pencil className="size-3.5" /> Edit
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => { setTab("training"); toast.success("Open training assignment", { description: "Pick modules from the Training tab." }); }}>
+                onClick={() => { setTab("training"); setOpenAssignTraining(true); }}>
                 <GraduationCap className="size-3.5" /> Assign training
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => { setTab("evaluations"); toast.success("Evaluation cycle ready", { description: "Configure reviewer in the Evaluations tab." }); }}>
+                onClick={() => { setTab("evaluations"); setOpenAssignEval(true); }}>
                 <ClipboardCheck className="size-3.5" /> Assign evaluation
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => { setTab("devices"); toast.success("Device assignment opened"); }}>
+                onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
                 <Smartphone className="size-3.5" /> Assign device
               </Button>
               <Button size="sm" className="text-xs"
@@ -775,15 +1160,12 @@ export default function EmployeeProfilePage() {
           <ul className="flex items-center gap-1">
             {TABS.map((t) => (
               <li key={t.id}>
-                <button
-                  onClick={() => setTab(t.id)}
+                <button onClick={() => setTab(t.id)}
                   className={cn(
                     "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 h-9 text-xs font-medium transition",
-                    tab === t.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
+                    tab === t.id ? "bg-primary text-primary-foreground shadow-sm"
+                                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}>
                   <t.icon className="size-3.5" /> {t.label}
                 </button>
               </li>
@@ -791,17 +1173,16 @@ export default function EmployeeProfilePage() {
           </ul>
         </nav>
 
-        {/* Tab content */}
         <div className="pb-16">
-          {tab === "overview" && <OverviewTab m={member} />}
+          {tab === "overview" && <OverviewTab m={member} jump={setTab} />}
           {tab === "employment" && <EmploymentTab m={member} />}
-          {tab === "training" && <TrainingTab m={member} />}
-          {tab === "evaluations" && <EvaluationsTab />}
-          {tab === "devices" && <DevicesTab />}
-          {tab === "logins" && <LoginsTab />}
+          {tab === "training" && <TrainingTab m={member} openAssign={openAssignTraining} setOpenAssign={setOpenAssignTraining} />}
+          {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
+          {tab === "devices" && <DevicesTab m={member} openAssign={openAssignDevice} setOpenAssign={setOpenAssignDevice} />}
+          {tab === "logins" && <LoginsTab m={member} />}
           {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} />}
           {tab === "permissions" && <PermissionsTab m={member} />}
-          {tab === "activity" && <ActivityTab />}
+          {tab === "activity" && <ActivityTab m={member} />}
         </div>
       </div>
     </OSShell>

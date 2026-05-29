@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, Users2, MapPin, Building2, ShieldCheck, GraduationCap,
-  ClipboardCheck, Activity, ChevronRight, Filter, Plus,
+  Search, Users2, MapPin, Building2, ChevronRight, Filter, Plus, BadgeCheck,
 } from "lucide-react";
 import { OSShell } from "../OSShell";
 import { Input } from "@/components/ui/input";
@@ -20,17 +19,7 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
 }
 
-function StatDot({ tone }: { tone: "ok" | "warn" | "off" }) {
-  const cls = tone === "ok" ? "bg-emerald-500" : tone === "warn" ? "bg-amber-500" : "bg-muted-foreground/40";
-  return <span className={cn("inline-block size-1.5 rounded-full", cls)} />;
-}
-
 function EmployeeCard({ m }: { m: DirectoryEmployee }) {
-  // Deterministic-ish demo metrics derived from name length so the UI feels alive
-  const seed = (m.name?.length ?? 5) * 7;
-  const trainingPct = 30 + (seed % 70);
-  const evalDone = seed % 3 === 0;
-  const lastLogin = ["Just now", "2h ago", "Yesterday", "3d ago", "1w ago"][seed % 5];
   return (
     <Link
       to={`/user-management/${m.id}`}
@@ -49,38 +38,23 @@ function EmployeeCard({ m }: { m: DirectoryEmployee }) {
               {initials(m.name)}
             </div>
           )}
-          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-semibold tracking-tight text-foreground">{m.name}</p>
+          <p className="truncate text-[15px] font-semibold tracking-tight text-foreground inline-flex items-center gap-1.5">
+            {m.name}
+            {m.leadership && <BadgeCheck className="size-3.5 text-primary" />}
+          </p>
           <p className="truncate text-[13px] text-muted-foreground">{m.title}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1"><MapPin className="size-3" />{m.states?.[0] ?? "—"}</span>
             <span className="opacity-40">·</span>
             <span className="inline-flex items-center gap-1"><Building2 className="size-3" />{m.departmentName ?? "Unassigned"}</span>
           </div>
+          {m.email && (
+            <p className="mt-2 truncate text-[11px] text-muted-foreground">{m.email}</p>
+          )}
         </div>
         <ChevronRight className="size-4 text-muted-foreground/50 transition group-hover:text-foreground" />
-      </div>
-
-      <div className="mt-5 grid grid-cols-3 gap-3 text-[11px]">
-        <div>
-          <div className="mb-1 flex items-center justify-between text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><GraduationCap className="size-3" />Training</span>
-            <span className="font-medium text-foreground">{trainingPct}%</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div className="h-full rounded-full bg-primary/80" style={{ width: `${trainingPct}%` }} />
-          </div>
-        </div>
-        <div className="flex flex-col items-start gap-1">
-          <span className="inline-flex items-center gap-1 text-muted-foreground"><ClipboardCheck className="size-3" />Eval</span>
-          <span className="inline-flex items-center gap-1.5 text-foreground"><StatDot tone={evalDone ? "ok" : "warn"} />{evalDone ? "Current" : "Due"}</span>
-        </div>
-        <div className="flex flex-col items-start gap-1">
-          <span className="inline-flex items-center gap-1 text-muted-foreground"><Activity className="size-3" />Last login</span>
-          <span className="text-foreground">{lastLogin}</span>
-        </div>
       </div>
     </Link>
   );
