@@ -140,71 +140,17 @@ export default function AiReportView() {
     })();
   }, [report, id]);
 
-  // Kick off generation once if pending.
+  // Legacy "generating" reports (created before the deterministic engine) cannot
+  // be revived — they have no computation payload. Surface a clear error.
   useEffect(() => {
     if (!report || report.status !== "generating" || ranRef.current) return;
     ranRef.current = true;
-
-    const payloadRaw = sessionStorage.getItem(`ai_report_payload_${id}`);
-    if (!payloadRaw) {
-      const errored: AiReport = { ...report, status: "error", error: "Payload missing — re-upload your file." };
-      saveAiReport(errored); setReport(errored);
-      return;
-    }
-
-    (async () => {
-      try {
-        const payload = JSON.parse(payloadRaw);
-        const { data, error } = await supabase.functions.invoke("generate-ai-report", {
-          body: {
-            prompt: payload.prompt,
-            filters: payload.filters,
-            fileName: payload.fileName,
-            csvPreview: payload.preview,
-            rowCount: payload.rowCount,
-            headers: payload.headers,
-            files: payload.files,
-            audience: payload.audience,
-            timeframe: payload.timeframe,
-            breakdown: payload.breakdown,
-            goal: payload.goal,
-            comparison: payload.comparison,
-          },
-        });
-        // Prefer the function's error message over the generic FunctionsHttpError.
-        if (data?.error) throw new Error(data.error);
-        if (error) {
-          // Try to pull the response body for a useful message.
-          let detail = error.message || "Generation failed";
-          try {
-            const ctx: any = (error as any).context;
-            const body = ctx?.body ? await new Response(ctx.body).text() : null;
-            if (body) {
-              const parsed = JSON.parse(body);
-              if (parsed?.error) detail = parsed.error;
-            }
-          } catch { /* ignore */ }
-          throw new Error(detail);
-        }
-        if (!data?.result) throw new Error("No result returned");
-        const result = data.result as AiReportResult;
-        const next: AiReport = {
-          ...report,
-          status: "ready",
-          title: result.title || report.title,
-          result,
-        };
-        saveAiReport(next);
-        setReport(next);
-        sessionStorage.removeItem(`ai_report_payload_${id}`);
-        toast.success("Report ready");
-      } catch (e: any) {
-        const msg = e?.message || "Generation failed";
-        const next: AiReport = { ...report, status: "error", error: msg };
-        saveAiReport(next); setReport(next);
-        toast.error(msg);
-      }
-    })();
+    const errored: AiReport = {
+      ...report,
+      status: "error",
+      error: "This report was created with an older flow. Click \"Try again\" to re-upload your CSV(s) and use the new deterministic report engine.",
+    };
+    saveAiReport(errored); setReport(errored);
   }, [report, id]);
 
   function startEditingTitle() {
