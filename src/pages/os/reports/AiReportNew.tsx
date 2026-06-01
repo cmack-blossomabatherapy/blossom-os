@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Upload, Sparkles, FileSpreadsheet, X, Wand2, Filter, Users, Calendar, Layers, Target, GitCompare } from "lucide-react";
+import { ArrowLeft, Upload, Sparkles, FileSpreadsheet, X, Wand2, Filter, Users, Calendar, Layers, Target, GitCompare, Plus } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,8 +56,7 @@ const COMPARISON_OPTIONS = [
 
 export default function AiReportNew() {
   const navigate = useNavigate();
-  const [file, setFile] = useState<File | null>(null);
-  const [csvText, setCsvText] = useState<string>("");
+  const [files, setFiles] = useState<{ file: File; csvText: string }[]>([]);
   const [prompt, setPrompt] = useState("");
   const [filters, setFilters] = useState<string[]>([]);
   const [filterInput, setFilterInput] = useState("");
@@ -70,16 +69,27 @@ export default function AiReportNew() {
   const [goal, setGoal] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const onFile = useCallback(async (f: File) => {
-    setFile(f);
-    const text = await f.text();
-    setCsvText(text);
+  const onFiles = useCallback(async (incoming: FileList | File[]) => {
+    const list = Array.from(incoming).filter((f) => /\.csv$/i.test(f.name) || f.type === "text/csv");
+    if (!list.length) { toast.error("Only .csv files are supported"); return; }
+    const loaded = await Promise.all(list.map(async (f) => ({ file: f, csvText: await f.text() })));
+    setFiles((prev) => {
+      const seen = new Set(prev.map((p) => p.file.name + ":" + p.file.size));
+      const merged = [...prev];
+      for (const item of loaded) {
+        const key = item.file.name + ":" + item.file.size;
+        if (!seen.has(key)) { merged.push(item); seen.add(key); }
+      }
+      return merged;
+    });
   }, []);
+
+  const removeFile = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx));
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) onFile(f);
+    const list = e.dataTransfer.files;
+    if (list?.length) void onFiles(list);
   };
 
   function toggleFilter(f: string) {
@@ -94,11 +104,21 @@ export default function AiReportNew() {
   }
 
   async function handleGenerate() {
-    if (!csvText) { toast.error("Upload a CSV first"); return; }
+    if (!files.length) { toast.error("Upload at least one CSV first"); return; }
     if (!prompt.trim()) { toast.error("Tell the AI what report to build"); return; }
     setSubmitting(true);
 
-    const { preview, rowCount, headers } = previewCsvForPrompt(csvText, 150);
+    // With multiple files, keep each preview compact so the AI prompt + sessionStorage stay reasonable.
+    const perFileMax = files.length <= 1 ? 150 : files.length <= 3 ? 80 : 50;
+    const filePayloads = files.map(({ file, csvText }) => {
+      const { preview, rowCount, headers } = previewCsvForPrompt(csvText, perFileMax);
+      return { fileName: file.name, preview, rowCount, headers };
+    });
+    const totalRows = filePayloads.reduce((s, f) => s + f.rowCount, 0);
+    const combinedName = files.length === 1
+      ? files[0].file.name
+      : `${files.length} files`;
+
     const id = newAiReportId();
     const report: AiReport = {
       id,
@@ -110,15 +130,24 @@ export default function AiReportNew() {
       breakdown,
       goal,
       comparison,
-      fileName: file?.name || "upload.csv",
-      rowCount,
+      fileName: combinedName,
+      rowCount: totalRows,
+      files: filePayloads.map((f) => ({ name: f.fileName, rowCount: f.rowCount })),
       createdAt: Date.now(),
       status: "generating",
     };
     saveAiReport(report);
-    // Stash payload for the loading view to consume.
+    // Stash payload for the loading view to consume. Includes per-file previews
+    // plus legacy single fields for backward compatibility.
+    const first = filePayloads[0];
     sessionStorage.setItem(`ai_report_payload_${id}`, JSON.stringify({
-      preview, rowCount, headers, prompt, filters, fileName: report.fileName,
+      files: filePayloads,
+      // Legacy/back-compat single-file fields (first file):
+      preview: first.preview,
+      rowCount: first.rowCount,
+      headers: first.headers,
+      fileName: report.fileName,
+      prompt, filters,
       audience, timeframe, breakdown, goal, comparison,
     }));
     navigate(`/reports/ai/${id}`);
@@ -153,7 +182,9 @@ export default function AiReportNew() {
               <Upload className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
               <h3 className="text-[14px] font-semibold tracking-tight">1 · Upload your data</h3>
             </div>
-            <p className="mt-1 text-[12px] text-muted-foreground">CSV export from CentralReach or any spreadsheet (.csv).</p>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              One or more CSV exports — Blossom will scan them together to build the report, dashboard, and drill-downs.
+            </p>
 
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -167,39 +198,48 @@ export default function AiReportNew() {
                   : "border-border/60 hover:border-[hsl(265_70%_55%/0.5)] hover:bg-secondary/30",
               )}
             >
-              {file ? (
-                <div className="flex items-center justify-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(265_100%_97%)] text-[hsl(265_70%_55%)]">
-                    <FileSpreadsheet className="h-5 w-5" />
-                  </span>
-                  <div className="text-left">
-                    <p className="text-[13px] font-semibold">{file.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB · ready</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setFile(null); setCsvText(""); }}
-                    className="ml-2 rounded-full p-1 text-muted-foreground hover:bg-secondary"
-                    aria-label="Remove file"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ) : (
+              {files.length === 0 ? (
                 <>
                   <div className="mx-auto mb-2 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
                     <Upload className="h-5 w-5 text-[hsl(265_70%_55%)]" />
                   </div>
-                  <p className="text-[13px] font-medium">Drop your CSV here</p>
-                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">or click to browse</p>
+                  <p className="text-[13px] font-medium">Drop one or more CSVs here</p>
+                  <p className="mt-0.5 text-[11.5px] text-muted-foreground">or click to browse — you can add more after</p>
                 </>
+              ) : (
+                <div className="flex flex-col items-stretch gap-2">
+                  {files.map(({ file: f }, idx) => (
+                    <div key={`${f.name}-${idx}`} className="flex items-center gap-3 rounded-xl border border-border/60 bg-white px-3 py-2 text-left">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(265_100%_97%)] text-[hsl(265_70%_55%)]">
+                        <FileSpreadsheet className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12.5px] font-semibold">{f.name}</p>
+                        <p className="text-[10.5px] text-muted-foreground">{(f.size / 1024).toFixed(1)} KB · ready</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                        className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                        aria-label={`Remove ${f.name}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="mt-1 flex items-center justify-between gap-2 px-1 text-[11px] text-muted-foreground">
+                    <span>{files.length} file{files.length === 1 ? "" : "s"} · click anywhere to add more</span>
+                    <span className="inline-flex items-center gap-1 text-[hsl(265_70%_55%)]"><Plus className="h-3 w-3" /> Add files</span>
+                  </div>
+                </div>
               )}
               <input
                 ref={inputRef}
                 type="file"
                 accept=".csv,text/csv"
+                multiple
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
+                onChange={(e) => { const list = e.target.files; if (list?.length) void onFiles(list); e.currentTarget.value = ""; }}
               />
             </div>
           </article>
@@ -321,7 +361,17 @@ export default function AiReportNew() {
             <h3 className="mt-1 text-[18px] font-semibold tracking-tight">Review &amp; generate</h3>
 
             <div className="mt-4 space-y-3 text-[12.5px]">
-              <SummaryRow label="Data" value={file ? `${file.name}` : "No file yet"} ok={!!file} />
+              <SummaryRow
+                label="Data"
+                value={
+                  files.length === 0
+                    ? "No file yet"
+                    : files.length === 1
+                      ? files[0].file.name
+                      : `${files.length} files (${files.map((f) => f.file.name).join(", ").slice(0, 60)}${files.map((f) => f.file.name).join(", ").length > 60 ? "…" : ""})`
+                }
+                ok={files.length > 0}
+              />
               <SummaryRow label="Prompt" value={prompt ? `"${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"` : "Not set"} ok={!!prompt.trim()} />
               <SummaryRow label="Audience" value={audience} ok />
               <SummaryRow label="Timeframe" value={timeframe} ok />
@@ -333,7 +383,7 @@ export default function AiReportNew() {
 
             <Button
               onClick={handleGenerate}
-              disabled={!file || !prompt.trim() || submitting}
+              disabled={files.length === 0 || !prompt.trim() || submitting}
               className="mt-5 w-full bg-gradient-to-r from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-[0_10px_30px_-10px_hsl(265_70%_55%/0.6)] transition hover:-translate-y-0.5 hover:shadow-[0_15px_40px_-15px_hsl(265_70%_55%/0.7)]"
             >
               <Sparkles className="mr-2 h-4 w-4" />
