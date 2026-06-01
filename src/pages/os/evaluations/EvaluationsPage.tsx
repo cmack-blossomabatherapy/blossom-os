@@ -238,6 +238,7 @@ export default function EvaluationsPage() {
         responses={data.responses}
         allStaff={data.staff}
         audit={data.audit}
+        reviewers={data.reviewers}
         permissions={perms}
         onClose={() => setOpenStaffId(null)}
         onChanged={data.refresh}
