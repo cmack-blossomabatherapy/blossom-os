@@ -1,13 +1,13 @@
 import {
   Activity, AlertTriangle, BarChart3, Brain, Briefcase, CalendarDays, ClipboardCheck,
-  DollarSign, FileCheck2, GraduationCap, HeartPulse, LineChart, MapPin, ShieldCheck,
+  DollarSign, FileCheck2, GraduationCap, HeartPulse, LineChart, MapPin, ShieldCheck, Calculator,
   Sparkles, Stethoscope, Target, TrendingUp, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "./permissions";
 
 export type ReportCategoryId =
   | "operations" | "qa" | "authorizations" | "scheduling" | "recruiting"
-  | "financial" | "clinical" | "training" | "leadership" | "state";
+  | "financial" | "clinical" | "training" | "leadership" | "state" | "hr";
 
 export interface ReportCategoryDef {
   id: ReportCategoryId;
@@ -29,6 +29,7 @@ export const REPORT_CATEGORIES: ReportCategoryDef[] = [
   { id: "training", name: "Training", description: "Academy progress, certifications, learning velocity.", icon: GraduationCap, tone: "from-[hsl(45_100%_94%)] to-[hsl(30_100%_95%)]", accent: "hsl(38 85% 50%)" },
   { id: "leadership", name: "Leadership", description: "Executive KPIs, growth, operating posture.", icon: Briefcase, tone: "from-[hsl(255_70%_96%)] to-[hsl(225_70%_96%)]", accent: "hsl(255 65% 55%)" },
   { id: "state", name: "State Analytics", description: "Cross-state benchmarks, regional risk, market share.", icon: MapPin, tone: "from-[hsl(345_85%_96%)] to-[hsl(15_85%_96%)]", accent: "hsl(350 70% 55%)" },
+  { id: "hr", name: "HR & Payroll", description: "Payroll readiness, employee hours, BCBA minimums, exceptions.", icon: Calculator, tone: "from-[hsl(265_100%_97%)] to-[hsl(245_100%_97%)]", accent: "hsl(265 70% 55%)" },
 ];
 
 export type ReportType = "dashboard" | "table" | "summary" | "trend";
