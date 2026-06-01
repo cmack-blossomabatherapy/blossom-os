@@ -285,10 +285,10 @@ export default function AiReportNew() {
           <article className="rounded-2xl border border-border/60 bg-card p-5">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[14px] font-semibold tracking-tight">3 · Shape the report</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">3 · Shape the report (optional)</h3>
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              A few quick choices let Blossom tailor a real drill-down dashboard instead of a generic chart.
+              All optional — leave on <span className="font-medium text-foreground">Auto</span> and Blossom will infer everything from your prompt and data. Pick a value only when you want to lock it in.
             </p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -384,10 +384,10 @@ export default function AiReportNew() {
                 ok={files.length > 0}
               />
               <SummaryRow label="Prompt" value={prompt ? `"${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"` : "Not set"} ok={!!prompt.trim()} />
-              <SummaryRow label="Audience" value={audience} ok />
-              <SummaryRow label="Timeframe" value={timeframe} ok />
-              <SummaryRow label="Breakdown" value={breakdown} ok />
-              <SummaryRow label="Comparison" value={comparison} ok />
+              <SummaryRow label="Audience" value={isAuto(audience) ? "Auto" : audience} ok={!isAuto(audience)} muted={isAuto(audience)} />
+              <SummaryRow label="Timeframe" value={isAuto(timeframe) ? "Auto" : timeframe} ok={!isAuto(timeframe)} muted={isAuto(timeframe)} />
+              <SummaryRow label="Breakdown" value={isAuto(breakdown) ? "Auto" : breakdown} ok={!isAuto(breakdown)} muted={isAuto(breakdown)} />
+              <SummaryRow label="Comparison" value={isAuto(comparison) ? "Auto" : comparison} ok={!isAuto(comparison)} muted={isAuto(comparison)} />
               <SummaryRow label="Goal" value={goal ? `"${goal.slice(0, 50)}${goal.length > 50 ? "…" : ""}"` : "—"} ok />
               <SummaryRow label="Filters" value={filters.length ? `${filters.length} applied` : "None"} ok />
             </div>
@@ -410,11 +410,13 @@ export default function AiReportNew() {
   );
 }
 
-function SummaryRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+const isAuto = (v: string) => !v || /^auto\b/i.test(v);
+
+function SummaryRow({ label, value, ok, muted }: { label: string; value: string; ok: boolean; muted?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
-      <span className={cn("text-right text-[12.5px] font-medium", ok ? "text-foreground" : "text-muted-foreground/60")}>{value}</span>
+      <span className={cn("text-right text-[12.5px] font-medium", muted ? "text-muted-foreground/70 italic" : ok ? "text-foreground" : "text-muted-foreground/60")}>{value}</span>
     </div>
   );
 }
