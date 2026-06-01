@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { Loader2, LogOut, ShieldCheck, Fingerprint } from "lucide-react";
 import { MfaBrandShell } from "@/components/auth/MfaBrandShell";
 import { markMfaVerified } from "@/lib/mfa";
+import { isPasskeyAvailable, verifyWithPasskey } from "@/lib/security/passkey";
 
 export default function MfaVerify() {
   const { user, loading, signOut } = useAuth();
@@ -23,6 +24,9 @@ export default function MfaVerify() {
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [passkeyCredId, setPasskeyCredId] = useState<string | null>(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const passkeySupported = isPasskeyAvailable();
 
   useEffect(() => {
     if (loading || !user) return;
@@ -44,6 +48,19 @@ export default function MfaVerify() {
         setChallengeId(ch.id);
       } catch (e: any) {
         if (!cancelled) setBootError(e?.message ?? "Could not start verification");
+      }
+      // Load any registered security key for this user (optional fallback)
+      try {
+        const { data: pin } = await supabase
+          .from("employee_pin_settings")
+          .select("passkey_credential_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled && pin?.passkey_credential_id) {
+          setPasskeyCredId(pin.passkey_credential_id);
+        }
+      } catch {
+        /* no-op */
       }
     })();
     return () => {
@@ -79,6 +96,25 @@ export default function MfaVerify() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth", { replace: true });
+  };
+
+  const handlePasskey = async () => {
+    if (!user || !passkeyCredId) return;
+    setPasskeyBusy(true);
+    const result = await verifyWithPasskey(passkeyCredId);
+    setPasskeyBusy(false);
+    if (result.ok !== true) {
+      if (result.reason === "cancelled") return;
+      if (result.reason === "notSupported") {
+        toast.error("Security keys aren't supported on this device.");
+        return;
+      }
+      toast.error(result.message ?? "Couldn't verify security key.");
+      return;
+    }
+    markMfaVerified(user.id);
+    toast.success("Verified with security key — welcome back.");
+    navigate(redirectTo, { replace: true });
   };
 
   return (
@@ -141,6 +177,33 @@ export default function MfaVerify() {
             {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Verify
           </Button>
+
+          {passkeyCredId && passkeySupported && (
+            <div className="space-y-3">
+              <div className="relative flex items-center">
+                <div className="flex-1 border-t border-slate-200" />
+                <span className="px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                  or
+                </span>
+                <div className="flex-1 border-t border-slate-200" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePasskey}
+                disabled={passkeyBusy}
+                className="h-[52px] w-full rounded-xl border-slate-200 text-base font-semibold text-[#0c2340] hover:bg-slate-50"
+                style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
+              >
+                {passkeyBusy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="mr-2 h-4 w-4 text-[#2d8a9e]" />
+                )}
+                Use a security key instead
+              </Button>
+            </div>
+          )}
 
           <p className="text-center text-xs text-slate-500">
             Lost your phone? Ask an admin to reset your two-factor at{" "}
