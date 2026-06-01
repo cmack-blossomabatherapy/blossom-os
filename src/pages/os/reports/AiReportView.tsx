@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
   TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
+  AlertTriangle, ListChecks, Target, Users, Calendar, Layers, Search,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { OSShell } from "@/pages/os/OSShell";
@@ -11,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  AiReport, AiReportResult, deleteAiReport, getAiReport, saveAiReport,
+  AiReport, AiReportResult, AiSection, AiChart, AiTable, AiRisk,
+  deleteAiReport, getAiReport, saveAiReport,
 } from "@/lib/os/aiReports";
 import { toast } from "sonner";
 
@@ -63,6 +65,11 @@ export default function AiReportView() {
             csvPreview: payload.preview,
             rowCount: payload.rowCount,
             headers: payload.headers,
+            audience: payload.audience,
+            timeframe: payload.timeframe,
+            breakdown: payload.breakdown,
+            goal: payload.goal,
+            comparison: payload.comparison,
           },
         });
         if (error) throw error;
