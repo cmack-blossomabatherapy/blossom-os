@@ -514,39 +514,13 @@ export default function OSTraining() {
             </div>
           )}
 
-          {/* Ask Blossom AI */}
-          <div className="rounded-2xl border border-border/70 bg-card p-5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Ask Blossom AI</h3>
-            </div>
-            <div className="mt-3 space-y-1">
-              {[
-                "Explain this SOP",
-                "Summarize this workflow",
-                "What's the next step?",
-                "Show related trainings",
-              ].map((p) => (
-                <Link
-                  key={p}
-                  to={`/ai/assistant?q=${encodeURIComponent(p)}`}
-                  className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px] hover:bg-muted/50"
-                >
-                  <span>{p}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
           {/* Quick Access */}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
             <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Quick Access</h3>
             <div className="mt-3 space-y-0.5 text-[12.5px]">
               {[
-                { label: "SOP Library", to: "/sop" },
-                { label: "Resource Hub", to: "/resources" },
                 { label: "Ask Blossom AI", to: "/ai/assistant" },
+                { label: "Resource Library", to: "/resources" },
               ].map((q) => (
                 <Link
                   key={q.label}
