@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Sparkles, Plus, Bookmark, Star, History,
-  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Pin, Wand2, Trash2,
+  ArrowUpRight, Clock, Eye, FileSpreadsheet, Search, Brain, ChevronRight, Pin, Trash2,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import {
 } from "@/lib/os/reportsCatalog";
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
-import { listAiDashboards, deleteAiDashboard, type AiDashboard } from "@/lib/os/aiDashboards";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
