@@ -315,8 +315,25 @@ function LoadingState({ step }: { step: number }) {
 }
 
 function ReadyState({ result }: { result: AiReportResult }) {
+  const sections = result.sections ?? [];
+  const hasSections = sections.length > 0;
   return (
     <div className="space-y-5">
+      {(result.audience || result.timeframe) && (
+        <div className="flex flex-wrap gap-1.5">
+          {result.audience && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
+              <Users className="h-3 w-3" /> {result.audience}
+            </span>
+          )}
+          {result.timeframe && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
+              <Calendar className="h-3 w-3" /> {result.timeframe}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* KPIs */}
       <div className={cn(
         "grid gap-3",
@@ -327,15 +344,125 @@ function ReadyState({ result }: { result: AiReportResult }) {
         {result.kpis.map((k, i) => <KpiCard key={i} kpi={k} />)}
       </div>
 
-      {/* Chart + insights */}
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        {result.chart ? <ChartCard chart={result.chart} /> : <div />}
+      {/* Top-level insights + recommendations + risks */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <InsightsCard insights={result.insights} />
+        {result.recommendations && result.recommendations.length > 0 && (
+          <RecommendationsCard items={result.recommendations} />
+        )}
+        {result.risks && result.risks.length > 0 && (
+          <RisksCard risks={result.risks} />
+        )}
       </div>
 
-      {/* Table */}
-      {result.table && result.table.rows.length > 0 && <TableCard table={result.table} />}
+      {/* Drill-down sections */}
+      {hasSections ? (
+        <div className="space-y-5">
+          {/* Section quick-nav */}
+          {sections.length > 1 && (
+            <nav className="flex flex-wrap gap-1.5">
+              {sections.map((s) => (
+                <a key={s.id} href={`#${s.id}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.4)] hover:text-[hsl(265_70%_55%)]">
+                  <Layers className="h-3 w-3" /> {s.title}
+                </a>
+              ))}
+            </nav>
+          )}
+          {sections.map((s, i) => <SectionCard key={s.id || i} section={s} index={i} />)}
+        </div>
+      ) : (
+        <>
+          {result.chart && (
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+              <ChartCard chart={result.chart} />
+              <div />
+            </div>
+          )}
+          {result.table && result.table.rows.length > 0 && <TableCard table={result.table} />}
+        </>
+      )}
     </div>
+  );
+}
+
+function SectionCard({ section, index }: { section: AiSection; index: number }) {
+  return (
+    <section id={section.id} className="os-rise rounded-2xl border border-border/60 bg-card p-5 scroll-mt-20">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">
+            Section {String(index + 1).padStart(2, "0")}
+          </p>
+          <h3 className="mt-1 text-[18px] font-semibold tracking-tight">{section.title}</h3>
+        </div>
+      </div>
+      {section.narrative && (
+        <p className="mt-2 max-w-3xl text-[12.5px] leading-relaxed text-muted-foreground">{section.narrative}</p>
+      )}
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        {section.chart ? <ChartCard chart={section.chart} compact /> : <div />}
+        {section.insights && section.insights.length > 0 && (
+          <InsightsCard insights={section.insights} subtle />
+        )}
+      </div>
+
+      {section.table && section.table.rows.length > 0 && (
+        <div className="mt-4">
+          <TableCard table={section.table} searchable />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RecommendationsCard({ items }: { items: string[] }) {
+  return (
+    <article className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-white p-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
+          <ListChecks className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="text-[14px] font-semibold tracking-tight">Recommended actions</h3>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
+            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white">{i + 1}</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function RisksCard({ risks }: { risks: AiRisk[] }) {
+  const sevTone = (s: AiRisk["severity"]) =>
+    s === "high" ? "bg-rose-500 text-white" :
+    s === "med" ? "bg-amber-500 text-white" :
+    "bg-muted text-foreground";
+  return (
+    <article className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-50 to-white p-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-sm">
+          <AlertTriangle className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="text-[14px] font-semibold tracking-tight">Risk flags</h3>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {risks.map((r, i) => (
+          <li key={i} className="text-[12.5px] leading-snug">
+            <div className="flex items-center gap-2">
+              <span className={cn("rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide", sevTone(r.severity))}>{r.severity}</span>
+              <span className="font-medium">{r.label}</span>
+            </div>
+            {r.note && <p className="mt-0.5 pl-1 text-[11.5px] text-muted-foreground">{r.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }
 
