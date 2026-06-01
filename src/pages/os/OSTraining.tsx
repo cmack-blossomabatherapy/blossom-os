@@ -210,7 +210,7 @@ export default function OSTraining() {
                     <Link
                       key={training.id}
                       to={`/training/${training.id}`}
-                      className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
+                      className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-muted-foreground">
@@ -226,9 +226,9 @@ export default function OSTraining() {
                           </span>
                         )}
                       </div>
-                      <h3 className="mt-3 text-[14px] font-semibold leading-snug">{training.title}</h3>
+                      <h3 className="mt-3 truncate text-[14px] font-semibold leading-snug">{training.title}</h3>
                       <p className="mt-0.5 text-[11.5px] text-muted-foreground capitalize">{training.department}</p>
-                      <div className="mt-3 space-y-1.5">
+                      <div className="mt-auto space-y-1.5 pt-3">
                         <Progress value={progress.progressPercent} className="h-1" />
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground">{progress.progressPercent}% complete</span>
