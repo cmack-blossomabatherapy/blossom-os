@@ -18,6 +18,7 @@ import type {
   AcademyModuleType,
 } from "@/lib/academy/types";
 import { MODULE_TYPE_META, PHASE_COLORS } from "@/lib/academy/types";
+import { OSShell } from "@/pages/os/OSShell";
 
 const TRACK_NAME = "HR Admin Assistant";
 
@@ -187,29 +188,34 @@ export default function HRAdminAssistantDashboard() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-12">
-        <Skeleton className="h-44 w-full rounded-3xl" />
-        <div className="grid gap-3 sm:grid-cols-2"><Skeleton className="h-40 rounded-2xl" /><Skeleton className="h-40 rounded-2xl" /></div>
-      </div>
+      <OSShell>
+        <div className="mx-auto w-full max-w-5xl space-y-4 pb-12">
+          <Skeleton className="h-44 w-full rounded-3xl" />
+          <div className="grid gap-3 sm:grid-cols-2"><Skeleton className="h-40 rounded-2xl" /><Skeleton className="h-40 rounded-2xl" /></div>
+        </div>
+      </OSShell>
     );
   }
 
   if (!curriculum || !enrollment) {
     return (
-      <div className="mx-auto w-full max-w-3xl pb-12">
-        <div className="rounded-3xl border border-border/60 bg-card p-8 text-center shadow-sm">
-          <GraduationCap className="mx-auto h-10 w-10 text-primary" />
-          <h1 className="mt-3 text-xl font-semibold">HR Admin Assistant onboarding</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You're not enrolled yet. Ask Nikki to assign you to the HR Admin Assistant track.
-          </p>
+      <OSShell>
+        <div className="mx-auto w-full max-w-3xl pb-12">
+          <div className="rounded-3xl border border-border/60 bg-card p-8 text-center shadow-sm">
+            <GraduationCap className="mx-auto h-10 w-10 text-primary" />
+            <h1 className="mt-3 text-xl font-semibold">HR Admin Assistant onboarding</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You're not enrolled yet. Ask Nikki to assign you to the HR Admin Assistant track.
+            </p>
+          </div>
         </div>
-      </div>
+      </OSShell>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 pb-16">
+    <OSShell>
+      <div className="mx-auto w-full max-w-5xl space-y-5 pb-16">
       {/* HERO */}
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary-glow,var(--primary)))_55%,hsl(var(--accent))_120%)] p-5 text-primary-foreground shadow-lg sm:p-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,hsl(var(--primary-foreground)/0.25),transparent_45%),radial-gradient(circle_at_90%_120%,hsl(var(--primary-foreground)/0.18),transparent_50%)]" />
@@ -447,7 +453,8 @@ export default function HRAdminAssistantDashboard() {
           <Link to="/profile">View profile <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
         </Button>
       </div>
-    </div>
+      </div>
+    </OSShell>
   );
 }
 
