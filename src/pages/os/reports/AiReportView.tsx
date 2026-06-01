@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
   TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
+  AlertTriangle, ListChecks, Users, Calendar, Layers, Search,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { OSShell } from "@/pages/os/OSShell";
@@ -11,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  AiReport, AiReportResult, deleteAiReport, getAiReport, saveAiReport,
+  AiReport, AiReportResult, AiSection, AiChart, AiTable, AiRisk,
+  deleteAiReport, getAiReport, saveAiReport,
 } from "@/lib/os/aiReports";
 import { toast } from "sonner";
 
@@ -63,6 +65,11 @@ export default function AiReportView() {
             csvPreview: payload.preview,
             rowCount: payload.rowCount,
             headers: payload.headers,
+            audience: payload.audience,
+            timeframe: payload.timeframe,
+            breakdown: payload.breakdown,
+            goal: payload.goal,
+            comparison: payload.comparison,
           },
         });
         if (error) throw error;
@@ -308,8 +315,25 @@ function LoadingState({ step }: { step: number }) {
 }
 
 function ReadyState({ result }: { result: AiReportResult }) {
+  const sections = result.sections ?? [];
+  const hasSections = sections.length > 0;
   return (
     <div className="space-y-5">
+      {(result.audience || result.timeframe) && (
+        <div className="flex flex-wrap gap-1.5">
+          {result.audience && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
+              <Users className="h-3 w-3" /> {result.audience}
+            </span>
+          )}
+          {result.timeframe && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground">
+              <Calendar className="h-3 w-3" /> {result.timeframe}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* KPIs */}
       <div className={cn(
         "grid gap-3",
@@ -320,15 +344,125 @@ function ReadyState({ result }: { result: AiReportResult }) {
         {result.kpis.map((k, i) => <KpiCard key={i} kpi={k} />)}
       </div>
 
-      {/* Chart + insights */}
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        {result.chart ? <ChartCard chart={result.chart} /> : <div />}
+      {/* Top-level insights + recommendations + risks */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <InsightsCard insights={result.insights} />
+        {result.recommendations && result.recommendations.length > 0 && (
+          <RecommendationsCard items={result.recommendations} />
+        )}
+        {result.risks && result.risks.length > 0 && (
+          <RisksCard risks={result.risks} />
+        )}
       </div>
 
-      {/* Table */}
-      {result.table && result.table.rows.length > 0 && <TableCard table={result.table} />}
+      {/* Drill-down sections */}
+      {hasSections ? (
+        <div className="space-y-5">
+          {/* Section quick-nav */}
+          {sections.length > 1 && (
+            <nav className="flex flex-wrap gap-1.5">
+              {sections.map((s) => (
+                <a key={s.id} href={`#${s.id}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.4)] hover:text-[hsl(265_70%_55%)]">
+                  <Layers className="h-3 w-3" /> {s.title}
+                </a>
+              ))}
+            </nav>
+          )}
+          {sections.map((s, i) => <SectionCard key={s.id || i} section={s} index={i} />)}
+        </div>
+      ) : (
+        <>
+          {result.chart && (
+            <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+              <ChartCard chart={result.chart} />
+              <div />
+            </div>
+          )}
+          {result.table && result.table.rows.length > 0 && <TableCard table={result.table} />}
+        </>
+      )}
     </div>
+  );
+}
+
+function SectionCard({ section, index }: { section: AiSection; index: number }) {
+  return (
+    <section id={section.id} className="os-rise rounded-2xl border border-border/60 bg-card p-5 scroll-mt-20">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">
+            Section {String(index + 1).padStart(2, "0")}
+          </p>
+          <h3 className="mt-1 text-[18px] font-semibold tracking-tight">{section.title}</h3>
+        </div>
+      </div>
+      {section.narrative && (
+        <p className="mt-2 max-w-3xl text-[12.5px] leading-relaxed text-muted-foreground">{section.narrative}</p>
+      )}
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        {section.chart ? <ChartCard chart={section.chart} compact /> : <div />}
+        {section.insights && section.insights.length > 0 && (
+          <InsightsCard insights={section.insights} subtle />
+        )}
+      </div>
+
+      {section.table && section.table.rows.length > 0 && (
+        <div className="mt-4">
+          <TableCard table={section.table} searchable />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RecommendationsCard({ items }: { items: string[] }) {
+  return (
+    <article className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-white p-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
+          <ListChecks className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="text-[14px] font-semibold tracking-tight">Recommended actions</h3>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-2 text-[12.5px] leading-snug">
+            <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white">{i + 1}</span>
+            <span>{it}</span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function RisksCard({ risks }: { risks: AiRisk[] }) {
+  const sevTone = (s: AiRisk["severity"]) =>
+    s === "high" ? "bg-rose-500 text-white" :
+    s === "med" ? "bg-amber-500 text-white" :
+    "bg-muted text-foreground";
+  return (
+    <article className="rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-50 to-white p-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-sm">
+          <AlertTriangle className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="text-[14px] font-semibold tracking-tight">Risk flags</h3>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {risks.map((r, i) => (
+          <li key={i} className="text-[12.5px] leading-snug">
+            <div className="flex items-center gap-2">
+              <span className={cn("rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide", sevTone(r.severity))}>{r.severity}</span>
+              <span className="font-medium">{r.label}</span>
+            </div>
+            {r.note && <p className="mt-0.5 pl-1 text-[11.5px] text-muted-foreground">{r.note}</p>}
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }
 
@@ -348,92 +482,221 @@ function KpiCard({ kpi }: { kpi: AiReportResult["kpis"][number] }) {
   );
 }
 
-function ChartCard({ chart }: { chart: NonNullable<AiReportResult["chart"]> }) {
+const CHART_COLORS = [
+  "hsl(265 70% 55%)", "hsl(195 80% 50%)", "hsl(150 65% 45%)",
+  "hsl(30 90% 55%)", "hsl(340 75% 55%)", "hsl(220 70% 55%)",
+];
+
+function ChartCard({ chart, compact = false }: { chart: AiChart; compact?: boolean }) {
+  const colors = CHART_COLORS;
+  const W = 560, H = compact ? 220 : 240;
+  const padL = 32, padB = 26, padT = 12, padR = 12;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  // PIE
+  if (chart.type === "pie") {
+    const series = chart.series[0]?.data ?? [];
+    const total = series.reduce((a, b) => a + b, 0) || 1;
+    const cx = W / 2, cy = H / 2, r = Math.min(innerW, innerH) / 2 - 8, ir = r * 0.55;
+    let angle = -Math.PI / 2;
+    return (
+      <ChartShell chart={chart} compact={compact}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-60 w-full">
+          {series.map((v, i) => {
+            const slice = (v / total) * Math.PI * 2;
+            const a0 = angle, a1 = angle + slice;
+            angle = a1;
+            const large = slice > Math.PI ? 1 : 0;
+            const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+            const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+            const xi0 = cx + ir * Math.cos(a0), yi0 = cy + ir * Math.sin(a0);
+            const xi1 = cx + ir * Math.cos(a1), yi1 = cy + ir * Math.sin(a1);
+            const d = `M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} L ${xi1} ${yi1} A ${ir} ${ir} 0 ${large} 0 ${xi0} ${yi0} Z`;
+            return (
+              <path key={i} d={d} fill={colors[i % colors.length]} opacity="0.9">
+                <title>{`${chart.labels[i]}: ${v} (${((v / total) * 100).toFixed(1)}%)`}</title>
+              </path>
+            );
+          })}
+          <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))">Total</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontSize="14" fontWeight="600" fill="hsl(var(--foreground))">{total.toLocaleString()}</text>
+        </svg>
+        <PieLegend labels={chart.labels} data={series} colors={colors} total={total} />
+      </ChartShell>
+    );
+  }
+
+  const step = chart.labels.length > 1 ? innerW / (chart.labels.length - 1) : innerW;
+
+  // STACKED BAR
+  if (chart.type === "stacked-bar") {
+    const stackTotals = chart.labels.map((_, i) =>
+      chart.series.reduce((a, s) => a + (s.data[i] ?? 0), 0)
+    );
+    const max = Math.max(1, ...stackTotals);
+    const groupW = step * 0.6;
+    return (
+      <ChartShell chart={chart} compact={compact}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-60 w-full">
+          <Gridlines padL={padL} padT={padT} padR={padR} W={W} innerH={innerH} max={max} />
+          {chart.labels.map((_, i) => {
+            const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2) - groupW / 2;
+            let yCursor = padT + innerH;
+            return (
+              <g key={i}>
+                {chart.series.map((s, si) => {
+                  const v = s.data[i] ?? 0;
+                  const h = (v / max) * innerH;
+                  yCursor -= h;
+                  return (
+                    <rect key={si} x={x} y={yCursor} width={groupW} height={h}
+                      fill={colors[si % colors.length]} opacity="0.9">
+                      <title>{`${s.name} · ${chart.labels[i]}: ${v}`}</title>
+                    </rect>
+                  );
+                })}
+              </g>
+            );
+          })}
+          <XLabels labels={chart.labels} padL={padL} innerW={innerW} step={step} H={H} />
+        </svg>
+        <SeriesLegend series={chart.series} colors={colors} />
+      </ChartShell>
+    );
+  }
+
+  // BAR / LINE / AREA
   const all = chart.series.flatMap(s => s.data);
   const max = Math.max(1, ...all);
-  const W = 560, H = 200, padL = 28, padB = 22, padT = 10, padR = 10;
-  const innerW = W - padL - padR, innerH = H - padT - padB;
-  const step = chart.labels.length > 1 ? innerW / (chart.labels.length - 1) : innerW;
-  const colors = ["hsl(265 70% 55%)", "hsl(195 80% 50%)", "hsl(150 65% 45%)", "hsl(30 90% 55%)"];
-
   return (
-    <article className="rounded-2xl border border-border/60 bg-card p-5">
-      <h3 className="text-[14px] font-semibold tracking-tight">Primary visual</h3>
-      <p className="mt-0.5 text-[11.5px] text-muted-foreground capitalize">{chart.type} chart</p>
-
-      <div className="mt-4 overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="h-56 w-full">
-          {/* gridlines */}
-          {[0.25, 0.5, 0.75, 1].map(t => (
-            <line key={t} x1={padL} x2={W - padR} y1={padT + innerH * (1 - t)} y2={padT + innerH * (1 - t)}
-              stroke="hsl(var(--border))" strokeDasharray="3 3" strokeWidth="0.5" />
-          ))}
-          {/* series */}
-          {chart.type === "bar" ? (
-            chart.series.map((s, si) => {
-              const groupW = step * 0.7;
-              const barW = groupW / chart.series.length;
-              return s.data.map((v, i) => {
-                const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2) - groupW / 2 + si * barW;
-                const h = (v / max) * innerH;
-                return (
-                  <rect
-                    key={`${si}-${i}`}
-                    x={x} y={padT + innerH - h} width={barW - 2} height={h}
-                    rx="3" fill={colors[si % colors.length]} opacity="0.85"
-                  >
-                    <title>{`${s.name} · ${chart.labels[i]}: ${v}`}</title>
-                  </rect>
-                );
-              });
-            })
-          ) : (
-            chart.series.map((s, si) => {
-              const pts = s.data.map((v, i) => {
-                const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2);
-                const y = padT + innerH - (v / max) * innerH;
-                return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-              }).join(" ");
-              return (
-                <g key={si}>
-                  <path d={pts} fill="none" stroke={colors[si % colors.length]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  {s.data.map((v, i) => {
-                    const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2);
-                    const y = padT + innerH - (v / max) * innerH;
-                    return <circle key={i} cx={x} cy={y} r="2.5" fill={colors[si % colors.length]} />;
-                  })}
-                </g>
-              );
-            })
-          )}
-          {/* x labels */}
-          {chart.labels.map((l, i) => {
+    <ChartShell chart={chart} compact={compact}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-60 w-full">
+        <Gridlines padL={padL} padT={padT} padR={padR} W={W} innerH={innerH} max={max} />
+        {chart.type === "bar" && chart.series.map((s, si) => {
+          const groupW = step * 0.7;
+          const barW = groupW / chart.series.length;
+          return s.data.map((v, i) => {
+            const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2) - groupW / 2 + si * barW;
+            const h = (v / max) * innerH;
+            return (
+              <rect key={`${si}-${i}`} x={x} y={padT + innerH - h} width={Math.max(2, barW - 2)} height={h}
+                rx="3" fill={colors[si % colors.length]} opacity="0.9">
+                <title>{`${s.name} · ${chart.labels[i]}: ${v}`}</title>
+              </rect>
+            );
+          });
+        })}
+        {(chart.type === "line" || chart.type === "area") && chart.series.map((s, si) => {
+          const pts = s.data.map((v, i) => {
             const x = padL + (chart.labels.length > 1 ? i * step : innerW / 2);
-            return <text key={i} x={x} y={H - 6} textAnchor="middle" fontSize="9" fill="hsl(var(--muted-foreground))">{l}</text>;
-          })}
-        </svg>
-      </div>
+            const y = padT + innerH - (v / max) * innerH;
+            return { x, y };
+          });
+          const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+          const area = chart.type === "area" && pts.length
+            ? `${line} L ${pts[pts.length - 1].x.toFixed(1)},${(padT + innerH).toFixed(1)} L ${pts[0].x.toFixed(1)},${(padT + innerH).toFixed(1)} Z`
+            : null;
+          return (
+            <g key={si}>
+              {area && <path d={area} fill={colors[si % colors.length]} opacity="0.15" />}
+              <path d={line} fill="none" stroke={colors[si % colors.length]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={colors[si % colors.length]} />)}
+            </g>
+          );
+        })}
+        <XLabels labels={chart.labels} padL={padL} innerW={innerW} step={step} H={H} />
+      </svg>
+      <SeriesLegend series={chart.series} colors={colors} />
+    </ChartShell>
+  );
+}
 
-      <div className="mt-3 flex flex-wrap gap-3">
-        {chart.series.map((s, i) => (
-          <span key={i} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: colors[i % colors.length] }} />
-            {s.name}
-          </span>
-        ))}
+function ChartShell({ chart, compact, children }: { chart: AiChart; compact?: boolean; children: React.ReactNode }) {
+  return (
+    <article className={cn("rounded-2xl border border-border/60 bg-card p-5", compact && "p-4")}>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-[13.5px] font-semibold tracking-tight">{chart.yLabel || "Primary visual"}</h3>
+        <span className="text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted-foreground capitalize">{chart.type.replace("-", " ")}</span>
       </div>
+      <div className="mt-3 overflow-x-auto">{children}</div>
     </article>
   );
 }
 
-function InsightsCard({ insights }: { insights: string[] }) {
+function Gridlines({ padL, padT, padR, W, innerH, max }: { padL: number; padT: number; padR: number; W: number; innerH: number; max: number }) {
   return (
-    <article className="rounded-2xl border border-[hsl(265_70%_55%/0.2)] bg-gradient-to-br from-[hsl(265_100%_98%)] to-white p-5">
+    <g>
+      {[0.25, 0.5, 0.75, 1].map(t => {
+        const y = padT + innerH * (1 - t);
+        return (
+          <g key={t}>
+            <line x1={padL} x2={W - padR} y1={y} y2={y} stroke="hsl(var(--border))" strokeDasharray="3 3" strokeWidth="0.5" />
+            <text x={padL - 4} y={y + 3} textAnchor="end" fontSize="9" fill="hsl(var(--muted-foreground))">
+              {Math.round(max * t).toLocaleString()}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+function XLabels({ labels, padL, innerW, step, H }: { labels: string[]; padL: number; innerW: number; step: number; H: number }) {
+  const stride = Math.max(1, Math.ceil(labels.length / 12));
+  return (
+    <g>
+      {labels.map((l, i) => {
+        if (i % stride !== 0 && i !== labels.length - 1) return null;
+        const x = padL + (labels.length > 1 ? i * step : innerW / 2);
+        return <text key={i} x={x} y={H - 6} textAnchor="middle" fontSize="9" fill="hsl(var(--muted-foreground))">{String(l).slice(0, 14)}</text>;
+      })}
+    </g>
+  );
+}
+
+function SeriesLegend({ series, colors }: { series: AiChart["series"]; colors: string[] }) {
+  if (series.length <= 1) return null;
+  return (
+    <div className="mt-3 flex flex-wrap gap-3">
+      {series.map((s, i) => (
+        <span key={i} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ background: colors[i % colors.length] }} />
+          {s.name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function PieLegend({ labels, data, colors, total }: { labels: string[]; data: number[]; colors: string[]; total: number }) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1">
+      {labels.map((l, i) => (
+        <span key={i} className="inline-flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 truncate">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: colors[i % colors.length] }} />
+            <span className="truncate">{l}</span>
+          </span>
+          <span className="tabular-nums text-foreground">{((data[i] / total) * 100).toFixed(0)}%</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function InsightsCard({ insights, subtle = false }: { insights: string[]; subtle?: boolean }) {
+  return (
+    <article className={cn(
+      "rounded-2xl border p-5",
+      subtle
+        ? "border-border/60 bg-secondary/20"
+        : "border-[hsl(265_70%_55%/0.2)] bg-gradient-to-br from-[hsl(265_100%_98%)] to-white",
+    )}>
       <div className="flex items-center gap-2">
         <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-sm">
           <Sparkles className="h-3.5 w-3.5" />
         </span>
-        <h3 className="text-[14px] font-semibold tracking-tight">AI insights</h3>
+        <h3 className="text-[14px] font-semibold tracking-tight">{subtle ? "Section insights" : "AI insights"}</h3>
       </div>
       <ul className="mt-3 space-y-2">
         {insights.map((ins, i) => (
@@ -447,29 +710,80 @@ function InsightsCard({ insights }: { insights: string[] }) {
   );
 }
 
-function TableCard({ table }: { table: NonNullable<AiReportResult["table"]> }) {
+function TableCard({ table, searchable = false }: { table: AiTable; searchable?: boolean }) {
+  const [query, setQuery] = useState("");
+  const [sortIdx, setSortIdx] = useState<number | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const filtered = useMemo(() => {
+    let rows = table.rows;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      rows = rows.filter(r => r.some(c => String(c).toLowerCase().includes(q)));
+    }
+    if (sortIdx !== null) {
+      rows = [...rows].sort((a, b) => {
+        const av = a[sortIdx], bv = b[sortIdx];
+        const an = Number(av), bn = Number(bv);
+        const cmp = !isNaN(an) && !isNaN(bn) ? an - bn : String(av).localeCompare(String(bv));
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return rows;
+  }, [table.rows, query, sortIdx, sortDir]);
+
   return (
     <article className="rounded-2xl border border-border/60 bg-card p-5">
-      <h3 className="text-[14px] font-semibold tracking-tight">Breakdown</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-[14px] font-semibold tracking-tight">Drill-down</h3>
+        {searchable && (
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter rows…"
+              className="h-8 w-44 pl-7 text-[12px]"
+            />
+          </div>
+        )}
+      </div>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full border-collapse text-[12.5px]">
           <thead>
             <tr>
               {table.columns.map((c, i) => (
                 <th key={i} className="border-b border-border/60 px-3 py-2 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  {c}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (sortIdx === i) setSortDir(sortDir === "asc" ? "desc" : "asc");
+                      else { setSortIdx(i); setSortDir("asc"); }
+                    }}
+                    className="inline-flex items-center gap-1 transition hover:text-foreground"
+                  >
+                    {c}
+                    {sortIdx === i && <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span>}
+                  </button>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {table.rows.map((row, ri) => (
+            {filtered.map((row, ri) => (
               <tr key={ri} className="transition hover:bg-secondary/30">
                 {row.map((cell, ci) => (
                   <td key={ci} className="border-b border-border/30 px-3 py-2 tabular-nums">{String(cell)}</td>
                 ))}
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={table.columns.length} className="px-3 py-6 text-center text-[12px] text-muted-foreground">
+                  No matching rows
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

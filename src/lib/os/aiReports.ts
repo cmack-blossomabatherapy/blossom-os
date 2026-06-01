@@ -1,16 +1,36 @@
 export type AiKpi = { label: string; value: string; delta?: string; trend?: "up" | "down" | "flat" };
 export type AiChart = {
-  type: "bar" | "line";
+  type: "bar" | "line" | "area" | "pie" | "stacked-bar";
   labels: string[];
   series: { name: string; data: number[] }[];
+  yLabel?: string;
+  xLabel?: string;
 };
 export type AiTable = { columns: string[]; rows: (string | number)[][] };
 
+export type AiRisk = { label: string; severity: "low" | "med" | "high"; note?: string };
+
+export type AiSection = {
+  id: string;
+  title: string;
+  narrative?: string;
+  chart?: AiChart;
+  table?: AiTable;
+  insights?: string[];
+};
+
 export type AiReportResult = {
   title: string;
+  subtitle?: string;
   summary: string;
+  audience?: string;
+  timeframe?: string;
   kpis: AiKpi[];
   insights: string[];
+  recommendations?: string[];
+  risks?: AiRisk[];
+  sections?: AiSection[];
+  // Legacy single chart/table (still rendered if no sections returned)
   chart?: AiChart;
   table?: AiTable;
 };
@@ -20,6 +40,11 @@ export type AiReport = {
   title: string;
   prompt: string;
   filters: string[];
+  audience?: string;
+  timeframe?: string;
+  breakdown?: string;
+  goal?: string;
+  comparison?: string;
   fileName: string;
   rowCount: number;
   createdAt: number;
