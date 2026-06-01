@@ -169,6 +169,7 @@ import OnboardingFinalCheck from "./pages/onboarding/FinalCheck";
 import OnboardingComplete from "./pages/onboarding/Complete";
 import Journey from "./pages/onboarding/Journey";
 import PhaseWelcome from "./pages/onboarding/PhaseWelcome";
+import OSWelcomeToBlossom from "./pages/os/OSWelcomeToBlossom";
 import WeekOne from "./pages/onboarding/WeekOne";
 import WeekTwo from "./pages/onboarding/WeekTwo";
 import WeekThree from "./pages/onboarding/WeekThree";
@@ -692,7 +693,8 @@ const App = () => (
                   <Route path="/onboarding" element={<Journey />} />
                   {/* Legacy flat-roadmap removed — Journey is the canonical onboarding. */}
                   <Route path="/onboarding/roadmap" element={<Navigate to="/onboarding" replace />} />
-                  <Route path="/onboarding/phase/welcome" element={<PhaseWelcome />} />
+                  <Route path="/onboarding/phase/welcome" element={<OSWelcomeToBlossom />} />
+                  <Route path="/onboarding/phase/welcome/legacy" element={<PhaseWelcome />} />
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
                   <Route path="/onboarding/week/2" element={<WeekTwo />} />
                   <Route path="/onboarding/week/3" element={<WeekThree />} />
