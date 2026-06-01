@@ -91,7 +91,7 @@ export default function OverviewTab({ data, onDrill, onGoToEmails }: { data: Eva
     return (
       <div className="rounded-2xl border border-dashed border-border/70 bg-card p-10 text-center">
         <UserPlus className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm font-medium">No BCBA/RBT staff added yet</p>
+        <p className="text-sm font-medium">No staff added yet</p>
         <p className="text-xs text-muted-foreground mt-1">Add staff manually or import a staff list to begin evaluations.</p>
       </div>
     );
@@ -116,7 +116,7 @@ export default function OverviewTab({ data, onDrill, onGoToEmails }: { data: Eva
       <section>
         <h2 className="text-sm font-semibold mb-3">Overview</h2>
         <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-      <Kpi label="Active BCBA / RBT" value={stats.active} hint="Staff in evaluation pool" onClick={() => onDrill?.("all")} />
+      <Kpi label="Active Staff" value={stats.active} hint="Staff in evaluation pool" onClick={() => onDrill?.("all")} />
       <Kpi label="Overdue" value={stats.overdue} tone={stats.overdue ? "crit" : "ok"} hint="Past next review date" onClick={() => onDrill?.("overdue")} />
       <Kpi label="Upcoming 30 Days" value={stats.upcoming30} tone={stats.upcoming30 ? "warn" : "muted"} onClick={() => onDrill?.("due_this_month")} />
       <Kpi label="Self Evaluations Sent" value={stats.selfSent} onClick={() => onDrill?.("all")} />

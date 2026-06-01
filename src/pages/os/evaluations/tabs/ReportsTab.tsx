@@ -179,7 +179,7 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
         </Select>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Role" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Roles</SelectItem><SelectItem value="BCBA">BCBA</SelectItem><SelectItem value="RBT">RBT</SelectItem></SelectContent>
+          <SelectContent><SelectItem value="all">All Roles</SelectItem><SelectItem value="BCBA">BCBA</SelectItem><SelectItem value="RBT">RBT</SelectItem><SelectItem value="Office">Office Staff</SelectItem></SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
