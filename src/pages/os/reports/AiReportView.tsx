@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
-  TrendingUp, TrendingDown, Minus, Brain,
+  TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,8 @@ export default function AiReportView() {
   const navigate = useNavigate();
   const [report, setReport] = useState<AiReport | undefined>(() => getAiReport(id));
   const [step, setStep] = useState(0);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
   const ranRef = useRef(false);
 
   // Animated loading steps while generating.
@@ -83,6 +86,26 @@ export default function AiReportView() {
       }
     })();
   }, [report, id]);
+
+  function startEditingTitle() {
+    if (!report) return;
+    setEditTitle(report.title);
+    setIsEditingTitle(true);
+  }
+
+  function saveTitle() {
+    if (!report || !editTitle.trim()) return;
+    const next: AiReport = { ...report, title: editTitle.trim() };
+    saveAiReport(next);
+    setReport(next);
+    setIsEditingTitle(false);
+    toast.success("Report name updated");
+  }
+
+  function cancelEditTitle() {
+    setIsEditingTitle(false);
+    setEditTitle("");
+  }
 
   if (!report) {
     return (
@@ -157,9 +180,52 @@ export default function AiReportView() {
               </span>
             )}
           </div>
-          <h1 className="mt-3 text-[28px] font-semibold tracking-tight md:text-[32px]">
-            {report.status === "ready" ? report.title : "Building your report…"}
-          </h1>
+
+          {isEditingTitle ? (
+            <div className="mt-3 flex items-center gap-2">
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); saveTitle(); }
+                  if (e.key === "Escape") cancelEditTitle();
+                }}
+                autoFocus
+                className="h-10 max-w-xl text-[22px] font-semibold tracking-tight md:text-[26px]"
+              />
+              <button
+                onClick={saveTitle}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-600"
+                aria-label="Save name"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+              <button
+                onClick={cancelEditTitle}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground shadow-sm transition hover:bg-muted-foreground/20"
+                aria-label="Cancel"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center gap-2">
+              <h1 className="text-[28px] font-semibold tracking-tight md:text-[32px]">
+                {report.status === "ready" ? report.title : "Building your report…"}
+              </h1>
+              {report.status === "ready" && (
+                <button
+                  onClick={startEditingTitle}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/70 text-muted-foreground shadow-sm transition hover:bg-white hover:text-foreground"
+                  aria-label="Edit report name"
+                  title="Edit report name"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+
           <p className="mt-1 max-w-2xl text-[13px] text-muted-foreground">
             {report.status === "ready" ? report.result?.summary : `Prompt: "${report.prompt}"`}
           </p>
