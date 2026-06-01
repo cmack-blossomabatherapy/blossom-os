@@ -3,68 +3,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM = `You are Blossom AI Report Builder for Blossom ABA Therapy — an operational OS for a multi-state ABA company.
-You receive ONE OR MORE CSV previews (each with its own filename, columns, and row count), a user prompt, audience role, timeframe, primary breakdown, decision goal, comparison mode, and optional filters.
-Build a PREMIUM DRILL-DOWN OPERATIONAL DASHBOARD — not a single chart. Think "executive command center": multiple sections, each answering a specific operational question, each with its own narrative, chart, and breakdown table.
+const SYSTEM = `You are Blossom AI Report Narrator for Blossom ABA Therapy — an operational OS for a multi-state ABA company.
+You receive a DETERMINISTIC report computation (KPIs, sections, tables, data-quality flags) already calculated from one or more uploaded CSVs.
+Your job is to write NARRATIVE ONLY — never invent numbers, never restate KPIs as different values, never add data not present.
 
 RULES:
-- Always call the "build_report" tool. Never reply with plain text.
-- When multiple CSVs are provided, treat them as related sources for the SAME report. Identify the entity each file describes (e.g. sessions, authorizations, staff roster, cancellations), join them conceptually by obvious keys (client id, BCBA name, date), and let sections combine signals across files. Call out cross-file findings explicitly in narratives.
-- If a file is clearly unrelated to the others, still surface it as its own section rather than ignore it.
-- Tailor depth, KPIs, and language to the AUDIENCE role (e.g. a State Director cares about staffing/auths in their state; Finance cares about utilization $/hours; QA cares about supervision %, PR overdue; HR cares about turnover, onboarding; Leadership cares about trends and risk).
+- Always call the "write_narrative" tool. Never reply with plain text.
+- Use ONLY the numbers/labels/rows provided. If a section is marked "unavailable", explain plainly what column is missing.
+- Tailor tone, emphasis, and language to the AUDIENCE role (State Director, Finance, QA, HR, Leadership, etc.).
 - Frame everything against the TIMEFRAME provided.
-- Make the PRIMARY BREAKDOWN dimension the spine of the report (e.g. by BCBA, by State, by Payor) — at least one section must group by it.
-- Use the GOAL to decide which sections to include — every section should help the user make that decision.
-- If COMPARISON is provided (e.g. vs previous period, vs target), surface deltas in KPIs and call out movement in insights.
-- Numbers MUST be derived from the provided CSV previews — never invent. If a file is sparse or only partially shown, say so plainly in the summary and still produce a useful structural report.
-- Build 3–6 SECTIONS. Each section: a tight title, 1–3 sentence narrative, a chart (bar/line/area/pie/stacked-bar), an optional drill-down table (<= 15 rows), and 2–4 insight bullets specific to that section.
-- Produce 4–8 KPIs at the top (most operationally relevant — not vanity metrics).
-- Produce 3–6 RECOMMENDATIONS (concrete next actions, verb-led, owner-implied).
-- Produce 1–4 RISKS with severity. Skip if truly none.
-- Tone: calm, executive, operationally sharp. No fluff. No emojis.
-- Title must be specific to the request, not generic.`;
+- summary: 2–4 sentence executive summary calling out the headline finding from the KPIs.
+- insights: 3–6 top-line operational insights across the whole report (cite numbers from KPIs/sections).
+- recommendations: 3–6 concrete, verb-led actions for the audience.
+- risks: 0–4 operational risks with severity (omit if truly none).
+- sectionNarratives: for EACH provided section id, write a 1–3 sentence narrative and 2–4 insight bullets specific to that section's table/chart.
+- Tone: calm, executive, operationally sharp. No fluff. No emojis.`;
 
 const tool = {
   type: "function",
   function: {
-    name: "build_report",
-    description: "Return a structured operational report based on the CSV data and user prompt.",
+    name: "write_narrative",
+    description: "Write narrative text to accompany a precomputed operational report.",
     parameters: {
       type: "object",
       properties: {
-        title: { type: "string", description: "Specific report title, max 80 chars." },
-        subtitle: { type: "string", description: "Optional one-line subtitle framing audience & timeframe." },
-        summary: { type: "string", description: "2–4 sentence executive summary calling out the headline finding." },
-        audience: { type: "string", description: "Echo the audience role this report is tailored for." },
-        timeframe: { type: "string", description: "Echo the timeframe used." },
-        kpis: {
-          type: "array",
-          description: "4–8 high-signal KPIs computed from the data. Most relevant to the audience & goal.",
-          items: {
-            type: "object",
-            properties: {
-              label: { type: "string" },
-              value: { type: "string", description: "Formatted, e.g. '128', '94%', '$12,400'." },
-              delta: { type: "string", description: "Change vs comparison, e.g. '+12%' or '-3 vs last period'." },
-              trend: { type: "string", enum: ["up", "down", "flat"] },
-            },
-            required: ["label", "value"],
-            additionalProperties: false,
-          },
-        },
-        insights: {
-          type: "array",
-          description: "3–6 top-line operational insights across the whole report.",
-          items: { type: "string" },
-        },
-        recommendations: {
-          type: "array",
-          description: "3–6 concrete, verb-led recommended actions.",
-          items: { type: "string" },
-        },
+        summary: { type: "string" },
+        insights: { type: "array", items: { type: "string" } },
+        recommendations: { type: "array", items: { type: "string" } },
         risks: {
           type: "array",
-          description: "0–4 operational risks. Omit when truly none.",
           items: {
             type: "object",
             properties: {
@@ -76,138 +43,95 @@ const tool = {
             additionalProperties: false,
           },
         },
-        sections: {
+        sectionNarratives: {
           type: "array",
-          description: "3–6 drill-down sections. Each answers a focused question and includes a chart + optional table.",
           items: {
             type: "object",
             properties: {
-              id: { type: "string", description: "url-safe id, lowercase-with-dashes" },
-              title: { type: "string" },
-              narrative: { type: "string", description: "1–3 sentences explaining the finding." },
+              id: { type: "string" },
+              narrative: { type: "string" },
               insights: { type: "array", items: { type: "string" } },
-              chart: {
-                type: "object",
-                properties: {
-                  type: { type: "string", enum: ["bar", "line", "area", "pie", "stacked-bar"] },
-                  labels: { type: "array", items: { type: "string" } },
-                  xLabel: { type: "string" },
-                  yLabel: { type: "string" },
-                  series: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string" },
-                        data: { type: "array", items: { type: "number" } },
-                      },
-                      required: ["name", "data"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["type", "labels", "series"],
-                additionalProperties: false,
-              },
-              table: {
-                type: "object",
-                properties: {
-                  columns: { type: "array", items: { type: "string" } },
-                  rows: {
-                    type: "array",
-                    items: { type: "array", items: { type: ["string", "number"] } },
-                  },
-                },
-                required: ["columns", "rows"],
-                additionalProperties: false,
-              },
             },
-            required: ["id", "title"],
+            required: ["id", "narrative"],
             additionalProperties: false,
           },
         },
-        chart: {
-          type: "object",
-          description: "Optional headline visual when no sections are returned. Keep to <= 12 labels.",
-          properties: {
-            type: { type: "string", enum: ["bar", "line", "area", "pie", "stacked-bar"] },
-            labels: { type: "array", items: { type: "string" } },
-            series: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  data: { type: "array", items: { type: "number" } },
-                },
-                required: ["name", "data"],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ["type", "labels", "series"],
-          additionalProperties: false,
-        },
-        table: {
-          type: "object",
-          description: "Optional headline breakdown table (<= 15 rows).",
-          properties: {
-            columns: { type: "array", items: { type: "string" } },
-            rows: {
-              type: "array",
-              items: { type: "array", items: { type: ["string", "number"] } },
-            },
-          },
-          required: ["columns", "rows"],
-          additionalProperties: false,
-        },
       },
-      required: ["title", "summary", "kpis", "insights"],
+      required: ["summary", "insights"],
       additionalProperties: false,
     },
   },
 };
 
+function summarizeComputation(c: any): string {
+  if (!c) return "(no computation provided)";
+  const lines: string[] = [];
+  lines.push(`Preset: ${c.presetTitle || c.presetKey || "custom"}`);
+  lines.push(`Total rows: ${c.totalRows ?? "?"} across ${c.totalFiles ?? "?"} file(s)`);
+  if (c.dateRange) lines.push(`Date range: ${c.dateRange.min} → ${c.dateRange.max}`);
+  if (Array.isArray(c.missingFields) && c.missingFields.length) {
+    lines.push(`Missing canonical fields: ${c.missingFields.join(", ")}`);
+  }
+  if (Array.isArray(c.kpis) && c.kpis.length) {
+    lines.push("");
+    lines.push("KPIs:");
+    for (const k of c.kpis) lines.push(`- ${k.label}: ${k.value}${k.hint ? ` (${k.hint})` : ""}`);
+  }
+  if (Array.isArray(c.dataQuality) && c.dataQuality.length) {
+    lines.push("");
+    lines.push("Data quality flags:");
+    for (const d of c.dataQuality) lines.push(`- ${d.label}: ${d.detail}${d.rowsAffected ? ` (${d.rowsAffected} rows)` : ""}`);
+  }
+  if (Array.isArray(c.sections) && c.sections.length) {
+    lines.push("");
+    lines.push("Sections:");
+    for (const s of c.sections) {
+      lines.push(`# ${s.id} — ${s.title}`);
+      if (s.unavailable) { lines.push(`  UNAVAILABLE: ${s.unavailable}`); continue; }
+      if (s.chart && Array.isArray(s.chart.labels)) {
+        const labels = s.chart.labels.slice(0, 12).join(", ");
+        lines.push(`  Chart (${s.chart.type}) labels: ${labels}`);
+        for (const sr of (s.chart.series || []).slice(0, 4)) {
+          lines.push(`    - ${sr.name}: [${(sr.data || []).slice(0, 12).join(", ")}]`);
+        }
+      }
+      if (s.table && Array.isArray(s.table.columns)) {
+        lines.push(`  Table columns: ${s.table.columns.join(" | ")}`);
+        const rows = (s.table.rows || []).slice(0, 15);
+        for (const r of rows) lines.push(`    ${r.join(" | ")}`);
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const body = await req.json();
     const {
-      prompt, filters, fileName, csvPreview, rowCount, headers,
-      files,
-      audience, timeframe, breakdown, goal, comparison,
-    } = await req.json();
+      prompt, audience, timeframe, presetTitle, computation,
+    } = body ?? {};
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    // Normalize: prefer multi-file `files` payload; fall back to legacy single-file fields.
-    type FilePart = { fileName: string; preview: string; rowCount: number; headers?: string[] };
-    const fileParts: FilePart[] = Array.isArray(files) && files.length
-      ? files
-      : [{ fileName: fileName || "upload.csv", preview: csvPreview || "", rowCount: rowCount ?? 0, headers }];
+    if (!computation) {
+      return new Response(JSON.stringify({ error: "Missing 'computation' in payload. Re-upload your CSV(s) and try again." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const totalRows = fileParts.reduce((s, f) => s + (f.rowCount || 0), 0);
-    const filesBlock = fileParts.map((f, i) => [
-      `--- FILE ${i + 1}: ${f.fileName} (${f.rowCount ?? "?"} rows) ---`,
-      f.headers?.length ? `Columns: ${f.headers.join(", ")}` : "",
-      "```",
-      f.preview || "",
-      "```",
-    ].filter(Boolean).join("\n")).join("\n\n");
-
+    const compBlock = summarizeComputation(computation);
     const userMsg = [
-      `Number of source files: ${fileParts.length}`,
-      `Total rows across all files: ${totalRows}`,
+      presetTitle ? `Report: ${presetTitle}` : "",
       audience ? `Audience role: ${audience}` : "",
       timeframe ? `Timeframe: ${timeframe}` : "",
-      breakdown ? `Primary breakdown: ${breakdown}` : "",
-      comparison ? `Comparison: ${comparison}` : "",
-      goal ? `Decision / goal: ${goal}` : "",
-      filters?.length ? `Filters: ${filters.join(" | ")}` : "",
-      `User request: ${prompt || "Build the most useful operational report."}`,
+      `User request: ${prompt || "Write a clear executive narrative for this report."}`,
       ``,
-      `CSV previews (each file truncated):`,
-      filesBlock,
+      `=== DETERMINISTIC COMPUTATION (use these numbers verbatim) ===`,
+      compBlock,
     ].filter(Boolean).join("\n");
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -223,8 +147,8 @@ Deno.serve(async (req) => {
           { role: "user", content: userMsg },
         ],
         tools: [tool],
-        tool_choice: { type: "function", function: { name: "build_report" } },
-        max_completion_tokens: 8192,
+        tool_choice: { type: "function", function: { name: "write_narrative" } },
+        max_completion_tokens: 4096,
       }),
     });
 
@@ -251,16 +175,16 @@ Deno.serve(async (req) => {
     const argsStr = call?.function?.arguments;
     if (!argsStr) {
       const finish = data?.choices?.[0]?.finish_reason;
-      throw new Error(`No tool call returned (finish_reason: ${finish || "unknown"}). The model may have hit the output token limit — try a smaller dataset or shorter prompt.`);
+      throw new Error(`No tool call returned (finish_reason: ${finish || "unknown"}).`);
     }
-    let result;
+    let narrative;
     try {
-      result = JSON.parse(argsStr);
-    } catch (err) {
-      throw new Error("Model returned malformed JSON — likely truncated output. Try fewer/smaller files.");
+      narrative = JSON.parse(argsStr);
+    } catch {
+      throw new Error("Model returned malformed JSON — likely truncated.");
     }
 
-    return new Response(JSON.stringify({ result }), {
+    return new Response(JSON.stringify({ narrative }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

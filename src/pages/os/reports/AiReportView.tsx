@@ -26,14 +26,23 @@ const LOADING_STEPS = [
   "Polishing the report…",
 ];
 
+const NARRATIVE_STEPS = [
+  "Reading the computed report…",
+  "Drafting executive summary…",
+  "Writing section narratives…",
+  "Surfacing recommendations…",
+];
+
 export default function AiReportView() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [report, setReport] = useState<AiReport | undefined>(() => getAiReport(id));
   const [step, setStep] = useState(0);
+  const [narrativeStep, setNarrativeStep] = useState(0);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const ranRef = useRef(false);
+  const narrativeRanRef = useRef(false);
 
   // Animated loading steps while generating.
   useEffect(() => {
@@ -41,6 +50,95 @@ export default function AiReportView() {
     const t = setInterval(() => setStep(s => (s + 1) % LOADING_STEPS.length), 1100);
     return () => clearInterval(t);
   }, [report?.status]);
+
+  // Animate narrative-loading steps while AI narrative is pending.
+  useEffect(() => {
+    if (report?.narrativeStatus !== "pending") return;
+    const t = setInterval(() => setNarrativeStep(s => (s + 1) % NARRATIVE_STEPS.length), 1100);
+    return () => clearInterval(t);
+  }, [report?.narrativeStatus]);
+
+  // Fetch AI narrative once if numbers are ready but narrative is still pending.
+  useEffect(() => {
+    if (!report || report.status !== "ready" || report.narrativeStatus !== "pending") return;
+    if (narrativeRanRef.current) return;
+    narrativeRanRef.current = true;
+
+    const payloadRaw = sessionStorage.getItem(`ai_report_payload_${id}`);
+    if (!payloadRaw) {
+      const next: AiReport = { ...report, narrativeStatus: "error" };
+      saveAiReport(next); setReport(next);
+      return;
+    }
+
+    (async () => {
+      try {
+        const payload = JSON.parse(payloadRaw);
+        const { data, error } = await supabase.functions.invoke("generate-ai-report", {
+          body: {
+            prompt: payload.prompt,
+            audience: payload.audience,
+            timeframe: payload.timeframe,
+            presetTitle: payload.presetTitle,
+            computation: payload.computation,
+          },
+        });
+        if (data?.error) throw new Error(data.error);
+        if (error) {
+          let detail = error.message || "Narrative failed";
+          try {
+            const ctx: any = (error as any).context;
+            const bodyTxt = ctx?.body ? await new Response(ctx.body).text() : null;
+            if (bodyTxt) {
+              const parsed = JSON.parse(bodyTxt);
+              if (parsed?.error) detail = parsed.error;
+            }
+          } catch { /* ignore */ }
+          throw new Error(detail);
+        }
+        const n = data?.narrative;
+        if (!n) throw new Error("No narrative returned");
+
+        const existing = report.result;
+        if (!existing) return;
+
+        // Merge AI narrative into deterministic result.
+        const sectionNarrativeMap = new Map<string, { narrative?: string; insights?: string[] }>();
+        for (const sn of (n.sectionNarratives ?? [])) {
+          if (sn?.id) sectionNarrativeMap.set(sn.id, { narrative: sn.narrative, insights: sn.insights });
+        }
+        const mergedSections = (existing.sections ?? []).map(s => {
+          const sn = sectionNarrativeMap.get(s.id);
+          if (!sn) return s;
+          // Don't overwrite "unavailable" narratives written by the engine.
+          const keepEngineNarrative = s.narrative && s.narrative.toLowerCase().startsWith("missing");
+          return {
+            ...s,
+            narrative: keepEngineNarrative ? s.narrative : (sn.narrative || s.narrative),
+            insights: sn.insights?.length ? sn.insights : s.insights,
+          };
+        });
+
+        const mergedResult: AiReportResult = {
+          ...existing,
+          summary: n.summary || existing.summary,
+          insights: Array.isArray(n.insights) && n.insights.length ? n.insights : existing.insights,
+          recommendations: Array.isArray(n.recommendations) && n.recommendations.length ? n.recommendations : existing.recommendations,
+          risks: Array.isArray(n.risks) && n.risks.length ? n.risks : existing.risks,
+          sections: mergedSections,
+        };
+
+        const next: AiReport = { ...report, narrativeStatus: "ready", result: mergedResult };
+        saveAiReport(next); setReport(next);
+        sessionStorage.removeItem(`ai_report_payload_${id}`);
+        toast.success("AI narrative added");
+      } catch (e: any) {
+        const next: AiReport = { ...report, narrativeStatus: "error" };
+        saveAiReport(next); setReport(next);
+        toast.error(`AI narrative unavailable: ${e?.message ?? "unknown error"}`);
+      }
+    })();
+  }, [report, id]);
 
   // Kick off generation once if pending.
   useEffect(() => {
@@ -274,7 +372,13 @@ export default function AiReportView() {
             <Button size="sm" className="mt-4" onClick={() => navigate("/reports/ai/new")}>Try again</Button>
           </div>
         )}
-        {report.status === "ready" && report.result && <ReadyState result={report.result} />}
+        {report.status === "ready" && report.result && (
+          <ReadyState
+            result={report.result}
+            narrativeStatus={report.narrativeStatus}
+            narrativeStep={narrativeStep}
+          />
+        )}
       </div>
     </OSShell>
   );
@@ -332,11 +436,49 @@ function LoadingState({ step }: { step: number }) {
   );
 }
 
-function ReadyState({ result }: { result: AiReportResult }) {
+function ReadyState({
+  result, narrativeStatus, narrativeStep,
+}: {
+  result: AiReportResult;
+  narrativeStatus?: "pending" | "ready" | "error";
+  narrativeStep: number;
+}) {
   const sections = result.sections ?? [];
   const hasSections = sections.length > 0;
   return (
     <div className="space-y-5">
+      {narrativeStatus === "pending" && (
+        <div className="rounded-2xl border border-[hsl(265_70%_55%/0.25)] bg-gradient-to-r from-[hsl(265_100%_98%)] to-white p-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white">
+              <Brain className="h-3 w-3" />
+            </span>
+            <p className="text-[12px] font-medium text-[hsl(265_70%_55%)]">
+              {NARRATIVE_STEPS[narrativeStep]} — numbers below are final.
+            </p>
+          </div>
+        </div>
+      )}
+      {narrativeStatus === "error" && (
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 p-3">
+          <p className="text-[12px] font-medium text-amber-800">
+            AI narrative unavailable — deterministic numbers are still accurate below.
+          </p>
+        </div>
+      )}
+      {result.dataQuality && result.dataQuality.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Data quality</p>
+          <ul className="mt-2 space-y-1 text-[12px]">
+            {result.dataQuality.map((d, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-3 w-3 text-amber-500" />
+                <span><span className="font-medium">{d.label}:</span> {d.detail}{d.rowsAffected ? ` (${d.rowsAffected} rows)` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {(result.audience || result.timeframe) && (
         <div className="flex flex-wrap gap-1.5">
           {result.audience && (
