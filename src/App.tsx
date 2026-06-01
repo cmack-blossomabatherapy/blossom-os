@@ -40,6 +40,7 @@ import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDash
 import QaCancellationDashboard from "./pages/os/reports/QaCancellationDashboard";
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
 import HrRecruitingPipelineDashboard from "./pages/os/reports/HrRecruitingPipelineDashboard";
+import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -629,6 +630,7 @@ const App = () => (
                   <Route path="/reports/qa-cancellation" element={<QaCancellationDashboard />} />
                   <Route path="/reports/hr-payroll-command" element={<HrPayrollCommandCenter />} />
                   <Route path="/reports/hr-recruiting-pipeline" element={<HrRecruitingPipelineDashboard />} />
+                  <Route path="/reports/hr-employee-compliance" element={<HrEmployeeComplianceDashboard />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
