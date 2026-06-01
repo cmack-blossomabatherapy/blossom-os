@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
   TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
-  AlertTriangle, ListChecks, Target, Users, Calendar, Layers, Search,
+  AlertTriangle, ListChecks, Users, Calendar, Layers, Search,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { OSShell } from "@/pages/os/OSShell";
