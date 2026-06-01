@@ -462,14 +462,14 @@ function AiReportCard({ report, onDelete }: { report: AiDashboard; onDelete: () 
   const when = new Date(report.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   return (
     <Link
-      to={`/reports/ai/${report.id}`}
+      to={`/dashboards/ai/${report.id}`}
       className="group relative block overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]"
     >
       <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br from-[hsl(265_100%_92%)] to-[hsl(285_100%_94%)] opacity-60 blur-2xl transition group-hover:opacity-90" />
       <div className="relative">
         <div className="flex items-start justify-between gap-2">
           <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(265_70%_55%)]">
-            <Sparkles className="mr-1 h-2.5 w-2.5" /> AI Report
+            <Sparkles className="mr-1 h-2.5 w-2.5" /> AI Dashboard
           </Badge>
           <button
             type="button"
@@ -483,7 +483,7 @@ function AiReportCard({ report, onDelete }: { report: AiDashboard; onDelete: () 
         <h3 className="mt-2 line-clamp-2 text-[13.5px] font-semibold tracking-tight">{report.title}</h3>
         <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
           <FileSpreadsheet className="mr-1 inline h-3 w-3" />
-          {report.fileName} · {report.rowCount} rows
+          {report.fileNames.join(", ")} · {report.rowCount} rows
         </p>
         <div className="mt-3 flex items-center justify-between text-[10.5px] text-muted-foreground">
           <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {when}</span>
