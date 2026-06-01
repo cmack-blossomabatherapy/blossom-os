@@ -10568,7 +10568,7 @@ export type Database = {
         | "On Hold"
       recruiting_role: "RBT" | "BCBA" | "BT" | "Other"
       recruiting_state:
-        | "GA" | "NC" | "VA" | "TN" | "MD" | "NJ" | "Other"
+        | "GA" | "NC" | "TN" | "VA" | "MD" | "FL" | "TX" | "SC" | "Other"
       review_rating:
         | "exceeds"
         | "meets"
