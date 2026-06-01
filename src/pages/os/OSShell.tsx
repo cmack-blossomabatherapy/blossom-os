@@ -570,7 +570,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "resources", label: "Resources", items: [
         { to: "/hr/org-chart", label: "Org Chart", icon: Network, module: "hr", disabled: true },
-        { to: "/hr/reports", label: "Reports", icon: BarChart3, module: "hr" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "/training/hr-admin-assistant", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
       ],
