@@ -55,7 +55,6 @@ export default function EvaluationsPage() {
   const visibleEvals = useMemo(() => filterEvaluationsByScope(data.evaluations, visibleStaff), [data.evaluations, visibleStaff]);
   const scopedData = useMemo(() => ({ ...data, staff: visibleStaff, evaluations: visibleEvals }), [data, visibleStaff, visibleEvals]);
 
-  const supervisors = useMemo(() => data.staff.filter((s) => s.role === "BCBA"), [data.staff]);
   const openStaff: EvalStaff | null = useMemo(
     () => visibleStaff.find((s) => s.id === openStaffId) ?? null,
     [visibleStaff, openStaffId],
@@ -102,26 +101,15 @@ export default function EvaluationsPage() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {perms.canImportStaff && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-muted">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">Actions</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
-                    <Upload className="h-3.5 w-3.5 mr-2" /> Import staff
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {perms.canManageStaff && (
-              <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 rounded-full px-4 shadow-sm">
-                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add staff
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => data.refresh()}
+              disabled={data.loading}
+              className="h-9 rounded-full px-4 shadow-sm"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", data.loading && "animate-spin")} /> Refresh
+            </Button>
           </div>
         </header>
 
