@@ -20,7 +20,6 @@ import FormsTab from "./tabs/FormsTab";
 import EmailQueueTab from "./tabs/EmailQueueTab";
 import ReportsTab from "./tabs/ReportsTab";
 import SettingsTab from "./tabs/SettingsTab";
-import ImportStaffDialog from "./ImportStaffDialog";
 import LaunchChecklistTab from "./tabs/LaunchChecklistTab";
 import AIInsightsTab from "./tabs/AIInsightsTab";
 import GoalsCoachingTab from "./tabs/GoalsCoachingTab";
