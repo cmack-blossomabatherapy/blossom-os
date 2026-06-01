@@ -6,7 +6,7 @@ import {
   ZoomIn, ZoomOut, Maximize2, RotateCcw, Download, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { PageShell } from "@/components/shared/PageShell";
+import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -259,17 +259,23 @@ export default function OrgChart() {
   }
 
   return (
-    <PageShell
-      title="Organizational Chart"
-      description="See how every department, leader, and teammate connects."
-      icon={Network}
-      actions={
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportPng} disabled={exporting}>
-          <Download className="h-3.5 w-3.5 mr-1.5" />
-          {exporting ? "Exporting…" : "Export PNG"}
-        </Button>
-      }
-    >
+    <OSShell>
+      <header className="os-rise relative overflow-hidden rounded-[28px] border border-border/70 bg-gradient-to-br from-card via-background to-muted p-7 shadow-sm">
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-[26px] font-semibold tracking-tight md:text-[30px]">
+              <Network className="h-7 w-7 text-primary" /> Organizational Chart
+            </h1>
+            <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
+              See how every department, leader, and teammate connects.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="h-8 text-xs bg-background/80 backdrop-blur" onClick={exportPng} disabled={exporting}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            {exporting ? "Exporting…" : "Export PNG"}
+          </Button>
+        </div>
+      </header>
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Kpi label="Team members" value={counts.total} />
@@ -364,7 +370,7 @@ export default function OrgChart() {
           {selected && <ProfileModal node={selected} onSelect={setSelectedId} />}
         </DialogContent>
       </Dialog>
-    </PageShell>
+    </OSShell>
   );
 }
 
