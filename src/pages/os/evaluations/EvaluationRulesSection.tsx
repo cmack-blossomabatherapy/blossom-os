@@ -3,13 +3,21 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, GraduationCap, ClipboardList, Building2 } from "lucide-react";
 import type { EvalRule, StaffRole, EvalType } from "./types";
 import type { EvaluationsData } from "./useEvaluationsData";
 
 const TYPE_ORDER: EvalType[] = ["30-Day", "Quarterly", "Annual"];
+
+const ROLE_META: Record<StaffRole, { label: string; description: string; icon: React.ComponentType<{ className?: string }> }> = {
+  BCBA: { label: "BCBA", description: "Board Certified Behavior Analysts", icon: GraduationCap },
+  RBT: { label: "RBT", description: "Registered Behavior Technicians", icon: ClipboardList },
+  Office: { label: "Office Staff", description: "Admin, intake, scheduling, billing, HR and all non-clinical roles", icon: Building2 },
+};
+const ROLES: StaffRole[] = ["BCBA", "RBT", "Office"];
 
 function TypeLabel({ t }: { t: EvalType }) {
   return (
@@ -19,7 +27,7 @@ function TypeLabel({ t }: { t: EvalType }) {
   );
 }
 
-function RoleCard({
+function RoleRules({
   role,
   rules,
   onChange,
@@ -31,14 +39,17 @@ function RoleCard({
   disabled: boolean;
 }) {
   const ofRole = rules.filter((r) => r.role === role);
+  const meta = ROLE_META[role];
+  const Icon = meta.icon;
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <div className="flex items-start gap-3 mb-5">
+        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <Icon className="h-4 w-4" />
+        </div>
         <div>
-          <h3 className="text-sm font-semibold">{role} Rules</h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Auto-generates each {role}'s evaluation schedule from their hire date.
-          </p>
+          <h3 className="text-sm font-semibold tracking-tight">{meta.label} Schedule</h3>
+          <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">{meta.description}. Schedule auto-generates from each person's hire date.</p>
         </div>
       </div>
       <div className="space-y-3">
@@ -46,7 +57,7 @@ function RoleCard({
           const r = ofRole.find((x) => x.eval_type === t);
           if (!r) return null;
           return (
-            <div key={r.id} className="rounded-xl border border-border/60 bg-background/60 p-3 space-y-3">
+            <div key={r.id} className="rounded-xl border border-border/50 bg-background/60 p-3.5 space-y-3">
               <div className="flex items-center justify-between">
                 <TypeLabel t={t} />
                 <Switch
@@ -157,13 +168,12 @@ export default function EvaluationRulesSection({
   }
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/5 to-transparent p-5 space-y-4">
+    <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 space-y-5 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-16px_hsl(220_30%_20%/0.08)]">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-sm font-semibold">Evaluation Rules</h2>
-          <p className="text-[11.5px] text-muted-foreground mt-1 max-w-xl">
-            Every staff member's evaluation schedule is built automatically from their hire date and these rules.
-            No more manually scheduling reviews — when someone is hired, their evaluations are scheduled instantly.
+          <h2 className="text-[15px] font-semibold tracking-tight">Evaluation Schedule Rules</h2>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
+            Configure how often each role gets evaluated. Every staff member's review schedule is built automatically from their hire date — no manual scheduling required.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -172,14 +182,22 @@ export default function EvaluationRulesSection({
           </Button>
           <Button size="sm" disabled={!canEdit || saving || regenerating} onClick={() => save(true)}>
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${regenerating ? "animate-spin" : ""}`} />
-            Save & regenerate future schedules
+            Save & regenerate schedules
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <RoleCard role="BCBA" rules={local} onChange={update} disabled={!canEdit} />
-        <RoleCard role="RBT" rules={local} onChange={update} disabled={!canEdit} />
-      </div>
+      <Tabs defaultValue="BCBA" className="w-full">
+        <TabsList className="grid grid-cols-3 w-full max-w-md">
+          {ROLES.map((r) => (
+            <TabsTrigger key={r} value={r}>{ROLE_META[r].label}</TabsTrigger>
+          ))}
+        </TabsList>
+        {ROLES.map((r) => (
+          <TabsContent key={r} value={r} className="mt-4">
+            <RoleRules role={r} rules={local} onChange={update} disabled={!canEdit} />
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
