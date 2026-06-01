@@ -13,20 +13,16 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  CheckCircle2, Circle, Sparkles, Save, X, Plus, UserSquare2,
-  Users2, ShieldAlert, Mail, Phone, Building2, MapPin, Linkedin, HelpCircle, Calendar,
+  CheckCircle2, Circle, Sparkles, Save, X, Plus,
+  ShieldAlert, Linkedin, HelpCircle, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import type { DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-function initials(name: string) {
-  return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
-}
 
 function Card({ id, className, children }: { id?: string; className?: string; children: React.ReactNode }) {
   return (
@@ -175,13 +171,9 @@ function CompletionRow({ ok, label }: { ok: boolean; label: string }) {
 }
 
 export function IdentityTab({ m }: { m: DirectoryEmployee }) {
-  const { byUuid, reportsOf } = useEmployeeDirectory();
   const [row, setRow] = useState<IdentityRow | null>(null);
   const [completion, setCompletion] = useState<Completion | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const manager = m.managerId ? byUuid.get(m.managerId) : null;
-  const directReports = m.uuid ? reportsOf(m.uuid) : [];
 
   // Load identity row + completion in parallel.
   useEffect(() => {
