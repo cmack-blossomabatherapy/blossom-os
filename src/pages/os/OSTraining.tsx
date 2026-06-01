@@ -365,7 +365,7 @@ export default function OSTraining() {
                     <Link
                       key={t.id}
                       to={`/training/${t.id}`}
-                      className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
+                      className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-muted-foreground">
@@ -385,9 +385,9 @@ export default function OSTraining() {
                           {done ? "Complete" : p.status === "overdue" ? "Overdue" : "Required"}
                         </Badge>
                       </div>
-                      <h3 className="mt-3 text-[14px] font-semibold leading-snug">{t.title}</h3>
-                      <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{t.description}</p>
-                      <div className="mt-3">
+                      <h3 className="mt-3 truncate text-[14px] font-semibold leading-snug">{t.title}</h3>
+                      <p className="mt-0.5 line-clamp-2 min-h-[2.5rem] text-[11.5px] text-muted-foreground">{t.description}</p>
+                      <div className="mt-auto pt-3">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" /> {t.estimatedMinutes} min
