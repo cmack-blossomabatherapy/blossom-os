@@ -4694,6 +4694,7 @@ export type Database = {
           active_status: boolean
           created_at: string
           email: string
+          employee_id: string | null
           evaluation_frequency: string
           first_name: string
           hire_date: string | null
@@ -4711,6 +4712,7 @@ export type Database = {
           active_status?: boolean
           created_at?: string
           email: string
+          employee_id?: string | null
           evaluation_frequency?: string
           first_name: string
           hire_date?: string | null
@@ -4728,6 +4730,7 @@ export type Database = {
           active_status?: boolean
           created_at?: string
           email?: string
+          employee_id?: string | null
           evaluation_frequency?: string
           first_name?: string
           hire_date?: string | null
@@ -4742,6 +4745,27 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "evaluation_staff_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "evaluation_staff_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_staff_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "evaluation_staff_supervisor_id_fkey"
             columns: ["supervisor_id"]
@@ -9858,6 +9882,7 @@ export type Database = {
       alerts_can_read: { Args: { _user_id: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       can_read_all_states: { Args: never; Returns: boolean }
+      classify_eval_role: { Args: { _job_title: string }; Returns: string }
       compute_profile_completion: {
         Args: { emp: Database["public"]["Tables"]["employees"]["Row"] }
         Returns: number
@@ -9865,6 +9890,7 @@ export type Database = {
       current_user_state: { Args: never; Returns: string }
       derive_state_from_labels: { Args: { labels: string }; Returns: string }
       eval_can_access: { Args: { _user_id: string }; Returns: boolean }
+      eval_is_qa: { Args: { _user_id: string }; Returns: boolean }
       evaluate_hr_admin_assistant_graduation: {
         Args: { _enrollment_id: string }
         Returns: undefined
