@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, ChevronRight, Download, Mail, BellRing, UserMinus } from "lucide-react";
+import { Search, ChevronRight, Download, Mail, BellRing, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,12 +48,10 @@ const isTest = (s: EvalStaff) => (s.notes ?? "").startsWith("[TEST]");
 export default function StaffTab({
   data,
   onOpenStaff,
-  onAddStaff,
   initialView,
 }: {
   data: EvaluationsData;
   onOpenStaff: (id: string) => void;
-  onAddStaff: () => void;
   initialView?: SavedView;
 }) {
   const [query, setQuery] = useState("");
@@ -292,11 +290,8 @@ export default function StaffTab({
           <div className="p-8 text-sm text-muted-foreground text-center">Loading…</div>
         ) : rows.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm font-medium">No staff members yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Add BCBAs, RBTs, and Office Staff to start tracking evaluations.</p>
-            <Button size="sm" className="mt-4" onClick={onAddStaff}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Staff Member
-            </Button>
+            <p className="text-sm font-medium">No staff members found.</p>
+            <p className="text-xs text-muted-foreground mt-1">Staff are managed through User Management. Ask HR or a Super Admin to add staff there.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

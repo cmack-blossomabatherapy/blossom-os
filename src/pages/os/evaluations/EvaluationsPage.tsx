@@ -4,15 +4,14 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardCheck, Plus, Mail, Upload, Settings as SettingsIcon,
-  MoreHorizontal, LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
+  ClipboardCheck, RefreshCw, Mail, Settings as SettingsIcon,
+  LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useEvaluationsData } from "./useEvaluationsData";
-import AddStaffDialog from "./AddStaffDialog";
 import StaffProfileDrawer from "./StaffProfileDrawer";
 import OverviewTab from "./tabs/OverviewTab";
 import StaffTab from "./tabs/StaffTab";
@@ -21,7 +20,6 @@ import FormsTab from "./tabs/FormsTab";
 import EmailQueueTab from "./tabs/EmailQueueTab";
 import ReportsTab from "./tabs/ReportsTab";
 import SettingsTab from "./tabs/SettingsTab";
-import ImportStaffDialog from "./ImportStaffDialog";
 import LaunchChecklistTab from "./tabs/LaunchChecklistTab";
 import AIInsightsTab from "./tabs/AIInsightsTab";
 import GoalsCoachingTab from "./tabs/GoalsCoachingTab";
@@ -50,8 +48,6 @@ export default function EvaluationsPage() {
   const data = useEvaluationsData();
   const [tab, setTab] = useState("overview");
   const [staffView, setStaffView] = useState<import("./tabs/StaffTab").SavedView | undefined>(undefined);
-  const [addOpen, setAddOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [openStaffId, setOpenStaffId] = useState<string | null>(null);
 
   // Scope data by permissions
@@ -59,7 +55,6 @@ export default function EvaluationsPage() {
   const visibleEvals = useMemo(() => filterEvaluationsByScope(data.evaluations, visibleStaff), [data.evaluations, visibleStaff]);
   const scopedData = useMemo(() => ({ ...data, staff: visibleStaff, evaluations: visibleEvals }), [data, visibleStaff, visibleEvals]);
 
-  const supervisors = useMemo(() => data.staff.filter((s) => s.role === "BCBA"), [data.staff]);
   const openStaff: EvalStaff | null = useMemo(
     () => visibleStaff.find((s) => s.id === openStaffId) ?? null,
     [visibleStaff, openStaffId],
@@ -106,26 +101,15 @@ export default function EvaluationsPage() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {perms.canImportStaff && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-full hover:bg-muted">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">Actions</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setImportOpen(true)}>
-                    <Upload className="h-3.5 w-3.5 mr-2" /> Import staff
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {perms.canManageStaff && (
-              <Button size="sm" onClick={() => setAddOpen(true)} className="h-9 rounded-full px-4 shadow-sm">
-                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add staff
-              </Button>
-            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => data.refresh()}
+              disabled={data.loading}
+              className="h-9 rounded-full px-4 shadow-sm"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", data.loading && "animate-spin")} /> Refresh
+            </Button>
           </div>
         </header>
 
@@ -208,7 +192,7 @@ export default function EvaluationsPage() {
             />
           </TabsContent>
           <TabsContent value="staff">
-            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} initialView={staffView} />
+            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} initialView={staffView} />
           </TabsContent>
           <TabsContent value="schedule"><ScheduleTab data={scopedData} onOpenStaff={setOpenStaffId} /></TabsContent>
           {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
@@ -221,14 +205,6 @@ export default function EvaluationsPage() {
           <TabsContent value="settings"><SettingsTab data={data} canEdit={perms.canManageSettings} /></TabsContent>
         </Tabs>
       </div>
-
-      <AddStaffDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        supervisors={supervisors}
-        onCreated={data.refresh}
-      />
-      <ImportStaffDialog open={importOpen} onOpenChange={setImportOpen} existing={data.staff} onImported={data.refresh} />
       <StaffProfileDrawer
         staff={openStaff}
         evaluations={data.evaluations}
