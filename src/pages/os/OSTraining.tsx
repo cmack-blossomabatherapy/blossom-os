@@ -187,8 +187,8 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
-                <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resources")}>
+                <BookMarked className="mr-1.5 h-3.5 w-3.5" /> Resource Library
               </Button>
               {role === "super_admin" && (
                 <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
