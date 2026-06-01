@@ -45,7 +45,7 @@ export function SecurityKeysCard() {
         userName: user.email ?? user.id,
         displayName: (user.user_metadata?.full_name as string) ?? user.email ?? "Blossom user",
       });
-      if (!result.ok) {
+      if (result.ok !== true) {
         if (result.reason === "notSupported") toast.error("Security keys aren't supported on this device.");
         else if (result.reason === "cancelled") toast("Registration cancelled.");
         else toast.error(result.message ?? "Couldn't register security key.");
