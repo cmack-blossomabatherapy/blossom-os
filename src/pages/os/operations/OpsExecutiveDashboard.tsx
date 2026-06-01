@@ -211,16 +211,14 @@ export default function OpsExecutiveDashboard() {
                 className={cn("h-2.5 w-2.5 rounded-full", {
                   "bg-emerald-500": overallTone === "healthy",
                   "bg-amber-500": overallTone === "attention",
-                  "bg-rose-500": overallTone === "risk",
-                  "bg-rose-500": overallTone === "blocked",
+                  "bg-rose-500": overallTone === "risk" || overallTone === "blocked",
                 })}
               />
               <span
                 className={cn("absolute inset-0 -m-1 rounded-full opacity-40 animate-ping", {
                   "bg-emerald-400": overallTone === "healthy",
                   "bg-amber-400": overallTone === "attention",
-                  "bg-rose-400": overallTone === "risk",
-                  "bg-rose-400": overallTone === "blocked",
+                  "bg-rose-400": overallTone === "risk" || overallTone === "blocked",
                 })}
               />
             </span>
@@ -255,8 +253,7 @@ export default function OpsExecutiveDashboard() {
                   className={cn("h-full rounded-full", {
                     "bg-emerald-500": d.tone === "healthy",
                     "bg-amber-500": d.tone === "attention",
-                    "bg-rose-500": d.tone === "risk",
-                    "bg-rose-500": d.tone === "blocked",
+                    "bg-rose-500": d.tone === "risk" || d.tone === "blocked",
                   })}
                   style={{ width: `${Math.min(100, Math.max(8, d.score))}%` }}
                 />
@@ -289,8 +286,7 @@ export default function OpsExecutiveDashboard() {
                         className={cn("h-1.5 w-1.5 rounded-full shrink-0", {
                           "bg-emerald-500": r.tone === "healthy",
                           "bg-amber-500": r.tone === "attention",
-                          "bg-rose-500": r.tone === "risk",
-                          "bg-rose-500": r.tone === "blocked",
+                          "bg-rose-500": r.tone === "risk" || r.tone === "blocked",
                         })}
                       />
                       <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -399,8 +395,7 @@ export default function OpsExecutiveDashboard() {
                     className={cn("h-full rounded-full", {
                       "bg-emerald-500": r.tone === "healthy",
                       "bg-amber-500": r.tone === "attention",
-                      "bg-rose-500": r.tone === "risk",
-                      "bg-rose-500": r.tone === "blocked",
+                      "bg-rose-500": r.tone === "risk" || r.tone === "blocked",
                       "bg-muted-foreground/30": r.tone === "neutral",
                     })}
                     style={{ width: `${r.tone === "neutral" ? 8 : Math.max(6, r.value)}%` }}
@@ -430,8 +425,7 @@ export default function OpsExecutiveDashboard() {
                     className={cn(
                       "absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-card",
                       {
-                        "bg-rose-500": e.tone === "blocked",
-                        "bg-rose-500": e.tone === "risk",
+                        "bg-rose-500": e.tone === "blocked" || e.tone === "risk",
                         "bg-amber-500": e.tone === "attention",
                         "bg-emerald-500": e.tone === "healthy",
                       },
@@ -521,8 +515,7 @@ export default function OpsExecutiveDashboard() {
                     className={cn("h-1.5 w-1.5 rounded-full shrink-0", {
                       "bg-emerald-500": a.tone === "healthy",
                       "bg-amber-500": a.tone === "attention",
-                      "bg-rose-500": a.tone === "risk",
-                      "bg-rose-500": a.tone === "blocked",
+                      "bg-rose-500": a.tone === "risk" || a.tone === "blocked",
                     })}
                   />
                   <span className="truncate text-[13px] text-foreground">{a.title}</span>

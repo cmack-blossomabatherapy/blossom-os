@@ -91,8 +91,7 @@ export function HealthPill({ tone, children }: { tone: HealthTone; children: Rea
       <span className={cn("h-1.5 w-1.5 rounded-full", {
         "bg-emerald-500": tone === "healthy",
         "bg-amber-500": tone === "attention",
-        "bg-rose-500": tone === "risk",
-        "bg-rose-500": tone === "blocked",
+        "bg-rose-500": tone === "risk" || tone === "blocked",
         "bg-muted-foreground/50": tone === "neutral",
       })} />
       {children}

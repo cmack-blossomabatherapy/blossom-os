@@ -38,8 +38,7 @@ function ToneBar({ tone, pct }: { tone: HealthTone; pct: number }) {
         className={cn("h-full rounded-full transition-all", {
           "bg-emerald-500": tone === "healthy",
           "bg-amber-500": tone === "attention",
-          "bg-rose-500": tone === "risk",
-          "bg-rose-500": tone === "blocked",
+          "bg-rose-500": tone === "risk" || tone === "blocked",
           "bg-muted-foreground/30": tone === "neutral",
         })}
         style={{ width: `${Math.max(6, Math.min(100, pct))}%` }}
@@ -54,8 +53,7 @@ function Dot({ tone }: { tone: HealthTone }) {
       className={cn("h-1.5 w-1.5 rounded-full shrink-0", {
         "bg-emerald-500": tone === "healthy",
         "bg-amber-500": tone === "attention",
-        "bg-rose-500": tone === "risk",
-        "bg-rose-500": tone === "blocked",
+        "bg-rose-500": tone === "risk" || tone === "blocked",
         "bg-muted-foreground/40": tone === "neutral",
       })}
     />
@@ -403,14 +401,12 @@ export default function OpsCommandCenter() {
                 <span className={cn("h-2 w-2 rounded-full", {
                   "bg-emerald-500": overallTone === "healthy",
                   "bg-amber-500": overallTone === "attention",
-                  "bg-rose-500": overallTone === "risk",
-                  "bg-rose-500": overallTone === "blocked",
+                  "bg-rose-500": overallTone === "risk" || overallTone === "blocked",
                 })} />
                 <span className={cn("absolute inset-0 -m-1 rounded-full opacity-40 animate-ping", {
                   "bg-emerald-400": overallTone === "healthy",
                   "bg-amber-400": overallTone === "attention",
-                  "bg-rose-400": overallTone === "risk",
-                  "bg-rose-400": overallTone === "blocked",
+                  "bg-rose-400": overallTone === "risk" || overallTone === "blocked",
                 })} />
               </span>
               <span className="text-[12px] text-muted-foreground">Pulse</span>
@@ -655,8 +651,7 @@ export default function OpsCommandCenter() {
                 <li key={e.id} className="relative">
                   <span
                     className={cn("absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-card", {
-                      "bg-rose-500": e.tone === "blocked",
-                      "bg-rose-500": e.tone === "risk",
+                      "bg-rose-500": e.tone === "blocked" || e.tone === "risk",
                       "bg-amber-500": e.tone === "attention",
                       "bg-emerald-500": e.tone === "healthy",
                     })}
