@@ -166,7 +166,7 @@ export default function ReportsHome() {
               </p>
             </Link>
           ) : (
-            aiReports.map(r => <AiReportCard key={r.id} report={r} onDelete={() => { deleteAiReport(r.id); setAiReports(listAiReports()); }} />)
+            aiReports.map(r => <AiReportCard key={r.id} report={r} onDelete={() => { deleteAiDashboard(r.id); setAiReports(listAiDashboards()); }} />)
           )}
         </div>
       </section>
@@ -456,8 +456,8 @@ function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored
   );
 }
 
-function AiReportCard({ report, onDelete }: { report: AiReport; onDelete: () => void }) {
-  const isGenerating = report.status === "generating";
+function AiReportCard({ report, onDelete }: { report: AiDashboard; onDelete: () => void }) {
+  const isGenerating = report.narrativeStatus === "pending";
   const isError = report.status === "error";
   const when = new Date(report.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   return (
