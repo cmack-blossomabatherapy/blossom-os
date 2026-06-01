@@ -626,7 +626,7 @@ function JourneyBuilderView({
                   <Icon className="h-4 w-4" />
                 </span>
                 <Link
-                  to={`/admin/training/${m.id}`}
+                  to={`/training/${m.id}`}
                   className="min-w-0 flex-1"
                 >
                   <p className="truncate text-[13.5px] font-medium text-foreground">
