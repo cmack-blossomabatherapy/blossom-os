@@ -36,6 +36,7 @@ import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
+import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDashboard";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -621,6 +622,7 @@ const App = () => (
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
+                  <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
