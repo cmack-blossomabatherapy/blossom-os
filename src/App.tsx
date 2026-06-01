@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
 import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
+import { ROLE_HOME } from "@/lib/os/roleHome";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -391,6 +392,23 @@ import { ClientsProvider } from "@/contexts/ClientsContext";
 function RoleDashboardRedirect() {
   const { roles, isAdmin, hasPerm, partOfLeadership, dashboardAccess } = useAuth();
   const hasTrainingAdminAccess = roles.some((role) => TRAINING_ADMIN_ROLES.includes(role));
+  const primaryRoleHome =
+    isAdmin ? ROLE_HOME.super_admin
+    : roles.includes("state_director") ? ROLE_HOME.state_director
+    : roles.includes("exec") ? ROLE_HOME.executive_leadership
+    : roles.includes("ops_manager") ? ROLE_HOME.operations_leadership
+    : roles.includes("intake") ? ROLE_HOME.intake_coordinator
+    : roles.includes("auth_team") ? ROLE_HOME.authorization_coordinator
+    : roles.includes("scheduling") ? ROLE_HOME.scheduling_team
+    : roles.includes("recruiting_assistant") ? ROLE_HOME.recruiting_team
+    : roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager") ? ROLE_HOME.hr_team
+    : roles.includes("finance") ? ROLE_HOME.billing_finance
+    : roles.includes("qa") ? ROLE_HOME.qa_team
+    : roles.includes("payroll_admin") ? ROLE_HOME.payroll_coordinator
+    : roles.includes("bcba") ? ROLE_HOME.bcba
+    : roles.includes("rbt") ? ROLE_HOME.rbt
+    : roles.includes("marketing") ? ROLE_HOME.marketing_team
+    : undefined;
   const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
   const dashboardRoutes: Record<string, string> = {
     ceo: "/leadership-dashboard",
@@ -432,7 +450,7 @@ function RoleDashboardRedirect() {
     ? "/leadership-dashboard"
     : roles.includes("state_director")
       ? "/training"
-      : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
+      : primaryRoleHome ?? roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
   const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") || hasTrainingAdminAccess ? "/hr/journey" : "/training";
   const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
