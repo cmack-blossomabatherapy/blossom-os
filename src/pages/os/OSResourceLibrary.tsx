@@ -8,6 +8,12 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
   Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin,
   X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
   FileType2, MessageSquare, Cpu, PlayCircle, Link2,
@@ -44,6 +50,10 @@ export default function OSResourceLibrary() {
   const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
   const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqType, setReqType] = useState("");
+  const [reqDetails, setReqDetails] = useState("");
 
   // Role-aware scope, pulled live from the operational library.
   const scope = useMemo(
@@ -400,11 +410,95 @@ export default function OSResourceLibrary() {
               <p className="mt-1 text-[12.5px] text-muted-foreground">
                 Request a resource or suggest an SOP update.
               </p>
-              <Button variant="outline" size="sm" className="mt-3 w-full">Request resource</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => setRequestOpen(true)}
+              >
+                Request resource
+              </Button>
             </div>
           </aside>
         </div>
       </div>
+
+      {/* REQUEST RESOURCE DIALOG */}
+      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Request a resource</DialogTitle>
+            <DialogDescription>
+              Tell us what you need. Super Admins will be notified to review your request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="req-title">Resource title</Label>
+              <Input
+                id="req-title"
+                placeholder="e.g. RBT shadowing checklist"
+                value={reqTitle}
+                onChange={(e) => setReqTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-type">Type</Label>
+              <Input
+                id="req-type"
+                placeholder="e.g. SOP, template, video"
+                value={reqType}
+                onChange={(e) => setReqType(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-details">What do you need?</Label>
+              <Textarea
+                id="req-details"
+                placeholder="Describe the resource, who it's for, and why it's needed."
+                rows={4}
+                value={reqDetails}
+                onChange={(e) => setReqDetails(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRequestOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (!reqTitle.trim()) {
+                  toast.error("Please add a resource title");
+                  return;
+                }
+                try {
+                  const key = "resource_requests";
+                  const existing = JSON.parse(localStorage.getItem(key) || "[]");
+                  existing.unshift({
+                    id: crypto.randomUUID(),
+                    title: reqTitle.trim(),
+                    type: reqType.trim(),
+                    details: reqDetails.trim(),
+                    requestedBy: role,
+                    state: activeState,
+                    createdAt: new Date().toISOString(),
+                    status: "pending",
+                  });
+                  localStorage.setItem(key, JSON.stringify(existing));
+                } catch {}
+                toast.success("Request submitted", {
+                  description: "Super Admins have been notified to review your request.",
+                });
+                setReqTitle("");
+                setReqType("");
+                setReqDetails("");
+                setRequestOpen(false);
+              }}
+            >
+              Submit request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* DETAIL DRAWER */}
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
