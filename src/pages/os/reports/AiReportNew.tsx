@@ -112,6 +112,13 @@ export default function AiReportNew() {
     if (!prompt.trim()) { toast.error("Tell the AI what report to build"); return; }
     setSubmitting(true);
 
+    // Strip "Auto …" sentinels — anything left blank means: let the AI infer from the prompt + data.
+    const clean = (v: string) => (v && !/^auto\b/i.test(v) ? v : "");
+    const audienceClean = clean(audience);
+    const timeframeClean = clean(timeframe);
+    const breakdownClean = clean(breakdown);
+    const comparisonClean = clean(comparison);
+
     // With multiple files, keep each preview compact so the AI prompt + sessionStorage stay reasonable.
     const perFileMax = files.length <= 1 ? 150 : files.length <= 3 ? 80 : 50;
     const filePayloads = files.map(({ file, csvText }) => {
@@ -129,11 +136,11 @@ export default function AiReportNew() {
       title: prompt.slice(0, 60) || "AI Report",
       prompt,
       filters,
-      audience,
-      timeframe,
-      breakdown,
+      audience: audienceClean,
+      timeframe: timeframeClean,
+      breakdown: breakdownClean,
       goal,
-      comparison,
+      comparison: comparisonClean,
       fileName: combinedName,
       rowCount: totalRows,
       files: filePayloads.map((f) => ({ name: f.fileName, rowCount: f.rowCount })),
@@ -152,7 +159,7 @@ export default function AiReportNew() {
       headers: first.headers,
       fileName: report.fileName,
       prompt, filters,
-      audience, timeframe, breakdown, goal, comparison,
+      audience: audienceClean, timeframe: timeframeClean, breakdown: breakdownClean, goal, comparison: comparisonClean,
     }));
     navigate(`/reports/ai/${id}`);
   }
