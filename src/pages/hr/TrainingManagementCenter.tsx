@@ -22,7 +22,6 @@ import {
   Sparkles,
   Upload,
   Users,
-  GraduationCap,
   Layers,
   FileText,
   Play,
@@ -33,32 +32,139 @@ import {
   Wand2,
   ArrowRight,
   Clock,
-  MoreHorizontal,
   Lightbulb,
   Compass,
   PlayCircle,
   BookOpen,
   Workflow as WorkflowIcon,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
 } from "lucide-react";
 import {
-  trainingJourneys,
-  trainingModules,
   trainingSops,
   trainingTangos,
   trainingAssignments,
   trainingCategories,
   trainingTemplates,
   formatRelative,
-  ROLE_LABEL,
   type ModuleType,
   type TrainingStatus,
-  type TrainingModule,
-  type TrainingJourney,
 } from "@/lib/hr/trainingCenterData";
+import {
+  useAcademy,
+  addModuleToJourney,
+  removeModuleFromJourney,
+  reorderJourneyModule,
+  type Training,
+  type RoleJourney,
+} from "@/lib/training/academyData";
 import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+
+/* ------- Local view-model adapters (Academy → Management Center) ------- */
+
+type ViewModule = {
+  id: string;
+  title: string;
+  description: string;
+  type: ModuleType;
+  category: string;
+  estimatedMinutes: number;
+  required: boolean;
+  status: TrainingStatus;
+  updatedAt: string;
+  owner: string;
+  tags: string[];
+};
+
+type ViewJourney = {
+  id: string;
+  title: string;
+  description: string;
+  role: string;
+  category: string;
+  status: TrainingStatus;
+  moduleIds: string[];
+  assignedCount: number;
+  completionPct: number;
+  updatedAt: string;
+  owner: string;
+};
+
+const ACADEMY_ROLE_LABEL: Record<string, string> = {
+  intake: "Intake Coordinator",
+  state_director: "State Director",
+  scheduling: "Scheduling",
+  qa_team: "QA",
+  recruiting_team: "Recruiting",
+  bcba: "BCBA",
+  rbt: "RBT",
+  authorizations: "Authorizations",
+  hr_team: "HR",
+  billing_finance: "Billing & Finance",
+  executive_leadership: "Executive Leadership",
+  operations_leadership: "Operations Leadership",
+  case_manager: "Case Manager",
+};
+
+function roleLabel(role: string): string {
+  return ACADEMY_ROLE_LABEL[role] ?? role;
+}
+
+function roleCategory(role: string): string {
+  if (role === "intake") return "Intake";
+  if (role === "scheduling") return "Scheduling";
+  if (role === "qa_team") return "QA";
+  if (role === "recruiting_team") return "Recruiting";
+  if (role === "bcba" || role === "rbt") return "Clinical";
+  if (role === "authorizations") return "Authorizations";
+  if (role === "hr_team") return "HR";
+  if (role === "executive_leadership" || role === "operations_leadership" || role === "state_director") return "Leadership";
+  if (role === "billing_finance") return "Operations";
+  return "Operations";
+}
+
+function toViewModule(t: Training): ViewModule {
+  const type: ModuleType =
+    t.type === "Quick Guide" || t.type === "Tango" || t.type === "Video" ||
+    t.type === "SOP" || t.type === "Workflow" || t.type === "Checklist"
+      ? t.type
+      : "SOP";
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    type,
+    category: t.department
+      ? t.department.charAt(0).toUpperCase() + t.department.slice(1)
+      : (t.category === "systems" ? "Systems & Software" : "Operations"),
+    estimatedMinutes: t.estimatedMinutes,
+    required: !!t.required,
+    status: "Published",
+    updatedAt: t.lastUpdated ?? new Date().toISOString().slice(0, 10),
+    owner: t.owner ?? "",
+    tags: [],
+  };
+}
+
+function toViewJourney(j: RoleJourney): ViewJourney {
+  return {
+    id: j.id,
+    title: j.title,
+    description: j.tagline,
+    role: j.role,
+    category: roleCategory(j.role),
+    status: "Published",
+    moduleIds: j.moduleIds,
+    assignedCount: 0,
+    completionPct: 0,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    owner: "",
+  };
+}
 
 type NavId =
   | "journeys"
@@ -126,21 +232,26 @@ export default function TrainingManagementCenter() {
   );
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
 
+  // Live academy data — single source of truth shared with the Training Academy.
+  const academy = useAcademy();
+  const allModules = useMemo(() => academy.trainings.map(toViewModule), [academy.trainings]);
+  const allJourneys = useMemo(() => academy.journeys.map(toViewJourney), [academy.journeys]);
+
   const selectedJourney = useMemo(
-    () => trainingJourneys.find((j) => j.id === selectedJourneyId) ?? null,
-    [selectedJourneyId],
+    () => allJourneys.find((j) => j.id === selectedJourneyId) ?? null,
+    [allJourneys, selectedJourneyId],
   );
 
   const filteredModules = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return trainingModules;
-    return trainingModules.filter(
+    if (!q) return allModules;
+    return allModules.filter(
       (m) =>
         m.title.toLowerCase().includes(q) ||
         m.description.toLowerCase().includes(q) ||
-        m.tags.some((t) => t.toLowerCase().includes(q)),
+        m.category.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [allModules, query]);
 
   return (
     <OSShell>
@@ -279,13 +390,14 @@ export default function TrainingManagementCenter() {
           {/* Content by nav */}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
-              journeys={trainingJourneys}
+              journeys={allJourneys}
               onSelect={setSelectedJourneyId}
             />
           )}
           {nav === "journeys" && selectedJourney && (
             <JourneyBuilderView
               journey={selectedJourney}
+              allModules={allModules}
               onBack={() => setSelectedJourneyId(null)}
             />
           )}
@@ -294,7 +406,7 @@ export default function TrainingManagementCenter() {
           {nav === "sops" && <SopsList />}
           {nav === "tangos" && <TangosGrid />}
           {nav === "assignments" && <AssignmentsTable />}
-          {nav === "categories" && <CategoriesGrid />}
+          {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
             <ModulesGrid
               modules={filteredModules.filter((m) => m.status === "Draft")}
@@ -373,7 +485,7 @@ function JourneysView({
   journeys,
   onSelect,
 }: {
-  journeys: TrainingJourney[];
+  journeys: ViewJourney[];
   onSelect: (id: string) => void;
 }) {
   return (
@@ -392,7 +504,7 @@ function JourneysView({
             <div className="flex items-start justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {ROLE_LABEL[j.role]}
+                  {roleLabel(j.role)}
                 </p>
                 <h3 className="mt-0.5 text-[15.5px] font-semibold tracking-tight text-foreground">
                   {j.title}
@@ -408,16 +520,7 @@ function JourneysView({
             <div className="mt-4 flex items-center justify-between text-[12px] text-muted-foreground">
               <span>{j.moduleIds.length} modules</span>
               <span>{j.assignedCount} assigned</span>
-              <span>Updated {formatRelative(j.updatedAt)}</span>
-            </div>
-            <div className="mt-3 space-y-1">
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-muted-foreground">Completion</span>
-                <span className="font-medium text-foreground">
-                  {j.completionPct}%
-                </span>
-              </div>
-              <Progress value={j.completionPct} className="h-1.5" />
+              <span>{roleCategory(j.role)}</span>
             </div>
             <div className="mt-3 flex items-center text-[12.5px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
               Open builder <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -431,14 +534,24 @@ function JourneysView({
 
 function JourneyBuilderView({
   journey,
+  allModules,
   onBack,
 }: {
-  journey: TrainingJourney;
+  journey: ViewJourney;
+  allModules: ViewModule[];
   onBack: () => void;
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const moduleMap = useMemo(() => {
+    const map = new Map<string, ViewModule>();
+    allModules.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [allModules]);
   const modules = journey.moduleIds
-    .map((id) => trainingModules.find((m) => m.id === id))
-    .filter(Boolean) as TrainingModule[];
+    .map((id) => moduleMap.get(id))
+    .filter(Boolean) as ViewModule[];
+  const availableModules = allModules.filter((m) => !journey.moduleIds.includes(m.id));
+  const missingCount = journey.moduleIds.length - modules.length;
 
   return (
     <section className="space-y-5">
@@ -453,7 +566,7 @@ function JourneyBuilderView({
           <Button variant="outline" size="sm" className="rounded-xl">
             <Users className="mr-1.5 h-3.5 w-3.5" /> Assign
           </Button>
-          <Button size="sm" className="rounded-xl">
+          <Button size="sm" className="rounded-xl" onClick={() => setPickerOpen(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Add module
           </Button>
         </div>
@@ -463,7 +576,7 @@ function JourneyBuilderView({
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {ROLE_LABEL[journey.role]} · {journey.category}
+              {roleLabel(journey.role)} · {journey.category}
             </p>
             <h2 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">
               {journey.title}
@@ -479,9 +592,14 @@ function JourneyBuilderView({
 
         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
           <Stat label="Modules" value={String(modules.length)} />
-          <Stat label="Assigned" value={String(journey.assignedCount)} />
-          <Stat label="Completion" value={`${journey.completionPct}%`} />
+          <Stat label="Required" value={String(modules.filter((m) => m.required).length)} />
+          <Stat label="Est. minutes" value={String(modules.reduce((s, m) => s + m.estimatedMinutes, 0))} />
         </div>
+        {missingCount > 0 && (
+          <p className="mt-3 text-[12px] text-amber-600 dark:text-amber-400">
+            {missingCount} module{missingCount === 1 ? "" : "s"} in this journey can't be found in the library — they may have been deleted.
+          </p>
+        )}
       </div>
 
       <div>
@@ -489,7 +607,7 @@ function JourneyBuilderView({
           Modules in this journey
         </h3>
         <p className="text-[12.5px] text-muted-foreground">
-          Drag to reorder · click to edit content.
+          Reorder with the arrows · open a module to edit its content in the builder.
         </p>
         <ol className="mt-4 space-y-2">
           {modules.map((m, idx) => {
@@ -505,29 +623,57 @@ function JourneyBuilderView({
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
-                <div className="min-w-0 flex-1">
+                <Link
+                  to={`/training/${m.id}`}
+                  className="min-w-0 flex-1"
+                >
                   <p className="truncate text-[13.5px] font-medium text-foreground">
                     {m.title}
                   </p>
                   <p className="truncate text-[12px] text-muted-foreground">
                     {m.type} · {m.estimatedMinutes} min · {m.category}
                   </p>
-                </div>
+                </Link>
                 <Badge variant="outline" className={STATUS_STYLE[m.status]}>
                   {m.status}
                 </Badge>
-                <button
-                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                  aria-label="Module actions"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => reorderJourneyModule(journey.id, idx, idx - 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === modules.length - 1}
+                    onClick={() => reorderJourneyModule(journey.id, idx, idx + 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removeModuleFromJourney(journey.id, m.id);
+                      toast.success(`Removed "${m.title}" from journey`);
+                    }}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-destructive/80 hover:bg-destructive/10"
+                    aria-label="Remove from journey"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </li>
             );
           })}
           <li>
             <button
-              onClick={() => toast.info("Module picker coming soon")}
+              onClick={() => setPickerOpen(true)}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-muted/30 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" /> Add module to journey
@@ -535,6 +681,16 @@ function JourneyBuilderView({
           </li>
         </ol>
       </div>
+
+      <AddModuleToJourneyDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        available={availableModules}
+        onPick={(moduleId, moduleTitle) => {
+          addModuleToJourney(journey.id, moduleId);
+          toast.success(`Added "${moduleTitle}" to journey`);
+        }}
+      />
     </section>
   );
 }
@@ -543,7 +699,7 @@ function ModulesGrid({
   modules,
   emptyLabel,
 }: {
-  modules: TrainingModule[];
+  modules: ViewModule[];
   emptyLabel?: string;
 }) {
   if (!modules.length) {
@@ -719,11 +875,11 @@ function AssignmentsTable() {
   );
 }
 
-function CategoriesGrid() {
+function CategoriesGrid({ modules }: { modules: ViewModule[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       {trainingCategories.map((c) => {
-        const count = trainingModules.filter((m) => m.category === c).length;
+        const count = modules.filter((m) => m.category === c).length;
         return (
           <div
             key={c}
@@ -955,10 +1111,13 @@ function AIAssistantPanel() {
 }
 
 function ProgressPanel() {
+  const academy = useAcademy();
   const totalAssigned = trainingAssignments.reduce((s, a) => s + a.assigned, 0);
   const totalCompleted = trainingAssignments.reduce((s, a) => s + a.completed, 0);
   const overdue = trainingAssignments.reduce((s, a) => s + a.overdue, 0);
   const pct = Math.round((totalCompleted / Math.max(totalAssigned, 1)) * 100);
+  const moduleCount = academy.trainings.length;
+  const journeyCount = academy.journeys.length;
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4">
       <p className="text-[13px] font-semibold tracking-tight">Library health</p>
@@ -972,16 +1131,8 @@ function ProgressPanel() {
           value={String(overdue)}
           tone={overdue > 0 ? "amber" : "default"}
         />
-        <MiniStat
-          label="Drafts"
-          value={String(trainingModules.filter((m) => m.status === "Draft").length)}
-        />
-        <MiniStat
-          label="Published"
-          value={String(
-            trainingModules.filter((m) => m.status === "Published").length,
-          )}
-        />
+        <MiniStat label="Modules" value={String(moduleCount)} />
+        <MiniStat label="Journeys" value={String(journeyCount)} />
       </div>
     </div>
   );
@@ -1187,6 +1338,97 @@ function AIGenerateDialog({
             </>
           )}
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ----------------------- Add-module picker ----------------------- */
+
+function AddModuleToJourneyDialog({
+  open,
+  onOpenChange,
+  available,
+  onPick,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  available: ViewModule[];
+  onPick: (moduleId: string, moduleTitle: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return available;
+    return available.filter(
+      (m) =>
+        m.title.toLowerCase().includes(term) ||
+        m.description.toLowerCase().includes(term) ||
+        m.category.toLowerCase().includes(term) ||
+        m.type.toLowerCase().includes(term),
+    );
+  }, [available, q]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Add module to journey</DialogTitle>
+          <DialogDescription>
+            Pick from any module in the academy library. Edits stay in sync with the Training Academy.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search modules…"
+            className="h-10 rounded-xl pl-9 text-[13px]"
+            autoFocus
+          />
+        </div>
+        <div className="max-h-[360px] overflow-y-auto rounded-xl border border-border/60">
+          {filtered.length === 0 ? (
+            <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+              {available.length === 0
+                ? "Every module in the library is already in this journey."
+                : "No modules match your search."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {filtered.map((m) => {
+                const Icon = TYPE_ICON[m.type] ?? FileText;
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPick(m.id, m.title);
+                        onOpenChange(false);
+                        setQ("");
+                      }}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium text-foreground">
+                          {m.title}
+                        </p>
+                        <p className="truncate text-[11.5px] text-muted-foreground">
+                          {m.type} · {m.estimatedMinutes} min · {m.category}
+                        </p>
+                      </div>
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
