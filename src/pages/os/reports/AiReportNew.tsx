@@ -26,6 +26,7 @@ const FILTER_SUGGESTIONS = [
 ];
 
 const AUDIENCE_OPTIONS = [
+  "Auto (let AI decide)",
   "Super Admin / Leadership",
   "Operations Lead",
   "State Director",
@@ -39,14 +40,17 @@ const AUDIENCE_OPTIONS = [
 ];
 
 const TIMEFRAME_OPTIONS = [
+  "Auto (infer from prompt)",
   "This week", "This month", "MTD", "Last 30 days", "QTD", "Last 90 days", "YTD", "Last 12 months", "All time",
 ];
 
 const BREAKDOWN_OPTIONS = [
+  "Auto (let AI decide)",
   "By State", "By Region", "By BCBA", "By RBT", "By Client", "By Payor", "By Service Code", "By Status", "By Week", "By Month",
 ];
 
 const COMPARISON_OPTIONS = [
+  "Auto (let AI decide)",
   "None",
   "vs previous period",
   "vs same period last year",
@@ -62,10 +66,10 @@ export default function AiReportNew() {
   const [filterInput, setFilterInput] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [audience, setAudience] = useState<string>("Super Admin / Leadership");
-  const [timeframe, setTimeframe] = useState<string>("This month");
-  const [breakdown, setBreakdown] = useState<string>("By State");
-  const [comparison, setComparison] = useState<string>("vs previous period");
+  const [audience, setAudience] = useState<string>("Auto (let AI decide)");
+  const [timeframe, setTimeframe] = useState<string>("Auto (infer from prompt)");
+  const [breakdown, setBreakdown] = useState<string>("Auto (let AI decide)");
+  const [comparison, setComparison] = useState<string>("Auto (let AI decide)");
   const [goal, setGoal] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
