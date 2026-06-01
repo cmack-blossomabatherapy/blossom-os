@@ -62,7 +62,7 @@ export default function ImportStaffDialog({
       if (!p.first_name) errs.push("missing first name");
       if (!p.last_name) errs.push("missing last name");
       if (!p.email || !EMAIL_RE.test(p.email)) errs.push("invalid email");
-      if (role !== "BCBA" && role !== "RBT") errs.push("role must be BCBA or RBT");
+      if (role !== "BCBA" && role !== "RBT" && role !== "Office") errs.push("role must be BCBA, RBT, or Office");
       return {
         first_name: p.first_name ?? "", last_name: p.last_name ?? "", email: (p.email ?? "").toLowerCase(),
         phone: p.phone, role, state: p.state, supervisor_email: p.supervisor_email,
@@ -102,7 +102,7 @@ export default function ImportStaffDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Import BCBA / RBT Staff</DialogTitle>
+          <DialogTitle>Import Staff (BCBA / RBT / Office)</DialogTitle>
           <DialogDescription className="text-xs">
             CSV columns: <code>first_name, last_name, email, phone, role, state, supervisor_email, hire_date, active_status</code>
           </DialogDescription>
