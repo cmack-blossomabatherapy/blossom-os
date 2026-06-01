@@ -110,9 +110,6 @@ export default function OSResourceLibrary() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" asChild>
-                <Link to="/sop"><BookOpen className="mr-2 h-4 w-4" />SOP Library</Link>
-              </Button>
-              <Button variant="outline" asChild>
                 <Link to="/training"><GraduationCap className="mr-2 h-4 w-4" />Training Academy</Link>
               </Button>
               {canManage && (
