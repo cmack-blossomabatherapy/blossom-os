@@ -65,6 +65,7 @@ export default function AiReportView() {
             csvPreview: payload.preview,
             rowCount: payload.rowCount,
             headers: payload.headers,
+            files: payload.files,
             audience: payload.audience,
             timeframe: payload.timeframe,
             breakdown: payload.breakdown,
