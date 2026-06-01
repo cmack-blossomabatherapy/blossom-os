@@ -148,6 +148,7 @@ import Profile from "./pages/Profile";
 import AccountSettings from "./pages/account/AccountSettings";
 import MfaSetup from "./pages/MfaSetup";
 import MfaVerify from "./pages/MfaVerify";
+import { SignInCtaButton } from "./components/auth/SignInCtaButton";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
@@ -448,6 +449,7 @@ const App = () => (
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
                 <PushNavigationListener />
+                <SignInCtaButton />
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
