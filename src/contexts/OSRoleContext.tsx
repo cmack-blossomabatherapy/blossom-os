@@ -16,7 +16,12 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("auth_team")) return "authorization_coordinator";
   if (appRoles.includes("scheduling")) return "scheduling_team";
   if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
-  if (appRoles.includes("hr") || appRoles.includes("hr_admin") || appRoles.includes("hr_manager")) return "hr_team";
+  if (
+    appRoles.includes("hr") ||
+    appRoles.includes("hr_admin") ||
+    appRoles.includes("hr_manager") ||
+    appRoles.includes("hr_admin_assistant")
+  ) return "hr_team";
   if (appRoles.includes("finance")) return "billing_finance";
   if (appRoles.includes("qa")) return "qa_team";
   if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
