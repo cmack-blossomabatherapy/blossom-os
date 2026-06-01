@@ -220,7 +220,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
 
   // Build the Home section dynamically based on the current role.
   const homeSection: NavSection = (() => {
-    const dashboardTo = ROLE_HOME[role];
     const items: NavEntry[] = [];
     if (role === "super_admin") {
       // Super admins see the generic dashboard plus quick access to every role dashboard.
@@ -228,9 +227,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ALL_ROLE_DASHBOARDS.forEach((d) => {
         items.push({ to: d.to, label: d.label, icon: Target, module: "dashboard" });
       });
-    } else {
-      items.push({ to: dashboardTo, label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true });
     }
+    // For non super_admin roles we intentionally omit a synthetic "Dashboard"
+    // entry — their landing page already lives elsewhere in the sidebar (e.g.
+    // Training Academy, Evaluations) and a duplicate route would cause two
+    // items to highlight at once.
     // Intake Workspace lives in Home for everyone who can see intake.
     items.push(INTAKE_WORKSPACE_ITEM);
     HOME_EXTRAS.forEach((e) => {
