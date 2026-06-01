@@ -567,9 +567,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/hr/org-chart", label: "Org Chart", icon: Network, module: "hr" },
+        { to: "/hr/org-chart", label: "Org Chart", icon: Network, module: "hr", disabled: true },
         { to: "/hr/reports", label: "Reports", icon: BarChart3, module: "hr" },
-        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training", disabled: true },
+        { to: "/training/hr-admin-assistant", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
       ],
     },
@@ -577,7 +577,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "hr_ops", label: "HR Operations", items: [
         { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
-        { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr" },
+        { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr", disabled: true },
         { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
         { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", disabled: true },
         { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
