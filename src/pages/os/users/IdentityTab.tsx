@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
@@ -38,9 +39,26 @@ function Card({ id, className, children }: { id?: string; className?: string; ch
 
 function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
-    <div className="mb-3 flex items-end justify-between">
-      <h2 className="text-sm font-semibold tracking-tight text-foreground">{children}</h2>
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    <div className="mb-5 flex items-center gap-1.5">
+      <h2 className="text-base font-semibold tracking-tight text-foreground">{children}</h2>
+      {hint && (
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What is this?"
+                className="inline-flex items-center justify-center text-muted-foreground/60 transition hover:text-foreground"
+              >
+                <HelpCircle className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 }
@@ -246,14 +264,14 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
 
       {/* Identity editor */}
       {row && (
-        <Card id="badge-about" className="p-6 scroll-mt-24">
-          <div className="mb-4 flex items-center justify-between">
+        <Card id="badge-about" className="p-6 sm:p-8 scroll-mt-24">
+          <div className="mb-6 flex items-center justify-between">
             <SectionTitle hint="Shown on directory, NFC badge, and digital business card">About</SectionTitle>
             <Button size="sm" onClick={save} disabled={saving} className="text-xs">
               <Save className="size-3.5" /> {saving ? "Saving…" : "Save changes"}
             </Button>
           </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-foreground">Short bio (1 line)</label>
               <Input
@@ -275,7 +293,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             </div>
           </div>
 
-          <div id="badge-tags" className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 scroll-mt-24">
+          <div id="badge-tags" className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3 scroll-mt-24">
             <ChipEditor
               label="Expertise"
               hint="Operational"
@@ -296,8 +314,8 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             />
           </div>
 
-          <div id="badge-help" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
-            <SectionTitle hint="The most important section on the public business card — what people can come to you for">
+          <div id="badge-help" className="mt-10 border-t border-border/60 pt-8 scroll-mt-24">
+            <SectionTitle hint="The most important section on the public business card. Each item shows as a checkmarked card on the digital business card — list the things teammates and partners can come to this person for.">
               How I can help
             </SectionTitle>
             <ChipEditor
@@ -307,7 +325,7 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
               onChange={(v) => updateRow({ help_with: v })}
               suggestions={SUGGESTED_HELP}
             />
-            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-foreground inline-flex items-center gap-1.5">
                   <Linkedin className="size-3.5" /> LinkedIn URL <span className="text-muted-foreground font-normal">(optional)</span>
@@ -333,8 +351,8 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             </div>
           </div>
 
-          <div id="badge-emergency" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
-            <SectionTitle hint="Used for emergency contact only — never shown publicly">Emergency contact</SectionTitle>
+          <div id="badge-emergency" className="mt-10 border-t border-border/60 pt-8 scroll-mt-24">
+            <SectionTitle hint="Used for emergency contact only. Never shown on the public NFC badge or digital business card — only visible internally to authorized HR roles.">Emergency contact</SectionTitle>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
               <Input placeholder="Name" value={row.emergency_contact?.name ?? ""}
                 onChange={(e) => updateRow({ emergency_contact: { ...row.emergency_contact, name: e.target.value } })} />
@@ -347,8 +365,8 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
             </div>
           </div>
 
-          <div id="badge-visibility" className="mt-6 border-t border-border/60 pt-5 scroll-mt-24">
-            <SectionTitle hint="Controls what shows when this employee's NFC badge is tapped">Smart Badge visibility</SectionTitle>
+          <div id="badge-visibility" className="mt-10 border-t border-border/60 pt-8 scroll-mt-24">
+            <SectionTitle hint="Controls which surfaces are available when this employee's NFC badge is tapped. Turn off any view you don't want exposed.">Smart Badge visibility</SectionTitle>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {(["public", "internal", "business_card", "emergency"] as const).map((k) => {
                 const on = !!row.nfc_settings?.[k];
