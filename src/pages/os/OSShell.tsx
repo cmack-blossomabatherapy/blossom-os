@@ -752,7 +752,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
               : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
             : collapsed
-            ? "text-foreground/70 hover:bg-primary/10 hover:text-primary"
+            ? "text-foreground hover:bg-primary/10 hover:text-primary"
             : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
         )
       }
