@@ -1,18 +1,31 @@
-import { Eye, EyeOff, RotateCcw, Settings as SettingsIcon, Bell, LogOut } from "lucide-react";
+import { Eye, EyeOff, RotateCcw, Settings as SettingsIcon, Bell, LogOut, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { resetOnboarding, setPreviewLocked } from "@/lib/onboarding/storage";
 import { PathSwitcher } from "@/components/onboarding/PathSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import { SecurityMfaCard } from "@/components/profile/SecurityMfaCard";
+import { SecurityKeysCard } from "@/components/profile/SecurityKeysCard";
+import { ProfileEditorCard } from "@/components/profile/ProfileEditorCard";
 
 export function SettingsSection({ ob }: { ob: any }) {
   const { signOut } = useAuth();
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="md:col-span-2">
-        <SecurityMfaCard />
-      </div>
+      <ProfileEditorCard />
+      <SecurityMfaCard />
+      <SecurityKeysCard />
+
+      <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm md:col-span-2">
+        <div className="mb-3 flex items-center gap-2"><KeyRound className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold">Your secure logins</h2></div>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Saved system passwords assigned to you. Reveal with your PIN — Face ID / Touch ID / Windows Hello also works once a security key is registered.
+        </p>
+        <Button asChild size="sm" variant="outline" className="gap-1.5">
+          <Link to="#logins">Open My Logins</Link>
+        </Button>
+      </section>
+
       <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
         <div className="mb-3 flex items-center gap-2"><SettingsIcon className="h-4 w-4 text-primary" /><h2 className="text-sm font-semibold">Onboarding path</h2></div>
         <PathSwitcher path={ob.path} disabled={ob.isComplete && !ob.bypassReal} />
