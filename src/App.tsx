@@ -35,6 +35,7 @@ import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportDetail from "./pages/os/reports/ReportDetail";
+import QaSupervisionPtDashboard from "./pages/os/reports/QaSupervisionPtDashboard";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
