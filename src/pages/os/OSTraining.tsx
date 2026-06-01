@@ -410,11 +410,7 @@ export default function OSTraining() {
             <SectionHeader title="Quick Access" subtitle="Jump straight into the tools and knowledge you need." />
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {[
-                { label: "SOP Library", icon: Library, to: "/sop" },
                 { label: "Resource Library", icon: BookMarked, to: "/resources" },
-                { label: "Intake Workspace", icon: Inbox, to: "/os/intake/workspace" },
-                { label: "Insurance Resources", icon: ShieldCheck, to: "/resources?category=insurance" },
-                { label: "Communication Templates", icon: MessageSquare, to: "/resources?category=templates" },
                 { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
               ].map((q) => {
                 const Icon = q.icon;
