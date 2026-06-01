@@ -33,6 +33,10 @@ export type AiReportResult = {
   // Legacy single chart/table (still rendered if no sections returned)
   chart?: AiChart;
   table?: AiTable;
+  /** Deterministic data-quality flags (when engine ran). */
+  dataQuality?: { label: string; detail: string; rowsAffected?: number }[];
+  /** Engine-supplied notes (e.g. unavailable sections). */
+  notes?: string[];
 };
 
 export type AiReport = {
@@ -52,6 +56,10 @@ export type AiReport = {
   status: "generating" | "ready" | "error";
   result?: AiReportResult;
   error?: string;
+  /** Engine preset key used to build deterministic numbers. */
+  presetKey?: string;
+  /** AI narrative request status (numbers can be ready before narrative). */
+  narrativeStatus?: "pending" | "ready" | "error";
 };
 
 const KEY = "blossom.os.aiReports.v1";
