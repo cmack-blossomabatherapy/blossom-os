@@ -31,7 +31,13 @@ type Assignment = {
   assigned_at: string;
 };
 
-type EmployeeLite = { id: string; full_name: string | null; email: string | null };
+type EmployeeLite = { id: string; first_name: string | null; last_name: string | null; email: string | null };
+
+function empName(e: EmployeeLite | undefined): string {
+  if (!e) return "";
+  const n = [e.first_name, e.last_name].filter(Boolean).join(" ").trim();
+  return n || e.email || "";
+}
 
 const TYPE_LABEL: Record<string, string> = {
   tablet: "Tablet", hotspot: "Hotspot", laptop: "Laptop", phone: "Phone", other: "Other",
@@ -89,7 +95,7 @@ export default function DeviceInventory() {
     if (empIds.length) {
       const { data: emps } = await supabase
         .from("employees")
-        .select("id,full_name,email")
+        .select("id,first_name,last_name,email")
         .in("id", empIds);
       setEmployees((emps ?? []) as EmployeeLite[]);
     } else {
@@ -255,7 +261,7 @@ export default function DeviceInventory() {
                       <TableCell className="text-sm">
                         {assignee ? (
                           <a href={`/user-management/${assignee.id}`} className="text-primary hover:underline">
-                            {assignee.full_name ?? assignee.email ?? "Unknown"}
+                            {empName(assignee) || "Unknown"}
                           </a>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
@@ -408,8 +414,8 @@ function AssignDialog({ device, onOpenChange, onSaved }: {
     setEmpId("");
     void supabase
       .from("employees")
-      .select("id,full_name,email")
-      .order("full_name")
+      .select("id,first_name,last_name,email")
+      .order("first_name")
       .limit(500)
       .then(({ data }) => setEmps((data ?? []) as EmployeeLite[]));
   }, [device]);
@@ -443,7 +449,7 @@ function AssignDialog({ device, onOpenChange, onSaved }: {
             <SelectTrigger><SelectValue placeholder="Select an employee" /></SelectTrigger>
             <SelectContent>
               {emps.map((e) => (
-                <SelectItem key={e.id} value={e.id}>{e.full_name ?? e.email ?? e.id}</SelectItem>
+                <SelectItem key={e.id} value={e.id}>{empName(e) || e.id}</SelectItem>
               ))}
             </SelectContent>
           </Select>
