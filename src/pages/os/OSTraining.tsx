@@ -387,8 +387,7 @@ export default function OSTraining() {
                       </div>
                       <h3 className="mt-3 text-[14px] font-semibold leading-snug">{t.title}</h3>
                       <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{t.description}</p>
-                      <div className="mt-3 space-y-1.5">
-                        <Progress value={p.progressPercent} className="h-1" />
+                      <div className="mt-3">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" /> {t.estimatedMinutes} min
