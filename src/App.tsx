@@ -128,7 +128,6 @@ import BlossomLocations from "./pages/blossom/Locations";
 import LocationDetail from "./pages/blossom/LocationDetail";
 import BlossomUsers from "./pages/blossom/Users";
 import BlossomReports from "./pages/blossom/BlossomReports";
-import Dashboard from "./pages/Dashboard";
 import ExecutiveCommandCenter from "./pages/intelligence/ExecutiveCommandCenter";
 import WorkforceIntelligence from "./pages/intelligence/WorkforceIntelligence";
 import TrainingIntelligence from "./pages/intelligence/TrainingIntelligence";
