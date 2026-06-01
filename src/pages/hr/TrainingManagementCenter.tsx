@@ -234,21 +234,26 @@ export default function TrainingManagementCenter() {
   );
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
 
+  // Live academy data — single source of truth shared with the Training Academy.
+  const academy = useAcademy();
+  const allModules = useMemo(() => academy.trainings.map(toViewModule), [academy.trainings]);
+  const allJourneys = useMemo(() => academy.journeys.map(toViewJourney), [academy.journeys]);
+
   const selectedJourney = useMemo(
-    () => trainingJourneys.find((j) => j.id === selectedJourneyId) ?? null,
-    [selectedJourneyId],
+    () => allJourneys.find((j) => j.id === selectedJourneyId) ?? null,
+    [allJourneys, selectedJourneyId],
   );
 
   const filteredModules = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return trainingModules;
-    return trainingModules.filter(
+    if (!q) return allModules;
+    return allModules.filter(
       (m) =>
         m.title.toLowerCase().includes(q) ||
         m.description.toLowerCase().includes(q) ||
-        m.tags.some((t) => t.toLowerCase().includes(q)),
+        m.category.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [allModules, query]);
 
   return (
     <OSShell>
@@ -387,13 +392,14 @@ export default function TrainingManagementCenter() {
           {/* Content by nav */}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
-              journeys={trainingJourneys}
+              journeys={allJourneys}
               onSelect={setSelectedJourneyId}
             />
           )}
           {nav === "journeys" && selectedJourney && (
             <JourneyBuilderView
               journey={selectedJourney}
+              allModules={allModules}
               onBack={() => setSelectedJourneyId(null)}
             />
           )}
@@ -402,7 +408,7 @@ export default function TrainingManagementCenter() {
           {nav === "sops" && <SopsList />}
           {nav === "tangos" && <TangosGrid />}
           {nav === "assignments" && <AssignmentsTable />}
-          {nav === "categories" && <CategoriesGrid />}
+          {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
             <ModulesGrid
               modules={filteredModules.filter((m) => m.status === "Draft")}
