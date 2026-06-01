@@ -8,7 +8,7 @@ import {
   useDraggable, useDroppable, type Modifier,
 } from "@dnd-kit/core";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { PageShell } from "@/components/shared/PageShell";
+import { OSShell } from "@/pages/os/OSShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -211,29 +211,37 @@ export default function OrgChartManage() {
   const editingPerson = editingId ? byId.get(editingId) ?? null : null;
 
   return (
-    <PageShell
-      title="Org Chart Settings"
-      description="Drag any seat onto another to set the new manager. Scroll or pinch to zoom. Drag the canvas to pan."
-      icon={Network}
-      actions={
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search people…"
-              className="h-8 pl-8 w-56 text-xs"
-            />
+    <OSShell>
+      <header className="os-rise relative overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[hsl(220_100%_98%)] via-white to-[hsl(265_100%_98%)] p-7 shadow-[0_30px_70px_-40px_hsl(220_60%_50%/0.4)]">
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[hsl(220_70%_70%/0.25)] blur-3xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="flex items-center gap-2 text-[26px] font-semibold tracking-tight md:text-[30px]">
+              <Network className="h-7 w-7 text-[hsl(220_70%_50%)]" /> Org Chart Settings
+            </h1>
+            <p className="mt-1 max-w-2xl text-[13.5px] text-muted-foreground">
+              Drag any seat onto another to set the new manager. Scroll or pinch to zoom. Drag the canvas to pan.
+            </p>
           </div>
-          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => void load()}>
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search people…"
+                className="h-8 pl-8 w-56 text-xs bg-white/80 backdrop-blur"
+              />
+            </div>
+            <Button size="sm" variant="outline" className="h-8 text-xs border-white/70 bg-white/70 backdrop-blur" onClick={() => void load()}>
+              Refresh
+            </Button>
+          </div>
         </div>
-      }
-    >
+      </header>
+
       {/* Compact stat strip */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-3">
         <Stat label="People" value={totalEmployees} />
         <Stat label="Managers" value={managerCount} />
         <Stat label="Top-level" value={topLevel} />
@@ -294,7 +302,7 @@ export default function OrgChartManage() {
         onClose={() => setEditingId(null)}
         onSave={saveRow}
       />
-    </PageShell>
+    </OSShell>
   );
 }
 
