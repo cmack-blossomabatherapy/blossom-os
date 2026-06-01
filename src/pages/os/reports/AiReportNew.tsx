@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Upload, Sparkles, FileSpreadsheet, X, Wand2, Filter } from "lucide-react";
+import { ArrowLeft, Upload, Sparkles, FileSpreadsheet, X, Wand2, Filter, Users, Calendar, Layers, Target, GitCompare } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,35 @@ const FILTER_SUGGESTIONS = [
   "By BCBA", "By Payor", "Active clients only",
 ];
 
+const AUDIENCE_OPTIONS = [
+  "Super Admin / Leadership",
+  "Operations Lead",
+  "State Director",
+  "HR Team",
+  "QA Team",
+  "Recruiting",
+  "Scheduling",
+  "Finance / Billing",
+  "BCBA Lead",
+  "Intake",
+];
+
+const TIMEFRAME_OPTIONS = [
+  "This week", "This month", "MTD", "Last 30 days", "QTD", "Last 90 days", "YTD", "Last 12 months", "All time",
+];
+
+const BREAKDOWN_OPTIONS = [
+  "By State", "By Region", "By BCBA", "By RBT", "By Client", "By Payor", "By Service Code", "By Status", "By Week", "By Month",
+];
+
+const COMPARISON_OPTIONS = [
+  "None",
+  "vs previous period",
+  "vs same period last year",
+  "vs target / goal",
+  "vs company average",
+];
+
 export default function AiReportNew() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
@@ -34,6 +63,11 @@ export default function AiReportNew() {
   const [filterInput, setFilterInput] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [audience, setAudience] = useState<string>("Super Admin / Leadership");
+  const [timeframe, setTimeframe] = useState<string>("This month");
+  const [breakdown, setBreakdown] = useState<string>("By State");
+  const [comparison, setComparison] = useState<string>("vs previous period");
+  const [goal, setGoal] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onFile = useCallback(async (f: File) => {
@@ -71,6 +105,11 @@ export default function AiReportNew() {
       title: prompt.slice(0, 60) || "AI Report",
       prompt,
       filters,
+      audience,
+      timeframe,
+      breakdown,
+      goal,
+      comparison,
       fileName: file?.name || "upload.csv",
       rowCount,
       createdAt: Date.now(),
@@ -80,6 +119,7 @@ export default function AiReportNew() {
     // Stash payload for the loading view to consume.
     sessionStorage.setItem(`ai_report_payload_${id}`, JSON.stringify({
       preview, rowCount, headers, prompt, filters, fileName: report.fileName,
+      audience, timeframe, breakdown, goal, comparison,
     }));
     navigate(`/reports/ai/${id}`);
   }
@@ -193,8 +233,37 @@ export default function AiReportNew() {
 
           <article className="rounded-2xl border border-border/60 bg-card p-5">
             <div className="flex items-center gap-2">
+              <Target className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
+              <h3 className="text-[14px] font-semibold tracking-tight">3 · Shape the report</h3>
+            </div>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              A few quick choices let Blossom tailor a real drill-down dashboard instead of a generic chart.
+            </p>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <PickerField label="Audience / role" icon={<Users className="h-3 w-3" />} options={AUDIENCE_OPTIONS} value={audience} onChange={setAudience} />
+              <PickerField label="Timeframe" icon={<Calendar className="h-3 w-3" />} options={TIMEFRAME_OPTIONS} value={timeframe} onChange={setTimeframe} />
+              <PickerField label="Primary breakdown" icon={<Layers className="h-3 w-3" />} options={BREAKDOWN_OPTIONS} value={breakdown} onChange={setBreakdown} />
+              <PickerField label="Comparison" icon={<GitCompare className="h-3 w-3" />} options={COMPARISON_OPTIONS} value={comparison} onChange={setComparison} />
+            </div>
+
+            <div className="mt-4">
+              <label className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <Target className="h-3 w-3" /> Decision this report should drive
+              </label>
+              <Input
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder="e.g. Which BCBAs need coaching this week?"
+                className="mt-2 h-9 text-[12.5px]"
+              />
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-border/60 bg-card p-5">
+            <div className="flex items-center gap-2">
               <Filter className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[14px] font-semibold tracking-tight">3 · Filters (optional)</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">4 · Filters (optional)</h3>
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">Scope the data — pick suggestions or add your own.</p>
 
@@ -254,6 +323,11 @@ export default function AiReportNew() {
             <div className="mt-4 space-y-3 text-[12.5px]">
               <SummaryRow label="Data" value={file ? `${file.name}` : "No file yet"} ok={!!file} />
               <SummaryRow label="Prompt" value={prompt ? `"${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"` : "Not set"} ok={!!prompt.trim()} />
+              <SummaryRow label="Audience" value={audience} ok />
+              <SummaryRow label="Timeframe" value={timeframe} ok />
+              <SummaryRow label="Breakdown" value={breakdown} ok />
+              <SummaryRow label="Comparison" value={comparison} ok />
+              <SummaryRow label="Goal" value={goal ? `"${goal.slice(0, 50)}${goal.length > 50 ? "…" : ""}"` : "—"} ok />
               <SummaryRow label="Filters" value={filters.length ? `${filters.length} applied` : "None"} ok />
             </div>
 
@@ -280,6 +354,25 @@ function SummaryRow({ label, value, ok }: { label: string; value: string; ok: bo
     <div className="flex items-start justify-between gap-3">
       <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
       <span className={cn("text-right text-[12.5px] font-medium", ok ? "text-foreground" : "text-muted-foreground/60")}>{value}</span>
+    </div>
+  );
+}
+
+function PickerField({
+  label, icon, options, value, onChange,
+}: { label: string; icon: React.ReactNode; options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {icon} {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 w-full rounded-xl border border-border/60 bg-secondary/20 px-3 py-2 text-[12.5px] font-medium outline-none transition focus:border-[hsl(265_70%_55%)] focus:bg-card"
+      >
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
     </div>
   );
 }
