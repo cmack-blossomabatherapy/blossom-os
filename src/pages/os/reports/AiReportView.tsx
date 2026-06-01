@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
-  TrendingUp, TrendingDown, Minus, Brain,
+  TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
