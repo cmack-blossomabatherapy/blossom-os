@@ -40,6 +40,7 @@ import QaAuthUtilizationDashboard from "./pages/os/reports/QaAuthUtilizationDash
 import QaCancellationDashboard from "./pages/os/reports/QaCancellationDashboard";
 import HrPayrollCommandCenter from "./pages/os/reports/HrPayrollCommandCenter";
 import HrRecruitingPipelineDashboard from "./pages/os/reports/HrRecruitingPipelineDashboard";
+import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
