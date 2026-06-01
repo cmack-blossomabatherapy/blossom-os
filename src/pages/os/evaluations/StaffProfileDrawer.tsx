@@ -597,6 +597,20 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
           </div>
         </DialogContent>
       </Dialog>
+
+      {staff && current && (
+        <ReviewersDialog
+          open={reviewersOpen}
+          onOpenChange={setReviewersOpen}
+          staff={staff}
+          evaluation={current}
+          reviewers={currentReviewers}
+          allStaff={allStaff}
+          templates={templates}
+          canOverrideRules={permissions.canOverrideRules}
+          onChanged={onChanged}
+        />
+      )}
     </Sheet>
   );
 }
