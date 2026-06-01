@@ -32,16 +32,6 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [aiReports, setAiReports] = useState<AiDashboard[]>(() => listAiDashboards());
-  useEffect(() => {
-    const refresh = () => setAiReports(listAiDashboards());
-    window.addEventListener("blossom-ai-dashboards-changed", refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener("blossom-ai-dashboards-changed", refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
   const filteredReports = search
     ? reports.filter(r => (r.title + r.description + (r.tags || []).join(" ")).toLowerCase().includes(search.toLowerCase()))
     : reports;
