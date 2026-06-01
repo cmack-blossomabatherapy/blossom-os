@@ -26,7 +26,7 @@ import { mockLeads } from "@/data/leads";
  * Derived from real candidate pipeline, source attribution, and state-level
  * staffing demand (family leads). Not an ATS, not Apploi. */
 
-const FOOTPRINT = ["GA", "NC", "TN", "VA", "MD"] as const;
+const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
   NC: "North Carolina",

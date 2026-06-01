@@ -28,7 +28,7 @@ type AuthRecord = {
   id: string;
   client: string;
   parent: string;
-  state: "GA" | "NC" | "TN" | "VA" | "MD";
+  state: "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
   bcba: string;
   payor: string;
   authType: AuthType;
@@ -59,7 +59,7 @@ type AuthRecord = {
 const ALL = "All";
 const today = new Date("2026-04-27T12:00:00Z");
 const coordinators = ["Priya K.", "Marcus T.", "Kayla R.", "Riki S.", "Devon M."];
-const states = ["GA", "NC", "TN", "VA", "MD"];
+const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 const docs = (missing: string[] = []): AuthDoc[] => [
   "Treatment Plan", "Insurance Card", "Diagnostic Evaluation", "Prescription / Referral", "Approval Letter",

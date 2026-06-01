@@ -15,7 +15,7 @@ import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 const AUTH_LANE: AuthStage[] = [
   "Awaiting Submission",

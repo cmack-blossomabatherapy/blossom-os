@@ -22,7 +22,7 @@ const DEPT_LINKS: Record<string, string> = {
   training: "/operations/training-adoption",
 };
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const toneToHealth = (t: OpsTone): HealthTone => t;
 
 function postureLabel(score: number) {

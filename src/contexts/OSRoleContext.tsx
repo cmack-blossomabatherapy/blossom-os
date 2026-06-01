@@ -27,7 +27,7 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
 }
 
 /** Mock list of states (would come from backend). */
-export const OS_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+export const OS_STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 export type OSState = typeof OS_STATES[number];
 
 interface OSRoleContextValue {

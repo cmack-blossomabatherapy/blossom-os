@@ -26,7 +26,7 @@ import { mockCandidates } from "@/data/recruiting";
  * Derives state-by-state expansion momentum from real lead, referral,
  * recruiting and onboarding signals across the Blossom footprint. */
 
-const FOOTPRINT = ["GA", "NC", "TN", "VA", "MD"] as const;
+const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
   NC: "North Carolina",

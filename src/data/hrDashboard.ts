@@ -1,4 +1,4 @@
-export type HrState = "GA" | "NC" | "TN" | "VA" | "MD";
+export type HrState = "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
 export type HrDepartment = "Clinical" | "Intake" | "Authorizations" | "QA" | "Scheduling" | "Clinic Ops" | "Leadership" | "HR / Payroll";
 export type HrRole = "RBT" | "BCBA" | "Intake Coordinator" | "Authorization Specialist" | "QA Specialist" | "Scheduler" | "Clinic Manager" | "Director" | "HR Specialist" | "Payroll Specialist";
 export type EmployeeStatus = "Pre-Hire" | "Onboarding" | "Training" | "Active" | "Review Due" | "At Risk" | "Inactive" | "Terminated";

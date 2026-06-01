@@ -190,7 +190,7 @@ export type WorkforceUser = {
   active: true;
 };
 
-export const WORKFORCE_STATES = ["NC", "GA", "VA", "TN", "MD"] as const;
+export const WORKFORCE_STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 /** All BCBAs + RBTs across every state as user-management rows. */
 export function allWorkforceUsers(): WorkforceUser[] {

@@ -21,7 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { RoleScorecardPlaceholder } from "@/components/scorecards/RoleScorecardPlaceholder";
 import { OS_ROLES } from "@/lib/os/permissions";
 
-const STATES = ["VA", "NC", "GA", "TN", "MD"];
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 export default function OSKpiScorecards() {
   const { role } = useOSRole();

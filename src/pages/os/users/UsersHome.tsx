@@ -12,7 +12,7 @@ import { AddEmployeeDialog } from "@/components/hr/AddEmployeeDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Department } from "@/lib/hr/types";
 
-const STATES = ["All", "GA", "NC", "VA", "TN", "MD", "FL"] as const;
+const STATES = ["All", "GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATUSES = ["All", "Active", "Inactive"] as const;
 
 function initials(name: string) {

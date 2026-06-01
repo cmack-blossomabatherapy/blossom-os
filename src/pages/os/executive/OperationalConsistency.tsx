@@ -5,7 +5,7 @@ import { useOpsIntelligence } from "@/hooks/useOpsIntelligence";
 import { useStateWorkforce } from "@/hooks/useStateWorkforce";
 import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",

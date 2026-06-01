@@ -1,4 +1,4 @@
-export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD";
+export type RecruitingState = "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
 export type RecruitingRole = "RBT" | "BCBA";
 export type RecruitingSource = "Apploi" | "Indeed" | "Website" | "Email" | "Phone" | "Referral";
 export type CandidateStage = "New Applicant" | "Screening" | "Interview Scheduled" | "Interview Completed" | "Offer Sent" | "Offer Accepted" | "Onboarding Handoff" | "Background Check" | "Orientation" | "Training" | "Ready for Staffing" | "Not Qualified";

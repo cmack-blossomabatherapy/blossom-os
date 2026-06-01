@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 type Severity = "monitoring" | "coordination" | "escalated" | "critical";
 const SEV_TONE: Record<Severity, HealthTone> = {

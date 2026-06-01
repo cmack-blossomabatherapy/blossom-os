@@ -26,7 +26,7 @@ export interface SavedView {
   filters: SdFilters;
 }
 
-const STATES = ["VA", "NC", "GA", "TN", "MD"];
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const REGIONS: Record<string, string[]> = {
   VA: ["All", "Richmond", "Arlington", "Norfolk", "Roanoke", "Charlottesville"],
   NC: ["All", "Charlotte", "Raleigh", "Greensboro"],

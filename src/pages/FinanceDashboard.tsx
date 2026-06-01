@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-type StateCode = "GA" | "NC" | "TN" | "VA" | "MD";
+type StateCode = "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
 type ClientType = "Clinic" | "Home" | "Hybrid" | "School";
 type Network = "INN" | "OON";
 type FinancialStatus = "Approved" | "Payment Plan" | "Review Needed" | "Blocked" | "At Risk";

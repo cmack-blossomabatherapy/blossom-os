@@ -1578,7 +1578,7 @@ export function PhoneAdmin() {
       <Card className="mt-6">
         <CardHeader><CardTitle className="text-base">Voicemail Notification Emails</CardTitle></CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
-          {(["GA","NC","TN","VA","MD","main"] as const).map((k) => (
+          {(["GA","NC","VA","TN","MD","NJ","main"] as const).map((k) => (
             <div key={k}>
               <Label className="text-xs">{k === "main" ? "Main / No State" : k}</Label>
               <Input

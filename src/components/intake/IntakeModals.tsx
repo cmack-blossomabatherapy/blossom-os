@@ -402,7 +402,7 @@ function Modals({ active, close }: { active: ModalKind; close: () => void }) {
               <Select value={select1} onValueChange={setSelect1}>
                 <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
                 <SelectContent>
-                  {["GA", "NC", "TN", "VA", "MD", "FL", "TX"].map((s) => (
+                  {["GA", "NC", "VA", "TN", "MD", "NJ"].map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>

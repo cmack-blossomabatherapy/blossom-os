@@ -26,7 +26,7 @@ import { mockCandidates } from "@/data/recruiting";
  * qualification, referral momentum, recruiting reputation, and friction.
  * Google/Yelp/survey feeds enrich through Admin → Data Uploads. */
 
-const FOOTPRINT = ["GA", "NC", "TN", "VA", "MD"] as const;
+const FOOTPRINT = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const STATE_NAMES: Record<string, string> = {
   GA: "Georgia",
   NC: "North Carolina",

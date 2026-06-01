@@ -18,7 +18,7 @@ import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES_KEY = "ops.leadership.priorities.v1";
 
 function greeting(): string {

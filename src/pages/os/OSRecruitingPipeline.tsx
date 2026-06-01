@@ -38,7 +38,7 @@ const STAGES: { key: PipelineStage; label: string }[] = [
 ];
 
 const ROLES = ["RBT", "BCBA", "BT", "Other"] as const;
-const STATES = ["GA", "NC", "TN", "VA", "MD", "FL", "TX", "SC"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 function toneFor(c: RecruitingCandidate): Tone {
   if (c.pipeline_stage === "Withdrawn" || c.pipeline_stage === "Rejected") return "muted";

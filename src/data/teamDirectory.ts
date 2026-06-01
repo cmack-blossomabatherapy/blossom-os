@@ -88,11 +88,11 @@ import taylorOliver from "@/assets/team/taylor-oliver.jpg";
 import yosefAharonoff from "@/assets/team/yosef-aharonoff.jpg";
 
 export const TEAM_MEMBERS: TeamMember[] = [
-  { id: "chad-kaufman", name: "Chad Kaufman", title: "Chief Executive Officer", blurb: "Executive leadership for Blossom's multi-state operating system.", department: "operations", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: chadKaufman },
-  { id: "mordy-gobioff", name: "Mordy Gobioff", title: "Chief Operating Officer", blurb: "Operational leadership across workflows, staffing, and growth readiness.", department: "operations", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: mordyGobioff },
-  { id: "eli-berman", name: "Eli Berman", title: "Operations Leadership", blurb: "Supports operational clarity and cross-functional execution.", department: "operations", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: eliBerman },
-  { id: "levi-garfunkel", name: "Levi Garfunkel", title: "Systems & Operations", blurb: "Keeps operational systems aligned with team workflows.", department: "operations", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: leviGarfunkel },
-  { id: "yosef-aharonoff", name: "Yosef Aharonoff", title: "Systems & Software", blurb: "Supports Blossom's internal systems and technology operations.", department: "operations", states: ["GA", "NC", "TN", "VA", "MD"], photo: yosefAharonoff },
+  { id: "chad-kaufman", name: "Chad Kaufman", title: "Chief Executive Officer", blurb: "Executive leadership for Blossom's multi-state operating system.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: chadKaufman },
+  { id: "mordy-gobioff", name: "Mordy Gobioff", title: "Chief Operating Officer", blurb: "Operational leadership across workflows, staffing, and growth readiness.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: mordyGobioff },
+  { id: "eli-berman", name: "Eli Berman", title: "Operations Leadership", blurb: "Supports operational clarity and cross-functional execution.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: eliBerman },
+  { id: "levi-garfunkel", name: "Levi Garfunkel", title: "Systems & Operations", blurb: "Keeps operational systems aligned with team workflows.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: leviGarfunkel },
+  { id: "yosef-aharonoff", name: "Yosef Aharonoff", title: "Systems & Software", blurb: "Supports Blossom's internal systems and technology operations.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: yosefAharonoff },
 
   { id: "kayla-brown", name: "Kayla Brown", title: "State Director", blurb: "State-level operational leadership and escalation support.", department: "state-directors", states: ["GA"], leadership: true, photo: kaylaBrown },
   { id: "nicky-newman", name: "Nicky Newman", title: "State Director", blurb: "State-level operational leadership and family support coordination.", department: "state-directors", states: ["NC"], leadership: true, photo: nickyNewman },
@@ -111,24 +111,24 @@ export const TEAM_MEMBERS: TeamMember[] = [
   { id: "miriam-metzger", name: "Miriam Metzger", title: "Intake Support", blurb: "Supports intake coordination and family communication.", department: "intake", states: ["GA", "NC"], photo: miriamMetzger },
   { id: "raizy-folger", name: "Raizy Folger", title: "Intake Support", blurb: "Supports intake workflows and lead follow-up.", department: "intake", states: ["TN", "VA"], photo: raizyFolger },
 
-  { id: "nikki-goldenberg", name: "Nikki Goldenberg", title: "HR Director", blurb: "Leads HR operations, people workflows, and employee support.", department: "hr-payroll", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, supportsOnboarding: true, photo: nikkiGoldenberg },
-  { id: "becca-bailey", name: "Becca Bailey", title: "HR Admin Assistant", blurb: "Supports onboarding, HR requests, training, and employee enablement.", department: "hr-payroll", states: ["GA", "NC", "TN", "VA", "MD"], supportsOnboarding: true, photo: beccaBailey },
-  { id: "baila-friedman", name: "Baila Friedman", title: "Payroll Specialist", blurb: "Supports payroll operations and employee pay workflows.", department: "hr-payroll", states: ["GA", "NC", "TN", "VA", "MD"], photo: bailaFriedman },
-  { id: "devorah-benenfeld", name: "Devorah Benenfeld", title: "HR & Payroll Support", blurb: "Supports HR records, onboarding details, and payroll coordination.", department: "hr-payroll", states: ["GA", "NC", "TN", "VA", "MD"], supportsOnboarding: true, photo: devorahBenenfeld },
+  { id: "nikki-goldenberg", name: "Nikki Goldenberg", title: "HR Director", blurb: "Leads HR operations, people workflows, and employee support.", department: "hr-payroll", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, supportsOnboarding: true, photo: nikkiGoldenberg },
+  { id: "becca-bailey", name: "Becca Bailey", title: "HR Admin Assistant", blurb: "Supports onboarding, HR requests, training, and employee enablement.", department: "hr-payroll", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], supportsOnboarding: true, photo: beccaBailey },
+  { id: "baila-friedman", name: "Baila Friedman", title: "Payroll Specialist", blurb: "Supports payroll operations and employee pay workflows.", department: "hr-payroll", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: bailaFriedman },
+  { id: "devorah-benenfeld", name: "Devorah Benenfeld", title: "HR & Payroll Support", blurb: "Supports HR records, onboarding details, and payroll coordination.", department: "hr-payroll", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], supportsOnboarding: true, photo: devorahBenenfeld },
 
-  { id: "corey-mack", name: "Corey Mack", title: "Marketing Lead", blurb: "Supports growth, campaigns, content, and market visibility.", department: "marketing", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: coreyMack },
-  { id: "michal-silberberg", name: "Michal Silberberg", title: "Recruiting Coordinator", blurb: "Supports recruiting pipeline, interviews, and candidate follow-up.", department: "recruiting", states: ["GA", "NC", "TN", "VA", "MD"], photo: michalSilberberg },
-  { id: "rivky-weissman", name: "Rivky Weissman", title: "Recruiting Coordinator", blurb: "Supports hiring workflows and candidate onboarding coordination.", department: "recruiting", states: ["GA", "NC", "TN", "VA", "MD"], photo: rivkyWeissman },
+  { id: "corey-mack", name: "Corey Mack", title: "Marketing Lead", blurb: "Supports growth, campaigns, content, and market visibility.", department: "marketing", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: coreyMack },
+  { id: "michal-silberberg", name: "Michal Silberberg", title: "Recruiting Coordinator", blurb: "Supports recruiting pipeline, interviews, and candidate follow-up.", department: "recruiting", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: michalSilberberg },
+  { id: "rivky-weissman", name: "Rivky Weissman", title: "Recruiting Coordinator", blurb: "Supports hiring workflows and candidate onboarding coordination.", department: "recruiting", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: rivkyWeissman },
 
   { id: "breanna-dodson", name: "Breanna Dodson", title: "Scheduling Coordinator", blurb: "Supports schedules, coverage, and staffing coordination.", department: "scheduling-rbt", states: ["GA"], photo: breannaDodson },
   { id: "daylis-yepez", name: "Daylis Yepez", title: "Scheduling Coordinator", blurb: "Coordinates scheduling coverage and service continuity.", department: "scheduling-rbt", states: ["NC", "TN"], photo: daylisYepez },
-  { id: "sara-uhr", name: "Sara Uhr", title: "Scheduling & Staffing Lead", blurb: "Supports staffing decisions, schedule coverage, and RBT coordination.", department: "scheduling-rbt", states: ["GA", "NC", "TN", "VA", "MD"], leadership: true, photo: saraUhr },
+  { id: "sara-uhr", name: "Sara Uhr", title: "Scheduling & Staffing Lead", blurb: "Supports staffing decisions, schedule coverage, and RBT coordination.", department: "scheduling-rbt", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: saraUhr },
   { id: "rachel-greenspan", name: "Rachel Greenspan", title: "Case Management", blurb: "Supports family coordination and case-level operational follow-through.", department: "ga-case-management", states: ["GA"], photo: rachelGreenspan },
 
-  { id: "riki-wallach", name: "Riki Wallach", title: "QA Specialist", blurb: "Supports documentation quality, compliance, and review workflows.", department: "qa", states: ["GA", "NC", "TN", "VA", "MD"], photo: rikiWallach },
-  { id: "rochel-walzman", name: "Rochel Walzman", title: "QA Specialist", blurb: "Supports QA reviews and compliance follow-up.", department: "qa", states: ["GA", "NC", "TN", "VA", "MD"], photo: rochelWalzman },
-  { id: "surie-goldstein", name: "Surie Goldstein", title: "QA Specialist", blurb: "Supports quality assurance and clinical documentation readiness.", department: "qa", states: ["GA", "NC", "TN", "VA", "MD"], photo: surieGoldstein },
-  { id: "rochell-coulson", name: "Rochell Coulson", title: "Authorizations Coordinator", blurb: "Supports authorization workflows, payer follow-up, and PR readiness.", department: "authorizations", states: ["GA", "NC", "TN", "VA", "MD"], photo: rochellCoulson },
+  { id: "riki-wallach", name: "Riki Wallach", title: "QA Specialist", blurb: "Supports documentation quality, compliance, and review workflows.", department: "qa", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: rikiWallach },
+  { id: "rochel-walzman", name: "Rochel Walzman", title: "QA Specialist", blurb: "Supports QA reviews and compliance follow-up.", department: "qa", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: rochelWalzman },
+  { id: "surie-goldstein", name: "Surie Goldstein", title: "QA Specialist", blurb: "Supports quality assurance and clinical documentation readiness.", department: "qa", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: surieGoldstein },
+  { id: "rochell-coulson", name: "Rochell Coulson", title: "Authorizations Coordinator", blurb: "Supports authorization workflows, payer follow-up, and PR readiness.", department: "authorizations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: rochellCoulson },
 
   { id: "anje-grobler", name: "Anje Grobler", title: "Regional BCBA", blurb: "Clinical support, supervision visibility, and BCBA enablement.", department: "regional-bcbas", states: ["GA"], credential: "BCBA", photo: anjeGrobler },
   { id: "ashley-conklin", name: "Ashley Conklin", title: "Regional BCBA", blurb: "Clinical leadership and BCBA workflow support.", department: "regional-bcbas", states: ["NC"], credential: "BCBA", photo: ashleyConklin },
@@ -138,16 +138,16 @@ export const TEAM_MEMBERS: TeamMember[] = [
   { id: "julia-pinder", name: "Julia Pinder", title: "BCBA Training Support", blurb: "Supports BCBA training, readiness, and operational learning.", department: "regional-bcbas", states: ["GA", "NC"], credential: "BCBA", photo: juliaPinder },
   { id: "julianne-rodriguez", name: "Julianne Rodriguez", title: "BCBA Training Support", blurb: "Supports BCBA enablement and clinical learning workflows.", department: "regional-bcbas", states: ["TN", "VA"], credential: "BCBA", photo: julianneRodriguez },
   { id: "nicholas-schlotterer", name: "Nicholas Schlotterer", title: "BCBA", blurb: "Supports clinical services, supervision, and care-team coordination.", department: "regional-bcbas", states: ["MD"], credential: "BCBA", photo: nicholasSchlotterer },
-  { id: "sam-perlow", name: "Sam Perlow", title: "BCBA", blurb: "Supports clinical operations, supervision, and training readiness.", department: "regional-bcbas", states: ["GA", "NC", "TN", "VA", "MD"], credential: "BCBA", photo: samPerlow },
-  { id: "eli-millman", name: "Eli Millman", title: "Behavioral Support", blurb: "Senior clinical guidance and behavioral support for complex needs.", department: "behavioral-support", states: ["GA", "NC", "TN", "VA", "MD"], credential: "BCBA", photo: eliMillman },
-  { id: "gary-frank", name: "Gary Frank", title: "Behavioral Support", blurb: "Supports clinical problem-solving and behavioral guidance.", department: "behavioral-support", states: ["GA", "NC", "TN", "VA", "MD"], credential: "BCBA", photo: garyFrank },
+  { id: "sam-perlow", name: "Sam Perlow", title: "BCBA", blurb: "Supports clinical operations, supervision, and training readiness.", department: "regional-bcbas", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], credential: "BCBA", photo: samPerlow },
+  { id: "eli-millman", name: "Eli Millman", title: "Behavioral Support", blurb: "Senior clinical guidance and behavioral support for complex needs.", department: "behavioral-support", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], credential: "BCBA", photo: eliMillman },
+  { id: "gary-frank", name: "Gary Frank", title: "Behavioral Support", blurb: "Supports clinical problem-solving and behavioral guidance.", department: "behavioral-support", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], credential: "BCBA", photo: garyFrank },
 ];
 
 export function membersByDepartment(id: DepartmentId): TeamMember[] {
   return TEAM_MEMBERS.filter((m) => m.department === id);
 }
 
-export const ALL_STATES = ["GA", "NC", "TN", "VA", "MD"] as const;
+export const ALL_STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 /** Visual flow used by the optional ecosystem section. */
 export const ORG_FLOW: { id: DepartmentId; label: string }[] = [
