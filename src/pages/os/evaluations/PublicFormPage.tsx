@@ -11,13 +11,14 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
   ShieldCheck,
   Search,
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormSection } from "./types";
+import blossomLogo from "@/assets/blossom-logo-full.png";
+import blossomMark from "@/assets/blossom-flower-mark.png";
 
 interface FormPayload {
   token_id: string;
@@ -151,8 +152,11 @@ export default function PublicFormPage() {
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading form…
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-8 w-auto opacity-90" />
+          <div className="text-sm flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading form…
+          </div>
         </div>
       </div>
     );
@@ -161,6 +165,7 @@ export default function PublicFormPage() {
     return (
       <div className="min-h-screen grid place-items-center bg-gradient-to-b from-primary/5 via-background to-background p-6">
         <div className="max-w-md text-center rounded-2xl border border-border/70 bg-card p-8 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_36px_-20px_hsl(var(--primary)/0.18)]">
+          <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-7 w-auto mx-auto mb-5 opacity-90" />
           <AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />
           <h1 className="text-lg font-semibold mt-3">Form unavailable</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -180,6 +185,7 @@ export default function PublicFormPage() {
     return (
       <div className="min-h-screen grid place-items-center bg-gradient-to-b from-primary/5 via-background to-background p-6">
         <div className="max-w-md text-center rounded-2xl border border-border/70 bg-card p-8 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_36px_-20px_hsl(var(--primary)/0.18)]">
+          <img src={blossomLogo} alt="Blossom ABA Therapy" className="h-7 w-auto mx-auto mb-5 opacity-90" />
           <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-500" />
           <h1 className="text-lg font-semibold mt-3">Thank you</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -197,14 +203,16 @@ export default function PublicFormPage() {
       <div className="sticky top-0 z-20 border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <div className="max-w-3xl mx-auto px-6 md:px-8 py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-primary">
-              <div className="h-8 w-8 rounded-xl bg-primary/10 grid place-items-center">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-foreground">Blossom ABA Therapy</p>
-                <p className="text-[11px] text-muted-foreground">Performance Evaluation</p>
-              </div>
+            <div className="flex items-center gap-3">
+              <img
+                src={blossomLogo}
+                alt="Blossom ABA Therapy"
+                className="h-9 w-auto"
+              />
+              <span className="hidden sm:inline-block h-6 w-px bg-border" aria-hidden />
+              <p className="hidden sm:block text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                Performance Evaluation
+              </p>
             </div>
             <Badge variant="secondary" className="rounded-full">
               {payload.evaluation.evaluation_type} · {payload.response_type}
@@ -481,6 +489,14 @@ export default function PublicFormPage() {
             {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
             Submit Evaluation
           </Button>
+        </div>
+
+        {/* Branded footer */}
+        <div className="border-t border-border/60 pt-6 pb-10 flex flex-col items-center gap-2 text-center">
+          <img src={blossomMark} alt="" className="h-6 w-auto opacity-70" aria-hidden />
+          <p className="text-[11px] text-muted-foreground">
+            Blossom ABA Therapy · Confidential performance evaluation
+          </p>
         </div>
       </div>
     </div>
