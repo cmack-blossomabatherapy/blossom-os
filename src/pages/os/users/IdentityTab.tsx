@@ -10,24 +10,19 @@
  * Lives next to EmployeeProfile.tsx and is mounted as the new "Identity" tab.
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  CheckCircle2, Circle, Sparkles, Save, X, Plus, UserSquare2,
-  Users2, ShieldAlert, Mail, Phone, Building2, MapPin, Linkedin, HelpCircle, Calendar,
+  CheckCircle2, Circle, Sparkles, Save, X, Plus,
+  ShieldAlert, Linkedin, HelpCircle, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import type { DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-function initials(name: string) {
-  return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
-}
 
 function Card({ id, className, children }: { id?: string; className?: string; children: React.ReactNode }) {
   return (
@@ -176,13 +171,9 @@ function CompletionRow({ ok, label }: { ok: boolean; label: string }) {
 }
 
 export function IdentityTab({ m }: { m: DirectoryEmployee }) {
-  const { byUuid, reportsOf } = useEmployeeDirectory();
   const [row, setRow] = useState<IdentityRow | null>(null);
   const [completion, setCompletion] = useState<Completion | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const manager = m.managerId ? byUuid.get(m.managerId) : null;
-  const directReports = m.uuid ? reportsOf(m.uuid) : [];
 
   // Load identity row + completion in parallel.
   useEffect(() => {
@@ -397,71 +388,6 @@ export function IdentityTab({ m }: { m: DirectoryEmployee }) {
         </Card>
       )}
 
-      {/* Org structure */}
-      <Card className="p-6">
-        <SectionTitle hint="Synced live from the org chart">Organizational structure</SectionTitle>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Reports to */}
-          <div>
-            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Reports to</p>
-            {manager ? (
-              <Link to={`/user-management/${manager.id}`}
-                className="flex items-center gap-3 rounded-xl border border-border/70 bg-muted/30 p-3 transition hover:bg-muted/60">
-                {manager.photo
-                  ? <img src={manager.photo} alt="" className="size-10 rounded-full object-cover" />
-                  : <div className="size-10 rounded-full bg-muted grid place-items-center text-xs font-semibold">{initials(manager.name)}</div>}
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{manager.name}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{manager.title}</p>
-                </div>
-              </Link>
-            ) : (
-              <p className="text-xs text-muted-foreground">No manager assigned</p>
-            )}
-          </div>
-
-          {/* Department / state */}
-          <div>
-            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Department</p>
-            <div className="space-y-1.5 text-sm">
-              <p className="inline-flex items-center gap-1.5"><Building2 className="size-3.5 text-muted-foreground" /> {m.departmentName ?? "Unassigned"}</p>
-              <p className="inline-flex items-center gap-1.5 text-muted-foreground"><MapPin className="size-3.5" /> {(m.states ?? []).join(", ") || "—"}</p>
-              {m.email && <p className="inline-flex items-center gap-1.5 text-muted-foreground"><Mail className="size-3.5" /> {m.email}</p>}
-              {m.phone && <p className="inline-flex items-center gap-1.5 text-muted-foreground"><Phone className="size-3.5" /> {m.phone}</p>}
-            </div>
-          </div>
-
-          {/* Direct reports */}
-          <div>
-            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              Direct reports {directReports.length > 0 && <span className="ml-1 text-foreground">({directReports.length})</span>}
-            </p>
-            {directReports.length === 0 ? (
-              <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                <UserSquare2 className="size-3.5" /> No direct reports
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {directReports.slice(0, 6).map((d) => (
-                  <li key={d.uuid ?? d.id}>
-                    <Link to={`/user-management/${d.id}`}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-muted">
-                      {d.photo
-                        ? <img src={d.photo} alt="" className="size-6 rounded-full object-cover" />
-                        : <div className="size-6 rounded-full bg-muted grid place-items-center text-[10px] font-semibold">{initials(d.name)}</div>}
-                      <span className="truncate font-medium text-foreground">{d.name}</span>
-                      <span className="truncate text-muted-foreground">· {d.title}</span>
-                    </Link>
-                  </li>
-                ))}
-                {directReports.length > 6 && (
-                  <li className="px-2 text-[11px] text-muted-foreground">+ {directReports.length - 6} more</li>
-                )}
-              </ul>
-            )}
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

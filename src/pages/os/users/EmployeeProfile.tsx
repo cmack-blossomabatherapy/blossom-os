@@ -28,6 +28,11 @@ import {
 } from "@/components/ui/select";
 import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { useAuth } from "@/contexts/AuthContext";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown, UserSquare2 } from "lucide-react";
 
 // ============================================================================
 // SHARED PRIMITIVES
@@ -195,10 +200,12 @@ const STATE_OPTIONS = ["GA", "NC", "TN", "VA", "MD", "NJ"];
 function EmploymentTab({ m }: { m: DirectoryEmployee }) {
   const { hasPerm } = useAuth();
   const { employees: phoneEmployees, saveEmployeeExtension } = usePhoneSystem();
+  const { members: directoryMembers, byUuid: directoryByUuid, reportsOf } = useEmployeeDirectory();
   const canEditEmployment = hasPerm("hr.employees.edit");
   const [row, setRow] = useState<EmploymentRow | null>(null);
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
-  const [manager, setManager] = useState<string | null>(null);
+  const [managerId, setManagerId] = useState<string | null>(null);
+  const [managerOpen, setManagerOpen] = useState(false);
   const [title, setTitle] = useState<string>(m.title ?? "");
   const [departmentId, setDepartmentId] = useState<string>(m.departmentId ?? "unassigned");
   const [state, setState] = useState<string>(m.states?.[0] ?? "GA");
@@ -241,15 +248,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     setPhone(data.phone ?? "");
     setCredential(data.credential ?? "");
     setPronouns(data.pronouns ?? "");
-    setManager(null);
-    if (data.manager_id) {
-      const { data: mgr } = await supabase
-        .from("employees")
-        .select("first_name,last_name,preferred_name")
-        .eq("id", data.manager_id)
-        .maybeSingle();
-      if (mgr) setManager(`${mgr.preferred_name || mgr.first_name} ${mgr.last_name}`.trim());
-    }
+    setManagerId(data.manager_id ?? null);
   }, [m.uuid]);
 
   useEffect(() => {
@@ -282,6 +281,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
         phone: phone.trim() || null,
         credential: credential.trim() || null,
         pronouns: pronouns.trim() || null,
+        manager_id: managerId,
       })
       .eq("id", m.uuid);
     setSavingEmployment(false);
@@ -291,6 +291,27 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
     window.dispatchEvent(new Event("employee-directory:refresh"));
     window.dispatchEvent(new Event("team-directory:refresh"));
   };
+
+  const manager = managerId ? directoryByUuid.get(managerId) ?? null : null;
+  const directReports = m.uuid ? reportsOf(m.uuid) : [];
+  const managerCandidates = useMemo(
+    () => directoryMembers
+      .filter((d) => d.uuid && d.uuid !== m.uuid)
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [directoryMembers, m.uuid],
+  );
+
+  async function saveManager(nextId: string | null) {
+    if (!m.uuid) return;
+    if (!canEditEmployment) { toast.error("You don't have permission to edit reporting structure."); return; }
+    setManagerId(nextId);
+    setManagerOpen(false);
+    const { error } = await supabase.from("employees").update({ manager_id: nextId }).eq("id", m.uuid);
+    if (error) { toast.error(error.message); return; }
+    toast.success(nextId ? "Reports-to updated" : "Manager cleared");
+    window.dispatchEvent(new Event("employee-directory:refresh"));
+    window.dispatchEvent(new Event("team-directory:refresh"));
+  }
 
   return (
     <div className="space-y-6">
@@ -359,7 +380,49 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
               <SelectContent>{WORK_SETTING_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <FieldWithSource label="Manager" value={manager ?? "—"} source={sourceBadge(false)} />
+          <div id="employment-manager" className="scroll-mt-24">
+            <EditableLabel label="Reports to" source={sourceBadge(false)} />
+            <Popover open={managerOpen} onOpenChange={setManagerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  disabled={!canEditEmployment}
+                  className="mt-1 h-9 w-full justify-between font-normal"
+                >
+                  <span className="truncate">{manager ? manager.name : "Select manager…"}</span>
+                  <ChevronsUpDown className="ml-2 size-3.5 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search employee…" />
+                  <CommandList>
+                    <CommandEmpty>No employees found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="__none__" onSelect={() => void saveManager(null)}>
+                        <Check className={cn("mr-2 size-3.5", !managerId ? "opacity-100" : "opacity-0")} />
+                        <span className="text-muted-foreground">No manager</span>
+                      </CommandItem>
+                      {managerCandidates.map((d) => (
+                        <CommandItem
+                          key={d.uuid}
+                          value={`${d.name} ${d.title ?? ""}`}
+                          onSelect={() => void saveManager(d.uuid!)}
+                        >
+                          <Check className={cn("mr-2 size-3.5", managerId === d.uuid ? "opacity-100" : "opacity-0")} />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm">{d.name}</p>
+                            <p className="truncate text-[11px] text-muted-foreground">{d.title}</p>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
           <div id="employment-email" className="scroll-mt-24">
             <EditableLabel label="Email" source={sourceBadge(false)} />
             <Input value={email} disabled={!canEditEmployment} onChange={(e) => setEmail(e.target.value)} placeholder="name@blossomabatherapy.com" type="email" className="mt-1 h-9" />
@@ -414,6 +477,69 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
           <StatusBadge tone={connected ? "ok" : "muted"}>
             <RefreshCw className="size-3" />{connected ? "Healthy" : "Not connected"}
           </StatusBadge>
+        </div>
+      </Card>
+      <Card>
+        <SectionTitle hint="Click 'Reports to' to reassign this employee's manager">Organizational structure</SectionTitle>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Reports to</p>
+            <button
+              type="button"
+              onClick={() => canEditEmployment && setManagerOpen(true)}
+              disabled={!canEditEmployment}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl border border-border/70 bg-muted/30 p-3 text-left transition",
+                canEditEmployment && "hover:bg-muted/60 cursor-pointer",
+              )}
+            >
+              {manager?.photo
+                ? <img src={manager.photo} alt="" className="size-10 rounded-full object-cover" />
+                : <div className="size-10 rounded-full bg-muted grid place-items-center text-xs font-semibold">
+                    {manager ? initials(manager.name) : "—"}
+                  </div>}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{manager ? manager.name : "No manager assigned"}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{manager?.title ?? "Click to assign"}</p>
+              </div>
+              <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+            </button>
+          </div>
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Department</p>
+            <div className="space-y-1.5 text-sm">
+              <p className="inline-flex items-center gap-1.5"><Building2 className="size-3.5 text-muted-foreground" /> {m.departmentName ?? "Unassigned"}</p>
+              <p className="inline-flex items-center gap-1.5 text-muted-foreground"><MapPin className="size-3.5" /> {(m.states ?? []).join(", ") || "—"}</p>
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              Direct reports {directReports.length > 0 && <span className="ml-1 text-foreground">({directReports.length})</span>}
+            </p>
+            {directReports.length === 0 ? (
+              <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <UserSquare2 className="size-3.5" /> No direct reports
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {directReports.slice(0, 6).map((d) => (
+                  <li key={d.uuid ?? d.id}>
+                    <Link to={`/user-management/${d.id}`}
+                      className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs hover:bg-muted">
+                      {d.photo
+                        ? <img src={d.photo} alt="" className="size-6 rounded-full object-cover" />
+                        : <div className="size-6 rounded-full bg-muted grid place-items-center text-[10px] font-semibold">{initials(d.name)}</div>}
+                      <span className="truncate font-medium text-foreground">{d.name}</span>
+                      <span className="truncate text-muted-foreground">· {d.title}</span>
+                    </Link>
+                  </li>
+                ))}
+                {directReports.length > 6 && (
+                  <li className="px-2 text-[11px] text-muted-foreground">+ {directReports.length - 6} more</li>
+                )}
+              </ul>
+            )}
+          </div>
         </div>
       </Card>
     </div>
