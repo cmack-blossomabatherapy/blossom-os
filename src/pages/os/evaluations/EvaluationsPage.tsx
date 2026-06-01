@@ -192,7 +192,7 @@ export default function EvaluationsPage() {
             />
           </TabsContent>
           <TabsContent value="staff">
-            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} onAddStaff={() => setAddOpen(true)} initialView={staffView} />
+            <StaffTab data={scopedData} onOpenStaff={setOpenStaffId} initialView={staffView} />
           </TabsContent>
           <TabsContent value="schedule"><ScheduleTab data={scopedData} onOpenStaff={setOpenStaffId} /></TabsContent>
           {perms.canManageForms && <TabsContent value="forms"><FormsTab data={data} /></TabsContent>}
@@ -205,14 +205,6 @@ export default function EvaluationsPage() {
           <TabsContent value="settings"><SettingsTab data={data} canEdit={perms.canManageSettings} /></TabsContent>
         </Tabs>
       </div>
-
-      <AddStaffDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        supervisors={supervisors}
-        onCreated={data.refresh}
-      />
-      <ImportStaffDialog open={importOpen} onOpenChange={setImportOpen} existing={data.staff} onImported={data.refresh} />
       <StaffProfileDrawer
         staff={openStaff}
         evaluations={data.evaluations}
