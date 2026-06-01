@@ -138,7 +138,7 @@ export default function DeviceInventory() {
       return (
         d.name.toLowerCase().includes(needle) ||
         (d.serial ?? "").toLowerCase().includes(needle) ||
-        (assignee?.full_name ?? "").toLowerCase().includes(needle) ||
+        empName(assignee).toLowerCase().includes(needle) ||
         (assignee?.email ?? "").toLowerCase().includes(needle)
       );
     });
