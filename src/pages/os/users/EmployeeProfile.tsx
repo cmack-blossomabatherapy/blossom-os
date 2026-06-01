@@ -1859,7 +1859,8 @@ export default function EmployeeProfilePage() {
       return;
     }
     if (data?.magicLink) {
-      toast.warning("Invite created — email service unavailable, copy the link from the response.");
+      await navigator.clipboard?.writeText(data.magicLink);
+      toast.warning("Invite created — email service unavailable, link copied to clipboard.");
       return;
     }
     toast.error(data?.emailError ?? "Invite could not be sent.");
