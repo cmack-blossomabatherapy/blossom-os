@@ -8,7 +8,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Sparkles, Send,
+  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin,
   X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
   FileType2, MessageSquare, Cpu, PlayCircle, Link2,
 } from "lucide-react";
@@ -17,7 +17,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   resourceCategories, categoryById, resourcesByCategory,
   isVisibleToRole, pinnedFor, recentFor, searchResources,
-  formatRelative, aiSamplePrompts, TYPE_ICON, TYPE_TONE, roleLabel,
+  formatRelative, TYPE_ICON, TYPE_TONE, roleLabel,
   type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
@@ -109,9 +109,6 @@ export default function OSResourceLibrary() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" asChild>
-                <Link to="/sop"><BookOpen className="mr-2 h-4 w-4" />SOP Library</Link>
-              </Button>
               <Button variant="outline" asChild>
                 <Link to="/training"><GraduationCap className="mr-2 h-4 w-4" />Training Academy</Link>
               </Button>
@@ -378,35 +375,8 @@ export default function OSResourceLibrary() {
             )}
           </div>
 
-          {/* AI SIDEBAR */}
+          {/* RIGHT SIDEBAR */}
           <aside className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-[hsl(265_70%_98%)] to-white p-5 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-12px_hsl(220_15%_30%/0.08)]">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[hsl(265_70%_94%)] text-[hsl(265_70%_45%)]">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="text-[13.5px] font-semibold text-foreground">Ask Blossom AI</div>
-                  <div className="text-[11.5px] text-muted-foreground">Find any resource instantly</div>
-                </div>
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {aiSamplePrompts.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setQuery(p.replace(/[.?]$/, ""))}
-                    className="block w-full rounded-lg border border-border/60 bg-white/70 px-3 py-2 text-left text-[12.5px] text-foreground transition-colors hover:bg-white"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Input placeholder="Ask anything…" className="h-9 rounded-lg border-border/70 bg-white text-[13px]" />
-                <Button size="icon" className="h-9 w-9 rounded-lg"><Send className="h-4 w-4" /></Button>
-              </div>
-            </div>
-
             {recentlyOpenedItems.length > 0 && (
               <div className="rounded-2xl border border-border/60 bg-card p-5">
                 <div className="text-[13.5px] font-semibold text-foreground">Recently viewed</div>
