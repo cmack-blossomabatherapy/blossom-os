@@ -19,6 +19,8 @@ interface AuthContextValue {
   permissions: Set<string>;
   ownedClientStages: Set<string>;
   ownedLeadStages: Set<string>;
+  avatarUrl: string | null;
+  displayName: string;
   hasPerm: (key: string) => boolean;
   ownsClientStage: (stage: string) => boolean;
   ownsLeadStage: (stage: string) => boolean;
