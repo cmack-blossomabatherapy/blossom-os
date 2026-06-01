@@ -1,23 +1,23 @@
 import type { OSRole } from "./permissions";
 
-/** Role → primary dashboard route. Used for nav distribution and `/os` redirect. */
+/** Role → first working landing page. Used for login/root redirects. */
 export const ROLE_HOME: Record<OSRole, string> = {
   super_admin: "/",
-  executive_leadership: "/executive",
-  operations_leadership: "/operations",
-  state_director: "/state-director",
-  intake_coordinator: "/intake-coordinator",
-  authorization_coordinator: "/auth-coordinator",
-  scheduling_team: "/scheduling-team",
-  recruiting_team: "/recruiting-team",
-  hr_team: "/hr-team",
-  billing_finance: "/billing-finance",
-  qa_team: "/qa-team",
-  payroll_coordinator: "/payroll-coordinator",
-  bcba: "/bcba",
-  rbt: "/rbt",
+  executive_leadership: "/bcba-performance-dashboard",
+  operations_leadership: "/operations/command-center",
+  state_director: "/training",
+  intake_coordinator: "/intake",
+  authorization_coordinator: "/auth-workspace",
+  scheduling_team: "/scheduling-workspace",
+  recruiting_team: "/recruiting/workspace",
+  hr_team: "/hr/evaluations",
+  billing_finance: "/finance-dashboard",
+  qa_team: "/qa-workspace",
+  payroll_coordinator: "/payroll/workspace",
+  bcba: "/training/journeys/bcba",
+  rbt: "/rbt/my-day",
   marketing_team: "/marketing",
-  case_manager: "/case-manager",
+  case_manager: "/case-manager/training",
 };
 
 /** All role-specific dashboard routes (for super_admin overview). */
