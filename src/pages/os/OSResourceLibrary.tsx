@@ -17,7 +17,7 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import {
   resourceCategories, categoryById, resourcesByCategory,
   isVisibleToRole, pinnedFor, recentFor, searchResources,
-  formatRelative, aiSamplePrompts, TYPE_ICON, TYPE_TONE, roleLabel,
+  formatRelative, TYPE_ICON, TYPE_TONE, roleLabel,
   type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
