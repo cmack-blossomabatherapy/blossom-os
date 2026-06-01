@@ -1,35 +1,24 @@
-## Problem
+## What's happening
 
-The Evaluations → Reports tab shows "Self Pending: 101" while there are only ~10 active staff in scope. Cause: the seed/data generator creates ~10 future evaluation cycles per staff (8 quarterly + 2 annual), and `ReportsTab.tsx` counts every row in `evaluations` for the pending KPIs. So a QA-scoped view of ~10 staff × ~10 future cycles ≈ 101 "self pending" — technically correct row counts, but operationally meaningless.
+Nicholas's record in `employees` has the updated address `nschlotterer@blossomabatherapy.com`, but the linked `auth.users` row still has the original `nicholas.schlotterer@blossomabatherapy.com`. The `admin-employee-magic-link` edge function uses the employee's email to generate the magic link and to send via Resend, without first updating the auth user. Two failure modes follow:
 
-Confirmed via DB: 63 active staff, 631 evaluations total, 631 "self_status != Completed AND final_status != Complete", 63 distinct staff. Sample shows each staff has cycles scheduled out to 2028.
+- Supabase's `generateLink({ type: "magiclink", email })` either auto-creates a brand-new auth user for the new address (leaving the employee's `user_id` pointing at the old account) or refuses, depending on signup settings.
+- Even if a link is generated and Resend accepts the POST, the new auth user is disconnected from the employee, so the link doesn't sign them into the right account — and any failure in Resend isn't being surfaced (function logs only show boot/shutdown).
 
 ## Fix
 
-In `src/pages/os/evaluations/tabs/ReportsTab.tsx`, restrict the "pending" KPIs and the Status Breakdown chart to the **current open cycle per staff** — i.e. for each staff, only the single earliest non-complete evaluation whose `next_review_date` is in the past or within the current quarter window. Future-scheduled cycles should not count as "pending" yet because the cycle hasn't opened.
+1. In `supabase/functions/admin-employee-magic-link/index.ts`:
+   - After resolving `userId`, fetch the auth user and, if its email differs from the employee email, call `admin.auth.admin.updateUserById(userId, { email, email_confirm: true })` before generating the link.
+   - Add `console.log` lines for: resolved userId, email-sync action taken, Resend HTTP status, and Resend response id / error body, so the next attempt is debuggable from the function logs.
+   - Return the Resend status code and error message in the response payload (already partially done — extend it).
 
-Concretely:
+2. In `src/pages/os/users/EmployeeProfile.tsx` (the `sendInvite` handler):
+   - When `emailSent` is false, show the actual `emailError` from the response in the toast and (if present) copy the magic link to clipboard as a fallback. The current code already does this — just make sure the error toast wins over a generic "sent" message.
 
-1. Derive `currentCycleEvals`: for each `staff_id`, pick the evaluation with the earliest `next_review_date` where `final_status !== "Complete"`. Optionally only include those where `next_review_date <= end of current quarter` so far-future cycles are excluded.
-2. Use `currentCycleEvals` (instead of `filteredEvals`) for these KPIs and the breakdown:
-   - Self Pending
-   - Leadership Pending
-   - Meetings Pending
-   - Overdue (already date-bounded but should also be per-staff to avoid double-counting)
-   - Status Breakdown card
-   - Completion Rate (numerator/denominator both on current cycle)
-3. Leave alone (already cycle/date-bounded):
-   - Active Staff
-   - Due This Quarter
-   - Completed This Quarter
-   - Upcoming Evaluations (next 90 days)
-   - Overdue list (date-bounded by `next_review_date < today`)
-   - By Role / By State / By Reviewer aggregates → also switch to `currentCycleEvals` so percentages reflect the active cycle and aren't inflated by future cycles.
+3. Verify via `supabase--curl_edge_functions` after deploy: invoke for Nicholas, confirm the response shows `emailSent: true` with a Resend message id, and check `auth.users.email` is now `nschlotterer@…`.
 
-No schema or data changes. No changes outside `ReportsTab.tsx`. After the fix, with ~10 staff in QA scope, "Self Pending" should be at most ~10, matching the staff count.
+## Notes
 
-## Verification
-
-- Reload Evaluations → Reports as QA. Self Pending, Leadership Pending, Meetings Pending should each be ≤ Active Staff in scope.
-- Completion Rate should reflect the current cycle, not all historical/future cycles.
-- Upcoming and Overdue lists should remain unchanged.
+- No DB migrations needed — `admin.auth.admin.updateUserById` handles the auth-side change.
+- Resend domain (`welcome@blossom.abacommandcenter.com`) is unchanged; if Resend still rejects after the fix, the response will now contain the exact error so we can act on it.
+- This also retroactively fixes any other employee whose email was edited after their account was created.

@@ -124,6 +124,30 @@ Deno.serve(async (req) => {
     await admin.from("employees").update({ user_id: userId }).eq("id", employee.id);
   }
 
+  // Ensure the auth user's email matches the employee record. If the admin
+  // updated the employee email after the auth account was created, the magic
+  // link would otherwise be sent to a stale address (or auto-create a new
+  // orphaned auth user).
+  try {
+    const { data: existingUser } = await admin.auth.admin.getUserById(userId!);
+    const currentEmail = (existingUser?.user?.email ?? "").toLowerCase();
+    if (currentEmail && currentEmail !== email) {
+      const { error: updErr } = await admin.auth.admin.updateUserById(userId!, {
+        email,
+        email_confirm: true,
+      });
+      if (updErr) {
+        console.log("[invite] failed to sync auth email", { userId, from: currentEmail, to: email, error: updErr.message });
+        return new Response(JSON.stringify({ error: `Could not update login email: ${updErr.message}` }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("[invite] synced auth email", { userId, from: currentEmail, to: email });
+    }
+  } catch (e) {
+    console.log("[invite] error checking auth user", { userId, error: (e as Error).message });
+  }
+
   if (skipEmail) {
     return new Response(JSON.stringify({ ok: true, userId, createdAccount, emailSent: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -246,10 +270,19 @@ Deno.serve(async (req) => {
   let json: { id?: string; message?: string; error?: string } | null = null;
   try { json = text ? JSON.parse(text) : null; } catch (_) { json = null; }
 
+  console.log("[invite] resend response", {
+    to: email,
+    status: response.status,
+    id: json?.id ?? null,
+    error: json?.message ?? json?.error ?? (response.ok ? null : text?.slice(0, 500)),
+  });
+
   if (!response.ok) {
     return new Response(JSON.stringify({
       ok: true, userId, createdAccount, magicLink,
-      emailSent: false, emailError: json?.message ?? json?.error ?? text ?? `Resend ${response.status}`,
+      emailSent: false,
+      emailError: json?.message ?? json?.error ?? text ?? `Resend ${response.status}`,
+      emailStatus: response.status,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
