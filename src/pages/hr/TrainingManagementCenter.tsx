@@ -877,11 +877,11 @@ function AssignmentsTable() {
   );
 }
 
-function CategoriesGrid() {
+function CategoriesGrid({ modules }: { modules: ViewModule[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
       {trainingCategories.map((c) => {
-        const count = trainingModules.filter((m) => m.category === c).length;
+        const count = modules.filter((m) => m.category === c).length;
         return (
           <div
             key={c}
@@ -1113,10 +1113,13 @@ function AIAssistantPanel() {
 }
 
 function ProgressPanel() {
+  const academy = useAcademy();
   const totalAssigned = trainingAssignments.reduce((s, a) => s + a.assigned, 0);
   const totalCompleted = trainingAssignments.reduce((s, a) => s + a.completed, 0);
   const overdue = trainingAssignments.reduce((s, a) => s + a.overdue, 0);
   const pct = Math.round((totalCompleted / Math.max(totalAssigned, 1)) * 100);
+  const moduleCount = academy.trainings.length;
+  const journeyCount = academy.journeys.length;
   return (
     <div className="rounded-2xl border border-border/70 bg-card p-4">
       <p className="text-[13px] font-semibold tracking-tight">Library health</p>
@@ -1130,16 +1133,8 @@ function ProgressPanel() {
           value={String(overdue)}
           tone={overdue > 0 ? "amber" : "default"}
         />
-        <MiniStat
-          label="Drafts"
-          value={String(trainingModules.filter((m) => m.status === "Draft").length)}
-        />
-        <MiniStat
-          label="Published"
-          value={String(
-            trainingModules.filter((m) => m.status === "Published").length,
-          )}
-        />
+        <MiniStat label="Modules" value={String(moduleCount)} />
+        <MiniStat label="Journeys" value={String(journeyCount)} />
       </div>
     </div>
   );
