@@ -372,7 +372,13 @@ export default function AiReportView() {
             <Button size="sm" className="mt-4" onClick={() => navigate("/reports/ai/new")}>Try again</Button>
           </div>
         )}
-        {report.status === "ready" && report.result && <ReadyState result={report.result} />}
+        {report.status === "ready" && report.result && (
+          <ReadyState
+            result={report.result}
+            narrativeStatus={report.narrativeStatus}
+            narrativeStep={narrativeStep}
+          />
+        )}
       </div>
     </OSShell>
   );
@@ -430,11 +436,49 @@ function LoadingState({ step }: { step: number }) {
   );
 }
 
-function ReadyState({ result }: { result: AiReportResult }) {
+function ReadyState({
+  result, narrativeStatus, narrativeStep,
+}: {
+  result: AiReportResult;
+  narrativeStatus?: "pending" | "ready" | "error";
+  narrativeStep: number;
+}) {
   const sections = result.sections ?? [];
   const hasSections = sections.length > 0;
   return (
     <div className="space-y-5">
+      {narrativeStatus === "pending" && (
+        <div className="rounded-2xl border border-[hsl(265_70%_55%/0.25)] bg-gradient-to-r from-[hsl(265_100%_98%)] to-white p-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white">
+              <Brain className="h-3 w-3" />
+            </span>
+            <p className="text-[12px] font-medium text-[hsl(265_70%_55%)]">
+              {NARRATIVE_STEPS[narrativeStep]} — numbers below are final.
+            </p>
+          </div>
+        </div>
+      )}
+      {narrativeStatus === "error" && (
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 p-3">
+          <p className="text-[12px] font-medium text-amber-800">
+            AI narrative unavailable — deterministic numbers are still accurate below.
+          </p>
+        </div>
+      )}
+      {result.dataQuality && result.dataQuality.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Data quality</p>
+          <ul className="mt-2 space-y-1 text-[12px]">
+            {result.dataQuality.map((d, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-3 w-3 text-amber-500" />
+                <span><span className="font-medium">{d.label}:</span> {d.detail}{d.rowsAffected ? ` (${d.rowsAffected} rows)` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {(result.audience || result.timeframe) && (
         <div className="flex flex-wrap gap-1.5">
           {result.audience && (
