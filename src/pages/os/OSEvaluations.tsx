@@ -46,7 +46,7 @@ function daysFromNow(date: string | null) {
 }
 
 export default function OSEvaluations() {
-  const { activeState } = useOSRole();
+  const { activeState, role } = useOSRole();
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,9 +71,16 @@ export default function OSEvaluations() {
           .limit(2000),
       ]);
       if (!alive) return;
-      const filtered = (ed ?? []).filter((e: EmployeeRow) =>
-        !activeState ? true : e.state === activeState,
-      );
+      const isClinicalOnly = role === "qa_team" || role === "bcba";
+      const filtered = (ed ?? []).filter((e: EmployeeRow) => {
+        if (activeState && e.state !== activeState) return false;
+        if (isClinicalOnly) {
+          const t = (e.job_title ?? "").toLowerCase();
+          // Restrict QA / BCBA reviewers to clinical staff only (BCBAs and RBTs).
+          if (!/\b(bcba|rbt)\b/.test(t)) return false;
+        }
+        return true;
+      });
       setEmployees(filtered);
       setReviews((rd ?? []) as ReviewRow[]);
       setLoading(false);
