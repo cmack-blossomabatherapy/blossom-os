@@ -624,6 +624,7 @@ const App = () => (
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
                   <Route path="/reports/qa-auth-utilization" element={<QaAuthUtilizationDashboard />} />
+                  <Route path="/reports/qa-cancellation" element={<QaCancellationDashboard />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
