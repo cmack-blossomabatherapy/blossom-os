@@ -5,18 +5,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye } from "lucide-react";
+import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
+import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse, EvalReviewer } from "./types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "./statusBadges";
 import { createFormToken, queueEvaluationEmail, templateVars, buildFormUrl } from "./workflow";
 import type { Permissions } from "./permissions";
 import { logAudit, AUDIT_LABELS, type AuditEntry } from "./audit";
 import { buildEvaluationSummaryHtml, openPrintableSummary } from "./pdf";
+import ReviewersDialog from "./ReviewersDialog";
 
 interface Props {
   staff: EvalStaff | null;
@@ -27,6 +28,7 @@ interface Props {
   responses: EvalResponse[];
   allStaff: EvalStaff[];
   audit: AuditEntry[];
+  reviewers: EvalReviewer[];
   permissions: Permissions;
   onClose: () => void;
   onChanged: () => void;
@@ -41,13 +43,14 @@ function completionPct(e: Evaluation): number {
   return Math.round((n / 4) * 100);
 }
 
-export default function StaffProfileDrawer({ staff, evaluations, meetings, notes, templates, responses, allStaff, audit, permissions, onClose, onChanged }: Props) {
+export default function StaffProfileDrawer({ staff, evaluations, meetings, notes, templates, responses, allStaff, audit, reviewers, permissions, onClose, onChanged }: Props) {
   const [noteText, setNoteText] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingType, setMeetingType] = useState("Zoom");
   const [meetingLink, setMeetingLink] = useState("");
   const [working, setWorking] = useState(false);
   const [viewResponse, setViewResponse] = useState<EvalResponse | null>(null);
+  const [reviewersOpen, setReviewersOpen] = useState(false);
 
   const open = !!staff;
   const current = useMemo(() => {
@@ -64,6 +67,16 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
   const staffNotes = current ? notes.filter((n) => n.evaluation_id === current.id) : [];
   const currentResponses = current ? responses.filter((r) => r.evaluation_id === current.id) : [];
   const reviewer = staff?.supervisor_id ? allStaff.find((s) => s.id === staff.supervisor_id) ?? null : null;
+  const currentReviewers = useMemo(
+    () => (current ? reviewers.filter((r) => r.evaluation_id === current.id) : []),
+    [reviewers, current]
+  );
+  const reviewerStats = useMemo(() => {
+    const total = currentReviewers.length;
+    const completed = currentReviewers.filter((r) => r.status === "Completed").length;
+    const pending = currentReviewers.filter((r) => r.status === "Not Sent").length;
+    return { total, completed, pending };
+  }, [currentReviewers]);
   const tplByKey = useMemo(() => Object.fromEntries(templates.map((t) => [t.template_key, t])), [templates]);
   const staffAudit = useMemo(() => (staff ? audit.filter((a) => a.staff_id === staff.id || (current && a.evaluation_id === current.id)) : []), [staff, audit, current]);
 
@@ -329,10 +342,26 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                   <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("self_request", "Self")} disabled={working}>
                     <Send className="h-3.5 w-3.5 mr-1.5" /> Send Self Eval
                   </Button>
-                  <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("leadership_request", "Leadership")} disabled={working}>
-                    <Send className="h-3.5 w-3.5 mr-1.5" /> Send Leadership
+                  <Button size="sm" variant="secondary" className="flex-1 h-9 rounded-xl" onClick={() => setReviewersOpen(true)} disabled={working}>
+                    <Users className="h-3.5 w-3.5 mr-1.5" />
+                    {reviewerStats.total === 0
+                      ? "Add Reviewers"
+                      : `Reviewers (${reviewerStats.completed}/${reviewerStats.total})`}
                   </Button>
                 </div>
+
+                {reviewerStats.total > 0 && (
+                  <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-[11.5px] text-muted-foreground flex items-center justify-between">
+                    <span>
+                      {reviewerStats.completed === reviewerStats.total
+                        ? "All reviewers completed"
+                        : reviewerStats.pending > 0
+                          ? `${reviewerStats.pending} reviewer${reviewerStats.pending === 1 ? "" : "s"} awaiting send`
+                          : `${reviewerStats.total - reviewerStats.completed} reviewer${reviewerStats.total - reviewerStats.completed === 1 ? "" : "s"} pending response`}
+                    </span>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => setReviewersOpen(true)}>Manage</Button>
+                  </div>
+                )}
 
                 {/* Secondary Actions Toolbar */}
                 <TooltipProvider delayDuration={200}>
@@ -345,14 +374,6 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Copy Self Link</p></TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => copyLink("Leadership")} disabled={working}>
-                          <Link2 className="h-3.5 w-3.5 rotate-45" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Copy Leadership Link</p></TooltipContent>
-                    </Tooltip>
                     <div className="w-px h-4 bg-border/70 mx-1" />
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -361,14 +382,6 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Self Reminder</p></TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => sendEmailFromTemplate("leadership_reminder", "Leadership")} disabled={working}>
-                          <BellRing className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Leadership Reminder</p></TooltipContent>
                     </Tooltip>
                     <div className="w-px h-4 bg-border/70 mx-1" />
                     <Tooltip>
@@ -584,6 +597,20 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
           </div>
         </DialogContent>
       </Dialog>
+
+      {staff && current && (
+        <ReviewersDialog
+          open={reviewersOpen}
+          onOpenChange={setReviewersOpen}
+          staff={staff}
+          evaluation={current}
+          reviewers={currentReviewers}
+          allStaff={allStaff}
+          templates={templates}
+          canOverrideRules={permissions.canOverrideRules}
+          onChanged={onChanged}
+        />
+      )}
     </Sheet>
   );
 }

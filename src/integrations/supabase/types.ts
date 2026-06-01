@@ -4525,6 +4525,73 @@ export type Database = {
           },
         ]
       }
+      evaluation_reviewers: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          evaluation_id: string
+          id: string
+          notes: string | null
+          response_id: string | null
+          reviewer_email: string
+          reviewer_name: string | null
+          reviewer_staff_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          evaluation_id: string
+          id?: string
+          notes?: string | null
+          response_id?: string | null
+          reviewer_email: string
+          reviewer_name?: string | null
+          reviewer_staff_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          evaluation_id?: string
+          id?: string
+          notes?: string | null
+          response_id?: string | null
+          reviewer_email?: string
+          reviewer_name?: string | null
+          reviewer_staff_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_reviewers_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_reviewers_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_reviewers_reviewer_staff_id_fkey"
+            columns: ["reviewer_staff_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_risk_flags: {
         Row: {
           created_at: string
@@ -9999,6 +10066,10 @@ export type Database = {
       }
       recruiting_can_read: { Args: { _user_id: string }; Returns: boolean }
       recruiting_can_write: { Args: { _user_id: string }; Returns: boolean }
+      refresh_evaluation_leadership_status: {
+        Args: { _evaluation_id: string }
+        Returns: undefined
+      }
       refresh_quiz_knowledge: { Args: { _quiz_id: string }; Returns: undefined }
       regenerate_staff_evaluations: {
         Args: { _staff_id: string }

@@ -219,3 +219,20 @@ export type StandingLevel =
   | "Needs Coaching"
   | "Performance Concern"
   | "Improvement Plan Active";
+
+export type ReviewerStatus = "Not Sent" | "Sent" | "In Progress" | "Completed" | "Declined";
+
+export interface EvalReviewer {
+  id: string;
+  evaluation_id: string;
+  reviewer_staff_id: string | null;
+  reviewer_email: string;
+  reviewer_name: string | null;
+  status: ReviewerStatus;
+  sent_at: string | null;
+  completed_at: string | null;
+  response_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}

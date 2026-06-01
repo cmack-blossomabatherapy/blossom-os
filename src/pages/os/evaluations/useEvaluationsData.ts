@@ -4,7 +4,7 @@ import type {
   EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmail,
   EvalForm, EvalEmailTemplate, EvalResponse,
   EvalGoal, EvalCoachingPlan, EvalAIInsight, EvalTrainingAssignment,
-  EvalPerformanceScore, EvalRiskFlag, EvalRule,
+  EvalPerformanceScore, EvalRiskFlag, EvalRule, EvalReviewer,
 } from "./types";
 import type { AuditEntry } from "./audit";
 
@@ -54,6 +54,7 @@ export interface EvaluationsData {
   trainings: EvalTrainingAssignment[];
   scores: EvalPerformanceScore[];
   riskFlags: EvalRiskFlag[];
+  reviewers: EvalReviewer[];
   loading: boolean;
   refresh: () => Promise<void>;
 }
@@ -76,11 +77,12 @@ export function useEvaluationsData(): EvaluationsData {
   const [trainings, setTrainings] = useState<EvalTrainingAssignment[]>([]);
   const [scores, setScores] = useState<EvalPerformanceScore[]>([]);
   const [riskFlags, setRiskFlags] = useState<EvalRiskFlag[]>([]);
+  const [reviewers, setReviewers] = useState<EvalReviewer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [s, e, m, n, em, fr, tp, rs, au, st, gl, cp, ai, tr, ps, rf, rl] = await Promise.all([
+    const [s, e, m, n, em, fr, tp, rs, au, st, gl, cp, ai, tr, ps, rf, rl, rv] = await Promise.all([
       supabase.from("evaluation_staff").select("*").order("last_name"),
       supabase.from("evaluations").select("*").order("created_at", { ascending: false }),
       supabase.from("evaluation_meetings").select("*").order("meeting_date", { ascending: false }),
@@ -98,6 +100,7 @@ export function useEvaluationsData(): EvaluationsData {
       (supabase.from as any)("evaluation_performance_scores").select("*").order("created_at", { ascending: false }),
       (supabase.from as any)("evaluation_risk_flags").select("*").order("created_at", { ascending: false }),
       (supabase.from as any)("evaluation_rules").select("*").order("role").order("first_offset_days"),
+      (supabase.from as any)("evaluation_reviewers").select("*").order("created_at", { ascending: false }),
     ]);
     setStaff((s.data ?? []) as EvalStaff[]);
     setEvaluations((e.data ?? []) as Evaluation[]);
@@ -116,10 +119,11 @@ export function useEvaluationsData(): EvaluationsData {
     setScores((((ps as any)?.data ?? []) as EvalPerformanceScore[]));
     setRiskFlags((((rf as any)?.data ?? []) as EvalRiskFlag[]));
     setRules((((rl as any)?.data ?? []) as EvalRule[]));
+    setReviewers((((rv as any)?.data ?? []) as EvalReviewer[]));
     setLoading(false);
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  return { staff, evaluations, meetings, notes, emails, forms, templates, responses, audit, settings, rules, goals, coachingPlans, insights, trainings, scores, riskFlags, loading, refresh };
+  return { staff, evaluations, meetings, notes, emails, forms, templates, responses, audit, settings, rules, goals, coachingPlans, insights, trainings, scores, riskFlags, reviewers, loading, refresh };
 }
