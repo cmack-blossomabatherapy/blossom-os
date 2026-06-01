@@ -25,7 +25,7 @@ interface FormPayload {
   used_at: string | null;
   employee: { first_name: string; last_name: string; role: string; state: string | null; email: string };
   reviewer_name: string | null;
-  evaluation: { id: string; evaluation_type: "Quarterly" | "Annual" };
+  evaluation: { id: string; evaluation_type: string };
   due_date: string | null;
   form: { id: string; name: string; questions_json: { sections: FormSection[] } };
 }
