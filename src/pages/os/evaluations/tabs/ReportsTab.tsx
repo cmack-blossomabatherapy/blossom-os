@@ -183,7 +183,7 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="h-8 w-32 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="Quarterly">Quarterly</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent>
+          <SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="10-Day">10-Day</SelectItem><SelectItem value="30-Day">30-Day</SelectItem><SelectItem value="90-Day">90-Day</SelectItem><SelectItem value="Quarterly">Quarterly</SelectItem><SelectItem value="Annual">Annual</SelectItem></SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>

@@ -221,6 +221,9 @@ export default function StaffTab({
           <SelectTrigger className="h-9 w-[130px]"><SelectValue placeholder="All types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="10-Day">10-Day</SelectItem>
+            <SelectItem value="30-Day">30-Day</SelectItem>
+            <SelectItem value="90-Day">90-Day</SelectItem>
             <SelectItem value="Quarterly">Quarterly</SelectItem>
             <SelectItem value="Annual">Annual</SelectItem>
           </SelectContent>

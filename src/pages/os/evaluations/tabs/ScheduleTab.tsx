@@ -14,9 +14,13 @@ function fmtDate(d?: string | null) {
 
 function humanLabel(ev: Evaluation): string {
   if (ev.eval_label) return ev.eval_label;
-  if (ev.evaluation_type === "30-Day") return "30-Day Review";
-  if (ev.evaluation_type === "Annual") return "Annual Performance Review";
-  return "Quarterly Review";
+  switch (ev.evaluation_type) {
+    case "10-Day": return "10-Day Review";
+    case "30-Day": return "30-Day Review";
+    case "90-Day": return "90-Day Review";
+    case "Annual": return "Annual Performance Review";
+    default: return "Quarterly Review";
+  }
 }
 
 function daysUntil(d?: string | null): number | null {
@@ -120,7 +124,9 @@ export default function ScheduleTab({
             <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="10-Day">10-Day</SelectItem>
               <SelectItem value="30-Day">30-Day</SelectItem>
+              <SelectItem value="90-Day">90-Day</SelectItem>
               <SelectItem value="Quarterly">Quarterly</SelectItem>
               <SelectItem value="Annual">Annual</SelectItem>
             </SelectContent>
