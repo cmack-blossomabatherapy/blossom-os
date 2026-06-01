@@ -35,8 +35,8 @@ import Tasks from "./pages/Tasks";
 import Reports from "./pages/Reports";
 import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportDetail from "./pages/os/reports/ReportDetail";
-import AiReportNew from "./pages/os/reports/AiReportNew";
-import AiReportView from "./pages/os/reports/AiReportView";
+import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
+import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
@@ -613,8 +613,10 @@ const App = () => (
                   <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
-                  <Route path="/reports/ai/new" element={<AiReportNew />} />
-                  <Route path="/reports/ai/:id" element={<AiReportView />} />
+                  <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
+                  <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
+                  <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
+                  <Route path="/reports/ai/:id" element={<AiReportRedirect />} />
                   <Route path="/reports/:reportId" element={<ReportDetail />} />
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
