@@ -148,6 +148,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "HR Operations",
     items: [
       { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
+      { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
       { to: "/hr", label: "HR Suite", icon: Building2, module: "hr" },
       { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
     ],
