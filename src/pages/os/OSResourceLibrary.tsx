@@ -8,7 +8,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
-  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Sparkles, Send,
+  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin,
   X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
   FileType2, MessageSquare, Cpu, PlayCircle, Link2,
 } from "lucide-react";
