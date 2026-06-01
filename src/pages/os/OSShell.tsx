@@ -1017,7 +1017,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
                     await signOut();
                     navigate("/auth");
                   }}
-                  className="text-destructive focus:text-destructive"
+                  className="text-destructive focus:bg-destructive focus:text-white"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
