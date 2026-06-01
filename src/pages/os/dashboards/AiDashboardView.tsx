@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { getAiDashboard, deleteAiDashboard, touchAiDashboard, saveAiDashboard, type AiDashboard } from "@/lib/os/aiDashboards";
+import { supabase } from "@/integrations/supabase/client";
 import { KpiTile } from "@/components/dashboards/KpiTile";
 import { ChartCard } from "@/components/dashboards/ChartCard";
 import { RiskTable } from "@/components/dashboards/RiskTable";
@@ -20,6 +21,46 @@ export default function AiDashboardView() {
   const [drill, setDrill] = useState<DrilldownSpec | null>(null);
 
   useEffect(() => { if (id) touchAiDashboard(id); }, [id]);
+
+  // Fetch AI narrative (executive insights + recommended actions) once per dashboard
+  useEffect(() => {
+    if (!dashboard || !dashboard.spec) return;
+    if (dashboard.narrativeStatus !== "pending") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-ai-dashboard", {
+          body: { prompt: dashboard.prompt, spec: dashboard.spec },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const n = data?.narrative;
+        if (!n) throw new Error("No narrative returned");
+        const updated: AiDashboard = {
+          ...dashboard,
+          title: n.title || dashboard.title,
+          narrativeStatus: "ready",
+          spec: {
+            ...dashboard.spec!,
+            subtitle: n.subtitle || dashboard.spec!.subtitle,
+            executiveInsights: Array.isArray(n.executiveInsights) && n.executiveInsights.length
+              ? n.executiveInsights : dashboard.spec!.executiveInsights,
+            recommendedActions: Array.isArray(n.recommendedActions) && n.recommendedActions.length
+              ? n.recommendedActions : dashboard.spec!.recommendedActions,
+          },
+        };
+        saveAiDashboard(updated);
+        setDashboard(updated);
+      } catch (e: any) {
+        if (cancelled) return;
+        const updated: AiDashboard = { ...dashboard, narrativeStatus: "error" };
+        saveAiDashboard(updated);
+        setDashboard(updated);
+        toast.error(`AI narrative failed: ${e?.message ?? e}`);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [dashboard?.id, dashboard?.narrativeStatus]);
 
   if (!dashboard) {
     return (
