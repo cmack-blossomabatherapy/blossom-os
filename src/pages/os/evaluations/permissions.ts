@@ -13,6 +13,8 @@ export type Permissions = {
   canImportStaff: boolean;
   canOverrideRules: boolean;
   scope: "all" | "assigned_state" | "assigned_staff" | "self";
+  /** Restrict visible staff to these roles. null = no role restriction. */
+  roleScope: Array<"BCBA" | "RBT" | "Office"> | null;
 };
 
 export function permissionsForRole(role: string): Permissions {
@@ -23,7 +25,7 @@ export function permissionsForRole(role: string): Permissions {
         canManageEmails: true, canManageSettings: true, canFinalize: true,
         canReopen: true, canDeleteCompleted: true, canViewAllStates: true,
         canViewReports: true, canImportStaff: true, canOverrideRules: true,
-        scope: "all",
+        scope: "all", roleScope: null,
       };
     case "executive_leadership":
       return {
@@ -31,7 +33,7 @@ export function permissionsForRole(role: string): Permissions {
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
-        scope: "all",
+        scope: "all", roleScope: null,
       };
     case "hr_team":
       return {
@@ -39,17 +41,24 @@ export function permissionsForRole(role: string): Permissions {
         canManageEmails: true, canManageSettings: true, canFinalize: true,
         canReopen: true, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: true, canOverrideRules: true,
-        scope: "all",
+        scope: "all", roleScope: null,
+      };
+    case "qa_team":
+      return {
+        canManageStaff: false, canManageForms: false,
+        canManageEmails: false, canManageSettings: false, canFinalize: false,
+        canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
+        canViewReports: true, canImportStaff: false, canOverrideRules: false,
+        scope: "all", roleScope: ["BCBA", "RBT"],
       };
     case "operations_leadership":
-    case "qa_team":
     case "bcba":
       return {
         canManageStaff: false, canManageForms: false,
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
-        scope: "assigned_staff",
+        scope: "assigned_staff", roleScope: null,
       };
     case "state_director":
       return {
@@ -57,7 +66,7 @@ export function permissionsForRole(role: string): Permissions {
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: false,
         canViewReports: true, canImportStaff: false, canOverrideRules: false,
-        scope: "assigned_state",
+        scope: "assigned_state", roleScope: null,
       };
     default:
       return {
@@ -65,7 +74,7 @@ export function permissionsForRole(role: string): Permissions {
         canManageEmails: false, canManageSettings: false, canFinalize: false,
         canReopen: false, canDeleteCompleted: false, canViewAllStates: false,
         canViewReports: false, canImportStaff: false, canOverrideRules: false,
-        scope: "self",
+        scope: "self", roleScope: null,
       };
   }
 }
@@ -75,12 +84,15 @@ export function filterStaffByScope(
   perms: Permissions,
   activeState: string,
 ): EvalStaff[] {
-  if (perms.scope === "all") return staff;
+  let out = staff;
   if (perms.scope === "assigned_state") {
-    return staff.filter((s) => (s.state ?? "").toLowerCase() === (activeState ?? "").toLowerCase());
+    out = out.filter((s) => (s.state ?? "").toLowerCase() === (activeState ?? "").toLowerCase());
   }
-  // For now treat assigned_staff/self the same as no real auth user mapping yet
-  return staff;
+  if (perms.roleScope && perms.roleScope.length > 0) {
+    const allowed = new Set(perms.roleScope);
+    out = out.filter((s) => allowed.has(s.role as "BCBA" | "RBT" | "Office"));
+  }
+  return out;
 }
 
 export function filterEvaluationsByScope(
