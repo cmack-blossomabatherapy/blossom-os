@@ -9,6 +9,11 @@ import {
   type Training,
 } from "@/lib/training/academyData";
 
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+}
+const sdId = (w: number, d: number, title: string) => `sd-w${w}d${d}-${slugify(title)}`;
+
 interface Props {
   trainings: Training[];
 }
@@ -24,13 +29,9 @@ export function SDJourneyView({ trainings }: Props) {
   // Compute per-day completion + sequential lock
   const dayStates = SD_JOURNEY_STRUCTURE.flatMap((w) =>
     w.days.map((d) => {
-      const ids = d.modules.map((m) => {
-        // Find the training by week/day suffix
-        const match = trainings.find(
-          (t) => t.id.startsWith(`sd-w${w.week}d${d.day}-`) && t.title.endsWith(m),
-        );
-        return match?.id;
-      }).filter(Boolean) as string[];
+      const ids = d.modules
+        .map((m) => sdId(w.week, d.day, m))
+        .filter((id) => byId.has(id));
       const completed = ids.filter((id) => getProgress(id).status === "completed").length;
       return { week: w.week, day: d.day, ids, completed, total: ids.length };
     }),
