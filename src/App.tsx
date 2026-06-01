@@ -630,6 +630,7 @@ const App = () => (
                   <Route path="/reports/qa-cancellation" element={<QaCancellationDashboard />} />
                   <Route path="/reports/hr-payroll-command" element={<HrPayrollCommandCenter />} />
                   <Route path="/reports/hr-recruiting-pipeline" element={<HrRecruitingPipelineDashboard />} />
+                  <Route path="/reports/hr-employee-compliance" element={<HrEmployeeComplianceDashboard />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
