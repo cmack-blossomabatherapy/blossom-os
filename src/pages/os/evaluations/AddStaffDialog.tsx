@@ -37,7 +37,7 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
   const [last, setLast] = useState(initial?.last_name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [role, setRole] = useState<"BCBA" | "RBT">((initial?.role as any) ?? "RBT");
+  const [role, setRole] = useState<"BCBA" | "RBT" | "Office">((initial?.role as any) ?? "RBT");
   const [state, setState] = useState(initial?.state ?? "");
   const [supervisorId, setSupervisorId] = useState<string>(initial?.supervisor_id ?? "");
   const [hireDate, setHireDate] = useState(initial?.hire_date ?? "");
@@ -176,6 +176,7 @@ export default function AddStaffDialog({ open, onOpenChange, supervisors, onCrea
                 <SelectContent>
                   <SelectItem value="BCBA">BCBA</SelectItem>
                   <SelectItem value="RBT">RBT</SelectItem>
+                  <SelectItem value="Office">Office Staff</SelectItem>
                 </SelectContent>
               </Select>
             </div>
