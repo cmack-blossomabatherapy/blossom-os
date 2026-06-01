@@ -448,6 +448,7 @@ const App = () => (
               <JourneyOverridesProvider>
                 <PhoneSystemProvider>
                 <PushNavigationListener />
+                <SignInCtaButton />
                 <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
