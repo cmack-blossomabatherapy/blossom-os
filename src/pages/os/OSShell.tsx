@@ -10,7 +10,7 @@ import {
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
   LineChart, PhoneCall, Gauge, Database, Moon,
-  Plug, Network,
+  Plug, Network, MonitorSmartphone,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -148,6 +148,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: "HR Operations",
     items: [
       { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
+      { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
       { to: "/hr", label: "HR Suite", icon: Building2, module: "hr" },
       { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
     ],
@@ -577,6 +578,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "hr_ops", label: "HR Operations", items: [
         { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
+        { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
         { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr", disabled: true },
         { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
         { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", disabled: true },

@@ -1909,10 +1909,6 @@ export default function EmployeeProfilePage() {
                 onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
                 <Smartphone className="size-3.5" /> Assign device
               </Button>
-              <Button size="sm" className="text-xs"
-                onClick={() => { setTab("nfc"); setOpenAssignNfc(true); }}>
-                <ScanLine className="size-3.5" /> Generate NFC
-              </Button>
             </div>
           </div>
         </Card>
