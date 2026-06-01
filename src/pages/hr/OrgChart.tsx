@@ -6,7 +6,7 @@ import {
   ZoomIn, ZoomOut, Maximize2, RotateCcw, Download, ExternalLink,
 } from "lucide-react";
 import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { PageShell } from "@/components/shared/PageShell";
+import { OSShell } from "@/pages/os/OSShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
