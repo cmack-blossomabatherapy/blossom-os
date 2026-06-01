@@ -113,6 +113,7 @@ export default function ScheduleTab({
               <SelectItem value="all">All roles</SelectItem>
               <SelectItem value="BCBA">BCBA</SelectItem>
               <SelectItem value="RBT">RBT</SelectItem>
+              <SelectItem value="Office">Office Staff</SelectItem>
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
