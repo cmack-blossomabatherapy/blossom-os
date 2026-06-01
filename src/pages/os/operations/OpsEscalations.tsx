@@ -66,6 +66,7 @@ export default function OpsEscalations() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const states = useMemo(
     () => [
       { code: "GA", data: ga },
@@ -74,7 +75,7 @@ export default function OpsEscalations() {
       { code: "TN", data: tn },
       { code: "MD", data: md },
     ],
-    [ga, nc, va, tn, md],
+    [ga, nc, va, tn, md, nj],
   );
 
   // ─── Derive real blockers ──────────────────────────────

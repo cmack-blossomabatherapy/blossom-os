@@ -60,7 +60,8 @@ export default function OrganizationalHealth() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
-  const wf = useMemo(() => ({ GA: ga, NC: nc, VA: va, TN: tn, MD: md }), [ga, nc, va, tn, md]);
+  const nj = useStateWorkforce("NJ");
+  const wf = useMemo(() => ({ GA: ga, NC: nc, VA: va, TN: tn, MD: md, NJ: nj }), [ga, nc, va, tn, md, nj]);
 
   const data = useMemo(() => {
     const allBcbas = Object.values(wf).flatMap((w) => w.bcbas);

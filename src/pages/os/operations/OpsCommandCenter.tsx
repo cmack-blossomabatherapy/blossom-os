@@ -69,8 +69,9 @@ export default function OpsCommandCenter() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const cr = useCentralReachOps({});
-  const wf = useMemo(() => [ga, nc, va, tn, md], [ga, nc, va, tn, md]);
+  const wf = useMemo(() => [ga, nc, va, tn, md, nj], [ga, nc, va, tn, md, nj]);
 
   // ---- Header signals ----
   const overallTone: HealthTone = ops.risks.some((r) => r.tone === "blocked")

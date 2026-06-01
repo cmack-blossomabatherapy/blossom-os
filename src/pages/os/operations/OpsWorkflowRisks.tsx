@@ -32,7 +32,8 @@ export default function OpsWorkflowRisks() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
-  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md };
+  const nj = useStateWorkforce("NJ");
+  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md, NJ: nj };
 
   const totalAuths = ops.auths.total || 1;
 
