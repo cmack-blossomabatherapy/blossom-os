@@ -21,6 +21,7 @@ import {
   recentlyAdded, requiredForDepartment,
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
+import { SDJourneyView } from "@/components/training/SDJourneyView";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText,
@@ -247,6 +248,9 @@ export default function OSTraining() {
           {/* MY ROLE JOURNEY */}
           <section>
             <SectionHeader title="My Role Journey" subtitle="A guided path for your role." />
+            {role === "state_director" ? (
+              <SDJourneyView trainings={journeyModules} />
+            ) : (
             <div className="rounded-3xl border border-border/70 bg-card p-6">
               <div className="flex items-start justify-between gap-6">
                 <div className="flex min-w-0 items-start gap-4">
@@ -328,6 +332,7 @@ export default function OSTraining() {
                 })}
               </div>
             </div>
+            )}
           </section>
 
           {/* ADDITIONAL LEARNING — Systems + Cross-department */}

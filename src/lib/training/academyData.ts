@@ -616,308 +616,136 @@ SEED_TRAININGS.push(...CASE_MANAGER_TRAININGS);
 /* ===================== State Director Journey ===================== */
 const SD_OWNER = "State Director Program";
 const SD_DATE = "2026-05-26";
-const sd = (
-  id: string,
-  title: string,
-  description: string,
-  type: TrainingType,
-  minutes: number,
-  overview: string,
-  items: string[],
-  opts: { required?: boolean; category?: "role" | "systems" | "shared"; sopMarkdown?: string; resources?: TrainingResource[]; videoUrl?: string; type?: TrainingType } = {},
-): Training => ({
-  id,
-  title,
-  description,
-  type: opts.type ?? type,
-  estimatedMinutes: minutes,
-  required: opts.required ?? true,
-  category: opts.category ?? "role",
-  department: "state_operations",
-  owner: SD_OWNER,
-  lastUpdated: SD_DATE,
-  overview,
-  sopMarkdown: opts.sopMarkdown,
-  videoUrl: opts.videoUrl,
-  checklist: items.map((item, i) => ({ id: `${id}-c${i + 1}`, item, required: true })),
-  resources: opts.resources ?? [],
-});
 
-const STATE_DIRECTOR_TRAININGS: Training[] = [
-  // ---- 14 Required Modules ----
-  sd("sd-m1-welcome", "Welcome to Blossom",
-    "Mission, philosophy, welcome video, and the Blossom multi-state ecosystem.",
-    "Video", 15,
-    "Welcome to Blossom ABA Therapy. We are so excited to have you here. Blossom Academy was created to help you feel confident, supported, and prepared as you begin your role. This module introduces you to who we are, what we believe, how we serve families, and how we work together as one team.",
-    [
-      "Watch the Welcome to Blossom video",
-      "Who we are — mission, vision, and values",
-      "How we work — families, clinical care, and operations",
-      "Your team — the people you'll work alongside and how to ask for help",
-      "Family-first philosophy",
-      "Multi-state operations overview",
-    ],
-    {
-      type: "Video",
-      videoUrl: "/videos/intro-welcome.mp4",
-      sopMarkdown: "## Welcome to Blossom\n\nWelcome to Blossom ABA Therapy. We are so excited to have you here. Blossom Academy was created to help you feel confident, supported, and prepared as you begin your role.\n\nThis journey will introduce you to who we are, what we believe, how we serve families, and how we work together as one team.\n\n### What to expect\n- **Who we are** — The mission, vision, and values that guide every decision at Blossom.\n- **How we work** — How families, clinical care, and operations all fit together.\n- **Your team** — The people you'll work alongside and how to ask for help.\n\n### The Blossom ecosystem\nWe are a multi-state ABA therapy provider serving Georgia, North Carolina, Tennessee, Virginia, Maryland, and future states. Every role — from RBT to State Director — exists to support families and clinical outcomes.",
-      resources: [
-        { id: "sd-m1-welcome-video", type: "Video", title: "Welcome to Blossom (Intro Video)", url: "/videos/intro-welcome.mp4" },
-      ],
-    }),
+/**
+ * State Director Training Journey — 5-week framework.
+ * Day-by-day placeholder structure. SOP / video / quiz content is intentionally
+ * empty — modules are scaffolds to be filled in later.
+ */
+export interface SDDay { day: number; title: string; modules: string[]; }
+export interface SDWeek { week: number; title: string; goal: string; days: SDDay[]; }
 
-  sd("sd-m2-role", "Understanding the State Director Role",
-    "Operational ownership, leadership, escalation, and accountability.",
-    "SOP", 18,
-    "What a State Director owns, who they answer to, and how they hold a state accountable end-to-end.",
-    ["SD responsibilities", "Operational ownership", "Leadership expectations", "Department coordination", "Accountability structure", "Escalation ownership"]),
-
-  sd("sd-m3-org", "Executive & Department Structure",
-    "Every department, every handoff, every dependency.",
-    "Quick Guide", 15,
-    "Know who owns what across Blossom so you can route, escalate, and coordinate without friction.",
-    ["Executive leadership", "Operations leadership", "Intake", "Authorizations", "Scheduling", "QA", "Recruiting", "Billing", "Marketing", "Clinics", "Training"]),
-
-  sd("sd-m4-winning-state", "The Winning State Philosophy",
-    "Honest communication, data integrity, utilization, ecosystem oversight.",
-    "SOP", 18,
-    "The operating philosophy from the SD workbook — the difference between running a state and reacting to one.",
-    ["Honest communication", "Data integrity", "High utilization", "Ecosystem oversight", "Operational flow vs damage control"]),
-
-  sd("sd-m5-cr-foundations", "CentralReach Foundations",
-    "CR as source of truth — navigation, calendar, scheduler, labels.",
-    "Tango", 22,
-    "The CR fundamentals every SD needs to read the state at a glance.",
-    ["CR overview", "Source of truth philosophy", "Navigation basics", "Calendar system", "Scheduler overview", "Labels & filtering", "Month/week/day views"]),
-
-  sd("sd-m6-sessions", "Session Management & Scheduling Oversight",
-    "Converted sessions, missing sessions, coverage gaps, cancellations.",
-    "Workflow", 24,
-    "Tracking session reality across the state — the single most leverage-heavy operational lens an SD has.",
-    ["Converted vs non-converted sessions", "Session accountability", "Tracking missing sessions", "Scheduling oversight", "Coverage gaps", "Client cancellations", "RBT cancellations", "Assessment tracking"]),
-
-  sd("sd-m7-cpt", "CPT Codes & ABA Billing Basics",
-    "97151, 97153, 97155, 97156 and how billing connects to operations.",
-    "Quick Guide", 14,
-    "Billing awareness for SDs — enough to read utilization and spot revenue risk without becoming a biller.",
-    ["97151 assessments", "97153 direct therapy", "97155 supervision", "97156 parent training", "Assessments", "Direct therapy", "Supervision", "Parent training", "Billing awareness"]),
-
-  sd("sd-m8-utilization", "Utilization Management",
-    "Pending vs actual, weekly vs bulk auths, decay, ghost sessions.",
-    "SOP", 22,
-    "Utilization is the SD scoreboard. Learn to read it, defend it, and grow it.",
-    ["Pending vs actual hours", "Utilization %", "Weekly vs bulk authorizations", "Underutilization", "Overutilization", "Maximizing hours", "Preventing utilization decay", "Ghost sessions"]),
-
-  sd("sd-m9-auths", "Authorizations Oversight",
-    "Auth lifecycle, expirations, QA review, BCBA accountability.",
-    "Workflow", 22,
-    "How auths move through Blossom and where SDs need to apply pressure to prevent gaps.",
-    ["Authorization lifecycle", "Awaiting submission", "Submitted vs approved", "Expiring soon", "QA review", "Treatment auth workflow", "Preventing auth gaps", "Progress reports", "Reassessments", "BCBA accountability"]),
-
-  sd("sd-m10-intake", "Intake & Client Lifecycle",
-    "Lead → VOB → Payment plan → Assessment → Staffing → Active.",
-    "Workflow", 26,
-    "The full client lifecycle so SDs can read where any family is and what's blocking them.",
-    ["Lead intake workflow", "Phone calls workflow", "Initial forms", "Consent forms", "Missing information", "VOB process", "Solum & Eligipro overview", "Payment plans", "Assessment scheduling", "Staffing needed workflow", "Pending start dates", "Active clients", "Flaked clients"]),
-
-  sd("sd-m11-staffing", "Staffing & Clinical Operations",
-    "BCBA / RBT oversight, pairing, capacity, state coverage.",
-    "Workflow", 20,
-    "How the clinical ecosystem actually runs day-to-day and how SDs steward it.",
-    ["Staffing ecosystem", "BCBA oversight", "RBT oversight", "Pairing process", "Scheduling health", "Capacity management", "State coverage awareness", "Clinical flow management"]),
-
-  sd("sd-m12-recruiting", "Recruiting & Workforce Operations",
-    "Apploi, screening, BACB, interviews, offers, orientation.",
-    "Workflow", 18,
-    "How candidates become workforce — and where SDs influence pipeline health.",
-    ["Recruiting workflow", "Apploi overview", "Resume screening", "BACB verification", "Interview flow", "Offer letters", "Orientation process", "Background checks", "Workforce readiness"]),
-
-  sd("sd-m13-escalations", "Parent & BCBA Escalations",
-    "Difficult parents, missing PRs, delayed assessments, conflict resolution.",
-    "SOP", 16,
-    "Calm, clear escalation handling — the SD as the last calm voice in the room.",
-    ["Difficult parent situations", "BCBA follow-up", "Missing PRs", "Delayed assessments", "Communication standards", "Escalation expectations", "Conflict resolution"]),
-
-  sd("sd-m14-leadership", "Operational Leadership & State Ownership",
-    "Weekly meetings, KPIs, prioritization, becoming the system architect.",
-    "SOP", 22,
-    "The leadership rhythm of a high-performing state and the mindset of a Director who builds systems.",
-    ["Running weekly meetings", "KPI oversight", "Cross-department coordination", "Managing operational chaos", "Protecting utilization", "Operational prioritization", "Accountability systems", "Becoming the system architect"]),
-
-  // ---- Required Shadowing ----
-  sd("sd-shadow-gary", "Shadow Gary Frank — 3 Days",
-    "Three days shadowing Gary to absorb the SD operating standard.",
-    "Checklist", 1440,
-    "Live observation of how a Blossom SD runs a week. Capture rhythms, decisions, and escalations.",
-    ["Day 1 shadow notes", "Day 2 shadow notes", "Day 3 shadow notes", "Debrief with Gary"]),
-  sd("sd-shadow-intake", "Shadow Intake Team",
-    "Sit alongside intake to see lead flow in real time.",
-    "Checklist", 240,
-    "Watch live calls, VOBs, and handoffs to understand how a family becomes a client.",
-    ["Shadow live intake calls", "Observe VOB workflow", "Observe handoff to scheduling", "Debrief with Intake Lead"]),
-  sd("sd-shadow-scheduling", "Shadow Scheduling Team",
-    "Live observation of scheduling, gaps, and coverage decisions.",
-    "Checklist", 240,
-    "Understand how schedules are actually built and where they break.",
-    ["Observe schedule build", "Watch cancellation handling", "Observe coverage decisions", "Debrief with Scheduling Lead"]),
-  sd("sd-shadow-auth", "Shadow Authorizations Team",
-    "Watch auth submissions, denials, and follow-ups end-to-end.",
-    "Checklist", 240,
-    "See how auths actually move through Blossom from submission to approval.",
-    ["Observe auth submission", "Watch QA review handoff", "Observe denial workflow", "Debrief with Authorizations Lead"]),
-  sd("sd-shadow-qa", "Shadow QA Team",
-    "Sit with QA to see treatment plan reviews and PR follow-ups.",
-    "Checklist", 180,
-    "QA is where operational quality is enforced. See it firsthand.",
-    ["Observe treatment plan review", "Watch PR follow-up cadence", "Observe escalation routing", "Debrief with QA Lead"]),
-  sd("sd-shadow-recruiting", "Shadow Recruiting Team",
-    "Observe screening, interviews, and orientation flow.",
-    "Checklist", 180,
-    "Recruiting is the pipeline. Understand the friction points.",
-    ["Observe resume screening", "Sit in on an interview", "Observe orientation onboarding", "Debrief with Recruiting Lead"]),
-  sd("sd-shadow-sd", "Shadow Existing State Director",
-    "Spend a full operating week with a tenured State Director.",
-    "Checklist", 480,
-    "Live observation of how an established SD prioritizes, escalates, and leads their week.",
-    ["Shadow weekly leadership meeting", "Observe KPI review", "Observe escalation triage", "Debrief with SD"]),
-  sd("sd-shadow-bcba", "Shadow BCBA Operations",
-    "Sit with BCBAs to understand clinical reality on the ground.",
-    "Checklist", 180,
-    "How BCBAs run their day — clinical reality drives every operational decision.",
-    ["Observe BCBA session prep", "Watch supervision time", "Observe parent meeting", "Debrief with BCBA"]),
-  sd("sd-shadow-leadership", "Shadow Leadership Meeting",
-    "Attend a full leadership meeting as an observer.",
-    "Checklist", 90,
-    "Understand the leadership rhythm Blossom runs on.",
-    ["Pre-read agenda", "Attend full meeting", "Capture key decisions", "Debrief with leadership"]),
-
-  // ---- Required System Training ----
-  sd("sd-sys-cr", "CentralReach (SD Depth)",
-    "Deeper CR workflows for state oversight.",
-    "Tango", 30,
-    "Beyond fundamentals — the views, reports, and scheduler depth an SD needs daily.",
-    ["Caseload views", "Scheduler depth", "Reporting basics", "Notes & supervision"],
-    { category: "systems" }),
-  sd("sd-sys-monday", "Monday.com",
-    "Operational boards used across Blossom.",
-    "Tango", 15,
-    "How Blossom uses Monday for cross-team operational workflows.",
-    ["Board navigation", "Column filters", "Status updates", "SD-relevant boards"],
-    { category: "systems" }),
-  sd("sd-sys-solum", "Solum",
-    "VOB workflow tooling.",
-    "Quick Guide", 10,
-    "What Solum is and how to read VOB output as an SD.",
-    ["VOB request flow", "Reading VOB results", "Common edge cases"],
-    { category: "systems" }),
-  sd("sd-sys-eligipro", "Eligipro",
-    "Eligibility verification tool.",
-    "Quick Guide", 10,
-    "When and how Eligipro is used in the intake stack.",
-    ["Eligipro overview", "When to use", "Common signals"],
-    { category: "systems" }),
-  sd("sd-sys-apploi", "Apploi",
-    "Recruiting ATS basics.",
-    "Quick Guide", 10,
-    "How Apploi feeds the recruiting pipeline.",
-    ["Pipeline overview", "Candidate stages", "SD visibility"],
-    { category: "systems" }),
-  sd("sd-sys-viventium", "Viventium",
-    "Payroll & HRIS overview for SDs.",
-    "Quick Guide", 10,
-    "What an SD needs to know about payroll and HRIS context.",
-    ["Viventium overview", "What SDs see", "Escalation path"],
-    { category: "systems" }),
-  sd("sd-sys-qglobal", "Q-Global",
-    "Assessment platform overview.",
-    "Quick Guide", 10,
-    "Q-Global basics for SDs supporting clinical assessment workflows.",
-    ["Q-Global overview", "Clinical workflow context", "SD visibility"],
-    { category: "systems" }),
-  sd("sd-sys-vbmapp", "VB-MAPP",
-    "Assessment framework overview.",
-    "Quick Guide", 10,
-    "VB-MAPP basics for SDs supporting clinical conversations.",
-    ["VB-MAPP overview", "How it informs assessments", "SD touchpoints"],
-    { category: "systems" }),
-
-  // ---- Required SOP / Resource Training ----
-  sd("sd-sop-leads", "Leads SOP",
-    "How leads are handled across Blossom.",
-    "SOP", 12,
-    "The canonical Leads SOP — every SD needs to read this end-to-end.",
-    ["Read full SOP", "Understand intake handoff", "Know escalation rules"]),
-  sd("sd-sop-clients", "Clients SOP",
-    "Client lifecycle and ownership.",
-    "SOP", 12,
-    "The canonical Clients SOP across all states.",
-    ["Read full SOP", "Understand status transitions", "Know SD oversight points"]),
-  sd("sd-sop-auth", "Auth SOP",
-    "Authorization lifecycle, submission, and review.",
-    "SOP", 14,
-    "The canonical Authorizations SOP — including QA review and escalations.",
-    ["Read full SOP", "Understand expiration handling", "Know QA review rules"]),
-  sd("sd-sop-eob", "EOB / Payment Plan Process",
-    "Payment plans and EOB handling.",
-    "SOP", 12,
-    "How Blossom handles payment plans and EOB reconciliation.",
-    ["Read full SOP", "Understand payment plan triggers", "Know finance escalation path"]),
-  sd("sd-sop-recruiting", "Recruiting Workflow",
-    "Full recruiting workflow from inbound to active hire.",
-    "Workflow", 12,
-    "The canonical recruiting workflow used across Blossom.",
-    ["Read full workflow", "Understand stage ownership", "Know SD escalation points"]),
-  sd("sd-sop-tangos", "Tangos / CR Workflows",
-    "Curated Tangos for the most common CR workflows.",
-    "Tango", 20,
-    "Click-by-click CR walkthroughs an SD references constantly.",
-    ["Walk through scheduler Tango", "Walk through caseload Tango", "Walk through report Tango"]),
-
-  // ---- Continued Education (Optional) ----
-  sd("sd-ce-utilization-advanced", "Advanced Utilization Analysis",
-    "Deeper utilization patterns and corrective levers.", "SOP", 20,
-    "Once fluent, learn the deeper levers behind utilization performance.",
-    ["Pattern detection", "Corrective actions", "Forecasting"], { required: false }),
-  sd("sd-ce-insurance-advanced", "Advanced Insurance Rules", "Payer-specific quirks and edge cases.", "Quick Guide", 15,
-    "Going past the basics into payer-specific operational implications.",
-    ["Payer quirks", "Edge cases", "When to escalate"], { required: false }),
-  sd("sd-ce-fraud", "Fraud Detection Awareness", "Spotting operational red flags early.", "Quick Guide", 12,
-    "What fraud looks like operationally and how to surface it responsibly.",
-    ["Red flags", "Surfacing concerns", "Escalation path"], { required: false }),
-  sd("sd-ce-scheduling-advanced", "Advanced Scheduling Oversight", "Coverage modeling and resilience.", "Workflow", 18,
-    "Advanced techniques for protecting schedule resilience.",
-    ["Coverage modeling", "Resilience tactics", "Risk scenarios"], { required: false }),
-  sd("sd-ce-multistate", "Multi-State Leadership", "Leading across more than one state.", "SOP", 18,
-    "When an SD's scope grows beyond a single state.",
-    ["Cross-state coordination", "Standardization", "Cultural rhythm"], { required: false }),
-  sd("sd-ce-expansion", "Expansion Planning", "Standing up new markets.", "Workflow", 18,
-    "What it takes to bring a new state online operationally.",
-    ["Market readiness", "Staffing build", "Operational sequencing"], { required: false }),
-  sd("sd-ce-burnout", "Burnout Prevention", "Sustainable leadership rhythm.", "Quick Guide", 10,
-    "Protect the operator. Burnt-out SDs make burnt-out states.",
-    ["Signals", "Boundaries", "Team rhythm"], { required: false }),
-  sd("sd-ce-crisis", "Crisis Management", "Operating during operational crises.", "SOP", 15,
-    "How to hold a state together when things break.",
-    ["Crisis triage", "Communication", "Recovery sequencing"], { required: false }),
-  sd("sd-ce-kpi-advanced", "Advanced KPI Management", "Reading and influencing KPIs at depth.", "SOP", 18,
-    "Going past dashboard literacy into KPI strategy.",
-    ["KPI strategy", "Leading vs lagging", "Driving change"], { required: false }),
-  sd("sd-ce-revenue", "Revenue Awareness", "How operations creates (or loses) revenue.", "Quick Guide", 12,
-    "Revenue literacy for SDs without becoming a finance role.",
-    ["Revenue drivers", "Operational leakage", "Reading reports"], { required: false }),
-  sd("sd-ce-staffing-markets", "Difficult Staffing Markets", "Operating where the labor market is hostile.", "Workflow", 15,
-    "Tactical playbook for tough staffing environments.",
-    ["Diagnostics", "Tactical levers", "Long-term plays"], { required: false }),
-  sd("sd-ce-escalations-advanced", "Advanced Parent Escalations", "Handling the hardest family conversations.", "SOP", 18,
-    "Tactics for escalations that require senior calm and clarity.",
-    ["Hardest cases", "Documentation", "Legal awareness"], { required: false }),
-  sd("sd-ce-coaching", "Leadership Coaching", "Coaching frameworks for the SD role.", "Quick Guide", 15,
-    "Becoming a coach to your team, not just a manager.",
-    ["Coaching basics", "Feedback frameworks", "Developing leaders"], { required: false }),
-  sd("sd-ce-forecasting", "Operational Forecasting", "Reading the next 90 days, not the last 7.", "SOP", 18,
-    "How great SDs anticipate operational risk.",
-    ["Forecast inputs", "Signals", "Pre-mortems"], { required: false }),
+export const SD_JOURNEY_STRUCTURE: SDWeek[] = [
+  { week: 1, title: "Foundations & Welcome to Blossom", goal: "Understand Blossom ABA, leadership expectations, company structure, and operational philosophy.", days: [
+    { day: 1, title: "Welcome to Blossom", modules: [
+      "Welcome Video from Blossom", "Mission & Vision", "Core Values", "Meet the Team",
+      "How Blossom Works", "Welcome from Chad Kaufman", "A Note from Shira Lasry",
+    ]},
+    { day: 2, title: "Understanding Blossom Operations", modules: [
+      "Company Structure", "Department Overview", "State Director Role Overview", "Leadership Expectations",
+    ]},
+    { day: 3, title: "Blossom Ecosystem", modules: [
+      "Intake Department", "Authorizations Department", "Scheduling Department",
+      "Recruiting Department", "QA Department", "Billing Department",
+    ]},
+    { day: 4, title: "Communication & Accountability", modules: [
+      "Communication Standards", "Escalation Structure", "Accountability Expectations", "Operational Ownership",
+    ]},
+    { day: 5, title: "The Winning State Philosophy", modules: [
+      "Data Integrity", "Utilization Mindset", "State Ownership", "Operational Leadership Philosophy",
+    ]},
+  ]},
+  { week: 2, title: "Systems & Client Flow", goal: "Understand systems and how clients move through Blossom.", days: [
+    { day: 1, title: "CentralReach Foundations", modules: [
+      "CR Overview", "Navigation", "Calendar Basics", "User Permissions",
+    ]},
+    { day: 2, title: "Scheduling Fundamentals", modules: [
+      "Calendar Views", "Labels & Filters", "Session Tracking", "Scheduling Oversight",
+    ]},
+    { day: 3, title: "Session Accountability", modules: [
+      "Converted Sessions", "Non-Converted Sessions", "Session Integrity", "Schedule Monitoring",
+    ]},
+    { day: 4, title: "Lead & Intake Flow", modules: [
+      "Lead Lifecycle", "Phone Calls Workflow", "Intake Workflow", "Consent Workflow",
+    ]},
+    { day: 5, title: "Client Lifecycle", modules: [
+      "VOB Process", "Assessment Process", "Client Workflow", "Active Client Lifecycle",
+    ]},
+  ]},
+  { week: 3, title: "Authorizations & Utilization", goal: "Learn how to protect revenue and treatment continuity.", days: [
+    { day: 1, title: "Authorization Foundations", modules: [
+      "Authorization Lifecycle", "Auth Statuses", "Submission Process",
+    ]},
+    { day: 2, title: "Treatment Authorizations", modules: [
+      "Initial Auths", "Treatment Auths", "Reassessments", "Progress Reports",
+    ]},
+    { day: 3, title: "Utilization Tracking", modules: [
+      "Actual Hours", "Pending Hours", "Remaining Hours", "Utilization %",
+    ]},
+    { day: 4, title: "Managing Gaps", modules: [
+      "Expiring Auths", "Missing PRs", "Delayed Assessments", "Coverage Risks",
+    ]},
+    { day: 5, title: "Revenue Protection", modules: [
+      "Utilization Management", "Revenue Awareness", "Preventing Lost Hours", "Operational Visibility",
+    ]},
+  ]},
+  { week: 4, title: "Staffing, Recruiting & Operations", goal: "Understand staffing growth and workforce management.", days: [
+    { day: 1, title: "Staffing Operations", modules: [
+      "Staffing Structure", "BCBA Oversight", "RBT Oversight", "Capacity Management",
+    ]},
+    { day: 2, title: "Scheduling Health", modules: [
+      "Coverage Gaps", "Cancellations", "Pairing Process", "Schedule Optimization",
+    ]},
+    { day: 3, title: "Recruiting Overview", modules: [
+      "Recruiting Workflow", "Candidate Pipeline", "Interview Process", "Hiring Flow",
+    ]},
+    { day: 4, title: "Onboarding Operations", modules: [
+      "Orientation Process", "Background Checks", "Viventium Workflow", "Workforce Readiness",
+    ]},
+    { day: 5, title: "Shadowing & Field Training", modules: [
+      "Scheduling Shadow", "Recruiting Shadow", "BCBA Shadow", "State Director Shadow",
+    ]},
+  ]},
+  { week: 5, title: "State Ownership & Leadership", goal: "Transition from trainee to operational leader.", days: [
+    { day: 1, title: "KPI Management", modules: [
+      "Utilization KPIs", "Staffing KPIs", "Client KPIs", "Recruiting KPIs",
+    ]},
+    { day: 2, title: "Weekly Operations", modules: [
+      "Weekly Meetings", "Department Follow-Up", "Accountability Reviews", "Escalation Tracking",
+    ]},
+    { day: 3, title: "Managing Escalations", modules: [
+      "Parent Escalations", "BCBA Escalations", "Staffing Escalations", "Operational Issues",
+    ]},
+    { day: 4, title: "Independent State Oversight", modules: [
+      "Cross Department Management", "Operational Prioritization", "State Health Monitoring", "Leadership Decision Making",
+    ]},
+    { day: 5, title: "Graduation & Readiness Review", modules: [
+      "Final Knowledge Review", "Readiness Assessment", "Leadership Sign-Off", "State Director Certification",
+    ]},
+  ]},
 ];
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+}
+
+/** Build a single placeholder Training for a day-module. */
+function buildSdModule(weekNum: number, dayNum: number, title: string): Training {
+  const id = `sd-w${weekNum}d${dayNum}-${slugify(title)}`;
+  return {
+    id,
+    title: `W${weekNum} · D${dayNum} — ${title}`,
+    description: "Placeholder — content to be added.",
+    type: "Quick Guide",
+    estimatedMinutes: 10,
+    required: true,
+    category: "role",
+    department: "state_operations",
+    owner: SD_OWNER,
+    lastUpdated: SD_DATE,
+    overview: "This module is a placeholder. SOPs, videos, quizzes, and resources will be added in a later step.",
+    sopMarkdown: "",
+    checklist: [],
+    resources: [],
+  };
+}
+
+const STATE_DIRECTOR_TRAININGS: Training[] = SD_JOURNEY_STRUCTURE.flatMap((w) =>
+  w.days.flatMap((d) => d.modules.map((m) => buildSdModule(w.week, d.day, m))),
+);
+
+/** Flat ordered moduleIds for the SD journey (W1D1 → W5D5). */
+export const SD_JOURNEY_MODULE_IDS: string[] = STATE_DIRECTOR_TRAININGS.map((t) => t.id);
 
 SEED_TRAININGS.push(...STATE_DIRECTOR_TRAININGS);
 
@@ -954,60 +782,8 @@ const SEED_JOURNEYS: RoleJourney[] = [
   { id: "j-bcba", role: "bcba", title: "BCBA Journey", tagline: "Clinical excellence and clean supervision.", icon: "Stethoscope", tone: "sky", moduleIds: [] },
   { id: "j-rbt", role: "rbt", title: "RBT Journey", tagline: "Show up prepared, document on time.", icon: "Stethoscope", tone: "mint", moduleIds: [] },
   { id: "j-state", role: "state_director", title: "State Director Journey",
-    tagline: "Run a state with calm, operational rhythm — utilization, staffing, auths, intake, and leadership.",
-    icon: "Crown", tone: "violet", moduleIds: [
-      "sd-m1-welcome",
-      "sd-m2-role",
-      "sd-m3-org",
-      "sd-m4-winning-state",
-      "sd-m5-cr-foundations",
-      "sd-m6-sessions",
-      "sd-m7-cpt",
-      "sd-m8-utilization",
-      "sd-m9-auths",
-      "sd-m10-intake",
-      "sd-m11-staffing",
-      "sd-m12-recruiting",
-      "sd-m13-escalations",
-      "sd-m14-leadership",
-      "sd-shadow-gary",
-      "sd-shadow-intake",
-      "sd-shadow-scheduling",
-      "sd-shadow-auth",
-      "sd-shadow-qa",
-      "sd-shadow-recruiting",
-      "sd-shadow-sd",
-      "sd-shadow-bcba",
-      "sd-shadow-leadership",
-      "sd-sys-cr",
-      "sd-sys-monday",
-      "sd-sys-solum",
-      "sd-sys-eligipro",
-      "sd-sys-apploi",
-      "sd-sys-viventium",
-      "sd-sys-qglobal",
-      "sd-sys-vbmapp",
-      "sd-sop-leads",
-      "sd-sop-clients",
-      "sd-sop-auth",
-      "sd-sop-eob",
-      "sd-sop-recruiting",
-      "sd-sop-tangos",
-      "sd-ce-utilization-advanced",
-      "sd-ce-insurance-advanced",
-      "sd-ce-fraud",
-      "sd-ce-scheduling-advanced",
-      "sd-ce-multistate",
-      "sd-ce-expansion",
-      "sd-ce-burnout",
-      "sd-ce-crisis",
-      "sd-ce-kpi-advanced",
-      "sd-ce-revenue",
-      "sd-ce-staffing-markets",
-      "sd-ce-escalations-advanced",
-      "sd-ce-coaching",
-      "sd-ce-forecasting",
-    ] },
+    tagline: "5-week structured onboarding: foundations → systems → auths → staffing → leadership.",
+    icon: "Crown", tone: "violet", moduleIds: SD_JOURNEY_MODULE_IDS },
   { id: "j-hr", role: "hr_team", title: "HR Journey", tagline: "Take care of the people who take care of clients.", icon: "Heart", tone: "rose", moduleIds: [] },
   { id: "j-billing", role: "billing_finance", title: "Billing & Finance Journey", tagline: "Keep revenue clean and predictable.", icon: "Wallet", tone: "lilac", moduleIds: [] },
   { id: "j-exec", role: "executive_leadership", title: "Executive Leadership Journey", tagline: "Lead Blossom with rhythm and clarity.", icon: "Crown", tone: "violet", moduleIds: [] },
@@ -1037,7 +813,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v7";
+const STORAGE_KEY = "blossom.training.academy.v8";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
