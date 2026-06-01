@@ -16,7 +16,7 @@ import {
 } from "@/lib/os/reportsCatalog";
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
-import { listAiReports, deleteAiReport, type AiReport } from "@/lib/os/aiReports";
+import { listAiDashboards, deleteAiDashboard, type AiDashboard } from "@/lib/os/aiDashboards";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -33,13 +33,13 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [aiReports, setAiReports] = useState<AiReport[]>(() => listAiReports());
+  const [aiReports, setAiReports] = useState<AiDashboard[]>(() => listAiDashboards());
   useEffect(() => {
-    const refresh = () => setAiReports(listAiReports());
-    window.addEventListener("blossom-ai-reports-changed", refresh);
+    const refresh = () => setAiReports(listAiDashboards());
+    window.addEventListener("blossom-ai-dashboards-changed", refresh);
     window.addEventListener("storage", refresh);
     return () => {
-      window.removeEventListener("blossom-ai-reports-changed", refresh);
+      window.removeEventListener("blossom-ai-dashboards-changed", refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
