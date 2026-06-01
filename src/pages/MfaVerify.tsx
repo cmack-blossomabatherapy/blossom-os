@@ -103,7 +103,7 @@ export default function MfaVerify() {
     setPasskeyBusy(true);
     const result = await verifyWithPasskey(passkeyCredId);
     setPasskeyBusy(false);
-    if (!result.ok) {
+    if (result.ok !== true) {
       if (result.reason === "cancelled") return;
       if (result.reason === "notSupported") {
         toast.error("Security keys aren't supported on this device.");
