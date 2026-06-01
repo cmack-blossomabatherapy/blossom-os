@@ -4,17 +4,19 @@ const corsHeaders = {
 };
 
 const SYSTEM = `You are Blossom AI Report Builder for Blossom ABA Therapy — an operational OS for a multi-state ABA company.
-You receive a CSV preview, a user prompt, audience role, timeframe, primary breakdown, decision goal, comparison mode, and optional filters.
+You receive ONE OR MORE CSV previews (each with its own filename, columns, and row count), a user prompt, audience role, timeframe, primary breakdown, decision goal, comparison mode, and optional filters.
 Build a PREMIUM DRILL-DOWN OPERATIONAL DASHBOARD — not a single chart. Think "executive command center": multiple sections, each answering a specific operational question, each with its own narrative, chart, and breakdown table.
 
 RULES:
 - Always call the "build_report" tool. Never reply with plain text.
+- When multiple CSVs are provided, treat them as related sources for the SAME report. Identify the entity each file describes (e.g. sessions, authorizations, staff roster, cancellations), join them conceptually by obvious keys (client id, BCBA name, date), and let sections combine signals across files. Call out cross-file findings explicitly in narratives.
+- If a file is clearly unrelated to the others, still surface it as its own section rather than ignore it.
 - Tailor depth, KPIs, and language to the AUDIENCE role (e.g. a State Director cares about staffing/auths in their state; Finance cares about utilization $/hours; QA cares about supervision %, PR overdue; HR cares about turnover, onboarding; Leadership cares about trends and risk).
 - Frame everything against the TIMEFRAME provided.
 - Make the PRIMARY BREAKDOWN dimension the spine of the report (e.g. by BCBA, by State, by Payor) — at least one section must group by it.
 - Use the GOAL to decide which sections to include — every section should help the user make that decision.
 - If COMPARISON is provided (e.g. vs previous period, vs target), surface deltas in KPIs and call out movement in insights.
-- Numbers MUST be derived from the provided CSV preview — never invent. If the data is sparse, say so plainly in the summary and still produce a useful structural report.
+- Numbers MUST be derived from the provided CSV previews — never invent. If a file is sparse or only partially shown, say so plainly in the summary and still produce a useful structural report.
 - Build 3–6 SECTIONS. Each section: a tight title, 1–3 sentence narrative, a chart (bar/line/area/pie/stacked-bar), an optional drill-down table (<= 15 rows), and 2–4 insight bullets specific to that section.
 - Produce 4–8 KPIs at the top (most operationally relevant — not vanity metrics).
 - Produce 3–6 RECOMMENDATIONS (concrete next actions, verb-led, owner-implied).
@@ -172,15 +174,30 @@ Deno.serve(async (req) => {
   try {
     const {
       prompt, filters, fileName, csvPreview, rowCount, headers,
+      files,
       audience, timeframe, breakdown, goal, comparison,
     } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
+    // Normalize: prefer multi-file `files` payload; fall back to legacy single-file fields.
+    type FilePart = { fileName: string; preview: string; rowCount: number; headers?: string[] };
+    const fileParts: FilePart[] = Array.isArray(files) && files.length
+      ? files
+      : [{ fileName: fileName || "upload.csv", preview: csvPreview || "", rowCount: rowCount ?? 0, headers }];
+
+    const totalRows = fileParts.reduce((s, f) => s + (f.rowCount || 0), 0);
+    const filesBlock = fileParts.map((f, i) => [
+      `--- FILE ${i + 1}: ${f.fileName} (${f.rowCount ?? "?"} rows) ---`,
+      f.headers?.length ? `Columns: ${f.headers.join(", ")}` : "",
+      "```",
+      f.preview || "",
+      "```",
+    ].filter(Boolean).join("\n")).join("\n\n");
+
     const userMsg = [
-      `Source file: ${fileName || "(unnamed)"}`,
-      `Total rows: ${rowCount ?? "?"}`,
-      headers?.length ? `Columns: ${headers.join(", ")}` : "",
+      `Number of source files: ${fileParts.length}`,
+      `Total rows across all files: ${totalRows}`,
       audience ? `Audience role: ${audience}` : "",
       timeframe ? `Timeframe: ${timeframe}` : "",
       breakdown ? `Primary breakdown: ${breakdown}` : "",
@@ -189,10 +206,8 @@ Deno.serve(async (req) => {
       filters?.length ? `Filters: ${filters.join(" | ")}` : "",
       `User request: ${prompt || "Build the most useful operational report."}`,
       ``,
-      `CSV preview (truncated):`,
-      "```",
-      csvPreview || "",
-      "```",
+      `CSV previews (each file truncated):`,
+      filesBlock,
     ].filter(Boolean).join("\n");
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
