@@ -175,6 +175,34 @@ export default function TrainingManagementCenter() {
 
         {/* CENTER */}
         <main className="min-w-0 space-y-8">
+          {/* Mobile / tablet nav (visible below xl) */}
+          <div className="xl:hidden -mx-1 overflow-x-auto">
+            <div className="flex gap-1.5 rounded-2xl border border-border/70 bg-card p-1.5 w-max min-w-full">
+              {NAV.map((n) => {
+                const Icon = n.icon;
+                const active = nav === n.id;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      setNav(n.id);
+                      setSelectedJourneyId(null);
+                    }}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[12.5px] font-medium transition-colors",
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground/70 hover:bg-muted",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="whitespace-nowrap">{n.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Header */}
           <header>
             <div className="flex flex-wrap items-end justify-between gap-3">
