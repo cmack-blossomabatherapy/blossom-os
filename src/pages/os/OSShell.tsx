@@ -10,7 +10,7 @@ import {
   KanbanSquare, Bot, Brain, Zap, Wand2, MapPin, UserPlus, Headphones,
   HeartHandshake, Globe, Hash, Star,
   LineChart, PhoneCall, Gauge, Database, Moon,
-  Plug, Network,
+  Plug, Network, MonitorSmartphone,
 } from "lucide-react";
 import { PanelRight } from "lucide-react";
 import { cn } from "@/lib/utils";
