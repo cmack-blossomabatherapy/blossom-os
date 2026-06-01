@@ -86,7 +86,7 @@ export default function OSEvaluations() {
       setLoading(false);
     })();
     return () => { alive = false; };
-  }, [activeState]);
+  }, [activeState, role]);
 
   const enriched = useMemo(() => {
     const byEmp = new Map<string, ReviewRow[]>();
