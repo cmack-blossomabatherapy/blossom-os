@@ -1,6 +1,5 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -10,16 +9,7 @@ import { Button } from "@/components/ui/button";
  * - Disappears the moment a user is authenticated.
  */
 export function SignInCtaButton() {
-  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-
-  if (loading || user) return null;
-  if (
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/reset-password") ||
-    pathname.startsWith("/mfa")
-  ) return null;
 
   return (
     <div className="fixed top-3 right-3 z-[60]">
