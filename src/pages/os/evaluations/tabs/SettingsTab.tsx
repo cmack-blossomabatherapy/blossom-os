@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Beaker, Trash2, ListChecks, Bell, Mail, Eye, FlaskConical } from "lucide-react";
+import { Beaker, Trash2, ListChecks, Bell, Mail, Eye, FlaskConical, Plug, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -47,6 +47,27 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [section, setSection] = useState<string>("rules");
   const testStaff = data.staff.filter((x) => (x.notes ?? "").startsWith("[TEST]"));
+  const [vivSyncing, setVivSyncing] = useState(false);
+  const [vivResult, setVivResult] = useState<{ ok: boolean; connected: boolean; updated?: number; matched?: number; received?: number; error?: string; at?: string } | null>(null);
+
+  async function syncViventium() {
+    setVivSyncing(true);
+    setVivResult(null);
+    const { data: out, error } = await supabase.functions.invoke("viventium-sync", { body: {} });
+    setVivSyncing(false);
+    if (error) {
+      setVivResult({ ok: false, connected: false, error: error.message });
+      toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setVivResult(out as any);
+    if (out?.ok) {
+      toast({ title: "Viventium synced", description: `Updated ${out.updated} of ${out.matched} matched employees.` });
+      data.refresh();
+    } else {
+      toast({ title: "Sync info", description: out?.error ?? "Not connected", variant: "destructive" });
+    }
+  }
 
   useEffect(() => { setS(data.settings); }, [data.settings]);
 
@@ -96,6 +117,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
     { id: "due", label: "Due Dates", icon: ListChecks },
     { id: "reminders", label: "Reminders", icon: Bell },
     { id: "email", label: "Email Sender", icon: Mail },
+    { id: "integrations", label: "Integrations", icon: Plug },
     { id: "visibility", label: "Visibility", icon: Eye },
     { id: "test", label: "Test Mode", icon: FlaskConical },
   ];
@@ -178,6 +200,33 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
           <Toggle label="Reviewers can see previous evaluations" value={s.reviewer_can_view_past} onChange={(v) => set("reviewer_can_view_past", v)} />
           <Toggle label="State Directors see only their assigned state" value={s.state_director_scope} onChange={(v) => set("state_director_scope", v)} />
           <Toggle label="HR sees all states" value={s.hr_sees_all_states} onChange={(v) => set("hr_sees_all_states", v)} />
+        </div>
+      </Section>
+
+      <Section id="settings-integrations" title="Integrations" description="Connect external systems to keep evaluation data in sync.">
+        <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Viventium · Hire Dates</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
+                Pull hire dates from Viventium so evaluation schedules (30-Day, Quarterly, Annual) are generated from each employee's actual hire date. Run this after onboarding new staff.
+              </p>
+              {vivResult && (
+                <p className={cn("text-xs mt-2", vivResult.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive")}>
+                  {vivResult.ok
+                    ? `Synced ${vivResult.updated} of ${vivResult.matched} matched (${vivResult.received} received).`
+                    : vivResult.error ?? "Sync failed"}
+                </p>
+              )}
+            </div>
+            <Button size="sm" variant="outline" onClick={syncViventium} disabled={vivSyncing || !canEdit}>
+              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", vivSyncing && "animate-spin")} />
+              {vivSyncing ? "Syncing…" : "Sync now"}
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            Not connected yet? Add <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_API_KEY</code> and <code className="px-1 py-0.5 rounded bg-muted">VIVENTIUM_COMPANY_ID</code> in Lovable Cloud secrets. Once connected, hire dates will refresh on every sync.
+          </p>
         </div>
       </Section>
 
