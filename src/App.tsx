@@ -419,10 +419,19 @@ function RoleDashboardRedirect() {
     ["payroll_admin", "/hr/payroll"],
     ["phone_support", "/phone-calls"],
   ];
-  const profileRoute = isExecOnly ? "/bcba-performance-dashboard" : dashboardAccess ? dashboardRoutes[dashboardAccess] : undefined;
-  const route = profileRoute ?? (isAdmin || partOfLeadership || roles.includes("exec") || roles.includes("ops_manager") || roles.includes("state_director")
+  const isStateDirectorOnly = roles.includes("state_director") && !isAdmin && !partOfLeadership && !roles.includes("exec") && !roles.includes("ops_manager");
+  const profileRoute = isStateDirectorOnly
+    ? "/training"
+    : isExecOnly
+      ? "/bcba-performance-dashboard"
+      : dashboardAccess
+        ? dashboardRoutes[dashboardAccess]
+        : undefined;
+  const route = profileRoute ?? (isAdmin || partOfLeadership || roles.includes("exec") || roles.includes("ops_manager")
     ? "/leadership-dashboard"
-    : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
+    : roles.includes("state_director")
+      ? "/training"
+      : roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
   const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") || hasTrainingAdminAccess ? "/hr/journey" : "/training";
   const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
