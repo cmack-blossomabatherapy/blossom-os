@@ -44,7 +44,7 @@ function firstName(email: string | null | undefined, meta: any) {
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",
   attention: "bg-amber-500",
-  risk: "bg-orange-500",
+  risk: "bg-rose-500",
   blocked: "bg-rose-500",
   neutral: "bg-muted-foreground/50",
 };
@@ -225,7 +225,7 @@ export default function ExecutiveOverview() {
         <ul className="space-y-3">
           {briefing.map((b, i) => {
             const Icon = b.trend === "up" ? TrendingUp : b.trend === "down" ? TrendingDown : Minus;
-            const tint = b.trend === "up" ? "text-emerald-600 bg-emerald-50" : b.trend === "down" ? "text-orange-600 bg-orange-50" : "text-muted-foreground bg-muted/50";
+            const tint = b.trend === "up" ? "text-emerald-600 bg-emerald-50" : b.trend === "down" ? "text-rose-600 bg-rose-50" : "text-muted-foreground bg-muted/50";
             return (
               <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-foreground/90">
                 <span className={cn("mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full", tint)}>
@@ -262,7 +262,7 @@ export default function ExecutiveOverview() {
                   "absolute inset-x-0 top-0 h-0.5 transition-opacity",
                   tone === "healthy" && "bg-emerald-400/70",
                   tone === "attention" && "bg-amber-400/80",
-                  tone === "risk" && "bg-orange-400/80",
+                  tone === "risk" && "bg-rose-400/80",
                   tone === "blocked" && "bg-rose-400/80",
                 )} />
                 <div className="flex items-center justify-between">
@@ -283,7 +283,7 @@ export default function ExecutiveOverview() {
                       "h-1 rounded-full transition-all",
                       tone === "healthy" && "bg-emerald-400",
                       tone === "attention" && "bg-amber-400",
-                      tone === "risk" && "bg-orange-400",
+                      tone === "risk" && "bg-rose-400",
                       tone === "blocked" && "bg-rose-400",
                     )}
                     style={{ width: `${readiness}%` }}

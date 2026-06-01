@@ -447,14 +447,14 @@ export default function OpsEscalations() {
                 <span className={cn(
                   "absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping",
                   posture.tone === "blocked" && "bg-rose-400",
-                  posture.tone === "risk" && "bg-orange-400",
+                  posture.tone === "risk" && "bg-rose-400",
                   posture.tone === "attention" && "bg-amber-400",
                   posture.tone === "healthy" && "bg-emerald-400",
                 )} />
                 <span className={cn(
                   "relative inline-flex h-2.5 w-2.5 rounded-full",
                   posture.tone === "blocked" && "bg-rose-500",
-                  posture.tone === "risk" && "bg-orange-500",
+                  posture.tone === "risk" && "bg-rose-500",
                   posture.tone === "attention" && "bg-amber-500",
                   posture.tone === "healthy" && "bg-emerald-500",
                 )} />
@@ -538,7 +538,7 @@ export default function OpsEscalations() {
                     <span className={cn(
                       "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
                       f.tone === "blocked" && "bg-rose-500",
-                      f.tone === "risk" && "bg-orange-500",
+                      f.tone === "risk" && "bg-rose-500",
                       f.tone === "attention" && "bg-amber-500",
                       f.tone === "neutral" && "bg-muted-foreground/50",
                       f.tone === "healthy" && "bg-emerald-500",

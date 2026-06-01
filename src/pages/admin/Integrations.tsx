@@ -352,7 +352,7 @@ const INTEGRATIONS: Integration[] = [
     enabled: true,
     health: "healthy",
     icon: LineChart,
-    accent: "text-orange-500",
+    accent: "text-rose-500",
   },
   {
     id: "gsc",
@@ -469,7 +469,7 @@ const INTEGRATIONS: Integration[] = [
     enabled: true,
     health: "healthy",
     icon: Brain,
-    accent: "text-orange-500",
+    accent: "text-rose-500",
   },
   {
     id: "elevenlabs",

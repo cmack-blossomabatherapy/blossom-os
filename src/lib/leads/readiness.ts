@@ -111,7 +111,7 @@ export const READINESS_TONE: Record<ReadinessStatus, string> = {
   "Awaiting Contact": "bg-sky-500/10 text-sky-700 dark:text-sky-300",
   "Waiting on Family": "bg-amber-500/10 text-amber-700 dark:text-amber-300",
   "Waiting on Internal Review": "bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  "Financial Review Needed": "bg-orange-500/10 text-orange-700 dark:text-orange-300",
+  "Financial Review Needed": "bg-rose-500/10 text-rose-700 dark:text-rose-300",
   "Assessment Coordination": "bg-blue-500/10 text-blue-700 dark:text-blue-300",
   "Operationally Ready": "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   "Cannot Proceed": "bg-destructive/10 text-destructive",

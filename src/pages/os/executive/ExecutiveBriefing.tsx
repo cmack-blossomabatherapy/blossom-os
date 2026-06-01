@@ -20,7 +20,7 @@ const STATES = [
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",
   attention: "bg-amber-500",
-  risk: "bg-orange-500",
+  risk: "bg-rose-500",
   blocked: "bg-rose-500",
   neutral: "bg-muted-foreground/50",
 };
@@ -35,7 +35,7 @@ function worst(tones: HealthTone[]): HealthTone {
 const DIR_STYLES: Record<Direction, { label: string; icon: typeof ArrowUpRight; tint: string }> = {
   improved: { label: "Improved", icon: ArrowUpRight, tint: "text-emerald-700 bg-emerald-50 border-emerald-200/70" },
   stable: { label: "Stable", icon: Minus, tint: "text-muted-foreground bg-muted/60 border-border/60" },
-  slowing: { label: "Slowing", icon: ArrowDownRight, tint: "text-orange-700 bg-orange-50 border-orange-200/70" },
+  slowing: { label: "Slowing", icon: ArrowDownRight, tint: "text-rose-700 bg-rose-50 border-rose-200/70" },
   escalating: { label: "Escalating", icon: ArrowDownRight, tint: "text-rose-700 bg-rose-50 border-rose-200/70" },
   watch: { label: "Watch", icon: Minus, tint: "text-amber-700 bg-amber-50 border-amber-200/70" },
 };

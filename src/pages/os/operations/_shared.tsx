@@ -73,7 +73,7 @@ export function OpsCard({
 const TONE_STYLES = {
   healthy: "bg-emerald-50 text-emerald-700 border-emerald-200/70",
   attention: "bg-amber-50 text-amber-700 border-amber-200/70",
-  risk: "bg-orange-50 text-orange-700 border-orange-200/70",
+  risk: "bg-rose-50 text-rose-700 border-rose-200/70",
   blocked: "bg-rose-50 text-rose-700 border-rose-200/70",
   neutral: "bg-muted text-muted-foreground border-border/60",
 } as const;
@@ -91,7 +91,7 @@ export function HealthPill({ tone, children }: { tone: HealthTone; children: Rea
       <span className={cn("h-1.5 w-1.5 rounded-full", {
         "bg-emerald-500": tone === "healthy",
         "bg-amber-500": tone === "attention",
-        "bg-orange-500": tone === "risk",
+        "bg-rose-500": tone === "risk",
         "bg-rose-500": tone === "blocked",
         "bg-muted-foreground/50": tone === "neutral",
       })} />

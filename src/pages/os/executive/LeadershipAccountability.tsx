@@ -10,7 +10,7 @@ const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",
   attention: "bg-amber-500",
-  risk: "bg-orange-500",
+  risk: "bg-rose-500",
   blocked: "bg-rose-500",
   neutral: "bg-muted-foreground/50",
 };
