@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Beaker, Trash2 } from "lucide-react";
+import { Beaker, Trash2, ListChecks, Bell, Mail, Eye, FlaskConical } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -14,9 +15,9 @@ import {
 import type { EvaluationsData, EvalSettings } from "../useEvaluationsData";
 import EvaluationRulesSection from "../EvaluationRulesSection";
 
-function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function Section({ id, title, description, children }: { id?: string; title: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-16px_hsl(220_30%_20%/0.08)]">
+    <div id={id} className="scroll-mt-24 rounded-2xl border border-border/60 bg-card p-6 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-16px_hsl(220_30%_20%/0.08)]">
       <div className="mb-5">
         <h3 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h3>
         {description && <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">{description}</p>}
@@ -44,6 +45,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [section, setSection] = useState<string>("rules");
   const testStaff = data.staff.filter((x) => (x.notes ?? "").startsWith("[TEST]"));
 
   useEffect(() => { setS(data.settings); }, [data.settings]);
@@ -89,13 +91,53 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
     data.refresh();
   }
 
+  const NAV: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "rules", label: "Schedule Rules", icon: ListChecks },
+    { id: "due", label: "Due Dates", icon: ListChecks },
+    { id: "reminders", label: "Reminders", icon: Bell },
+    { id: "email", label: "Email Sender", icon: Mail },
+    { id: "visibility", label: "Visibility", icon: Eye },
+    { id: "test", label: "Test Mode", icon: FlaskConical },
+  ];
+
+  function goTo(id: string) {
+    setSection(id);
+    const el = document.getElementById(`settings-${id}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <div className="space-y-6 pb-24">
+    <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6 pb-24">
+      <aside className="lg:sticky lg:top-24 lg:self-start space-y-1">
+        {NAV.map((n) => {
+          const Icon = n.icon;
+          const active = section === n.id;
+          return (
+            <button
+              key={n.id}
+              onClick={() => goTo(n.id)}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                active
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {n.label}
+            </button>
+          );
+        })}
+      </aside>
+
+      <div className="space-y-6 min-w-0">
       {!canEdit && <p className="text-xs text-muted-foreground rounded-xl border border-border/60 bg-muted/60 px-4 py-2.5">Read-only view. HR or Super Admin can edit settings.</p>}
 
-      <EvaluationRulesSection data={data} canEdit={canEdit} />
+      <div id="settings-rules" className="scroll-mt-24">
+        <EvaluationRulesSection data={data} canEdit={canEdit} />
+      </div>
 
-      <Section title="Due Date Rules" description="Days from previous step completion.">
+      <Section id="settings-due" title="Due Date Rules" description="Days from previous step completion within an evaluation cycle.">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="space-y-1.5"><FieldLabel>Self eval</FieldLabel><Input type="number" value={s.self_due_days} onChange={(e) => set("self_due_days", Number(e.target.value))} className="h-9 text-sm" /></div>
           <div className="space-y-1.5"><FieldLabel>Leadership</FieldLabel><Input type="number" value={s.leadership_due_days} onChange={(e) => set("leadership_due_days", Number(e.target.value))} className="h-9 text-sm" /></div>
@@ -104,7 +146,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
         </div>
       </Section>
 
-      <Section title="Reminder Rules">
+      <Section id="settings-reminders" title="Reminder Rules" description="When to nudge staff and reviewers about pending evaluations.">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           <Toggle label="7 days before due date" value={s.reminder_7_before} onChange={(v) => set("reminder_7_before", v)} />
           <Toggle label="3 days before due date" value={s.reminder_3_before} onChange={(v) => set("reminder_3_before", v)} />
@@ -115,7 +157,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
         </div>
       </Section>
 
-      <Section title="Email Sender Settings">
+      <Section id="settings-email" title="Email Sender" description="Branding and integration for outbound evaluation emails.">
         {!s.email_connected && (
           <p className="text-xs rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 text-amber-900 dark:text-amber-200 px-4 py-2.5">
             Email integration required before live evaluation emails can be sent. Emails are queued until then.
@@ -129,9 +171,9 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
         </div>
       </Section>
 
-      <Section title="Visibility Settings">
+      <Section id="settings-visibility" title="Visibility & Access" description="Who can see past evaluations and across which states.">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          <Toggle label="BCBA/RBT can view past completed evaluations" value={s.staff_can_view_past} onChange={(v) => set("staff_can_view_past", v)} />
+          <Toggle label="Staff can view past completed evaluations" value={s.staff_can_view_past} onChange={(v) => set("staff_can_view_past", v)} />
           <Toggle label="Staff can download completed evaluation summaries" value={s.staff_can_download} onChange={(v) => set("staff_can_download", v)} />
           <Toggle label="Reviewers can see previous evaluations" value={s.reviewer_can_view_past} onChange={(v) => set("reviewer_can_view_past", v)} />
           <Toggle label="State Directors see only their assigned state" value={s.state_director_scope} onChange={(v) => set("state_director_scope", v)} />
@@ -148,7 +190,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
       )}
 
       {canEdit && (
-        <Section title="Test Mode" description="Create safe test staff to walk through the evaluation workflow without affecting live data. Test records are excluded from reports unless 'Include Test Data' is enabled.">
+        <Section id="settings-test" title="Test Mode" description="Create safe test staff to walk through the evaluation workflow without affecting live data. Test records are excluded from reports unless 'Include Test Data' is enabled.">
           <div className="flex flex-wrap items-center gap-2.5">
             <Button variant="outline" size="sm" onClick={createTestStaff} disabled={seeding}>
               <Beaker className="h-3.5 w-3.5 mr-1.5" /> {seeding ? "Creating…" : "Create test staff"}
@@ -175,6 +217,7 @@ export default function SettingsTab({ data, canEdit }: { data: EvaluationsData; 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }
