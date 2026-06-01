@@ -390,7 +390,7 @@ import { LeadsProvider } from "@/contexts/LeadsContext";
 import { ClientsProvider } from "@/contexts/ClientsContext";
 
 function RoleDashboardRedirect() {
-  const { roles, isAdmin, hasPerm, partOfLeadership, dashboardAccess } = useAuth();
+  const { roles, isAdmin, hasPerm } = useAuth();
   const hasTrainingAdminAccess = roles.some((role) => TRAINING_ADMIN_ROLES.includes(role));
   const primaryRoleHome =
     isAdmin ? ROLE_HOME.super_admin
@@ -409,51 +409,9 @@ function RoleDashboardRedirect() {
     : roles.includes("rbt") ? ROLE_HOME.rbt
     : roles.includes("marketing") ? ROLE_HOME.marketing_team
     : undefined;
-  const isExecOnly = roles.includes("exec") && !roles.includes("admin") && !roles.includes("ops_manager");
-  const dashboardRoutes: Record<string, string> = {
-    ceo: "/leadership-dashboard",
-    intake: "/intake-dashboard",
-    authorizations: "/authorizations-dashboard",
-    scheduling: "/scheduling-dashboard",
-    staffing: "/staffing-dashboard",
-    clinic: "/clinic-dashboard",
-    qa: "/qa-dashboard",
-    finance: "/finance-dashboard",
-    hr: "/hr",
-    recruiting: "/recruiting-dashboard",
-  };
-  const roleRoutes: Array<[string, string]> = [
-    ["intake", "/intake-dashboard"],
-    ["auth_team", "/authorizations-dashboard"],
-    ["scheduling", "/scheduling-dashboard"],
-    ["staffing", "/staffing-dashboard"],
-    ["clinic", "/clinic-dashboard"],
-    ["clinic_director", "/clinic-dashboard"],
-    ["qa", "/qa-team"],
-    ["finance", "/finance-dashboard"],
-    ["hr", "/hr"],
-    ["hr_admin", "/hr"],
-    ["hr_manager", "/hr"],
-    ["recruiting_assistant", "/recruiting-team"],
-    ["payroll_admin", "/hr/payroll"],
-    ["phone_support", "/phone-calls"],
-  ];
-  const isStateDirectorOnly = roles.includes("state_director") && !isAdmin && !partOfLeadership && !roles.includes("exec") && !roles.includes("ops_manager");
-  const profileRoute = isStateDirectorOnly
-    ? "/training"
-    : isExecOnly
-      ? "/bcba-performance-dashboard"
-      : dashboardAccess
-        ? dashboardRoutes[dashboardAccess]
-        : undefined;
-  const route = profileRoute ?? (isAdmin || partOfLeadership || roles.includes("exec") || roles.includes("ops_manager")
-    ? "/leadership-dashboard"
-    : roles.includes("state_director")
-      ? "/training"
-      : primaryRoleHome ?? roleRoutes.find(([role]) => roles.includes(role as never))?.[1]);
 
   const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") || hasTrainingAdminAccess ? "/hr/journey" : "/training";
-  const fallbackRoute = route ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
+  const fallbackRoute = primaryRoleHome ?? (hasPerm("clients.view") ? "/clients" : intelligenceFallback);
   const allowedRoute = hasFullNavigationAccess(roles) || canAccessRouteForRoles(fallbackRoute, roles)
     ? fallbackRoute
     : intelligenceFallback;
