@@ -714,7 +714,7 @@ const App = () => (
                   <Route path="/onboarding/final-check" element={<OnboardingFinalCheck />} />
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<RoleDashboardRedirect />} />
                   <Route path="/blossom/academy" element={<OperationsAcademy />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />
