@@ -77,22 +77,45 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
 
   const today = new Date();
   const quarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+  const quarterEnd = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3 + 3, 0);
+
+  // Current open cycle per staff: earliest non-complete evaluation whose
+  // next_review_date is on/before the end of the current quarter. Future
+  // cycles (scheduled out 1–2 years) should not count as "pending" yet.
+  const currentCycleEvals = useMemo(() => {
+    const byStaff = new Map<string, typeof filteredEvals[number]>();
+    for (const e of filteredEvals) {
+      if (e.final_status === "Complete") continue;
+      if (!e.next_review_date) continue;
+      const d = new Date(e.next_review_date);
+      if (d > quarterEnd) continue;
+      const existing = byStaff.get(e.staff_id);
+      if (!existing || new Date(existing.next_review_date!) > d) {
+        byStaff.set(e.staff_id, e);
+      }
+    }
+    // Include completed-this-quarter evals so completion rate has a denominator
+    const completedThisQ = filteredEvals.filter(
+      (e) => e.final_status === "Complete" && e.completed_at && new Date(e.completed_at) >= quarterStart,
+    );
+    return [...byStaff.values(), ...completedThisQ];
+  }, [filteredEvals, quarterStart, quarterEnd]);
 
   const kpis = useMemo(() => {
     const activeStaff = data.staff.filter((s) => s.active_status).length;
     const dueQ = filteredEvals.filter((e) => e.next_review_date && new Date(e.next_review_date) >= quarterStart).length;
     const completedQ = filteredEvals.filter((e) => e.completed_at && new Date(e.completed_at) >= quarterStart).length;
-    const overdue = filteredEvals.filter((e) => e.final_status !== "Complete" && e.next_review_date && new Date(e.next_review_date) < today).length;
-    const selfPending = filteredEvals.filter((e) => e.self_status !== "Completed" && e.final_status !== "Complete").length;
-    const leaderPending = filteredEvals.filter((e) => e.leadership_status !== "Completed" && e.final_status !== "Complete").length;
-    const meetingsPending = filteredEvals.filter((e) => e.meeting_status !== "Completed" && e.final_status !== "Complete").length;
-    const completionRate = filteredEvals.length ? Math.round((filteredEvals.filter((e) => e.final_status === "Complete").length / filteredEvals.length) * 100) : 0;
+    const overdue = currentCycleEvals.filter((e) => e.final_status !== "Complete" && e.next_review_date && new Date(e.next_review_date) < today).length;
+    const selfPending = currentCycleEvals.filter((e) => e.self_status !== "Completed" && e.final_status !== "Complete").length;
+    const leaderPending = currentCycleEvals.filter((e) => e.leadership_status !== "Completed" && e.final_status !== "Complete").length;
+    const meetingsPending = currentCycleEvals.filter((e) => e.meeting_status !== "Completed" && e.final_status !== "Complete").length;
+    const completionRate = currentCycleEvals.length ? Math.round((currentCycleEvals.filter((e) => e.final_status === "Complete").length / currentCycleEvals.length) * 100) : 0;
     return { activeStaff, dueQ, completedQ, overdue, selfPending, leaderPending, meetingsPending, completionRate };
-  }, [data.staff, filteredEvals, quarterStart, today]);
+  }, [data.staff, filteredEvals, currentCycleEvals, quarterStart, today]);
 
   const byRole = useMemo(() => {
     const groups: Record<string, { total: number; complete: number }> = {};
-    filteredEvals.forEach((e) => {
+    currentCycleEvals.forEach((e) => {
       const s = staffById[e.staff_id];
       if (!s) return;
       groups[s.role] ||= { total: 0, complete: 0 };
@@ -100,11 +123,11 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       if (e.final_status === "Complete") groups[s.role].complete++;
     });
     return groups;
-  }, [filteredEvals, staffById]);
+  }, [currentCycleEvals, staffById]);
 
   const byState = useMemo(() => {
     const groups: Record<string, { total: number; complete: number }> = {};
-    filteredEvals.forEach((e) => {
+    currentCycleEvals.forEach((e) => {
       const s = staffById[e.staff_id];
       if (!s) return;
       const key = s.state ?? "Unassigned";
@@ -113,11 +136,11 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       if (e.final_status === "Complete") groups[key].complete++;
     });
     return groups;
-  }, [filteredEvals, staffById]);
+  }, [currentCycleEvals, staffById]);
 
   const byReviewer = useMemo(() => {
     const groups: Record<string, { name: string; assigned: number; completed: number; pending: number; overdue: number }> = {};
-    filteredEvals.forEach((e) => {
+    currentCycleEvals.forEach((e) => {
       const s = staffById[e.staff_id];
       const reviewerId = s?.supervisor_id ?? "unassigned";
       const reviewerName = s?.supervisor_name ?? "Unassigned";
@@ -128,14 +151,14 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       else groups[reviewerId].pending++;
     });
     return Object.values(groups);
-  }, [filteredEvals, staffById, today]);
+  }, [currentCycleEvals, staffById, today]);
 
   const statusBreakdown = useMemo(() => {
     const groups: Record<string, number> = {
       "Not Started": 0, "Self Sent": 0, "Self Complete": 0, "Leadership Pending": 0,
       "Needs Meeting": 0, "Ready to Finalize": 0, "Complete": 0, "Overdue": 0,
     };
-    filteredEvals.forEach((e) => {
+    currentCycleEvals.forEach((e) => {
       if (e.final_status === "Complete") groups["Complete"]++;
       else if (e.next_review_date && new Date(e.next_review_date) < today) groups["Overdue"]++;
       else if (e.self_status === "Not Sent") groups["Not Started"]++;
@@ -145,7 +168,7 @@ export default function ReportsTab({ data }: { data: EvaluationsData }) {
       else groups["Ready to Finalize"]++;
     });
     return groups;
-  }, [filteredEvals, today]);
+  }, [currentCycleEvals, today]);
 
   const upcoming = useMemo(() => {
     const in90 = new Date(); in90.setDate(today.getDate() + 90);

@@ -1,37 +1,35 @@
-# Device Inventory + NFC Button Cleanup
+## Problem
 
-## 1. Remove "Generate NFC" button
-In `src/pages/os/users/EmployeeProfile.tsx` (~line 1914), remove only the quick-action "Generate NFC" button in the profile header. The NFC tab and its generation flow inside the profile stay intact.
+The Evaluations → Reports tab shows "Self Pending: 101" while there are only ~10 active staff in scope. Cause: the seed/data generator creates ~10 future evaluation cycles per staff (8 quarterly + 2 annual), and `ReportsTab.tsx` counts every row in `evaluations` for the pending KPIs. So a QA-scoped view of ~10 staff × ~10 future cycles ≈ 101 "self pending" — technically correct row counts, but operationally meaningless.
 
-## 2. New Device Inventory page
-Create `src/pages/admin/DeviceInventory.tsx`:
-- Reads/writes the existing `device_inventory` table via Supabase
-- Joins `employee_devices` to show current assignee per device
-- KPI tiles: Total / Assigned / Available / Retired
-- Searchable + filterable table (status, type, location)
-- Actions: Add device, Edit, Assign to employee, Unassign, Retire, Delete
-- Apple-style calm UI, semantic tokens only
+Confirmed via DB: 63 active staff, 631 evaluations total, 631 "self_status != Completed AND final_status != Complete", 63 distinct staff. Sample shows each staff has cycles scheduled out to 2028.
 
-## 3. Role-gated route
-In `src/App.tsx`, add `/admin/device-inventory` gated to `super_admin` and `hr_team` only.
+## Fix
 
-## 4. Sidebar navigation
-In `src/pages/os/OSShell.tsx`, add a "Device Inventory" entry (icon: `MonitorSmartphone`) under **HR Operations** in:
-- `NAV_SECTIONS` (super_admin view)
-- `HR_TEAM_SECTIONS` (hr_team view)
+In `src/pages/os/evaluations/tabs/ReportsTab.tsx`, restrict the "pending" KPIs and the Status Breakdown chart to the **current open cycle per staff** — i.e. for each staff, only the single earliest non-complete evaluation whose `next_review_date` is in the past or within the current quarter window. Future-scheduled cycles should not count as "pending" yet because the cycle hasn't opened.
 
-Hidden from all other roles.
+Concretely:
 
-## 5. Connect it all
-- **Assign Device button** in user management (`DevicesTab`) → already writes to `device_inventory` + `employee_devices`; verify the dialog pulls from the same `device_inventory` rows the new page manages (single source of truth)
-- **Devices tab** in user profile → already reads `employee_devices` joined to `device_inventory`; any add/retire on the new page immediately reflects there
-- New page's "Assign" action reuses the same assignment write path as the user-management Assign Device button
+1. Derive `currentCycleEvals`: for each `staff_id`, pick the evaluation with the earliest `next_review_date` where `final_status !== "Complete"`. Optionally only include those where `next_review_date <= end of current quarter` so far-future cycles are excluded.
+2. Use `currentCycleEvals` (instead of `filteredEvals`) for these KPIs and the breakdown:
+   - Self Pending
+   - Leadership Pending
+   - Meetings Pending
+   - Overdue (already date-bounded but should also be per-staff to avoid double-counting)
+   - Status Breakdown card
+   - Completion Rate (numerator/denominator both on current cycle)
+3. Leave alone (already cycle/date-bounded):
+   - Active Staff
+   - Due This Quarter
+   - Completed This Quarter
+   - Upcoming Evaluations (next 90 days)
+   - Overdue list (date-bounded by `next_review_date < today`)
+   - By Role / By State / By Reviewer aggregates → also switch to `currentCycleEvals` so percentages reflect the active cycle and aren't inflated by future cycles.
 
-## Out of scope
-- No schema changes (tables already exist)
-- No changes to the NFC tab itself or NFC generation logic
-- No changes to the Assign Device dialog's UX beyond pointing at the shared inventory source
+No schema or data changes. No changes outside `ReportsTab.tsx`. After the fix, with ~10 staff in QA scope, "Self Pending" should be at most ~10, matching the staff count.
 
-## Technical notes
-- Module key for navigation gating: `user_management` (or add `device_inventory` if you'd prefer a dedicated key — let me know)
-- All inventory mutations go through Supabase client with RLS; HR Team + Super Admin policies on `device_inventory` should already allow full CRUD — will verify and flag if a migration is needed
+## Verification
+
+- Reload Evaluations → Reports as QA. Self Pending, Leadership Pending, Meetings Pending should each be ≤ Active Staff in scope.
+- Completion Rate should reflect the current cycle, not all historical/future cycles.
+- Upcoming and Overdue lists should remain unchanged.
