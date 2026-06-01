@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ShieldCheck, ShieldAlert, KeyRound, Loader2, Smartphone } from "lucide-react";
+import { ShieldCheck, ShieldAlert, KeyRound, Loader2, Smartphone, Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import { clearMfaVerified, getMfaVerifiedAt, MFA_MAX_AGE_MS, unenrollAllTotp } from "@/lib/mfa";
 
@@ -22,6 +22,7 @@ interface FactorRow {
   id: string;
   friendlyName: string | null;
   createdAt: string;
+  kind: "totp" | "passkey";
 }
 
 export function SecurityMfaCard() {
@@ -32,19 +33,37 @@ export function SecurityMfaCard() {
 
   const load = async () => {
     const { data } = await supabase.auth.mfa.listFactors();
-    const rows = (data?.totp ?? [])
+    const rows: FactorRow[] = (data?.totp ?? [])
       .filter((f) => f.status === "verified")
-      .map<FactorRow>((f) => ({
+      .map((f) => ({
         id: f.id,
         friendlyName: f.friendly_name ?? "Authenticator app",
         createdAt: f.created_at,
+        kind: "totp" as const,
       }));
+
+    if (user) {
+      const { data: pin } = await supabase
+        .from("employee_pin_settings")
+        .select("passkey_credential_id, last_set_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (pin?.passkey_credential_id) {
+        rows.push({
+          id: `passkey-${pin.passkey_credential_id}`,
+          friendlyName: "Security key / passkey",
+          createdAt: pin.last_set_at,
+          kind: "passkey",
+        });
+      }
+    }
     setFactors(rows);
   };
 
   useEffect(() => {
     void load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleReset = async () => {
     if (!user) return;
@@ -95,7 +114,11 @@ export function SecurityMfaCard() {
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Smartphone className="h-4 w-4" />
+                  {f.kind === "passkey" ? (
+                    <Fingerprint className="h-4 w-4" />
+                  ) : (
+                    <Smartphone className="h-4 w-4" />
+                  )}
                 </div>
                 <div className="text-xs">
                   <div className="font-medium text-foreground">{f.friendlyName}</div>
@@ -105,7 +128,7 @@ export function SecurityMfaCard() {
                 </div>
               </div>
               <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                Active
+                Verified
               </span>
             </div>
           ))}
