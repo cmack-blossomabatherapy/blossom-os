@@ -100,7 +100,13 @@ export default function MfaVerify() {
           {bootError}
         </div>
       ) : (
-        <div className="space-y-6">
+        <form
+          className="space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (code.length === 6) handleVerify();
+          }}
+        >
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2d8a9e]/10 text-[#2d8a9e]">
               <ShieldCheck className="h-5 w-5" />
@@ -116,9 +122,7 @@ export default function MfaVerify() {
               value={code}
               onChange={setCode}
               autoFocus
-              onComplete={() => {
-                /* user clicks Verify */
-              }}
+              onComplete={handleVerify}
             >
               <InputOTPGroup>
                 {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -129,7 +133,7 @@ export default function MfaVerify() {
           </div>
 
           <Button
-            onClick={handleVerify}
+            type="submit"
             disabled={code.length !== 6 || verifying || !challengeId}
             className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
             style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
@@ -148,7 +152,7 @@ export default function MfaVerify() {
             </a>
             .
           </p>
-        </div>
+        </form>
       )}
     </MfaBrandShell>
   );
