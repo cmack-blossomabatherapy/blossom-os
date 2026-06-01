@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Sparkles, Plus, Bookmark, Star, History,
@@ -108,55 +108,7 @@ export default function ReportsHome() {
               <Search className="pointer-events-none absolute z-10 left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
-            <Link
-              to="/dashboards/ai/new"
-              className="group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] px-4 text-[12.5px] font-semibold text-white shadow-[0_10px_30px_-10px_hsl(265_70%_55%/0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_-15px_hsl(265_70%_55%/0.7)]"
-            >
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <Wand2 className="h-3.5 w-3.5" />
-              Create AI Dashboard
-              <Sparkles className="h-3 w-3 opacity-80 transition group-hover:rotate-12" />
-            </Link>
           </div>
-        </div>
-      </section>
-
-      {/* ============== AI-GENERATED REPORTS ============== */}
-      <section className="mt-8">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-[18px] font-semibold tracking-tight">AI Dashboards</h2>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
-              {aiReports.length === 0
-                ? "Upload your data. Ask a question. Instantly build an interactive dashboard."
-                : `${aiReports.length} dashboard${aiReports.length === 1 ? "" : "s"} saved to your library.`}
-            </p>
-          </div>
-          <Link
-            to="/dashboards/ai/new"
-            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[hsl(265_70%_55%/0.3)] bg-[hsl(265_100%_98%)] px-3 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:-translate-y-0.5 hover:bg-[hsl(265_100%_96%)]"
-          >
-            <Wand2 className="h-3 w-3" /> New AI Dashboard
-          </Link>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {aiReports.length === 0 ? (
-            <Link
-              to="/dashboards/ai/new"
-              className="group col-span-full flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[hsl(265_70%_55%/0.4)] bg-gradient-to-br from-[hsl(265_100%_99%)] via-white to-[hsl(285_100%_99%)] px-6 py-10 text-center transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%)] hover:shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.4)]"
-            >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-[0_10px_30px_-10px_hsl(265_70%_55%/0.6)] transition group-hover:scale-110">
-                <Sparkles className="h-5 w-5" />
-              </span>
-              <p className="text-[13.5px] font-semibold">Build your first AI dashboard</p>
-              <p className="max-w-sm text-[11.5px] text-muted-foreground">
-                Drop a CentralReach export, ask a question, and Blossom AI builds an interactive dashboard instantly.
-              </p>
-            </Link>
-          ) : (
-            aiReports.map(r => <AiReportCard key={r.id} report={r} onDelete={() => { deleteAiDashboard(r.id); setAiReports(listAiDashboards()); }} />)
-          )}
         </div>
       </section>
 
