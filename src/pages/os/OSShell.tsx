@@ -177,7 +177,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, avatarUrl, displayName } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -203,7 +203,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     params.set("panel", value ? "hidden" : "open");
     setSearchParams(params, { replace: true });
   };
-  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
+  
   const showOldVersion = platform("accessOldVersion");
 
   // Global ⌘K / Ctrl+K search shortcut
@@ -984,9 +984,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="os-glass-panel hidden items-center gap-2.5 rounded-2xl px-2.5 py-1.5 pr-3.5 sm:flex">
-                  <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="h-8 w-8 rounded-xl object-cover ring-1 ring-border"
+                    />
+                  ) : (
+                    <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[hsl(265_85%_65%)] to-[hsl(285_85%_70%)] text-[11px] font-bold text-white">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div className="hidden text-left lg:block">
                     <p className="text-[12.5px] font-semibold leading-tight capitalize">{displayName}</p>
                     <p className="text-[10.5px] capitalize text-muted-foreground leading-tight">{role.replace(/_/g, " ")}</p>
