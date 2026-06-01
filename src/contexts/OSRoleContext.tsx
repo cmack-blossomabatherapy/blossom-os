@@ -16,7 +16,12 @@ function mapAuthRoleToOS(appRoles: AppRole[]): OSRole | null {
   if (appRoles.includes("auth_team")) return "authorization_coordinator";
   if (appRoles.includes("scheduling")) return "scheduling_team";
   if (appRoles.includes("recruiting_assistant")) return "recruiting_team";
-  if (appRoles.includes("hr") || appRoles.includes("hr_admin") || appRoles.includes("hr_manager")) return "hr_team";
+  if (
+    appRoles.includes("hr") ||
+    appRoles.includes("hr_admin") ||
+    appRoles.includes("hr_manager") ||
+    appRoles.includes("hr_admin_assistant")
+  ) return "hr_team";
   if (appRoles.includes("finance")) return "billing_finance";
   if (appRoles.includes("qa")) return "qa_team";
   if (appRoles.includes("payroll_admin")) return "payroll_coordinator";
@@ -55,7 +60,9 @@ export function OSRoleProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return null;
     return (window.localStorage.getItem(STORAGE_KEY) as OSRole) || null;
   });
-  const derivedRole = mapAuthRoleToOS(appRoles) ?? "state_director";
+  // Fall back to the lowest-privilege OS role if none of the user's app roles
+  // map to a known OS role — never silently elevate to State Director.
+  const derivedRole = mapAuthRoleToOS(appRoles) ?? "rbt";
   // Only super_admins can override their role via the demo switcher.
   const role: OSRole = derivedRole === "super_admin" && roleOverride ? roleOverride : derivedRole;
   const isSuperAdmin = derivedRole === "super_admin";
