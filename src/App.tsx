@@ -661,6 +661,7 @@ const App = () => (
                   <Route path="/user-management" element={<UsersHome />} />
                   <Route path="/user-management/admin" element={<OSUserManagement />} />
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
+                  <Route path="/admin/device-inventory" element={<DeviceInventory />} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
@@ -709,7 +710,6 @@ const App = () => (
                   <Route path="/admin/access-requests" element={<AccessRequests />} />
                   <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
                   <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
-                  <Route path="/admin/device-inventory" element={<DeviceInventory />} />
                   <Route path="/admin/journey-editor" element={<JourneyEditor />} />
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />

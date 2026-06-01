@@ -72,9 +72,6 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function DeviceInventory() {
   const { role } = useOSRole();
-  if (role !== "super_admin" && role !== "hr_team") {
-    return <Navigate to="/" replace />;
-  }
   const [devices, setDevices] = useState<Device[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [employees, setEmployees] = useState<EmployeeLite[]>([]);
@@ -183,6 +180,10 @@ export default function DeviceInventory() {
     }).eq("id", a.id);
     if (error) return toast.error(error.message);
     toast.success("Marked returned"); void load();
+  }
+
+  if (role !== "super_admin" && role !== "hr_team") {
+    return <Navigate to="/" replace />;
   }
 
   return (
