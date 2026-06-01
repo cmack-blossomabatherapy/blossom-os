@@ -487,7 +487,7 @@ function JourneysView({
   journeys,
   onSelect,
 }: {
-  journeys: TrainingJourney[];
+  journeys: ViewJourney[];
   onSelect: (id: string) => void;
 }) {
   return (
@@ -506,7 +506,7 @@ function JourneysView({
             <div className="flex items-start justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {ROLE_LABEL[j.role]}
+                  {roleLabel(j.role)}
                 </p>
                 <h3 className="mt-0.5 text-[15.5px] font-semibold tracking-tight text-foreground">
                   {j.title}
@@ -522,16 +522,7 @@ function JourneysView({
             <div className="mt-4 flex items-center justify-between text-[12px] text-muted-foreground">
               <span>{j.moduleIds.length} modules</span>
               <span>{j.assignedCount} assigned</span>
-              <span>Updated {formatRelative(j.updatedAt)}</span>
-            </div>
-            <div className="mt-3 space-y-1">
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-muted-foreground">Completion</span>
-                <span className="font-medium text-foreground">
-                  {j.completionPct}%
-                </span>
-              </div>
-              <Progress value={j.completionPct} className="h-1.5" />
+              <span>{roleCategory(j.role)}</span>
             </div>
             <div className="mt-3 flex items-center text-[12.5px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
               Open builder <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -545,14 +536,24 @@ function JourneysView({
 
 function JourneyBuilderView({
   journey,
+  allModules,
   onBack,
 }: {
-  journey: TrainingJourney;
+  journey: ViewJourney;
+  allModules: ViewModule[];
   onBack: () => void;
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const moduleMap = useMemo(() => {
+    const map = new Map<string, ViewModule>();
+    allModules.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [allModules]);
   const modules = journey.moduleIds
-    .map((id) => trainingModules.find((m) => m.id === id))
-    .filter(Boolean) as TrainingModule[];
+    .map((id) => moduleMap.get(id))
+    .filter(Boolean) as ViewModule[];
+  const availableModules = allModules.filter((m) => !journey.moduleIds.includes(m.id));
+  const missingCount = journey.moduleIds.length - modules.length;
 
   return (
     <section className="space-y-5">
@@ -567,7 +568,7 @@ function JourneyBuilderView({
           <Button variant="outline" size="sm" className="rounded-xl">
             <Users className="mr-1.5 h-3.5 w-3.5" /> Assign
           </Button>
-          <Button size="sm" className="rounded-xl">
+          <Button size="sm" className="rounded-xl" onClick={() => setPickerOpen(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Add module
           </Button>
         </div>
@@ -577,7 +578,7 @@ function JourneyBuilderView({
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              {ROLE_LABEL[journey.role]} · {journey.category}
+              {roleLabel(journey.role)} · {journey.category}
             </p>
             <h2 className="mt-1 text-[22px] font-semibold tracking-tight text-foreground">
               {journey.title}
@@ -593,9 +594,14 @@ function JourneyBuilderView({
 
         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
           <Stat label="Modules" value={String(modules.length)} />
-          <Stat label="Assigned" value={String(journey.assignedCount)} />
-          <Stat label="Completion" value={`${journey.completionPct}%`} />
+          <Stat label="Required" value={String(modules.filter((m) => m.required).length)} />
+          <Stat label="Est. minutes" value={String(modules.reduce((s, m) => s + m.estimatedMinutes, 0))} />
         </div>
+        {missingCount > 0 && (
+          <p className="mt-3 text-[12px] text-amber-600 dark:text-amber-400">
+            {missingCount} module{missingCount === 1 ? "" : "s"} in this journey can't be found in the library — they may have been deleted.
+          </p>
+        )}
       </div>
 
       <div>
@@ -603,7 +609,7 @@ function JourneyBuilderView({
           Modules in this journey
         </h3>
         <p className="text-[12.5px] text-muted-foreground">
-          Drag to reorder · click to edit content.
+          Reorder with the arrows · open a module to edit its content in the builder.
         </p>
         <ol className="mt-4 space-y-2">
           {modules.map((m, idx) => {
@@ -619,29 +625,57 @@ function JourneyBuilderView({
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
-                <div className="min-w-0 flex-1">
+                <Link
+                  to={`/admin/training/${m.id}`}
+                  className="min-w-0 flex-1"
+                >
                   <p className="truncate text-[13.5px] font-medium text-foreground">
                     {m.title}
                   </p>
                   <p className="truncate text-[12px] text-muted-foreground">
                     {m.type} · {m.estimatedMinutes} min · {m.category}
                   </p>
-                </div>
+                </Link>
                 <Badge variant="outline" className={STATUS_STYLE[m.status]}>
                   {m.status}
                 </Badge>
-                <button
-                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
-                  aria-label="Module actions"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => reorderJourneyModule(journey.id, idx, idx - 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === modules.length - 1}
+                    onClick={() => reorderJourneyModule(journey.id, idx, idx + 1)}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removeModuleFromJourney(journey.id, m.id);
+                      toast.success(`Removed "${m.title}" from journey`);
+                    }}
+                    className="grid h-8 w-8 place-items-center rounded-lg text-destructive/80 hover:bg-destructive/10"
+                    aria-label="Remove from journey"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </li>
             );
           })}
           <li>
             <button
-              onClick={() => toast.info("Module picker coming soon")}
+              onClick={() => setPickerOpen(true)}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 bg-muted/30 py-3 text-[13px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" /> Add module to journey
@@ -649,6 +683,16 @@ function JourneyBuilderView({
           </li>
         </ol>
       </div>
+
+      <AddModuleToJourneyDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        available={availableModules}
+        onPick={(moduleId, moduleTitle) => {
+          addModuleToJourney(journey.id, moduleId);
+          toast.success(`Added "${moduleTitle}" to journey`);
+        }}
+      />
     </section>
   );
 }
@@ -657,7 +701,7 @@ function ModulesGrid({
   modules,
   emptyLabel,
 }: {
-  modules: TrainingModule[];
+  modules: ViewModule[];
   emptyLabel?: string;
 }) {
   if (!modules.length) {
