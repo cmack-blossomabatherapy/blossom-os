@@ -394,22 +394,34 @@ function ReadyState({
   return (
     <div className="space-y-5">
       {narrativeStatus === "pending" && (
-        <div className="rounded-2xl border border-[hsl(265_70%_55%/0.25)] bg-gradient-to-r from-[hsl(265_100%_98%)] to-white p-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white">
-              <Brain className="h-3 w-3" />
+        <div className="rounded-2xl border border-[hsl(265_70%_55%/0.25)] bg-gradient-to-r from-[hsl(265_100%_98%)] via-white to-white p-4 shadow-[0_8px_24px_-16px_hsl(265_60%_50%/0.35)]">
+          <div className="flex items-center gap-3">
+            <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-sm">
+              <Brain className="h-4 w-4" />
+              <span className="absolute inset-0 animate-ping rounded-xl bg-[hsl(265_70%_55%)] opacity-20" />
             </span>
-            <p className="text-[12px] font-medium text-[hsl(265_70%_55%)]">
-              {NARRATIVE_STEPS[narrativeStep]} — numbers below are final.
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-semibold text-[hsl(265_70%_55%)]">
+                {NARRATIVE_STEPS[narrativeStep]}
+              </p>
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                Numbers below are final — Blossom AI is drafting the narrative around them.
+              </p>
+            </div>
           </div>
         </div>
       )}
       {narrativeStatus === "error" && (
-        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 p-3">
-          <p className="text-[12px] font-medium text-amber-800">
-            AI narrative unavailable — deterministic numbers are still accurate below.
-          </p>
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50/60 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-[12.5px] font-semibold text-amber-900">AI narrative unavailable</p>
+              <p className="mt-0.5 text-[11.5px] text-amber-800/80">
+                Deterministic numbers, tables, and charts below are still accurate. You can retry by re-running the report.
+              </p>
+            </div>
+          </div>
         </div>
       )}
       {result.dataQuality && result.dataQuality.length > 0 && (
