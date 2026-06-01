@@ -504,7 +504,9 @@
   }
   .os-glass-input:focus {
     border-color: hsl(265 70% 70%);
-    box-shadow: 0 0 0 4px hsl(265 85% 90% / 0.6);
+    outline: 2px solid hsl(265 85% 90% / 0.7);
+    outline-offset: 1px;
+    box-shadow: 0 1px 0 hsl(0 0% 100%) inset, 0 8px 20px -16px hsl(265 60% 50% / 0.12);
   }
   .os-glass-icon {
     @apply relative grid h-11 w-11 place-items-center rounded-2xl transition-all;
