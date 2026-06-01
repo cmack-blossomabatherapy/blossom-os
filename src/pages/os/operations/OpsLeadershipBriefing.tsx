@@ -184,9 +184,9 @@ export default function OpsLeadershipBriefing() {
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
-                  posture.tone === "healthy" ? "bg-emerald-400" : posture.tone === "attention" ? "bg-amber-400" : posture.tone === "risk" ? "bg-orange-400" : "bg-rose-400")} />
+                  posture.tone === "healthy" ? "bg-emerald-400" : posture.tone === "attention" ? "bg-amber-400" : posture.tone === "risk" ? "bg-rose-400" : "bg-rose-400")} />
                 <span className={cn("relative inline-flex h-2 w-2 rounded-full",
-                  posture.tone === "healthy" ? "bg-emerald-500" : posture.tone === "attention" ? "bg-amber-500" : posture.tone === "risk" ? "bg-orange-500" : "bg-rose-500")} />
+                  posture.tone === "healthy" ? "bg-emerald-500" : posture.tone === "attention" ? "bg-amber-500" : posture.tone === "risk" ? "bg-rose-500" : "bg-rose-500")} />
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Operational readiness · {posture.label}</span>
             </div>
@@ -290,7 +290,7 @@ export default function OpsLeadershipBriefing() {
             <ul className="space-y-2">
               {ops.risks.filter((r) => r.tone === "blocked" || r.tone === "risk").map((r) => (
                 <li key={r.id} className="flex items-start gap-3 rounded-xl border border-border/60 p-3">
-                  <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", r.tone === "blocked" ? "text-rose-500" : "text-orange-500")} />
+                  <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", r.tone === "blocked" ? "text-rose-500" : "text-rose-500")} />
                   <div className="min-w-0 flex-1">
                     <div className="text-[13.5px] font-medium text-foreground">{r.title}</div>
                     <div className="text-[12px] text-muted-foreground">{r.detail} · owner: {r.area} lead</div>
@@ -325,7 +325,7 @@ export default function OpsLeadershipBriefing() {
           <div className="grid gap-4 sm:grid-cols-3">
             {readiness.map((r) => {
               const tone: HealthTone = r.value >= 90 ? "healthy" : r.value >= 75 ? "attention" : r.value >= 60 ? "risk" : "blocked";
-              const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+              const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
               return (
                 <div key={r.label} className="rounded-xl border border-border/60 bg-card p-4">
                   <div className="flex items-center justify-between text-[12.5px]">

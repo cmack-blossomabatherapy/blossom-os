@@ -38,7 +38,7 @@ const SYSTEM_LINKS = [
   { name: "Teams",      url: "https://teams.microsoft.com",      hue: "from-indigo-500 to-blue-600" },
   { name: "Outlook",    url: "https://outlook.office.com",       hue: "from-sky-500 to-blue-600" },
   { name: "SharePoint", url: "https://www.office.com/launch/sharepoint", hue: "from-blue-500 to-cyan-600" },
-  { name: "Tapcheck",   url: "https://www.tapcheck.com",         hue: "from-amber-500 to-orange-600" },
+  { name: "Tapcheck",   url: "https://www.tapcheck.com",         hue: "from-amber-500 to-rose-600" },
   { name: "Jivetel",    url: "https://www.jivetel.com",          hue: "from-rose-500 to-pink-600" },
 ];
 

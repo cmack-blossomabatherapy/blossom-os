@@ -650,7 +650,7 @@ export default function OpsLeadershipUpdates() {
                   <div
                     className={cn(
                       "h-full rounded-full",
-                      c.adoption >= 80 ? "bg-emerald-500/70" : c.adoption >= 60 ? "bg-amber-500/70" : "bg-orange-500/70",
+                      c.adoption >= 80 ? "bg-emerald-500/70" : c.adoption >= 60 ? "bg-amber-500/70" : "bg-rose-500/70",
                     )}
                     style={{ width: `${Math.max(4, c.adoption)}%` }}
                   />

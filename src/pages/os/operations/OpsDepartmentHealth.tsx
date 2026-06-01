@@ -258,9 +258,9 @@ export default function OpsDepartmentHealth() {
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
-                  posture.tone === "healthy" ? "bg-emerald-400" : posture.tone === "attention" ? "bg-amber-400" : posture.tone === "risk" ? "bg-orange-400" : "bg-rose-400")} />
+                  posture.tone === "healthy" ? "bg-emerald-400" : posture.tone === "attention" ? "bg-amber-400" : posture.tone === "risk" ? "bg-rose-400" : "bg-rose-400")} />
                 <span className={cn("relative inline-flex h-2 w-2 rounded-full",
-                  posture.tone === "healthy" ? "bg-emerald-500" : posture.tone === "attention" ? "bg-amber-500" : posture.tone === "risk" ? "bg-orange-500" : "bg-rose-500")} />
+                  posture.tone === "healthy" ? "bg-emerald-500" : posture.tone === "attention" ? "bg-amber-500" : posture.tone === "risk" ? "bg-rose-500" : "bg-rose-500")} />
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Organizational posture · {posture.label}</span>
             </div>
@@ -268,7 +268,7 @@ export default function OpsDepartmentHealth() {
             <div className="flex flex-wrap items-center gap-4 text-[12px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {counts.healthy} healthy</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {counts.attention} attention</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" /> {counts.risk} at risk</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> {counts.risk} at risk</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> {counts.blocked} blocked</span>
             </div>
           </div>
@@ -309,7 +309,7 @@ export default function OpsDepartmentHealth() {
             const Icon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
             const iconCls = trend === "up" ? "text-emerald-600" : trend === "down" ? "text-rose-600" : "text-muted-foreground";
             const tone = toneToHealth(d.tone);
-            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
             return (
               <Link
                 key={d.id}
@@ -342,7 +342,7 @@ export default function OpsDepartmentHealth() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stability.map((s) => {
             const tone: HealthTone = s.value >= 88 ? "healthy" : s.value >= 75 ? "attention" : s.value >= 60 ? "risk" : "blocked";
-            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
             return (
               <div key={s.label} className="rounded-xl border border-border/60 bg-card p-3">
                 <div className="flex items-center justify-between text-[12.5px]">
@@ -364,7 +364,7 @@ export default function OpsDepartmentHealth() {
           <div className="space-y-2.5">
             {workflows.map((w) => {
               const tone: HealthTone = w.value >= 88 ? "healthy" : w.value >= 75 ? "attention" : w.value >= 60 ? "risk" : "blocked";
-              const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+              const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
               return (
                 <div key={w.label}>
                   <div className="flex items-center justify-between text-[12.5px]">
@@ -431,7 +431,7 @@ export default function OpsDepartmentHealth() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <ShieldAlert className={cn("size-3.5", r.severity === "blocked" ? "text-rose-500" : r.severity === "risk" ? "text-orange-500" : "text-amber-500")} />
+                      <ShieldAlert className={cn("size-3.5", r.severity === "blocked" ? "text-rose-500" : r.severity === "risk" ? "text-rose-500" : "text-amber-500")} />
                       <div className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{r.dept}</div>
                     </div>
                     <div className="mt-1 text-[13.5px] font-medium text-foreground">{r.title}</div>

@@ -10,7 +10,7 @@ const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",
   attention: "bg-amber-500",
-  risk: "bg-orange-500",
+  risk: "bg-rose-500",
   blocked: "bg-rose-500",
   neutral: "bg-muted-foreground/50",
 };
@@ -397,7 +397,7 @@ export default function OrganizationalHealth() {
           {[
             { label: "Healthy", value: counts.healthy, color: "text-emerald-600" },
             { label: "Attention", value: counts.attention, color: "text-amber-600" },
-            { label: "At Risk", value: counts.risk, color: "text-orange-600" },
+            { label: "At Risk", value: counts.risk, color: "text-rose-600" },
             { label: "Critical", value: counts.blocked, color: "text-rose-600" },
           ].map((c) => (
             <div key={c.label} className="rounded-xl border border-border/60 bg-background/40 p-3">

@@ -240,9 +240,9 @@ export default function OpsWorkflowRisks() {
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
-                  orgStatus === "Stable" ? "bg-emerald-400" : orgStatus === "Monitor" ? "bg-amber-400" : orgStatus === "At Risk" ? "bg-orange-400" : "bg-rose-400")} />
+                  orgStatus === "Stable" ? "bg-emerald-400" : orgStatus === "Monitor" ? "bg-amber-400" : orgStatus === "At Risk" ? "bg-rose-400" : "bg-rose-400")} />
                 <span className={cn("relative inline-flex h-2 w-2 rounded-full",
-                  orgStatus === "Stable" ? "bg-emerald-500" : orgStatus === "Monitor" ? "bg-amber-500" : orgStatus === "At Risk" ? "bg-orange-500" : "bg-rose-500")} />
+                  orgStatus === "Stable" ? "bg-emerald-500" : orgStatus === "Monitor" ? "bg-amber-500" : orgStatus === "At Risk" ? "bg-rose-500" : "bg-rose-500")} />
               </span>
               <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Workflow posture · {orgStatus}</span>
             </div>
@@ -250,7 +250,7 @@ export default function OpsWorkflowRisks() {
             <div className="flex flex-wrap items-center gap-4 text-[12px] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {counts.Stable} stable</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {counts.Monitor} monitor</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-orange-500" /> {counts["At Risk"]} at risk</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> {counts["At Risk"]} at risk</span>
               <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-rose-500" /> {counts.Critical} critical</span>
             </div>
           </div>
@@ -290,7 +290,7 @@ export default function OpsWorkflowRisks() {
             const tone = statusTone[w.status];
             const Trend = w.trend === "up" ? TrendingUp : w.trend === "down" ? TrendingDown : Activity;
             const trendCls = w.trend === "up" ? "text-emerald-600" : w.trend === "down" ? "text-rose-600" : "text-muted-foreground";
-            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
             return (
               <div key={w.id} className="rounded-2xl border border-border/70 bg-card p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -326,7 +326,7 @@ export default function OpsWorkflowRisks() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Flame className={cn("size-3.5", b.severity === "blocked" ? "text-rose-500" : b.severity === "risk" ? "text-orange-500" : "text-amber-500")} />
+                      <Flame className={cn("size-3.5", b.severity === "blocked" ? "text-rose-500" : b.severity === "risk" ? "text-rose-500" : "text-amber-500")} />
                       <div className="text-[13.5px] font-medium text-foreground">{b.title}</div>
                     </div>
                     <div className="mt-1 text-[12.5px] text-muted-foreground">{b.impact}</div>
@@ -366,7 +366,7 @@ export default function OpsWorkflowRisks() {
                             "rounded-full border px-2.5 py-1 text-[11.5px] font-medium",
                             idx === 0
                               ? d.severity === "blocked" ? "bg-rose-50 text-rose-700 border-rose-200/70"
-                                : d.severity === "risk" ? "bg-orange-50 text-orange-700 border-orange-200/70"
+                                : d.severity === "risk" ? "bg-rose-50 text-rose-700 border-rose-200/70"
                                 : "bg-amber-50 text-amber-700 border-amber-200/70"
                               : "bg-card text-foreground/80 border-border/60",
                           )}>
@@ -391,7 +391,7 @@ export default function OpsWorkflowRisks() {
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {readiness.map((r) => {
             const tone = statusTone[r.status];
-            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-orange-500" : "bg-rose-500";
+            const barCls = tone === "healthy" ? "bg-emerald-500" : tone === "attention" ? "bg-amber-500" : tone === "risk" ? "bg-rose-500" : "bg-rose-500";
             return (
               <div key={r.area} className="rounded-xl border border-border/60 bg-card p-3">
                 <div className="flex items-center justify-between">
@@ -437,7 +437,7 @@ export default function OpsWorkflowRisks() {
           <ul className="space-y-2">
             {escalations.map((e, i) => (
               <li key={i} className="flex items-start gap-3 rounded-xl border border-border/60 p-3">
-                <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", e.tone === "blocked" ? "text-rose-500" : e.tone === "risk" ? "text-orange-500" : "text-amber-500")} />
+                <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", e.tone === "blocked" ? "text-rose-500" : e.tone === "risk" ? "text-rose-500" : "text-amber-500")} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[13.5px] font-medium text-foreground">{e.title}</div>
                   <div className="text-[12px] text-muted-foreground">Impact: {e.impact} · Window: {e.window}</div>

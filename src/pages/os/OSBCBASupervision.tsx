@@ -16,7 +16,7 @@ type Status = "on_track" | "watch" | "needs" | "urgent";
 const statusMeta: Record<Status, { label: string; dot: string; ring: string; text: string }> = {
   on_track: { label: "On track",        dot: "bg-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-500/30", text: "text-emerald-700 dark:text-emerald-300" },
   watch:    { label: "Watch",           dot: "bg-amber-500",   ring: "ring-amber-200 dark:ring-amber-500/30",     text: "text-amber-700 dark:text-amber-300" },
-  needs:    { label: "Needs supervision", dot: "bg-orange-500", ring: "ring-orange-200 dark:ring-orange-500/30", text: "text-orange-700 dark:text-orange-300" },
+  needs:    { label: "Needs supervision", dot: "bg-rose-500", ring: "ring-rose-200 dark:ring-rose-500/30", text: "text-rose-700 dark:text-rose-300" },
   urgent:   { label: "Urgent",          dot: "bg-rose-500",    ring: "ring-rose-200 dark:ring-rose-500/30",       text: "text-rose-700 dark:text-rose-300" },
 };
 
@@ -465,7 +465,7 @@ export default function OSBCBASupervision() {
             {rows.filter((r) => r.reasons.length > 0).slice(0, 8).map((r) => (
               <Card key={r.client.clientName} onClick={() => setActive(r.client.clientName)} className="p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className={cn("mt-0.5 size-4", r.status === "urgent" ? "text-rose-500" : r.status === "needs" ? "text-orange-500" : "text-amber-500")} />
+                  <AlertTriangle className={cn("mt-0.5 size-4", r.status === "urgent" ? "text-rose-500" : r.status === "needs" ? "text-rose-500" : "text-amber-500")} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">{r.client.clientName}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{r.reasons[0]?.label}</p>

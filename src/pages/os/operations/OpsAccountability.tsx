@@ -375,14 +375,14 @@ export default function OpsAccountability() {
                   orgStatus === "strong" && "bg-emerald-400",
                   orgStatus === "stable" && "bg-sky-400",
                   orgStatus === "support" && "bg-amber-400",
-                  orgStatus === "attention" && "bg-orange-400",
+                  orgStatus === "attention" && "bg-rose-400",
                 )} />
                 <span className={cn(
                   "relative inline-flex h-2.5 w-2.5 rounded-full",
                   orgStatus === "strong" && "bg-emerald-500",
                   orgStatus === "stable" && "bg-sky-500",
                   orgStatus === "support" && "bg-amber-500",
-                  orgStatus === "attention" && "bg-orange-500",
+                  orgStatus === "attention" && "bg-rose-500",
                 )} />
               </span>
               <div>
@@ -469,7 +469,7 @@ export default function OpsAccountability() {
                     <div
                       className={cn(
                         "h-full rounded-full",
-                        r.score >= 85 ? "bg-emerald-500" : r.score >= 70 ? "bg-amber-500" : "bg-orange-500",
+                        r.score >= 85 ? "bg-emerald-500" : r.score >= 70 ? "bg-amber-500" : "bg-rose-500",
                       )}
                       style={{ width: `${Math.min(100, r.score)}%` }}
                     />

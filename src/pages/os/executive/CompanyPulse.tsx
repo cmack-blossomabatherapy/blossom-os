@@ -20,7 +20,7 @@ const STATES = [
 const TONE_DOT: Record<HealthTone, string> = {
   healthy: "bg-emerald-500",
   attention: "bg-amber-500",
-  risk: "bg-orange-500",
+  risk: "bg-rose-500",
   blocked: "bg-rose-500",
   neutral: "bg-muted-foreground/50",
 };
@@ -52,7 +52,7 @@ function dirTint(d: Direction, positiveDown = false) {
   const good = positiveDown ? d === "down" : d === "up";
   const bad = positiveDown ? d === "up" : d === "down";
   if (good) return "text-emerald-600 bg-emerald-50";
-  if (bad) return "text-orange-600 bg-orange-50";
+  if (bad) return "text-rose-600 bg-rose-50";
   return "text-muted-foreground bg-muted/60";
 }
 
@@ -336,7 +336,7 @@ export default function CompanyPulse() {
                 "absolute inset-x-0 top-0 h-0.5",
                 s.overall === "healthy" && "bg-emerald-400/70",
                 s.overall === "attention" && "bg-amber-400/80",
-                s.overall === "risk" && "bg-orange-400/80",
+                s.overall === "risk" && "bg-rose-400/80",
                 s.overall === "blocked" && "bg-rose-400/80",
               )} />
               <div className="flex items-center justify-between">
@@ -383,7 +383,7 @@ export default function CompanyPulse() {
                     "h-1 rounded-full transition-all",
                     f.tone === "healthy" && "bg-emerald-400",
                     f.tone === "attention" && "bg-amber-400",
-                    f.tone === "risk" && "bg-orange-400",
+                    f.tone === "risk" && "bg-rose-400",
                     f.tone === "blocked" && "bg-rose-400",
                   )}
                   style={{ width: `${f.pct}%` }}

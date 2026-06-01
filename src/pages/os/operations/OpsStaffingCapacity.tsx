@@ -356,14 +356,14 @@ export default function OpsStaffingCapacity() {
                   "absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping",
                   orgReadiness === "stable" && "bg-emerald-400",
                   orgReadiness === "monitor" && "bg-amber-400",
-                  orgReadiness === "pressure" && "bg-orange-400",
+                  orgReadiness === "pressure" && "bg-rose-400",
                   orgReadiness === "critical" && "bg-rose-400",
                 )} />
                 <span className={cn(
                   "relative inline-flex h-2.5 w-2.5 rounded-full",
                   orgReadiness === "stable" && "bg-emerald-500",
                   orgReadiness === "monitor" && "bg-amber-500",
-                  orgReadiness === "pressure" && "bg-orange-500",
+                  orgReadiness === "pressure" && "bg-rose-500",
                   orgReadiness === "critical" && "bg-rose-500",
                 )} />
               </span>
@@ -411,7 +411,7 @@ export default function OpsStaffingCapacity() {
                       "h-full rounded-full",
                       s.readiness === "stable" && "bg-emerald-500",
                       s.readiness === "monitor" && "bg-amber-500",
-                      s.readiness === "pressure" && "bg-orange-500",
+                      s.readiness === "pressure" && "bg-rose-500",
                       s.readiness === "critical" && "bg-rose-500",
                     )}
                     style={{ width: `${s.pressureScore}%` }}

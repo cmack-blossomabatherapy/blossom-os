@@ -66,7 +66,7 @@ function Bar({ pct, tone }: { pct: number; tone: HealthTone }) {
       : tone === "attention"
       ? "bg-amber-500/70"
       : tone === "risk"
-      ? "bg-orange-500/70"
+      ? "bg-rose-500/70"
       : tone === "blocked"
       ? "bg-rose-500/70"
       : "bg-muted-foreground/40";

@@ -15,7 +15,7 @@ function initials(name: string) {
 
 const GRADIENTS = [
   "from-sky-400 to-blue-600", "from-emerald-400 to-teal-600", "from-violet-400 to-purple-600",
-  "from-rose-400 to-pink-600", "from-amber-400 to-orange-600", "from-cyan-400 to-blue-500",
+  "from-rose-400 to-pink-600", "from-amber-400 to-rose-600", "from-cyan-400 to-blue-500",
 ];
 function gradientFor(id: string) {
   let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
