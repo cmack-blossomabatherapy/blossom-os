@@ -1,41 +1,37 @@
-## Problem
+# Device Inventory + NFC Button Cleanup
 
-The Training Academy and Training Management Center are reading from two completely different data stores:
+## 1. Remove "Generate NFC" button
+In `src/pages/os/users/EmployeeProfile.tsx` (~line 1914), remove only the quick-action "Generate NFC" button in the profile header. The NFC tab and its generation flow inside the profile stay intact.
 
-- **Academy** (`src/lib/training/academyData.ts`) — reactive store with the real **51-module State Director journey**, deep content (overview, SOP, Tango, checklist, resources), and localStorage persistence. This is what users see.
-- **Training Management Center** (`src/lib/hr/trainingCenterData.ts`) — a static file with only **5 modules** for State Director and no deep content. Editing it changes nothing the user sees.
+## 2. New Device Inventory page
+Create `src/pages/admin/DeviceInventory.tsx`:
+- Reads/writes the existing `device_inventory` table via Supabase
+- Joins `employee_devices` to show current assignee per device
+- KPI tiles: Total / Assigned / Available / Retired
+- Searchable + filterable table (status, type, location)
+- Actions: Add device, Edit, Assign to employee, Unassign, Retire, Delete
+- Apple-style calm UI, semantic tokens only
 
-The sub-section editors on `OSTrainingManage.tsx` already write to the Academy store, but the Management Center page itself doesn't read or write to it.
+## 3. Role-gated route
+In `src/App.tsx`, add `/admin/device-inventory` gated to `super_admin` and `hr_team` only.
 
-## Fix
+## 4. Sidebar navigation
+In `src/pages/os/OSShell.tsx`, add a "Device Inventory" entry (icon: `MonitorSmartphone`) under **HR Operations** in:
+- `NAV_SECTIONS` (super_admin view)
+- `HR_TEAM_SECTIONS` (hr_team view)
 
-### 1. Unify the journey/module source
-- `src/lib/training/academyData.ts`: add optional `assignedCount` and `completionPct` fields to `RoleJourney` so the Management Center can use the same type without an adapter.
-- `src/pages/hr/TrainingManagementCenter.tsx`:
-  - Replace `trainingJourneys` / `trainingModules` imports from `@/lib/hr/trainingCenterData` with `useAcademy`, `getJourneyForRole`, `getTraining`, and the journey list from `@/lib/training/academyData`.
-  - Subscribe via `useAcademy()` so edits made anywhere update live.
-  - `selectedJourney` lookup → use the academy journeys list (filter by role keys).
-  - `JourneyBuilderView` module resolution → `getTraining(id)` instead of `trainingModules.find`.
-  - Keep the existing UI shell, KPIs, filters, and layout — only swap the data plumbing.
+Hidden from all other roles.
 
-### 2. Make the Journey Builder actually edit
-Currently "Add module to journey" only shows a toast. Wire it to the real store:
-- Add module: open a searchable picker over all academy trainings (excluding ones already in the journey) → call `addModuleToJourney(journeyId, moduleId)`.
-- Remove module from journey → call `removeModuleFromJourney(journeyId, moduleId)`.
-- Reorder modules (drag handles or up/down) → call `setJourneyModules(journeyId, nextIds)`.
-- Update module title/minutes/type inline → call `updateTraining`.
-
-### 3. Keep non-overlapping data alone
-- `trainingCenterData.ts` keeps the unrelated exports it still owns (`trainingAssignments`, `trainingSops`, `trainingTangos`, `trainingCategories`, `trainingTemplates`) so the rest of the Management Center keeps working.
-- Remove only the now-unused `trainingModules` and `trainingJourneys` exports from `trainingCenterData.ts` once the page is migrated.
-
-### 4. Audit pass
-After the swap, verify:
-- State Director journey in Management shows the same 51 modules as the Academy.
-- All 7 role journeys (BCBA, RBT, Intake, Auth, Scheduling, QA, State Director, etc.) reflect the academy data.
-- Editing a module's overview/SOP/Tango/checklist/resources from `OSTrainingManage` is visible in both the Academy and the Management Center.
+## 5. Connect it all
+- **Assign Device button** in user management (`DevicesTab`) → already writes to `device_inventory` + `employee_devices`; verify the dialog pulls from the same `device_inventory` rows the new page manages (single source of truth)
+- **Devices tab** in user profile → already reads `employee_devices` joined to `device_inventory`; any add/retire on the new page immediately reflects there
+- New page's "Assign" action reuses the same assignment write path as the user-management Assign Device button
 
 ## Out of scope
-- No backend migration — the Academy store stays on its existing localStorage-backed reactive store for now.
-- No changes to the Academy page UI.
-- `assignedCount` / `completionPct` will display as 0 / `—` until a real assignments source is wired (separate ticket).
+- No schema changes (tables already exist)
+- No changes to the NFC tab itself or NFC generation logic
+- No changes to the Assign Device dialog's UX beyond pointing at the shared inventory source
+
+## Technical notes
+- Module key for navigation gating: `user_management` (or add `device_inventory` if you'd prefer a dedicated key — let me know)
+- All inventory mutations go through Supabase client with RLS; HR Team + Super Admin policies on `device_inventory` should already allow full CRUD — will verify and flag if a migration is needed
