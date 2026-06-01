@@ -1345,6 +1345,97 @@ function AIGenerateDialog({
   );
 }
 
+/* ----------------------- Add-module picker ----------------------- */
+
+function AddModuleToJourneyDialog({
+  open,
+  onOpenChange,
+  available,
+  onPick,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  available: ViewModule[];
+  onPick: (moduleId: string, moduleTitle: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return available;
+    return available.filter(
+      (m) =>
+        m.title.toLowerCase().includes(term) ||
+        m.description.toLowerCase().includes(term) ||
+        m.category.toLowerCase().includes(term) ||
+        m.type.toLowerCase().includes(term),
+    );
+  }, [available, q]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Add module to journey</DialogTitle>
+          <DialogDescription>
+            Pick from any module in the academy library. Edits stay in sync with the Training Academy.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search modules…"
+            className="h-10 rounded-xl pl-9 text-[13px]"
+            autoFocus
+          />
+        </div>
+        <div className="max-h-[360px] overflow-y-auto rounded-xl border border-border/60">
+          {filtered.length === 0 ? (
+            <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+              {available.length === 0
+                ? "Every module in the library is already in this journey."
+                : "No modules match your search."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {filtered.map((m) => {
+                const Icon = TYPE_ICON[m.type] ?? FileText;
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onPick(m.id, m.title);
+                        onOpenChange(false);
+                        setQ("");
+                      }}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+                    >
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium text-foreground">
+                          {m.title}
+                        </p>
+                        <p className="truncate text-[11.5px] text-muted-foreground">
+                          {m.type} · {m.estimatedMinutes} min · {m.category}
+                        </p>
+                      </div>
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CreateModuleDialog({
   open,
   onOpenChange,
