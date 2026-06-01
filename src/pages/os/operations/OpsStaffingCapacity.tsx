@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 type Readiness = "stable" | "monitor" | "pressure" | "critical";
 const TONE: Record<Readiness, HealthTone> = {
@@ -50,6 +50,7 @@ export default function OpsStaffingCapacity() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const rec = useRecruitingCandidates();
   const cr = useCentralReachOps();
   const ops = useOpsIntelligence();
@@ -62,7 +63,7 @@ export default function OpsStaffingCapacity() {
       { code: "TN", data: tn },
       { code: "MD", data: md },
     ],
-    [ga, nc, va, tn, md],
+    [ga, nc, va, tn, md, nj],
   );
 
   // ─── Per-state pressure score ─────────────────────────

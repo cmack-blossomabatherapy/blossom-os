@@ -32,7 +32,7 @@ interface Row {
 
 const roleLabel = (r: AppRole) => ROLE_META.find((m) => m.key === r)?.label ?? r;
 const ROLE_GROUPS = ["Leadership", "Operations", "Pipeline", "Service", "People", "Support", "Legacy"] as const;
-const EMPLOYEE_STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const EMPLOYEE_STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 export default function OSUserManagement() {
   const { toast } = useToast();

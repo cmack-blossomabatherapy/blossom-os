@@ -1,0 +1,1 @@
+ALTER TYPE public.recruiting_state ADD VALUE IF NOT EXISTS 'NJ';

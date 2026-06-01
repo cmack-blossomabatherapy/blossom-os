@@ -52,6 +52,7 @@ export default function ExecutiveBriefing() {
   const tn = useStateWorkforce("TN");
   const va = useStateWorkforce("VA");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const wf = useMemo(
     () => [
       { state: STATES[0], data: ga },

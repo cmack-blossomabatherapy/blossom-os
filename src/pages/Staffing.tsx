@@ -106,7 +106,7 @@ type StaffingRecord = {
 
 type SchedulingRecord = { id: string; clientId: string; clientName: string; status: "Ready for Scheduling" | "Pending Schedule"; assignedRbt: string; requiredHours: number };
 
-const states = ["All", "GA", "NC", "TN", "VA", "MD"];
+const states = ["All", "GA", "NC", "VA", "TN", "MD", "NJ"];
 const owners = ["All", "Maria L.", "Dante R.", "Priya S.", "Noelle C.", "Marcus H."];
 const bcbaNames = ["Dr. Kim", "Dr. Lee", "Dr. Patel", "Dr. Moore", "Dr. Price", "Dr. Nguyen"];
 const statusOptions: ("All" | StaffingStatus)[] = ["All", "Staffing Needed", "Matching in Progress", "Confirmation Pending", "RBT Assigned", "Ready for Scheduling", "Restaffing Needed", "No Match Available"];

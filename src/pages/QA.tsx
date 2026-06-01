@@ -110,7 +110,7 @@ interface StarterQaSettings {
 const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA Team", "Clinical Director"];
 const BCBAS = ["Dr. Mia Hart", "Elena Ruiz", "Jordan Klein", "Nora Patel", "Caleb Stone", "Avery Brooks"];
 const RBTS = ["Sofia Miles", "Noah Grant", "Camila Reed", "Ethan Fox", "Maya Chen", "Liam Price", "Harper Cole"];
-const STATES = ["GA", "NC", "TN", "VA", "MD"];
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const ISSUE_TYPES: IssueType[] = ["None", "Missing Treatment Plan", "Missing Docs", "Clinical Accuracy", "Formatting", "Signatures", "NoteGuard Flag", "Amerigroup Issue", "Missing Notes", "Progress Report Risk"];
 const CHECKLIST: { key: ChecklistKey; label: string }[] = [
   { key: "planReceived", label: "Treatment plan received" },

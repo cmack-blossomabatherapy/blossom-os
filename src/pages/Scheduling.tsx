@@ -89,7 +89,7 @@ const daysUntil = (date?: string) => date ? Math.ceil((new Date(date).getTime() 
 const daysFrom = (date?: string | null) => date ? Math.max(0, Math.floor((today.getTime() - new Date(date).getTime()) / 86400000)) : 0;
 const avg = (values: number[]) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
 
-const states = ["GA", "NC", "TN", "VA", "MD"];
+const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const schedulers = ["Alyssa Carter", "Monica Ruiz", "Kayla Morris", "Jordan Mills", "Scheduling Team"];
 const rbts = ["Taylor S.", "Jordan M.", "Riley B.", "Casey P.", "Morgan K.", "Quinn D.", "Samira W.", "No RBT Assigned"];
 const bcbas = ["Dr. Kim", "Dr. Patel", "Avery Stone", "Maya Reynolds", "Dr. Lee", "Clinical Team"];

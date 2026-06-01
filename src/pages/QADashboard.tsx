@@ -19,7 +19,7 @@ type KpiKey = "awaiting" | "inReview" | "issues" | "ready" | "overdue" | "notes"
 interface QARecord {
   id: string;
   client: string;
-  state: "GA" | "NC" | "TN" | "VA" | "MD";
+  state: "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
   stage: string;
   payor: string;
   bcba: string;

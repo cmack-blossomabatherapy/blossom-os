@@ -29,7 +29,7 @@ const ALL_ROLES: OSRole[] = [
   "state_director","operations_leadership","executive_leadership","marketing_team",
 ];
 
-const STATES = ["GA","NC","VA","TN","MD","FL","TX","SC"];
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 export default function ResourceManagement() {
   const [items, setItems] = useState<Resource[]>(seedResources);

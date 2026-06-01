@@ -110,7 +110,7 @@ function deriveOrientation(status: string | undefined): LegacyCandidate["orienta
   }
 }
 
-const STATES: LegacyState[] = ["GA", "NC", "TN", "VA", "MD"];
+const STATES: LegacyState[] = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const ROLES: LegacyRole[] = ["RBT", "BCBA"];
 
 function coerceState(s: string): LegacyState {

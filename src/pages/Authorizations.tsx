@@ -109,7 +109,7 @@ const daysUntil = (date?: string) => (date ? Math.ceil((new Date(date).getTime()
 const avg = (values: number[]) => (values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0);
 
 const statuses: WorkspaceStatus[] = ["Awaiting Submission", "Submitted", "Approved", "Denied", "Expiring Soon", "In QA Review", "Missing Documentation", "Flaked Client"];
-const states = ["GA", "NC", "TN", "VA", "MD"];
+const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const coordinators = ["Kayla Morris", "Riki Hall", "Nina Brooks", "Marcus Lee", "Auth Team"];
 const panelTabs: PanelTab[] = ["Overview", "Submission", "Documents", "QA Connection", "Reauth", "Payor Rules", "Client Impact", "Tasks", "Timeline"];
 

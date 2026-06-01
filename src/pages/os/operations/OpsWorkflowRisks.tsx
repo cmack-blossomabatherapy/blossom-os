@@ -7,7 +7,7 @@ import { daysUntil } from "@/data/authorizations";
 import { Sparkles, ArrowRight, TrendingUp, TrendingDown, AlertTriangle, GitBranch, Activity, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 type Status = "Stable" | "Monitor" | "At Risk" | "Critical";
 const statusTone: Record<Status, HealthTone> = {
@@ -32,7 +32,8 @@ export default function OpsWorkflowRisks() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
-  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md };
+  const nj = useStateWorkforce("NJ");
+  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md, NJ: nj };
 
   const totalAuths = ops.auths.total || 1;
 

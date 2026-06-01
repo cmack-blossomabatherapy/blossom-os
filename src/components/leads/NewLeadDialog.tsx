@@ -33,7 +33,7 @@ interface NewLeadDialogProps {
 
 const sources: LeadSource[] = ["Website", "Phone", "Facebook", "Referral", "Ads", "Organic", "Digital", "Insurance"];
 const priorities: Priority[] = ["Hot", "Warm", "Cold"];
-const states = ["GA", "TX", "AZ", "FL", "CA", "NY", "NC", "VA", "TN", "OH"];
+const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const owners = ["Sarah M.", "James R.", "Maya P."];
 
 export function NewLeadDialog({ open, onOpenChange, onCreated }: NewLeadDialogProps) {

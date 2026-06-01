@@ -195,7 +195,7 @@ export default function Campaigns() {
     return Array.from(buckets.values()).sort((a, b) => b.count - a.count).slice(0, 6);
   }, []);
 
-  const states = ["GA", "NC", "TN", "VA", "MD"];
+  const states = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
   return (
     <MktgPage

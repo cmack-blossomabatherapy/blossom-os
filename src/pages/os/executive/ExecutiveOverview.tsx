@@ -68,6 +68,7 @@ export default function ExecutiveOverview() {
   const tn = useStateWorkforce("TN");
   const va = useStateWorkforce("VA");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const cr = useCentralReachOps({});
   const wf = useMemo(() => [
     { state: STATES[0], data: ga },

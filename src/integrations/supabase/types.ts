@@ -10577,6 +10577,7 @@ export type Database = {
         | "TX"
         | "SC"
         | "Other"
+        | "NJ"
       review_rating:
         | "exceeds"
         | "meets"
@@ -11279,6 +11280,7 @@ export const Constants = {
         "TX",
         "SC",
         "Other",
+        "NJ",
       ],
       review_rating: [
         "exceeds",

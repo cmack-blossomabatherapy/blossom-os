@@ -24,7 +24,7 @@ import {
 
 type Tone = "ok" | "warn" | "crit";
 
-const STATES = ["GA", "NC", "TN", "VA", "MD", "FL", "TX", "SC"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const ALL = "All";
 
 function toneClasses(t: Tone) {

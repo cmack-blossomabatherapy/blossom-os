@@ -15,7 +15,7 @@ import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { daysUntil, type AuthStage } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 const AUTH_LANE: AuthStage[] = [
   "Awaiting Submission",
@@ -69,8 +69,9 @@ export default function OpsCommandCenter() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const cr = useCentralReachOps({});
-  const wf = useMemo(() => [ga, nc, va, tn, md], [ga, nc, va, tn, md]);
+  const wf = useMemo(() => [ga, nc, va, tn, md, nj], [ga, nc, va, tn, md, nj]);
 
   // ---- Header signals ----
   const overallTone: HealthTone = ops.risks.some((r) => r.tone === "blocked")

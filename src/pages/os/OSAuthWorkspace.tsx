@@ -111,7 +111,7 @@ type AuthState = "awaiting" | "expiring" | "denied" | "missing" | "qa" | "approv
 type AuthCard = {
   id: string;
   client: string;
-  state: "GA" | "NC" | "TN" | "VA" | "MD";
+  state: "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
   payer: string;
   authType: "Initial Auth" | "Treatment Auth" | "Reassessment" | "Parent Training 97156";
   requestType: string;

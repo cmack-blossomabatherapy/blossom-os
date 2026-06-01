@@ -22,7 +22,7 @@ const DEPT_LINKS: Record<string, string> = {
   training: "/operations/training-adoption",
 };
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const toneToHealth = (t: OpsTone): HealthTone => t;
 
 function postureLabel(score: number) {
@@ -47,7 +47,8 @@ export default function OpsDepartmentHealth() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
-  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md };
+  const nj = useStateWorkforce("NJ");
+  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md, NJ: nj };
 
   const orgScore = Math.round(ops.depts.reduce((a, d) => a + d.score, 0) / Math.max(1, ops.depts.length));
   const posture = postureLabel(orgScore);

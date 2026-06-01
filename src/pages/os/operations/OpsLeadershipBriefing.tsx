@@ -6,7 +6,7 @@ import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { Sparkles, TrendingUp, TrendingDown, Minus, CheckCircle2, Clock, AlertTriangle, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 
 const toneToHealth = (t: OpsTone): HealthTone => t;
 
@@ -25,7 +25,8 @@ export default function OpsLeadershipBriefing() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
-  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md };
+  const nj = useStateWorkforce("NJ");
+  const wf = { GA: ga, NC: nc, VA: va, TN: tn, MD: md, NJ: nj };
 
   const now = new Date();
   const today = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });

@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
 
-type StateCode = "GA" | "NC" | "TN" | "VA" | "MD";
+type StateCode = "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
 type ScheduleStatus = "Pending Schedule" | "Schedule In Progress" | "Schedule Created" | "Pending Start Date" | "Ready to Activate" | "Active" | "Delayed";
 type CrStatus = "Missing" | "Entered" | "Verified";
 type DocStatus = "Missing" | "Generated" | "Sent" | "Verified";
@@ -63,7 +63,7 @@ type SchedulingRecord = {
 
 const ALL = "All";
 const today = new Date("2026-04-27T12:00:00Z");
-const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
+const states: StateCode[] = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const stages: ScheduleStatus[] = ["Pending Schedule", "Schedule In Progress", "Schedule Created", "Pending Start Date", "Ready to Activate", "Active", "Delayed"];
 const schedulers = ["Nina Patel", "Jordan Miles", "Avery Brooks", "Sam Rivera", "Taylor Quinn"];
 

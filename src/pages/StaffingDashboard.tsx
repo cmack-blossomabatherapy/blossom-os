@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-type StateCode = "GA" | "NC" | "TN" | "VA" | "MD";
+type StateCode = "GA" | "NC" | "VA" | "TN" | "MD" | "NJ";
 type LocationType = "Clinic" | "Home" | "Hybrid";
 type StaffingStatus = "Staffing Needed" | "Matching in Progress" | "Offer / Confirmation Pending" | "RBT Assigned" | "Restaffing Needed" | "No Match Available" | "Ready for Scheduling";
 type Urgency = "Routine" | "Elevated" | "High" | "Critical";
@@ -52,7 +52,7 @@ const STAFFING_RBTS_KEY = "blossom.staffing.rbts.v1";
 const STAFFING_MAP_STATE_KEY = "blossom.staffing.map-state.v1";
 const auditWeights = { region: 18, availability: 35, compliance: 14, capacity: 25 };
 const today = new Date("2026-04-27T12:00:00Z");
-const states: StateCode[] = ["GA", "NC", "TN", "VA", "MD"];
+const states: StateCode[] = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 const statuses: StaffingStatus[] = ["Staffing Needed", "Matching in Progress", "Offer / Confirmation Pending", "RBT Assigned", "Restaffing Needed", "No Match Available", "Ready for Scheduling"];
 const owners = ["Nina Patel", "Jordan Miles", "Avery Brooks", "Sam Rivera", "Taylor Quinn"];
 const bcbas = ["Dr. Kim", "Dr. Patel", "Dr. Lee", "Dr. Stone", "Dr. Hayes"];

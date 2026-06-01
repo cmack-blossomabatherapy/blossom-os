@@ -22,7 +22,7 @@ interface Props {
   initial?: Partial<EvalStaff>;
 }
 
-const STATES = ["GA", "NC", "TN", "VA", "MD"];
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 interface InternalStaffOption {
   id: string;

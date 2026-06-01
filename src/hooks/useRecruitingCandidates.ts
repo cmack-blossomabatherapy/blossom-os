@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export type RecruitingRole = "RBT" | "BCBA" | "BT" | "Other";
-export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD" | "FL" | "TX" | "SC" | "Other";
+export type RecruitingState = "GA" | "NC" | "TN" | "VA" | "MD" | "NJ" | "FL" | "TX" | "SC" | "Other";
 export type PipelineStage =
   | "New Applicant"
   | "Phone Screen"

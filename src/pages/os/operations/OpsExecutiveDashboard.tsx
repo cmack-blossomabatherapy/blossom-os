@@ -18,7 +18,7 @@ import { useCentralReachOps } from "@/hooks/useCentralReachOps";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
-const STATES = ["GA", "NC", "VA", "TN", "MD"] as const;
+const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"] as const;
 const PRIORITIES_KEY = "ops.leadership.priorities.v1";
 
 function greeting(): string {
@@ -51,8 +51,9 @@ export default function OpsExecutiveDashboard() {
   const va = useStateWorkforce("VA");
   const tn = useStateWorkforce("TN");
   const md = useStateWorkforce("MD");
+  const nj = useStateWorkforce("NJ");
   const cr = useCentralReachOps({});
-  const wf = useMemo(() => [ga, nc, va, tn, md], [ga, nc, va, tn, md]);
+  const wf = useMemo(() => [ga, nc, va, tn, md, nj], [ga, nc, va, tn, md, nj]);
 
   // ---- Posture ----
   const overallTone: HealthTone = ops.risks.some((r) => r.tone === "blocked")
