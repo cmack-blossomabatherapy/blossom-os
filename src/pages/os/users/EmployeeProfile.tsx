@@ -1826,13 +1826,44 @@ export default function EmployeeProfilePage() {
   const [tab, setTab] = useState<TabId>("overview");
   const [openAssignNfc, setOpenAssignNfc] = useState(false);
   const [openAssignTraining, setOpenAssignTraining] = useState(false);
-  const [openAssignEval, setOpenAssignEval] = useState(false);
   const [openAssignDevice, setOpenAssignDevice] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   const member = useMemo(
     () => members.find((m) => m.id === employeeId || m.uuid === employeeId) ?? null,
     [members, employeeId],
   );
+
+  const sendInvite = async () => {
+    if (!member?.uuid) {
+      toast.error("Employee record is still loading.");
+      return;
+    }
+    if (!member.email) {
+      toast.error("Add an email to this user before sending an invite.");
+      return;
+    }
+
+    setSendingInvite(true);
+    const { data, error } = await supabase.functions.invoke("admin-employee-magic-link", {
+      body: { employeeId: member.uuid, siteUrl: window.location.origin },
+    });
+    setSendingInvite(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (data?.emailSent) {
+      toast.success(`Invite to Blossom OS sent to ${member.email}`);
+      return;
+    }
+    if (data?.magicLink) {
+      toast.warning("Invite created — email service unavailable, copy the link from the response.");
+      return;
+    }
+    toast.error(data?.emailError ?? "Invite could not be sent.");
+  };
 
   if (loading && !member) {
     return <OSShell><div className="mx-auto max-w-5xl p-10"><div className="h-40 animate-pulse rounded-2xl bg-muted/50" /></div></OSShell>;
@@ -1902,8 +1933,9 @@ export default function EmployeeProfilePage() {
                 <GraduationCap className="size-3.5" /> Assign training
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
-                onClick={() => { setTab("evaluations"); setOpenAssignEval(true); }}>
-                <ClipboardCheck className="size-3.5" /> Assign evaluation
+                onClick={sendInvite}
+                disabled={sendingInvite || !member.email || !member.uuid}>
+                {sendingInvite ? <RefreshCw className="size-3.5 animate-spin" /> : <Mail className="size-3.5" />} Invite to Blossom OS
               </Button>
               <Button size="sm" variant="outline" className="text-xs"
                 onClick={() => { setTab("devices"); setOpenAssignDevice(true); }}>
@@ -1935,7 +1967,7 @@ export default function EmployeeProfilePage() {
           {tab === "overview" && <OverviewTab m={member} jump={setTab} />}
           {tab === "employment" && <EmploymentTab m={member} />}
           {tab === "training" && <TrainingTab m={member} openAssign={openAssignTraining} setOpenAssign={setOpenAssignTraining} />}
-          {tab === "evaluations" && <EvaluationsTab m={member} openAssign={openAssignEval} setOpenAssign={setOpenAssignEval} />}
+          {tab === "evaluations" && <EvaluationsTab m={member} openAssign={false} setOpenAssign={() => undefined} />}
           {tab === "devices" && <DevicesTab m={member} openAssign={openAssignDevice} setOpenAssign={setOpenAssignDevice} />}
           {tab === "logins" && <LoginsTab m={member} />}
           {tab === "nfc" && <NfcTab m={member} openAssign={openAssignNfc} setOpenAssign={setOpenAssignNfc} jumpToEmployment={(fieldId) => {
