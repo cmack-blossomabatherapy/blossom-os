@@ -177,7 +177,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, avatarUrl, displayName } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -203,7 +203,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     params.set("panel", value ? "hidden" : "open");
     setSearchParams(params, { replace: true });
   };
-  const displayName = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "there";
+  
   const showOldVersion = platform("accessOldVersion");
 
   // Global ⌘K / Ctrl+K search shortcut
