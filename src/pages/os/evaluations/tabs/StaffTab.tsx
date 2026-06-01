@@ -48,12 +48,10 @@ const isTest = (s: EvalStaff) => (s.notes ?? "").startsWith("[TEST]");
 export default function StaffTab({
   data,
   onOpenStaff,
-  onAddStaff,
   initialView,
 }: {
   data: EvaluationsData;
   onOpenStaff: (id: string) => void;
-  onAddStaff: () => void;
   initialView?: SavedView;
 }) {
   const [query, setQuery] = useState("");
