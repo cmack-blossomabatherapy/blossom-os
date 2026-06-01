@@ -175,8 +175,11 @@ export default function AiReportView() {
             <Badge variant="secondary" className="rounded-full bg-white/70 text-[10px] font-semibold uppercase tracking-[0.16em] text-[hsl(265_70%_55%)]">
               <Sparkles className="mr-1 h-3 w-3" /> AI Report
             </Badge>
-            <Badge variant="outline" className="rounded-full border-white/60 bg-white/60 text-[10px] font-medium text-muted-foreground">
-              <FileSpreadsheet className="mr-1 h-3 w-3" /> {report.fileName} · {report.rowCount} rows
+            <Badge variant="outline" className="rounded-full border-white/60 bg-white/60 text-[10px] font-medium text-muted-foreground" title={report.files?.map((f) => `${f.name} (${f.rowCount} rows)`).join(", ")}>
+              <FileSpreadsheet className="mr-1 h-3 w-3" />
+              {report.files && report.files.length > 1
+                ? `${report.files.length} files · ${report.rowCount} rows`
+                : `${report.fileName} · ${report.rowCount} rows`}
             </Badge>
             {report.status === "generating" && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[10.5px] font-medium text-[hsl(265_70%_55%)]">
