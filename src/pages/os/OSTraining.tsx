@@ -187,8 +187,8 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/sop")}>
-                <Library className="mr-1.5 h-3.5 w-3.5" /> SOP Library
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resources")}>
+                <BookMarked className="mr-1.5 h-3.5 w-3.5" /> Resource Library
               </Button>
               {role === "super_admin" && (
                 <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/manage")}>
@@ -387,8 +387,7 @@ export default function OSTraining() {
                       </div>
                       <h3 className="mt-3 text-[14px] font-semibold leading-snug">{t.title}</h3>
                       <p className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{t.description}</p>
-                      <div className="mt-3 space-y-1.5">
-                        <Progress value={p.progressPercent} className="h-1" />
+                      <div className="mt-3">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" /> {t.estimatedMinutes} min
@@ -409,13 +408,9 @@ export default function OSTraining() {
           {/* QUICK ACCESS */}
           <section>
             <SectionHeader title="Quick Access" subtitle="Jump straight into the tools and knowledge you need." />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-2 max-w-xl">
               {[
-                { label: "SOP Library", icon: Library, to: "/sop" },
                 { label: "Resource Library", icon: BookMarked, to: "/resources" },
-                { label: "Intake Workspace", icon: Inbox, to: "/os/intake/workspace" },
-                { label: "Insurance Resources", icon: ShieldCheck, to: "/resources?category=insurance" },
-                { label: "Communication Templates", icon: MessageSquare, to: "/resources?category=templates" },
                 { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
               ].map((q) => {
                 const Icon = q.icon;
@@ -519,39 +514,13 @@ export default function OSTraining() {
             </div>
           )}
 
-          {/* Ask Blossom AI */}
-          <div className="rounded-2xl border border-border/70 bg-card p-5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Ask Blossom AI</h3>
-            </div>
-            <div className="mt-3 space-y-1">
-              {[
-                "Explain this SOP",
-                "Summarize this workflow",
-                "What's the next step?",
-                "Show related trainings",
-              ].map((p) => (
-                <Link
-                  key={p}
-                  to={`/ai/assistant?q=${encodeURIComponent(p)}`}
-                  className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px] hover:bg-muted/50"
-                >
-                  <span>{p}</span>
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
           {/* Quick Access */}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
             <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Quick Access</h3>
             <div className="mt-3 space-y-0.5 text-[12.5px]">
               {[
-                { label: "SOP Library", to: "/sop" },
-                { label: "Resource Hub", to: "/resources" },
                 { label: "Ask Blossom AI", to: "/ai/assistant" },
+                { label: "Resource Library", to: "/resources" },
               ].map((q) => (
                 <Link
                   key={q.label}
