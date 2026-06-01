@@ -37,6 +37,12 @@ import ReportsHome from "./pages/os/reports/ReportsHome";
 import ReportDetail from "./pages/os/reports/ReportDetail";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
+
+function AiReportRedirect() {
+  const { pathname } = useLocation();
+  const id = pathname.split("/").pop();
+  return <Navigate to={`/dashboards/ai/${id}`} replace />;
+}
 import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
