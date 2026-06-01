@@ -408,7 +408,7 @@ export default function OSTraining() {
           {/* QUICK ACCESS */}
           <section>
             <SectionHeader title="Quick Access" subtitle="Jump straight into the tools and knowledge you need." />
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-2 max-w-xl">
               {[
                 { label: "Resource Library", icon: BookMarked, to: "/resources" },
                 { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
