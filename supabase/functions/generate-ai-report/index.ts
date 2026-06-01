@@ -217,13 +217,14 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: userMsg },
         ],
         tools: [tool],
         tool_choice: { type: "function", function: { name: "build_report" } },
+        max_completion_tokens: 8192,
       }),
     });
 
@@ -240,7 +241,7 @@ Deno.serve(async (req) => {
       }
       const t = await resp.text();
       console.error("AI gateway error:", resp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      return new Response(JSON.stringify({ error: `AI gateway error (${resp.status}): ${t.slice(0, 500)}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -248,8 +249,16 @@ Deno.serve(async (req) => {
     const data = await resp.json();
     const call = data?.choices?.[0]?.message?.tool_calls?.[0];
     const argsStr = call?.function?.arguments;
-    if (!argsStr) throw new Error("No tool call returned");
-    const result = JSON.parse(argsStr);
+    if (!argsStr) {
+      const finish = data?.choices?.[0]?.finish_reason;
+      throw new Error(`No tool call returned (finish_reason: ${finish || "unknown"}). The model may have hit the output token limit — try a smaller dataset or shorter prompt.`);
+    }
+    let result;
+    try {
+      result = JSON.parse(argsStr);
+    } catch (err) {
+      throw new Error("Model returned malformed JSON — likely truncated output. Try fewer/smaller files.");
+    }
 
     return new Response(JSON.stringify({ result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
