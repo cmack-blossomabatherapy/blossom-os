@@ -1048,63 +1048,97 @@ function NfcCardPreview({ m, variant }: { m: DirectoryEmployee; variant: ReturnT
   const VariantIcon = variant.icon;
   const tags = (m as DirectoryEmployee & { expertise?: string[]; skills?: string[] });
   const chips = [...(tags.expertise ?? []), ...(tags.skills ?? [])].slice(0, 3);
+  const primaryActions = variant.actions.slice(0, 2);
   return (
-    <div className="w-[260px] overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_12px_30px_-18px_oklch(0.2_0.02_260/0.18)]">
-      <p className="bg-muted/40 px-3 py-1.5 text-center text-[9px] uppercase tracking-widest text-muted-foreground">
-        What others see · {variant.eyebrow}
+    <div className="w-[280px]">
+      <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        What others see
       </p>
-      <div className="flex flex-col items-center gap-2 px-4 pt-4 pb-3">
-        <div className="inline-flex items-center gap-1 text-[9px] font-medium uppercase tracking-widest text-muted-foreground">
-          <VariantIcon className="size-2.5" /> {variant.eyebrow}
-        </div>
-        {m.photo ? (
-          <img src={m.photo} alt="" className="size-14 rounded-full object-cover ring-2 ring-primary/30" />
-        ) : (
-          <div className="grid size-14 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground ring-2 ring-primary/30">
-            {initials(m.name)}
-          </div>
-        )}
-        <div className="text-center">
-          <p className="text-sm font-semibold leading-tight">
-            {m.name}
-            {m.credential ? <span className="ml-1 text-[10px] font-normal text-muted-foreground">{m.credential}</span> : null}
-          </p>
-          {m.title && <p className="text-[10px] text-muted-foreground">{m.title}</p>}
-        </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
-          <BadgeCheck className="size-2.5" /> Verified
-        </span>
-        <p className="line-clamp-2 max-w-[220px] text-center text-[10px] leading-snug text-muted-foreground">
-          {m.blurb || variant.tagline}
-        </p>
-      </div>
-      <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1.5"><Building2 className="size-2.5" /> {m.departmentName ?? "Blossom ABA Therapy"}</div>
-        <div className="mt-1 flex items-center gap-1.5"><MapPin className="size-2.5" /> {(m.states ?? []).join(", ") || "Multi-state"}</div>
-        {chips.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {chips.map((c) => (
-              <span key={c} className="rounded-full bg-muted px-1.5 py-0.5 text-[9px]">{c}</span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-px border-t border-border/60 bg-border/60">
-        {variant.actions.slice(0, 4).map((kind: NfcActionKind) => {
-          const meta = ACTION_META[kind];
-          const Icon = meta.icon;
-          return (
-            <div
-              key={kind}
-              className={`flex items-center justify-center gap-1 bg-card px-2 py-2 text-[10px] font-medium ${
-                meta.destructive ? "text-destructive" : meta.accent ? "text-primary" : "text-foreground"
-              }`}
-            >
-              <Icon className="size-3" /> {meta.label}
+      <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_18px_50px_-24px_oklch(0.2_0.02_260/0.28)]">
+        {/* Gradient hero — mirrors the public profile */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-primary/10 to-background" />
+          <div className="pointer-events-none absolute -left-10 -top-10 size-32 rounded-full bg-primary/30 blur-2xl" />
+          <div className="pointer-events-none absolute -right-12 top-8 size-32 rounded-full bg-[oklch(0.78_0.12_320/0.25)] blur-2xl" />
+          <div className="relative flex flex-col items-center px-5 pb-5 pt-6 text-center">
+            <span className="mb-3 inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/40 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-foreground/80 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+              <VariantIcon className="size-2.5" /> {variant.eyebrow}
+            </span>
+            <div className="relative inline-block">
+              {m.photo ? (
+                <img src={m.photo} alt="" className="size-20 rounded-full object-cover ring-[3px] ring-white/70 shadow-[0_10px_30px_-12px_oklch(0.2_0.02_260/0.45)] dark:ring-white/10" />
+              ) : (
+                <div className="grid size-20 place-items-center rounded-full bg-card text-base font-semibold text-muted-foreground ring-[3px] ring-white/70 shadow-[0_10px_30px_-12px_oklch(0.2_0.02_260/0.45)] dark:ring-white/10">
+                  {initials(m.name)}
+                </div>
+              )}
+              <div className="absolute -bottom-0.5 -right-0.5 rounded-full bg-card p-0.5 shadow-sm">
+                <div className="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                  <BadgeCheck className="size-2.5" strokeWidth={3} />
+                </div>
+              </div>
             </div>
-          );
-        })}
+            <p className="mt-3 text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+              {m.name}
+              {m.credential ? <span className="ml-1 text-[10px] font-normal text-muted-foreground">{m.credential}</span> : null}
+            </p>
+            {m.title && <p className="mt-0.5 text-[11px] font-medium text-foreground/80">{m.title}</p>}
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              {(m.departmentName ?? "Blossom ABA Therapy")}
+              {(m.states ?? []).length > 0 && ` · ${(m.states ?? []).join(", ")}`}
+            </p>
+            <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-foreground/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-background">
+              <BadgeCheck className="size-2.5" /> Verified
+            </span>
+            {/* Action buttons */}
+            {primaryActions.length > 0 && (
+              <div className="mt-4 grid w-full grid-cols-2 gap-1.5">
+                {primaryActions.map((kind: NfcActionKind) => {
+                  const meta = ACTION_META[kind];
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={kind}
+                      className={cn(
+                        "flex items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[10px] font-semibold",
+                        meta.destructive
+                          ? "bg-destructive/10 text-destructive"
+                          : meta.accent
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-foreground/90 text-background",
+                      )}
+                    >
+                      <Icon className="size-2.5" /> {meta.label}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Stat row */}
+        <div className="grid grid-cols-3 gap-1 border-t border-border/60 bg-muted/20 px-2 py-2">
+          {[
+            { icon: Building2, label: m.departmentName?.split(" ")[0] ?? "Blossom" },
+            { icon: MapPin, label: (m.states ?? [])[0] ?? "Multi" },
+            { icon: Sparkles, label: chips.length ? `${chips.length}+` : "—" },
+          ].map(({ icon: Icon, label }, i) => (
+            <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg bg-card px-1 py-1.5">
+              <Icon className="size-3 text-muted-foreground" />
+              <span className="truncate text-[9px] font-medium text-foreground">{label}</span>
+            </div>
+          ))}
+        </div>
+        {/* Tagline / blurb */}
+        {(m.blurb || variant.tagline) && (
+          <p className="border-t border-border/60 px-4 py-2.5 text-center text-[10px] leading-snug text-muted-foreground line-clamp-2">
+            {m.blurb || variant.tagline}
+          </p>
+        )}
       </div>
+      <p className="mt-2 text-center text-[9px] text-muted-foreground/70">
+        Live preview · matches public NFC profile
+      </p>
     </div>
   );
 }
