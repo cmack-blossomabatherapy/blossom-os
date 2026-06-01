@@ -73,8 +73,22 @@ export default function AiReportView() {
             comparison: payload.comparison,
           },
         });
-        if (error) throw error;
-        if (!data?.result) throw new Error(data?.error || "No result");
+        // Prefer the function's error message over the generic FunctionsHttpError.
+        if (data?.error) throw new Error(data.error);
+        if (error) {
+          // Try to pull the response body for a useful message.
+          let detail = error.message || "Generation failed";
+          try {
+            const ctx: any = (error as any).context;
+            const body = ctx?.body ? await new Response(ctx.body).text() : null;
+            if (body) {
+              const parsed = JSON.parse(body);
+              if (parsed?.error) detail = parsed.error;
+            }
+          } catch { /* ignore */ }
+          throw new Error(detail);
+        }
+        if (!data?.result) throw new Error("No result returned");
         const result = data.result as AiReportResult;
         const next: AiReport = {
           ...report,
