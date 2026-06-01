@@ -18,6 +18,17 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+async function findAuthUserByEmail(admin: ReturnType<typeof createClient>, email: string) {
+  for (let page = 1; page <= 10; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const found = data?.users?.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (found) return found;
+    if ((data?.users?.length ?? 0) < 200) break;
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") {
@@ -92,8 +103,7 @@ Deno.serve(async (req) => {
 
   if (!userId) {
     // Try to find an existing auth user with that email first.
-    const { data: existing } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    const found = existing?.users?.find((u) => (u.email ?? "").toLowerCase() === email);
+    const found = await findAuthUserByEmail(admin, email);
     if (found) {
       userId = found.id;
     } else {
@@ -132,6 +142,33 @@ Deno.serve(async (req) => {
     const { data: existingUser } = await admin.auth.admin.getUserById(userId!);
     const currentEmail = (existingUser?.user?.email ?? "").toLowerCase();
     if (currentEmail && currentEmail !== email) {
+      const targetUser = await findAuthUserByEmail(admin, email);
+      if (targetUser && targetUser.id !== userId) {
+        const { data: linkedEmployee } = await admin
+          .from("employees")
+          .select("id, first_name, last_name")
+          .eq("user_id", targetUser.id)
+          .neq("id", employee.id)
+          .maybeSingle();
+
+        if (linkedEmployee) {
+          return new Response(JSON.stringify({
+            error: `That email is already linked to ${linkedEmployee.first_name ?? ""} ${linkedEmployee.last_name ?? ""}.`.trim(),
+          }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const { error: relinkErr } = await admin
+          .from("employees")
+          .update({ user_id: targetUser.id })
+          .eq("id", employee.id);
+        if (relinkErr) {
+          return new Response(JSON.stringify({ error: `Could not link existing login: ${relinkErr.message}` }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.log("[invite] relinked employee to existing auth user", { employeeId: employee.id, fromUserId: userId, toUserId: targetUser.id, email });
+        userId = targetUser.id;
+      } else {
       const { error: updErr } = await admin.auth.admin.updateUserById(userId!, {
         email,
         email_confirm: true,
@@ -143,6 +180,7 @@ Deno.serve(async (req) => {
         });
       }
       console.log("[invite] synced auth email", { userId, from: currentEmail, to: email });
+      }
     }
   } catch (e) {
     console.log("[invite] error checking auth user", { userId, error: (e as Error).message });
