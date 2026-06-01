@@ -59,35 +59,53 @@ export function renderWelcomeEmail(input: WelcomeEmailInput): { subject: string;
       <tr><td align="center" style="padding:36px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 24px 60px rgba(57,153,170,0.18);">
           <!-- Logo header -->
-          <tr><td align="center" style="padding:36px 30px 8px;background:#ffffff;">
-            <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="220" style="display:block;width:220px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
+          <tr><td align="center" style="padding:40px 30px 16px;background:#ffffff;">
+            <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="240" style="display:block;width:240px;max-width:65%;height:auto;border:0;outline:none;text-decoration:none;" />
           </td></tr>
           <!-- Solid teal hero (bulletproof across light/dark mode + Outlook) -->
           <tr><td bgcolor="#3999AA" style="padding:28px 36px 32px;background-color:#3999AA;background-image:linear-gradient(135deg,#3999AA 0%,#5bb7c6 60%,#7cd0d8 100%);color:#ffffff;">
             <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#ffffff;opacity:0.92;mso-line-height-rule:exactly;">Welcome to the team</div>
-            <h1 style="margin:10px 0 0;font-size:30px;line-height:1.2;font-weight:750;color:#ffffff;letter-spacing:-0.3px;mso-line-height-rule:exactly;">Welcome to Blossom${greetingName}!</h1>
-            <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#ffffff;mso-line-height-rule:exactly;">Your Blossom workspace is ready. We are so glad to have you on the team — let's get you signed in.</p>
+            <h1 style="margin:10px 0 0;font-size:30px;line-height:1.2;font-weight:750;color:#ffffff;letter-spacing:-0.3px;mso-line-height-rule:exactly;">Welcome to Blossom OS${greetingName}!</h1>
+            <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#ffffff;mso-line-height-rule:exactly;">Your operational home for everything Blossom — training, workflows, schedules, and the people who'll help you thrive.</p>
           </td></tr>
           <!-- Body -->
           <tr><td style="padding:32px 36px 12px;">
-            <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#31505a;">Use the details below to sign in to your Blossom workspace${tempPassword ? ". For security, you'll be asked to create your own password the first time you sign in." : "."}</p>
+            <h2 style="margin:0 0 6px;font-size:18px;font-weight:700;color:#18313a;letter-spacing:-0.2px;">Your sign-in details</h2>
+            <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#5b757e;">Use the details below to access your Blossom OS workspace${tempPassword ? ". For security, you'll create your own password and set up two-factor authentication the first time you sign in." : "."}</p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dcebed;border-radius:14px;background:#f8fcfd;margin:0 0 26px;">
               <tr><td style="padding:18px 20px;">${credentialsRows}</td></tr>
             </table>
             <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-radius:12px;background:#3999AA;box-shadow:0 14px 30px rgba(57,153,170,0.32);">
-              <a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;letter-spacing:0.2px;">Sign in to Blossom →</a>
+              <a href="${escapeHtml(loginUrl)}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;letter-spacing:0.2px;">Sign in to Blossom OS →</a>
             </td></tr></table>
-            <p style="margin:26px 0 0;font-size:14px;line-height:1.65;color:#5b757e;">Once you're in, you'll see your training, resources, and the tools connected to your role. If anything looks off, just reply to this email — a real person will help.</p>
+          </td></tr>
+          <!-- What to expect -->
+          <tr><td style="padding:8px 36px 4px;">
+            <div style="height:1px;background:#e3eef0;margin:18px 0 22px;"></div>
+            <h2 style="margin:0 0 14px;font-size:18px;font-weight:700;color:#18313a;letter-spacing:-0.2px;">What happens next</h2>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${step("1", "Sign in & secure your account", "Create your password and turn on two-factor authentication.")}
+              ${step("2", "Start with Week 1, Day 1 onboarding", "A short welcome from leadership and a tour of who we are.")}
+              ${step("3", "Explore your role workspace", "Your menu, tools, and reports are tailored to your role.")}
+            </table>
+          </td></tr>
+          <!-- Support -->
+          <tr><td style="padding:18px 36px 4px;">
+            <div style="border:1px solid #dcebed;border-radius:14px;background:#f8fcfd;padding:18px 20px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#7a949c;margin-bottom:6px;">Need a hand?</div>
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#31505a;">Reply to this email and a real person on the Blossom team will help — usually within a few hours during business days.</p>
+            </div>
           </td></tr>
           <!-- Sign-off -->
           <tr><td style="padding:8px 36px 36px;">
-            <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#31505a;">Welcome aboard,<br/><strong style="color:#18313a;">The Blossom team</strong></p>
+            <p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#31505a;">Welcome aboard,<br/><strong style="color:#18313a;">The Blossom Team</strong></p>
           </td></tr>
           <!-- Footer -->
           <tr><td style="padding:22px 36px 30px;background:#f8fcfd;border-top:1px solid #e3eef0;">
             <p style="margin:0;font-size:11px;line-height:1.6;color:#8aa2aa;text-align:center;letter-spacing:0.2px;">
               Blossom ABA Therapy · Helping every child blossom.<br/>
-              You received this email because an account was created for you in Blossom OS.
+              Serving Georgia, North Carolina, Tennessee, Virginia & Maryland.<br/>
+              You received this email because an account was created for you in Blossom OS. This message may contain confidential information.
             </p>
           </td></tr>
         </table>
@@ -122,6 +140,20 @@ function row(label: string, value: string) {
     <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#7a949c;margin-bottom:4px;">${label}</div>
     <div style="font-size:15px;font-weight:600;color:#18313a;line-height:1.4;">${value}</div>
   </div>`;
+}
+
+function step(num: string, title: string, body: string) {
+  return `<tr><td style="padding:0 0 14px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+      <td width="36" valign="top" style="width:36px;">
+        <div style="width:28px;height:28px;border-radius:14px;background:#e6f4f6;color:#2f7d8c;font-size:13px;font-weight:700;line-height:28px;text-align:center;">${num}</div>
+      </td>
+      <td valign="top" style="padding-left:4px;">
+        <div style="font-size:15px;font-weight:650;color:#18313a;line-height:1.35;">${title}</div>
+        <div style="font-size:13px;color:#5b757e;line-height:1.55;margin-top:2px;">${body}</div>
+      </td>
+    </tr></table>
+  </td></tr>`;
 }
 
 export const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
