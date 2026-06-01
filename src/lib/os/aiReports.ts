@@ -47,6 +47,7 @@ export type AiReport = {
   comparison?: string;
   fileName: string;
   rowCount: number;
+  files?: { name: string; rowCount: number }[];
   createdAt: number;
   status: "generating" | "ready" | "error";
   result?: AiReportResult;
