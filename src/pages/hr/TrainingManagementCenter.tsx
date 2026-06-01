@@ -39,26 +39,134 @@ import {
   PlayCircle,
   BookOpen,
   Workflow as WorkflowIcon,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
 } from "lucide-react";
 import {
-  trainingJourneys,
-  trainingModules,
   trainingSops,
   trainingTangos,
   trainingAssignments,
   trainingCategories,
   trainingTemplates,
   formatRelative,
-  ROLE_LABEL,
   type ModuleType,
   type TrainingStatus,
-  type TrainingModule,
-  type TrainingJourney,
 } from "@/lib/hr/trainingCenterData";
+import {
+  useAcademy,
+  addModuleToJourney,
+  removeModuleFromJourney,
+  reorderJourneyModule,
+  type Training,
+  type RoleJourney,
+} from "@/lib/training/academyData";
 import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+
+/* ------- Local view-model adapters (Academy → Management Center) ------- */
+
+type ViewModule = {
+  id: string;
+  title: string;
+  description: string;
+  type: ModuleType;
+  category: string;
+  estimatedMinutes: number;
+  required: boolean;
+  status: TrainingStatus;
+  updatedAt: string;
+  owner: string;
+  tags: string[];
+};
+
+type ViewJourney = {
+  id: string;
+  title: string;
+  description: string;
+  role: string;
+  category: string;
+  status: TrainingStatus;
+  moduleIds: string[];
+  assignedCount: number;
+  completionPct: number;
+  updatedAt: string;
+  owner: string;
+};
+
+const ACADEMY_ROLE_LABEL: Record<string, string> = {
+  intake: "Intake Coordinator",
+  state_director: "State Director",
+  scheduling: "Scheduling",
+  qa_team: "QA",
+  recruiting_team: "Recruiting",
+  bcba: "BCBA",
+  rbt: "RBT",
+  authorizations: "Authorizations",
+  hr_team: "HR",
+  billing_finance: "Billing & Finance",
+  executive_leadership: "Executive Leadership",
+  operations_leadership: "Operations Leadership",
+  case_manager: "Case Manager",
+};
+
+function roleLabel(role: string): string {
+  return ACADEMY_ROLE_LABEL[role] ?? role;
+}
+
+function roleCategory(role: string): string {
+  if (role === "intake") return "Intake";
+  if (role === "scheduling") return "Scheduling";
+  if (role === "qa_team") return "QA";
+  if (role === "recruiting_team") return "Recruiting";
+  if (role === "bcba" || role === "rbt") return "Clinical";
+  if (role === "authorizations") return "Authorizations";
+  if (role === "hr_team") return "HR";
+  if (role === "executive_leadership" || role === "operations_leadership" || role === "state_director") return "Leadership";
+  if (role === "billing_finance") return "Operations";
+  return "Operations";
+}
+
+function toViewModule(t: Training): ViewModule {
+  const type: ModuleType =
+    t.type === "Quick Guide" || t.type === "Tango" || t.type === "Video" ||
+    t.type === "SOP" || t.type === "Workflow" || t.type === "Checklist"
+      ? t.type
+      : "SOP";
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    type,
+    category: t.department
+      ? t.department.charAt(0).toUpperCase() + t.department.slice(1)
+      : (t.category === "systems" ? "Systems & Software" : "Operations"),
+    estimatedMinutes: t.estimatedMinutes,
+    required: !!t.required,
+    status: "Published",
+    updatedAt: t.lastUpdated ?? new Date().toISOString().slice(0, 10),
+    owner: t.owner ?? "",
+    tags: [],
+  };
+}
+
+function toViewJourney(j: RoleJourney): ViewJourney {
+  return {
+    id: j.id,
+    title: j.title,
+    description: j.tagline,
+    role: j.role,
+    category: roleCategory(j.role),
+    status: "Published",
+    moduleIds: j.moduleIds,
+    assignedCount: 0,
+    completionPct: 0,
+    updatedAt: new Date().toISOString().slice(0, 10),
+    owner: "",
+  };
+}
 
 type NavId =
   | "journeys"
