@@ -5,18 +5,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye } from "lucide-react";
+import { Mail, Phone, MapPin, CalendarDays, Send, CheckCircle2, RotateCcw, FileDown, Plus, Link2, BellRing, Eye, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse } from "./types";
+import type { EvalStaff, Evaluation, EvalMeeting, EvalNote, EvalEmailTemplate, EvalResponse, EvalReviewer } from "./types";
 import { SelfBadge, LeadershipBadge, MeetingBadge, FinalBadge, fmtDate } from "./statusBadges";
 import { createFormToken, queueEvaluationEmail, templateVars, buildFormUrl } from "./workflow";
 import type { Permissions } from "./permissions";
 import { logAudit, AUDIT_LABELS, type AuditEntry } from "./audit";
 import { buildEvaluationSummaryHtml, openPrintableSummary } from "./pdf";
+import ReviewersDialog from "./ReviewersDialog";
 
 interface Props {
   staff: EvalStaff | null;
@@ -27,6 +28,7 @@ interface Props {
   responses: EvalResponse[];
   allStaff: EvalStaff[];
   audit: AuditEntry[];
+  reviewers: EvalReviewer[];
   permissions: Permissions;
   onClose: () => void;
   onChanged: () => void;
@@ -41,13 +43,14 @@ function completionPct(e: Evaluation): number {
   return Math.round((n / 4) * 100);
 }
 
-export default function StaffProfileDrawer({ staff, evaluations, meetings, notes, templates, responses, allStaff, audit, permissions, onClose, onChanged }: Props) {
+export default function StaffProfileDrawer({ staff, evaluations, meetings, notes, templates, responses, allStaff, audit, reviewers, permissions, onClose, onChanged }: Props) {
   const [noteText, setNoteText] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingType, setMeetingType] = useState("Zoom");
   const [meetingLink, setMeetingLink] = useState("");
   const [working, setWorking] = useState(false);
   const [viewResponse, setViewResponse] = useState<EvalResponse | null>(null);
+  const [reviewersOpen, setReviewersOpen] = useState(false);
 
   const open = !!staff;
   const current = useMemo(() => {
@@ -64,6 +67,16 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
   const staffNotes = current ? notes.filter((n) => n.evaluation_id === current.id) : [];
   const currentResponses = current ? responses.filter((r) => r.evaluation_id === current.id) : [];
   const reviewer = staff?.supervisor_id ? allStaff.find((s) => s.id === staff.supervisor_id) ?? null : null;
+  const currentReviewers = useMemo(
+    () => (current ? reviewers.filter((r) => r.evaluation_id === current.id) : []),
+    [reviewers, current]
+  );
+  const reviewerStats = useMemo(() => {
+    const total = currentReviewers.length;
+    const completed = currentReviewers.filter((r) => r.status === "Completed").length;
+    const pending = currentReviewers.filter((r) => r.status === "Not Sent").length;
+    return { total, completed, pending };
+  }, [currentReviewers]);
   const tplByKey = useMemo(() => Object.fromEntries(templates.map((t) => [t.template_key, t])), [templates]);
   const staffAudit = useMemo(() => (staff ? audit.filter((a) => a.staff_id === staff.id || (current && a.evaluation_id === current.id)) : []), [staff, audit, current]);
 
