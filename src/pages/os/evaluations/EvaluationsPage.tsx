@@ -4,15 +4,14 @@ import { useOSRole } from "@/contexts/OSRoleContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
-  ClipboardCheck, Plus, Mail, Upload, Settings as SettingsIcon,
-  MoreHorizontal, LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
+  ClipboardCheck, RefreshCw, Mail, Settings as SettingsIcon,
+  LayoutGrid, Users as UsersIcon, CalendarDays, FileText, BarChart3, ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useEvaluationsData } from "./useEvaluationsData";
-import AddStaffDialog from "./AddStaffDialog";
 import StaffProfileDrawer from "./StaffProfileDrawer";
 import OverviewTab from "./tabs/OverviewTab";
 import StaffTab from "./tabs/StaffTab";
