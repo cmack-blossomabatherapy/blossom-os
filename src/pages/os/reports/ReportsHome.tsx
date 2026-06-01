@@ -16,7 +16,7 @@ import {
 } from "@/lib/os/reportsCatalog";
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
-import { listAiReports, deleteAiReport, type AiReport } from "@/lib/os/aiReports";
+import { listAiDashboards, deleteAiDashboard, type AiDashboard } from "@/lib/os/aiDashboards";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -33,13 +33,13 @@ export default function ReportsHome() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [aiReports, setAiReports] = useState<AiReport[]>(() => listAiReports());
+  const [aiReports, setAiReports] = useState<AiDashboard[]>(() => listAiDashboards());
   useEffect(() => {
-    const refresh = () => setAiReports(listAiReports());
-    window.addEventListener("blossom-ai-reports-changed", refresh);
+    const refresh = () => setAiReports(listAiDashboards());
+    window.addEventListener("blossom-ai-dashboards-changed", refresh);
     window.addEventListener("storage", refresh);
     return () => {
-      window.removeEventListener("blossom-ai-reports-changed", refresh);
+      window.removeEventListener("blossom-ai-dashboards-changed", refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -120,12 +120,12 @@ export default function ReportsHome() {
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports…" className="h-9 border-white/80 bg-white/70 pl-9 backdrop-blur" />
             </div>
             <Link
-              to="/reports/ai/new"
+              to="/dashboards/ai/new"
               className="group relative inline-flex h-9 items-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] px-4 text-[12.5px] font-semibold text-white shadow-[0_10px_30px_-10px_hsl(265_70%_55%/0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_15px_40px_-15px_hsl(265_70%_55%/0.7)]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               <Wand2 className="h-3.5 w-3.5" />
-              Create a report with AI
+              Create AI Dashboard
               <Sparkles className="h-3 w-3 opacity-80 transition group-hover:rotate-12" />
             </Link>
           </div>
@@ -136,37 +136,37 @@ export default function ReportsHome() {
       <section className="mt-8">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-tight">AI-generated reports</h2>
+            <h2 className="text-[18px] font-semibold tracking-tight">AI Dashboards</h2>
             <p className="mt-0.5 text-[12.5px] text-muted-foreground">
               {aiReports.length === 0
-                ? "Upload a CSV and tell Blossom what to build."
-                : `${aiReports.length} report${aiReports.length === 1 ? "" : "s"} saved to your library.`}
+                ? "Upload your data. Ask a question. Instantly build an interactive dashboard."
+                : `${aiReports.length} dashboard${aiReports.length === 1 ? "" : "s"} saved to your library.`}
             </p>
           </div>
           <Link
-            to="/reports/ai/new"
+            to="/dashboards/ai/new"
             className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[hsl(265_70%_55%/0.3)] bg-[hsl(265_100%_98%)] px-3 text-[11.5px] font-semibold text-[hsl(265_70%_50%)] transition hover:-translate-y-0.5 hover:bg-[hsl(265_100%_96%)]"
           >
-            <Wand2 className="h-3 w-3" /> New AI report
+            <Wand2 className="h-3 w-3" /> New AI Dashboard
           </Link>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {aiReports.length === 0 ? (
             <Link
-              to="/reports/ai/new"
+              to="/dashboards/ai/new"
               className="group col-span-full flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[hsl(265_70%_55%/0.4)] bg-gradient-to-br from-[hsl(265_100%_99%)] via-white to-[hsl(285_100%_99%)] px-6 py-10 text-center transition hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%)] hover:shadow-[0_20px_50px_-30px_hsl(265_60%_50%/0.4)]"
             >
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(265_70%_55%)] to-[hsl(285_70%_55%)] text-white shadow-[0_10px_30px_-10px_hsl(265_70%_55%/0.6)] transition group-hover:scale-110">
                 <Sparkles className="h-5 w-5" />
               </span>
-              <p className="text-[13.5px] font-semibold">Build your first AI report</p>
+              <p className="text-[13.5px] font-semibold">Build your first AI dashboard</p>
               <p className="max-w-sm text-[11.5px] text-muted-foreground">
-                Drop a CentralReach export, describe what you need, and Blossom AI builds it instantly.
+                Drop a CentralReach export, ask a question, and Blossom AI builds an interactive dashboard instantly.
               </p>
             </Link>
           ) : (
-            aiReports.map(r => <AiReportCard key={r.id} report={r} onDelete={() => { deleteAiReport(r.id); setAiReports(listAiReports()); }} />)
+            aiReports.map(r => <AiReportCard key={r.id} report={r} onDelete={() => { deleteAiDashboard(r.id); setAiReports(listAiDashboards()); }} />)
           )}
         </div>
       </section>
@@ -456,20 +456,20 @@ function MiniReportCard({ report, favored, onFav }: { report: ReportDef; favored
   );
 }
 
-function AiReportCard({ report, onDelete }: { report: AiReport; onDelete: () => void }) {
-  const isGenerating = report.status === "generating";
+function AiReportCard({ report, onDelete }: { report: AiDashboard; onDelete: () => void }) {
+  const isGenerating = report.narrativeStatus === "pending";
   const isError = report.status === "error";
   const when = new Date(report.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   return (
     <Link
-      to={`/reports/ai/${report.id}`}
+      to={`/dashboards/ai/${report.id}`}
       className="group relative block overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-[0_20px_40px_-25px_hsl(265_60%_50%/0.4)]"
     >
       <div className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br from-[hsl(265_100%_92%)] to-[hsl(285_100%_94%)] opacity-60 blur-2xl transition group-hover:opacity-90" />
       <div className="relative">
         <div className="flex items-start justify-between gap-2">
           <Badge variant="secondary" className="rounded-full bg-[hsl(265_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(265_70%_55%)]">
-            <Sparkles className="mr-1 h-2.5 w-2.5" /> AI Report
+            <Sparkles className="mr-1 h-2.5 w-2.5" /> AI Dashboard
           </Badge>
           <button
             type="button"
@@ -483,7 +483,7 @@ function AiReportCard({ report, onDelete }: { report: AiReport; onDelete: () => 
         <h3 className="mt-2 line-clamp-2 text-[13.5px] font-semibold tracking-tight">{report.title}</h3>
         <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
           <FileSpreadsheet className="mr-1 inline h-3 w-3" />
-          {report.fileName} · {report.rowCount} rows
+          {report.fileNames.join(", ")} · {report.rowCount} rows
         </p>
         <div className="mt-3 flex items-center justify-between text-[10.5px] text-muted-foreground">
           <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {when}</span>
