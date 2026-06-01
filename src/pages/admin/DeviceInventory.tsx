@@ -12,6 +12,8 @@ import { MonitorSmartphone, Tablet, Wifi, Laptop, Smartphone, Plus, Search, More
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useOSRole } from "@/contexts/OSRoleContext";
+import { Navigate } from "react-router-dom";
 
 type Device = {
   id: string;
@@ -69,6 +71,10 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function DeviceInventory() {
+  const { role } = useOSRole();
+  if (role !== "super_admin" && role !== "hr_team") {
+    return <Navigate to="/" replace />;
+  }
   const [devices, setDevices] = useState<Device[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [employees, setEmployees] = useState<EmployeeLite[]>([]);
