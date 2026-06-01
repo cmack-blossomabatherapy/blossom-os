@@ -528,7 +528,18 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
             ))}
           </div>
           <div className="flex gap-2">
-            <Textarea rows={2} value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Add a note" />
+            <Textarea
+              rows={2}
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Add a note"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  addNote();
+                }
+              }}
+            />
             <Button size="sm" onClick={addNote} disabled={!current || !noteText.trim() || working}>Add</Button>
           </div>
           {!current && <p className="text-[10px] text-muted-foreground mt-1">Start an evaluation to add notes.</p>}
