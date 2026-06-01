@@ -1,5 +1,5 @@
 export type StaffRole = "BCBA" | "RBT" | "Office";
-export type EvalType = "Quarterly" | "Annual" | "30-Day";
+export type EvalType = "Quarterly" | "Annual" | "30-Day" | "10-Day" | "90-Day";
 export type SelfStatus = "Not Sent" | "Sent" | "Opened" | "Completed" | "Overdue";
 export type LeadershipStatus = "Not Started" | "In Progress" | "Completed";
 export type MeetingStatus = "Not Scheduled" | "Scheduled" | "Completed";

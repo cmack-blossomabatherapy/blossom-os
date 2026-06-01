@@ -10,7 +10,7 @@ import { RefreshCw, GraduationCap, ClipboardList, Building2 } from "lucide-react
 import type { EvalRule, StaffRole, EvalType } from "./types";
 import type { EvaluationsData } from "./useEvaluationsData";
 
-const TYPE_ORDER: EvalType[] = ["30-Day", "Quarterly", "Annual"];
+const TYPE_ORDER: EvalType[] = ["10-Day", "30-Day", "90-Day", "Quarterly", "Annual"];
 
 const ROLE_META: Record<StaffRole, { label: string; description: string; icon: React.ComponentType<{ className?: string }> }> = {
   BCBA: { label: "BCBA", description: "Board Certified Behavior Analysts", icon: GraduationCap },
@@ -20,11 +20,13 @@ const ROLE_META: Record<StaffRole, { label: string; description: string; icon: R
 const ROLES: StaffRole[] = ["BCBA", "RBT", "Office"];
 
 function TypeLabel({ t }: { t: EvalType }) {
-  return (
-    <span className="text-xs font-medium">
-      {t === "30-Day" ? "30-Day Review" : t === "Quarterly" ? "Quarterly Review" : "Annual Review"}
-    </span>
-  );
+  const label =
+    t === "10-Day" ? "10-Day Review"
+    : t === "30-Day" ? "30-Day Review"
+    : t === "90-Day" ? "90-Day Review"
+    : t === "Quarterly" ? "Quarterly Review"
+    : "Annual Review";
+  return <span className="text-xs font-medium">{label}</span>;
 }
 
 function RoleRules({
@@ -84,7 +86,7 @@ function RoleRules({
                     <Input
                       type="number"
                       min={0}
-                      placeholder={t === "30-Day" ? "Once only" : ""}
+                      placeholder={t === "10-Day" || t === "30-Day" || t === "90-Day" ? "Once only" : ""}
                       value={r.cadence_days ?? ""}
                       disabled={disabled}
                       onChange={(e) =>
