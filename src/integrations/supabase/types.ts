@@ -10568,7 +10568,16 @@ export type Database = {
         | "On Hold"
       recruiting_role: "RBT" | "BCBA" | "BT" | "Other"
       recruiting_state:
-        | "GA" | "NC" | "TN" | "VA" | "MD" | "FL" | "TX" | "SC" | "Other"
+        | "GA"
+        | "NC"
+        | "TN"
+        | "VA"
+        | "MD"
+        | "FL"
+        | "TX"
+        | "SC"
+        | "Other"
+        | "NJ"
       review_rating:
         | "exceeds"
         | "meets"
@@ -11271,6 +11280,7 @@ export const Constants = {
         "TX",
         "SC",
         "Other",
+        "NJ",
       ],
       review_rating: [
         "exceeds",
