@@ -504,6 +504,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "ops_intelligence", label: "Operations & Intelligence", items: [
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "/kpi", label: "KPI Tracking", icon: Target, module: "dashboard", disabled: true },
       ],
     },
