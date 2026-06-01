@@ -101,7 +101,7 @@ export default function EvaluationsPage() {
                 </span>
               </div>
               <p className="text-[12.5px] text-muted-foreground mt-1.5 max-w-xl">
-                Quarterly and annual evaluations for BCBA and RBT staff.
+                Quarterly and annual evaluations for BCBA, RBT, and Office staff.
               </p>
             </div>
           </div>
