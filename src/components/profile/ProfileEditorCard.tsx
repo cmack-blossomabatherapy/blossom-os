@@ -37,8 +37,10 @@ export function ProfileEditorCard() {
   async function save() {
     if (!user) return;
     setSaving(true);
-    const payload: Record<string, any> = { display_name: displayName.trim() || null, phone: phone.trim() || null };
-    const { error } = await supabase.from("profiles").update(payload).eq("user_id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: displayName.trim() || null, phone: phone.trim() || null })
+      .eq("user_id", user.id);
     setSaving(false);
     if (error) {
       toast.error(error.message);
