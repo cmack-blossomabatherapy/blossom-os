@@ -11,7 +11,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
   ShieldCheck,
   Search,
   UserRound,
