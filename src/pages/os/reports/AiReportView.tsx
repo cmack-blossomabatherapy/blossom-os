@@ -4,6 +4,7 @@ import {
   ArrowLeft, Sparkles, Download, RefreshCw, Trash2, FileSpreadsheet,
   TrendingUp, TrendingDown, Minus, Brain, Pencil, Check, X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
