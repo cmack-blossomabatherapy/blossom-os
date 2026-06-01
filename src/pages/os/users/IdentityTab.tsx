@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEmployeeDirectory, type DirectoryEmployee } from "@/hooks/useEmployeeDirectory";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
@@ -38,9 +39,26 @@ function Card({ id, className, children }: { id?: string; className?: string; ch
 
 function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
-    <div className="mb-3 flex items-end justify-between">
-      <h2 className="text-sm font-semibold tracking-tight text-foreground">{children}</h2>
-      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    <div className="mb-5 flex items-center gap-1.5">
+      <h2 className="text-base font-semibold tracking-tight text-foreground">{children}</h2>
+      {hint && (
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="What is this?"
+                className="inline-flex items-center justify-center text-muted-foreground/60 transition hover:text-foreground"
+              >
+                <HelpCircle className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 }
