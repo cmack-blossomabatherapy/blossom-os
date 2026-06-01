@@ -8,6 +8,10 @@ export type PasskeyResult =
   | { ok: true; credentialId: string }
   | { ok: false; reason: "notSupported" | "cancelled" | "error"; message?: string };
 
+export type PasskeyRegistration =
+  | { ok: true; credentialId: string; publicKey: string }
+  | { ok: false; reason: "notSupported" | "cancelled" | "error"; message?: string };
+
 export function isPasskeyAvailable(): boolean {
   return typeof window !== "undefined" && !!window.PublicKeyCredential && !!navigator.credentials;
 }
@@ -48,6 +52,61 @@ export async function verifyWithPasskey(credentialIdB64?: string | null): Promis
     })) as PublicKeyCredential | null;
     if (!cred) return { ok: false, reason: "cancelled" };
     return { ok: true, credentialId: cred.id };
+  } catch (e: any) {
+    if (e?.name === "NotAllowedError") return { ok: false, reason: "cancelled" };
+    return { ok: false, reason: "error", message: e?.message };
+  }
+}
+
+function bufToB64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+/**
+ * Register a new platform / roaming security key (passkey) for the current user.
+ * v1: stores credential id + public key locally — full attestation verification
+ * lives in a future edge function.
+ */
+export async function registerPasskey(opts: {
+  userId: string;
+  userName: string;
+  displayName: string;
+  rpName?: string;
+}): Promise<PasskeyRegistration> {
+  if (!isPasskeyAvailable()) return { ok: false, reason: "notSupported" };
+  try {
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+    const userIdBytes = new TextEncoder().encode(opts.userId);
+    const cred = (await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: opts.rpName ?? "Blossom OS" },
+        user: {
+          id: userIdBytes,
+          name: opts.userName,
+          displayName: opts.displayName,
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },   // ES256
+          { type: "public-key", alg: -257 }, // RS256
+        ],
+        authenticatorSelection: {
+          userVerification: "preferred",
+          residentKey: "preferred",
+        },
+        timeout: 60_000,
+        attestation: "none",
+      },
+    })) as PublicKeyCredential | null;
+    if (!cred) return { ok: false, reason: "cancelled" };
+    const response = cred.response as AuthenticatorAttestationResponse;
+    const pk = response.getPublicKey?.();
+    const publicKey = pk ? bufToB64(pk) : "";
+    return { ok: true, credentialId: cred.id, publicKey };
   } catch (e: any) {
     if (e?.name === "NotAllowedError") return { ok: false, reason: "cancelled" };
     return { ok: false, reason: "error", message: e?.message };
