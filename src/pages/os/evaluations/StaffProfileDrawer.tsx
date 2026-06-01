@@ -342,10 +342,26 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                   <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("self_request", "Self")} disabled={working}>
                     <Send className="h-3.5 w-3.5 mr-1.5" /> Send Self Eval
                   </Button>
-                  <Button size="sm" className="flex-1 h-9 bg-primary text-primary-foreground hover:opacity-90 rounded-xl" onClick={() => sendEmailFromTemplate("leadership_request", "Leadership")} disabled={working}>
-                    <Send className="h-3.5 w-3.5 mr-1.5" /> Send Leadership
+                  <Button size="sm" variant="secondary" className="flex-1 h-9 rounded-xl" onClick={() => setReviewersOpen(true)} disabled={working}>
+                    <Users className="h-3.5 w-3.5 mr-1.5" />
+                    {reviewerStats.total === 0
+                      ? "Add Reviewers"
+                      : `Reviewers (${reviewerStats.completed}/${reviewerStats.total})`}
                   </Button>
                 </div>
+
+                {reviewerStats.total > 0 && (
+                  <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-[11.5px] text-muted-foreground flex items-center justify-between">
+                    <span>
+                      {reviewerStats.completed === reviewerStats.total
+                        ? "All reviewers completed"
+                        : reviewerStats.pending > 0
+                          ? `${reviewerStats.pending} reviewer${reviewerStats.pending === 1 ? "" : "s"} awaiting send`
+                          : `${reviewerStats.total - reviewerStats.completed} reviewer${reviewerStats.total - reviewerStats.completed === 1 ? "" : "s"} pending response`}
+                    </span>
+                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => setReviewersOpen(true)}>Manage</Button>
+                  </div>
+                )}
 
                 {/* Secondary Actions Toolbar */}
                 <TooltipProvider delayDuration={200}>
@@ -358,14 +374,6 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Copy Self Link</p></TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => copyLink("Leadership")} disabled={working}>
-                          <Link2 className="h-3.5 w-3.5 rotate-45" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Copy Leadership Link</p></TooltipContent>
-                    </Tooltip>
                     <div className="w-px h-4 bg-border/70 mx-1" />
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -374,14 +382,6 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom"><p>Self Reminder</p></TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-full p-0" onClick={() => sendEmailFromTemplate("leadership_reminder", "Leadership")} disabled={working}>
-                          <BellRing className="h-3.5 w-3.5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Leadership Reminder</p></TooltipContent>
                     </Tooltip>
                     <div className="w-px h-4 bg-border/70 mx-1" />
                     <Tooltip>
