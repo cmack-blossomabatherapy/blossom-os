@@ -30,8 +30,8 @@
     --muted: 190 20% 94%;
     --muted-foreground: 200 12% 45%;
 
-    /* Accent uses warm petal orange for contrast */
-    --accent: 25 69% 50%;
+    /* Accent uses petal purple — paired with brand teal */
+    --accent: 256 35% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 358 59% 56%;
@@ -67,8 +67,9 @@
     --surface: 0 0% 100%;
     --surface-raised: 190 25% 99%;
 
-    /* Petal accents — available for charts, badges, illustrations */
-    --petal-orange: 25 69% 50%;
+    /* Petal accents — available for charts, badges, illustrations.
+       Note: petal-orange is intentionally remapped to brand teal so no orange shows in the UI. */
+    --petal-orange: 189 50% 45%;
     --petal-yellow: 51 75% 50%;
     --petal-green:  72 52% 47%;
     --petal-sage:   117 27% 51%;
@@ -78,7 +79,7 @@
 
     /* Brand gradients & shadows */
     --gradient-brand: linear-gradient(135deg, hsl(189 50% 45%), hsl(189 55% 58%));
-    --gradient-petal: linear-gradient(135deg, hsl(25 69% 50%), hsl(332 47% 64%));
+    --gradient-petal: linear-gradient(135deg, hsl(189 50% 45%), hsl(256 35% 45%));
     --shadow-brand: 0 10px 30px -10px hsl(189 50% 45% / 0.35);
   }
 }
