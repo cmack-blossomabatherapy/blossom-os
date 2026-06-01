@@ -55,9 +55,21 @@ export default function StaffProfileDrawer({ staff, evaluations, meetings, notes
   const open = !!staff;
   const current = useMemo(() => {
     if (!staff) return null;
-    return evaluations
-      .filter((e) => e.staff_id === staff.id && e.final_status !== "Complete")
-      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0] ?? null;
+    const list = evaluations.filter((e) => e.staff_id === staff.id && e.final_status !== "Complete");
+    if (list.length === 0) return null;
+    const rank = (e: typeof list[number]) => {
+      if (e.final_status === "In Progress") return 0;
+      if (e.self_status !== "Not Sent" || e.leadership_status !== "Not Started" || e.meeting_status !== "Not Scheduled") return 1;
+      return 2;
+    };
+    return list.sort((a, b) => {
+      const r = rank(a) - rank(b);
+      if (r !== 0) return r;
+      const da = a.next_review_date ? +new Date(a.next_review_date) : Infinity;
+      const db = b.next_review_date ? +new Date(b.next_review_date) : Infinity;
+      if (da !== db) return da - db;
+      return +new Date(b.created_at) - +new Date(a.created_at);
+    })[0];
   }, [staff, evaluations]);
   const past = useMemo(() => {
     if (!staff) return [];

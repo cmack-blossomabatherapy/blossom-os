@@ -33,9 +33,23 @@ const SAVED_VIEWS: { id: SavedView; label: string }[] = [
 ];
 
 function currentEval(staffId: string, evaluations: Evaluation[]) {
-  return evaluations
-    .filter((e) => e.staff_id === staffId && e.final_status !== "Complete")
-    .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))[0] ?? null;
+  const open = evaluations.filter((e) => e.staff_id === staffId && e.final_status !== "Complete");
+  if (open.length === 0) return null;
+  // Prefer evaluations that are actively in progress (self/leadership/meeting started)
+  // over "Not Started" placeholders, then pick the one with the soonest next review date.
+  const rank = (e: Evaluation) => {
+    if (e.final_status === "In Progress") return 0;
+    if (e.self_status !== "Not Sent" || e.leadership_status !== "Not Started" || e.meeting_status !== "Not Scheduled") return 1;
+    return 2;
+  };
+  return open.sort((a, b) => {
+    const r = rank(a) - rank(b);
+    if (r !== 0) return r;
+    const da = a.next_review_date ? +new Date(a.next_review_date) : Infinity;
+    const db = b.next_review_date ? +new Date(b.next_review_date) : Infinity;
+    if (da !== db) return da - db;
+    return +new Date(b.created_at) - +new Date(a.created_at);
+  })[0];
 }
 function lastCompleted(staffId: string, evaluations: Evaluation[]) {
   return evaluations
