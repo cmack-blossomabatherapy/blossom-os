@@ -453,7 +453,8 @@ export default function HRAdminAssistantDashboard() {
           <Link to="/profile">View profile <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
         </Button>
       </div>
-    </div>
+      </div>
+    </OSShell>
   );
 }
 
