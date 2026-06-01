@@ -26,6 +26,7 @@ const FILTER_SUGGESTIONS = [
 ];
 
 const AUDIENCE_OPTIONS = [
+  "Auto (let AI decide)",
   "Super Admin / Leadership",
   "Operations Lead",
   "State Director",
@@ -39,14 +40,17 @@ const AUDIENCE_OPTIONS = [
 ];
 
 const TIMEFRAME_OPTIONS = [
+  "Auto (infer from prompt)",
   "This week", "This month", "MTD", "Last 30 days", "QTD", "Last 90 days", "YTD", "Last 12 months", "All time",
 ];
 
 const BREAKDOWN_OPTIONS = [
+  "Auto (let AI decide)",
   "By State", "By Region", "By BCBA", "By RBT", "By Client", "By Payor", "By Service Code", "By Status", "By Week", "By Month",
 ];
 
 const COMPARISON_OPTIONS = [
+  "Auto (let AI decide)",
   "None",
   "vs previous period",
   "vs same period last year",
@@ -62,10 +66,10 @@ export default function AiReportNew() {
   const [filterInput, setFilterInput] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [audience, setAudience] = useState<string>("Super Admin / Leadership");
-  const [timeframe, setTimeframe] = useState<string>("This month");
-  const [breakdown, setBreakdown] = useState<string>("By State");
-  const [comparison, setComparison] = useState<string>("vs previous period");
+  const [audience, setAudience] = useState<string>("Auto (let AI decide)");
+  const [timeframe, setTimeframe] = useState<string>("Auto (infer from prompt)");
+  const [breakdown, setBreakdown] = useState<string>("Auto (let AI decide)");
+  const [comparison, setComparison] = useState<string>("Auto (let AI decide)");
   const [goal, setGoal] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +112,13 @@ export default function AiReportNew() {
     if (!prompt.trim()) { toast.error("Tell the AI what report to build"); return; }
     setSubmitting(true);
 
+    // Strip "Auto …" sentinels — anything left blank means: let the AI infer from the prompt + data.
+    const clean = (v: string) => (v && !/^auto\b/i.test(v) ? v : "");
+    const audienceClean = clean(audience);
+    const timeframeClean = clean(timeframe);
+    const breakdownClean = clean(breakdown);
+    const comparisonClean = clean(comparison);
+
     // With multiple files, keep each preview compact so the AI prompt + sessionStorage stay reasonable.
     const perFileMax = files.length <= 1 ? 150 : files.length <= 3 ? 80 : 50;
     const filePayloads = files.map(({ file, csvText }) => {
@@ -125,11 +136,11 @@ export default function AiReportNew() {
       title: prompt.slice(0, 60) || "AI Report",
       prompt,
       filters,
-      audience,
-      timeframe,
-      breakdown,
+      audience: audienceClean,
+      timeframe: timeframeClean,
+      breakdown: breakdownClean,
       goal,
-      comparison,
+      comparison: comparisonClean,
       fileName: combinedName,
       rowCount: totalRows,
       files: filePayloads.map((f) => ({ name: f.fileName, rowCount: f.rowCount })),
@@ -148,7 +159,7 @@ export default function AiReportNew() {
       headers: first.headers,
       fileName: report.fileName,
       prompt, filters,
-      audience, timeframe, breakdown, goal, comparison,
+      audience: audienceClean, timeframe: timeframeClean, breakdown: breakdownClean, goal, comparison: comparisonClean,
     }));
     navigate(`/reports/ai/${id}`);
   }
@@ -274,10 +285,10 @@ export default function AiReportNew() {
           <article className="rounded-2xl border border-border/60 bg-card p-5">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5 text-[hsl(265_70%_55%)]" />
-              <h3 className="text-[14px] font-semibold tracking-tight">3 · Shape the report</h3>
+              <h3 className="text-[14px] font-semibold tracking-tight">3 · Shape the report (optional)</h3>
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              A few quick choices let Blossom tailor a real drill-down dashboard instead of a generic chart.
+              All optional — leave on <span className="font-medium text-foreground">Auto</span> and Blossom will infer everything from your prompt and data. Pick a value only when you want to lock it in.
             </p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -373,10 +384,10 @@ export default function AiReportNew() {
                 ok={files.length > 0}
               />
               <SummaryRow label="Prompt" value={prompt ? `"${prompt.slice(0, 60)}${prompt.length > 60 ? "…" : ""}"` : "Not set"} ok={!!prompt.trim()} />
-              <SummaryRow label="Audience" value={audience} ok />
-              <SummaryRow label="Timeframe" value={timeframe} ok />
-              <SummaryRow label="Breakdown" value={breakdown} ok />
-              <SummaryRow label="Comparison" value={comparison} ok />
+              <SummaryRow label="Audience" value={isAuto(audience) ? "Auto" : audience} ok={!isAuto(audience)} muted={isAuto(audience)} />
+              <SummaryRow label="Timeframe" value={isAuto(timeframe) ? "Auto" : timeframe} ok={!isAuto(timeframe)} muted={isAuto(timeframe)} />
+              <SummaryRow label="Breakdown" value={isAuto(breakdown) ? "Auto" : breakdown} ok={!isAuto(breakdown)} muted={isAuto(breakdown)} />
+              <SummaryRow label="Comparison" value={isAuto(comparison) ? "Auto" : comparison} ok={!isAuto(comparison)} muted={isAuto(comparison)} />
               <SummaryRow label="Goal" value={goal ? `"${goal.slice(0, 50)}${goal.length > 50 ? "…" : ""}"` : "—"} ok />
               <SummaryRow label="Filters" value={filters.length ? `${filters.length} applied` : "None"} ok />
             </div>
@@ -399,11 +410,13 @@ export default function AiReportNew() {
   );
 }
 
-function SummaryRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+const isAuto = (v: string) => !v || /^auto\b/i.test(v);
+
+function SummaryRow({ label, value, ok, muted }: { label: string; value: string; ok: boolean; muted?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
-      <span className={cn("text-right text-[12.5px] font-medium", ok ? "text-foreground" : "text-muted-foreground/60")}>{value}</span>
+      <span className={cn("text-right text-[12.5px] font-medium", muted ? "text-muted-foreground/70 italic" : ok ? "text-foreground" : "text-muted-foreground/60")}>{value}</span>
     </div>
   );
 }
