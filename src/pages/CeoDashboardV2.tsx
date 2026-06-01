@@ -503,17 +503,15 @@ export default function CeoDashboardV2() {
   const observations = useMemo(() => buildObservations(filtered), [filtered]);
 
   return (
-    <div className="-mx-3 -mt-3 md:-mx-6 md:-mt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12">
-      {/* HERO HEADER */}
-      <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/5 px-4 pt-5 pb-4 md:px-8 md:pt-8 md:pb-6">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-        <div className="pointer-events-none absolute -left-32 bottom-0 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-12 space-y-5">
+      {/* HEADER */}
+      <div className="rounded-2xl border border-border/70 bg-card p-5 md:p-6 shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-12px_hsl(220_15%_20%/0.08)]">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               <TrendingUp className="h-3 w-3" /> Executive
             </div>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">BCBA Performance</h1>
+            <h1 className="mt-2 text-[26px] font-semibold tracking-tight md:text-[30px]">BCBA Performance</h1>
             <p className="mt-1 text-sm text-muted-foreground">Billable hours per BCBA · live label-driven attribution</p>
             {imports.length > 0 ? (
               <p className="mt-2 text-[11px] text-muted-foreground">
@@ -527,7 +525,7 @@ export default function CeoDashboardV2() {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-card/60 backdrop-blur p-1">
+            <div className="flex items-center gap-1 rounded-xl border border-border/70 bg-muted/40 p-1">
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -565,7 +563,7 @@ export default function CeoDashboardV2() {
               </Button>
             </div>
             <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            <div className="flex items-center rounded-xl border border-border/60 bg-card/60 backdrop-blur overflow-hidden">
+            <div className="flex items-center rounded-xl border border-border/70 bg-muted/40 overflow-hidden">
               <Select value={uploadMode} onValueChange={(v) => setUploadMode(v as "replace" | "append")}>
                 <SelectTrigger className="h-9 w-[100px] text-xs border-0 bg-transparent rounded-none focus:ring-0" aria-label="Upload mode">
                   <SelectValue />
@@ -575,7 +573,7 @@ export default function CeoDashboardV2() {
                   <SelectItem value="replace">Replace</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="h-5 w-px bg-border/60" />
+              <div className="h-5 w-px bg-border/70" />
               <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} disabled={uploading} className="h-9 rounded-none gap-1.5 text-primary hover:text-primary hover:bg-primary/5">
                 <Upload className="h-3.5 w-3.5" />{uploading ? "Uploading…" : "Upload CSV"}
               </Button>
@@ -584,7 +582,7 @@ export default function CeoDashboardV2() {
         </div>
 
         {/* KPI strip */}
-        <div className="relative mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-4 md:gap-3">
           <KpiTile icon={Clock} label="Billable hours" value={totalHours.toLocaleString(undefined, { maximumFractionDigits: 1 })} accent="primary" />
           <KpiTile icon={UserCog} label="BCBAs" value={groups.length.toString()} accent="petal-purple" />
           <KpiTile icon={FileBarChart} label="Sessions" value={filtered.length.toLocaleString()} accent="petal-sage" />
@@ -592,8 +590,8 @@ export default function CeoDashboardV2() {
         </div>
 
         {/* Window chips */}
-        <div className="relative mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1 shrink-0">Range</span>
+        <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+          <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground mr-1 shrink-0">Range</span>
           {WINDOW_ORDER.map((w) => (
             <button
               key={w}
@@ -602,7 +600,7 @@ export default function CeoDashboardV2() {
                 "shrink-0 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors",
                 windowKey === w
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border/60 text-muted-foreground hover:text-foreground",
+                  : "bg-muted/40 border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
               {WINDOW_LABELS[w]}
@@ -630,7 +628,7 @@ export default function CeoDashboardV2() {
         </div>
       </div>
 
-      <div className="px-3 pt-4 md:px-8 md:pt-6 space-y-4">
+      <div className="space-y-4">
         {/* CONTROL BAR */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
