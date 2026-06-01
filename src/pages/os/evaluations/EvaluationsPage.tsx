@@ -48,8 +48,6 @@ export default function EvaluationsPage() {
   const data = useEvaluationsData();
   const [tab, setTab] = useState("overview");
   const [staffView, setStaffView] = useState<import("./tabs/StaffTab").SavedView | undefined>(undefined);
-  const [addOpen, setAddOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [openStaffId, setOpenStaffId] = useState<string | null>(null);
 
   // Scope data by permissions
