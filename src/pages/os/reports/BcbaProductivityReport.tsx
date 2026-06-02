@@ -693,8 +693,10 @@ export default function BcbaProductivityReport() {
     toast.success(`Exported ${kind.toUpperCase()}`);
   }
 
-  const empty = !billingRaws.length;
+  const billingLoaded = billingRaws.length > 0;
   const authsLoaded = authRecords.length > 0;
+  const ready = billingLoaded && authsLoaded;
+  const empty = !ready;
 
   return (
     <OSShell>
@@ -725,6 +727,11 @@ export default function BcbaProductivityReport() {
       {/* ===== Upload ===== */}
       {empty && (
         <section className="mt-4 print:hidden">
+          <div className="mb-3 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Both reports required.</span>{" "}
+            Upload the Billing Report <span className="text-foreground">and</span> the Authorization Report
+            before the dashboard is generated. Auths drive historical BCBA attribution for 97153/97154 hours.
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -752,6 +759,11 @@ export default function BcbaProductivityReport() {
                 className="hidden"
               />
             </div>
+            {billingLoaded && (
+              <p className="mt-3 text-[11px] text-emerald-700">
+                ✓ Loaded {billingRaws.length.toLocaleString()} rows from {billingFileName}
+              </p>
+            )}
             {missing.length > 0 && (
               <div className="mx-auto mt-4 max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-left text-xs text-destructive">
                 <p className="font-semibold">Missing required columns:</p>
@@ -868,33 +880,6 @@ export default function BcbaProductivityReport() {
               {" · "}{exceptions.length.toLocaleString()} attribution exception{exceptions.length === 1 ? "" : "s"}
             </p>
           </section>
-
-          {/* ===== Auth status banner ===== */}
-          {!authsLoaded && (
-            <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 print:hidden">
-              <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 text-amber-700" />
-                <div className="flex-1 text-xs text-amber-900">
-                  <p className="font-semibold">Authorization report not uploaded.</p>
-                  <p className="mt-0.5">
-                    97153 hours are currently attributed to the rendering provider as a fallback.
-                    Upload your Authorization Report to attribute 97153 hours to the correct historical BCBA based on auth date ranges.
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => authInputRef.current?.click()}>
-                  Upload Authorizations
-                </Button>
-                <input
-                  ref={authInputRef}
-                  type="file"
-                  multiple
-                  accept={SUPPORTED_EXTENSIONS}
-                  onChange={(e) => handleAuthFiles(e.target.files)}
-                  className="hidden"
-                />
-              </div>
-            </section>
-          )}
 
           {/* ===== KPI Summary ===== */}
           <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
