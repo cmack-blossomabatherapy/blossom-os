@@ -26,7 +26,8 @@ export type OSRole =
   | "bcba"
   | "rbt"
   | "marketing_team"
-  | "case_manager";
+  | "case_manager"
+  | "behavioral_support";
 
 export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadership" | "operations" | "field" }[] = [
   { id: "super_admin", label: "Super Admin", tier: "platform" },
@@ -45,6 +46,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "rbt", label: "RBT", tier: "field" },
   { id: "marketing_team", label: "Marketing Team", tier: "operations" },
   { id: "case_manager", label: "Case Manager", tier: "operations" },
+  { id: "behavioral_support", label: "Behavioral Support", tier: "field" },
 ];
 
 export type OSAction = "view" | "create" | "edit" | "delete" | "approve" | "export" | "assign";
@@ -361,6 +363,15 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       training: VIEW,
     },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
+  },
+  behavioral_support: {
+    modules: ["reports", "training"],
+    scope: "company",
+    actions: {
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
   },
 };
 
