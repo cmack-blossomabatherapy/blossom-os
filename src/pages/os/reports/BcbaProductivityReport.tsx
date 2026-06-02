@@ -1263,8 +1263,10 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
                   <DT label="Missing parent training" value={String(agg.missingPT)} />
                   <DT label="Missing supervision" value={String(agg.missingSup)} />
                   <DT label="Assigned RBTs" value={String(agg.assignedRbts)} />
-                  <DT label="Payors" value={agg.payors.size ? [...agg.payors].join(", ") : "—"} />
                 </dl>
+                <div className="mt-2">
+                  <PayorsDisclosure payors={[...agg.payors]} />
+                </div>
                 {agg.flags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {agg.flags.map(f => (
