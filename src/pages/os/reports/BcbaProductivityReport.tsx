@@ -247,6 +247,8 @@ export default function BcbaProductivityReport() {
       const dirH = findH(headers, ["StateDirector", "Director", "RegionalDirector"]);
       const payorH = findH(headers, ["PayorName", "PayorNickname", "Payor", "Payer", "Insurance", "Funder"]);
       const ptH = findH(headers, ["ParentTrainingCompleted", "PT Completed", "ParentTraining"]);
+      const authIdH = findH(headers, ["AuthorizationId", "Authorization Id", "AuthId", "AuthorizationID"]);
+      const authResIdH = findH(headers, ["AuthorizationResourceId", "Authorization Resource Id", "AuthResourceId", "AuthorizationResourceID"]);
 
       const composeProv = (r: Record<string, string>) => {
         if (bcbaH) {
@@ -296,6 +298,8 @@ export default function BcbaProductivityReport() {
           payor: payorH ? (r[payorH] || "") : "",
           pt: ptH ? boolish(r[ptH]) : false,
           raw: r,
+          authId: authIdH ? (r[authIdH] || "").trim() : "",
+          authResourceId: authResIdH ? (r[authResIdH] || "").trim() : "",
         });
       }
       setBillingRaws(raws);
