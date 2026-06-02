@@ -161,20 +161,20 @@ export default function QaAuthUtilizationDashboard() {
 
       const clientFnH = findHeader(headers, ["ClientFirstName", "Client First Name", "Client First"]);
       const clientLnH = findHeader(headers, ["ClientLastName", "Client Last Name", "Client Last"]);
-      const clientFullH = findHeader(headers, ["ClientName", "Client Name", "Client"]);
+      const clientFullH = findHeader(headers, ["ClientFullName", "Client Full Name", "ClientName", "Client Name", "Client", "clientName"]);
       const clientIdH = findHeader(headers, ["ClientId", "Client Id", "Client ID"]);
       const authNumH = findHeader(headers, ["AuthorizationNumber", "Authorization Number", "AuthNumber", "Auth Number", "AuthorizationId", "Authorization Id", "Auth Id"]);
       const payorH = findHeader(headers, ["PayorName", "Payor", "Payer", "PayerName", "Insurance"]);
-      const codeH = findHeader(headers, ["ServiceCode", "Service Code", "ProcedureCode", "Procedure Code", "CPTCode", "CPT Code"]);
+      const codeH = findHeader(headers, ["ServiceCode", "Service Code", "ServiceCodes", "Service Codes", "ProcedureCode", "Procedure Code", "CPTCode", "CPT Code"]);
       const codeDescH = findHeader(headers, ["ServiceCodeDescription", "ProcedureCodeDescription", "Service Code Description", "Procedure Code Description"]);
-      const authHrsH = findHeader(headers, ["AuthorizedHours", "Authorized Hours", "AuthorizedAmount", "Authorized Amount", "AuthorizedUnits", "Authorized Units", "AuthorizedQuantity"]);
-      const workedHrsH = findHeader(headers, ["WorkedHours", "Worked Hours", "WorkedAmount", "Worked Amount", "WorkedUnits", "Worked Units", "UsedHours", "Used Hours"]);
-      const pendingHrsH = findHeader(headers, ["PendingHours", "Pending Hours", "PendingAmount", "Pending Amount", "PendingUnits", "Pending Units"]);
-      const remainingHrsH = findHeader(headers, ["RemainingHours", "Remaining Hours", "RemainingAmount", "Remaining Amount", "RemainingUnits", "Remaining Units"]);
-      const expH = findHeader(headers, ["ExpirationDate", "Expiration Date", "EndDate", "End Date", "AuthorizationEndDate"]);
-      const startH = findHeader(headers, ["StartDate", "Start Date", "AuthorizationStartDate", "AuthorizationStart"]);
+      const authHrsH = findHeader(headers, ["AuthorizedHoursAll", "AuthorizedHours", "Authorized Hours", "AuthorizedHoursMonth", "AuthorizedAmountAll", "AuthorizedAmount", "Authorized Amount", "AuthorizedUnitsAll", "AuthorizedUnits", "Authorized Units", "AuthorizedQuantity"]);
+      const workedHrsH = findHeader(headers, ["WorkedHoursAll", "WorkedHours", "Worked Hours", "WorkedHoursMonth", "WorkedAmountAll", "WorkedAmount", "Worked Amount", "WorkedUnitsAll", "WorkedUnits", "Worked Units", "UsedHours", "Used Hours"]);
+      const pendingHrsH = findHeader(headers, ["PendingHoursAll", "PendingHours", "Pending Hours", "PendingHoursMonth", "PendingAmountAll", "PendingAmount", "Pending Amount", "PendingUnitsAll", "PendingUnits", "Pending Units"]);
+      const remainingHrsH = findHeader(headers, ["RemainingHoursAll", "RemainingHours", "Remaining Hours", "RemainingHoursMonth", "RemainingAmountAll", "RemainingAmount", "Remaining Amount", "RemainingUnitsAll", "RemainingUnits", "Remaining Units"]);
+      const expH = findHeader(headers, ["ExpirationDate", "Expiration Date", "endDate", "EndDate", "End Date", "AuthorizationEndDate", "ActualEndDate"]);
+      const startH = findHeader(headers, ["startDate", "StartDate", "Start Date", "AuthorizationStartDate", "AuthorizationStart", "ActualStartDate"]);
       const stateH = findHeader(headers, ["State", "ClientState", "Client State"]);
-      const bcbaH = findHeader(headers, ["BCBA", "AssignedBCBA", "Assigned BCBA", "Supervisor", "PrimaryBCBA", "Primary BCBA", "Provider", "ProviderName"]);
+      const bcbaH = findHeader(headers, ["BCBA", "AssignedBCBA", "Assigned BCBA", "Supervisor", "PrimaryBCBA", "Primary BCBA", "Provider", "ProviderName", "managerName", "Manager", "ManagerName"]);
 
       const missing: string[] = [];
       if (!clientFullH && !(clientFnH && clientLnH)) missing.push("ClientName (or ClientFirstName + ClientLastName)");
