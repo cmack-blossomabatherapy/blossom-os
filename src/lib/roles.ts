@@ -27,6 +27,7 @@ export type AppRole =
   | "staff"
   | "hr_admin_assistant"
   | "marketing"
+  | "behavioral_support"
   | "viewer";
 
 export interface RoleMeta {
