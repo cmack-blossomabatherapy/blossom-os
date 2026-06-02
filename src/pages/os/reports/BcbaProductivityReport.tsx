@@ -693,8 +693,10 @@ export default function BcbaProductivityReport() {
     toast.success(`Exported ${kind.toUpperCase()}`);
   }
 
-  const empty = !billingRaws.length;
+  const billingLoaded = billingRaws.length > 0;
   const authsLoaded = authRecords.length > 0;
+  const ready = billingLoaded && authsLoaded;
+  const empty = !ready;
 
   return (
     <OSShell>
@@ -752,6 +754,11 @@ export default function BcbaProductivityReport() {
                 className="hidden"
               />
             </div>
+            {billingLoaded && (
+              <p className="mt-3 text-[11px] text-emerald-700">
+                ✓ Loaded {billingRaws.length.toLocaleString()} rows from {billingFileName}
+              </p>
+            )}
             {missing.length > 0 && (
               <div className="mx-auto mt-4 max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-left text-xs text-destructive">
                 <p className="font-semibold">Missing required columns:</p>
