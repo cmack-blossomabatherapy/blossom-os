@@ -323,7 +323,7 @@ export default function BcbaProductivityReport() {
       const startH = findH(headers, ["AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "EffectiveDate", "Effective Date", "From"]);
       const endH = findH(headers, ["AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
       const codeH = findH(headers, ["ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
-      const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
+      const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "managerName", "Manager Name", "Manager", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
       const payorH = findH(headers, ["PayorName", "Payor", "Payer", "Insurance", "Funder"]);
       const statusH = findH(headers, ["Status", "AuthorizationStatus", "Auth Status"]);
 
