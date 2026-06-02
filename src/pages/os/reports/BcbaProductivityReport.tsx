@@ -1072,6 +1072,7 @@ export default function BcbaProductivityReport() {
                     <Th>State</Th>
                     <Th align="right">Active Clients</Th>
                     <Th align="right">RBTs</Th>
+                    <Th align="right">97153</Th>
                     <Th align="right">97155</Th>
                     <Th align="right">97156</Th>
                     <Th align="right">Total Billable</Th>
@@ -1095,7 +1096,7 @@ export default function BcbaProductivityReport() {
                     );
                   })}
                   {visible.length === 0 && (
-                    <tr><td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">No BCBAs match your filters.</td></tr>
+                    <tr><td colSpan={14} className="px-4 py-8 text-center text-muted-foreground">No BCBAs match your filters.</td></tr>
                   )}
                 </tbody>
               </table>
