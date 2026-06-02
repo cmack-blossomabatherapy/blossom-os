@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
+  ShieldCheck, FileWarning,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -113,33 +114,58 @@ function classifyCode(code: string) {
   return c ? "other" : "other";
 }
 
-/* Extract a BCBA person-name from a ClientContactLabels cell.
- * Labels are comma-separated; we skip operational/status tokens and
- * return the first token that looks like a person's name. */
-const LABEL_STATUS_TOKENS = new Set([
-  "needs verification","client","reassessment approved","telehealth approved",
-  "initial treatment approved","concurrent treatment approved","reassessment",
-  "initial assessment approved","tms - billable sessions pulled for secondary",
-  "initial treatment","concurrent treatment","initial assessment",
-  "staffing needed","secondary for rf","new client","ready to schedule",
-  "ready to staff","awaiting auth","awaiting assessment",
-]);
-function extractBcbaFromLabels(labels: string): string | null {
-  if (!labels) return null;
-  const parts = labels.split(",").map(s => s.trim()).filter(Boolean);
-  for (const p of parts) {
-    const lower = p.toLowerCase();
-    if (LABEL_STATUS_TOKENS.has(lower)) continue;
-    if (lower.startsWith("case manager")) continue;
-    if (lower.includes("location") || lower.includes("clinic")) continue;
-    if (lower.includes("approved") || lower.includes("pending")) continue;
-    if (/^\d/.test(p)) continue;
-    const words = p.split(/\s+/).filter(Boolean);
-    if (words.length < 2) continue;
-    if (!/^[A-Za-z][A-Za-z'.\- ]+$/.test(p)) continue;
-    return p;
-  }
-  return null;
+/* Date helpers for authorization attribution. */
+function parseDate(v: string): number {
+  if (!v) return NaN;
+  const t = new Date(v).getTime();
+  return isFinite(t) ? t : NaN;
+}
+function normName(s: string) {
+  return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/* ------- Authorization records (separate upload) ------- */
+interface AuthRecord {
+  client: string;
+  clientKey: string; // normalized client name
+  clientId: string;
+  authNumber: string;
+  startMs: number;
+  endMs: number;
+  startRaw: string;
+  endRaw: string;
+  code: string;
+  bucket: string; // classified code
+  bcba: string;
+  payor: string;
+  status: string;
+}
+
+interface BillingRaw {
+  provider: string;
+  client: string;
+  clientKey: string;
+  clientId: string;
+  code: string;
+  bucket: string;
+  hours: number;
+  date: string;
+  dateMs: number;
+  state: string;
+  director: string;
+  payor: string;
+  pt: boolean;
+  raw: Record<string, string>;
+}
+
+interface AttributionException {
+  client: string;
+  clientId: string;
+  date: string;
+  code: string;
+  hours: number;
+  provider: string;
+  reason: string;
 }
 
 function downloadBlob(filename: string, mime: string, content: string) {
