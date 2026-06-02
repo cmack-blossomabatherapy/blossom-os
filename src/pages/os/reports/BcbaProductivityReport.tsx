@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
-  ShieldCheck, FileWarning,
+  ShieldCheck, FileWarning, ArrowUpDown,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
