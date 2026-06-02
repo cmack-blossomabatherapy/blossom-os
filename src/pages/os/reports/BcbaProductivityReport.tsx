@@ -401,7 +401,15 @@ export default function BcbaProductivityReport() {
       setAuthRecords(prev => {
         const seen = new Set<string>();
         const keyOf = (a: AuthRecord) =>
-          [a.clientKey, a.authNumber, a.code, a.startRaw, a.endRaw, normName(a.bcba)].join("|");
+          [
+            a.resourceId || `${a.clientKey}:${a.authNumber}`,
+            a.clientId || a.clientKey,
+            a.code,
+            a.startRaw,
+            a.endRaw,
+            a.managerId || normName(a.bcba),
+            (a.payor || "").toLowerCase(),
+          ].join("|");
         const merged: AuthRecord[] = [];
         for (const a of [...prev, ...newRecs]) {
           const k = keyOf(a);
