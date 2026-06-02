@@ -143,6 +143,7 @@ export default function BcbaProductivityReport() {
   const [bcbaF, setBcbaF] = useState("all");
   const [dirF, setDirF] = useState("all");
   const [payorF, setPayorF] = useState("all");
+  const [codesF, setCodesF] = useState<string[]>([]); // empty = all
   const [search, setSearch] = useState("");
   const [minHours, setMinHours] = useState(DEFAULT_MIN);
 
@@ -305,8 +306,9 @@ export default function BcbaProductivityReport() {
     if (bcbaF !== "all" && s.bcba !== bcbaF) return false;
     if (dirF !== "all" && s.director !== dirF) return false;
     if (payorF !== "all" && s.payor !== payorF) return false;
+    if (codesF.length > 0 && !codesF.includes(classifyCode(s.code))) return false;
     return true;
-  }), [sessions, month, stateF, bcbaF, dirF, payorF]);
+  }), [sessions, month, stateF, bcbaF, dirF, payorF, codesF]);
 
   /* ---- aggregate ---- */
   const aggregates = useMemo<BcbaAgg[]>(() => {
@@ -547,6 +549,38 @@ export default function BcbaProductivityReport() {
               <FilterSelect label="BCBA" value={bcbaF} onChange={setBcbaF} options={bcbas} />
               <FilterSelect label="State Director" value={dirF} onChange={setDirF} options={directors} />
               <FilterSelect label="Payor" value={payorF} onChange={setPayorF} options={payors} />
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground">Service Code</span>
+                <div className="flex flex-wrap gap-1">
+                  {["97155", "97156", "97153", "97151"].map(code => {
+                    const active = codesF.includes(code);
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => setCodesF(prev => active ? prev.filter(c => c !== code) : [...prev, code])}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-foreground hover:border-primary/40",
+                        )}
+                      >
+                        {code}
+                      </button>
+                    );
+                  })}
+                  {codesF.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setCodesF([])}
+                      className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      All
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-1.5 text-xs">
                 <span className="text-muted-foreground">Min hours</span>
                 <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20" />
