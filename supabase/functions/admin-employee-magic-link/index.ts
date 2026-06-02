@@ -11,6 +11,7 @@ const corsHeaders = {
 
 const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const FROM_EMAIL = "Blossom ABA Therapy <welcome@blossom.abacommandcenter.com>";
+const LOGO_URL = "https://blossom-os.lovable.app/email-assets/blossom-logo.png";
 
 function escapeHtml(value: string) {
   return value
@@ -232,7 +233,9 @@ Deno.serve(async (req) => {
   <tr><td align="center" style="padding:40px 16px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,0.08);border:1px solid #e6edf5;">
       <tr><td style="padding:32px 36px 0;">
-        <div style="font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#2B7BD5;">Blossom ABA Therapy</div>
+        <div style="text-align:center;padding:8px 0 4px;">
+          <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="200" style="display:inline-block;max-width:200px;height:auto;border:0;outline:none;text-decoration:none;" />
+        </div>
       </td></tr>
       <tr><td style="padding:18px 36px 8px;">
         <h1 style="margin:0;font-size:26px;line-height:1.25;font-weight:700;color:#0f172a;letter-spacing:-0.01em;">${greeting}</h1>
