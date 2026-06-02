@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
+  ShieldCheck, FileWarning,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -113,33 +114,58 @@ function classifyCode(code: string) {
   return c ? "other" : "other";
 }
 
-/* Extract a BCBA person-name from a ClientContactLabels cell.
- * Labels are comma-separated; we skip operational/status tokens and
- * return the first token that looks like a person's name. */
-const LABEL_STATUS_TOKENS = new Set([
-  "needs verification","client","reassessment approved","telehealth approved",
-  "initial treatment approved","concurrent treatment approved","reassessment",
-  "initial assessment approved","tms - billable sessions pulled for secondary",
-  "initial treatment","concurrent treatment","initial assessment",
-  "staffing needed","secondary for rf","new client","ready to schedule",
-  "ready to staff","awaiting auth","awaiting assessment",
-]);
-function extractBcbaFromLabels(labels: string): string | null {
-  if (!labels) return null;
-  const parts = labels.split(",").map(s => s.trim()).filter(Boolean);
-  for (const p of parts) {
-    const lower = p.toLowerCase();
-    if (LABEL_STATUS_TOKENS.has(lower)) continue;
-    if (lower.startsWith("case manager")) continue;
-    if (lower.includes("location") || lower.includes("clinic")) continue;
-    if (lower.includes("approved") || lower.includes("pending")) continue;
-    if (/^\d/.test(p)) continue;
-    const words = p.split(/\s+/).filter(Boolean);
-    if (words.length < 2) continue;
-    if (!/^[A-Za-z][A-Za-z'.\- ]+$/.test(p)) continue;
-    return p;
-  }
-  return null;
+/* Date helpers for authorization attribution. */
+function parseDate(v: string): number {
+  if (!v) return NaN;
+  const t = new Date(v).getTime();
+  return isFinite(t) ? t : NaN;
+}
+function normName(s: string) {
+  return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/* ------- Authorization records (separate upload) ------- */
+interface AuthRecord {
+  client: string;
+  clientKey: string; // normalized client name
+  clientId: string;
+  authNumber: string;
+  startMs: number;
+  endMs: number;
+  startRaw: string;
+  endRaw: string;
+  code: string;
+  bucket: string; // classified code
+  bcba: string;
+  payor: string;
+  status: string;
+}
+
+interface BillingRaw {
+  provider: string;
+  client: string;
+  clientKey: string;
+  clientId: string;
+  code: string;
+  bucket: string;
+  hours: number;
+  date: string;
+  dateMs: number;
+  state: string;
+  director: string;
+  payor: string;
+  pt: boolean;
+  raw: Record<string, string>;
+}
+
+interface AttributionException {
+  client: string;
+  clientId: string;
+  date: string;
+  code: string;
+  hours: number;
+  provider: string;
+  reason: string;
 }
 
 function downloadBlob(filename: string, mime: string, content: string) {
@@ -162,10 +188,14 @@ function toCsv(columns: string[], rows: (string | number)[][]) {
 const DEFAULT_MIN = 100;
 
 export default function BcbaProductivityReport() {
-  const [fileName, setFileName] = useState("");
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [billingFileName, setBillingFileName] = useState("");
+  const [authFileName, setAuthFileName] = useState("");
+  const [billingRaws, setBillingRaws] = useState<BillingRaw[]>([]);
+  const [authRecords, setAuthRecords] = useState<AuthRecord[]>([]);
   const [missing, setMissing] = useState<string[]>([]);
+  const [authMissing, setAuthMissing] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(false);
 
   const [month, setMonth] = useState("all");
   const [stateF, setStateF] = useState("all");
@@ -178,9 +208,11 @@ export default function BcbaProductivityReport() {
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
+  const [authDragOver, setAuthDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const authInputRef = useRef<HTMLInputElement>(null);
 
-  /* ---- parse ---- */
+  /* ---- parse billing report ---- */
   async function handleFiles(files: FileList | File[] | null) {
     if (!files || !files[0]) return;
     const file = files[0];
@@ -197,6 +229,7 @@ export default function BcbaProductivityReport() {
       const clientH = findH(headers, ["Client", "Client Name", "Patient", "Patient Name"]);
       const cliFirstH = findH(headers, ["ClientFirstName", "Client First Name"]);
       const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
+      const cliIdH = findH(headers, ["ClientId", "Client ID", "ClientNumber", "Client Number", "PatientId", "Patient ID", "MRN"]);
       const rbtH = findH(headers, ["RBT", "RBT Name", "Tech", "Technician", "BehaviorTechnician"]);
       const codeH = findH(headers, ["ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure", "Procedure Code"]);
       const hoursH = findH(headers, ["TimeWorkedInHours", "Hours", "BillableHours", "Worked Hours", "ServiceHours", "UnitsOfService", "Units"]);
@@ -205,7 +238,6 @@ export default function BcbaProductivityReport() {
       const dirH = findH(headers, ["StateDirector", "Director", "RegionalDirector"]);
       const payorH = findH(headers, ["PayorName", "PayorNickname", "Payor", "Payer", "Insurance", "Funder"]);
       const ptH = findH(headers, ["ParentTrainingCompleted", "PT Completed", "ParentTraining"]);
-      const labelsH = findH(headers, ["ClientContactLabels", "Client Contact Labels", "Labels", "ContactLabels"]);
 
       const composeProv = (r: Record<string, string>) => {
         if (bcbaH) {
@@ -233,104 +265,33 @@ export default function BcbaProductivityReport() {
       if (!hoursH) miss.push("Hours / Units column");
 
       if (miss.length) {
-        setMissing(miss); setSessions([]); setFileName(file.name); return;
+        setMissing(miss); setBillingRaws([]); setBillingFileName(file.name); return;
       }
       setMissing([]);
 
-      // Pass 1: build raw entries with provider + client + code.
-      type Raw = {
-        provider: string; client: string; code: string; bucket: string;
-        hours: number; date: string; state: string; director: string;
-        payor: string; pt: boolean; labelBcba: string | null; raw: Record<string, string>;
-      };
-      const raws: Raw[] = [];
+      const raws: BillingRaw[] = [];
       for (const r of first.rows) {
         const provider = composeProv(r);
         const client = composeClient(r);
         if (!provider) continue;
         const code = codeH ? (r[codeH] || "").trim() : "";
-        const labels = labelsH ? (r[labelsH] || "") : "";
+        const date = dateH ? (r[dateH] || "") : "";
         raws.push({
-          provider, client, code, bucket: classifyCode(code),
+          provider, client, clientKey: normName(client),
+          clientId: cliIdH ? (r[cliIdH] || "").trim() : "",
+          code, bucket: classifyCode(code),
           hours: hoursH ? num(r[hoursH]) : 0,
-          date: dateH ? (r[dateH] || "") : "",
+          date, dateMs: parseDate(date),
           state: stateH ? (r[stateH] || "") : "",
           director: dirH ? (r[dirH] || "") : "",
           payor: payorH ? (r[payorH] || "") : "",
           pt: ptH ? boolish(r[ptH]) : false,
-          labelBcba: extractBcbaFromLabels(labels),
           raw: r,
         });
       }
-
-      // Pass 2: determine the BCBA assigned to each client.
-      // Priority:
-      //   1) BCBA extracted from ClientContactLabels (source of truth — when
-      //      the label changes, the assignment changes).
-      //   2) Provider with most supervisor-code hours (97155/97156/97151).
-      //   3) Highest-hours provider overall.
-      const labelBcbaByClient = new Map<string, Map<string, number>>();
-      for (const x of raws) {
-        if (!x.client || !x.labelBcba) continue;
-        let m = labelBcbaByClient.get(x.client);
-        if (!m) { m = new Map(); labelBcbaByClient.set(x.client, m); }
-        m.set(x.labelBcba, (m.get(x.labelBcba) ?? 0) + 1);
-      }
-      const supByClient = new Map<string, Map<string, number>>();
-      const anyByClient = new Map<string, Map<string, number>>();
-      for (const x of raws) {
-        if (!x.client) continue;
-        const isSup = x.bucket === "97155" || x.bucket === "97156" || x.bucket === "97151";
-        const target = isSup ? supByClient : anyByClient;
-        let m = target.get(x.client);
-        if (!m) { m = new Map(); target.set(x.client, m); }
-        m.set(x.provider, (m.get(x.provider) ?? 0) + x.hours);
-      }
-      const bcbaForClient = new Map<string, string>();
-      const pickTop = (m: Map<string, number>) => {
-        let best = ""; let bestH = -1;
-        for (const [p, h] of m) if (h > bestH) { best = p; bestH = h; }
-        return best;
-      };
-      const allClients = new Set<string>([
-        ...labelBcbaByClient.keys(), ...supByClient.keys(), ...anyByClient.keys(),
-      ]);
-      for (const c of allClients) {
-        const lm = labelBcbaByClient.get(c);
-        if (lm && lm.size) { bcbaForClient.set(c, pickTop(lm)); continue; }
-        const sm = supByClient.get(c);
-        if (sm && sm.size) { bcbaForClient.set(c, pickTop(sm)); continue; }
-        const am = anyByClient.get(c);
-        if (am && am.size) { bcbaForClient.set(c, pickTop(am)); }
-      }
-
-      // Pass 3: build SessionRow stream feeding existing aggregation.
-      // - bcba grouping field = bcbaForClient (or self if no client)
-      // - hours are credited when the provider IS that BCBA, OR for
-      //   97153/97154 RBT direct sessions (attributed to the BCBA via label).
-      // - if the provider is NOT the BCBA, set rbt = provider so the RBT roster is built
-      const rows: SessionRow[] = [];
-      for (const x of raws) {
-        const bcba = x.client ? (bcbaForClient.get(x.client) || x.provider) : x.provider;
-        const isBcbaRow = x.provider === bcba;
-        const creditRbtDirect = !isBcbaRow && x.bucket === "97153";
-        rows.push({
-          bcba,
-          client: x.client,
-          rbt: isBcbaRow ? "" : x.provider,
-          code: x.code,
-          hours: isBcbaRow || creditRbtDirect ? x.hours : 0,
-          date: x.date,
-          state: x.state,
-          director: x.director,
-          payor: x.payor,
-          parentTrainingCompleted: x.pt,
-          raw: x.raw,
-        });
-      }
-      setSessions(rows);
-      setFileName(file.name);
-      toast.success(`Loaded ${rows.length.toLocaleString()} session rows`);
+      setBillingRaws(raws);
+      setBillingFileName(file.name);
+      toast.success(`Loaded ${raws.length.toLocaleString()} billing rows`);
     } catch (e: any) {
       toast.error(`Failed to parse: ${e?.message ?? e}`);
     } finally {
@@ -338,10 +299,190 @@ export default function BcbaProductivityReport() {
     }
   }
 
-  function resetUpload() {
-    setFileName(""); setSessions([]); setMissing([]);
-    if (inputRef.current) inputRef.current.value = "";
+  /* ---- parse authorization report ---- */
+  async function handleAuthFiles(files: FileList | File[] | null) {
+    if (!files || !files[0]) return;
+    const file = files[0];
+    setLoadingAuth(true);
+    try {
+      const parsed = await parseAnyFile(file);
+      const first = parsed[0];
+      if (!first) throw new Error("No data in file.");
+      const headers = first.headers;
+
+      const clientH = findH(headers, ["Client", "Client Name", "Patient", "Patient Name", "Name"]);
+      const cliFirstH = findH(headers, ["ClientFirstName", "Client First Name"]);
+      const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
+      const cliIdH = findH(headers, ["ClientId", "Client ID", "ClientNumber", "PatientId", "Patient ID", "MRN"]);
+      const authNumH = findH(headers, ["AuthorizationNumber", "Auth Number", "Authorization #", "Auth #", "AuthId"]);
+      const startH = findH(headers, ["AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "EffectiveDate", "Effective Date", "From"]);
+      const endH = findH(headers, ["AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
+      const codeH = findH(headers, ["ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
+      const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
+      const payorH = findH(headers, ["PayorName", "Payor", "Payer", "Insurance", "Funder"]);
+      const statusH = findH(headers, ["Status", "AuthorizationStatus", "Auth Status"]);
+
+      const miss: string[] = [];
+      if (!clientH && !(cliFirstH || cliLastH)) miss.push("Client column");
+      if (!startH) miss.push("Authorization Start Date column");
+      if (!endH) miss.push("Authorization End Date column");
+      if (!bcbaH) miss.push("BCBA column");
+
+      if (miss.length) {
+        setAuthMissing(miss); setAuthRecords([]); setAuthFileName(file.name); return;
+      }
+      setAuthMissing([]);
+
+      const composeClient = (r: Record<string, string>) => {
+        if (clientH) { const v = (r[clientH] || "").trim(); if (v) return v; }
+        const fn = cliFirstH ? (r[cliFirstH] || "").trim() : "";
+        const ln = cliLastH ? (r[cliLastH] || "").trim() : "";
+        return [fn, ln].filter(Boolean).join(" ").trim();
+      };
+
+      const recs: AuthRecord[] = [];
+      for (const r of first.rows) {
+        const client = composeClient(r);
+        if (!client) continue;
+        const code = codeH ? (r[codeH] || "").trim() : "";
+        const startRaw = startH ? (r[startH] || "") : "";
+        const endRaw = endH ? (r[endH] || "") : "";
+        const bcba = bcbaH ? (r[bcbaH] || "").trim() : "";
+        if (!bcba) continue;
+        recs.push({
+          client, clientKey: normName(client),
+          clientId: cliIdH ? (r[cliIdH] || "").trim() : "",
+          authNumber: authNumH ? (r[authNumH] || "").trim() : "",
+          startRaw, endRaw,
+          startMs: parseDate(startRaw),
+          endMs: parseDate(endRaw),
+          code, bucket: classifyCode(code),
+          bcba,
+          payor: payorH ? (r[payorH] || "").trim() : "",
+          status: statusH ? (r[statusH] || "").trim() : "",
+        });
+      }
+      setAuthRecords(recs);
+      setAuthFileName(file.name);
+      toast.success(`Loaded ${recs.length.toLocaleString()} authorization records`);
+    } catch (e: any) {
+      toast.error(`Failed to parse: ${e?.message ?? e}`);
+    } finally {
+      setLoadingAuth(false);
+    }
   }
+
+  function resetUpload() {
+    setBillingFileName(""); setBillingRaws([]); setMissing([]);
+    setAuthFileName(""); setAuthRecords([]); setAuthMissing([]);
+    if (inputRef.current) inputRef.current.value = "";
+    if (authInputRef.current) authInputRef.current.value = "";
+  }
+
+  /* ---- Attribution: build sessions + exceptions from billing + auths ---- */
+  const { sessions, exceptions } = useMemo(() => {
+    const exc: AttributionException[] = [];
+    const rows: SessionRow[] = [];
+
+    // Index auths by normalized client name.
+    const authsByClient = new Map<string, AuthRecord[]>();
+    for (const a of authRecords) {
+      const key = a.clientKey;
+      let arr = authsByClient.get(key);
+      if (!arr) { arr = []; authsByClient.set(key, arr); }
+      arr.push(a);
+    }
+
+    const codeMatches = (authBucket: string, billBucket: string) => {
+      if (!authBucket || authBucket === "other") return true; // generic auth covers all
+      return authBucket === billBucket;
+    };
+
+    const findAuthBcba = (b: BillingRaw): { bcba: string; reason?: string } => {
+      const arr = authsByClient.get(b.clientKey);
+      if (!arr || !arr.length) return { bcba: "", reason: "No authorization on file for client" };
+
+      // Priority: matching code + DOS in range. Then matching code only. Then any.
+      const inRange = (a: AuthRecord) =>
+        isFinite(b.dateMs) && isFinite(a.startMs) && isFinite(a.endMs) &&
+        b.dateMs >= a.startMs && b.dateMs <= a.endMs;
+
+      const codeAndDate = arr.filter(a => codeMatches(a.bucket, b.bucket) && inRange(a));
+      if (codeAndDate.length) {
+        // Most recently approved = latest startMs
+        const pick = codeAndDate.slice().sort((x, y) => y.startMs - x.startMs)[0];
+        return { bcba: pick.bcba };
+      }
+
+      const codeOnly = arr.filter(a => codeMatches(a.bucket, b.bucket));
+      if (codeOnly.length && !isFinite(b.dateMs)) {
+        const pick = codeOnly.slice().sort((x, y) => y.startMs - x.startMs)[0];
+        return { bcba: pick.bcba, reason: "DOS not parseable — used latest matching auth" };
+      }
+
+      const dateOnly = arr.filter(a => inRange(a));
+      if (dateOnly.length) {
+        const pick = dateOnly.slice().sort((x, y) => y.startMs - x.startMs)[0];
+        return { bcba: pick.bcba, reason: "No auth matched service code — used date overlap" };
+      }
+
+      return { bcba: "", reason: "No authorization overlaps DOS / service code" };
+    };
+
+    const hasAuths = authRecords.length > 0;
+
+    for (const x of billingRaws) {
+      let bcba = "";
+      let isRbtDirect = false;
+
+      if (x.bucket === "97153") {
+        // 97153 is performed by RBTs; productivity always goes to authorization BCBA.
+        isRbtDirect = true;
+        if (hasAuths) {
+          const r = findAuthBcba(x);
+          if (r.bcba) bcba = r.bcba;
+          else {
+            exc.push({
+              client: x.client, clientId: x.clientId, date: x.date,
+              code: x.code, hours: x.hours, provider: x.provider,
+              reason: r.reason || "No authorization match",
+            });
+            continue;
+          }
+        } else {
+          // No auths uploaded — fall back to rendering provider so we don't drop rows.
+          bcba = x.provider;
+        }
+      } else if (x.bucket === "97155" || x.bucket === "97156" || x.bucket === "97151") {
+        // BCBA codes: rendering provider is the BCBA when present.
+        bcba = x.provider;
+        if (!bcba && hasAuths) {
+          const r = findAuthBcba(x);
+          if (r.bcba) bcba = r.bcba;
+        }
+      } else {
+        // Other codes: use rendering provider.
+        bcba = x.provider;
+      }
+
+      if (!bcba) continue;
+      rows.push({
+        bcba,
+        client: x.client,
+        rbt: isRbtDirect ? x.provider : "",
+        code: x.code,
+        hours: x.hours,
+        date: x.date,
+        state: x.state,
+        director: x.director,
+        payor: x.payor,
+        parentTrainingCompleted: x.pt,
+        raw: x.raw,
+      });
+    }
+
+    return { sessions: rows, exceptions: exc };
+  }, [billingRaws, authRecords]);
 
   /* ---- filter options ---- */
   const months = useMemo(() => [...new Set(sessions.map(s => monthOf(s.date)).filter(Boolean))].sort(), [sessions]);
@@ -520,7 +661,8 @@ export default function BcbaProductivityReport() {
     toast.success(`Exported ${kind.toUpperCase()}`);
   }
 
-  const empty = !sessions.length;
+  const empty = !billingRaws.length;
+  const authsLoaded = authRecords.length > 0;
 
   return (
     <OSShell>
@@ -551,6 +693,7 @@ export default function BcbaProductivityReport() {
       {/* ===== Upload ===== */}
       {empty && (
         <section className="mt-4 print:hidden">
+          <div className="grid gap-4 md:grid-cols-2">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -561,9 +704,9 @@ export default function BcbaProductivityReport() {
             )}
           >
             <Upload className="mx-auto h-7 w-7 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">Upload a CR billing / service export</p>
+            <p className="mt-3 text-sm font-medium">1. Upload Billing Report</p>
             <p className="text-xs text-muted-foreground">
-              CSV or Excel · one row per session with BCBA, Client, CPT code, hours, RBT, payor, date, state.
+              CR billing/service export · one row per session with Client, CPT, hours, provider, DOS.
             </p>
             <div className="mt-4">
               <Button onClick={() => inputRef.current?.click()} disabled={loading}>
@@ -585,6 +728,47 @@ export default function BcbaProductivityReport() {
                 </ul>
               </div>
             )}
+          </div>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setAuthDragOver(true); }}
+            onDragLeave={() => setAuthDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setAuthDragOver(false); handleAuthFiles(e.dataTransfer.files); }}
+            className={cn(
+              "rounded-2xl border-2 border-dashed p-10 text-center transition",
+              authDragOver ? "border-primary bg-primary/5" : "border-border/60 bg-secondary/20",
+            )}
+          >
+            <ShieldCheck className="mx-auto h-7 w-7 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium">2. Upload Authorization Report</p>
+            <p className="text-xs text-muted-foreground">
+              Source of BCBA ownership · Client, Auth Start, Auth End, Service Code, BCBA.
+            </p>
+            <div className="mt-4">
+              <Button variant="outline" onClick={() => authInputRef.current?.click()} disabled={loadingAuth}>
+                {loadingAuth ? "Parsing…" : "Choose file"}
+              </Button>
+              <input
+                ref={authInputRef}
+                type="file"
+                accept={SUPPORTED_EXTENSIONS}
+                onChange={(e) => handleAuthFiles(e.target.files)}
+                className="hidden"
+              />
+            </div>
+            {authFileName && !authMissing.length && (
+              <p className="mt-3 text-[11px] text-emerald-700">
+                Loaded {authRecords.length.toLocaleString()} records from {authFileName}
+              </p>
+            )}
+            {authMissing.length > 0 && (
+              <div className="mx-auto mt-4 max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-left text-xs text-destructive">
+                <p className="font-semibold">Missing required columns:</p>
+                <ul className="ml-4 mt-1 list-disc">
+                  {authMissing.map(m => <li key={m}>{m}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
           </div>
         </section>
       )}
@@ -644,9 +828,38 @@ export default function BcbaProductivityReport() {
               </Button>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Source: <span className="font-medium text-foreground">{fileName}</span> · {filteredSessions.length.toLocaleString()} session rows in view.
+              Billing: <span className="font-medium text-foreground">{billingFileName || "—"}</span>
+              {" · "}Auths: <span className="font-medium text-foreground">{authFileName || "not uploaded"}</span>
+              {" · "}{filteredSessions.length.toLocaleString()} session rows in view
+              {" · "}{exceptions.length.toLocaleString()} attribution exception{exceptions.length === 1 ? "" : "s"}
             </p>
           </section>
+
+          {/* ===== Auth status banner ===== */}
+          {!authsLoaded && (
+            <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 print:hidden">
+              <div className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 text-amber-700" />
+                <div className="flex-1 text-xs text-amber-900">
+                  <p className="font-semibold">Authorization report not uploaded.</p>
+                  <p className="mt-0.5">
+                    97153 hours are currently attributed to the rendering provider as a fallback.
+                    Upload your Authorization Report to attribute 97153 hours to the correct historical BCBA based on auth date ranges.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => authInputRef.current?.click()}>
+                  Upload Authorizations
+                </Button>
+                <input
+                  ref={authInputRef}
+                  type="file"
+                  accept={SUPPORTED_EXTENSIONS}
+                  onChange={(e) => handleAuthFiles(e.target.files)}
+                  className="hidden"
+                />
+              </div>
+            </section>
+          )}
 
           {/* ===== KPI Summary ===== */}
           <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
@@ -718,6 +931,47 @@ export default function BcbaProductivityReport() {
               </table>
             </div>
           </section>
+
+          {/* ===== Exceptions ===== */}
+          {exceptions.length > 0 && (
+            <section className="mt-4 overflow-hidden rounded-xl border border-amber-200 bg-card">
+              <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50/60 px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <FileWarning className="h-4 w-4 text-amber-700" />
+                  <h2 className="text-sm font-semibold text-amber-900">BCBA Attribution Exceptions ({exceptions.length.toLocaleString()})</h2>
+                </div>
+                <span className="text-[11px] text-amber-800">
+                  These 97153 rows could not be matched to an active authorization and are not credited to any BCBA.
+                </span>
+              </div>
+              <div className="max-h-72 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-card text-[10px] uppercase text-muted-foreground">
+                    <tr>
+                      <Th>Client</Th><Th>Client ID</Th><Th>DOS</Th><Th>Code</Th>
+                      <Th align="right">Hours</Th><Th>RBT Provider</Th><Th>Reason</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exceptions.slice(0, 500).map((e, i) => (
+                      <tr key={i} className="border-t border-border/30">
+                        <Td className="font-medium">{e.client}</Td>
+                        <Td>{e.clientId || "—"}</Td>
+                        <Td>{e.date || "—"}</Td>
+                        <Td>{e.code}</Td>
+                        <Td align="right">{fmt1(e.hours)}</Td>
+                        <Td>{e.provider}</Td>
+                        <Td className="text-amber-800">{e.reason}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {exceptions.length > 500 && (
+                  <p className="px-4 py-2 text-[11px] text-muted-foreground">Showing first 500 of {exceptions.length.toLocaleString()}.</p>
+                )}
+              </div>
+            </section>
+          )}
         </>
       )}
     </OSShell>
