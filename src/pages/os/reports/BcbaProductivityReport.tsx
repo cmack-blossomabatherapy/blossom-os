@@ -205,6 +205,7 @@ export default function BcbaProductivityReport() {
       const dirH = findH(headers, ["StateDirector", "Director", "RegionalDirector"]);
       const payorH = findH(headers, ["PayorName", "PayorNickname", "Payor", "Payer", "Insurance", "Funder"]);
       const ptH = findH(headers, ["ParentTrainingCompleted", "PT Completed", "ParentTraining"]);
+      const labelsH = findH(headers, ["ClientContactLabels", "Client Contact Labels", "Labels", "ContactLabels"]);
 
       const composeProv = (r: Record<string, string>) => {
         if (bcbaH) {
@@ -240,7 +241,7 @@ export default function BcbaProductivityReport() {
       type Raw = {
         provider: string; client: string; code: string; bucket: string;
         hours: number; date: string; state: string; director: string;
-        payor: string; pt: boolean; raw: Record<string, string>;
+        payor: string; pt: boolean; labelBcba: string | null; raw: Record<string, string>;
       };
       const raws: Raw[] = [];
       for (const r of first.rows) {
@@ -248,6 +249,7 @@ export default function BcbaProductivityReport() {
         const client = composeClient(r);
         if (!provider) continue;
         const code = codeH ? (r[codeH] || "").trim() : "";
+        const labels = labelsH ? (r[labelsH] || "") : "";
         raws.push({
           provider, client, code, bucket: classifyCode(code),
           hours: hoursH ? num(r[hoursH]) : 0,
@@ -256,13 +258,24 @@ export default function BcbaProductivityReport() {
           director: dirH ? (r[dirH] || "") : "",
           payor: payorH ? (r[payorH] || "") : "",
           pt: ptH ? boolish(r[ptH]) : false,
+          labelBcba: extractBcbaFromLabels(labels),
           raw: r,
         });
       }
 
       // Pass 2: determine the BCBA assigned to each client.
-      // A BCBA is the provider with the most supervisor-code hours (97155/97156/97151)
-      // for that client; fall back to the highest-hours provider overall.
+      // Priority:
+      //   1) BCBA extracted from ClientContactLabels (source of truth — when
+      //      the label changes, the assignment changes).
+      //   2) Provider with most supervisor-code hours (97155/97156/97151).
+      //   3) Highest-hours provider overall.
+      const labelBcbaByClient = new Map<string, Map<string, number>>();
+      for (const x of raws) {
+        if (!x.client || !x.labelBcba) continue;
+        let m = labelBcbaByClient.get(x.client);
+        if (!m) { m = new Map(); labelBcbaByClient.set(x.client, m); }
+        m.set(x.labelBcba, (m.get(x.labelBcba) ?? 0) + 1);
+      }
       const supByClient = new Map<string, Map<string, number>>();
       const anyByClient = new Map<string, Map<string, number>>();
       for (const x of raws) {
@@ -279,26 +292,34 @@ export default function BcbaProductivityReport() {
         for (const [p, h] of m) if (h > bestH) { best = p; bestH = h; }
         return best;
       };
-      const allClients = new Set<string>([...supByClient.keys(), ...anyByClient.keys()]);
+      const allClients = new Set<string>([
+        ...labelBcbaByClient.keys(), ...supByClient.keys(), ...anyByClient.keys(),
+      ]);
       for (const c of allClients) {
-        const m = supByClient.get(c);
-        bcbaForClient.set(c, m && m.size ? pickTop(m) : pickTop(anyByClient.get(c)!));
+        const lm = labelBcbaByClient.get(c);
+        if (lm && lm.size) { bcbaForClient.set(c, pickTop(lm)); continue; }
+        const sm = supByClient.get(c);
+        if (sm && sm.size) { bcbaForClient.set(c, pickTop(sm)); continue; }
+        const am = anyByClient.get(c);
+        if (am && am.size) { bcbaForClient.set(c, pickTop(am)); }
       }
 
       // Pass 3: build SessionRow stream feeding existing aggregation.
       // - bcba grouping field = bcbaForClient (or self if no client)
-      // - hours are credited only when the actual provider IS that BCBA
+      // - hours are credited when the provider IS that BCBA, OR for
+      //   97153/97154 RBT direct sessions (attributed to the BCBA via label).
       // - if the provider is NOT the BCBA, set rbt = provider so the RBT roster is built
       const rows: SessionRow[] = [];
       for (const x of raws) {
         const bcba = x.client ? (bcbaForClient.get(x.client) || x.provider) : x.provider;
         const isBcbaRow = x.provider === bcba;
+        const creditRbtDirect = !isBcbaRow && x.bucket === "97153";
         rows.push({
           bcba,
           client: x.client,
           rbt: isBcbaRow ? "" : x.provider,
           code: x.code,
-          hours: isBcbaRow ? x.hours : 0,
+          hours: isBcbaRow || creditRbtDirect ? x.hours : 0,
           date: x.date,
           state: x.state,
           director: x.director,
