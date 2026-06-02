@@ -109,6 +109,7 @@ function classifyCode(code: string) {
   if (c.startsWith("97155")) return "97155";
   if (c.startsWith("97156")) return "97156";
   if (c.startsWith("97151") || c.startsWith("97152")) return "97151";
+  if (c.startsWith("97153") || c.startsWith("97154")) return "97153";
   return c ? "other" : "other";
 }
 
@@ -161,19 +162,42 @@ export default function BcbaProductivityReport() {
       const headers = first.headers;
 
       const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Provider", "Provider Name", "Supervisor", "Staff"]);
+      const provFirstH = findH(headers, ["ProviderFirstName", "Provider First Name"]);
+      const provLastH = findH(headers, ["ProviderLastName", "Provider Last Name"]);
       const clientH = findH(headers, ["Client", "Client Name", "Patient", "Patient Name"]);
+      const cliFirstH = findH(headers, ["ClientFirstName", "Client First Name"]);
+      const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
       const rbtH = findH(headers, ["RBT", "RBT Name", "Tech", "Technician", "BehaviorTechnician"]);
-      const codeH = findH(headers, ["Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure", "Procedure Code"]);
-      const hoursH = findH(headers, ["Hours", "Units", "BillableHours", "Worked Hours", "ServiceHours"]);
-      const dateH = findH(headers, ["Date", "ServiceDate", "Service Date", "SessionDate", "DOS"]);
-      const stateH = findH(headers, ["State", "WorkState", "Location"]);
+      const codeH = findH(headers, ["ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure", "Procedure Code"]);
+      const hoursH = findH(headers, ["TimeWorkedInHours", "Hours", "BillableHours", "Worked Hours", "ServiceHours", "UnitsOfService", "Units"]);
+      const dateH = findH(headers, ["DateOfService", "Date", "ServiceDate", "Service Date", "SessionDate", "DOS"]);
+      const stateH = findH(headers, ["ClientLocationStateProvince", "ProviderLocationStateProvince", "ServiceLocationStateProvince", "State", "WorkState", "Location"]);
       const dirH = findH(headers, ["StateDirector", "Director", "RegionalDirector"]);
-      const payorH = findH(headers, ["Payor", "Payer", "Insurance", "Funder"]);
+      const payorH = findH(headers, ["PayorName", "PayorNickname", "Payor", "Payer", "Insurance", "Funder"]);
       const ptH = findH(headers, ["ParentTrainingCompleted", "PT Completed", "ParentTraining"]);
 
+      const composeProv = (r: Record<string, string>) => {
+        if (bcbaH) {
+          const v = (r[bcbaH] || "").trim();
+          if (v) return v;
+        }
+        const fn = provFirstH ? (r[provFirstH] || "").trim() : "";
+        const ln = provLastH ? (r[provLastH] || "").trim() : "";
+        return [fn, ln].filter(Boolean).join(" ").trim();
+      };
+      const composeClient = (r: Record<string, string>) => {
+        if (clientH) {
+          const v = (r[clientH] || "").trim();
+          if (v) return v;
+        }
+        const fn = cliFirstH ? (r[cliFirstH] || "").trim() : "";
+        const ln = cliLastH ? (r[cliLastH] || "").trim() : "";
+        return [fn, ln].filter(Boolean).join(" ").trim();
+      };
+
       const miss: string[] = [];
-      if (!bcbaH) miss.push("BCBA / Provider name column");
-      if (!clientH) miss.push("Client column");
+      if (!bcbaH && !(provFirstH || provLastH)) miss.push("BCBA / Provider name column");
+      if (!clientH && !(cliFirstH || cliLastH)) miss.push("Client column");
       if (!codeH) miss.push("CPT / Service Code column");
       if (!hoursH) miss.push("Hours / Units column");
 
@@ -182,22 +206,75 @@ export default function BcbaProductivityReport() {
       }
       setMissing([]);
 
-      const rows: SessionRow[] = [];
+      // Pass 1: build raw entries with provider + client + code.
+      type Raw = {
+        provider: string; client: string; code: string; bucket: string;
+        hours: number; date: string; state: string; director: string;
+        payor: string; pt: boolean; raw: Record<string, string>;
+      };
+      const raws: Raw[] = [];
       for (const r of first.rows) {
-        const bcba = bcbaH ? (r[bcbaH] || "").trim() : "";
-        if (!bcba) continue;
-        rows.push({
-          bcba,
-          client: clientH ? (r[clientH] || "").trim() : "",
-          rbt: rbtH ? (r[rbtH] || "").trim() : "",
-          code: codeH ? (r[codeH] || "").trim() : "",
+        const provider = composeProv(r);
+        const client = composeClient(r);
+        if (!provider) continue;
+        const code = codeH ? (r[codeH] || "").trim() : "";
+        raws.push({
+          provider, client, code, bucket: classifyCode(code),
           hours: hoursH ? num(r[hoursH]) : 0,
           date: dateH ? (r[dateH] || "") : "",
           state: stateH ? (r[stateH] || "") : "",
           director: dirH ? (r[dirH] || "") : "",
           payor: payorH ? (r[payorH] || "") : "",
-          parentTrainingCompleted: ptH ? boolish(r[ptH]) : false,
+          pt: ptH ? boolish(r[ptH]) : false,
           raw: r,
+        });
+      }
+
+      // Pass 2: determine the BCBA assigned to each client.
+      // A BCBA is the provider with the most supervisor-code hours (97155/97156/97151)
+      // for that client; fall back to the highest-hours provider overall.
+      const supByClient = new Map<string, Map<string, number>>();
+      const anyByClient = new Map<string, Map<string, number>>();
+      for (const x of raws) {
+        if (!x.client) continue;
+        const isSup = x.bucket === "97155" || x.bucket === "97156" || x.bucket === "97151";
+        const target = isSup ? supByClient : anyByClient;
+        let m = target.get(x.client);
+        if (!m) { m = new Map(); target.set(x.client, m); }
+        m.set(x.provider, (m.get(x.provider) ?? 0) + x.hours);
+      }
+      const bcbaForClient = new Map<string, string>();
+      const pickTop = (m: Map<string, number>) => {
+        let best = ""; let bestH = -1;
+        for (const [p, h] of m) if (h > bestH) { best = p; bestH = h; }
+        return best;
+      };
+      const allClients = new Set<string>([...supByClient.keys(), ...anyByClient.keys()]);
+      for (const c of allClients) {
+        const m = supByClient.get(c);
+        bcbaForClient.set(c, m && m.size ? pickTop(m) : pickTop(anyByClient.get(c)!));
+      }
+
+      // Pass 3: build SessionRow stream feeding existing aggregation.
+      // - bcba grouping field = bcbaForClient (or self if no client)
+      // - hours are credited only when the actual provider IS that BCBA
+      // - if the provider is NOT the BCBA, set rbt = provider so the RBT roster is built
+      const rows: SessionRow[] = [];
+      for (const x of raws) {
+        const bcba = x.client ? (bcbaForClient.get(x.client) || x.provider) : x.provider;
+        const isBcbaRow = x.provider === bcba;
+        rows.push({
+          bcba,
+          client: x.client,
+          rbt: isBcbaRow ? "" : x.provider,
+          code: x.code,
+          hours: isBcbaRow ? x.hours : 0,
+          date: x.date,
+          state: x.state,
+          director: x.director,
+          payor: x.payor,
+          parentTrainingCompleted: x.pt,
+          raw: x.raw,
         });
       }
       setSessions(rows);
