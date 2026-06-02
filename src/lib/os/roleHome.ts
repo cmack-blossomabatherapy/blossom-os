@@ -18,6 +18,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   rbt: "/rbt/my-day",
   marketing_team: "/marketing",
   case_manager: "/case-manager/training",
+  behavioral_support: "/reports",
 };
 
 /** All role-specific dashboard routes (for super_admin overview). */
