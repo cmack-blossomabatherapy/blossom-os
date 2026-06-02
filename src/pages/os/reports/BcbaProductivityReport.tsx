@@ -216,6 +216,9 @@ export default function BcbaProductivityReport() {
   const [search, setSearch] = useState("");
   const [minHours, setMinHours] = useState(DEFAULT_MIN);
 
+  const [sortKey, setSortKey] = useState<keyof BcbaAgg | "">("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
   const [authDragOver, setAuthDragOver] = useState(false);
