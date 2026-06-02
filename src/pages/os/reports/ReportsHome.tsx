@@ -21,7 +21,19 @@ export default function ReportsHome() {
   const { role } = useOSRole();
   const reports = useMemo(() => visibleReportsForRole(role), [role]);
   const categories = useMemo(() => visibleCategoriesForRole(role), [role]);
-  const featured = useMemo(() => reports.filter(r => r.featured).slice(0, 4), [reports]);
+  const featured = useMemo(() => {
+    const qaPriority = ["bcba-productivity-report", "qa-supervision-pt", "qa-auth-utilization", "qa-cancellation"];
+    return reports
+      .filter(r => r.featured)
+      .sort((a, b) => {
+        if (role === "qa_team") {
+          const aRank = qaPriority.indexOf(a.id);
+          const bRank = qaPriority.indexOf(b.id);
+          if (aRank !== bRank) return (aRank === -1 ? 999 : aRank) - (bRank === -1 ? 999 : bRank);
+        }
+        return b.popularity - a.popularity;
+      });
+  }, [reports, role]);
   const aiSummary = ROLE_AI_SUMMARY[role];
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
