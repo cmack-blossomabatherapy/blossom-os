@@ -219,6 +219,16 @@ export default function BcbaProductivityReport() {
   const [sortKey, setSortKey] = useState<keyof BcbaAgg | "">("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
+  const handleSort = (key: keyof BcbaAgg | "") => {
+    if (!key) return;
+    if (sortKey === key) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
   const [authDragOver, setAuthDragOver] = useState(false);
