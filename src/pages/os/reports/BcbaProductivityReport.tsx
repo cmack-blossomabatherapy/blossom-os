@@ -1206,6 +1206,47 @@ function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; val
   );
 }
 
+function SortTh({
+  children,
+  align = "left",
+  sortKey: key,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  children?: React.ReactNode;
+  align?: "left" | "right";
+  sortKey: keyof BcbaAgg | "";
+  activeKey: keyof BcbaAgg | "";
+  dir: "asc" | "desc";
+  onSort: (k: keyof BcbaAgg | "") => void;
+}) {
+  const active = activeKey === key && key !== "";
+  return (
+    <th
+      className={cn(
+        "px-3 py-2 font-medium select-none",
+        align === "right" && "text-right",
+        key && "cursor-pointer hover:text-foreground",
+      )}
+      onClick={() => key && onSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        {key && (
+          <ArrowUpDown className={cn(
+            "h-3 w-3 transition-colors",
+            active ? "text-primary" : "text-muted-foreground/40",
+          )} />
+        )}
+        {active && (
+          <span className="text-[10px] text-primary">{dir === "asc" ? "▲" : "▼"}</span>
+        )}
+      </span>
+    </th>
+  );
+}
+
 function Th({ children, align = "left" }: { children?: React.ReactNode; align?: "left" | "right" }) {
   return <th className={cn("px-3 py-2 font-medium", align === "right" && "text-right")}>{children}</th>;
 }
