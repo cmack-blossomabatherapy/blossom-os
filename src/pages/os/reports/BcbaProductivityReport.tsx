@@ -1361,3 +1361,48 @@ function DT({ label, value }: { label: string; value: string }) {
     </>
   );
 }
+
+function PayorsDisclosure({ payors }: { payors: string[] }) {
+  const [open, setOpen] = useState(false);
+  const count = payors.length;
+  if (!count) {
+    return (
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Payors</span>
+        <span className="font-medium">—</span>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-border/60 bg-secondary/20">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs"
+        aria-expanded={open}
+      >
+        <span className="text-muted-foreground">Payors</span>
+        <span className="flex items-center gap-1.5 font-medium">
+          {count} {count === 1 ? "payor" : "payors"}
+          {open
+            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-border/60 px-2.5 py-1.5">
+          <div className="flex flex-wrap gap-1">
+            {payors.map(p => (
+              <span
+                key={p}
+                className="inline-flex rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-foreground"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
