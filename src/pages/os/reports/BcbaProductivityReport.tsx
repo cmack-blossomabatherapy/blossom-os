@@ -139,6 +139,9 @@ interface AuthRecord {
   bcba: string;
   payor: string;
   status: string;
+  resourceId: string;
+  managerId: string;
+  followUpAuthNumber: string;
 }
 
 interface BillingRaw {
@@ -156,6 +159,8 @@ interface BillingRaw {
   payor: string;
   pt: boolean;
   raw: Record<string, string>;
+  authId: string;
+  authResourceId: string;
 }
 
 interface AttributionException {
@@ -166,6 +171,10 @@ interface AttributionException {
   hours: number;
   provider: string;
   reason: string;
+  authId?: string;
+  authResourceId?: string;
+  payor?: string;
+  suggested?: string;
 }
 
 function downloadBlob(filename: string, mime: string, content: string) {
