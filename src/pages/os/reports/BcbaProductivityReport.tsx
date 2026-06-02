@@ -676,7 +676,7 @@ export default function BcbaProductivityReport() {
       if (!agg) {
         agg = {
           name: s.bcba, state: s.state, director: s.director, payors: new Set(),
-          h97155: 0, h97156: 0, h97151: 0, hOther: 0, total: 0, payrollHours: 0,
+          h97155: 0, h97156: 0, h97151: 0, h97153: 0, hOther: 0, total: 0, payrollHours: 0,
           clients: new Map(), rbts: new Map(),
           newClients: 0, discharged: 0, minimumHours: minHours,
           activeClients: 0, assignedRbts: 0,
@@ -691,6 +691,7 @@ export default function BcbaProductivityReport() {
       if (bucket === "97155") agg.h97155 += s.hours;
       else if (bucket === "97156") agg.h97156 += s.hours;
       else if (bucket === "97151") agg.h97151 += s.hours;
+      else if (bucket === "97153") agg.h97153 += s.hours;
       else agg.hOther += s.hours;
       agg.total += s.hours;
       agg.payrollHours += s.hours;
@@ -774,15 +775,17 @@ export default function BcbaProductivityReport() {
     const totalRbts = new Set(filteredSessions.map(s => s.rbt).filter(Boolean)).size;
     const t97155 = aggregates.reduce((s, a) => s + a.h97155, 0);
     const t97156 = aggregates.reduce((s, a) => s + a.h97156, 0);
+    const t97153 = aggregates.reduce((s, a) => s + a.h97153, 0);
     const totalCases = aggregates.reduce((s, a) => s + a.activeClients, 0);
     return {
       totalBcbas: n,
       totalClients,
       totalRbts,
-      t97155, t97156,
+      t97155, t97156, t97153,
       avgCaseload: n ? totalCases / n : 0,
       avg97155: n ? t97155 / n : 0,
       avg97156: n ? t97156 / n : 0,
+      avg97153: n ? t97153 / n : 0,
       avgClientsPerBcba: n ? totalClients / n : 0,
     };
   }, [aggregates, filteredSessions]);
