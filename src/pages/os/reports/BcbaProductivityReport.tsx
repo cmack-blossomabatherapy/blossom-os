@@ -60,6 +60,7 @@ interface BcbaAgg {
   h97155: number;
   h97156: number;
   h97151: number; // assessment
+  h97153: number; // RBT direct (attributed via auth)
   hOther: number;
   total: number;
   payrollHours: number;
@@ -675,7 +676,7 @@ export default function BcbaProductivityReport() {
       if (!agg) {
         agg = {
           name: s.bcba, state: s.state, director: s.director, payors: new Set(),
-          h97155: 0, h97156: 0, h97151: 0, hOther: 0, total: 0, payrollHours: 0,
+          h97155: 0, h97156: 0, h97151: 0, h97153: 0, hOther: 0, total: 0, payrollHours: 0,
           clients: new Map(), rbts: new Map(),
           newClients: 0, discharged: 0, minimumHours: minHours,
           activeClients: 0, assignedRbts: 0,
@@ -690,6 +691,7 @@ export default function BcbaProductivityReport() {
       if (bucket === "97155") agg.h97155 += s.hours;
       else if (bucket === "97156") agg.h97156 += s.hours;
       else if (bucket === "97151") agg.h97151 += s.hours;
+      else if (bucket === "97153") agg.h97153 += s.hours;
       else agg.hOther += s.hours;
       agg.total += s.hours;
       agg.payrollHours += s.hours;
@@ -773,15 +775,17 @@ export default function BcbaProductivityReport() {
     const totalRbts = new Set(filteredSessions.map(s => s.rbt).filter(Boolean)).size;
     const t97155 = aggregates.reduce((s, a) => s + a.h97155, 0);
     const t97156 = aggregates.reduce((s, a) => s + a.h97156, 0);
+    const t97153 = aggregates.reduce((s, a) => s + a.h97153, 0);
     const totalCases = aggregates.reduce((s, a) => s + a.activeClients, 0);
     return {
       totalBcbas: n,
       totalClients,
       totalRbts,
-      t97155, t97156,
+      t97155, t97156, t97153,
       avgCaseload: n ? totalCases / n : 0,
       avg97155: n ? t97155 / n : 0,
       avg97156: n ? t97156 / n : 0,
+      avg97153: n ? t97153 / n : 0,
       avgClientsPerBcba: n ? totalClients / n : 0,
     };
   }, [aggregates, filteredSessions]);
@@ -806,12 +810,12 @@ export default function BcbaProductivityReport() {
   function buildExportRows() {
     const cols = [
       "BCBA", "State", "State Director", "Active Clients", "Assigned RBTs",
-      "97155", "97156", "97151", "Other", "Total", "Payroll Hours",
+      "97153", "97155", "97156", "97151", "Other", "Total", "Payroll Hours",
       "Avg/Client", "Avg/RBT", "Min Hours", "Status", "Flags",
     ];
     const rows = visible.map(a => [
       a.name, a.state, a.director, a.activeClients, a.assignedRbts,
-      fmt1(a.h97155), fmt1(a.h97156), fmt1(a.h97151), fmt1(a.hOther), fmt1(a.total),
+      fmt1(a.h97153), fmt1(a.h97155), fmt1(a.h97156), fmt1(a.h97151), fmt1(a.hOther), fmt1(a.total),
       fmt1(a.payrollHours), fmt1(a.avgHoursPerClient), fmt1(a.avgHoursPerRbt),
       a.minimumHours, a.minStatus, a.flags.join("; "),
     ] as (string | number)[]);
@@ -1017,6 +1021,18 @@ export default function BcbaProductivityReport() {
 
           {/* ===== KPI Summary ===== */}
           <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+            <Kpi
+              label="Total 97153 Hours (RBT Direct)"
+              value={fmt1(kpis.t97153)}
+              icon={Stethoscope}
+              highlight
+              hint="Attributed to supervising BCBA via authorization"
+            />
+            <Kpi
+              label="Avg 97153 / BCBA"
+              value={fmt1(kpis.avg97153)}
+              highlight
+            />
             <Kpi label="Total BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} />
             <Kpi label="Total Clients Served" value={fmt0(kpis.totalClients)} icon={Stethoscope} />
             <Kpi label="Total RBTs Supervised" value={fmt0(kpis.totalRbts)} />
@@ -1056,6 +1072,7 @@ export default function BcbaProductivityReport() {
                     <Th>State</Th>
                     <Th align="right">Active Clients</Th>
                     <Th align="right">RBTs</Th>
+                    <Th align="right">97153</Th>
                     <Th align="right">97155</Th>
                     <Th align="right">97156</Th>
                     <Th align="right">Total Billable</Th>
@@ -1079,7 +1096,7 @@ export default function BcbaProductivityReport() {
                     );
                   })}
                   {visible.length === 0 && (
-                    <tr><td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">No BCBAs match your filters.</td></tr>
+                    <tr><td colSpan={14} className="px-4 py-8 text-center text-muted-foreground">No BCBAs match your filters.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1155,14 +1172,21 @@ function FilterSelect({ label, value, onChange, options }: {
   );
 }
 
-function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) {
+function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; value: string; icon?: any; highlight?: boolean; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-3">
+    <div className={cn(
+      "rounded-xl border bg-card p-3",
+      highlight ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20" : "border-border/60",
+    )}>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <p className={cn(
+          "text-[10px] font-semibold uppercase tracking-[0.14em]",
+          highlight ? "text-primary" : "text-muted-foreground",
+        )}>{label}</p>
+        {Icon && <Icon className={cn("h-3.5 w-3.5", highlight ? "text-primary" : "text-muted-foreground")} />}
       </div>
-      <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
+      <p className={cn("mt-1 font-semibold tabular-nums tracking-tight", highlight ? "text-2xl text-primary" : "text-xl")}>{value}</p>
+      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -1193,6 +1217,7 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
         <Td>{agg.state || "—"}</Td>
         <Td align="right">{agg.activeClients}</Td>
         <Td align="right">{agg.assignedRbts}</Td>
+        <Td align="right" className="font-semibold text-primary">{fmt1(agg.h97153)}</Td>
         <Td align="right">{fmt1(agg.h97155)}</Td>
         <Td align="right">{fmt1(agg.h97156)}</Td>
         <Td align="right" className="font-semibold">{fmt1(agg.total)}</Td>
@@ -1208,17 +1233,18 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
       </tr>
       {isOpen && (
         <tr className="bg-secondary/10">
-          <td colSpan={13} className="px-4 py-4">
+          <td colSpan={14} className="px-4 py-4">
             <div className="grid gap-4 lg:grid-cols-2">
               {/* Code breakdown */}
               <SubCard title="Code Breakdown">
                 <table className="w-full text-xs">
                   <thead className="text-[10px] uppercase text-muted-foreground">
-                    <tr><Th>BCBA</Th><Th align="right">97155</Th><Th align="right">97156</Th><Th align="right">97151</Th><Th align="right">Other</Th><Th align="right">Total</Th></tr>
+                    <tr><Th>BCBA</Th><Th align="right">97153</Th><Th align="right">97155</Th><Th align="right">97156</Th><Th align="right">97151</Th><Th align="right">Other</Th><Th align="right">Total</Th></tr>
                   </thead>
                   <tbody>
                     <tr className="border-t border-border/30">
                       <Td>{agg.name}</Td>
+                      <Td align="right" className="font-semibold text-primary">{fmt1(agg.h97153)}</Td>
                       <Td align="right">{fmt1(agg.h97155)}</Td>
                       <Td align="right">{fmt1(agg.h97156)}</Td>
                       <Td align="right">{fmt1(agg.h97151)}</Td>
@@ -1237,8 +1263,10 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
                   <DT label="Missing parent training" value={String(agg.missingPT)} />
                   <DT label="Missing supervision" value={String(agg.missingSup)} />
                   <DT label="Assigned RBTs" value={String(agg.assignedRbts)} />
-                  <DT label="Payors" value={agg.payors.size ? [...agg.payors].join(", ") : "—"} />
                 </dl>
+                <div className="mt-2">
+                  <PayorsDisclosure payors={[...agg.payors]} />
+                </div>
                 {agg.flags.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {agg.flags.map(f => (
@@ -1331,5 +1359,50 @@ function DT({ label, value }: { label: string; value: string }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="text-right font-medium tabular-nums">{value}</dd>
     </>
+  );
+}
+
+function PayorsDisclosure({ payors }: { payors: string[] }) {
+  const [open, setOpen] = useState(false);
+  const count = payors.length;
+  if (!count) {
+    return (
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Payors</span>
+        <span className="font-medium">—</span>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-border/60 bg-secondary/20">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs"
+        aria-expanded={open}
+      >
+        <span className="text-muted-foreground">Payors</span>
+        <span className="flex items-center gap-1.5 font-medium">
+          {count} {count === 1 ? "payor" : "payors"}
+          {open
+            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-border/60 px-2.5 py-1.5">
+          <div className="flex flex-wrap gap-1">
+            {payors.map(p => (
+              <span
+                key={p}
+                className="inline-flex rounded-full border border-border bg-card px-2 py-0.5 text-[10px] text-foreground"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
