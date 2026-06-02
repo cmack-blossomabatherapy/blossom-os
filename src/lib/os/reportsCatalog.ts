@@ -224,6 +224,11 @@ export const ROLE_AI_SUMMARY: Record<OSRole, RoleAISummary> = {
     { icon: ClipboardCheck, text: "3 follow-ups scheduled in the next 48 hours.", tone: "violet" },
     { icon: AlertTriangle, text: "1 service continuity risk worth a quick check-in.", tone: "amber" },
   ]},
+  behavioral_support:    { headline: "Clinical guidance dashboard — reports and training at a glance.", insights: [
+    { icon: ShieldCheck, text: "BCBA productivity & supervision reports available.", tone: "emerald" },
+    { icon: GraduationCap, text: "Training Academy ready when you need it.", tone: "violet" },
+    { icon: TrendingUp, text: "Use reports to coach BCBAs across the network.", tone: "sky" },
+  ]},
 };
 
 /* ---------- Request store (localStorage Phase 1) ---------- */
