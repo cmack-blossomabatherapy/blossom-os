@@ -364,6 +364,15 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },
+  behavioral_support: {
+    modules: ["reports", "training"],
+    scope: "company",
+    actions: {
+      reports: ["view", "export"],
+      training: VIEW,
+    },
+    leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: false, workflowBottlenecks: false, aiInsights: false },
+  },
 };
 
 export function canSeeModule(role: OSRole, module: OSModule): boolean {
