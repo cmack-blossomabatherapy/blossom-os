@@ -700,6 +700,8 @@ export default function BcbaProductivityReport() {
         map.set(s.bcba, agg);
       }
       if (s.payor) agg.payors.add(s.payor);
+      if ((!agg.state || agg.state === "—") && s.state) agg.state = s.state;
+      if ((!agg.director || agg.director === "—") && s.director) agg.director = s.director;
       const bucket = classifyCode(s.code);
       if (bucket === "97155") agg.h97155 += s.hours;
       else if (bucket === "97156") agg.h97156 += s.hours;
