@@ -881,33 +881,6 @@ export default function BcbaProductivityReport() {
             </p>
           </section>
 
-          {/* ===== Auth status banner ===== */}
-          {!authsLoaded && (
-            <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 print:hidden">
-              <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 text-amber-700" />
-                <div className="flex-1 text-xs text-amber-900">
-                  <p className="font-semibold">Authorization report not uploaded.</p>
-                  <p className="mt-0.5">
-                    97153 hours are currently attributed to the rendering provider as a fallback.
-                    Upload your Authorization Report to attribute 97153 hours to the correct historical BCBA based on auth date ranges.
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => authInputRef.current?.click()}>
-                  Upload Authorizations
-                </Button>
-                <input
-                  ref={authInputRef}
-                  type="file"
-                  multiple
-                  accept={SUPPORTED_EXTENSIONS}
-                  onChange={(e) => handleAuthFiles(e.target.files)}
-                  className="hidden"
-                />
-              </div>
-            </section>
-          )}
-
           {/* ===== KPI Summary ===== */}
           <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
             <Kpi label="Total BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} />
