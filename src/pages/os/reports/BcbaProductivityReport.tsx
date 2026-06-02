@@ -1217,6 +1217,7 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
         <Td>{agg.state || "—"}</Td>
         <Td align="right">{agg.activeClients}</Td>
         <Td align="right">{agg.assignedRbts}</Td>
+        <Td align="right" className="font-semibold text-primary">{fmt1(agg.h97153)}</Td>
         <Td align="right">{fmt1(agg.h97155)}</Td>
         <Td align="right">{fmt1(agg.h97156)}</Td>
         <Td align="right" className="font-semibold">{fmt1(agg.total)}</Td>
@@ -1232,17 +1233,18 @@ function ExpandableBcbaRow({ agg, isOpen, onToggle }: { agg: BcbaAgg; isOpen: bo
       </tr>
       {isOpen && (
         <tr className="bg-secondary/10">
-          <td colSpan={13} className="px-4 py-4">
+          <td colSpan={14} className="px-4 py-4">
             <div className="grid gap-4 lg:grid-cols-2">
               {/* Code breakdown */}
               <SubCard title="Code Breakdown">
                 <table className="w-full text-xs">
                   <thead className="text-[10px] uppercase text-muted-foreground">
-                    <tr><Th>BCBA</Th><Th align="right">97155</Th><Th align="right">97156</Th><Th align="right">97151</Th><Th align="right">Other</Th><Th align="right">Total</Th></tr>
+                    <tr><Th>BCBA</Th><Th align="right">97153</Th><Th align="right">97155</Th><Th align="right">97156</Th><Th align="right">97151</Th><Th align="right">Other</Th><Th align="right">Total</Th></tr>
                   </thead>
                   <tbody>
                     <tr className="border-t border-border/30">
                       <Td>{agg.name}</Td>
+                      <Td align="right" className="font-semibold text-primary">{fmt1(agg.h97153)}</Td>
                       <Td align="right">{fmt1(agg.h97155)}</Td>
                       <Td align="right">{fmt1(agg.h97156)}</Td>
                       <Td align="right">{fmt1(agg.h97151)}</Td>
