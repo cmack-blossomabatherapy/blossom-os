@@ -139,6 +139,9 @@ interface AuthRecord {
   bcba: string;
   payor: string;
   status: string;
+  resourceId: string;
+  managerId: string;
+  followUpAuthNumber: string;
 }
 
 interface BillingRaw {
@@ -156,6 +159,8 @@ interface BillingRaw {
   payor: string;
   pt: boolean;
   raw: Record<string, string>;
+  authId: string;
+  authResourceId: string;
 }
 
 interface AttributionException {
@@ -166,6 +171,10 @@ interface AttributionException {
   hours: number;
   provider: string;
   reason: string;
+  authId?: string;
+  authResourceId?: string;
+  payor?: string;
+  suggested?: string;
 }
 
 function downloadBlob(filename: string, mime: string, content: string) {
@@ -238,6 +247,8 @@ export default function BcbaProductivityReport() {
       const dirH = findH(headers, ["StateDirector", "Director", "RegionalDirector"]);
       const payorH = findH(headers, ["PayorName", "PayorNickname", "Payor", "Payer", "Insurance", "Funder"]);
       const ptH = findH(headers, ["ParentTrainingCompleted", "PT Completed", "ParentTraining"]);
+      const authIdH = findH(headers, ["AuthorizationId", "Authorization Id", "AuthId", "AuthorizationID"]);
+      const authResIdH = findH(headers, ["AuthorizationResourceId", "Authorization Resource Id", "AuthResourceId", "AuthorizationResourceID"]);
 
       const composeProv = (r: Record<string, string>) => {
         if (bcbaH) {
@@ -287,6 +298,8 @@ export default function BcbaProductivityReport() {
           payor: payorH ? (r[payorH] || "") : "",
           pt: ptH ? boolish(r[ptH]) : false,
           raw: r,
+          authId: authIdH ? (r[authIdH] || "").trim() : "",
+          authResourceId: authResIdH ? (r[authResIdH] || "").trim() : "",
         });
       }
       setBillingRaws(raws);
@@ -320,17 +333,22 @@ export default function BcbaProductivityReport() {
       const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
       const cliIdH = findH(headers, ["ClientId", "Client ID", "ClientNumber", "PatientId", "Patient ID", "MRN"]);
       const authNumH = findH(headers, ["AuthorizationNumber", "Auth Number", "Authorization #", "Auth #", "AuthId"]);
-      const startH = findH(headers, ["ActualStartDate", "AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "startDate", "EffectiveDate", "Effective Date", "From"]);
-      const endH = findH(headers, ["ActualEndDate", "AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "endDate", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
+      const followUpH = findH(headers, ["FollowUpAuthorizationNumber", "Follow Up Authorization Number", "FollowUpAuthNumber", "FollowUp Auth Number"]);
+      const actualStartH = findH(headers, ["ActualStartDate", "Actual Start Date"]);
+      const actualEndH = findH(headers, ["ActualEndDate", "Actual End Date"]);
+      const startH = findH(headers, ["AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "startDate", "EffectiveDate", "Effective Date", "From"]);
+      const endH = findH(headers, ["AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "endDate", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
       const codeH = findH(headers, ["ServiceCodes", "ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
       const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "managerName", "Manager Name", "Manager", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
+      const managerIdH = findH(headers, ["managerId", "Manager Id", "ManagerID", "ManagerId"]);
+      const resourceIdH = findH(headers, ["ResourceId", "Resource Id", "ResourceID"]);
       const payorH = findH(headers, ["PayorName", "Payor", "Payer", "Insurance", "Funder"]);
       const statusH = findH(headers, ["Status", "AuthorizationStatus", "Auth Status"]);
 
       const miss: string[] = [];
       if (!clientH && !(cliFirstH || cliLastH)) miss.push("Client column");
-      if (!startH) miss.push("Authorization Start Date column");
-      if (!endH) miss.push("Authorization End Date column");
+      if (!actualStartH && !startH) miss.push("Authorization Start Date column");
+      if (!actualEndH && !endH) miss.push("Authorization End Date column");
       if (!bcbaH) miss.push("BCBA column");
 
           if (miss.length) {
@@ -349,8 +367,12 @@ export default function BcbaProductivityReport() {
         const client = composeClient(r);
         if (!client) continue;
         const code = codeH ? (r[codeH] || "").trim() : "";
-        const startRaw = startH ? (r[startH] || "") : "";
-        const endRaw = endH ? (r[endH] || "") : "";
+        const actualStartRaw = actualStartH ? (r[actualStartH] || "").trim() : "";
+        const actualEndRaw = actualEndH ? (r[actualEndH] || "").trim() : "";
+        const fbStartRaw = startH ? (r[startH] || "").trim() : "";
+        const fbEndRaw = endH ? (r[endH] || "").trim() : "";
+        const startRaw = actualStartRaw || fbStartRaw;
+        const endRaw = actualEndRaw || fbEndRaw;
         const bcba = bcbaH ? (r[bcbaH] || "").trim() : "";
         if (!bcba) continue;
             newRecs.push({
@@ -364,6 +386,9 @@ export default function BcbaProductivityReport() {
           bcba,
           payor: payorH ? (r[payorH] || "").trim() : "",
           status: statusH ? (r[statusH] || "").trim() : "",
+          resourceId: resourceIdH ? (r[resourceIdH] || "").trim() : "",
+          managerId: managerIdH ? (r[managerIdH] || "").trim() : "",
+          followUpAuthNumber: followUpH ? (r[followUpH] || "").trim() : "",
         });
       }
           loadedNames.push(file.name);
@@ -376,7 +401,15 @@ export default function BcbaProductivityReport() {
       setAuthRecords(prev => {
         const seen = new Set<string>();
         const keyOf = (a: AuthRecord) =>
-          [a.clientKey, a.authNumber, a.code, a.startRaw, a.endRaw, normName(a.bcba)].join("|");
+          [
+            a.resourceId || `${a.clientKey}:${a.authNumber}`,
+            a.clientId || a.clientKey,
+            a.code,
+            a.startRaw,
+            a.endRaw,
+            a.managerId || normName(a.bcba),
+            (a.payor || "").toLowerCase(),
+          ].join("|");
         const merged: AuthRecord[] = [];
         for (const a of [...prev, ...newRecs]) {
           const k = keyOf(a);
@@ -416,49 +449,148 @@ export default function BcbaProductivityReport() {
     const exc: AttributionException[] = [];
     const rows: SessionRow[] = [];
 
-    // Index auths by normalized client name.
-    const authsByClient = new Map<string, AuthRecord[]>();
+    // Index auths by clientId AND by normalized client name so we can match
+    // even when the billing export uses one but not the other.
+    const authsByClientId = new Map<string, AuthRecord[]>();
+    const authsByClientName = new Map<string, AuthRecord[]>();
+    const authsByResourceId = new Map<string, AuthRecord>();
+    const authsByAuthNumber = new Map<string, AuthRecord[]>();
     for (const a of authRecords) {
-      const key = a.clientKey;
-      let arr = authsByClient.get(key);
-      if (!arr) { arr = []; authsByClient.set(key, arr); }
-      arr.push(a);
+      if (a.resourceId) authsByResourceId.set(a.resourceId, a);
+      if (a.clientId) {
+        let arr = authsByClientId.get(a.clientId);
+        if (!arr) { arr = []; authsByClientId.set(a.clientId, arr); }
+        arr.push(a);
+      }
+      if (a.clientKey) {
+        let arr = authsByClientName.get(a.clientKey);
+        if (!arr) { arr = []; authsByClientName.set(a.clientKey, arr); }
+        arr.push(a);
+      }
+      if (a.authNumber) {
+        let arr = authsByAuthNumber.get(a.authNumber);
+        if (!arr) { arr = []; authsByAuthNumber.set(a.authNumber, arr); }
+        arr.push(a);
+      }
     }
 
+    const authsForBilling = (b: BillingRaw): AuthRecord[] => {
+      if (b.clientId && authsByClientId.has(b.clientId)) return authsByClientId.get(b.clientId)!;
+      if (b.clientKey && authsByClientName.has(b.clientKey)) return authsByClientName.get(b.clientKey)!;
+      return [];
+    };
     const codeMatches = (authBucket: string, billBucket: string) => {
-      if (!authBucket || authBucket === "other") return true; // generic auth covers all
+      if (!authBucket || authBucket === "other") return true;
       return authBucket === billBucket;
     };
+    const inRange = (b: BillingRaw, a: AuthRecord) =>
+      isFinite(b.dateMs) && isFinite(a.startMs) && isFinite(a.endMs) &&
+      b.dateMs >= a.startMs && b.dateMs <= a.endMs;
+    const DAY = 86_400_000;
 
-    const findAuthBcba = (b: BillingRaw): { bcba: string; reason?: string } => {
-      const arr = authsByClient.get(b.clientKey);
-      if (!arr || !arr.length) return { bcba: "", reason: "No authorization on file for client" };
-
-      // Priority: matching code + DOS in range. Then matching code only. Then any.
-      const inRange = (a: AuthRecord) =>
-        isFinite(b.dateMs) && isFinite(a.startMs) && isFinite(a.endMs) &&
-        b.dateMs >= a.startMs && b.dateMs <= a.endMs;
-
-      const codeAndDate = arr.filter(a => codeMatches(a.bucket, b.bucket) && inRange(a));
-      if (codeAndDate.length) {
-        // Most recently approved = latest startMs
-        const pick = codeAndDate.slice().sort((x, y) => y.startMs - x.startMs)[0];
-        return { bcba: pick.bcba };
+    /**
+     * Matching waterfall for a 97153 row.
+     * Returns the BCBA + optional flag, or empty bcba with exception detail.
+     */
+    const matchAuth = (b: BillingRaw): { bcba: string; flag?: string; reason?: string; suggested?: string } => {
+      // --- LEVEL 1: Exact AuthorizationResourceId → ResourceId ---
+      if (b.authResourceId) {
+        const hit = authsByResourceId.get(b.authResourceId);
+        if (hit && hit.bcba) return { bcba: hit.bcba };
+        // If matched but no manager on the auth, fall through to next levels.
       }
 
-      const codeOnly = arr.filter(a => codeMatches(a.bucket, b.bucket));
-      if (codeOnly.length && !isFinite(b.dateMs)) {
-        const pick = codeOnly.slice().sort((x, y) => y.startMs - x.startMs)[0];
-        return { bcba: pick.bcba, reason: "DOS not parseable — used latest matching auth" };
+      const pool = authsForBilling(b);
+
+      // --- LEVEL 2: Historical date match (client + code + DOS in range) ---
+      const lvl2 = pool.filter(a => codeMatches(a.bucket, b.bucket) && inRange(b, a));
+      if (lvl2.length) {
+        const pick = lvl2.slice().sort((x, y) => y.startMs - x.startMs)[0];
+        if (pick.bcba) return { bcba: pick.bcba };
       }
 
-      const dateOnly = arr.filter(a => inRange(a));
-      if (dateOnly.length) {
-        const pick = dateOnly.slice().sort((x, y) => y.startMs - x.startMs)[0];
-        return { bcba: pick.bcba, reason: "No auth matched service code — used date overlap" };
+      // --- LEVEL 3: Follow-up authorization bridge ---
+      // Build a chain via FollowUpAuthorizationNumber from any auth in the
+      // billing's pool, then check whether the DOS lands inside the bridged
+      // auth's range or a small gap between two linked auths for the same
+      // client/code/payor/BCBA.
+      if (isFinite(b.dateMs)) {
+        const samePayor = (a: AuthRecord) =>
+          !b.payor || !a.payor ||
+          a.payor.toLowerCase() === b.payor.toLowerCase();
+        const sameCode = (a: AuthRecord) => codeMatches(a.bucket, b.bucket);
+        const bridged = new Set<AuthRecord>();
+        for (const seed of pool) {
+          if (!sameCode(seed)) continue;
+          // Walk follow-up chain forward.
+          let cur: AuthRecord | undefined = seed;
+          const visited = new Set<string>();
+          while (cur) {
+            if (visited.has(cur.authNumber || cur.resourceId)) break;
+            visited.add(cur.authNumber || cur.resourceId);
+            bridged.add(cur);
+            const next = cur.followUpAuthNumber
+              ? (authsByAuthNumber.get(cur.followUpAuthNumber) || []).find(a => a.clientKey === cur!.clientKey)
+              : undefined;
+            cur = next;
+          }
+        }
+        // Find bridge candidate: DOS in range OR within a small gap (<=14d)
+        // between two consecutive linked auths.
+        const list = [...bridged].filter(samePayor).sort((x, y) => x.startMs - y.startMs);
+        for (let i = 0; i < list.length; i++) {
+          const a = list[i];
+          if (inRange(b, a) && a.bcba) {
+            return { bcba: a.bcba, flag: "Matched by follow-up bridge / date gap." };
+          }
+        }
+        for (let i = 0; i < list.length - 1; i++) {
+          const a = list[i], next = list[i + 1];
+          if (!isFinite(a.endMs) || !isFinite(next.startMs)) continue;
+          if (b.dateMs > a.endMs && b.dateMs < next.startMs &&
+              (next.startMs - a.endMs) <= 14 * DAY) {
+            const bcba = next.bcba || a.bcba;
+            if (bcba) return { bcba, flag: "Matched by follow-up bridge / date gap." };
+          }
+        }
       }
 
-      return { bcba: "", reason: "No authorization overlaps DOS / service code" };
+      // --- LEVEL 4: Closest same client + code + payor within ±30d ---
+      if (isFinite(b.dateMs)) {
+        const samePayor = (a: AuthRecord) =>
+          !b.payor || !a.payor ||
+          a.payor.toLowerCase() === b.payor.toLowerCase();
+        const candidates = pool.filter(a =>
+          codeMatches(a.bucket, b.bucket) && samePayor(a) && a.bcba &&
+          isFinite(a.startMs) && isFinite(a.endMs),
+        );
+        let best: { a: AuthRecord; dist: number } | null = null;
+        for (const a of candidates) {
+          const dist = b.dateMs < a.startMs
+            ? a.startMs - b.dateMs
+            : b.dateMs > a.endMs ? b.dateMs - a.endMs : 0;
+          if (dist <= 30 * DAY && (!best || dist < best.dist)) {
+            best = { a, dist };
+          }
+        }
+        if (best) {
+          return { bcba: best.a.bcba, flag: "Matched by closest auth — review needed." };
+        }
+      }
+
+      // --- LEVEL 5: Exception ---
+      const suggested = pool
+        .filter(a => codeMatches(a.bucket, b.bucket))
+        .slice(0, 3)
+        .map(a => `${a.authNumber || a.resourceId || "—"} (${a.startRaw}→${a.endRaw}, ${a.bcba || "no BCBA"})`)
+        .join("; ");
+      return {
+        bcba: "",
+        reason: pool.length
+          ? "No authorization overlaps DOS / service code / payor"
+          : "No authorization on file for client",
+        suggested: suggested || undefined,
+      };
     };
 
     const hasAuths = authRecords.length > 0;
@@ -471,13 +603,15 @@ export default function BcbaProductivityReport() {
         // 97153 is performed by RBTs; productivity always goes to authorization BCBA.
         isRbtDirect = true;
         if (hasAuths) {
-          const r = findAuthBcba(x);
+          const r = matchAuth(x);
           if (r.bcba) bcba = r.bcba;
           else {
             exc.push({
               client: x.client, clientId: x.clientId, date: x.date,
               code: x.code, hours: x.hours, provider: x.provider,
               reason: r.reason || "No authorization match",
+              authId: x.authId, authResourceId: x.authResourceId,
+              payor: x.payor, suggested: r.suggested,
             });
             continue;
           }
@@ -489,7 +623,7 @@ export default function BcbaProductivityReport() {
         // BCBA codes: rendering provider is the BCBA when present.
         bcba = x.provider;
         if (!bcba && hasAuths) {
-          const r = findAuthBcba(x);
+          const r = matchAuth(x);
           if (r.bcba) bcba = r.bcba;
         }
       } else {
@@ -969,7 +1103,8 @@ export default function BcbaProductivityReport() {
                   <thead className="sticky top-0 bg-card text-[10px] uppercase text-muted-foreground">
                     <tr>
                       <Th>Client</Th><Th>Client ID</Th><Th>DOS</Th><Th>Code</Th>
-                      <Th align="right">Hours</Th><Th>RBT Provider</Th><Th>Reason</Th>
+                      <Th align="right">Hours</Th><Th>Auth Id</Th><Th>Auth Resource Id</Th>
+                      <Th>Payor</Th><Th>Reason</Th><Th>Suggested</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -980,8 +1115,11 @@ export default function BcbaProductivityReport() {
                         <Td>{e.date || "—"}</Td>
                         <Td>{e.code}</Td>
                         <Td align="right">{fmt1(e.hours)}</Td>
-                        <Td>{e.provider}</Td>
+                        <Td>{e.authId || "—"}</Td>
+                        <Td>{e.authResourceId || "—"}</Td>
+                        <Td>{e.payor || "—"}</Td>
                         <Td className="text-amber-800">{e.reason}</Td>
+                        <Td className="text-muted-foreground">{e.suggested || "—"}</Td>
                       </tr>
                     ))}
                   </tbody>
