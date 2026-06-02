@@ -1103,7 +1103,8 @@ export default function BcbaProductivityReport() {
                   <thead className="sticky top-0 bg-card text-[10px] uppercase text-muted-foreground">
                     <tr>
                       <Th>Client</Th><Th>Client ID</Th><Th>DOS</Th><Th>Code</Th>
-                      <Th align="right">Hours</Th><Th>RBT Provider</Th><Th>Reason</Th>
+                      <Th align="right">Hours</Th><Th>Auth Id</Th><Th>Auth Resource Id</Th>
+                      <Th>Payor</Th><Th>Reason</Th><Th>Suggested</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1114,8 +1115,11 @@ export default function BcbaProductivityReport() {
                         <Td>{e.date || "—"}</Td>
                         <Td>{e.code}</Td>
                         <Td align="right">{fmt1(e.hours)}</Td>
-                        <Td>{e.provider}</Td>
+                        <Td>{e.authId || "—"}</Td>
+                        <Td>{e.authResourceId || "—"}</Td>
+                        <Td>{e.payor || "—"}</Td>
                         <Td className="text-amber-800">{e.reason}</Td>
+                        <Td className="text-muted-foreground">{e.suggested || "—"}</Td>
                       </tr>
                     ))}
                   </tbody>
