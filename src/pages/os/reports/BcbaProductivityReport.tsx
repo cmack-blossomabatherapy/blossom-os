@@ -333,17 +333,22 @@ export default function BcbaProductivityReport() {
       const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
       const cliIdH = findH(headers, ["ClientId", "Client ID", "ClientNumber", "PatientId", "Patient ID", "MRN"]);
       const authNumH = findH(headers, ["AuthorizationNumber", "Auth Number", "Authorization #", "Auth #", "AuthId"]);
-      const startH = findH(headers, ["ActualStartDate", "AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "startDate", "EffectiveDate", "Effective Date", "From"]);
-      const endH = findH(headers, ["ActualEndDate", "AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "endDate", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
+      const followUpH = findH(headers, ["FollowUpAuthorizationNumber", "Follow Up Authorization Number", "FollowUpAuthNumber", "FollowUp Auth Number"]);
+      const actualStartH = findH(headers, ["ActualStartDate", "Actual Start Date"]);
+      const actualEndH = findH(headers, ["ActualEndDate", "Actual End Date"]);
+      const startH = findH(headers, ["AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "startDate", "EffectiveDate", "Effective Date", "From"]);
+      const endH = findH(headers, ["AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "endDate", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
       const codeH = findH(headers, ["ServiceCodes", "ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
       const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "managerName", "Manager Name", "Manager", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
+      const managerIdH = findH(headers, ["managerId", "Manager Id", "ManagerID", "ManagerId"]);
+      const resourceIdH = findH(headers, ["ResourceId", "Resource Id", "ResourceID"]);
       const payorH = findH(headers, ["PayorName", "Payor", "Payer", "Insurance", "Funder"]);
       const statusH = findH(headers, ["Status", "AuthorizationStatus", "Auth Status"]);
 
       const miss: string[] = [];
       if (!clientH && !(cliFirstH || cliLastH)) miss.push("Client column");
-      if (!startH) miss.push("Authorization Start Date column");
-      if (!endH) miss.push("Authorization End Date column");
+      if (!actualStartH && !startH) miss.push("Authorization Start Date column");
+      if (!actualEndH && !endH) miss.push("Authorization End Date column");
       if (!bcbaH) miss.push("BCBA column");
 
           if (miss.length) {
@@ -362,8 +367,12 @@ export default function BcbaProductivityReport() {
         const client = composeClient(r);
         if (!client) continue;
         const code = codeH ? (r[codeH] || "").trim() : "";
-        const startRaw = startH ? (r[startH] || "") : "";
-        const endRaw = endH ? (r[endH] || "") : "";
+        const actualStartRaw = actualStartH ? (r[actualStartH] || "").trim() : "";
+        const actualEndRaw = actualEndH ? (r[actualEndH] || "").trim() : "";
+        const fbStartRaw = startH ? (r[startH] || "").trim() : "";
+        const fbEndRaw = endH ? (r[endH] || "").trim() : "";
+        const startRaw = actualStartRaw || fbStartRaw;
+        const endRaw = actualEndRaw || fbEndRaw;
         const bcba = bcbaH ? (r[bcbaH] || "").trim() : "";
         if (!bcba) continue;
             newRecs.push({
@@ -377,6 +386,9 @@ export default function BcbaProductivityReport() {
           bcba,
           payor: payorH ? (r[payorH] || "").trim() : "",
           status: statusH ? (r[statusH] || "").trim() : "",
+          resourceId: resourceIdH ? (r[resourceIdH] || "").trim() : "",
+          managerId: managerIdH ? (r[managerIdH] || "").trim() : "",
+          followUpAuthNumber: followUpH ? (r[followUpH] || "").trim() : "",
         });
       }
           loadedNames.push(file.name);
