@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
-  ShieldCheck, FileWarning,
+  ShieldCheck, FileWarning, ArrowUpDown,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -215,6 +215,19 @@ export default function BcbaProductivityReport() {
   const [codesF, setCodesF] = useState<string[]>([]); // empty = all
   const [search, setSearch] = useState("");
   const [minHours, setMinHours] = useState(DEFAULT_MIN);
+
+  const [sortKey, setSortKey] = useState<keyof BcbaAgg | "">("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (key: keyof BcbaAgg | "") => {
+    if (!key) return;
+    if (sortKey === key) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dragOver, setDragOver] = useState(false);
@@ -759,14 +772,26 @@ export default function BcbaProductivityReport() {
   }, [filteredSessions, minHours]);
 
   const visible = useMemo(() => {
-    if (!search.trim()) return aggregates;
-    const q = search.toLowerCase();
-    return aggregates.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.state.toLowerCase().includes(q) ||
-      a.director.toLowerCase().includes(q),
-    );
-  }, [aggregates, search]);
+    let rows = aggregates;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      rows = rows.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.state.toLowerCase().includes(q) ||
+        a.director.toLowerCase().includes(q),
+      );
+    }
+    if (!sortKey) return rows;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === "number" && typeof bv === "number") {
+        return (av - bv) * dir;
+      }
+      return String(av || "").localeCompare(String(bv || ""), undefined, { numeric: true }) * dir;
+    });
+  }, [aggregates, search, sortKey, sortDir]);
 
   /* ---- KPIs ---- */
   const kpis = useMemo(() => {
@@ -1068,19 +1093,19 @@ export default function BcbaProductivityReport() {
                 <thead className="bg-secondary/40 text-[11px] uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <Th />
-                    <Th>BCBA</Th>
-                    <Th>State</Th>
-                    <Th align="right">Active Clients</Th>
-                    <Th align="right">RBTs</Th>
-                    <Th align="right">97153</Th>
-                    <Th align="right">97155</Th>
-                    <Th align="right">97156</Th>
-                    <Th align="right">Total Billable</Th>
-                    <Th align="right">Avg/Client</Th>
-                    <Th align="right">Avg/RBT</Th>
-                    <Th align="right">Payroll</Th>
-                    <Th align="right">Min</Th>
-                    <Th>Status</Th>
+                    <SortTh sortKey="name" activeKey={sortKey} dir={sortDir} onSort={handleSort}>BCBA</SortTh>
+                    <SortTh sortKey="state" activeKey={sortKey} dir={sortDir} onSort={handleSort}>State</SortTh>
+                    <SortTh sortKey="activeClients" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Active Clients</SortTh>
+                    <SortTh sortKey="assignedRbts" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>RBTs</SortTh>
+                    <SortTh sortKey="h97153" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>97153</SortTh>
+                    <SortTh sortKey="h97155" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>97155</SortTh>
+                    <SortTh sortKey="h97156" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>97156</SortTh>
+                    <SortTh sortKey="total" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Total Billable</SortTh>
+                    <SortTh sortKey="avgHoursPerClient" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Avg/Client</SortTh>
+                    <SortTh sortKey="avgHoursPerRbt" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Avg/RBT</SortTh>
+                    <SortTh sortKey="payrollHours" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Payroll</SortTh>
+                    <SortTh sortKey="minimumHours" align="right" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Min</SortTh>
+                    <SortTh sortKey="minStatus" activeKey={sortKey} dir={sortDir} onSort={handleSort}>Status</SortTh>
                   </tr>
                 </thead>
                 <tbody>
@@ -1188,6 +1213,47 @@ function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; val
       <p className={cn("mt-1 font-semibold tabular-nums tracking-tight", highlight ? "text-2xl text-primary" : "text-xl")}>{value}</p>
       {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
+  );
+}
+
+function SortTh({
+  children,
+  align = "left",
+  sortKey: key,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  children?: React.ReactNode;
+  align?: "left" | "right";
+  sortKey: keyof BcbaAgg | "";
+  activeKey: keyof BcbaAgg | "";
+  dir: "asc" | "desc";
+  onSort: (k: keyof BcbaAgg | "") => void;
+}) {
+  const active = activeKey === key && key !== "";
+  return (
+    <th
+      className={cn(
+        "px-3 py-2 font-medium select-none",
+        align === "right" && "text-right",
+        key && "cursor-pointer hover:text-foreground",
+      )}
+      onClick={() => key && onSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        {key && (
+          <ArrowUpDown className={cn(
+            "h-3 w-3 transition-colors",
+            active ? "text-primary" : "text-muted-foreground/40",
+          )} />
+        )}
+        {active && (
+          <span className="text-[10px] text-primary">{dir === "asc" ? "▲" : "▼"}</span>
+        )}
+      </span>
+    </th>
   );
 }
 
