@@ -777,19 +777,21 @@ export default function BcbaProductivityReport() {
             </p>
             <div className="mt-4">
               <Button variant="outline" onClick={() => authInputRef.current?.click()} disabled={loadingAuth}>
-                {loadingAuth ? "Parsing…" : "Choose file"}
+                {loadingAuth ? "Parsing…" : "Choose file(s)"}
               </Button>
               <input
                 ref={authInputRef}
                 type="file"
+                multiple
                 accept={SUPPORTED_EXTENSIONS}
                 onChange={(e) => handleAuthFiles(e.target.files)}
                 className="hidden"
               />
             </div>
-            {authFileName && !authMissing.length && (
+            {authFileNames.length > 0 && (
               <p className="mt-3 text-[11px] text-emerald-700">
-                Loaded {authRecords.length.toLocaleString()} records from {authFileName}
+                Loaded {authRecords.length.toLocaleString()} records from {authFileNames.length} file
+                {authFileNames.length === 1 ? "" : "s"}: {authFileNames.join(", ")}
               </p>
             )}
             {authMissing.length > 0 && (
@@ -861,7 +863,7 @@ export default function BcbaProductivityReport() {
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
               Billing: <span className="font-medium text-foreground">{billingFileName || "—"}</span>
-              {" · "}Auths: <span className="font-medium text-foreground">{authFileName || "not uploaded"}</span>
+              {" · "}Auths: <span className="font-medium text-foreground">{authFileNames.length ? `${authFileNames.length} file${authFileNames.length === 1 ? "" : "s"}` : "not uploaded"}</span>
               {" · "}{filteredSessions.length.toLocaleString()} session rows in view
               {" · "}{exceptions.length.toLocaleString()} attribution exception{exceptions.length === 1 ? "" : "s"}
             </p>
@@ -885,6 +887,7 @@ export default function BcbaProductivityReport() {
                 <input
                   ref={authInputRef}
                   type="file"
+                  multiple
                   accept={SUPPORTED_EXTENSIONS}
                   onChange={(e) => handleAuthFiles(e.target.files)}
                   className="hidden"
