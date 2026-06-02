@@ -423,6 +423,7 @@ function RoleDashboardRedirect() {
     : roles.includes("bcba") ? ROLE_HOME.bcba
     : roles.includes("rbt") ? ROLE_HOME.rbt
     : roles.includes("marketing") ? ROLE_HOME.marketing_team
+    : roles.includes("behavioral_support") ? ROLE_HOME.behavioral_support
     : undefined;
 
   const intelligenceFallback = roles.includes("rbt") || roles.includes("bcba") || hasTrainingAdminAccess ? "/hr/journey" : "/training";
