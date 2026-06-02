@@ -762,14 +762,26 @@ export default function BcbaProductivityReport() {
   }, [filteredSessions, minHours]);
 
   const visible = useMemo(() => {
-    if (!search.trim()) return aggregates;
-    const q = search.toLowerCase();
-    return aggregates.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.state.toLowerCase().includes(q) ||
-      a.director.toLowerCase().includes(q),
-    );
-  }, [aggregates, search]);
+    let rows = aggregates;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      rows = rows.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.state.toLowerCase().includes(q) ||
+        a.director.toLowerCase().includes(q),
+      );
+    }
+    if (!sortKey) return rows;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === "number" && typeof bv === "number") {
+        return (av - bv) * dir;
+      }
+      return String(av || "").localeCompare(String(bv || ""), undefined, { numeric: true }) * dir;
+    });
+  }, [aggregates, search, sortKey, sortDir]);
 
   /* ---- KPIs ---- */
   const kpis = useMemo(() => {
