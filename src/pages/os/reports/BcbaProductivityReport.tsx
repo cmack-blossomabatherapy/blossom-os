@@ -810,12 +810,12 @@ export default function BcbaProductivityReport() {
   function buildExportRows() {
     const cols = [
       "BCBA", "State", "State Director", "Active Clients", "Assigned RBTs",
-      "97155", "97156", "97151", "Other", "Total", "Payroll Hours",
+      "97153", "97155", "97156", "97151", "Other", "Total", "Payroll Hours",
       "Avg/Client", "Avg/RBT", "Min Hours", "Status", "Flags",
     ];
     const rows = visible.map(a => [
       a.name, a.state, a.director, a.activeClients, a.assignedRbts,
-      fmt1(a.h97155), fmt1(a.h97156), fmt1(a.h97151), fmt1(a.hOther), fmt1(a.total),
+      fmt1(a.h97153), fmt1(a.h97155), fmt1(a.h97156), fmt1(a.h97151), fmt1(a.hOther), fmt1(a.total),
       fmt1(a.payrollHours), fmt1(a.avgHoursPerClient), fmt1(a.avgHoursPerRbt),
       a.minimumHours, a.minStatus, a.flags.join("; "),
     ] as (string | number)[]);
