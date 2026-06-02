@@ -315,14 +315,14 @@ export default function BcbaProductivityReport() {
           if (!first) { allMissing.push(`${file.name}: no data`); continue; }
           const headers = first.headers;
 
-      const clientH = findH(headers, ["Client", "Client Name", "Patient", "Patient Name", "Name"]);
+      const clientH = findH(headers, ["clientName", "ClientFullName", "Client", "Client Name", "Patient", "Patient Name", "Name"]);
       const cliFirstH = findH(headers, ["ClientFirstName", "Client First Name"]);
       const cliLastH = findH(headers, ["ClientLastName", "Client Last Name"]);
       const cliIdH = findH(headers, ["ClientId", "Client ID", "ClientNumber", "PatientId", "Patient ID", "MRN"]);
       const authNumH = findH(headers, ["AuthorizationNumber", "Auth Number", "Authorization #", "Auth #", "AuthId"]);
-      const startH = findH(headers, ["AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "EffectiveDate", "Effective Date", "From"]);
-      const endH = findH(headers, ["AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
-      const codeH = findH(headers, ["ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
+      const startH = findH(headers, ["ActualStartDate", "AuthorizationStartDate", "Auth Start", "Auth Start Date", "Start Date", "startDate", "EffectiveDate", "Effective Date", "From"]);
+      const endH = findH(headers, ["ActualEndDate", "AuthorizationEndDate", "Auth End", "Auth End Date", "End Date", "endDate", "ExpirationDate", "Expiration Date", "Auth Exp. Date", "To"]);
+      const codeH = findH(headers, ["ServiceCodes", "ProcedureCode", "Code", "CPT", "CPT Code", "ServiceCode", "Service Code", "Procedure"]);
       const bcbaH = findH(headers, ["BCBA", "BCBA Name", "Active BCBA", "managerName", "Manager Name", "Manager", "Provider", "Provider Name", "Supervisor", "AuthorizedProvider", "Authorized Provider"]);
       const payorH = findH(headers, ["PayorName", "Payor", "Payer", "Insurance", "Funder"]);
       const statusH = findH(headers, ["Status", "AuthorizationStatus", "Auth Status"]);
