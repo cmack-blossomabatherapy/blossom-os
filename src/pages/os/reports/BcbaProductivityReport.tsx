@@ -661,7 +661,8 @@ export default function BcbaProductivityReport() {
     toast.success(`Exported ${kind.toUpperCase()}`);
   }
 
-  const empty = !sessions.length;
+  const empty = !billingRaws.length;
+  const authsLoaded = authRecords.length > 0;
 
   return (
     <OSShell>
@@ -692,6 +693,7 @@ export default function BcbaProductivityReport() {
       {/* ===== Upload ===== */}
       {empty && (
         <section className="mt-4 print:hidden">
+          <div className="grid gap-4 md:grid-cols-2">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -702,9 +704,9 @@ export default function BcbaProductivityReport() {
             )}
           >
             <Upload className="mx-auto h-7 w-7 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">Upload a CR billing / service export</p>
+            <p className="mt-3 text-sm font-medium">1. Upload Billing Report</p>
             <p className="text-xs text-muted-foreground">
-              CSV or Excel · one row per session with BCBA, Client, CPT code, hours, RBT, payor, date, state.
+              CR billing/service export · one row per session with Client, CPT, hours, provider, DOS.
             </p>
             <div className="mt-4">
               <Button onClick={() => inputRef.current?.click()} disabled={loading}>
@@ -726,6 +728,47 @@ export default function BcbaProductivityReport() {
                 </ul>
               </div>
             )}
+          </div>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setAuthDragOver(true); }}
+            onDragLeave={() => setAuthDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setAuthDragOver(false); handleAuthFiles(e.dataTransfer.files); }}
+            className={cn(
+              "rounded-2xl border-2 border-dashed p-10 text-center transition",
+              authDragOver ? "border-primary bg-primary/5" : "border-border/60 bg-secondary/20",
+            )}
+          >
+            <ShieldCheck className="mx-auto h-7 w-7 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium">2. Upload Authorization Report</p>
+            <p className="text-xs text-muted-foreground">
+              Source of BCBA ownership · Client, Auth Start, Auth End, Service Code, BCBA.
+            </p>
+            <div className="mt-4">
+              <Button variant="outline" onClick={() => authInputRef.current?.click()} disabled={loadingAuth}>
+                {loadingAuth ? "Parsing…" : "Choose file"}
+              </Button>
+              <input
+                ref={authInputRef}
+                type="file"
+                accept={SUPPORTED_EXTENSIONS}
+                onChange={(e) => handleAuthFiles(e.target.files)}
+                className="hidden"
+              />
+            </div>
+            {authFileName && !authMissing.length && (
+              <p className="mt-3 text-[11px] text-emerald-700">
+                Loaded {authRecords.length.toLocaleString()} records from {authFileName}
+              </p>
+            )}
+            {authMissing.length > 0 && (
+              <div className="mx-auto mt-4 max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-left text-xs text-destructive">
+                <p className="font-semibold">Missing required columns:</p>
+                <ul className="ml-4 mt-1 list-disc">
+                  {authMissing.map(m => <li key={m}>{m}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
           </div>
         </section>
       )}
