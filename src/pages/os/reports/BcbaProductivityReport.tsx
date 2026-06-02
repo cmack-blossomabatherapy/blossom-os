@@ -1021,6 +1021,18 @@ export default function BcbaProductivityReport() {
 
           {/* ===== KPI Summary ===== */}
           <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+            <Kpi
+              label="Total 97153 Hours (RBT Direct)"
+              value={fmt1(kpis.t97153)}
+              icon={Stethoscope}
+              highlight
+              hint="Attributed to supervising BCBA via authorization"
+            />
+            <Kpi
+              label="Avg 97153 / BCBA"
+              value={fmt1(kpis.avg97153)}
+              highlight
+            />
             <Kpi label="Total BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} />
             <Kpi label="Total Clients Served" value={fmt0(kpis.totalClients)} icon={Stethoscope} />
             <Kpi label="Total RBTs Supervised" value={fmt0(kpis.totalRbts)} />
