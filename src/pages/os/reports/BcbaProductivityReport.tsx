@@ -727,6 +727,11 @@ export default function BcbaProductivityReport() {
       {/* ===== Upload ===== */}
       {empty && (
         <section className="mt-4 print:hidden">
+          <div className="mb-3 rounded-xl border border-border/60 bg-secondary/30 p-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Both reports required.</span>{" "}
+            Upload the Billing Report <span className="text-foreground">and</span> the Authorization Report
+            before the dashboard is generated. Auths drive historical BCBA attribution for 97153/97154 hours.
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
