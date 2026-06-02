@@ -931,6 +931,47 @@ export default function BcbaProductivityReport() {
               </table>
             </div>
           </section>
+
+          {/* ===== Exceptions ===== */}
+          {exceptions.length > 0 && (
+            <section className="mt-4 overflow-hidden rounded-xl border border-amber-200 bg-card">
+              <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50/60 px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <FileWarning className="h-4 w-4 text-amber-700" />
+                  <h2 className="text-sm font-semibold text-amber-900">BCBA Attribution Exceptions ({exceptions.length.toLocaleString()})</h2>
+                </div>
+                <span className="text-[11px] text-amber-800">
+                  These 97153 rows could not be matched to an active authorization and are not credited to any BCBA.
+                </span>
+              </div>
+              <div className="max-h-72 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-card text-[10px] uppercase text-muted-foreground">
+                    <tr>
+                      <Th>Client</Th><Th>Client ID</Th><Th>DOS</Th><Th>Code</Th>
+                      <Th align="right">Hours</Th><Th>RBT Provider</Th><Th>Reason</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exceptions.slice(0, 500).map((e, i) => (
+                      <tr key={i} className="border-t border-border/30">
+                        <Td className="font-medium">{e.client}</Td>
+                        <Td>{e.clientId || "—"}</Td>
+                        <Td>{e.date || "—"}</Td>
+                        <Td>{e.code}</Td>
+                        <Td align="right">{fmt1(e.hours)}</Td>
+                        <Td>{e.provider}</Td>
+                        <Td className="text-amber-800">{e.reason}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {exceptions.length > 500 && (
+                  <p className="px-4 py-2 text-[11px] text-muted-foreground">Showing first 500 of {exceptions.length.toLocaleString()}.</p>
+                )}
+              </div>
+            </section>
+          )}
         </>
       )}
     </OSShell>
