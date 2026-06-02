@@ -378,6 +378,10 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     osRole === "hr_team" ||
     ((roles.includes("hr") || roles.includes("hr_admin") || roles.includes("hr_manager"))
       && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
+  // Behavioral Support gets a minimal menu with just Resources (Reports + Training Academy).
+  const isBehavioralSupportOnly =
+    osRole === "behavioral_support" ||
+    (roles.includes("behavioral_support") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
   void getRoleNavigationExceptions; void hasFullNavigationAccess; void navPathToRoutePrefix;
   void TRAINING_ADMIN_ROLES; void ANALYTICS_ROLES; void AUTOMATIONS_ROLES; void COURSE_AUTHOR_ROLES;
   const { complete: academyComplete } = useAcademyComplete();
@@ -638,6 +642,16 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
         ...academySections,
         intelligenceSection,
         ...(showAdmin ? adminSections : []),
+      ]
+    : isBehavioralSupportOnly
+    ? [
+        {
+          title: "Resources",
+          items: [
+            { label: "Reports", icon: BarChart3, path: "/reports", perm: "" },
+            { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+          ],
+        },
       ]
     : isSchedulingOnly
     ? schedulingSections
