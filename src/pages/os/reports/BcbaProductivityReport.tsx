@@ -189,7 +189,7 @@ const DEFAULT_MIN = 100;
 
 export default function BcbaProductivityReport() {
   const [billingFileName, setBillingFileName] = useState("");
-  const [authFileName, setAuthFileName] = useState("");
+  const [authFileNames, setAuthFileNames] = useState<string[]>([]);
   const [billingRaws, setBillingRaws] = useState<BillingRaw[]>([]);
   const [authRecords, setAuthRecords] = useState<AuthRecord[]>([]);
   const [missing, setMissing] = useState<string[]>([]);
@@ -301,14 +301,19 @@ export default function BcbaProductivityReport() {
 
   /* ---- parse authorization report ---- */
   async function handleAuthFiles(files: FileList | File[] | null) {
-    if (!files || !files[0]) return;
-    const file = files[0];
+    if (!files || !files.length) return;
+    const fileList = Array.from(files as ArrayLike<File>);
     setLoadingAuth(true);
+    const allMissing: string[] = [];
+    const newRecs: AuthRecord[] = [];
+    const loadedNames: string[] = [];
     try {
-      const parsed = await parseAnyFile(file);
-      const first = parsed[0];
-      if (!first) throw new Error("No data in file.");
-      const headers = first.headers;
+      for (const file of fileList) {
+        try {
+          const parsed = await parseAnyFile(file);
+          const first = parsed[0];
+          if (!first) { allMissing.push(`${file.name}: no data`); continue; }
+          const headers = first.headers;
 
       const clientH = findH(headers, ["Client", "Client Name", "Patient", "Patient Name", "Name"]);
       const cliFirstH = findH(headers, ["ClientFirstName", "Client First Name"]);
@@ -328,10 +333,10 @@ export default function BcbaProductivityReport() {
       if (!endH) miss.push("Authorization End Date column");
       if (!bcbaH) miss.push("BCBA column");
 
-      if (miss.length) {
-        setAuthMissing(miss); setAuthRecords([]); setAuthFileName(file.name); return;
-      }
-      setAuthMissing([]);
+          if (miss.length) {
+            allMissing.push(`${file.name}: missing ${miss.join(", ")}`);
+            continue;
+          }
 
       const composeClient = (r: Record<string, string>) => {
         if (clientH) { const v = (r[clientH] || "").trim(); if (v) return v; }
@@ -340,7 +345,6 @@ export default function BcbaProductivityReport() {
         return [fn, ln].filter(Boolean).join(" ").trim();
       };
 
-      const recs: AuthRecord[] = [];
       for (const r of first.rows) {
         const client = composeClient(r);
         if (!client) continue;
@@ -349,7 +353,7 @@ export default function BcbaProductivityReport() {
         const endRaw = endH ? (r[endH] || "") : "";
         const bcba = bcbaH ? (r[bcbaH] || "").trim() : "";
         if (!bcba) continue;
-        recs.push({
+            newRecs.push({
           client, clientKey: normName(client),
           clientId: cliIdH ? (r[cliIdH] || "").trim() : "",
           authNumber: authNumH ? (r[authNumH] || "").trim() : "",
@@ -362,19 +366,47 @@ export default function BcbaProductivityReport() {
           status: statusH ? (r[statusH] || "").trim() : "",
         });
       }
-      setAuthRecords(recs);
-      setAuthFileName(file.name);
-      toast.success(`Loaded ${recs.length.toLocaleString()} authorization records`);
+          loadedNames.push(file.name);
+        } catch (err: any) {
+          allMissing.push(`${file.name}: ${err?.message ?? err}`);
+        }
+      }
+
+      // Merge with existing records, deduping by key.
+      setAuthRecords(prev => {
+        const seen = new Set<string>();
+        const keyOf = (a: AuthRecord) =>
+          [a.clientKey, a.authNumber, a.code, a.startRaw, a.endRaw, normName(a.bcba)].join("|");
+        const merged: AuthRecord[] = [];
+        for (const a of [...prev, ...newRecs]) {
+          const k = keyOf(a);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          merged.push(a);
+        }
+        return merged;
+      });
+      setAuthFileNames(prev => Array.from(new Set([...prev, ...loadedNames])));
+      setAuthMissing(allMissing);
+      if (loadedNames.length) {
+        toast.success(
+          `Loaded ${newRecs.length.toLocaleString()} records from ${loadedNames.length} file${loadedNames.length === 1 ? "" : "s"}`,
+        );
+      }
+      if (allMissing.length && !loadedNames.length) {
+        toast.error("No authorization files could be parsed");
+      }
     } catch (e: any) {
       toast.error(`Failed to parse: ${e?.message ?? e}`);
     } finally {
       setLoadingAuth(false);
+      if (authInputRef.current) authInputRef.current.value = "";
     }
   }
 
   function resetUpload() {
     setBillingFileName(""); setBillingRaws([]); setMissing([]);
-    setAuthFileName(""); setAuthRecords([]); setAuthMissing([]);
+    setAuthFileNames([]); setAuthRecords([]); setAuthMissing([]);
     if (inputRef.current) inputRef.current.value = "";
     if (authInputRef.current) authInputRef.current.value = "";
   }
