@@ -1171,14 +1171,21 @@ function FilterSelect({ label, value, onChange, options }: {
   );
 }
 
-function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) {
+function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; value: string; icon?: any; highlight?: boolean; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card p-3">
+    <div className={cn(
+      "rounded-xl border bg-card p-3",
+      highlight ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20" : "border-border/60",
+    )}>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        <p className={cn(
+          "text-[10px] font-semibold uppercase tracking-[0.14em]",
+          highlight ? "text-primary" : "text-muted-foreground",
+        )}>{label}</p>
+        {Icon && <Icon className={cn("h-3.5 w-3.5", highlight ? "text-primary" : "text-muted-foreground")} />}
       </div>
-      <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">{value}</p>
+      <p className={cn("mt-1 font-semibold tabular-nums tracking-tight", highlight ? "text-2xl text-primary" : "text-xl")}>{value}</p>
+      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
