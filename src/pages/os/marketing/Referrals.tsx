@@ -438,6 +438,12 @@ function ReferralsInner() {
       {addContactOpen && <AddReferralDialog open onOpenChange={setAddContactOpen} onCreated={refreshAll} />}
       {addCompanyOpen && <AddCompanyDialog open onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />}
       {importOpen && <ImportReferralsDialog open onOpenChange={setImportOpen} onComplete={refreshAll} />}
+      <ReferralExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        sources={exportSources}
+        initialDataset={activeTab}
+      />
       {contactDrawer && (
         <ContactDetailDrawer
           contact={contactDrawer}
