@@ -301,10 +301,10 @@ function parseBillingFile(headers: string[], rows: Record<string, string>[]): Bi
 }
 
 function parseAuthFile(headers: string[], rows: Record<string, string>[]): AuthRecord[] {
-  const clientH = findH(headers, ["ClientName", "Client Name", "Client", "PatientName"]);
-  const bcbaH = findH(headers, ["BCBA", "BCBAName", "Supervisor", "Assigned BCBA", "Provider"]);
-  const startH = findH(headers, ["AuthStart", "Authorization Start", "StartDate", "Start Date", "EffectiveDate"]);
-  const endH = findH(headers, ["AuthEnd", "Authorization End", "EndDate", "End Date", "ExpirationDate", "Expiration Date"]);
+  const clientH = findH(headers, ["ClientFullName", "ClientName", "Client Name", "clientName", "Client", "PatientName"]);
+  const bcbaH = findH(headers, ["managerName", "ManagerName", "Manager Name", "BCBA", "BCBAName", "Supervisor", "Assigned BCBA", "Provider"]);
+  const startH = findH(headers, ["ActualStartDate", "startDate", "AuthStart", "Authorization Start", "StartDate", "Start Date", "EffectiveDate"]);
+  const endH = findH(headers, ["ActualEndDate", "endDate", "AuthEnd", "Authorization End", "EndDate", "End Date", "ExpirationDate", "Expiration Date"]);
   return rows.map(r => ({
     client: tidyName(clientH ? r[clientH] : ""),
     bcba: tidyName(bcbaH ? r[bcbaH] : ""),
