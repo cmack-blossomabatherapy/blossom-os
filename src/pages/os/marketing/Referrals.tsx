@@ -1,523 +1,415 @@
 import { useMemo, useState } from "react";
 import {
-  Sparkles,
-  Heart,
-  Stethoscope,
-  GraduationCap,
-  Users,
-  Building2,
-  Briefcase,
-  MapPin,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Brain,
-  ArrowRight,
-  Calendar,
-  HandHeart,
+  Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle,
 } from "lucide-react";
-import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
+import { MktgPage, MktgCard } from "./_shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
+import type { ReferralCompany, ReferralContact } from "@/lib/os/referrals/types";
+import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
+import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
+import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
+import { ImportReferralsDialog } from "@/components/marketing/referrals/ImportReferralsDialog";
+import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDetailDrawer";
+import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
 
-/* ────────────────────────────────────────────────────────────────────────── *
- * Referrals — operational relationship intelligence. Derived from real
- * referral leads + referred candidates. Connect physician, school, and
- * community partnerships via Admin → Data Uploads to enrich relationship
- * categories with named partners.
- * ────────────────────────────────────────────────────────────────────────── */
+function StatTile({ label, value, icon: Icon, hint }: { label: string; value: React.ReactNode; icon: React.ElementType; hint?: string }) {
+  return (
+    <div className="rounded-2xl border bg-card p-4">
+      <div className="flex items-start justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <Icon className="size-4 text-muted-foreground" />
+      </div>
+      <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
+      {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
+    </div>
+  );
+}
 
-const STATE_NAMES: Record<string, string> = {
-  GA: "Georgia",
-  NC: "North Carolina",
-  TN: "Tennessee",
-  VA: "Virginia",
-  MD: "Maryland",
-};
-
-const QUALIFIED_STATUSES = new Set(["VOB Completed", "Sent to VOB", "Form Received"]);
-
-function TrendIcon({ delta }: { delta: number }) {
-  if (delta > 0) return <TrendingUp className="size-3.5 text-emerald-600" />;
-  if (delta < 0) return <TrendingDown className="size-3.5 text-amber-600" />;
-  return <Minus className="size-3.5 text-muted-foreground" />;
+function exportCsv(filename: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function Referrals() {
-  const mi = useMarketingIntelligence();
-  const [activeState, setActiveState] = useState<string | null>(null);
+  const { data: contacts, loading: lc, refresh: refreshContacts } = useReferralContacts();
+  const { data: companies, loading: lo, refresh: refreshCompanies } = useReferralCompanies();
+  const { data: batches } = useReferralBatches();
 
-  const referralLeads = useMemo(() => mockLeads.filter((l) => l.source === "Referral"), []);
-  const referralCandidates = useMemo(() => mockCandidates.filter((c) => c.source === "Referral"), []);
+  const [addContactOpen, setAddContactOpen] = useState(false);
+  const [addCompanyOpen, setAddCompanyOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [contactDrawer, setContactDrawer] = useState<ReferralContact | null>(null);
+  const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
 
-  /* ── momentum (7d vs prior 7d) ─────────────────────────────────────── */
-  const momentum = useMemo(() => {
-    const now = Date.now();
-    const age = (iso: string) => (now - new Date(iso).getTime()) / 86_400_000;
-    const recent = referralLeads.filter((l) => age(l.createdAt) <= 7).length;
-    const prior = referralLeads.filter((l) => {
-      const a = age(l.createdAt);
-      return a > 7 && a <= 14;
-    }).length;
-    const qualified = referralLeads.filter((l) => QUALIFIED_STATUSES.has(l.status)).length;
-    return {
-      recent,
-      prior,
-      delta: recent - prior,
-      qualified,
-      qualifiedRate: referralLeads.length ? Math.round((qualified / referralLeads.length) * 100) : 0,
-    };
-  }, [referralLeads]);
+  // Filters
+  const [search, setSearch] = useState("");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
 
-  /* ── relationship state rollup ─────────────────────────────────────── */
-  const stateRows = useMemo(() => {
-    const map = new Map<string, { state: string; referrals: number; qualified: number; recruitingRefs: number; recent: number; prior: number }>();
-    const now = Date.now();
-    referralLeads.forEach((l) => {
-      const e = map.get(l.state) ?? { state: l.state, referrals: 0, qualified: 0, recruitingRefs: 0, recent: 0, prior: 0 };
-      e.referrals += 1;
-      if (QUALIFIED_STATUSES.has(l.status)) e.qualified += 1;
-      const a = (now - new Date(l.createdAt).getTime()) / 86_400_000;
-      if (a <= 7) e.recent += 1;
-      else if (a <= 14) e.prior += 1;
-      map.set(l.state, e);
+  const states = useMemo(() => {
+    const s = new Set<string>();
+    contacts.forEach((c) => c.state && s.add(c.state));
+    companies.forEach((c) => c.state && s.add(c.state));
+    return Array.from(s).sort();
+  }, [contacts, companies]);
+
+  const refreshAll = () => { refreshContacts(); refreshCompanies(); };
+
+  const visibleContacts = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return contacts.filter((c) => {
+      if (c.status === "Archived") return false;
+      if (stateFilter !== "all" && c.state !== stateFilter) return false;
+      if (stageFilter !== "all" && c.relationship_stage !== stageFilter) return false;
+      if (!q) return true;
+      return [c.full_name, c.email, c.phone, c.title, c.role_type, c.contact_owner]
+        .some((v) => v?.toLowerCase().includes(q));
     });
-    referralCandidates.forEach((c) => {
-      if (!c.state) return;
-      const e = map.get(c.state) ?? { state: c.state, referrals: 0, qualified: 0, recruitingRefs: 0, recent: 0, prior: 0 };
-      e.recruitingRefs += 1;
-      map.set(c.state, e);
+  }, [contacts, search, stateFilter, stageFilter]);
+
+  const visibleCompanies = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return companies.filter((c) => {
+      if (c.status === "Archived") return false;
+      if (stateFilter !== "all" && c.state !== stateFilter) return false;
+      if (!q) return true;
+      return [c.company_name, c.domain, c.website_url, c.relationship_owner].some((v) => v?.toLowerCase().includes(q));
     });
-    return Array.from(map.values()).sort((a, b) => b.referrals + b.recruitingRefs - (a.referrals + a.recruitingRefs));
-  }, [referralLeads, referralCandidates]);
+  }, [companies, search, stateFilter]);
 
-  const topState = stateRows[0];
-  const activeRow = stateRows.find((s) => s.state === activeState);
+  // Stats
+  const activeContacts = contacts.filter((c) => c.status !== "Archived");
+  const activeCompanies = companies.filter((c) => c.status !== "Archived");
+  const needsFollowUp = activeContacts.filter((c) => c.relationship_stage === "Needs Follow-Up" || c.status === "Needs Follow-Up").length;
+  const strongPartners = activeContacts.filter((c) => c.relationship_stage === "Strong Partner").length;
+  const referralsSent = activeContacts.reduce((s, c) => s + (c.number_of_referrals_sent ?? 0), 0);
+  const now = Date.now();
+  const upcoming = activeContacts.filter((c) => c.next_follow_up_at && new Date(c.next_follow_up_at).getTime() >= now).length;
+  const overdue = activeContacts.filter((c) => c.next_follow_up_at && new Date(c.next_follow_up_at).getTime() < now).length;
 
-  /* ── relationship categories (operational tracks) ──────────────────── */
-  // No partner-type field exists yet, so we surface tracks as connect-to-enrich
-  // surfaces but seed signal from real referral lead + candidate activity.
-  const categories = useMemo(() => {
-    const tracks = [
-      {
-        id: "physician",
-        title: "Physician & clinical",
-        icon: Stethoscope,
-        description: "Pediatricians, diagnostic specialists, clinics",
-        signal: Math.max(0, momentum.qualified),
-        hint: `${momentum.qualified} qualified referral leads`,
-      },
-      {
-        id: "school",
-        title: "Schools & districts",
-        icon: GraduationCap,
-        description: "Public, private, IEP coordinators",
-        signal: Math.round(referralLeads.length * 0.25),
-        hint: "Connect district partnerships",
-      },
-      {
-        id: "parent",
-        title: "Parent advocates",
-        icon: Heart,
-        description: "Word-of-mouth and parent groups",
-        signal: Math.round(referralLeads.length * 0.35),
-        hint: "Highest-trust channel",
-      },
-      {
-        id: "community",
-        title: "Community & advocacy",
-        icon: HandHeart,
-        description: "Autism orgs, awareness events, support groups",
-        signal: Math.round(referralLeads.length * 0.2),
-        hint: "Outreach event-driven",
-      },
-      {
-        id: "recruiting",
-        title: "Recruiting referrals",
-        icon: Briefcase,
-        description: "Staff-referred candidates",
-        signal: referralCandidates.length,
-        hint: `${referralCandidates.length} applicants referred`,
-      },
-    ];
-    return tracks.sort((a, b) => b.signal - a.signal);
-  }, [momentum, referralLeads, referralCandidates]);
+  // Follow-up groupings
+  const followUps = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    const overdueRows: ReferralContact[] = [];
+    const todayRows: ReferralContact[] = [];
+    const upcomingRows: ReferralContact[] = [];
+    for (const c of activeContacts) {
+      if (!c.next_follow_up_at) continue;
+      const t = new Date(c.next_follow_up_at).getTime();
+      if (t < today.getTime()) overdueRows.push(c);
+      else if (t < tomorrow.getTime()) todayRows.push(c);
+      else upcomingRows.push(c);
+    }
+    return { overdueRows, todayRows, upcomingRows };
+  }, [activeContacts]);
 
-  /* ── intake conversion progression for referral leads ──────────────── */
-  const conversionStages = useMemo(() => {
-    const order = ["New Lead", "In Contact", "Sent Form", "Form Received", "Sent to VOB", "VOB Completed"];
-    const counts = new Map<string, number>();
-    referralLeads.forEach((l) => counts.set(l.status, (counts.get(l.status) ?? 0) + 1));
-    return order
-      .map((stage) => ({ stage, count: counts.get(stage) ?? 0 }))
-      .filter((s) => s.count > 0 || ["New Lead", "Form Received", "VOB Completed"].includes(s.stage));
-  }, [referralLeads]);
-
-  /* ── AI insights ───────────────────────────────────────────────────── */
-  const insights = useMemo(() => {
-    const out: string[] = [];
-    if (topState) {
-      out.push(
-        `${STATE_NAMES[topState.state] ?? topState.state} is Blossom's strongest relationship region — ${topState.referrals} family referrals · ${topState.recruitingRefs} recruiting.`,
-      );
-    }
-    if (momentum.delta > 0) {
-      out.push(`Referral momentum is building — ${momentum.recent} new referrals this week vs ${momentum.recent - momentum.delta} prior.`);
-    }
-    if (momentum.qualifiedRate >= 40) {
-      out.push(`Referral leads qualify at ${momentum.qualifiedRate}% — relationship trust remains Blossom's highest-converting channel.`);
-    }
-    const weakState = stateRows.find((s) => s.referrals === 0 && s.recruitingRefs > 0);
-    if (weakState) {
-      out.push(`${STATE_NAMES[weakState.state] ?? weakState.state} has recruiting referral activity but no family referrals yet — outreach opportunity.`);
-    }
-    if (referralCandidates.length > 0) {
-      out.push(`${referralCandidates.length} staff-referred candidates in motion — internal referral culture is active.`);
-    }
-    return out.slice(0, 5);
-  }, [topState, momentum, stateRows, referralCandidates]);
+  function companyName(id: string | null | undefined) {
+    if (!id) return "—";
+    return companies.find((c) => c.id === id)?.company_name ?? "—";
+  }
 
   return (
     <MktgPage
       title="Referrals"
-      subtitle="Operational relationship intelligence — where trust, partnerships, and outreach translate into real operational growth."
-      actions={<AIPrompt label="Which relationships are driving the most growth?" variant="card" />}
+      subtitle="Manage referral relationships across pediatricians, schools, social workers, and community partners."
+      actions={
+        <>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload className="size-4 mr-1.5" />Import</Button>
+          <Button size="sm" variant="outline" onClick={() => setAddCompanyOpen(true)}><Building2 className="size-4 mr-1.5" />Add Company</Button>
+          <Button size="sm" onClick={() => setAddContactOpen(true)}><Plus className="size-4 mr-1.5" />Add Referral</Button>
+        </>
+      }
     >
-      {/* ── 1. RELATIONSHIP INTELLIGENCE HERO ────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-card p-6 md:p-8">
-        <div className="absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-32 -left-20 size-80 rounded-full bg-rose-500/5 blur-3xl" aria-hidden />
-        <div className="relative">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            <Sparkles className="size-3.5" />
-            Relationship Intelligence
-          </div>
-          <h2 className="mt-2 max-w-2xl text-xl md:text-2xl font-semibold tracking-tight text-foreground">
-            {momentum.delta > 0
-              ? `Referral momentum is building — ${momentum.recent} new referrals this week.`
-              : topState
-              ? `${STATE_NAMES[topState.state] ?? topState.state} is driving Blossom's strongest relationship growth.`
-              : "Connect physician, school, and community partnerships in Admin → Data Uploads to activate relationship intelligence."}
-          </h2>
-          <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {[
-              { label: "Referral leads", value: referralLeads.length },
-              { label: "Top region", value: topState ? STATE_NAMES[topState.state] ?? topState.state : "—" },
-              { label: "Qualified rate", value: `${momentum.qualifiedRate}%` },
-              { label: "Staff referrals", value: referralCandidates.length },
-            ].map((m) => (
-              <div key={m.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
-                <div className="mt-1 text-[20px] font-semibold tracking-tight text-foreground truncate">{m.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 2. REFERRAL SNAPSHOT CARDS ───────────────────────────────── */}
-      <MktgCard title="Referral snapshot" hint="Relationship momentum, not sales metrics">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "Family referrals", value: referralLeads.length, sub: `${stateRows.filter((s) => s.referrals > 0).length} states`, icon: Heart, delta: momentum.delta },
-            { label: "Qualified referrals", value: momentum.qualified, sub: `${momentum.qualifiedRate}% qualification`, icon: TrendingUp, delta: 0 },
-            { label: "Recruiting referrals", value: referralCandidates.length, sub: "Staff-referred talent", icon: Briefcase, delta: 0 },
-            { label: "Active regions", value: stateRows.filter((s) => s.referrals + s.recruitingRefs > 0).length, sub: "States with relationship activity", icon: MapPin, delta: 0 },
-          ].map((m) => {
-            const Icon = m.icon;
-            return (
-              <div key={m.label} className="rounded-xl border border-border/60 bg-card p-4">
-                <div className="flex items-center justify-between">
-                  <div className="grid size-8 place-items-center rounded-lg bg-muted">
-                    <Icon className="size-4 text-foreground" />
-                  </div>
-                  <TrendIcon delta={m.delta} />
-                </div>
-                <div className="mt-3 text-[11.5px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
-                <div className="mt-1 text-[22px] font-semibold tabular-nums text-foreground">{m.value}</div>
-                <div className="mt-1 text-[11.5px] text-muted-foreground">{m.sub}</div>
-              </div>
-            );
-          })}
-        </div>
-      </MktgCard>
-
-      {/* ── 3. RELATIONSHIP NETWORK (category surfaces) ──────────────── */}
-      <MktgCard title="Relationship network" hint="Operational tracks ranked by signal">
-        <div className="space-y-2.5">
-          {categories.map((c) => {
-            const Icon = c.icon;
-            const max = Math.max(1, ...categories.map((x) => x.signal));
-            return (
-              <div key={c.id} className="rounded-xl border border-border/60 bg-card p-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="grid size-8 place-items-center rounded-lg bg-muted">
-                      <Icon className="size-4 text-foreground" />
-                    </div>
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">{c.title}</div>
-                      <div className="text-[11.5px] text-muted-foreground">{c.description}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[15px] font-semibold tabular-nums text-foreground">{c.signal}</div>
-                    <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">{c.hint}</div>
-                  </div>
-                </div>
-                <div className="mt-2.5">
-                  <ShareBar value={(c.signal / max) * 100} tone="primary" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </MktgCard>
-
-      {/* ── 4. STATE OUTREACH & REFERRAL MAP ─────────────────────────── */}
-      <MktgCard title="State outreach & referrals" hint="Click a state to see relationship detail">
-        {stateRows.length === 0 ? (
-          <EmptyRow>No referral activity yet.</EmptyRow>
-        ) : (
-          <div className="grid gap-2.5 md:grid-cols-2">
-            {stateRows.map((s) => {
-              const max = Math.max(1, ...stateRows.map((x) => x.referrals + x.recruitingRefs));
-              const total = s.referrals + s.recruitingRefs;
-              const isActive = activeState === s.state;
-              return (
-                <button
-                  key={s.state}
-                  onClick={() => setActiveState(isActive ? null : s.state)}
-                  className={`text-left rounded-xl border p-4 transition hover:-translate-y-0.5 ${
-                    isActive ? "border-foreground/40 bg-muted/50" : "border-border/60 bg-card hover:border-border"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="size-4 text-muted-foreground" />
-                      <span className="text-[13.5px] font-medium text-foreground">
-                        {STATE_NAMES[s.state] ?? s.state}
-                      </span>
-                    </div>
-                    <TrendIcon delta={s.recent - s.prior} />
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px]">
-                    <div>
-                      <div className="text-muted-foreground">Family</div>
-                      <div className="text-[15px] font-semibold text-foreground">{s.referrals}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Qualified</div>
-                      <div className="text-[15px] font-semibold text-foreground">{s.qualified}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Staff</div>
-                      <div className="text-[15px] font-semibold text-foreground">{s.recruitingRefs}</div>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <ShareBar value={(total / max) * 100} tone={s.recent > s.prior ? "accent" : "primary"} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {activeRow && (
-          <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-[13px] font-medium text-foreground">
-                {STATE_NAMES[activeRow.state] ?? activeRow.state} relationship detail
-              </div>
-              <button
-                onClick={() => setActiveState(null)}
-                className="text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
-              >
-                Close
-              </button>
-            </div>
-            <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-              <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.qualified}</span> qualified of{" "}
-                <span className="text-foreground font-medium">{activeRow.referrals}</span> family referrals
-              </div>
-              <div className="text-[12.5px] text-muted-foreground">
-                <span className="text-foreground font-medium">{activeRow.recent}</span> new last 7d ·{" "}
-                <span className="text-foreground font-medium">{activeRow.prior}</span> prior week
-              </div>
-              <div className="text-[12.5px] text-muted-foreground">
-                Staff referrals:{" "}
-                <span className="text-foreground font-medium">{activeRow.recruitingRefs}</span> applicants
-              </div>
-              <div className="text-[12.5px] text-muted-foreground">
-                Relationship share:{" "}
-                <span className="text-foreground font-medium">
-                  {Math.round(((activeRow.referrals + activeRow.recruitingRefs) / Math.max(1, referralLeads.length + referralCandidates.length)) * 100)}%
-                </span>
-              </div>
-            </div>
-            {activeRow.referrals > 0 && activeRow.recruitingRefs === 0 && (
-              <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[12px] text-foreground">
-                Family referrals are growing but recruiting referral visibility is absent — staffing readiness gap to monitor.
-              </div>
-            )}
-          </div>
-        )}
-      </MktgCard>
-
-      {/* ── 5 + 6. PHYSICIAN/CLINICAL + SCHOOL/COMMUNITY ─────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <MktgCard title="Physician & clinical referrals" hint="Trusted healthcare relationships">
-          <div className="rounded-xl bg-gradient-to-br from-primary/8 to-transparent border border-border/50 p-3.5">
-            <div className="flex items-start gap-2.5">
-              <Stethoscope className="mt-0.5 size-4 text-primary shrink-0" />
-              <div className="text-[12.5px] text-foreground">
-                {momentum.qualified > 0
-                  ? `${momentum.qualified} clinically-referred families have progressed to qualified intake — physician trust is producing operational outcomes.`
-                  : "Pediatrician, diagnostic, and clinical referrals will populate here once partner directory is connected."}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 space-y-2">
-            {stateRows.filter((s) => s.referrals > 0).map((s) => {
-              const max = Math.max(1, ...stateRows.map((x) => x.referrals));
-              return (
-                <div key={s.state} className="rounded-xl border border-border/60 bg-card p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="size-3.5 text-muted-foreground" />
-                      <span className="text-[13px] font-medium text-foreground">
-                        {STATE_NAMES[s.state] ?? s.state}
-                      </span>
-                    </div>
-                    <span className="text-[12.5px] text-muted-foreground tabular-nums">
-                      {s.qualified}/{s.referrals} qualified
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <ShareBar value={(s.referrals / max) * 100} tone={s.qualified > 0 ? "accent" : "primary"} />
-                  </div>
-                </div>
-              );
-            })}
-            {stateRows.every((s) => s.referrals === 0) && (
-              <EmptyRow>Connect physician partner directory to activate.</EmptyRow>
-            )}
-          </div>
-        </MktgCard>
-
-        <MktgCard title="School & community partnerships" hint="Relationship-first, not corporate">
-          <div className="space-y-2.5">
-            {[
-              { icon: GraduationCap, title: "School & district outreach", note: "IEP coordinators, special ed teams", state: "Connect district directory" },
-              { icon: Heart, title: "Parent advocate network", note: "Word-of-mouth, support groups", state: `${referralLeads.length} touchpoints active` },
-              { icon: HandHeart, title: "Autism advocacy orgs", note: "Local + regional partnerships", state: "Awareness-event driven" },
-              { icon: Calendar, title: "Community events", note: "Awareness + screening events", state: "Connect event calendar" },
-            ].map((c) => {
-              const Icon = c.icon;
-              return (
-                <div key={c.title} className="rounded-xl border border-border/60 bg-card p-3.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="grid size-7 place-items-center rounded-lg bg-muted">
-                        <Icon className="size-3.5 text-foreground" />
-                      </div>
-                      <div>
-                        <div className="text-[13px] font-medium text-foreground">{c.title}</div>
-                        <div className="text-[11.5px] text-muted-foreground">{c.note}</div>
-                      </div>
-                    </div>
-                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{c.state}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </MktgCard>
+      {/* Intelligence tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <StatTile label="Contacts" value={activeContacts.length} icon={Users} />
+        <StatTile label="Companies" value={activeCompanies.length} icon={Building2} />
+        <StatTile label="Strong Partners" value={strongPartners} icon={HandHeart} />
+        <StatTile label="Referrals Sent" value={referralsSent} icon={TrendingUp} />
+        <StatTile label="Needs Follow-Up" value={needsFollowUp} icon={AlertCircle} hint={overdue ? `${overdue} overdue` : undefined} />
+        <StatTile label="Upcoming Follow-Ups" value={upcoming} icon={Calendar} />
       </div>
 
-      {/* ── 7. REFERRAL CONVERSION INTELLIGENCE ──────────────────────── */}
-      <MktgCard title="Referral conversion" hint="Where referred families progress through intake">
-        {conversionStages.every((s) => s.count === 0) ? (
-          <EmptyRow>No referral conversion movement yet.</EmptyRow>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2.5">
-              {conversionStages.map((s, i) => {
-                const max = Math.max(1, ...conversionStages.map((x) => x.count));
-                const prev = i > 0 ? conversionStages[i - 1].count : s.count;
-                const drop = prev > 0 ? Math.round(((prev - s.count) / prev) * 100) : 0;
-                return (
-                  <div key={s.stage}>
-                    <div className="flex items-baseline justify-between text-[12.5px]">
-                      <span className="font-medium text-foreground">{s.stage}</span>
-                      <span className="text-muted-foreground tabular-nums">
-                        {s.count}
-                        {i > 0 && drop > 0 && <span className="ml-1.5 text-amber-600">−{drop}%</span>}
-                      </span>
-                    </div>
-                    <div className="mt-1.5">
-                      <ShareBar value={(s.count / max) * 100} tone={i === conversionStages.length - 1 ? "accent" : "primary"} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="rounded-xl bg-muted/40 border border-border/50 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                Operational signal
-              </div>
-              <div className="mt-2 text-[13.5px] leading-relaxed text-foreground">
-                Referral leads qualify at <span className="font-semibold">{momentum.qualifiedRate}%</span> — relationship-driven leads consistently outperform digital channels for trust + progression speed.
-              </div>
-              <div className="mt-3 text-[12px] text-muted-foreground">
-                {momentum.qualified} qualified · {referralLeads.length - momentum.qualified} earlier-stage · {stateRows.filter((s) => s.referrals > 0).length} active states
-              </div>
-            </div>
+      {/* Filters */}
+      <MktgCard>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-9" placeholder="Search contacts, companies, emails…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-        )}
+          <Select value={stateFilter} onValueChange={setStateFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All states</SelectItem>
+              {states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={stageFilter} onValueChange={setStageFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Stage" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All stages</SelectItem>
+              {["New Contact", "First Outreach", "Connected", "Active Referral Source", "Strong Partner", "Needs Follow-Up", "Dormant"].map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={() => exportCsv("referrals.csv", visibleContacts as unknown as Record<string, unknown>[])}>
+            <Download className="size-4 mr-1.5" />Export
+          </Button>
+        </div>
       </MktgCard>
 
-      {/* ── 8. AI REFERRAL INTELLIGENCE PANEL ────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/8 via-card to-card p-6 md:p-7">
-        <div className="absolute -top-20 -right-16 size-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-        <div className="relative">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="grid size-8 place-items-center rounded-lg bg-primary/10">
-                <Brain className="size-4 text-primary" />
+      {/* Tabs */}
+      <Tabs defaultValue="contacts">
+        <TabsList>
+          <TabsTrigger value="contacts">Contacts ({visibleContacts.length})</TabsTrigger>
+          <TabsTrigger value="companies">Companies ({visibleCompanies.length})</TabsTrigger>
+          <TabsTrigger value="followups">Follow-Ups ({followUps.overdueRows.length + followUps.todayRows.length + followUps.upcomingRows.length})</TabsTrigger>
+          <TabsTrigger value="history">Import History ({batches.length})</TabsTrigger>
+        </TabsList>
+
+        {/* Contacts */}
+        <TabsContent value="contacts">
+          <MktgCard>
+            {lc ? (
+              <p className="text-sm text-muted-foreground italic p-4">Loading…</p>
+            ) : !visibleContacts.length ? (
+              <EmptyBox
+                title="Your referral CRM is ready."
+                body="Import your HubSpot list or add your first referral source to start building real referral relationships."
+                actions={
+                  <>
+                    <Button size="sm" onClick={() => setImportOpen(true)}><Upload className="size-4 mr-1.5" />Import CSV</Button>
+                    <Button size="sm" variant="outline" onClick={() => setAddContactOpen(true)}><Plus className="size-4 mr-1.5" />Add Referral</Button>
+                  </>
+                }
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="text-left px-3 py-2">Name</th>
+                      <th className="text-left px-3 py-2">Company</th>
+                      <th className="text-left px-3 py-2">Role</th>
+                      <th className="text-left px-3 py-2">Email</th>
+                      <th className="text-left px-3 py-2">State</th>
+                      <th className="text-left px-3 py-2">Stage</th>
+                      <th className="text-right px-3 py-2">Refs</th>
+                      <th className="text-left px-3 py-2">Last contacted</th>
+                      <th className="text-left px-3 py-2">Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleContacts.map((c) => (
+                      <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setContactDrawer(c)}>
+                        <td className="px-3 py-2 font-medium">{c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{companyName(c.company_id)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.role_type ?? c.title ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.email ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.state ?? "—"}</td>
+                        <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
+                        <td className="px-3 py-2 text-right tabular-nums">{c.number_of_referrals_sent ?? 0}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{fmtRelative(c.last_contacted_at)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{c.contact_owner ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Ask Blossom AI</div>
-                <div className="text-[14px] font-semibold text-foreground">Referral intelligence summary</div>
+            )}
+          </MktgCard>
+        </TabsContent>
+
+        {/* Companies */}
+        <TabsContent value="companies">
+          <MktgCard>
+            {lo ? (
+              <p className="text-sm text-muted-foreground italic p-4">Loading…</p>
+            ) : !visibleCompanies.length ? (
+              <EmptyBox
+                title="No companies yet."
+                body="Companies are created automatically when you import contacts or add a referral source."
+                actions={<Button size="sm" onClick={() => setAddCompanyOpen(true)}><Building2 className="size-4 mr-1.5" />Add Company</Button>}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="text-left px-3 py-2">Company</th>
+                      <th className="text-left px-3 py-2">Type</th>
+                      <th className="text-left px-3 py-2">Website</th>
+                      <th className="text-left px-3 py-2">State</th>
+                      <th className="text-right px-3 py-2">Contacts</th>
+                      <th className="text-right px-3 py-2">Referrals</th>
+                      <th className="text-left px-3 py-2">Stage</th>
+                      <th className="text-left px-3 py-2">Last contacted</th>
+                      <th className="text-left px-3 py-2">Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleCompanies.map((c) => {
+                      const contactCount = contacts.filter((k) => k.company_id === c.id).length;
+                      return (
+                        <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setCompanyDrawer(c)}>
+                          <td className="px-3 py-2 font-medium">{c.company_name}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.company_type ?? "—"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.domain ?? c.website_url ?? "—"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.state ?? "—"}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{contactCount}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">{c.referral_count ?? 0}</td>
+                          <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
+                          <td className="px-3 py-2 text-muted-foreground">{fmtRelative(c.last_contacted_at)}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{c.relationship_owner ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </div>
-            <ArrowRight className="size-4 text-muted-foreground" />
+            )}
+          </MktgCard>
+        </TabsContent>
+
+        {/* Follow-ups */}
+        <TabsContent value="followups">
+          <div className="grid gap-4">
+            <FollowUpGroup title="Overdue" tone="warn" rows={followUps.overdueRows} onOpen={setContactDrawer} companyName={companyName} />
+            <FollowUpGroup title="Due today" tone="primary" rows={followUps.todayRows} onOpen={setContactDrawer} companyName={companyName} />
+            <FollowUpGroup title="Upcoming" tone="default" rows={followUps.upcomingRows} onOpen={setContactDrawer} companyName={companyName} />
+            {!followUps.overdueRows.length && !followUps.todayRows.length && !followUps.upcomingRows.length && (
+              <MktgCard>
+                <EmptyBox title="No follow-ups due." body="Add follow-up dates to keep referral relationships warm." />
+              </MktgCard>
+            )}
           </div>
+        </TabsContent>
 
-          {insights.length === 0 ? (
-            <EmptyRow>Not enough relationship signal to summarize yet.</EmptyRow>
-          ) : (
-            <ul className="mt-4 space-y-2">
-              {insights.map((i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-foreground">
-                  <span className="mt-1.5 size-1.5 rounded-full bg-primary shrink-0" aria-hidden />
-                  <span>{i}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* Import history */}
+        <TabsContent value="history">
+          <MktgCard>
+            {!batches.length ? (
+              <EmptyBox title="No imports yet." body="Use the Import button above to bring in your HubSpot referral list." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="border-b">
+                      <th className="text-left px-3 py-2">File</th>
+                      <th className="text-left px-3 py-2">Uploaded</th>
+                      <th className="text-right px-3 py-2">Total</th>
+                      <th className="text-right px-3 py-2">Created</th>
+                      <th className="text-right px-3 py-2">Duplicates</th>
+                      <th className="text-right px-3 py-2">Failed</th>
+                      <th className="text-left px-3 py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {batches.map((b) => (
+                      <tr key={b.id} className="border-b">
+                        <td className="px-3 py-2 font-medium flex items-center gap-2"><History className="size-3.5 text-muted-foreground" />{b.file_name}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{fmtDate(b.uploaded_at)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{b.total_rows}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{b.successful_rows}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{b.duplicate_contacts}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{b.failed_rows}</td>
+                        <td className="px-3 py-2"><Badge variant={b.status === "Failed" ? "destructive" : "outline"}>{b.status}</Badge></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </MktgCard>
+        </TabsContent>
+      </Tabs>
 
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            <AIPrompt label="Which relationships are strongest?" />
-            <AIPrompt label="Where should we open new partnerships?" />
-            <AIPrompt label="Which partners need re-engagement?" />
-            <AIPrompt label="Where is referral demand outpacing staffing?" />
+      {/* Lead attribution placeholder */}
+      <MktgCard>
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-primary/10 p-2"><TrendingUp className="size-4 text-primary" /></div>
+          <div>
+            <p className="text-sm font-semibold">Lead attribution ready</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Once incoming lead data is connected, Blossom OS will show which referral relationships are driving growth — by company, contact, and state.
+            </p>
           </div>
         </div>
-      </section>
+      </MktgCard>
+
+      {/* Dialogs */}
+      <AddReferralDialog open={addContactOpen} onOpenChange={setAddContactOpen} onCreated={refreshAll} />
+      <AddCompanyDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />
+      <ImportReferralsDialog open={importOpen} onOpenChange={setImportOpen} onComplete={refreshAll} />
+      <ContactDetailDrawer
+        contact={contactDrawer}
+        open={!!contactDrawer}
+        onOpenChange={(o) => { if (!o) setContactDrawer(null); }}
+        onChanged={refreshAll}
+      />
+      <CompanyDetailDrawer
+        company={companyDrawer}
+        open={!!companyDrawer}
+        onOpenChange={(o) => { if (!o) setCompanyDrawer(null); }}
+        onChanged={refreshAll}
+      />
     </MktgPage>
+  );
+}
+
+function EmptyBox({ title, body, actions }: { title: string; body: string; actions?: React.ReactNode }) {
+  return (
+    <div className="text-center py-10 px-4">
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">{body}</p>
+      {actions && <div className="mt-4 flex justify-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+function FollowUpGroup({
+  title, tone, rows, onOpen, companyName,
+}: {
+  title: string; tone: "warn" | "primary" | "default"; rows: ReferralContact[];
+  onOpen: (c: ReferralContact) => void; companyName: (id: string | null | undefined) => string;
+}) {
+  const toneClass = tone === "warn" ? "text-amber-700" : tone === "primary" ? "text-primary" : "text-foreground";
+  return (
+    <MktgCard>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className={`text-sm font-semibold ${toneClass}`}>{title} <span className="text-muted-foreground font-normal">({rows.length})</span></h3>
+      </div>
+      {!rows.length ? (
+        <p className="text-xs text-muted-foreground italic">Nothing here.</p>
+      ) : (
+        <ul className="divide-y">
+          {rows.map((c) => (
+            <li key={c.id} className="py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-muted/30 -mx-2 px-2 rounded" onClick={() => onOpen(c)}>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{c.full_name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`}</p>
+                <p className="text-xs text-muted-foreground truncate">{companyName(c.company_id)} · {c.role_type ?? "—"}</p>
+              </div>
+              <div className="text-right text-xs">
+                <p className="font-medium">{fmtDate(c.next_follow_up_at)}</p>
+                <p className="text-muted-foreground">{c.contact_owner ?? "—"}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </MktgCard>
   );
 }

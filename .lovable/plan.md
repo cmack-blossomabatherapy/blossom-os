@@ -1,109 +1,90 @@
-## Goal
+# Marketing Referrals — Functional CRM
 
-Replace the AI report flow at `/reports/ai/*` with a new **Create AI Dashboard** experience. Output is always an **interactive dashboard** (KPI cards + charts + risk tables + drilldowns + executive insights), never a text report. Keep deterministic ABA math (97153/97155/97156, auth utilization, cancellations, parent training) and use AI only to (1) pick dashboard type, (2) map columns, (3) generate executive insights / recommended actions.
+Convert `/marketing/referrals` from a visual shell into a working referral CRM (companies + contacts + activities + CSV import + future lead attribution). Keep the existing Blossom OS look — calm, Apple-style, no Salesforce overload.
 
-## Routes & entry points
+## 1. Database (Lovable Cloud migration)
 
-- New routes (replace old):
-  - `/dashboards/ai/new` → `AiDashboardNew.tsx`
-  - `/dashboards/ai/:id` → `AiDashboardView.tsx`
-- Keep old `/reports/ai/*` routes mounted as redirects to `/dashboards/ai/*` so existing links don't 404.
-- `ReportsHome.tsx`: rename the primary card to **"Create AI Dashboard"** with subtitle *"Upload your data. Ask a question. Instantly build an interactive dashboard."* Replace the "AI Reports" list section with **"AI Dashboards"** (same storage, relabeled).
+Five new tables in `public`, all with RLS + GRANTs. Standard `id`, `created_at`, `updated_at` on each.
 
-## New file structure
+**`referral_companies`** — company_name, normalized_name (generated lowercase), company_type, website_url, domain, main_phone, main_email, address_line_1/2, city, state, zip_code, full_address, service_area, notes, status, relationship_stage, relationship_owner, referral_count, last_referral_date, last_contacted_at, next_follow_up_at, source, import_batch_id.
 
-**New library (`src/lib/os/dashboardEngine/`):**
-- `types.ts` — `DashboardSpec`, `KpiSpec`, `ChartSpec`, `RiskTableSpec`, `DrilldownSpec`, `DashboardType`, `DataSource`.
-- `excelParser.ts` — wraps `xlsx` (already installed) + existing CSV parser to handle `.csv`, `.xlsx`, `.xls`, and multi-sheet workbooks. Returns `ParsedFile[]`.
-- `multiFileMerge.ts` — when multiple files are uploaded, infer relationships (shared client id / client name) and produce a unified row set per logical entity (sessions, auths, cancellations, etc.).
-- `intentClassifier.ts` — local heuristic + AI fallback: from prompt + detected columns, picks `DashboardType` (Operations | Supervision | Authorization | Parent Training | Cancellation | Scheduling | Recruiting | Billing | Payroll | Leadership | State | BCBA | RBT | Custom).
-- `dashboardBuilder.ts` — given `DashboardType` + parsed data + mapping, deterministically produces a full `DashboardSpec` (KPIs, charts, risk tables, drilldown row sets). Reuses existing `reportEngine/calculations.ts` for ABA math.
-- `chartPicker.ts` — picks chart type (bar/line/pie/stacked/heatmap/trend) based on dimensionality of each section.
-- `dashboardStore.ts` — replaces `aiReports.ts` storage with `blossom.os.aiDashboards.v1` (migration that re-keys existing AI reports as dashboards so history isn't lost).
+**`referral_contacts`** — company_id (FK, nullable), first_name, last_name, full_name, title, role_type, email (unique-ish), phone, mobile_phone, direct_phone, website_url, linkedin_url, address fields, state, contact_owner, status, relationship_stage, preferred_contact_method, last_contacted_at, next_follow_up_at, number_of_referrals_sent, number_of_sales_activities, number_of_times_contacted, last_activity_date, recent_email_opened_at, last_meeting_booked_at, notes, source, original_record_id, import_batch_id.
 
-**New pages:**
-- `src/pages/os/dashboards/AiDashboardNew.tsx` — 2-step flow:
-  1. Drag-drop **CSV/XLSX** (multi-file). Per-file chip: rows, sheets, date range, detected entity type (sessions / auths / cancellations / billing / etc.).
-  2. Single prompt box: *"What would you like to understand from your data?"* with suggested chips ("Show supervision %", "Build leadership dashboard", "Find auth risks"). One CTA: **Build Dashboard**. No "report type" picker.
-- `src/pages/os/dashboards/AiDashboardView.tsx` — renders `DashboardSpec`:
-  - **Top:** KPI cards (large numbers, sparklines, delta)
-  - **Second:** primary + secondary charts (recharts, already installed)
-  - **Third:** risk tables (low supervision, expiring auths, missing PT, top cancellation reasons)
-  - **Fourth:** drilldown tables (sortable, filterable, searchable)
-  - **Bottom:** executive insights + recommended actions (AI narrative)
-  - Right rail: filter chips (state, date range, BCBA, payor) — apply across all widgets.
-- `src/components/dashboards/` — `KpiTile.tsx`, `ChartCard.tsx`, `RiskTable.tsx`, `DrilldownDrawer.tsx`, `InsightStrip.tsx`, `FilterRail.tsx`.
+**`referral_import_batches`** — file_name, uploaded_by, uploaded_at, total_rows, successful_rows, failed_rows, duplicate_contacts, duplicate_companies, status, error_log (jsonb).
 
-## Drilldown model
+**`referral_activities`** — contact_id, company_id, activity_type, activity_date, subject, notes, outcome, created_by, next_follow_up_at.
 
-Every KPI tile carries a `drilldown: { title, columns, rows, filters? }`. Click → opens right-side `DrilldownDrawer` (sheet) with sortable table, search, and export. Examples:
+**`referral_lead_links`** — lead_id (uuid, no FK yet — leads table not finalized), referral_contact_id, referral_company_id, referral_source_type, referral_date, attribution_confidence, notes.
 
-| KPI | Drilldown columns |
-|---|---|
-| Parent Training Missing | Client, BCBA, State, 97156 hrs, Last PT date, Auth status |
-| Authorization Risks | Client, Auth #, Utilization %, Remaining hrs, Expiration, BCBA |
-| Cancellations | Client, Provider, Date, Reason, Type, State |
-| Low Supervision | Client, 97153 hrs, 97155 hrs, Supervision %, BCBA, State |
+Enums kept loose as `text` with CHECK constraints so we can extend without migrations. Indexes on company_id, normalized_name + state, email, owner, next_follow_up_at, import_batch_id.
 
-Drilldowns are built deterministically inside `dashboardBuilder.ts` so click → row set is instant (no AI round-trip).
+**RLS:** `marketing`, `exec`, `ops_manager`, `admin` can read/write via `has_role`. `service_role` full access. No `anon`.
 
-## ABA auto-intelligence (always run when CPT codes present)
+**Trigger:** on `referral_contacts` insert/update, roll up `referral_count`, `last_referral_date`, `last_contacted_at`, `next_follow_up_at` onto the parent company.
 
-When `procedure_code` includes 97153/97155/97156, auto-compute regardless of prompt:
-- Supervision % = 97155 ÷ 97153
-- Parent training presence = any 97156 per client
-- Auth utilization = worked ÷ authorized
-- Flags: low/over utilization, expiring auths (≤30d), missing supervision, missing PT
-- These power both KPI tiles and the executive insight strip.
+## 2. Data layer
 
-## AI usage (narrow, never invents numbers)
+`src/lib/os/referrals/` —
+- `types.ts` — TS types + enum option arrays for dropdowns.
+- `api.ts` — supabase queries: list/get/create/update/archive contact & company, list activities, list batches, link company-by-name-or-domain.
+- `csvImport.ts` — parse with existing `parseCSVText`, HubSpot field map, normalize domain from email/website, company match (normalized_name + domain + state fallback), contact dedupe (email → first+last+company → phone → original_record_id), produce a preview + commit step that writes a batch and bulk-inserts via a single edge function call.
+- `hooks.ts` — `useReferralContacts`, `useReferralCompanies`, `useFollowUps`, `useImportBatches`.
 
-Edge function `generate-ai-dashboard` (rename/replace `generate-ai-report`):
-- Input: `{ prompt, detectedColumns, dataSummary, computedKpis, candidateDashboardTypes }`
-- Output (tool schema):
-```json
-{
-  "dashboardType": "supervision",
-  "title": "Supervision Dashboard — March 2026",
-  "executiveInsights": ["string"],
-  "recommendedActions": ["string"],
-  "kpiPriority": ["supervision_pct", "missing_pt", "auth_risk"],
-  "chartHints": { "supervision_by_bcba": "bar", "trend": "line" }
-}
+## 3. Edge function
+
+`supabase/functions/referrals-import/index.ts` — accepts parsed rows + batch metadata, runs company-match + contact-dedupe server-side (so RLS + service_role can do bulk upserts atomically), writes batch, returns `{ createdContacts, createdCompanies, updatedContacts, duplicates, failed[] }`. Validates with zod. Marketing role JWT required.
+
+## 4. UI — keep `Referrals.tsx` shell, add working surfaces
+
+Top of page action bar: **Add Referral**, **Import Referrals**, **Add Company**, **Export**, **Import History**.
+
+Tabs under the existing intelligence summary:
+- **Contacts** — table/card hybrid (name, company, role, email, phone, state, stage, referrals sent, last contacted, owner, actions). Row click opens detail drawer.
+- **Companies** — name, type, website/domain, state, contact count, referral count, stage, last contacted, owner. Row click opens company drawer.
+- **Follow-Ups** — Overdue / Due Today / Upcoming groupings.
+- **Import History** — batch list with drill-in.
+
+Intelligence summary tiles become live counts (total contacts, total companies, active sources, needs follow-up, strong partners, referrals sent, upcoming follow-ups) — empty states when zero.
+
+Search + filter bar (state, company type, role type, stage, status, owner, has referrals, batch).
+
+## 5. Modals / drawers
+
+- `AddReferralDialog` — contact fields + inline company picker ("select existing" combobox with create-new option). Single screen, not a wizard.
+- `AddCompanyDialog` — company-only.
+- `ImportReferralsDialog` — three steps: upload → preview first 10 rows with mapping confirmation → result screen (created/updated/duplicates/failed + download-failed-CSV).
+- `ContactDetailDrawer` — header, contact info, relationship intelligence, linked company, activity timeline, actions (edit, log activity, schedule follow-up, link company, archive).
+- `CompanyDetailDrawer` — header, company info, attached contacts list, combined activity timeline, referral intelligence, actions.
+- `LogActivityDialog` — used from both drawers.
+
+All built with existing shadcn primitives + Blossom OS glass styling. No new design tokens.
+
+## 6. Permissions
+
+In `src/lib/os/permissions.ts`, ensure `marketing` (already has referrals access) plus `exec`, `ops_manager`, `admin` get `referrals` module view+manage. Other roles: no access. AI panel on the page stays, but when data is empty it returns the "still being built" copy — no fake numbers.
+
+## 7. Out of scope (explicitly deferred)
+
+- Real lead ingestion + attribution dashboards (table is created and ready; UI shows "Lead attribution ready" empty state).
+- Undo-import (logged as nice-to-have; skipped unless trivial).
+- Email/calendar integrations beyond storing what's in the CSV.
+- Rebuilding the existing visual shell or intelligence section layout.
+
+## Technical notes
+
+- CSV parsing reuses `src/lib/os/reportEngine/csv.ts` — no new dependency.
+- Domain normalization: lowercase, strip `www.`, take host only.
+- Company match key: `lower(regexp_replace(company_name, '[^a-z0-9]', '', 'gi'))` stored as generated column for fast lookup.
+- All writes go through the edge function for import; manual add/edit uses Supabase client directly under RLS.
+- No changes to existing leads schema; `referral_lead_links.lead_id` is a plain uuid for now and we'll add the FK in a later migration when leads land.
+
+```text
+Referrals page
+├── Action bar (Add / Import / Export / History)
+├── Intelligence tiles (live counts)
+├── Tabs: Contacts | Companies | Follow-Ups | Import History
+│     └── Search + filters
+└── Drawers: Contact detail · Company detail · Log activity
+        ↑
+        └── Edge fn: referrals-import  →  companies / contacts / batches / activities
 ```
-- AI never returns numbers. Numbers come from `dashboardBuilder.ts`.
-
-## Export & history
-
-- Dashboard view toolbar: **Save · Duplicate · Share · Export PDF · Export Excel · Export CSV**.
-  - PDF: `window.print()` with print stylesheet (no new dep).
-  - Excel: `xlsx` (already installed) — one sheet per drilldown table.
-  - CSV: per-table.
-- History card on `ReportsHome` retitled **AI Dashboards**: name, created, creator, source files, dashboard type, last viewed.
-
-## Files to delete / replace
-
-- Delete: `src/pages/os/reports/AiReportNew.tsx`, `src/pages/os/reports/AiReportView.tsx` (replaced by dashboard equivalents; redirects added).
-- Keep & reuse: `src/lib/os/reportEngine/*` (the deterministic ABA math is still the math layer under the new builder).
-- Replace: `src/lib/os/aiReports.ts` → thin shim that re-exports from new `dashboardStore.ts` for any lingering imports during migration; remove after sweep.
-- Edge function: rename folder `supabase/functions/generate-ai-report` → `generate-ai-dashboard` with new tool schema (numbers stripped, narrative + type-picker only).
-
-## Design (Blossom OS)
-
-- Apple-clean, soft purple accents, rounded-2xl cards, hairline borders, generous whitespace.
-- KPI tile: large tabular-nums value, tiny sparkline, delta chip, click affordance (`ArrowUpRight`).
-- Charts: recharts with muted palette derived from semantic tokens; one accent only.
-- One primary CTA per view ("Build Dashboard" on new; "Export" on view).
-- No marketing tropes, no walls of text.
-
-## Out of scope (this pass)
-
-- Scheduled dashboard delivery (UI placeholder only, disabled).
-- Dashboard templates library (save-as-template stub; full library later).
-- Real-time collab / sharing permissions (share = copy link only).
-
-## Risks
-
-- Multi-file relationship inference: start with simple join on `client_name` normalization; flag unmatched rows in a Data Quality strip.
-- Large XLSX (>10MB) parsed client-side: warn user, cap rendered drilldown rows to 500 (full data kept for math/export).
-- AI dashboard-type misclassification: always show a "Change dashboard type" dropdown in the view header so the user can swap presets without rebuilding.

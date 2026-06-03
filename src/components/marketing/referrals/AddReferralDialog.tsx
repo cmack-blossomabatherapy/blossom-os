@@ -1,0 +1,196 @@
+import { useState, useEffect, useMemo } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useReferralCompanies } from "@/lib/os/referrals/hooks";
+import { createContact, findOrCreateCompany } from "@/lib/os/referrals/api";
+import { CONTACT_ROLE_TYPES, CONTACT_STAGES, CONTACT_STATUSES, COMPANY_TYPES, PREFERRED_CONTACT_METHODS } from "@/lib/os/referrals/types";
+import { extractDomain } from "@/lib/os/referrals/utils";
+import { toast } from "@/hooks/use-toast";
+
+interface Props { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: () => void; presetCompanyId?: string }
+
+export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompanyId }: Props) {
+  const { data: companies } = useReferralCompanies();
+  const [saving, setSaving] = useState(false);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [title, setTitle] = useState("");
+  const [roleType, setRoleType] = useState<string>("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [preferred, setPreferred] = useState<string>("");
+  const [stage, setStage] = useState<string>("New Contact");
+  const [status, setStatus] = useState<string>("New");
+  const [owner, setOwner] = useState("");
+  const [notes, setNotes] = useState("");
+  const [nextFollowUp, setNextFollowUp] = useState("");
+
+  // Company selection
+  const [companyMode, setCompanyMode] = useState<"existing" | "new" | "none">("existing");
+  const [companyId, setCompanyId] = useState<string>(presetCompanyId ?? "");
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyType, setNewCompanyType] = useState<string>("");
+  const [newCompanyWebsite, setNewCompanyWebsite] = useState("");
+  const [newCompanyState, setNewCompanyState] = useState("");
+  const [newCompanyPhone, setNewCompanyPhone] = useState("");
+
+  useEffect(() => { if (presetCompanyId) { setCompanyId(presetCompanyId); setCompanyMode("existing"); } }, [presetCompanyId]);
+
+  const sortedCompanies = useMemo(() => [...companies].sort((a, b) => a.company_name.localeCompare(b.company_name)), [companies]);
+
+  function reset() {
+    setFirstName(""); setLastName(""); setTitle(""); setRoleType(""); setEmail(""); setPhone("");
+    setPreferred(""); setStage("New Contact"); setStatus("New"); setOwner(""); setNotes(""); setNextFollowUp("");
+    setCompanyMode("existing"); setCompanyId(""); setNewCompanyName(""); setNewCompanyType("");
+    setNewCompanyWebsite(""); setNewCompanyState(""); setNewCompanyPhone("");
+  }
+
+  async function handleSave() {
+    if (!firstName && !lastName && !email) {
+      toast({ title: "Add at least a name or email", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      let resolvedCompanyId: string | null = null;
+      if (companyMode === "existing" && companyId) resolvedCompanyId = companyId;
+      else if (companyMode === "new" && newCompanyName.trim()) {
+        resolvedCompanyId = await findOrCreateCompany({
+          company_name: newCompanyName.trim(),
+          company_type: newCompanyType || null,
+          website_url: newCompanyWebsite || null,
+          domain: extractDomain(email, newCompanyWebsite),
+          state: newCompanyState || null,
+          main_phone: newCompanyPhone || null,
+          relationship_owner: owner || null,
+          source: "Manual",
+        });
+      }
+      await createContact({
+        company_id: resolvedCompanyId,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        title: title || null,
+        role_type: roleType || null,
+        email: email || null,
+        phone: phone || null,
+        preferred_contact_method: (preferred || null) as never,
+        relationship_stage: stage as never,
+        status: status as never,
+        contact_owner: owner || null,
+        notes: notes || null,
+        next_follow_up_at: nextFollowUp ? new Date(nextFollowUp).toISOString() : null,
+        source: "Manual",
+      });
+      toast({ title: "Referral contact added" });
+      reset();
+      onCreated?.();
+      onOpenChange(false);
+    } catch (e) {
+      toast({ title: "Failed to save", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Add Referral Contact</DialogTitle></DialogHeader>
+        <div className="space-y-5">
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">Contact</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>First name</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+              <div><Label>Last name</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
+              <div><Label>Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Pediatrician, Office Manager" /></div>
+              <div>
+                <Label>Role type</Label>
+                <Select value={roleType} onValueChange={setRoleType}>
+                  <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                  <SelectContent>{CONTACT_ROLE_TYPES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+              <div><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+              <div>
+                <Label>Preferred contact</Label>
+                <Select value={preferred} onValueChange={setPreferred}>
+                  <SelectTrigger><SelectValue placeholder="Method" /></SelectTrigger>
+                  <SelectContent>{PREFERRED_CONTACT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label>Owner</Label><Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Relationship owner" /></div>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">Company</h3>
+            <div className="flex gap-2 text-xs">
+              {(["existing", "new", "none"] as const).map((m) => (
+                <button key={m} type="button" onClick={() => setCompanyMode(m)}
+                  className={`px-3 py-1.5 rounded-full border ${companyMode === m ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-muted-foreground"}`}>
+                  {m === "existing" ? "Select existing" : m === "new" ? "Create new" : "No company"}
+                </button>
+              ))}
+            </div>
+            {companyMode === "existing" && (
+              <Select value={companyId} onValueChange={setCompanyId}>
+                <SelectTrigger><SelectValue placeholder="Choose a company" /></SelectTrigger>
+                <SelectContent>
+                  {sortedCompanies.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+            {companyMode === "new" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Company name</Label><Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} /></div>
+                <div>
+                  <Label>Company type</Label>
+                  <Select value={newCompanyType} onValueChange={setNewCompanyType}>
+                    <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                    <SelectContent>{COMPANY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Website</Label><Input value={newCompanyWebsite} onChange={(e) => setNewCompanyWebsite(e.target.value)} /></div>
+                <div><Label>State</Label><Input value={newCompanyState} onChange={(e) => setNewCompanyState(e.target.value)} placeholder="e.g. NC" /></div>
+                <div className="col-span-2"><Label>Main phone</Label><Input value={newCompanyPhone} onChange={(e) => setNewCompanyPhone(e.target.value)} /></div>
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold">Relationship</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Stage</Label>
+                <Select value={stage} onValueChange={setStage}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CONTACT_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CONTACT_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2"><Label>Next follow-up</Label><Input type="datetime-local" value={nextFollowUp} onChange={(e) => setNextFollowUp(e.target.value)} /></div>
+              <div className="col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
+            </div>
+          </section>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : "Add Referral"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

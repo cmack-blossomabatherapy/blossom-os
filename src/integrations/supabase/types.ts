@@ -8487,6 +8487,401 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_activities: {
+        Row: {
+          activity_date: string
+          activity_type: string
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          next_follow_up_at: string | null
+          notes: string | null
+          outcome: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_type: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_follow_up_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_follow_up_at?: string | null
+          notes?: string | null
+          outcome?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "referral_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "referral_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_companies: {
+        Row: {
+          address_line_1: string | null
+          address_line_2: string | null
+          city: string | null
+          company_name: string
+          company_type: string | null
+          created_at: string
+          domain: string | null
+          full_address: string | null
+          id: string
+          import_batch_id: string | null
+          last_contacted_at: string | null
+          last_referral_date: string | null
+          main_email: string | null
+          main_phone: string | null
+          next_follow_up_at: string | null
+          normalized_name: string | null
+          notes: string | null
+          referral_count: number
+          relationship_owner: string | null
+          relationship_stage: string
+          service_area: string | null
+          source: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          website_url: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          company_name: string
+          company_type?: string | null
+          created_at?: string
+          domain?: string | null
+          full_address?: string | null
+          id?: string
+          import_batch_id?: string | null
+          last_contacted_at?: string | null
+          last_referral_date?: string | null
+          main_email?: string | null
+          main_phone?: string | null
+          next_follow_up_at?: string | null
+          normalized_name?: string | null
+          notes?: string | null
+          referral_count?: number
+          relationship_owner?: string | null
+          relationship_stage?: string
+          service_area?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          company_name?: string
+          company_type?: string | null
+          created_at?: string
+          domain?: string | null
+          full_address?: string | null
+          id?: string
+          import_batch_id?: string | null
+          last_contacted_at?: string | null
+          last_referral_date?: string | null
+          main_email?: string | null
+          main_phone?: string | null
+          next_follow_up_at?: string | null
+          normalized_name?: string | null
+          notes?: string | null
+          referral_count?: number
+          relationship_owner?: string | null
+          relationship_stage?: string
+          service_area?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_companies_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "referral_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_contacts: {
+        Row: {
+          address_line_1: string | null
+          address_line_2: string | null
+          city: string | null
+          company_id: string | null
+          contact_owner: string | null
+          created_at: string
+          direct_phone: string | null
+          email: string | null
+          first_name: string | null
+          full_address: string | null
+          full_name: string | null
+          id: string
+          import_batch_id: string | null
+          last_activity_date: string | null
+          last_contacted_at: string | null
+          last_meeting_booked_at: string | null
+          last_name: string | null
+          linkedin_url: string | null
+          mobile_phone: string | null
+          next_follow_up_at: string | null
+          notes: string | null
+          number_of_referrals_sent: number
+          number_of_sales_activities: number
+          number_of_times_contacted: number
+          original_record_id: string | null
+          phone: string | null
+          preferred_contact_method: string | null
+          recent_email_opened_at: string | null
+          relationship_stage: string
+          role_type: string | null
+          source: string | null
+          state: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          website_url: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_owner?: string | null
+          created_at?: string
+          direct_phone?: string | null
+          email?: string | null
+          first_name?: string | null
+          full_address?: string | null
+          full_name?: string | null
+          id?: string
+          import_batch_id?: string | null
+          last_activity_date?: string | null
+          last_contacted_at?: string | null
+          last_meeting_booked_at?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          mobile_phone?: string | null
+          next_follow_up_at?: string | null
+          notes?: string | null
+          number_of_referrals_sent?: number
+          number_of_sales_activities?: number
+          number_of_times_contacted?: number
+          original_record_id?: string | null
+          phone?: string | null
+          preferred_contact_method?: string | null
+          recent_email_opened_at?: string | null
+          relationship_stage?: string
+          role_type?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          city?: string | null
+          company_id?: string | null
+          contact_owner?: string | null
+          created_at?: string
+          direct_phone?: string | null
+          email?: string | null
+          first_name?: string | null
+          full_address?: string | null
+          full_name?: string | null
+          id?: string
+          import_batch_id?: string | null
+          last_activity_date?: string | null
+          last_contacted_at?: string | null
+          last_meeting_booked_at?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          mobile_phone?: string | null
+          next_follow_up_at?: string | null
+          notes?: string | null
+          number_of_referrals_sent?: number
+          number_of_sales_activities?: number
+          number_of_times_contacted?: number
+          original_record_id?: string | null
+          phone?: string | null
+          preferred_contact_method?: string | null
+          recent_email_opened_at?: string | null
+          relationship_stage?: string
+          role_type?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "referral_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_contacts_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "referral_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_import_batches: {
+        Row: {
+          created_at: string
+          duplicate_companies: number
+          duplicate_contacts: number
+          error_log: Json
+          failed_rows: number
+          file_name: string
+          id: string
+          status: string
+          successful_rows: number
+          total_rows: number
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          duplicate_companies?: number
+          duplicate_contacts?: number
+          error_log?: Json
+          failed_rows?: number
+          file_name: string
+          id?: string
+          status?: string
+          successful_rows?: number
+          total_rows?: number
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          duplicate_companies?: number
+          duplicate_contacts?: number
+          error_log?: Json
+          failed_rows?: number
+          file_name?: string
+          id?: string
+          status?: string
+          successful_rows?: number
+          total_rows?: number
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      referral_lead_links: {
+        Row: {
+          attribution_confidence: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          notes: string | null
+          referral_company_id: string | null
+          referral_contact_id: string | null
+          referral_date: string | null
+          referral_source_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          attribution_confidence?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          referral_date?: string | null
+          referral_source_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attribution_confidence?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          referral_company_id?: string | null
+          referral_contact_id?: string | null
+          referral_date?: string | null
+          referral_source_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_lead_links_referral_company_id_fkey"
+            columns: ["referral_company_id"]
+            isOneToOne: false
+            referencedRelation: "referral_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_lead_links_referral_contact_id_fkey"
+            columns: ["referral_contact_id"]
+            isOneToOne: false
+            referencedRelation: "referral_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_audit_log: {
         Row: {
           action: string
@@ -9951,6 +10346,7 @@ export type Database = {
         Args: { _dept_name: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      can_access_referral_crm: { Args: { _uid: string }; Returns: boolean }
       can_edit: { Args: { _user_id: string }; Returns: boolean }
       can_read_all_states: { Args: never; Returns: boolean }
       classify_eval_role: { Args: { _job_title: string }; Returns: string }
@@ -10066,6 +10462,10 @@ export type Database = {
       }
       recalc_course_progress: {
         Args: { _course_id: string; _user_id: string }
+        Returns: undefined
+      }
+      recalc_referral_company_rollup: {
+        Args: { _company_id: string }
         Returns: undefined
       }
       recruiting_can_read: { Args: { _user_id: string }; Returns: boolean }
