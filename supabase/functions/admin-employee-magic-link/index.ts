@@ -242,21 +242,22 @@ Deno.serve(async (req) => {
         <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#475569;">Your Blossom OS account is ready. Use the secure link below to sign in for the first time and finish setting up your account.</p>
       </td></tr>
       <tr><td align="center" style="padding:28px 36px 8px;">
-        <a href="${safeLink}" style="display:inline-block;background:#2B7BD5;color:#ffffff;text-decoration:none;border-radius:10px;padding:14px 26px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(43,123,213,0.28);">Activate my account</a>
+        <a href="${safeLink}" style="display:inline-block;background:#3999AA;color:#ffffff;text-decoration:none;border-radius:10px;padding:14px 26px;font-size:15px;font-weight:600;box-shadow:0 6px 18px rgba(57,153,170,0.32);">Activate my account</a>
       </td></tr>
       <tr><td style="padding:8px 36px 0;">
         <p style="margin:16px 0 0;font-size:13px;line-height:1.55;color:#64748b;">Or paste this link into your browser:<br />
-          <a href="${safeLink}" style="color:#2B7BD5;word-break:break-all;">${safeLink}</a>
+          <a href="${safeLink}" style="color:#3999AA;word-break:break-all;">${safeLink}</a>
         </p>
       </td></tr>
       <tr><td style="padding:28px 36px 0;">
         <div style="background:#f8fafc;border:1px solid #e6edf5;border-radius:14px;padding:20px 22px;">
           <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#0f172a;">What happens next</div>
           <ol style="margin:12px 0 0;padding-left:20px;color:#334155;font-size:14px;line-height:1.7;">
-            <li><strong>Click “Activate my account”</strong> above to sign in securely.</li>
-            <li><strong>Create your password</strong> — you'll be prompted to set one on first sign-in.</li>
-            <li><strong>Complete your profile</strong> and review your dashboard in Blossom OS.</li>
-            <li><strong>Reach out to HR</strong> if anything looks off or you need help.</li>
+            <li><strong>Click “Activate my account”</strong> above to securely sign in to Blossom OS for the first time.</li>
+            <li><strong>Create your password</strong> — you'll be prompted to set a secure password on your first sign-in.</li>
+            <li><strong>Set up two-factor authentication (2FA)</strong> to keep your account protected.</li>
+            <li><strong>Complete your profile</strong> from the dropdown menu in the top right corner where your name appears.</li>
+            <li><strong>Need a hand?</strong> Reach out to Corey at <a href="mailto:cmack@blossomabatherapy.com" style="color:#3999AA;text-decoration:none;">cmack@blossomabatherapy.com</a> if anything looks off or you have questions.</li>
           </ol>
         </div>
       </td></tr>
@@ -282,10 +283,11 @@ Deno.serve(async (req) => {
     `Activate your account: ${magicLink}`,
     "",
     "What happens next:",
-    "1. Click the link above to sign in securely.",
-    "2. Create your password — you'll be prompted to set one on first sign-in.",
-    "3. Complete your profile and review your Blossom OS dashboard.",
-    "4. Reach out to HR if anything looks off or you need help.",
+    "1. Click the link above to securely sign in to Blossom OS for the first time.",
+    "2. Create your password — you'll be prompted to set a secure password on first sign-in.",
+    "3. Set up two-factor authentication (2FA) to keep your account protected.",
+    "4. Complete your profile from the dropdown menu in the top right corner where your name appears.",
+    "5. Need help? Reach out to Corey at cmack@blossomabatherapy.com if anything looks off.",
     "",
     "This link expires in 1 hour and can only be used once.",
     "",
