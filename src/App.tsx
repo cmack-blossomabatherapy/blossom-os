@@ -44,6 +44,7 @@ import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplian
 import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnboardingCommandCenter";
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
 import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
+import OSComingSoon from "./pages/os/OSComingSoon";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
@@ -339,7 +340,6 @@ import MarketingReputation from "./pages/os/marketing/Reputation";
 import MarketingAttribution from "./pages/os/marketing/AttributionROI";
 import MarketingStateGrowth from "./pages/os/marketing/StateGrowth";
 import MarketingReports from "./pages/os/marketing/MarketingReports";
-import OSComingSoon from "./pages/os/OSComingSoon";
 import OSReportBcbaPerformance from "./pages/os/OSReportBcbaPerformance";
 import OSTraining from "./pages/os/OSTraining";
 import OSTrainingDetail from "./pages/os/OSTrainingDetail";
@@ -654,8 +654,8 @@ const App = () => (
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
-                  <Route path="/ai/assistant" element={<OSPlaceholder title="Ask Blossom AI" description="Your operational AI copilot — coming soon." icon={Sparkles} />} />
-                  <Route path="/ask-blossom" element={<OSPlaceholder title="Ask Blossom AI" description="Your operational AI copilot — coming soon." icon={Sparkles} />} />
+                  <Route path="/ai/assistant" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
+                  <Route path="/ask-blossom" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
