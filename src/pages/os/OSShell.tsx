@@ -177,6 +177,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState("");
+  const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
+  const headerSearchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!headerSearchRef.current) return;
+      if (!headerSearchRef.current.contains(e.target as Node)) setHeaderSearchOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
   const { user, signOut, avatarUrl, displayName } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
