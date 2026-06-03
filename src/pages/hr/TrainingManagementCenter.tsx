@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -964,13 +964,13 @@ function OnboardingView() {
   });
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
-  // Re-hydrate drafts when overrides arrive from Supabase
-  useMemo(() => {
+  // Re-hydrate drafts when overrides arrive from Supabase (only for unedited keys)
+  useEffect(() => {
     setDrafts((prev) => {
       const next = { ...prev };
       baseWelcome.modules.forEach((m) => {
-        const o = moduleOverrides[`welcome:${m.key}`];
         if (!prev[m.key]) {
+          const o = moduleOverrides[`welcome:${m.key}`];
           next[m.key] = { title: o?.title ?? m.title, blurb: o?.blurb ?? m.blurb };
         }
       });
