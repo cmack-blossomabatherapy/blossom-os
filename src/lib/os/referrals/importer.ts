@@ -156,7 +156,7 @@ export async function importReferralRows(
         if (row.number_of_referrals_sent > 0) patch.number_of_referrals_sent = row.number_of_referrals_sent;
         if (row.number_of_sales_activities > 0) patch.number_of_sales_activities = row.number_of_sales_activities;
         if (row.number_of_times_contacted > 0) patch.number_of_times_contacted = row.number_of_times_contacted;
-        const { error } = await supabase.from("referral_contacts").update(patch).eq("id", existing.id);
+        const { error } = await supabase.from("referral_contacts").update(patch as never).eq("id", existing.id);
         if (error) throw error;
         result.updatedContacts += 1;
         result.duplicateContacts += 1;
@@ -182,7 +182,7 @@ export async function importReferralRows(
       failed_rows: result.failedRows,
       duplicate_contacts: result.duplicateContacts,
       duplicate_companies: 0,
-      error_log: result.errors as unknown as object,
+      error_log: result.errors as unknown as never,
       status: result.failedRows > 0 ? "Completed with Errors" : "Completed",
     })
     .eq("id", batch.id);
