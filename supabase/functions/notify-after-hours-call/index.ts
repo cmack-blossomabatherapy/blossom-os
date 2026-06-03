@@ -27,7 +27,54 @@ function row(label: string, value: unknown) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
-    const { call_id, force } = await req.json()
+    const body = await req.json()
+    const { call_id, force, test, department: testDept, to: testTo } = body ?? {}
+
+    // ---- Test mode: send a sample email to a specific address ----
+    if (test) {
+      const recipient = (testTo || '').toString().trim()
+      const dept = (testDept || 'intake').toString()
+      if (!recipient) {
+        return new Response(JSON.stringify({ error: 'to (recipient) required for test' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
+        return new Response(JSON.stringify({ error: 'email not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const subject = `✅ Test — Blossom OS After-Hours routing (${dept})`
+      const html = `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;background:#f8fafc;padding:24px;">
+          <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#2B7BD5,#5BA9F2);padding:20px 24px;color:#fff;">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.85;">Blossom OS · After-Hours AI</div>
+              <div style="font-size:20px;font-weight:600;margin-top:4px;">Test notification</div>
+              <div style="font-size:13px;opacity:.9;margin-top:2px;">Department: ${esc(dept)}</div>
+            </div>
+            <div style="padding:24px;color:#0f172a;font-size:14px;line-height:1.55;">
+              <p style="margin:0 0 12px 0;">This is a test from the After-Hours AI Calls page. If you received this, email routing for <strong>${esc(dept)}</strong> is working.</p>
+              <p style="margin:0;color:#64748b;font-size:13px;">Sent at ${new Date().toLocaleString()}</p>
+              <div style="margin-top:20px;text-align:center;">
+                <a href="${APP_URL}" style="display:inline-block;background:#2B7BD5;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;">Open Blossom OS</a>
+              </div>
+            </div>
+            <div style="background:#f8fafc;padding:14px 24px;font-size:11px;color:#94a3b8;text-align:center;">Blossom OS · Test message — no action required</div>
+          </div>
+        </div>`
+      const resendRes = await fetch('https://connector-gateway.lovable.dev/resend/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          'X-Connection-Api-Key': RESEND_API_KEY,
+        },
+        body: JSON.stringify({ from: FROM_ADDRESS, to: [recipient], subject, html }),
+      })
+      const respBody = await resendRes.json().catch(() => ({}))
+      if (!resendRes.ok) {
+        return new Response(JSON.stringify({ error: 'email send failed', details: respBody }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ ok: true, test: true, to: recipient, department: dept }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     if (!call_id) {
       return new Response(JSON.stringify({ error: 'call_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
