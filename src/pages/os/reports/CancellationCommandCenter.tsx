@@ -413,9 +413,11 @@ export default function CancellationCommandCenter() {
       if (!first) throw new Error("No data in file.");
       // Validation
       const headers = first.headers;
-      const hasDate = !!findH(headers, ["StartDateTime", "Start Date Time", "AppointmentStart", "Date", "AppointmentDate", "Appointment Date", "ServiceDate"]);
+      const hasDate = !!findH(headers, ["StartDateTime", "Start Date Time", "EventStartDateTime", "AppointmentStart", "Date", "AppointmentDate", "Appointment Date", "ServiceDate"]);
       const hasClient = !!(findH(headers, ["ClientName", "Client Name", "Client"]) ||
-        (findH(headers, ["ClientFirstName"]) && findH(headers, ["ClientLastName"])));
+        (findH(headers, ["ClientFirstName"]) && findH(headers, ["ClientLastName"])) ||
+        findH(headers, ["Principal2Name"]) || findH(headers, ["Principal1Name"]) ||
+        findH(headers, ["ParticipantNames"]));
       if (!hasDate || !hasClient) {
         toast.error("Scheduling file missing required columns (date and client).");
         return;
