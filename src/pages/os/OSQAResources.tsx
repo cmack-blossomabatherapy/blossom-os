@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 // =============================================================================
-// QA Team Resource Library
+// QA / Compliance Resource Library
 // Role-scoped operational knowledge for the QA team. Categories, SOP placeholders,
 // workflow placeholders, templates, and quick references — no fake content beyond
 // curated placeholder titles. Search, favorites, recents, and Ask Blossom AI use
@@ -274,7 +274,7 @@ export default function OSQAResources() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/60 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               <Library className="h-3 w-3" />
-              Resource Library · QA Team
+              Resource Library · QA / Compliance
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">QA Resources</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">
