@@ -43,7 +43,7 @@ import HrRecruitingPipelineDashboard from "./pages/os/reports/HrRecruitingPipeli
 import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplianceDashboard";
 import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnboardingCommandCenter";
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
-import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
+import OSComingSoon from "./pages/os/OSComingSoon";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
 
