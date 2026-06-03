@@ -49,7 +49,13 @@ type Call = {
   raw_retell_payload: Record<string, any> | null;
 };
 
-const STATUS_OPTIONS = ["new", "in_progress", "called_back", "resolved", "no_action"] as const;
+const STATUS_OPTIONS = ["new", "resolved", "no_action"] as const;
+
+const STAGE_META: Record<(typeof STATUS_OPTIONS)[number], { label: string; tone: string; dot: string }> = {
+  new: { label: "New", tone: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground", dot: "bg-primary" },
+  resolved: { label: "Resolved", tone: "data-[state=active]:bg-emerald-500 data-[state=active]:text-white", dot: "bg-emerald-500" },
+  no_action: { label: "No action", tone: "data-[state=active]:bg-muted-foreground data-[state=active]:text-background", dot: "bg-muted-foreground" },
+};
 
 const DEPARTMENT_META: Record<string, { label: string; tone: string }> = {
   intake: { label: "Intake", tone: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30" },
@@ -87,8 +93,6 @@ type TestSendResponse = {
 function statusColor(s: string | null) {
   switch (s) {
     case "resolved": return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
-    case "called_back": return "bg-sky-500/15 text-sky-700 dark:text-sky-300";
-    case "in_progress": return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
     case "no_action": return "bg-muted text-muted-foreground";
     default: return "bg-primary/15 text-primary";
   }
@@ -181,6 +185,16 @@ export function AfterHoursAIBoard() {
     today: rangeScoped.filter(isToday).length,
     resolved: rangeScoped.filter((c) => (c.follow_up_status ?? "") === "resolved").length,
   }), [rangeScoped]);
+
+  const stageCounts = useMemo(() => {
+    const base: Record<string, number> = { all: rangeScoped.length, new: 0, resolved: 0, no_action: 0 };
+    rangeScoped.forEach((c) => {
+      const s = (c.follow_up_status ?? "new");
+      const key = s === "resolved" || s === "no_action" ? s : "new";
+      base[key] = (base[key] ?? 0) + 1;
+    });
+    return base;
+  }, [rangeScoped]);
 
   const deptBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
@@ -367,13 +381,6 @@ export function AfterHoursAIBoard() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search caller, phone, state, reason…" className="pl-9" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}
-          </SelectContent>
-        </Select>
         <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Urgency" /></SelectTrigger>
           <SelectContent>
@@ -395,6 +402,21 @@ export function AfterHoursAIBoard() {
             <X className="mr-1 h-3.5 w-3.5" /> Clear
           </Button>
         )}
+      </div>
+
+      {/* Stage tabs — simple workflow stages */}
+      <div className="mb-3 inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+        <StageTab label="All" count={stageCounts.all} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        {(STATUS_OPTIONS).map((s) => (
+          <StageTab
+            key={s}
+            label={STAGE_META[s].label}
+            count={stageCounts[s] ?? 0}
+            dot={STAGE_META[s].dot}
+            active={statusFilter === s}
+            onClick={() => setStatusFilter(s)}
+          />
+        ))}
       </div>
 
       <Card>
@@ -662,6 +684,22 @@ function DeptChip({ label, count, tone, active, onClick }: { label: string; coun
     >
       <span className="font-medium">{label}</span>
       <span className={`tabular-nums ${active ? "opacity-90" : "text-muted-foreground"}`}>{count}</span>
+    </button>
+  );
+}
+
+function StageTab({ label, count, dot, active, onClick }: { label: string; count: number; dot?: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+        active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      }`}
+    >
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />}
+      <span>{label}</span>
+      <span className={`tabular-nums text-[11px] ${active ? "opacity-80" : "text-muted-foreground/80"}`}>{count}</span>
     </button>
   );
 }
