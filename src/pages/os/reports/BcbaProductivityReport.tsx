@@ -502,6 +502,7 @@ export default function BcbaProductivityReport() {
   /* ---- Load saved report from ?saved=<id>, otherwise auto-restore last session ---- */
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
+    pushRecent("bcba-productivity-report");
     const savedId = searchParams.get("saved");
     try {
       if (savedId) {
