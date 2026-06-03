@@ -841,10 +841,48 @@ export default function CancellationCommandCenter() {
       ) : (
         <>
           {/* FILTERS */}
-          <section className="mt-6 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+            {/* Top bar: search + filter count + actions */}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search client, RBT, BCBA, reason…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-9 w-72 rounded-xl border-border/70 bg-muted/60 pl-9 text-sm placeholder:text-muted-foreground/70 focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-primary/20"
+                  >
+                    <X className="h-3 w-3" />
+                    {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportCsv}>
+                  <Download className="mr-1.5 h-3.5 w-3.5" />CSV
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportExcel}>
+                  <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />Excel
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => window.print()}>
+                  <Printer className="mr-1.5 h-3.5 w-3.5" />Print
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={emailSnapshot}>Email</Button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="my-4 border-t border-border/60" />
+
+            {/* Filter dropdowns */}
             <div className="flex flex-wrap items-center gap-2">
-              <Search className="h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Search client, RBT, BCBA, reason…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-64" />
               <FilterSelect label="State" value={stateFilter} setValue={setStateFilter} options={states} />
               <FilterSelect label="BCBA" value={bcbaFilter} setValue={setBcbaFilter} options={bcbas} />
               <FilterSelect label="RBT" value={rbtFilter} setValue={setRbtFilter} options={rbts} />
@@ -856,7 +894,7 @@ export default function CancellationCommandCenter() {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 text-xs">
-                    <CalendarRange className="mr-1 h-3.5 w-3.5" />
+                    <CalendarRange className="mr-1.5 h-3.5 w-3.5" />
                     {dateFrom || dateTo ? `${dateFrom || "…"} → ${dateTo || "…"}` : "Date range"}
                   </Button>
                 </PopoverTrigger>
@@ -870,12 +908,6 @@ export default function CancellationCommandCenter() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <div className="ml-auto flex gap-2">
-                <Button variant="outline" size="sm" onClick={exportCsv}><Download className="mr-1 h-3.5 w-3.5" />CSV</Button>
-                <Button variant="outline" size="sm" onClick={exportExcel}><FileSpreadsheet className="mr-1 h-3.5 w-3.5" />Excel</Button>
-                <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-1 h-3.5 w-3.5" />Print</Button>
-                <Button variant="outline" size="sm" onClick={emailSnapshot}>Email</Button>
-              </div>
             </div>
           </section>
 
