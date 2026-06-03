@@ -692,7 +692,21 @@ export default function CancellationCommandCenter() {
     window.location.href = `mailto:?subject=${encodeURIComponent("Cancellation Snapshot")}&body=${encodeURIComponent(lines)}`;
   }
 
-  const hasData = processedAll.length > 0;
+  const hasSchedule = scheduleRaws.length > 0;
+  const hasBilling = billingRaws.length > 0;
+  const hasAuths = authRecords.length > 0;
+  const anyUpload = hasSchedule || hasBilling || hasAuths;
+  const allUploaded = hasSchedule && hasBilling && hasAuths;
+  const hasData = built && processedAll.length > 0;
+
+  function handleBuild() {
+    if (!allUploaded) {
+      toast.error("Upload all three reports (Scheduling, Billing, Authorizations) before building.");
+      return;
+    }
+    setBuilt(true);
+    toast.success("Dashboard built from all three reports.");
+  }
 
   /* ============================================================
    * RENDER
