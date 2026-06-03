@@ -132,12 +132,20 @@ function tidyName(raw: string): string {
     : tok
   ).join(" ");
 }
-function classifyStatus(reasonRaw: string, statusRaw: string): { status: CancelStatus; isCancelled: boolean; isExcused: boolean } {
+function classifyStatus(
+  reasonRaw: string,
+  statusRaw: string,
+  opts: { explicitCancelled?: boolean; explicitRendered?: boolean } = {},
+): { status: CancelStatus; isCancelled: boolean; isExcused: boolean } {
   const r = (reasonRaw || "").toLowerCase();
   const s = (statusRaw || "").toLowerCase();
   const both = `${s} ${r}`;
+  // Explicit rendered (e.g. Cancelled=0 + Present=1, or TypeName "Direct Service" with no cancel flag)
+  if (opts.explicitRendered && !opts.explicitCancelled) {
+    return { status: "Rendered", isCancelled: false, isExcused: false };
+  }
   if (/render|complete|attended|kept/.test(s)) return { status: "Rendered", isCancelled: false, isExcused: false };
-  if (!s && !r) return { status: "Scheduled", isCancelled: false, isExcused: false };
+  if (!opts.explicitCancelled && !s && !r) return { status: "Scheduled", isCancelled: false, isExcused: false };
   if (/no[\s-]?show|nos\b/.test(both)) return { status: "No Show", isCancelled: true, isExcused: false };
   if (/weather|snow|storm|hurricane|ice/.test(both)) return { status: "Weather", isCancelled: true, isExcused: true };
   if (/hospital|admitted|ER\b/i.test(both)) return { status: "Hospitalization", isCancelled: true, isExcused: true };
@@ -153,7 +161,9 @@ function classifyStatus(reasonRaw: string, statusRaw: string): { status: CancelS
   if (/excused/.test(both)) return { status: "Excused", isCancelled: true, isExcused: true };
   if (/unexcused/.test(both)) return { status: "Unexcused", isCancelled: true, isExcused: false };
   if (/cancel/.test(both)) return { status: "Cancelled", isCancelled: true, isExcused: false };
-  return { status: "Other", isCancelled: true, isExcused: false };
+  if (opts.explicitCancelled) return { status: "Other", isCancelled: true, isExcused: false };
+  // No cancellation signal at all — treat as rendered/completed session.
+  return { status: "Rendered", isCancelled: false, isExcused: false };
 }
 
 function downloadBlob(filename: string, mime: string, data: string) {
@@ -193,6 +203,10 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
   const reasonH = findH(headers, ["CancellationReason", "Cancellation Reason", "CancelledReason", "Cancel Reason", "CancelReason", "ReasonName", "ReasonComment", "ChangeNote"]);
   const statusH = findH(headers, ["Status", "AppointmentStatus", "Appointment Status", "CancellationType", "Cancellation Type", "Category", "TypeName"]);
   const cancelledFlagH = findH(headers, ["Cancelled", "IsCancelled"]);
+  const presentFlagH = findH(headers, ["Present"]);
+  const attendanceH = findH(headers, ["Attendance"]);
+  const deletedFlagH = findH(headers, ["Deleted", "IsDeleted", "Hidden"]);
+  const convertedH = findH(headers, ["ConvertedToTimesheet", "BillingEntry"]);
   // CR-style Principal columns (Principal1 = provider, Principal2 = client typically)
   const p1NameH = findH(headers, ["Principal1Name"]);
   const p2NameH = findH(headers, ["Principal2Name"]);
@@ -232,11 +246,20 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
     const hoursOut = hoursH && /unit/i.test(hoursH) && hours > 12 ? hours / 4 : hours;
     const reasonRaw = reasonH ? r[reasonH] : "";
     let statusRaw = statusH ? r[statusH] : "";
-    if (cancelledFlagH) {
-      const v = String(r[cancelledFlagH] || "").trim().toLowerCase();
-      if (v === "1" || v === "true" || v === "yes") statusRaw = statusRaw || "Cancelled";
-    }
-    const { status, isCancelled, isExcused } = classifyStatus(reasonRaw, statusRaw);
+    const truthy = (v: any) => {
+      const s = String(v ?? "").trim().toLowerCase();
+      return s === "1" || s === "true" || s === "yes" || s === "y";
+    };
+    const explicitCancelled = cancelledFlagH ? truthy(r[cancelledFlagH]) : false;
+    const explicitRendered =
+      (presentFlagH ? truthy(r[presentFlagH]) : false) ||
+      (attendanceH ? truthy(r[attendanceH]) : false) ||
+      (convertedH ? truthy(r[convertedH]) : false);
+    const deleted = deletedFlagH ? truthy(r[deletedFlagH]) : false;
+    if (explicitCancelled) statusRaw = statusRaw || "Cancelled";
+    const { status, isCancelled, isExcused } = deleted
+      ? { status: "Other" as CancelStatus, isCancelled: false, isExcused: false }
+      : classifyStatus(reasonRaw, statusRaw, { explicitCancelled, explicitRendered });
     const codeRaw = codeH ? r[codeH] : (codeDescH ? r[codeDescH] : "");
     const code = (codeRaw.match(/\b(\d{5})\b/) || [null, codeRaw])[1] || "";
     return {
@@ -257,6 +280,10 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
       isExcused,
       raw: r,
     };
+  }).filter((row, i) => {
+    if (!deletedFlagH) return true;
+    const v = String(rows[i][deletedFlagH] ?? "").trim().toLowerCase();
+    return !(v === "1" || v === "true" || v === "yes");
   });
 }
 
@@ -274,10 +301,10 @@ function parseBillingFile(headers: string[], rows: Record<string, string>[]): Bi
 }
 
 function parseAuthFile(headers: string[], rows: Record<string, string>[]): AuthRecord[] {
-  const clientH = findH(headers, ["ClientName", "Client Name", "Client", "PatientName"]);
-  const bcbaH = findH(headers, ["BCBA", "BCBAName", "Supervisor", "Assigned BCBA", "Provider"]);
-  const startH = findH(headers, ["AuthStart", "Authorization Start", "StartDate", "Start Date", "EffectiveDate"]);
-  const endH = findH(headers, ["AuthEnd", "Authorization End", "EndDate", "End Date", "ExpirationDate", "Expiration Date"]);
+  const clientH = findH(headers, ["ClientFullName", "ClientName", "Client Name", "clientName", "Client", "PatientName"]);
+  const bcbaH = findH(headers, ["managerName", "ManagerName", "Manager Name", "BCBA", "BCBAName", "Supervisor", "Assigned BCBA", "Provider"]);
+  const startH = findH(headers, ["ActualStartDate", "startDate", "AuthStart", "Authorization Start", "StartDate", "Start Date", "EffectiveDate"]);
+  const endH = findH(headers, ["ActualEndDate", "endDate", "AuthEnd", "Authorization End", "EndDate", "End Date", "ExpirationDate", "Expiration Date"]);
   return rows.map(r => ({
     client: tidyName(clientH ? r[clientH] : ""),
     bcba: tidyName(bcbaH ? r[bcbaH] : ""),
