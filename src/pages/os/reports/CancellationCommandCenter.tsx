@@ -793,7 +793,51 @@ export default function CancellationCommandCenter() {
       )}
 
       {!hasData ? (
-        <EmptyState />
+        anyUpload ? (
+          <section className="mt-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
+            <h2 className="text-lg font-semibold">Upload all reports, then build the dashboard</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              All three reports are required so cancellations can be attributed to the right BCBA and lost revenue is calculated accurately.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm">
+              <li className="flex items-center gap-2">
+                {hasSchedule ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
+                <span className={hasSchedule ? "text-foreground" : "text-muted-foreground"}>Scheduling Report {hasSchedule && `· ${scheduleFileName}`}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                {hasBilling ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
+                <span className={hasBilling ? "text-foreground" : "text-muted-foreground"}>Billing Report {hasBilling && `· ${billingFileName}`}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                {hasAuths ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <span className="h-4 w-4 rounded-full border border-muted-foreground/40" />}
+                <span className={hasAuths ? "text-foreground" : "text-muted-foreground"}>Authorization Report(s) {hasAuths && `· ${authFileNames.join(", ")}`}</span>
+              </li>
+            </ul>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                className="bg-[hsl(345_70%_50%)] hover:bg-[hsl(345_70%_45%)]"
+                disabled={!allUploaded}
+                onClick={handleBuild}
+              >
+                Build Dashboard
+              </Button>
+              {allUploaded ? null : (
+                <Button size="sm" variant="ghost" onClick={() => setBuilt(true)} disabled={!hasSchedule}>
+                  Build with what I have
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={resetAll}>Clear uploads</Button>
+            </div>
+            {!allUploaded && (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                Building without all three reports is supported but will reduce attribution accuracy and revenue precision.
+              </p>
+            )}
+          </section>
+        ) : (
+          <EmptyState />
+        )
       ) : (
         <>
           {/* FILTERS */}
