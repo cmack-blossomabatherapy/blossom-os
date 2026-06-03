@@ -649,7 +649,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
           title: "Resources",
           items: [
             { label: "Reports", icon: BarChart3, path: "/reports", perm: "" },
-            { label: "Training Academy", icon: GraduationCap, path: "/academy", perm: "" },
+            { label: "Training (Coming Soon)", icon: GraduationCap, path: "#", perm: "", disabled: true },
           ],
         },
       ]
