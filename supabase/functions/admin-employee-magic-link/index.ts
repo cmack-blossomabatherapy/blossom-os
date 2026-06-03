@@ -233,8 +233,8 @@ Deno.serve(async (req) => {
   <tr><td align="center" style="padding:40px 16px;">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,0.08);border:1px solid #e6edf5;">
       <tr><td style="padding:32px 36px 0;">
-        <div style="text-align:center;padding:8px 0 4px;">
-          <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="200" style="display:inline-block;max-width:200px;height:auto;border:0;outline:none;text-decoration:none;" />
+        <div style="text-align:left;padding:8px 0 4px;">
+          <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="140" style="display:inline-block;max-width:140px;height:auto;border:0;outline:none;text-decoration:none;" />
         </div>
       </td></tr>
       <tr><td style="padding:18px 36px 8px;">
