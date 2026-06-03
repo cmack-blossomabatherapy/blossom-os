@@ -760,7 +760,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           collapsed && "h-10 w-10 justify-center px-0 ring-1",
           isActive
             ? collapsed
-              ? "bg-primary/12 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
+              ? "bg-primary/10 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
               : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
             : collapsed
             ? "bg-card/80 text-primary ring-border/70 hover:bg-primary/10 hover:text-primary hover:ring-primary/25"
