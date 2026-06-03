@@ -18,6 +18,7 @@ import {
   BCBA_LAST_SESSION_KEY, getSavedReport, saveReport,
 } from "@/lib/os/bcbaSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
+import { exportBcbaProductivityPdf } from "@/lib/os/bcbaProductivityPdf";
 
 /* ---- Lightweight insights computed at save time for the Blossom AI Today panel ---- */
 function computeBcbaInsights(billingRaws: BillingRaw[], authRecords: AuthRecord[]): string[] {
@@ -1030,7 +1031,54 @@ export default function BcbaProductivityReport() {
   }
   function exportAs(kind: "csv" | "excel" | "pdf") {
     if (!visible.length) { toast.error("No data to export."); return; }
-    if (kind === "pdf") { window.print(); return; }
+    if (kind === "pdf") {
+      try {
+        exportBcbaProductivityPdf({
+          rows: visible.map(a => ({
+            name: a.name,
+            state: a.state,
+            director: a.director,
+            activeClients: a.activeClients,
+            assignedRbts: a.assignedRbts,
+            h97153: a.h97153,
+            h97155: a.h97155,
+            h97156: a.h97156,
+            h97151: a.h97151,
+            hOther: a.hOther,
+            total: a.total,
+            payrollHours: a.payrollHours,
+            avgHoursPerClient: a.avgHoursPerClient,
+            avgHoursPerRbt: a.avgHoursPerRbt,
+            minimumHours: a.minimumHours,
+            minStatus: a.minStatus,
+            flags: a.flags,
+          })),
+          kpis: {
+            totalBcbas: kpis.totalBcbas,
+            totalClients: kpis.totalClients,
+            totalRbts: kpis.totalRbts,
+            t97153: kpis.t97153,
+            t97155: kpis.t97155,
+            t97156: kpis.t97156,
+            avgCaseload: kpis.avgCaseload,
+            avg97153: kpis.avg97153,
+            avg97155: kpis.avg97155,
+            avg97156: kpis.avg97156,
+          },
+          periodLabel: periodInfo.label,
+          periodSpan: periodInfo.span,
+          nMonths: periodInfo.nMonths,
+          minHours,
+          insights: aiBullets,
+          filters: { search },
+        });
+        toast.success("PDF generated");
+      } catch (e) {
+        console.error(e);
+        toast.error("Failed to generate PDF");
+      }
+      return;
+    }
     const { cols, rows } = buildExportRows();
     const csv = toCsv(cols, rows);
     if (kind === "excel") downloadBlob("bcba-productivity-report.xls", "application/vnd.ms-excel", csv);
