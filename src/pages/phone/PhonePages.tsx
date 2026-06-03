@@ -465,6 +465,40 @@ export function PhoneShared() {
 
 // ---------- /phone/directory ----------
 
+type DirectoryLabels = {
+  main: string; menu: string; stateDir: string;
+  stateIntake: string; queues: string; shared: string;
+};
+
+function EditableTitle({
+  editing, field, labels, draftLabels, setDraftLabels,
+}: {
+  editing: boolean;
+  field: keyof DirectoryLabels;
+  labels: DirectoryLabels;
+  draftLabels: DirectoryLabels;
+  setDraftLabels: (l: DirectoryLabels) => void;
+}) {
+  if (editing) {
+    return (
+      <Input
+        className="h-8 text-sm font-semibold max-w-md"
+        value={draftLabels[field]}
+        onChange={(e) => setDraftLabels({ ...draftLabels, [field]: e.target.value })}
+      />
+    );
+  }
+  return <CardTitle className="text-base">{labels[field]}</CardTitle>;
+}
+
+function AddRowButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <Button size="sm" variant="outline" onClick={onClick} className="mt-3">
+      <Plus className="h-4 w-4 mr-2" /> {label}
+    </Button>
+  );
+}
+
 export function PhoneDirectory() {
   const {
     queues, shared, settings,
@@ -511,20 +545,14 @@ export function PhoneDirectory() {
     arr.map((row, i) => (i === idx ? { ...row, ...patch } : row));
   const removeAt = <T,>(arr: T[], idx: number): T[] => arr.filter((_, i) => i !== idx);
 
-  const EditableTitle = ({ field }: { field: keyof typeof draftLabels }) => (
-    editing ? (
-      <Input
-        className="h-8 text-sm font-semibold max-w-md"
-        value={draftLabels[field]}
-        onChange={(e) => setDraftLabels({ ...draftLabels, [field]: e.target.value })}
-      />
-    ) : <CardTitle className="text-base">{directoryLabels[field]}</CardTitle>
-  );
-
-  const AddRowButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
-    <Button size="sm" variant="outline" onClick={onClick} className="mt-3">
-      <Plus className="h-4 w-4 mr-2" /> {label}
-    </Button>
+  const renderTitle = (field: keyof typeof draftLabels) => (
+    <EditableTitle
+      editing={editing}
+      field={field}
+      labels={directoryLabels}
+      draftLabels={draftLabels}
+      setDraftLabels={setDraftLabels}
+    />
   );
 
   const term = q.trim().toLowerCase();
@@ -582,7 +610,7 @@ export function PhoneDirectory() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <EditableTitle field="main" />
+            {renderTitle("main")}
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
@@ -621,7 +649,7 @@ export function PhoneDirectory() {
 
         <Card>
           <CardHeader>
-            <EditableTitle field="menu" />
+            {renderTitle("menu")}
           </CardHeader>
           <CardContent>
             <Table>
@@ -673,7 +701,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="stateDir" />
+          {renderTitle("stateDir")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -728,7 +756,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="stateIntake" />
+          {renderTitle("stateIntake")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -782,7 +810,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="queues" />
+          {renderTitle("queues")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -845,7 +873,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="shared" />
+          {renderTitle("shared")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
