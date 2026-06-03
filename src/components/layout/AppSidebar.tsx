@@ -268,13 +268,14 @@ function buildGenericRoleSections(role: OSRole): NavSection[] {
       const meta = MODULE_NAV_META[m];
       if (!meta) return null;
       const isAi = m === "ai_assistant" || m === "ai_insights" || m === "ai_workflows";
-      return {
+      const item: NavItem = {
         label: isAi ? `${meta.label} (Coming Soon)` : meta.label,
         icon: meta.icon,
         path: isAi ? "#" : MODULE_ROUTES[m],
         perm: "",
-        disabled: isAi ? true : undefined,
       };
+      if (isAi) item.disabled = true;
+      return item;
     })
     .filter((x): x is NavItem => !!x);
   return [
