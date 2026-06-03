@@ -83,34 +83,42 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     icon: Sparkles,
     path: "/onboarding/phase/welcome",
     modules: [
-      { key: "p0.intro-video", title: "Welcome video from Blossom!", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
+      { key: "p0.intro-video", title: "Welcome to Blossom", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
         video: { url: "/videos/intro-welcome.mp4", poster: "/videos/intro-welcome-poster.jpg", presenter: "Blossom", duration: "~3 min" },
         actions: [
           { id: "watch", label: "Watch the welcome video", icon: PlayCircle },
           { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
         ] },
-      { key: "p0.mission", title: "Mission & Vision", blurb: "Why we exist and where we're going.", icon: Heart, estMinutes: 5, kind: "content",
+      { key: "p0.mission", title: "Mission & Values", blurb: "Why we exist, where we're going, and the values that guide every decision.", icon: Heart, estMinutes: 8, kind: "content",
         actions: [
           { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
-          { id: "reflect", label: "Which part resonates with you most?", prompt: true, promptPlaceholder: "A sentence or two is plenty.", icon: MessageSquare },
-        ] },
-      { key: "p0.values", title: "Core Values", blurb: "The four values that guide every decision.", icon: Compass, estMinutes: 6, kind: "content",
-        actions: [
-          { id: "open", label: "Open the Core Values page", icon: Compass, href: "/onboarding/values" },
+          { id: "values", label: "Open the Core Values page", icon: Compass, href: "/onboarding/values" },
           { id: "pick", label: "Pick a value you'd like to live this week", icon: Target, prompt: true, promptPlaceholder: "Which value, and how will you live it?" },
         ] },
-      { key: "p0.team", title: "Meet the Team", blurb: "Who you'll work with at Blossom.", icon: Users, estMinutes: 5, kind: "content",
+      { key: "p0.org-structure", title: "Organizational Structure", blurb: "How Blossom is organized — leadership, departments, and the people you'll work with.", icon: Network, estMinutes: 6, kind: "content",
         actions: [
-          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/onboarding/team" },
           { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/onboarding/org-chart" },
+          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/onboarding/team" },
           { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/meet-the-team" },
         ] },
-      { key: "p0.how", title: "How Blossom Works", blurb: "How learning, training, and growth fit together.", icon: GraduationCap, estMinutes: 5, kind: "content",
+      { key: "p0.systems", title: "Systems Overview", blurb: "A quick tour of the systems Blossom runs on — and how they fit together.", icon: MonitorPlay, estMinutes: 6, kind: "content",
         actions: [
           { id: "how", label: "Read How Blossom Works", icon: BookOpen, href: "/onboarding/how-it-works" },
           { id: "academy", label: "Peek at the Operations Academy", icon: GraduationCap, href: "/onboarding/academy-preview" },
         ] },
-      { key: "p0.chad", title: "Welcome from Chad Kaufman", blurb: "Leadership expectations, oversight, and company vision.", icon: UserCheck, estMinutes: 4, kind: "leader",
+      { key: "p0.hipaa", title: "HIPAA & Compliance", blurb: "What HIPAA means at Blossom and the basics every employee must understand from day one.", icon: ShieldCheck, estMinutes: 10, kind: "content",
+        actions: [
+          { id: "read", label: "Read the HIPAA basics overview", icon: BookOpen },
+          { id: "acknowledge", label: "Acknowledge you understand HIPAA expectations", icon: ClipboardCheck },
+          { id: "reflect", label: "Note one situation where HIPAA applies to your role", prompt: true, promptPlaceholder: "A sentence is plenty.", icon: MessageSquare },
+        ] },
+      { key: "p0.expectations", title: "Employee Expectations", blurb: "How we communicate, collaborate, and show up for each other and for families.", icon: ListChecks, estMinutes: 8, kind: "content",
+        actions: [
+          { id: "read", label: "Read the Employee Expectations overview", icon: BookOpen },
+          { id: "comms", label: "Review communication standards", icon: MessageSquare },
+          { id: "acknowledge", label: "Acknowledge the expectations", icon: ClipboardCheck },
+        ] },
+      { key: "p0.chad", title: "Letter from Chad Kaufman - CEO", blurb: "A personal welcome from our CEO — leadership, vision, and what to expect.", icon: UserCheck, estMinutes: 4, kind: "leader",
         leader: {
           ...LEADERS.chad,
           message: "A personal letter from our CEO/COO — open it to read the full message.",
@@ -137,7 +145,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
           { id: "letter", label: "Open Chad's welcome letter", icon: BookOpen },
           { id: "note", label: "Jot down one expectation Chad mentioned", icon: FileText },
         ] },
-      { key: "p0.shira", title: "A note from Shira Lasry", blurb: "This onboarding journey was designed for you.", icon: UserCheck, estMinutes: 4, kind: "leader",
+      { key: "p0.shira", title: "Letter from Shira Lasry - DOO", blurb: "A personal welcome from our Director of Operations — this onboarding journey was designed for you.", icon: UserCheck, estMinutes: 4, kind: "leader",
         leader: {
           ...LEADERS.shira,
           message: "A personal letter from our Director of Operations & Company Experience — open it to read the full message.",
