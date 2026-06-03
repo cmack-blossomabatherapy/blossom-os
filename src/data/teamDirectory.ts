@@ -17,13 +17,14 @@ export type TeamMember = {
 };
 
 export type DepartmentId =
-  | "operations" | "state-directors" | "asst-state-directors"
+  | "operations" | "executive-operations" | "state-directors" | "asst-state-directors"
   | "intake" | "marketing" | "hr-payroll" | "qa"
   | "regional-bcbas" | "behavioral-support"
   | "scheduling-rbt" | "ga-case-management" | "recruiting" | "authorizations";
 
 export const DEPARTMENTS: { id: DepartmentId; name: string; tagline: string; spotlight?: boolean }[] = [
   { id: "operations", name: "Operations", tagline: "The team setting direction and keeping Blossom running.", spotlight: true },
+  { id: "executive-operations", name: "Executive Operations", tagline: "Executive support across operational leadership.", spotlight: true },
   { id: "state-directors", name: "State Directors", tagline: "Local leaders for each state we serve.", spotlight: true },
   { id: "asst-state-directors", name: "Assistant State Directors", tagline: "Right-hand support to our State Directors." },
   { id: "intake", name: "Intake", tagline: "Welcoming new families to Blossom." },
