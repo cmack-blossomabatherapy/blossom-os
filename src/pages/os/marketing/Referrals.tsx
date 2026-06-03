@@ -734,6 +734,117 @@ function EmptyBox({ title, body, actions }: { title: string; body: string; actio
   );
 }
 
+function BulkEditBar({
+  count, label, visible, onClear, onOpen,
+}: { count: number; label: string; visible: boolean; onClear: () => void; onOpen: () => void }) {
+  if (!visible || count === 0) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-foreground text-background rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-lg animate-fade-in">
+      <span className="text-sm font-medium">{count} {label} selected</span>
+      <div className="h-4 w-px bg-background/20" />
+      <Button size="sm" variant="ghost" className="h-7 text-xs text-background hover:bg-background/10" onClick={onOpen}>
+        <Settings2 className="size-3.5 mr-1.5" /> Bulk edit
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 text-xs text-background hover:bg-background/10" onClick={onClear}>
+        Clear
+      </Button>
+    </div>
+  );
+}
+
+function BulkEditDialog({
+  open, onOpenChange, count, kind, stages, states, owners, onApply,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  count: number;
+  kind: "contacts" | "companies";
+  stages: readonly string[];
+  states: string[];
+  owners: string[];
+  onApply: (patch: { state?: string | null; stage?: string; owner?: string | null }) => void;
+}) {
+  const KEEP = "__keep";
+  const CLEAR = "__clear";
+  const [stateVal, setStateVal] = useState<string>(KEEP);
+  const [stateCustom, setStateCustom] = useState("");
+  const [stageVal, setStageVal] = useState<string>(KEEP);
+  const [ownerVal, setOwnerVal] = useState<string>(KEEP);
+  const [ownerCustom, setOwnerCustom] = useState("");
+
+  useEffect(() => {
+    if (open) { setStateVal(KEEP); setStageVal(KEEP); setOwnerVal(KEEP); setStateCustom(""); setOwnerCustom(""); }
+  }, [open]);
+
+  function handleApply() {
+    const patch: { state?: string | null; stage?: string; owner?: string | null } = {};
+    if (stateVal !== KEEP) patch.state = stateVal === CLEAR ? null : stateVal === "__custom" ? stateCustom.trim() : stateVal;
+    if (stageVal !== KEEP) patch.stage = stageVal;
+    if (ownerVal !== KEEP) patch.owner = ownerVal === CLEAR ? null : ownerVal === "__custom" ? ownerCustom.trim() : ownerVal;
+    if (Object.keys(patch).length === 0) {
+      toast({ title: "Nothing to update", description: "Pick at least one field to change." });
+      return;
+    }
+    onApply(patch);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Bulk edit {count} {kind}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-xs">State</Label>
+            <Select value={stateVal} onValueChange={setStateVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                <SelectItem value={CLEAR}>Clear</SelectItem>
+                <SelectItem value="__custom">Custom…</SelectItem>
+                {states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {stateVal === "__custom" && (
+              <Input className="mt-2" value={stateCustom} onChange={(e) => setStateCustom(e.target.value)} placeholder="e.g. NC" />
+            )}
+          </div>
+          <div>
+            <Label className="text-xs">Stage</Label>
+            <Select value={stageVal} onValueChange={setStageVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                {stages.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Owner</Label>
+            <Select value={ownerVal} onValueChange={setOwnerVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                <SelectItem value={CLEAR}>Clear</SelectItem>
+                <SelectItem value="__custom">Custom…</SelectItem>
+                {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {ownerVal === "__custom" && (
+              <Input className="mt-2" value={ownerCustom} onChange={(e) => setOwnerCustom(e.target.value)} placeholder="Owner name" />
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleApply}>Apply to {count}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function FollowUpGroup({
   title, tone, rows, onOpen, companyName,
 }: {
