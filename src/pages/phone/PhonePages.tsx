@@ -610,7 +610,7 @@ export function PhoneDirectory() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <EditableTitle field="main" />
+            {renderTitle("main")}
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
@@ -649,7 +649,7 @@ export function PhoneDirectory() {
 
         <Card>
           <CardHeader>
-            <EditableTitle field="menu" />
+            {renderTitle("menu")}
           </CardHeader>
           <CardContent>
             <Table>
@@ -701,7 +701,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="stateDir" />
+          {renderTitle("stateDir")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -756,7 +756,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="stateIntake" />
+          {renderTitle("stateIntake")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -810,7 +810,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="queues" />
+          {renderTitle("queues")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -873,7 +873,7 @@ export function PhoneDirectory() {
 
       <Card className="mt-6">
         <CardHeader>
-          <EditableTitle field="shared" />
+          {renderTitle("shared")}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
