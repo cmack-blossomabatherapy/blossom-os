@@ -76,7 +76,8 @@ function EmployeeCard({ m, completion }: { m: DirectoryEmployee; completion?: nu
   );
 }
 
-const navigate = useNavigate();
+export default function UsersHome() {
+  const navigate = useNavigate();
   const { members, departments, loading } = useEmployeeDirectory();
   const [q, setQ] = useState("");
   const [state, setState] = useState<string>("All");
