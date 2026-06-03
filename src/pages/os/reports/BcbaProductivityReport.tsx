@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
-  ShieldCheck, FileWarning, ArrowUpDown,
+  ShieldCheck, FileWarning, ArrowUpDown, Save,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
+import {
+  BCBA_LAST_SESSION_KEY, getSavedReport, saveReport,
+} from "@/lib/os/bcbaSavedReports";
 
 /* ============================================================
  * BCBA Productivity Report (Standard Report)
@@ -456,6 +460,67 @@ export default function BcbaProductivityReport() {
     setAuthFileNames([]); setAuthRecords([]); setAuthMissing([]);
     if (inputRef.current) inputRef.current.value = "";
     if (authInputRef.current) authInputRef.current.value = "";
+    try { localStorage.removeItem(BCBA_LAST_SESSION_KEY); } catch {}
+  }
+
+  /* ---- Load saved report from ?saved=<id>, otherwise auto-restore last session ---- */
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const savedId = searchParams.get("saved");
+    try {
+      if (savedId) {
+        const r = getSavedReport(savedId);
+        if (r) {
+          setBillingFileName(r.billingFileName);
+          setAuthFileNames(r.authFileNames);
+          setBillingRaws(r.billingRaws as BillingRaw[]);
+          setAuthRecords(r.authRecords as AuthRecord[]);
+          toast.success(`Loaded saved report: ${r.name}`);
+          return;
+        }
+        toast.error("Saved report not found");
+      }
+      const raw = localStorage.getItem(BCBA_LAST_SESSION_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d?.billingRaws?.length) {
+          setBillingFileName(d.billingFileName || "");
+          setAuthFileNames(d.authFileNames || []);
+          setBillingRaws(d.billingRaws);
+          setAuthRecords(d.authRecords || []);
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---- Auto-persist current session so leaving the page doesn't lose work ---- */
+  useEffect(() => {
+    if (!billingRaws.length && !authRecords.length) return;
+    try {
+      localStorage.setItem(BCBA_LAST_SESSION_KEY, JSON.stringify({
+        billingFileName, authFileNames, billingRaws, authRecords,
+      }));
+    } catch {}
+  }, [billingFileName, authFileNames, billingRaws, authRecords]);
+
+  /* ---- Save current report under a name ---- */
+  function handleSaveReport() {
+    if (!billingRaws.length) {
+      toast.error("Upload a billing report before saving");
+      return;
+    }
+    const defaultName = billingFileName
+      ? `BCBA Productivity · ${billingFileName.replace(/\.[^.]+$/, "")}`
+      : `BCBA Productivity · ${new Date().toLocaleDateString()}`;
+    const name = typeof window !== "undefined" ? window.prompt("Name this saved report", defaultName) : defaultName;
+    if (!name) return;
+    const rec = saveReport({
+      name: name.trim(),
+      billingFileName, authFileNames, billingRaws, authRecords,
+    });
+    setSearchParams({ saved: rec.id }, { replace: true });
+    toast.success(`Saved "${rec.name}" to Saved Reports`);
   }
 
   /* ---- Attribution: build sessions + exceptions from billing + auths ---- */
@@ -876,6 +941,9 @@ export default function BcbaProductivityReport() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={handleSaveReport} disabled={!billingRaws.length}>
+              <Save className="mr-1.5 h-3.5 w-3.5" />Save Report
+            </Button>
             <Button variant="outline" size="sm" onClick={() => exportAs("csv")}>
               <Download className="mr-1.5 h-3.5 w-3.5" />CSV
             </Button>
