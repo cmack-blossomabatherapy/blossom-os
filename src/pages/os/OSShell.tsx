@@ -722,11 +722,13 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
           key={item.to}
           className={cn(
             "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
-            collapsed && "h-10 w-10 justify-center px-0",
-            "text-muted-foreground/50 cursor-not-allowed select-none",
+            collapsed
+              ? "h-10 w-10 justify-center bg-muted/70 px-0 text-muted-foreground ring-1 ring-border/70"
+              : "text-muted-foreground/50",
+            "cursor-not-allowed select-none",
           )}
         >
-          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-70" : "opacity-40")} />
+          <item.icon className={cn("h-[16px] w-[16px] shrink-0", collapsed ? "opacity-100" : "opacity-40")} />
           {!collapsed && (
             <>
               <span className="truncate">{item.label}</span>
@@ -755,18 +757,18 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       className={({ isActive }) =>
         cn(
           "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all text-foreground",
-          collapsed && "h-10 w-10 justify-center px-0",
+          collapsed && "h-10 w-10 justify-center px-0 ring-1",
           isActive
             ? collapsed
-              ? "bg-primary/10 text-primary ring-1 ring-primary/20 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
+              ? "bg-primary/10 text-primary ring-primary/25 shadow-[0_10px_24px_-18px_hsl(var(--primary)/0.7)]"
               : "bg-primary text-primary-foreground shadow-[0_10px_26px_-12px_hsl(var(--primary)/0.6)]"
             : collapsed
-            ? "text-foreground hover:bg-primary/10 hover:text-primary"
+            ? "bg-card/80 text-primary ring-border/70 hover:bg-primary/10 hover:text-primary hover:ring-primary/25"
             : "text-foreground/80 hover:bg-foreground/[0.04] hover:text-foreground",
         )
       }
     >
-      <item.icon className="h-[16px] w-[16px] shrink-0" strokeWidth={collapsed ? 2.35 : 2} style={{ color: "currentColor" }} />
+      <item.icon className="h-[16px] w-[16px] shrink-0 text-current" strokeWidth={collapsed ? 2.35 : 2} />
       {!collapsed && <span className="truncate">{item.label}</span>}
     </NavLink>
     );
