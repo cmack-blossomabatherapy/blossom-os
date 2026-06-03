@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -16,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   Plus,
@@ -40,6 +44,8 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Library,
+  Loader2,
 } from "lucide-react";
 import {
   trainingSops,
@@ -50,12 +56,14 @@ import {
   formatRelative,
   type ModuleType,
   type TrainingStatus,
+  type TrainingAssignment,
 } from "@/lib/hr/trainingCenterData";
 import {
   useAcademy,
   addModuleToJourney,
   removeModuleFromJourney,
   reorderJourneyModule,
+  createTraining,
   type Training,
   type RoleJourney,
 } from "@/lib/training/academyData";
@@ -172,6 +180,7 @@ type NavId =
   | "onboarding"
   | "sops"
   | "tangos"
+  | "resources"
   | "assignments"
   | "categories"
   | "drafts"
@@ -184,6 +193,7 @@ const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
   { id: "tangos", label: "Tango Walkthroughs", icon: PlayCircle },
+  { id: "resources", label: "Resource Library", icon: Library },
   { id: "assignments", label: "Assignments", icon: Users },
   { id: "categories", label: "Categories", icon: FolderOpen },
   { id: "drafts", label: "Drafts", icon: PenSquare },
