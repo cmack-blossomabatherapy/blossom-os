@@ -458,6 +458,7 @@ export default function TrainingManagementCenter() {
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "tangos" && <TangosGrid />}
+          {nav === "resources" && <ResourceLibraryView />}
           {nav === "assignments" && <AssignmentsTable />}
           {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
