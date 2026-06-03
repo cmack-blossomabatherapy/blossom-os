@@ -570,6 +570,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? RBT_SECTIONS
     : role === "payroll_coordinator"
     ? PAYROLL_SECTIONS
+    : role === "state_director"
+    ? STATE_DIRECTOR_SECTIONS
     : role === "operations_leadership"
     ? OPS_LEADERSHIP_SECTIONS
     : role === "case_manager"
