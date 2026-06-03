@@ -924,7 +924,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         {/* MAIN COLUMN */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 md:h-[calc(100vh-1.5rem)] md:overflow-y-auto">
           {/* TOPBAR */}
-          <header className="flex items-center gap-3">
+          <header className="flex items-center gap-3 py-1">
             <button
               onClick={() => setMobileOpen(true)}
               className="os-glass-icon h-11 w-11 shrink-0 md:hidden"
