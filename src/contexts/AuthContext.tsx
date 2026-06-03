@@ -165,9 +165,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("focus", refreshAccess);
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    const onProfileUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { userId?: string; avatarUrl?: string | null } | undefined;
+      if (detail && detail.userId && detail.userId !== user.id) return;
+      if (detail && "avatarUrl" in detail) setAvatarUrl(detail.avatarUrl ?? null);
+      void loadProfileFlag(user.id);
+    };
+    window.addEventListener("profile:updated", onProfileUpdated as EventListener);
     return () => {
       window.removeEventListener("focus", refreshAccess);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("profile:updated", onProfileUpdated as EventListener);
     };
   }, [user?.id]);
 
