@@ -9,6 +9,24 @@ import {
   SEED_RETELL_CALLS, SEED_SHARED,
 } from "@/data/phoneSystem";
 
+export type DirectoryLabels = {
+  main: string;
+  menu: string;
+  stateDir: string;
+  stateIntake: string;
+  queues: string;
+  shared: string;
+};
+
+export const DEFAULT_DIRECTORY_LABELS: DirectoryLabels = {
+  main: "Main Corporate Numbers",
+  menu: "Corporate Menu (AA9000)",
+  stateDir: "State Direct Numbers",
+  stateIntake: "State Intake Routing",
+  queues: "All Call Queues",
+  shared: "Shared Department Routing",
+};
+
 type PhoneSystemState = {
   queues: CallQueue[];
   employees: Employee[];
@@ -21,6 +39,7 @@ type PhoneSystemState = {
   stateDirectory: StateDirectoryEntry[];
   corporateMenu: CorporateMenuOption[];
   stateIntakeRouting: StateIntakeRouting[];
+  directoryLabels: DirectoryLabels;
   setQueues: (q: CallQueue[]) => void;
   setEmployees: (e: Employee[]) => void;
   saveEmployeeExtension: (previousExtension: string, employee: Employee) => void;
@@ -34,6 +53,7 @@ type PhoneSystemState = {
   setStateDirectory: (d: StateDirectoryEntry[]) => void;
   setCorporateMenu: (m: CorporateMenuOption[]) => void;
   setStateIntakeRouting: (r: StateIntakeRouting[]) => void;
+  setDirectoryLabels: (l: DirectoryLabels) => void;
 };
 
 const Ctx = createContext<PhoneSystemState | null>(null);
@@ -101,6 +121,7 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
   const [stateDirectory, setStateDirectory] = useState<StateDirectoryEntry[]>(STATE_DIRECTORY);
   const [corporateMenu, setCorporateMenu] = useState<CorporateMenuOption[]>(CORPORATE_MENU);
   const [stateIntakeRouting, setStateIntakeRouting] = useState<StateIntakeRouting[]>(STATE_INTAKE_ROUTING);
+  const [directoryLabels, setDirectoryLabels] = useState<DirectoryLabels>(DEFAULT_DIRECTORY_LABELS);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -119,6 +140,7 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
         if (data.stateDirectory) setStateDirectory(data.stateDirectory);
         if (data.corporateMenu) setCorporateMenu(data.corporateMenu);
         if (data.stateIntakeRouting) setStateIntakeRouting(data.stateIntakeRouting);
+        if (data.directoryLabels) setDirectoryLabels({ ...DEFAULT_DIRECTORY_LABELS, ...data.directoryLabels });
       }
     } catch { /* ignore */ }
     setHydrated(true);
@@ -134,16 +156,16 @@ export function PhoneSystemProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
-        stateDirectory, corporateMenu, stateIntakeRouting,
+        stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels,
       }));
     } catch { /* ignore */ }
-  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, stateDirectory, corporateMenu, stateIntakeRouting, hydrated]);
+  }, [queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles, stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels, hydrated]);
 
   const value: PhoneSystemState = {
     queues, employees, shared, requests, retellCalls, settings, coverageTemplates, holidayProfiles,
-    stateDirectory, corporateMenu, stateIntakeRouting,
+    stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels,
     setQueues, setEmployees, setShared, setSettings, setCoverageTemplates, setHolidayProfiles,
-    setStateDirectory, setCorporateMenu, setStateIntakeRouting,
+    setStateDirectory, setCorporateMenu, setStateIntakeRouting, setDirectoryLabels,
     saveEmployeeExtension: (previousExtension, employee) => {
       const nextExtension = employee.extension.trim();
       setEmployees((prev) => {

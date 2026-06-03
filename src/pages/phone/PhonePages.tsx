@@ -468,9 +468,9 @@ export function PhoneShared() {
 export function PhoneDirectory() {
   const {
     queues, shared, settings,
-    stateDirectory, corporateMenu, stateIntakeRouting,
+    stateDirectory, corporateMenu, stateIntakeRouting, directoryLabels,
     setQueues, setShared, setSettings,
-    setStateDirectory, setCorporateMenu, setStateIntakeRouting,
+    setStateDirectory, setCorporateMenu, setStateIntakeRouting, setDirectoryLabels,
   } = usePhoneSystem();
   const { role } = useOSRole();
   const canEdit = role === "super_admin" || role === "hr_team" || role === "marketing_team";
@@ -481,6 +481,7 @@ export function PhoneDirectory() {
   const [draftIntake, setDraftIntake] = useState(stateIntakeRouting);
   const [draftQueues, setDraftQueues] = useState(queues);
   const [draftShared, setDraftShared] = useState(shared);
+  const [draftLabels, setDraftLabels] = useState(directoryLabels);
   const [q, setQ] = useState("");
 
   const startEdit = () => {
@@ -490,6 +491,7 @@ export function PhoneDirectory() {
     setDraftIntake(stateIntakeRouting);
     setDraftQueues(queues);
     setDraftShared(shared);
+    setDraftLabels(directoryLabels);
     setEditing(true);
   };
   const cancelEdit = () => setEditing(false);
@@ -500,12 +502,30 @@ export function PhoneDirectory() {
     setStateIntakeRouting(draftIntake);
     setQueues(draftQueues);
     setShared(draftShared);
+    setDirectoryLabels(draftLabels);
     setEditing(false);
     toast.success("Routing directory updated");
   };
 
   const updateAt = <T,>(arr: T[], idx: number, patch: Partial<T>): T[] =>
     arr.map((row, i) => (i === idx ? { ...row, ...patch } : row));
+  const removeAt = <T,>(arr: T[], idx: number): T[] => arr.filter((_, i) => i !== idx);
+
+  const EditableTitle = ({ field }: { field: keyof typeof draftLabels }) => (
+    editing ? (
+      <Input
+        className="h-8 text-sm font-semibold max-w-md"
+        value={draftLabels[field]}
+        onChange={(e) => setDraftLabels({ ...draftLabels, [field]: e.target.value })}
+      />
+    ) : <CardTitle className="text-base">{directoryLabels[field]}</CardTitle>
+  );
+
+  const AddRowButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
+    <Button size="sm" variant="outline" onClick={onClick} className="mt-3">
+      <Plus className="h-4 w-4 mr-2" /> {label}
+    </Button>
+  );
 
   const term = q.trim().toLowerCase();
   const matches = (s: string) => !term || s.toLowerCase().includes(term);
@@ -562,7 +582,7 @@ export function PhoneDirectory() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Main Corporate Numbers</CardTitle>
+            <EditableTitle field="main" />
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
@@ -601,12 +621,13 @@ export function PhoneDirectory() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Corporate Menu ({CORPORATE_AUTO_ATTENDANT})</CardTitle>
+            <EditableTitle field="menu" />
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader><TableRow>
                 <TableHead className="w-16">Option</TableHead><TableHead>Department</TableHead><TableHead>Routes To</TableHead>
+                {editing && <TableHead className="w-12"></TableHead>}
               </TableRow></TableHeader>
               <TableBody>
                 {menuView.map((m, idx) => (
@@ -629,17 +650,30 @@ export function PhoneDirectory() {
                           onChange={(e) => setDraftMenu(updateAt(draftMenu, idx, { routesTo: e.target.value }))} />
                       ) : m.routesTo}
                     </TableCell>
+                    {editing && (
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setDraftMenu(removeAt(draftMenu, idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            {editing && (
+              <AddRowButton
+                label="Add menu option"
+                onClick={() => setDraftMenu([...draftMenu, { option: String(draftMenu.length + 1), label: "New option", routesTo: "" }])}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">State Direct Numbers</CardTitle>
+          <EditableTitle field="stateDir" />
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -647,13 +681,17 @@ export function PhoneDirectory() {
               <TableHeader><TableRow>
                 <TableHead>State</TableHead><TableHead>Direct Number</TableHead>
                 <TableHead>Auto Attendant</TableHead><TableHead>Intake Submenu</TableHead>
+                {editing && <TableHead className="w-12"></TableHead>}
               </TableRow></TableHeader>
               <TableBody>
                 {stateDirView.map((s, idx) => {
                   if (!editing && !(matches(s.state) || matches(s.direct) || matches(s.intakeRouting))) return null;
                   return (
-                  <TableRow key={s.state}>
-                    <TableCell className="font-medium">{s.state}</TableCell>
+                  <TableRow key={`${s.state}-${idx}`}>
+                    <TableCell className="font-medium">{editing ? (
+                      <Input className="h-8 text-xs" value={s.state}
+                        onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { state: e.target.value }))} />
+                    ) : s.state}</TableCell>
                     <TableCell className="font-mono">{editing ? (
                       <Input className="h-8 font-mono text-xs" value={s.direct}
                         onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { direct: e.target.value }))} />
@@ -666,18 +704,31 @@ export function PhoneDirectory() {
                       <Input className="h-8 font-mono text-xs" value={s.intakeRouting}
                         onChange={(e) => setDraftStateDir(updateAt(draftStateDir, idx, { intakeRouting: e.target.value }))} />
                     ) : s.intakeRouting}</TableCell>
+                    {editing && (
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setDraftStateDir(removeAt(draftStateDir, idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           </div>
+          {editing && (
+            <AddRowButton
+              label="Add state"
+              onClick={() => setDraftStateDir([...draftStateDir, { state: "New State", direct: "", mainAA: "AA9000", intakeRouting: "" }])}
+            />
+          )}
         </CardContent>
       </Card>
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">State Intake Routing</CardTitle>
+          <EditableTitle field="stateIntake" />
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -686,13 +737,17 @@ export function PhoneDirectory() {
                 <TableHead>State</TableHead><TableHead>Intake</TableHead>
                 <TableHead>Day Queue</TableHead><TableHead>Afternoon Queue</TableHead>
                 <TableHead>After-Hours</TableHead><TableHead>Voicemail Email</TableHead>
+                {editing && <TableHead className="w-12"></TableHead>}
               </TableRow></TableHeader>
               <TableBody>
                 {intakeView.map((s, idx) => {
                   if (!editing && !filteredStateIntake.includes(s)) return null;
                   return (
-                  <TableRow key={s.state}>
-                    <TableCell className="font-medium">{s.state}</TableCell>
+                  <TableRow key={`${s.state}-${idx}`}>
+                    <TableCell className="font-medium">{editing ? (
+                      <Input className="h-8 text-xs min-w-[140px]" value={s.state}
+                        onChange={(e) => setDraftIntake(updateAt(draftIntake, idx, { state: e.target.value as typeof s.state }))} />
+                    ) : s.state}</TableCell>
                     {(["intakeExt","dayQueue","afternoonQueue","afterHours"] as const).map((k) => (
                       <TableCell key={k} className="font-mono">{editing ? (
                         <Input className="h-8 font-mono text-xs" value={s[k]}
@@ -703,18 +758,31 @@ export function PhoneDirectory() {
                       <Input className="h-8 text-xs" value={s.voicemailEmail}
                         onChange={(e) => setDraftIntake(updateAt(draftIntake, idx, { voicemailEmail: e.target.value }))} />
                     ) : s.voicemailEmail}</TableCell>
+                    {editing && (
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setDraftIntake(removeAt(draftIntake, idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           </div>
+          {editing && (
+            <AddRowButton
+              label="Add intake route"
+              onClick={() => setDraftIntake([...draftIntake, { state: "New State" as typeof draftIntake[number]["state"], intakeExt: "", dayQueue: "", afternoonQueue: "", afterHours: "", voicemailEmail: "" }])}
+            />
+          )}
         </CardContent>
       </Card>
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">All Call Queues</CardTitle>
+          <EditableTitle field="queues" />
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -722,13 +790,17 @@ export function PhoneDirectory() {
               <TableHeader><TableRow>
                 <TableHead>Queue</TableHead><TableHead>State</TableHead><TableHead>Timeframe</TableHead>
                 <TableHead>Agents</TableHead><TableHead>Voicemail</TableHead><TableHead>Routing</TableHead>
+                {editing && <TableHead className="w-12"></TableHead>}
               </TableRow></TableHeader>
               <TableBody>
                 {queuesView.map((row, idx) => {
                   if (!editing && !filteredQueues.includes(row)) return null;
                   return (
-                  <TableRow key={row.queue}>
-                    <TableCell className="font-medium">{row.queue}</TableCell>
+                  <TableRow key={`${row.queue}-${idx}`}>
+                    <TableCell className="font-medium">{editing ? (
+                      <Input className="h-8 font-mono text-xs w-24" value={row.queue}
+                        onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { queue: e.target.value }))} />
+                    ) : row.queue}</TableCell>
                     <TableCell>{editing ? (
                       <Input className="h-8 text-xs w-24" value={row.state}
                         onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { state: e.target.value }))} />
@@ -749,18 +821,31 @@ export function PhoneDirectory() {
                       <Input className="h-8 text-xs min-w-[160px]" value={row.routing}
                         onChange={(e) => setDraftQueues(updateAt(draftQueues, idx, { routing: e.target.value }))} />
                     ) : row.routing}</TableCell>
+                    {editing && (
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setDraftQueues(removeAt(draftQueues, idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           </div>
+          {editing && (
+            <AddRowButton
+              label="Add call queue"
+              onClick={() => setDraftQueues([...draftQueues, { queue: "", state: "", timeframe: "Day", agents: [], voicemail: "", routing: "" }])}
+            />
+          )}
         </CardContent>
       </Card>
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base">Shared Department Routing</CardTitle>
+          <EditableTitle field="shared" />
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -769,6 +854,7 @@ export function PhoneDirectory() {
                 <TableHead>Department</TableHead><TableHead>Extension</TableHead>
                 <TableHead>Business Hours</TableHead><TableHead>After Hours</TableHead>
                 <TableHead>Agents</TableHead><TableHead>Backup</TableHead>
+                {editing && <TableHead className="w-12"></TableHead>}
               </TableRow></TableHeader>
               <TableBody>
                 {sharedView.map((s, idx) => {
@@ -799,12 +885,28 @@ export function PhoneDirectory() {
                       <Input className="h-8 text-xs" value={s.backupPath ?? ""}
                         onChange={(e) => setDraftShared(updateAt(draftShared, idx, { backupPath: e.target.value }))} />
                     ) : (s.backupPath ?? "—")}</TableCell>
+                    {editing && (
+                      <TableCell>
+                        <Button size="icon" variant="ghost" onClick={() => setDraftShared(removeAt(draftShared, idx))}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           </div>
+          {editing && (
+            <AddRowButton
+              label="Add shared route"
+              onClick={() => setDraftShared([
+                ...draftShared,
+                { id: `SR-NEW-${Date.now()}`, department: "New Department", category: "General Inquiries", extension: "", businessHoursRouting: "", afterHoursRouting: "", agents: [], priority: 1, backupPath: "" },
+              ])}
+            />
+          )}
         </CardContent>
       </Card>
     </Shell>
