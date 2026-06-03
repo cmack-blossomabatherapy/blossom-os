@@ -867,7 +867,7 @@ function FollowUpGroup({
               </div>
               <div className="text-right text-xs">
                 <p className="font-medium">{fmtDate(c.next_follow_up_at)}</p>
-                <p className="text-muted-foreground">{c.contact_owner ?? "—"}</p>
+                <p className="text-muted-foreground">{ownersToText(c.contact_owner)}</p>
               </div>
             </li>
           ))}
