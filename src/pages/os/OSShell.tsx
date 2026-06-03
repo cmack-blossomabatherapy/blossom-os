@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
@@ -177,6 +177,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState("");
+  const [headerSearchOpen, setHeaderSearchOpen] = useState(false);
+  const headerSearchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (!headerSearchRef.current) return;
+      if (!headerSearchRef.current.contains(e.target as Node)) setHeaderSearchOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
   const { user, signOut, avatarUrl, displayName } = useAuth();
   const { canSee, role, platform } = useOSRole();
   const navigate = useNavigate();
@@ -943,19 +954,82 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
             >
               <Menu className="h-4 w-4 text-muted-foreground" />
             </button>
-            <div className="relative hidden flex-1 md:block">
-              <button
-                type="button"
-                onClick={() => setPaletteOpen(true)}
-                aria-label="Search Blossom OS"
-                className="os-glass-input flex h-11 w-full items-center gap-3 rounded-2xl pl-4 pr-2 text-left text-[13.5px] text-muted-foreground transition hover:text-foreground"
-              >
+            <div ref={headerSearchRef} className="relative hidden flex-1 md:block">
+              <div className="os-glass-input flex h-11 w-full items-center gap-3 rounded-2xl pl-4 pr-2 text-[13.5px]">
                 <Search className="h-[18px] w-[18px] shrink-0 text-foreground/70" strokeWidth={2.25} />
-                <span className="flex-1 truncate">Search pages, clients, staff, leads…</span>
-                <kbd className="ml-auto hidden items-center gap-1 rounded-md border border-foreground/10 bg-foreground/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-foreground/60 lg:inline-flex">
-                  <span className="text-[11px]">⌘</span>K
-                </kbd>
-              </button>
+                <input
+                  type="text"
+                  value={headerSearch}
+                  onChange={(e) => { setHeaderSearch(e.target.value); setHeaderSearchOpen(true); }}
+                  onFocus={() => setHeaderSearchOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") { setHeaderSearchOpen(false); (e.target as HTMLInputElement).blur(); }
+                    if (e.key === "Enter") {
+                      const q = headerSearch.trim().toLowerCase();
+                      if (!q) return;
+                      for (const s of sections) {
+                        const hit = s.items.find((i) => i.label.toLowerCase().includes(q));
+                        if (hit) { navigate(hit.to); setHeaderSearchOpen(false); setHeaderSearch(""); break; }
+                      }
+                    }
+                  }}
+                  placeholder="Search everything…"
+                  aria-label="Search Blossom OS"
+                  className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                />
+                {headerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => { setHeaderSearch(""); setHeaderSearchOpen(false); }}
+                    className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    aria-label="Clear search"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {headerSearchOpen && headerSearch.trim() && (() => {
+                const q = headerSearch.trim().toLowerCase();
+                const filtered = sections
+                  .map((s) => ({ ...s, items: s.items.filter((i) => i.label.toLowerCase().includes(q) || s.label.toLowerCase().includes(q)) }))
+                  .filter((s) => s.items.length > 0);
+                return (
+                  <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[60vh] overflow-y-auto rounded-2xl border border-border/60 bg-background/95 p-2 shadow-2xl backdrop-blur-xl">
+                    {filtered.length === 0 ? (
+                      <div className="px-3 py-6 text-center text-[13px] text-muted-foreground">
+                        No results for “{headerSearch.trim()}”.
+                      </div>
+                    ) : (
+                      filtered.map((section) => (
+                        <div key={section.id} className="px-1 py-1">
+                          <div className="px-2 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+                            {section.label}
+                          </div>
+                          {section.items.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={`${section.id}-${item.to}-${item.label}`}
+                                type="button"
+                                onClick={() => {
+                                  navigate(item.to);
+                                  setHeaderSearchOpen(false);
+                                  setHeaderSearch("");
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px] text-foreground hover:bg-muted/60"
+                              >
+                                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <span className="truncate">{item.label}</span>
+                                <span className="ml-auto truncate text-[10.5px] text-muted-foreground">{item.to}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex-1 md:hidden" />
             <button className="os-glass-icon relative">
