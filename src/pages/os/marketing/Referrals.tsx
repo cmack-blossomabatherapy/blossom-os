@@ -1,21 +1,25 @@
-import { useMemo, useState, Component, type ReactNode, type ErrorInfo } from "react";
+import { useEffect, useMemo, useState, Component, type ReactNode, type ErrorInfo } from "react";
 import {
-  Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle,
+  Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle, Settings2,
 } from "lucide-react";
 import { MktgPage, MktgCard } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
-import type { ReferralCompany, ReferralContact } from "@/lib/os/referrals/types";
+import type { ReferralCompany, ReferralContact, ReferralImportBatch } from "@/lib/os/referrals/types";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
 import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
 import { ImportReferralsDialog } from "@/components/marketing/referrals/ImportReferralsDialog";
 import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDetailDrawer";
 import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
+import { toast } from "@/hooks/use-toast";
 
 function StatTile({ label, value, icon: Icon, hint }: { label: string; value: React.ReactNode; icon: React.ElementType; hint?: string }) {
   return (
@@ -30,11 +34,27 @@ function StatTile({ label, value, icon: Icon, hint }: { label: string; value: Re
   );
 }
 
-function exportCsv(filename: string, rows: Record<string, unknown>[]) {
-  if (!rows.length) return;
-  const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+type ExportDataset = "contacts" | "companies" | "followups" | "history";
+
+type ExportColumn<T> = {
+  key: string;
+  label: string;
+  value: (row: T) => unknown;
+  defaultSelected?: boolean;
+};
+
+type ExportSource<T> = {
+  label: string;
+  description: string;
+  fileName: string;
+  rows: T[];
+  columns: ExportColumn<T>[];
+};
+
+function exportCsv<T>(filename: string, rows: T[], columns: ExportColumn<T>[]) {
+  const headers = columns.map((c) => c.label);
   const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))];
+  const lines = [headers.map(esc).join(","), ...rows.map((r) => columns.map((c) => esc(c.value(r))).join(","))];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
