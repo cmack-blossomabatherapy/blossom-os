@@ -62,6 +62,9 @@ export function SecurityMfaCard() {
 
   useEffect(() => {
     void load();
+    const refresh = () => void load();
+    window.addEventListener("blossom-passkey-changed", refresh);
+    return () => window.removeEventListener("blossom-passkey-changed", refresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
