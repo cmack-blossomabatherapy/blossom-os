@@ -40,6 +40,11 @@ type Call = {
   source: string | null;
   call_started_at: string | null;
   created_at: string;
+  caller_emotion: string | null;
+  call_outcome: string | null;
+  needs_intake_follow_up: boolean | null;
+  custom_analysis_data: Record<string, any> | null;
+  raw_retell_payload: Record<string, any> | null;
 };
 
 const STATUS_OPTIONS = ["new", "in_progress", "called_back", "resolved", "no_action"] as const;
@@ -270,16 +275,26 @@ export function AfterHoursAIBoard() {
               </SheetHeader>
               <div className="mt-4 space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
-                  <Info label="Phone" value={selected.phone_number} />
-                  <Info label="State" value={selected.state} />
+                  <Info label="Call successful" value={fmt(pick(selected, "call_successful") ?? selected.call_outcome)} />
+                  <Info label="User sentiment" value={selected.sentiment} />
                   <Info label="Caller type" value={selected.caller_type} />
+                  <Info label="Parent / caller name" value={pick(selected, "parent_or_caller_name") ?? selected.caller_name} />
+                  <Info label="Callback number" value={pick(selected, "callback_number") ?? selected.phone_number} />
+                  <Info label="Preferred callback time" value={selected.preferred_callback_time} />
+                  <Info label="State" value={selected.state} />
                   <Info label="Child age" value={selected.child_age} />
-                  <Info label="Insurance" value={selected.insurance_provider} />
+                  <Info label="Insurance provider" value={selected.insurance_provider} />
                   <Info label="Insurance type" value={selected.insurance_type} />
-                  <Info label="Urgency" value={selected.urgency_level} />
-                  <Info label="Sentiment" value={selected.sentiment} />
+                  <Info label="Urgency level" value={selected.urgency_level} />
+                  <Info label="Needs intake follow-up" value={fmt(selected.needs_intake_follow_up)} />
+                  <Info label="Emergency flag" value={fmt(selected.emergency_flag)} />
+                  <Info label="Callback confirmed" value={fmt(pick(selected, "callback_confirmed"))} />
+                  <Info label="Caller emotion" value={selected.caller_emotion ?? pick(selected, "caller_emotion")} />
+                  <Info label="Transcript quality" value={pick(selected, "transcript_quality")} />
+                  <Info label="Intake readiness" value={pick(selected, "intake_readiness")} />
+                  <Info label="Callback priority" value={pick(selected, "callback_priority")} />
+                  <Info label="Call outcome" value={selected.call_outcome ?? pick(selected, "call_outcome")} />
                   <Info label="Department" value={selected.department_to_notify} />
-                  <Info label="Callback time" value={selected.preferred_callback_time} />
                   <Info label="Source" value={selected.source} />
                   <Info label="Verification" value={selected.verification_status} />
                 </div>
@@ -335,6 +350,18 @@ function Info({ label, value }: { label: string; value: string | null | undefine
       <div className="text-sm">{value ?? "—"}</div>
     </div>
   );
+}
+
+function pick(c: Call, key: string): string | null {
+  const v = c.custom_analysis_data?.[key] ?? c.raw_retell_payload?.call?.call_analysis?.custom_analysis_data?.[key];
+  if (v === undefined || v === null || v === "") return null;
+  return typeof v === "string" ? v : String(v);
+}
+
+function fmt(v: unknown): string | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  return String(v);
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
