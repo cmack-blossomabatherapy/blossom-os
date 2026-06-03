@@ -340,6 +340,9 @@ export default function CancellationCommandCenter() {
   const [authRecords, setAuthRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoredFromSession, setRestoredFromSession] = useState(false);
+  // Dashboard is only rendered after the user explicitly clicks Build.
+  // Restored sessions are pre-built so users see their last view immediately.
+  const [built, setBuilt] = useState(false);
 
   // filters
   const [search, setSearch] = useState("");
@@ -372,6 +375,7 @@ export default function CancellationCommandCenter() {
           setBillingRaws(saved.billingRaws);
           setAuthRecords(saved.authRecords);
           setRestoredFromSession(true);
+          setBuilt(true);
           toast.success(`Restored "${saved.name}"`);
           pushRecent("cancellation-command-center");
         }
@@ -386,6 +390,7 @@ export default function CancellationCommandCenter() {
         setBillingRaws(last.billingRaws);
         setAuthRecords(last.authRecords);
         setRestoredFromSession(true);
+        setBuilt(true);
       }
     })();
     pushRecent("cancellation-command-center");
@@ -482,6 +487,7 @@ export default function CancellationCommandCenter() {
     setScheduleFileName(""); setBillingFileName(""); setAuthFileNames([]);
     setScheduleRaws([]); setBillingRaws([]); setAuthRecords([]);
     setRestoredFromSession(false);
+    setBuilt(false);
     clearCancellationLastSession().catch(() => {});
     if (scheduleInput.current) scheduleInput.current.value = "";
     if (billingInput.current) billingInput.current.value = "";
