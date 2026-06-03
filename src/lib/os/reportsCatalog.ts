@@ -125,6 +125,9 @@ export const REPORTS: ReportDef[] = [
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
+  if (role === "state_director") {
+    return REPORTS.filter(r => r.id === "bcba-productivity-report");
+  }
   return REPORTS.filter(r => r.visibleTo === "all" || (r.visibleTo as OSRole[]).includes(role));
 }
 
