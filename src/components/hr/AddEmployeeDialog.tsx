@@ -12,7 +12,7 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   departments: Department[];
-  onCreated: () => void;
+  onCreated: (employeeId: string) => void;
 }
 
 export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }: Props) {
@@ -80,8 +80,7 @@ export function AddEmployeeDialog({ open, onOpenChange, departments, onCreated }
         toast.warning("Employee created, but couldn't auto-create their login. You can still send a sign-in link from the Access tab.");
       }
     }
-    reset();
-    onCreated();
+    onCreated(data.id);
   }
 
   return (
