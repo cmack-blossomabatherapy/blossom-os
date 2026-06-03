@@ -357,6 +357,25 @@ export default function CancellationCommandCenter() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  const activeFilterCount = [
+    stateFilter, bcbaFilter, rbtFilter, clientFilter,
+    payorFilter, codeFilter, statusFilter, locationFilter,
+  ].filter(f => f !== "all").length + (dateFrom || dateTo ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setStateFilter("all");
+    setBcbaFilter("all");
+    setRbtFilter("all");
+    setClientFilter("all");
+    setPayorFilter("all");
+    setCodeFilter("all");
+    setStatusFilter("all");
+    setLocationFilter("all");
+    setDateFrom("");
+    setDateTo("");
+  };
+
   const scheduleInput = useRef<HTMLInputElement>(null);
   const billingInput = useRef<HTMLInputElement>(null);
   const authInput = useRef<HTMLInputElement>(null);
