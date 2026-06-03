@@ -17,6 +17,10 @@ import {
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
 import { readSavedReports, deleteSavedReport, type BcbaSavedReport } from "@/lib/os/bcbaSavedReports";
+import {
+  readCancellationSavedReports, deleteCancellationSavedReport,
+  type CancellationSavedReport,
+} from "@/lib/os/cancellationSavedReports";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -50,20 +54,30 @@ export default function ReportsHome() {
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
   const [savedReports, setSavedReports] = useState<BcbaSavedReport[]>([]);
+  const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
   useEffect(() => {
     setSavedReports(readSavedReports());
-    const refresh = () => setSavedReports(readSavedReports());
+    setCancelSaved(readCancellationSavedReports());
+    const refresh = () => {
+      setSavedReports(readSavedReports());
+      setCancelSaved(readCancellationSavedReports());
+    };
     window.addEventListener("bcba-saved-reports-changed", refresh);
+    window.addEventListener("cancellation-saved-reports-changed", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("focus", refresh);
     return () => {
       window.removeEventListener("bcba-saved-reports-changed", refresh);
+      window.removeEventListener("cancellation-saved-reports-changed", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("focus", refresh);
     };
   }, []);
   function handleDeleteSaved(id: string) {
     void deleteSavedReport(id).then(() => setSavedReports(readSavedReports()));
+  }
+  function handleDeleteCancelSaved(id: string) {
+    void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
