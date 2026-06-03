@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Search, Users2, MapPin, Building2, ChevronRight, Filter, Plus, BadgeCheck, Sparkles,
 } from "lucide-react";
@@ -77,6 +77,7 @@ function EmployeeCard({ m, completion }: { m: DirectoryEmployee; completion?: nu
 }
 
 export default function UsersHome() {
+  const navigate = useNavigate();
   const { members, departments, loading } = useEmployeeDirectory();
   const [q, setQ] = useState("");
   const [state, setState] = useState<string>("All");
@@ -195,8 +196,9 @@ export default function UsersHome() {
         open={openAdd}
         onOpenChange={setOpenAdd}
         departments={hrDepartments}
-        onCreated={() => {
+        onCreated={(employeeId) => {
           setOpenAdd(false);
+          navigate(`/user-management/${employeeId}`);
           window.dispatchEvent(new Event("team-directory:refresh"));
         }}
       />
