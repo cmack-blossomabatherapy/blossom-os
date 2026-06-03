@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   const responsibilities = typeof body.responsibilities === "string" ? body.responsibilities.trim() : undefined;
   const siteUrl = typeof body.siteUrl === "string" && body.siteUrl.startsWith("http")
     ? body.siteUrl.replace(/\/$/, "")
-    : "https://blossom-os.lovable.app";
+    : "https://blossom.abacommandcenter.com";
   const roles = (Array.isArray(body.roles) ? body.roles : [])
     .filter((role): role is Role => typeof role === "string" && (VALID_ROLES as readonly string[]).includes(role));
 

@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
   const displayName: string | undefined = body.displayName?.trim() || undefined;
   const siteUrl: string = typeof body.siteUrl === "string" && body.siteUrl.startsWith("http")
     ? body.siteUrl.replace(/\/$/, "")
-    : "https://blossom-os.lovable.app";
+    : "https://blossom.abacommandcenter.com";
   // Accept either `roles: string[]` (preferred, multi-role) or legacy single `role`.
   const incoming: unknown[] = Array.isArray(body.roles)
     ? body.roles
