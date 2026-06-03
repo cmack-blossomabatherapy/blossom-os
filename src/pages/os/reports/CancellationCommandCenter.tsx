@@ -1415,3 +1415,210 @@ function EmptyState() {
     </section>
   );
 }
+
+/* ============================================================
+ * Cancellation Log — primary table (dense, sortable, action-focused)
+ * ============================================================ */
+function KpiPill({ label, value, tone = "default" }: {
+  label: string; value: string; tone?: "default" | "rose" | "emerald";
+}) {
+  return (
+    <div className={cn(
+      "inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 shadow-sm",
+      tone === "rose" && "border-rose-200/70",
+      tone === "emerald" && "border-emerald-200/70",
+      tone === "default" && "border-border/60",
+    )}>
+      <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+      <span className={cn(
+        "text-[13px] font-semibold tabular-nums tracking-tight",
+        tone === "rose" && "text-rose-600",
+        tone === "emerald" && "text-emerald-600",
+      )}>{value}</span>
+    </div>
+  );
+}
+
+function FollowUpChip({ status }: { status: "todo" | "contacted" | "resolved" }) {
+  const styles: Record<string, string> = {
+    todo: "bg-amber-100 text-amber-700 border-amber-200",
+    contacted: "bg-sky-100 text-sky-700 border-sky-200",
+    resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  };
+  const labels: Record<string, string> = { todo: "Todo", contacted: "Contacted", resolved: "Resolved" };
+  return (
+    <span className={cn(
+      "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide transition hover:scale-105",
+      styles[status],
+    )}>{labels[status]}</span>
+  );
+}
+
+function StatusBadge({ row }: { row: ScheduleRow }) {
+  const tone = row.isExcused
+    ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-rose-50 text-rose-700 border-rose-200";
+  return (
+    <span className={cn("inline-flex rounded-md border px-1.5 py-0.5 text-[10.5px] font-medium", tone)}>
+      {row.status}
+    </span>
+  );
+}
+
+function NoticeBadge({ hours }: { hours: number | null }) {
+  if (hours === null) return <span className="text-muted-foreground">—</span>;
+  let tone = "text-emerald-700";
+  if (hours < 8) tone = "text-rose-700 font-semibold";
+  else if (hours < 24) tone = "text-amber-700 font-medium";
+  else if (hours < 48) tone = "text-foreground";
+  const label = hours < 1 ? `<1h` : hours < 48 ? `${hours.toFixed(0)}h` : `${(hours / 24).toFixed(1)}d`;
+  return <span className={cn("tabular-nums", tone)}>{label}</span>;
+}
+
+function CancellationLogTable({
+  rows, billing, sortBy, sortDir, onSort,
+  followUps, onFollowUpClick, rowKey,
+  onClientClick, onRbtClick, onBcbaClick,
+}: {
+  rows: ScheduleRow[];
+  billing: BillingLite[];
+  sortBy: string; sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
+  followUps: Record<string, "todo" | "contacted" | "resolved">;
+  onFollowUpClick: (r: ScheduleRow) => void;
+  rowKey: (r: ScheduleRow) => string;
+  onClientClick: (c: string) => void;
+  onRbtClick: (r: string) => void;
+  onBcbaClick: (b: string) => void;
+}) {
+  const sorted = useMemo(() => {
+    const arr = [...rows];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      let av: any, bv: any;
+      switch (sortBy) {
+        case "date": av = a.date?.getTime() ?? 0; bv = b.date?.getTime() ?? 0; break;
+        case "client": av = a.client; bv = b.client; break;
+        case "bcba": av = a.bcba; bv = b.bcba; break;
+        case "rbt": av = a.rbt; bv = b.rbt; break;
+        case "code": av = a.code; bv = b.code; break;
+        case "hours": av = a.hours; bv = b.hours; break;
+        case "state": av = a.state; bv = b.state; break;
+        case "reason": av = a.status; bv = b.status; break;
+        case "notice": av = a.hoursBetween ?? Number.MAX_SAFE_INTEGER; bv = b.hoursBetween ?? Number.MAX_SAFE_INTEGER; break;
+        case "revenue":
+          av = a.hours * estimateRevenuePerHour(a.code, billing);
+          bv = b.hours * estimateRevenuePerHour(b.code, billing);
+          break;
+        default: av = 0; bv = 0;
+      }
+      if (typeof av === "string") return av.localeCompare(bv) * dir;
+      return (av - bv) * dir;
+    });
+    return arr;
+  }, [rows, sortBy, sortDir, billing]);
+
+  const Header = ({ k, label, align = "left" }: { k: string; label: string; align?: "left" | "right" | "center" }) => (
+    <th
+      onClick={() => onSort(k)}
+      className={cn(
+        "px-2.5 py-2 font-semibold cursor-pointer select-none hover:text-foreground transition",
+        align === "right" && "text-right",
+        align === "center" && "text-center",
+        align === "left" && "text-left",
+      )}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortBy === k && <span className="text-[9px]">{sortDir === "asc" ? "▲" : "▼"}</span>}
+      </span>
+    </th>
+  );
+
+  if (!sorted.length) {
+    return (
+      <div className="mt-3 rounded-2xl border border-dashed border-border/60 bg-secondary/20 p-8 text-center">
+        <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-600" />
+        <p className="mt-2 text-[13px] font-medium">No cancellations in current filter</p>
+        <p className="text-[11.5px] text-muted-foreground">Adjust filters above or clear them to see all cancellations.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_oklch(1_0_0/0.6)_inset,0_8px_24px_-12px_oklch(0.2_0.02_260/0.08)]">
+      <div className="flex items-center justify-between border-b border-border/60 bg-secondary/30 px-3 py-1.5 text-[11px] text-muted-foreground">
+        <span><span className="font-semibold text-foreground tabular-nums">{sorted.length.toLocaleString()}</span> cancellations</span>
+        <span className="hidden md:inline">Click any column header to sort · Click the follow-up chip to advance status</span>
+      </div>
+      <div className="max-h-[68vh] overflow-auto">
+        <table className="w-full text-[12.5px]">
+          <thead className="sticky top-0 z-10 bg-secondary/60 text-[11px] uppercase tracking-wider text-muted-foreground backdrop-blur">
+            <tr>
+              <Header k="date" label="Date" />
+              <Header k="client" label="Client" />
+              <Header k="bcba" label="BCBA (Owner)" />
+              <Header k="rbt" label="RBT" />
+              <Header k="state" label="State" />
+              <Header k="code" label="Code" />
+              <Header k="hours" label="Hrs" align="right" />
+              <Header k="notice" label="Notice" align="right" />
+              <Header k="reason" label="Reason" />
+              <th className="px-2.5 py-2 text-left font-semibold">Detail</th>
+              <Header k="revenue" label="$ Lost" align="right" />
+              <th className="px-2.5 py-2 text-center font-semibold">Follow-up</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/40">
+            {sorted.map((r, i) => {
+              const k = rowKey(r);
+              const fu = followUps[k] || "todo";
+              const rev = r.hours * estimateRevenuePerHour(r.code, billing);
+              return (
+                <tr key={i} className={cn(
+                  "transition hover:bg-secondary/30",
+                  fu === "resolved" && "opacity-60",
+                )}>
+                  <td className="whitespace-nowrap px-2.5 py-1.5 tabular-nums text-muted-foreground">
+                    {r.date ? r.date.toISOString().slice(0, 10) : "—"}
+                  </td>
+                  <td className="px-2.5 py-1.5">
+                    <button onClick={() => onClientClick(r.client)} className="font-medium hover:underline">
+                      {r.client}
+                    </button>
+                  </td>
+                  <td className="px-2.5 py-1.5">
+                    <button onClick={() => onBcbaClick(r.bcba)} className="text-[12px] hover:underline">
+                      {r.bcba || "Unassigned"}
+                    </button>
+                  </td>
+                  <td className="px-2.5 py-1.5">
+                    <button onClick={() => onRbtClick(r.rbt)} className="text-[12px] text-muted-foreground hover:underline hover:text-foreground">
+                      {r.rbt}
+                    </button>
+                  </td>
+                  <td className="px-2.5 py-1.5 text-[11.5px] text-muted-foreground">{r.state || "—"}</td>
+                  <td className="px-2.5 py-1.5 tabular-nums text-[11.5px] text-muted-foreground">{r.code || "—"}</td>
+                  <td className="px-2.5 py-1.5 text-right tabular-nums">{r.hours.toFixed(1)}</td>
+                  <td className="px-2.5 py-1.5 text-right"><NoticeBadge hours={r.hoursBetween} /></td>
+                  <td className="px-2.5 py-1.5"><StatusBadge row={r} /></td>
+                  <td className="px-2.5 py-1.5 max-w-[260px] truncate text-[11.5px] text-muted-foreground" title={r.reasonRaw}>
+                    {r.reasonRaw || "—"}
+                  </td>
+                  <td className="px-2.5 py-1.5 text-right tabular-nums text-rose-700">
+                    {rev > 0 ? fmtMoney(rev) : "—"}
+                  </td>
+                  <td className="px-2.5 py-1.5 text-center">
+                    <button onClick={() => onFollowUpClick(r)} className="cursor-pointer">
+                      <FollowUpChip status={fu} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
