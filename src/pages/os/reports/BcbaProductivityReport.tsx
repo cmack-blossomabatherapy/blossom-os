@@ -1165,15 +1165,114 @@ export default function BcbaProductivityReport() {
       {!empty && (
         <>
           {/* ===== Filters ===== */}
-          <section className="mt-4 rounded-xl border border-border/60 bg-card p-3 print:hidden">
-            <div className="flex flex-wrap items-center gap-2">
+          <section className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-16px_hsl(265_60%_50%/0.18)] print:hidden">
+            {/* header strip */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-gradient-to-r from-[hsl(265_100%_99%)] via-card to-[hsl(225_100%_99%)] px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[hsl(265_100%_96%)] text-[hsl(265_70%_55%)]">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                </span>
+                <p className="text-[12px] font-semibold tracking-tight">Filters</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+                  <CalendarRange className="h-3 w-3" />
+                  {periodInfo.label} · {periodInfo.span}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>{filteredSessions.length.toLocaleString()} sessions</span>
+                <span>·</span>
+                <span>{exceptions.length.toLocaleString()} exception{exceptions.length === 1 ? "" : "s"}</span>
+                <Button variant="ghost" size="sm" onClick={resetUpload} className="h-7 text-[11px]">
+                  <Trash2 className="mr-1 h-3 w-3" />Reset
+                </Button>
+              </div>
+            </div>
+
+            {/* date range row */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Date range</span>
+              {[
+                { id: "all", label: "All data" },
+                { id: "latest-month", label: "Latest month" },
+                { id: "last-3", label: "Last 3 mo (quarter)" },
+                { id: "last-6", label: "Last 6 mo" },
+                { id: "ytd", label: "YTD" },
+              ].map(p => {
+                const active = datePreset === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => applyDatePreset(p.id)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] font-medium transition",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition",
+                      datePreset === "custom" || (dateFrom || dateTo)
+                        ? "border-primary/70 bg-primary/5 text-foreground"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    <CalendarRange className="h-3 w-3" />
+                    {dateFrom || dateTo ? `${dateFrom || "…"} → ${dateTo || "…"}` : "Custom"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Custom range</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <label className="text-[11px] text-muted-foreground">
+                      From
+                      <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setDatePreset("custom"); }} className="mt-1 h-8 text-xs" />
+                    </label>
+                    <label className="text-[11px] text-muted-foreground">
+                      To
+                      <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setDatePreset("custom"); }} className="mt-1 h-8 text-xs" />
+                    </label>
+                  </div>
+                  {dataRange && (
+                    <p className="mt-2 text-[10.5px] text-muted-foreground">
+                      Data covers {dataRange.lo.toLocaleDateString()} – {dataRange.hi.toLocaleDateString()}
+                    </p>
+                  )}
+                  {(dateFrom || dateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setDateFrom(""); setDateTo(""); setDatePreset("all"); }}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" /> Clear
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* selects row */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5">
               <FilterSelect label="Month" value={month} onChange={setMonth} options={months} />
               <FilterSelect label="State" value={stateF} onChange={setStateF} options={states} />
               <FilterSelect label="BCBA" value={bcbaF} onChange={setBcbaF} options={bcbas} />
-              <FilterSelect label="State Director" value={dirF} onChange={setDirF} options={directors} />
+              <FilterSelect label="Director" value={dirF} onChange={setDirF} options={directors} />
               <FilterSelect label="Payor" value={payorF} onChange={setPayorF} options={payors} />
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Service Code</span>
+            </div>
+
+            {/* codes / min hours / search row */}
+            <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Codes</span>
                 <div className="flex flex-wrap gap-1">
                   {["97155", "97156", "97153", "97151"].map(code => {
                     const active = codesF.includes(code);
@@ -1204,23 +1303,19 @@ export default function BcbaProductivityReport() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Min hours</span>
-                <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Min hrs</span>
+                <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20 text-xs" />
               </div>
-              <div className="relative ml-auto w-56">
+              <div className="relative ml-auto w-64">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search BCBA…" className="h-8 pl-8 text-xs" />
               </div>
-              <Button variant="ghost" size="sm" onClick={resetUpload} className="text-xs">
-                <Trash2 className="mr-1 h-3.5 w-3.5" />Reset
-              </Button>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
+
+            <p className="border-t border-border/60 bg-secondary/30 px-4 py-2 text-[10.5px] text-muted-foreground">
               Billing: <span className="font-medium text-foreground">{billingFileName || "—"}</span>
               {" · "}Auths: <span className="font-medium text-foreground">{authFileNames.length ? `${authFileNames.length} file${authFileNames.length === 1 ? "" : "s"}` : "not uploaded"}</span>
-              {" · "}{filteredSessions.length.toLocaleString()} session rows in view
-              {" · "}{exceptions.length.toLocaleString()} attribution exception{exceptions.length === 1 ? "" : "s"}
             </p>
           </section>
 
