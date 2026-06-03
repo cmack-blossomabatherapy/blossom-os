@@ -3,8 +3,8 @@ import type { OSRole } from "./permissions";
 /** Role → first working landing page. Used for login/root redirects. */
 export const ROLE_HOME: Record<OSRole, string> = {
   super_admin: "/",
-  executive_leadership: "/bcba-performance-dashboard",
-  operations_leadership: "/operations/command-center",
+  executive_leadership: "/evaluations",
+  operations_leadership: "/evaluations",
   state_director: "/training",
   intake_coordinator: "/intake",
   authorization_coordinator: "/auth-workspace",
