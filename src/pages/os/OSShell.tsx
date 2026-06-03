@@ -365,39 +365,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Payroll Coordinator gets a focused payroll operations menu.
   const PAYROLL_SECTIONS: NavSection[] = [
     {
-      id: "home", label: "Home", items: [
-        { to: "/payroll-coordinator", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
-        { to: "/payroll/workspace", label: "Payroll Workspace", icon: Workflow, module: "payroll", disabled: true },
-        { to: "/payroll/training-academy", label: "Training Academy", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-    {
-      id: "payroll_operations", label: "Payroll Operations", items: [
-        { to: "/payroll/queue", label: "Payroll Queue", icon: KanbanSquare, module: "payroll", disabled: true },
-        { to: "/payroll/adjustments", label: "Payroll Adjustments", icon: Wallet, module: "payroll", disabled: true },
-        { to: "/payroll/time-attendance", label: "Time & Attendance", icon: CalendarDays, module: "payroll", disabled: true },
-        { to: "/payroll/issues", label: "Payroll Issues", icon: AlertTriangle, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "employees", label: "Employees", items: [
-        { to: "/payroll/profiles", label: "Employee Payroll Profiles", icon: Users, module: "payroll", disabled: true },
-        { to: "/payroll/pto", label: "PTO & Time Off", icon: Heart, module: "payroll", disabled: true },
-        { to: "/payroll/benefits", label: "Benefits & Deductions", icon: Briefcase, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "compliance", label: "Compliance", items: [
-        { to: "/payroll/compliance", label: "Payroll Compliance", icon: ShieldCheck, module: "payroll", disabled: true },
-        { to: "/payroll/tax-documents", label: "Tax Documents & Records", icon: FileCheck2, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "communication", label: "Communication", items: [
-        { to: "/payroll/messages", label: "Payroll Messages & Updates", icon: BellRing, module: "payroll", disabled: true },
-      ],
-    },
-    {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
@@ -526,48 +493,9 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Case Manager — warm, supportive, family-relationship oriented.
   const CASE_MANAGER_SECTIONS: NavSection[] = [
     {
-      id: "home", label: "Home", items: [
-        { to: "/case-manager", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/case-manager/training", label: "Training Academy", icon: GraduationCap, module: "training" },
-      ],
-    },
-    {
-      id: "family_relationships", label: "Family Relationships", items: [
-        { to: "/case-manager/families",      label: "Assigned Families",     icon: Users,          module: "clients" },
-        { to: "/case-manager/communication", label: "Parent Communication",  icon: BellRing,       module: "clients" },
-        { to: "/case-manager/family-support",label: "Family Support",        icon: HeartHandshake, module: "clients" },
-        { to: "/case-manager/follow-ups",    label: "Progress & Follow-Ups", icon: Activity,       module: "clients" },
-      ],
-    },
-    {
-      id: "operations", label: "Operations", items: [
-        { to: "/case-manager/scheduling",     label: "Scheduling Coordination",   icon: CalendarDays,  module: "scheduling" },
-        { to: "/case-manager/authorizations", label: "Authorizations Visibility", icon: FileCheck2,    module: "authorizations" },
-        { to: "/case-manager/staffing",       label: "Staffing Coordination",     icon: UserCog,       module: "staff" },
-        { to: "/case-manager/service-issues", label: "Service Issues",            icon: AlertTriangle, module: "clients" },
-        { to: "/case-manager/escalations",    label: "Escalations",               icon: ShieldAlert,   module: "clients" },
-      ],
-    },
-    {
-      id: "community_support", label: "Community & Support", items: [
-        { to: "/case-manager/community", label: "Community Referrals", icon: Globe,    module: "sop" },
-        { to: "/case-manager/resources", label: "Resource Library",    icon: BookOpen, module: "sop" },
-      ],
-    },
-    {
-      id: "workforce", label: "Workforce", items: [
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-    {
-      id: "ai", label: "AI & Automations", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
       ],
     },
   ];
@@ -611,24 +539,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // QA / Compliance — only Evaluations and Reports are active. Everything else is
   // disabled and shown as Coming Soon.
   const QA_TEAM_SECTIONS: NavSection[] = [
-    {
-      id: "home", label: "Home", items: [
-        { to: "/", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
-      ],
-    },
-    {
-      id: "quality", label: "Quality & Compliance", items: [
-        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-      ],
-    },
-    {
-      id: "records", label: "Records", items: [
-        { to: "/clients", label: "Clients", icon: Heart, module: "clients", disabled: true },
-        { to: "/cases", label: "Cases", icon: FolderKanban, module: "cases", disabled: true },
-        { to: "/authorizations", label: "Authorizations", icon: FileCheck2, module: "authorizations", disabled: true },
-        { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff", disabled: true },
-      ],
-    },
     {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
