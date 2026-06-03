@@ -361,7 +361,7 @@ export function AfterHoursAIBoard() {
               call={selected}
               resending={resending}
               onResend={() => resendNotification(selected)}
-              onSaveNotes={(notes) => updateNotes(selected, notes)}
+              onSaveNotes={async (notes) => { await updateNotes(selected, notes); }}
             />
           )}
         </SheetContent>
