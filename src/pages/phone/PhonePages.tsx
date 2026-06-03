@@ -511,20 +511,14 @@ export function PhoneDirectory() {
     arr.map((row, i) => (i === idx ? { ...row, ...patch } : row));
   const removeAt = <T,>(arr: T[], idx: number): T[] => arr.filter((_, i) => i !== idx);
 
-  const EditableTitle = ({ field }: { field: keyof typeof draftLabels }) => (
-    editing ? (
-      <Input
-        className="h-8 text-sm font-semibold max-w-md"
-        value={draftLabels[field]}
-        onChange={(e) => setDraftLabels({ ...draftLabels, [field]: e.target.value })}
-      />
-    ) : <CardTitle className="text-base">{directoryLabels[field]}</CardTitle>
-  );
-
-  const AddRowButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
-    <Button size="sm" variant="outline" onClick={onClick} className="mt-3">
-      <Plus className="h-4 w-4 mr-2" /> {label}
-    </Button>
+  const renderTitle = (field: keyof typeof draftLabels) => (
+    <EditableTitle
+      editing={editing}
+      field={field}
+      labels={directoryLabels}
+      draftLabels={draftLabels}
+      setDraftLabels={setDraftLabels}
+    />
   );
 
   const term = q.trim().toLowerCase();
