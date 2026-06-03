@@ -508,6 +508,7 @@ export function AfterHoursAIBoard() {
 
 function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routing, patch: Partial<Routing>) => void }) {
   const [draft, setDraft] = useState("");
+  const [testing, setTesting] = useState(false);
   const add = () => {
     const email = draft.trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -522,6 +523,23 @@ function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routin
     setDraft("");
   };
   const remove = (email: string) => onSave(routing, { emails: routing.emails.filter((e) => e !== email) });
+  const sendTest = async () => {
+    setTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("notify-after-hours-call", {
+        body: { test: true, department: routing.department, to: "cmack@blossomabatherapy.com" },
+      });
+      if (error || (data as any)?.error) {
+        toast.error(`Test failed: ${(data as any)?.error ?? error?.message ?? "unknown"}`);
+      } else {
+        toast.success(`Test sent to cmack@blossomabatherapy.com`);
+      }
+    } catch (e: any) {
+      toast.error(`Test failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
   return (
     <Card>
       <CardContent className="pt-5">
@@ -562,6 +580,13 @@ function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routin
             className="h-8 text-sm"
           />
           <Button size="sm" variant="outline" onClick={add}><Plus className="h-3.5 w-3.5" /></Button>
+        </div>
+        <div className="mt-3 flex items-center justify-between border-t pt-3">
+          <div className="text-xs text-muted-foreground">Send a sample email to verify routing.</div>
+          <Button size="sm" variant="secondary" onClick={sendTest} disabled={testing}>
+            <Mail className="h-3.5 w-3.5 mr-1.5" />
+            {testing ? "Sending…" : "Send test"}
+          </Button>
         </div>
       </CardContent>
     </Card>
