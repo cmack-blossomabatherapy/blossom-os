@@ -173,7 +173,7 @@ function toCsv(columns: string[], rows: (string | number)[][]) {
 /* ----------------------- parsers ----------------------- */
 
 function parseScheduleFile(headers: string[], rows: Record<string, string>[]): ScheduleRow[] {
-  const startH = findH(headers, ["StartDateTime", "Start Date Time", "AppointmentStart", "Appointment Start", "ServiceStart", "Date", "AppointmentDate", "Appointment Date", "Date Of Service", "ServiceDate"]);
+  const startH = findH(headers, ["StartDateTime", "Start Date Time", "EventStartDateTime", "AppointmentStart", "Appointment Start", "ServiceStart", "Date", "AppointmentDate", "Appointment Date", "Date Of Service", "ServiceDate"]);
   const cancelledOnH = findH(headers, ["CancelledOn", "Cancelled On", "CanceledOn", "Canceled On", "CancellationDate", "Cancellation Date"]);
   const clientFullH = findH(headers, ["ClientName", "Client Name", "Client"]);
   const clientFnH = findH(headers, ["ClientFirstName", "Client First Name"]);
@@ -182,14 +182,22 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
   const rbtFnH = findH(headers, ["ProviderFirstName", "Provider First Name"]);
   const rbtLnH = findH(headers, ["ProviderLastName", "Provider Last Name"]);
   const bcbaH = findH(headers, ["BCBA", "BCBAName", "Supervisor", "Supervising BCBA", "CaseSupervisor", "Case Supervisor"]);
-  const codeH = findH(headers, ["ProcedureCode", "Procedure Code", "ServiceCode", "Service Code", "CPTCode", "CPT Code", "Code"]);
-  const codeDescH = findH(headers, ["ProcedureCodeDescription", "Service Description", "ServiceDescription"]);
-  const hoursH = findH(headers, ["Units", "Hours", "ScheduledHours", "Scheduled Hours", "Duration", "DurationHours"]);
-  const stateH = findH(headers, ["State", "ClientState", "Client State"]);
-  const locH = findH(headers, ["LocationDescription", "Location Description", "Location", "ServiceLocation", "Service Location"]);
+  const codeH = findH(headers, ["ProcedureCode", "Procedure Code", "ServiceCode", "Service Code", "CPTCode", "CPT Code", "BillingCode", "CodeName", "BillingCodeName"]);
+  const codeDescH = findH(headers, ["ProcedureCodeDescription", "Service Description", "ServiceDescription", "CodeDesc", "BillingCodeDesc"]);
+  const hoursH = findH(headers, ["SegmentHours", "EventHours", "Hours", "ScheduledHours", "Scheduled Hours", "Duration", "DurationHours", "Units"]);
+  const minutesH = findH(headers, ["SegmentMins", "EventMins"]);
+  const stateH = findH(headers, ["State", "ClientState", "Client State", "LocationStateProvince", "ServiceLocationStateProvince"]);
+  const locH = findH(headers, ["LocationDescription", "Location Description", "PlaceOfServiceName", "Location", "ServiceLocation", "Service Location", "LocationName"]);
   const payorH = findH(headers, ["PayorName", "Payor", "Payer", "PayerName", "Insurance"]);
-  const reasonH = findH(headers, ["CancellationReason", "Cancellation Reason", "Reason", "CancelReason", "Cancel Reason"]);
-  const statusH = findH(headers, ["Status", "AppointmentStatus", "Appointment Status", "CancellationType", "Cancellation Type", "Category"]);
+  const reasonH = findH(headers, ["CancellationReason", "Cancellation Reason", "CancelledReason", "Cancel Reason", "CancelReason", "ReasonName", "ReasonComment", "ChangeNote"]);
+  const statusH = findH(headers, ["Status", "AppointmentStatus", "Appointment Status", "CancellationType", "Cancellation Type", "Category", "TypeName"]);
+  const cancelledFlagH = findH(headers, ["Cancelled", "IsCancelled"]);
+  // CR-style Principal columns (Principal1 = provider, Principal2 = client typically)
+  const p1NameH = findH(headers, ["Principal1Name"]);
+  const p2NameH = findH(headers, ["Principal2Name"]);
+  const p1EmailH = findH(headers, ["Principal1Email"]);
+  const p2EmailH = findH(headers, ["Principal2Email"]);
+  const isStaffEmail = (e: string) => !!e && !/withheld/i.test(e) && /@/.test(e);
 
   return rows.map(r => {
     const date = startH ? parseDate(r[startH]) : null;
@@ -197,17 +205,36 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
     const hoursBetween = (date && cancelledOn)
       ? (date.getTime() - cancelledOn.getTime()) / 36e5
       : null;
-    const client = clientFullH
+    let client = clientFullH
       ? r[clientFullH]
       : `${clientFnH ? r[clientFnH] : ""} ${clientLnH ? r[clientLnH] : ""}`.trim();
-    const rbt = rbtFullH
+    let rbt = rbtFullH
       ? r[rbtFullH]
       : `${rbtFnH ? r[rbtFnH] : ""} ${rbtLnH ? r[rbtLnH] : ""}`.trim();
-    const hours = hoursH ? num(r[hoursH]) : 0;
+    // Fallback to CR Principal columns
+    if ((!client || !rbt) && (p1NameH || p2NameH)) {
+      const p1 = p1NameH ? r[p1NameH] : "";
+      const p2 = p2NameH ? r[p2NameH] : "";
+      const e1 = p1EmailH ? r[p1EmailH] : "";
+      const e2 = p2EmailH ? r[p2EmailH] : "";
+      // The principal with a real (staff) email is provider; the other is client.
+      let provider = "", clientName = "";
+      if (isStaffEmail(e1) && !isStaffEmail(e2)) { provider = p1; clientName = p2; }
+      else if (isStaffEmail(e2) && !isStaffEmail(e1)) { provider = p2; clientName = p1; }
+      else { provider = p1; clientName = p2; } // CR default
+      if (!client) client = clientName;
+      if (!rbt) rbt = provider;
+    }
+    let hours = hoursH ? num(r[hoursH]) : 0;
+    if (!hours && minutesH) hours = num(r[minutesH]) / 60;
     // Units often come in 15-min units; if value is large integer assume units of 15min.
     const hoursOut = hoursH && /unit/i.test(hoursH) && hours > 12 ? hours / 4 : hours;
     const reasonRaw = reasonH ? r[reasonH] : "";
-    const statusRaw = statusH ? r[statusH] : "";
+    let statusRaw = statusH ? r[statusH] : "";
+    if (cancelledFlagH) {
+      const v = String(r[cancelledFlagH] || "").trim().toLowerCase();
+      if (v === "1" || v === "true" || v === "yes") statusRaw = statusRaw || "Cancelled";
+    }
     const { status, isCancelled, isExcused } = classifyStatus(reasonRaw, statusRaw);
     const codeRaw = codeH ? r[codeH] : (codeDescH ? r[codeDescH] : "");
     const code = (codeRaw.match(/\b(\d{5})\b/) || [null, codeRaw])[1] || "";
