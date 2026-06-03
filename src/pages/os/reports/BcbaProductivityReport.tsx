@@ -1307,10 +1307,6 @@ export default function BcbaProductivityReport() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Min hrs</span>
                 <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20 text-xs" />
               </div>
-              <div className="relative ml-auto w-64">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search BCBA…" className="h-8 pl-8 text-xs" />
-              </div>
             </div>
 
             <p className="border-t border-border/60 bg-secondary/30 px-4 py-2 text-[10.5px] text-muted-foreground">
