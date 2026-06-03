@@ -40,6 +40,13 @@ Deno.serve(async (req) => {
       if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
         return new Response(JSON.stringify({ error: 'email not configured' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
+      console.log('[notify-after-hours-call:test] starting', {
+        to: recipient,
+        department: dept,
+        from: FROM_ADDRESS,
+        hasLovableApiKey: Boolean(LOVABLE_API_KEY),
+        hasResendApiKey: Boolean(RESEND_API_KEY),
+      })
       const subject = `✅ Test — Blossom OS After-Hours routing (${dept})`
       const html = `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;background:#f8fafc;padding:24px;">
@@ -68,11 +75,41 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ from: FROM_ADDRESS, to: [recipient], subject, html }),
       })
-      const respBody = await resendRes.json().catch(() => ({}))
+      const respText = await resendRes.text()
+      let respBody: Record<string, unknown> = {}
+      try { respBody = respText ? JSON.parse(respText) : {} } catch { respBody = { raw: respText } }
+      const resendMessage = String(respBody.message ?? respBody.error ?? respBody.raw ?? '')
+      console.log('[notify-after-hours-call:test] resend response', {
+        to: recipient,
+        department: dept,
+        status: resendRes.status,
+        ok: resendRes.ok,
+        body: respBody,
+      })
+      const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
+      const { error: logErr } = await supabase.from('phone_ai_call_notifications').insert({
+        call_id: null,
+        retell_call_id: null,
+        department: dept,
+        recipients: [recipient],
+        status: resendRes.ok ? 'sent' : 'failed',
+        error: resendRes.ok ? null : JSON.stringify(respBody).slice(0, 500),
+      })
+      if (logErr) console.error('[notify-after-hours-call:test] notification log insert failed', logErr.message)
       if (!resendRes.ok) {
-        return new Response(JSON.stringify({ error: 'email send failed', details: respBody }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        return new Response(JSON.stringify({
+          error: resendMessage || 'email send failed',
+          details: respBody,
+          resend: { status: resendRes.status, ok: false, id: respBody.id ?? null, message: resendMessage || null },
+        }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
-      return new Response(JSON.stringify({ ok: true, test: true, to: recipient, department: dept }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({
+        ok: true,
+        test: true,
+        to: recipient,
+        department: dept,
+        resend: { status: resendRes.status, ok: true, id: respBody.id ?? null, message: resendMessage || null, body: respBody },
+      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     if (!call_id) {
