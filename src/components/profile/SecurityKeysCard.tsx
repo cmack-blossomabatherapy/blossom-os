@@ -51,15 +51,19 @@ export function SecurityKeysCard() {
         else toast.error(result.message ?? "Couldn't register security key.");
         return;
       }
-      const { error } = await supabase
+      // Try updating an existing row first. If no row matches (RLS or no PIN
+      // set yet), `data` will be empty — fall back to an upsert so the key
+      // is always persisted.
+      const { data: updated, error: updErr } = await supabase
         .from("employee_pin_settings")
         .update({
           passkey_credential_id: result.credentialId,
           passkey_public_key: result.publicKey || null,
         })
-        .eq("user_id", user.id);
-      if (error) {
-        // No PIN row yet — create one with passkey fields. PIN is still required separately.
+        .eq("user_id", user.id)
+        .select("user_id");
+      if (updErr) throw updErr;
+      if (!updated || updated.length === 0) {
         const { error: insErr } = await supabase.from("employee_pin_settings").upsert(
           {
             user_id: user.id,
@@ -74,6 +78,7 @@ export function SecurityKeysCard() {
       }
       toast.success("Security key registered.");
       await load();
+      try { window.dispatchEvent(new CustomEvent("blossom-passkey-changed")); } catch {}
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't register security key.");
     } finally {
@@ -95,6 +100,7 @@ export function SecurityKeysCard() {
     }
     toast.success("Security key removed.");
     await load();
+    try { window.dispatchEvent(new CustomEvent("blossom-passkey-changed")); } catch {}
   }
 
   return (
