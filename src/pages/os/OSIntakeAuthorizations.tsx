@@ -352,7 +352,7 @@ function AuthModals({ active, onClose }: { active: AuthModal | null; onClose: ()
                   <SelectTrigger><SelectValue placeholder="Choose team" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auth">Authorization Team</SelectItem>
-                    <SelectItem value="qa">QA Team</SelectItem>
+                    <SelectItem value="qa">QA / Compliance</SelectItem>
                     <SelectItem value="ops">Operations Leadership</SelectItem>
                     <SelectItem value="state">State Director</SelectItem>
                   </SelectContent>
