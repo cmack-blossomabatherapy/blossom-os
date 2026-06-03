@@ -352,7 +352,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
   },
   case_manager: {
     modules: [
-      "dashboard", "clients", "scheduling", "authorizations", "sop", "training", "ai_assistant", "reports",
+      "dashboard", "clients", "scheduling", "authorizations", "sop", "training", "ai_assistant", "reports", "evaluations",
     ],
     scope: "assigned",
     actions: {
@@ -362,6 +362,7 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
       authorizations: VIEW,
       training: VIEW,
       reports: ["view", "export"],
+      evaluations: VIEW,
     },
     leadership: { kpis: false, operationalAnalytics: false, staffingAlerts: true, workflowBottlenecks: true, aiInsights: false },
   },

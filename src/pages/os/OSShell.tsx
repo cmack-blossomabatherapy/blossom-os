@@ -555,6 +555,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
+      id: "workforce", label: "Workforce", items: [
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+      ],
+    },
+    {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
