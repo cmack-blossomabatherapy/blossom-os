@@ -257,6 +257,44 @@ export default function ReportsHome() {
         </div>
       </section>
 
+      {/* ============== ALL REPORTS (grouped by category) ============== */}
+      <section className="mt-10">
+        <SectionHeader
+          title={`All reports · ${reports.length}`}
+          subtitle={`Every report available for ${roleLabel}, grouped by category.`}
+        />
+        <div className="mt-4 space-y-6">
+          {categories.map(cat => {
+            const inCat = reports
+              .filter(r => r.category === cat.id)
+              .sort((a, b) => b.popularity - a.popularity);
+            if (inCat.length === 0) return null;
+            const Icon = cat.icon;
+            return (
+              <div key={cat.id}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white shadow-sm"
+                    style={{ color: cat.accent }}
+                  >
+                    <Icon className="h-3 w-3" />
+                  </span>
+                  <h3 className="text-[13.5px] font-semibold tracking-tight">{cat.name}</h3>
+                  <Badge variant="secondary" className="rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    {inCat.length}
+                  </Badge>
+                </div>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {inCat.map(r => (
+                    <MiniReportCard key={r.id} report={r} favored={favs.includes(r.id)} onFav={onFav} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ============== RECENT + FAVORITES ============== */}
       <section className="mt-10 grid gap-4 lg:grid-cols-2">
         <SidePanel title="Recently viewed" icon={History} empty="Open a report to start building your recent list.">
