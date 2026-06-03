@@ -10,14 +10,14 @@ export const ROLE_HOME: Record<OSRole, string> = {
   authorization_coordinator: "/auth-workspace",
   scheduling_team: "/scheduling-workspace",
   recruiting_team: "/recruiting/workspace",
-  hr_team: "/hr/evaluations",
+  hr_team: "/evaluations",
   billing_finance: "/finance-dashboard",
-  qa_team: "/qa-workspace",
-  payroll_coordinator: "/payroll/workspace",
+  qa_team: "/reports",
+  payroll_coordinator: "/reports",
   bcba: "/training/journeys/bcba",
   rbt: "/rbt/my-day",
   marketing_team: "/marketing",
-  case_manager: "/case-manager/training",
+  case_manager: "/reports",
   behavioral_support: "/reports",
 };
 
