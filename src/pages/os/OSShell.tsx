@@ -555,6 +555,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
+      id: "resources", label: "Resources", items: [
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
+      ],
+    },
+    {
       id: "ai", label: "AI & Automations", items: [
         { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
       ],
