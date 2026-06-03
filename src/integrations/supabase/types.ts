@@ -7635,33 +7635,54 @@ export type Database = {
       phone_ai_call_notifications: {
         Row: {
           call_id: string | null
+          caller_snapshot: Json
           created_at: string
           department: string | null
           error: string | null
           id: string
           recipients: string[]
+          resend_message_id: string | null
           retell_call_id: string | null
           status: string
+          subject: string | null
+          trigger_source: string
+          triggered_by_email: string | null
+          triggered_by_name: string | null
+          triggered_by_user_id: string | null
         }
         Insert: {
           call_id?: string | null
+          caller_snapshot?: Json
           created_at?: string
           department?: string | null
           error?: string | null
           id?: string
           recipients?: string[]
+          resend_message_id?: string | null
           retell_call_id?: string | null
           status?: string
+          subject?: string | null
+          trigger_source?: string
+          triggered_by_email?: string | null
+          triggered_by_name?: string | null
+          triggered_by_user_id?: string | null
         }
         Update: {
           call_id?: string | null
+          caller_snapshot?: Json
           created_at?: string
           department?: string | null
           error?: string | null
           id?: string
           recipients?: string[]
+          resend_message_id?: string | null
           retell_call_id?: string | null
           status?: string
+          subject?: string | null
+          trigger_source?: string
+          triggered_by_email?: string | null
+          triggered_by_name?: string | null
+          triggered_by_user_id?: string | null
         }
         Relationships: [
           {
