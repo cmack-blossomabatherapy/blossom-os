@@ -273,8 +273,16 @@ export function AfterHoursAIBoard() {
   const resendNotification = async (call: Call) => {
     setResending(true);
     try {
+      const { data: u } = await supabase.auth.getUser();
+      const user = u?.user;
       const { data, error } = await supabase.functions.invoke("notify-after-hours-call", {
-        body: { call_id: call.id, force: true },
+        body: {
+          call_id: call.id,
+          force: true,
+          triggered_by_user_id: user?.id ?? null,
+          triggered_by_email: user?.email ?? null,
+          triggered_by_name: (user?.user_metadata as any)?.display_name ?? user?.email ?? null,
+        },
       });
       if (error) throw error;
       if ((data as any)?.skipped) {
@@ -570,8 +578,17 @@ function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routin
   const sendTest = async () => {
     setTesting(true);
     try {
+      const { data: u } = await supabase.auth.getUser();
+      const user = u?.user;
       const { data, error } = await supabase.functions.invoke("notify-after-hours-call", {
-        body: { test: true, department: routing.department, to: "cmack@blossomabatherapy.com" },
+        body: {
+          test: true,
+          department: routing.department,
+          to: "cmack@blossomabatherapy.com",
+          triggered_by_user_id: user?.id ?? null,
+          triggered_by_email: user?.email ?? null,
+          triggered_by_name: (user?.user_metadata as any)?.display_name ?? user?.email ?? null,
+        },
       });
       const result = data as TestSendResponse | null;
       const resend = result?.resend;
