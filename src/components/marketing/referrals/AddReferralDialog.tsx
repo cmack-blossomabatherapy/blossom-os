@@ -46,7 +46,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
 
   function reset() {
     setFirstName(""); setLastName(""); setTitle(""); setRoleType(""); setEmail(""); setPhone("");
-    setPreferred(""); setStage("New Contact"); setStatus("New"); setOwner(""); setNotes(""); setNextFollowUp("");
+    setPreferred(""); setStage("New Contact"); setStatus("New"); setNotes(""); setNextFollowUp("");
     setOwners([]);
     setCompanyMode("existing"); setCompanyId(""); setNewCompanyName(""); setNewCompanyType("");
     setNewCompanyWebsite(""); setNewCompanyState(""); setNewCompanyPhone("");
@@ -127,7 +127,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
                   <SelectContent>{PREFERRED_CONTACT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div><Label>Owner</Label><Input value={owner} onChange={(e) => setOwner(e.target.value)} placeholder="Relationship owner" /></div>
+              <div><Label>Owner</Label><OwnerCombobox value={owners} onChange={setOwners} /></div>
             </div>
           </section>
 
