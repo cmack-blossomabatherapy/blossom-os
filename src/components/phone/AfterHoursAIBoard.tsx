@@ -355,71 +355,14 @@ export function AfterHoursAIBoard() {
       </Card>
 
       <Sheet open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
           {selected && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selected.caller_name ?? "Unknown caller"}</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <Info label="Call successful" value={fmt(pick(selected, "call_successful") ?? selected.call_outcome)} />
-                  <Info label="User sentiment" value={selected.sentiment} />
-                  <Info label="Caller type" value={selected.caller_type} />
-                  <Info label="Parent / caller name" value={pick(selected, "parent_or_caller_name") ?? selected.caller_name} />
-                  <Info label="Callback number" value={pick(selected, "callback_number") ?? selected.phone_number} />
-                  <Info label="Preferred callback time" value={selected.preferred_callback_time} />
-                  <Info label="State" value={selected.state} />
-                  <Info label="Child age" value={selected.child_age} />
-                  <Info label="Insurance provider" value={selected.insurance_provider} />
-                  <Info label="Insurance type" value={selected.insurance_type} />
-                  <Info label="Urgency level" value={selected.urgency_level} />
-                  <Info label="Needs intake follow-up" value={fmt(selected.needs_intake_follow_up)} />
-                  <Info label="Emergency flag" value={fmt(selected.emergency_flag)} />
-                  <Info label="Callback confirmed" value={fmt(pick(selected, "callback_confirmed"))} />
-                  <Info label="Caller emotion" value={selected.caller_emotion ?? pick(selected, "caller_emotion")} />
-                  <Info label="Transcript quality" value={pick(selected, "transcript_quality")} />
-                  <Info label="Intake readiness" value={pick(selected, "intake_readiness")} />
-                  <Info label="Callback priority" value={pick(selected, "callback_priority")} />
-                  <Info label="Call outcome" value={selected.call_outcome ?? pick(selected, "call_outcome")} />
-                  <Info label="Department" value={selected.department_to_notify} />
-                  <Info label="Source" value={selected.source} />
-                  <Info label="Verification" value={selected.verification_status} />
-                </div>
-                {selected.reason_for_call && (
-                  <Section title="Reason">{selected.reason_for_call}</Section>
-                )}
-                {selected.call_summary && (
-                  <Section title="AI summary">{selected.call_summary}</Section>
-                )}
-                {selected.transcript && (
-                  <Section title="Transcript">
-                    <pre className="whitespace-pre-wrap text-xs font-mono">{selected.transcript}</pre>
-                  </Section>
-                )}
-                {selected.recording_url && (
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={selected.recording_url} target="_blank" rel="noreferrer">
-                      Listen to recording <ExternalLink className="ml-1 h-3 w-3" />
-                    </a>
-                  </Button>
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" disabled={resending} onClick={() => resendNotification(selected)}>
-                    <Send className="mr-2 h-3.5 w-3.5" /> {resending ? "Sending…" : "Send email notification"}
-                  </Button>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Follow-up notes</label>
-                  <Input
-                    defaultValue={selected.follow_up_notes ?? ""}
-                    onBlur={(e) => updateNotes(selected, e.target.value)}
-                    placeholder="Add internal notes…"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            </>
+            <CallDetail
+              call={selected}
+              resending={resending}
+              onResend={() => resendNotification(selected)}
+              onSaveNotes={(notes) => updateNotes(selected, notes)}
+            />
           )}
         </SheetContent>
       </Sheet>
