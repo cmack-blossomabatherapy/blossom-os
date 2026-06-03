@@ -582,14 +582,19 @@ export default function BcbaProductivityReport() {
       : `BCBA Productivity · ${new Date().toLocaleDateString()}`;
     const name = typeof window !== "undefined" ? window.prompt("Name this saved report", defaultName) : defaultName;
     if (!name) return;
-    const insights = computeBcbaInsights(billingRaws, authRecords);
-    const rec = saveReport({
-      name: name.trim(),
-      billingFileName, authFileNames, billingRaws, authRecords, insights,
-    });
-    pushRecent("bcba-productivity-report");
-    setSearchParams({ saved: rec.id }, { replace: true });
-    toast.success(`Saved "${rec.name}" to Saved Reports`);
+    try {
+      const insights = computeBcbaInsights(billingRaws, authRecords);
+      const rec = saveReport({
+        name: name.trim(),
+        billingFileName, authFileNames, billingRaws, authRecords, insights,
+      });
+      pushRecent("bcba-productivity-report");
+      setSearchParams({ saved: rec.id }, { replace: true });
+      toast.success(`Saved "${rec.name}" to Saved Reports`);
+    } catch (err) {
+      console.error("Failed to save report", err);
+      toast.error("Couldn't save report — file may be too large for local storage.");
+    }
   }
 
   /* ---- Attribution: build sessions + exceptions from billing + auths ---- */
