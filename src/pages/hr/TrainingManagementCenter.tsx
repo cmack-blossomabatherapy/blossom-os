@@ -227,6 +227,49 @@ const AI_SUGGESTIONS = [
   "Recommend related modules to add to the Intake Journey.",
 ];
 
+/* ---------- User-created assignments store (localStorage) ---------- */
+
+const USER_ASSIGNMENTS_KEY = "blossom.training.userAssignments.v1";
+
+function loadUserAssignments(): TrainingAssignment[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(USER_ASSIGNMENTS_KEY);
+    return raw ? (JSON.parse(raw) as TrainingAssignment[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let userAssignments: TrainingAssignment[] = loadUserAssignments();
+const userAssignmentListeners = new Set<() => void>();
+
+function emitUserAssignments() {
+  try {
+    localStorage.setItem(USER_ASSIGNMENTS_KEY, JSON.stringify(userAssignments));
+  } catch {
+    /* ignore */
+  }
+  userAssignmentListeners.forEach((l) => l());
+}
+
+function addUserAssignment(a: TrainingAssignment) {
+  userAssignments = [a, ...userAssignments];
+  emitUserAssignments();
+}
+
+function useUserAssignments(): TrainingAssignment[] {
+  const [list, setList] = useState<TrainingAssignment[]>(userAssignments);
+  useEffect(() => {
+    const l = () => setList([...userAssignments]);
+    userAssignmentListeners.add(l);
+    return () => {
+      userAssignmentListeners.delete(l);
+    };
+  }, []);
+  return list;
+}
+
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
   const [nav, setNav] = useState<NavId>("journeys");
