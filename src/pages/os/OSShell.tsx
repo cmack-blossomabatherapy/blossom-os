@@ -365,39 +365,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Payroll Coordinator gets a focused payroll operations menu.
   const PAYROLL_SECTIONS: NavSection[] = [
     {
-      id: "home", label: "Home", items: [
-        { to: "/payroll-coordinator", label: "Dashboard", icon: LayoutDashboard, module: "dashboard", end: true, disabled: true },
-        { to: "/payroll/workspace", label: "Payroll Workspace", icon: Workflow, module: "payroll", disabled: true },
-        { to: "/payroll/training-academy", label: "Training Academy", icon: GraduationCap, module: "training", disabled: true },
-      ],
-    },
-    {
-      id: "payroll_operations", label: "Payroll Operations", items: [
-        { to: "/payroll/queue", label: "Payroll Queue", icon: KanbanSquare, module: "payroll", disabled: true },
-        { to: "/payroll/adjustments", label: "Payroll Adjustments", icon: Wallet, module: "payroll", disabled: true },
-        { to: "/payroll/time-attendance", label: "Time & Attendance", icon: CalendarDays, module: "payroll", disabled: true },
-        { to: "/payroll/issues", label: "Payroll Issues", icon: AlertTriangle, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "employees", label: "Employees", items: [
-        { to: "/payroll/profiles", label: "Employee Payroll Profiles", icon: Users, module: "payroll", disabled: true },
-        { to: "/payroll/pto", label: "PTO & Time Off", icon: Heart, module: "payroll", disabled: true },
-        { to: "/payroll/benefits", label: "Benefits & Deductions", icon: Briefcase, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "compliance", label: "Compliance", items: [
-        { to: "/payroll/compliance", label: "Payroll Compliance", icon: ShieldCheck, module: "payroll", disabled: true },
-        { to: "/payroll/tax-documents", label: "Tax Documents & Records", icon: FileCheck2, module: "payroll", disabled: true },
-      ],
-    },
-    {
-      id: "communication", label: "Communication", items: [
-        { to: "/payroll/messages", label: "Payroll Messages & Updates", icon: BellRing, module: "payroll", disabled: true },
-      ],
-    },
-    {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
