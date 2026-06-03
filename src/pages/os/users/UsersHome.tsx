@@ -196,8 +196,9 @@ export default function UsersHome() {
         open={openAdd}
         onOpenChange={setOpenAdd}
         departments={hrDepartments}
-        onCreated={() => {
+        onCreated={(employeeId) => {
           setOpenAdd(false);
+          navigate(`/user-management/${employeeId}`);
           window.dispatchEvent(new Event("team-directory:refresh"));
         }}
       />
