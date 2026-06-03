@@ -283,6 +283,8 @@ export function AfterHoursAIBoard() {
               {filtered.map((c) => {
                 const status = c.follow_up_status ?? "new";
                 const urgent = c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high";
+                const dept = deptMeta(c);
+                const aiReviewed = !!c.call_summary;
                 return (
                   <button
                     key={c.id}
@@ -301,6 +303,20 @@ export function AfterHoursAIBoard() {
                           {c.verification_status === "unverified" && (
                             <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-600/40">unverified</Badge>
                           )}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                          {aiReviewed ? (
+                            <Badge variant="outline" className="text-[10px] gap-1 border-primary/40 text-primary bg-primary/5">
+                              <Sparkles className="h-2.5 w-2.5" /> AI Reviewed
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/40 text-amber-600">
+                              <AlertTriangle className="h-2.5 w-2.5" /> AI pending
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className={`text-[10px] gap-1 ${dept.tone}`}>
+                            <Building2 className="h-2.5 w-2.5" /> Route → {dept.label}
+                          </Badge>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                           <span className="font-mono">{c.phone_number ?? "—"}</span>
