@@ -1,25 +1,30 @@
 import { useMemo, useState } from "react";
 import {
-  Sparkles,
-  Heart,
-  Stethoscope,
-  GraduationCap,
-  Users,
+  Plus,
+  Upload,
   Building2,
-  Briefcase,
-  MapPin,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Brain,
-  ArrowRight,
-  Calendar,
+  Download,
+  History,
+  Search,
+  Users,
   HandHeart,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
-import { MktgPage, MktgCard, AIPrompt, EmptyRow, ShareBar } from "./_shared";
-import { useMarketingIntelligence } from "@/hooks/useMarketingIntelligence";
-import { mockLeads } from "@/data/leads";
-import { mockCandidates } from "@/data/recruiting";
+import { MktgPage, MktgCard } from "./_shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
+import type { ReferralCompany, ReferralContact } from "@/lib/os/referrals/types";
+import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
+import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
+import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
+import { ImportReferralsDialog } from "@/components/marketing/referrals/ImportReferralsDialog";
+import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDetailDrawer";
+import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
 
 /* ────────────────────────────────────────────────────────────────────────── *
  * Referrals — operational relationship intelligence. Derived from real
