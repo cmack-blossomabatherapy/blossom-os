@@ -267,7 +267,15 @@ function buildGenericRoleSections(role: OSRole): NavSection[] {
     .map((m) => {
       const meta = MODULE_NAV_META[m];
       if (!meta) return null;
-      return { label: meta.label, icon: meta.icon, path: MODULE_ROUTES[m], perm: "" };
+      const isAi = m === "ai_assistant" || m === "ai_insights" || m === "ai_workflows";
+      const item: NavItem = {
+        label: isAi ? `${meta.label} (Coming Soon)` : meta.label,
+        icon: meta.icon,
+        path: isAi ? "#" : MODULE_ROUTES[m],
+        perm: "",
+      };
+      if (isAi) item.disabled = true;
+      return item;
     })
     .filter((x): x is NavItem => !!x);
   return [
@@ -433,7 +441,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -468,7 +476,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -530,7 +538,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -583,7 +591,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -631,7 +639,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
