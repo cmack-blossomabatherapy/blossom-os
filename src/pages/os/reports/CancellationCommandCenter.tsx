@@ -203,6 +203,10 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
   const reasonH = findH(headers, ["CancellationReason", "Cancellation Reason", "CancelledReason", "Cancel Reason", "CancelReason", "ReasonName", "ReasonComment", "ChangeNote"]);
   const statusH = findH(headers, ["Status", "AppointmentStatus", "Appointment Status", "CancellationType", "Cancellation Type", "Category", "TypeName"]);
   const cancelledFlagH = findH(headers, ["Cancelled", "IsCancelled"]);
+  const presentFlagH = findH(headers, ["Present"]);
+  const attendanceH = findH(headers, ["Attendance"]);
+  const deletedFlagH = findH(headers, ["Deleted", "IsDeleted", "Hidden"]);
+  const convertedH = findH(headers, ["ConvertedToTimesheet", "BillingEntry"]);
   // CR-style Principal columns (Principal1 = provider, Principal2 = client typically)
   const p1NameH = findH(headers, ["Principal1Name"]);
   const p2NameH = findH(headers, ["Principal2Name"]);
@@ -242,11 +246,20 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
     const hoursOut = hoursH && /unit/i.test(hoursH) && hours > 12 ? hours / 4 : hours;
     const reasonRaw = reasonH ? r[reasonH] : "";
     let statusRaw = statusH ? r[statusH] : "";
-    if (cancelledFlagH) {
-      const v = String(r[cancelledFlagH] || "").trim().toLowerCase();
-      if (v === "1" || v === "true" || v === "yes") statusRaw = statusRaw || "Cancelled";
-    }
-    const { status, isCancelled, isExcused } = classifyStatus(reasonRaw, statusRaw);
+    const truthy = (v: any) => {
+      const s = String(v ?? "").trim().toLowerCase();
+      return s === "1" || s === "true" || s === "yes" || s === "y";
+    };
+    const explicitCancelled = cancelledFlagH ? truthy(r[cancelledFlagH]) : false;
+    const explicitRendered =
+      (presentFlagH ? truthy(r[presentFlagH]) : false) ||
+      (attendanceH ? truthy(r[attendanceH]) : false) ||
+      (convertedH ? truthy(r[convertedH]) : false);
+    const deleted = deletedFlagH ? truthy(r[deletedFlagH]) : false;
+    if (explicitCancelled) statusRaw = statusRaw || "Cancelled";
+    const { status, isCancelled, isExcused } = deleted
+      ? { status: "Other" as CancelStatus, isCancelled: false, isExcused: false }
+      : classifyStatus(reasonRaw, statusRaw, { explicitCancelled, explicitRendered });
     const codeRaw = codeH ? r[codeH] : (codeDescH ? r[codeDescH] : "");
     const code = (codeRaw.match(/\b(\d{5})\b/) || [null, codeRaw])[1] || "";
     return {
