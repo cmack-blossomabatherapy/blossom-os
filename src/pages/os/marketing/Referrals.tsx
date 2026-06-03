@@ -21,6 +21,7 @@ import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDia
 import { ImportReferralsDialog } from "@/components/marketing/referrals/ImportReferralsDialog";
 import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDetailDrawer";
 import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
+import { OwnerCombobox, ownersToList, ownersToText } from "@/components/marketing/referrals/OwnerCombobox";
 import { toast } from "@/hooks/use-toast";
 
 function StatTile({ label, value, icon: Icon, hint }: { label: string; value: React.ReactNode; icon: React.ElementType; hint?: string }) {
@@ -111,7 +112,7 @@ function ReferralsInner() {
       if (stateFilter !== "all" && c.state !== stateFilter) return false;
       if (stageFilter !== "all" && c.relationship_stage !== stageFilter) return false;
       if (!q) return true;
-      return [c.full_name, c.email, c.phone, c.title, c.role_type, c.contact_owner]
+      return [c.full_name, c.email, c.phone, c.title, c.role_type, ownersToList(c.contact_owner).join(" ")]
         .some((v) => v?.toLowerCase().includes(q));
     });
   }, [contacts, search, stateFilter, stageFilter]);
@@ -122,7 +123,7 @@ function ReferralsInner() {
       if (c.status === "Archived") return false;
       if (stateFilter !== "all" && c.state !== stateFilter) return false;
       if (!q) return true;
-      return [c.company_name, c.domain, c.website_url, c.relationship_owner].some((v) => v?.toLowerCase().includes(q));
+      return [c.company_name, c.domain, c.website_url, ownersToList(c.relationship_owner).join(" ")].some((v) => v?.toLowerCase().includes(q));
     });
   }, [companies, search, stateFilter]);
 
@@ -168,8 +169,8 @@ function ReferralsInner() {
     setSelectedCompanyIds((ids) => ids.filter((id) => visibleCompanies.some((c) => c.id === id)));
   }, [visibleCompanies]);
 
-  const contactOwners = useMemo(() => Array.from(new Set(contacts.map((c) => c.contact_owner).filter(Boolean) as string[])).sort(), [contacts]);
-  const companyOwners = useMemo(() => Array.from(new Set(companies.map((c) => c.relationship_owner).filter(Boolean) as string[])).sort(), [companies]);
+  const contactOwners = useMemo(() => Array.from(new Set(contacts.flatMap((c) => ownersToList(c.contact_owner)))).sort(), [contacts]);
+  const companyOwners = useMemo(() => Array.from(new Set(companies.flatMap((c) => ownersToList(c.relationship_owner)))).sort(), [companies]);
 
   async function applyContactBulk(patch: Partial<ReferralContact>) {
     if (!selectedContactIds.length) return;
@@ -213,7 +214,7 @@ function ReferralsInner() {
       { key: "times_contacted", label: "Times Contacted", value: (c) => c.number_of_times_contacted },
       { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
       { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at), defaultSelected: true },
-      { key: "owner", label: "Owner", value: (c) => c.contact_owner, defaultSelected: true },
+      { key: "owner", label: "Owner", value: (c) => ownersToList(c.contact_owner).join(", "), defaultSelected: true },
       { key: "source", label: "Source", value: (c) => c.source },
       { key: "notes", label: "Notes", value: (c) => c.notes },
     ];
@@ -231,7 +232,7 @@ function ReferralsInner() {
       { key: "status", label: "Status", value: (c) => c.status },
       { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
       { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at) },
-      { key: "owner", label: "Owner", value: (c) => c.relationship_owner, defaultSelected: true },
+      { key: "owner", label: "Owner", value: (c) => ownersToList(c.relationship_owner).join(", "), defaultSelected: true },
       { key: "notes", label: "Notes", value: (c) => c.notes },
     ];
 
@@ -380,7 +381,7 @@ function ReferralsInner() {
                         <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
                         <td className="px-3 py-2 text-right tabular-nums">{c.number_of_referrals_sent ?? 0}</td>
                         <td className="px-3 py-2 text-muted-foreground">{fmtRelative(c.last_contacted_at)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{c.contact_owner ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{ownersToText(c.contact_owner)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -442,7 +443,7 @@ function ReferralsInner() {
                           <td className="px-3 py-2 text-right tabular-nums">{c.referral_count ?? 0}</td>
                           <td className="px-3 py-2"><Badge variant="outline">{c.relationship_stage}</Badge></td>
                           <td className="px-3 py-2 text-muted-foreground">{fmtRelative(c.last_contacted_at)}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{c.relationship_owner ?? "—"}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{ownersToText(c.relationship_owner)}</td>
                         </tr>
                       );
                     })}
