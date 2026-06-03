@@ -3,13 +3,14 @@ import { useSearchParams } from "react-router-dom";
 import {
   Upload, FileSpreadsheet, Download, Search, Sparkles, ChevronRight, ChevronDown,
   Users, Stethoscope, GraduationCap, AlertTriangle, CheckCircle2, Printer, Trash2,
-  ShieldCheck, FileWarning, ArrowUpDown, Save,
+  ShieldCheck, FileWarning, ArrowUpDown, Save, CalendarRange, SlidersHorizontal, X,
 } from "lucide-react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
@@ -255,6 +256,35 @@ export default function BcbaProductivityReport() {
   const [codesF, setCodesF] = useState<string[]>([]); // empty = all
   const [search, setSearch] = useState("");
   const [minHours, setMinHours] = useState(DEFAULT_MIN);
+  const [dateFrom, setDateFrom] = useState<string>(""); // YYYY-MM-DD
+  const [dateTo, setDateTo] = useState<string>("");     // YYYY-MM-DD
+  const [datePreset, setDatePreset] = useState<string>("all");
+
+  function applyDatePreset(preset: string) {
+    setDatePreset(preset);
+    if (!dataRange) { setDateFrom(""); setDateTo(""); return; }
+    const hi = new Date(dataRange.hiMs);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    if (preset === "all") { setDateFrom(""); setDateTo(""); return; }
+    if (preset === "latest-month") {
+      const start = new Date(hi.getFullYear(), hi.getMonth(), 1);
+      const end = new Date(hi.getFullYear(), hi.getMonth() + 1, 0);
+      setDateFrom(iso(start)); setDateTo(iso(end)); return;
+    }
+    if (preset === "last-3" || preset === "last-6") {
+      const months = preset === "last-3" ? 3 : 6;
+      const start = new Date(hi.getFullYear(), hi.getMonth() - (months - 1), 1);
+      const end = new Date(hi.getFullYear(), hi.getMonth() + 1, 0);
+      setDateFrom(iso(start)); setDateTo(iso(end)); return;
+    }
+    if (preset === "ytd") {
+      const start = new Date(hi.getFullYear(), 0, 1);
+      setDateFrom(iso(start)); setDateTo(iso(hi)); return;
+    }
+    if (preset === "full") {
+      setDateFrom(iso(new Date(dataRange.loMs))); setDateTo(iso(hi)); return;
+    }
+  }
 
   const [sortKey, setSortKey] = useState<keyof BcbaAgg | "">("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -775,6 +805,22 @@ export default function BcbaProductivityReport() {
   const directors = useMemo(() => [...new Set(sessions.map(s => s.director).filter(Boolean))].sort(), [sessions]);
   const payors = useMemo(() => [...new Set(sessions.map(s => s.payor).filter(Boolean))].sort(), [sessions]);
 
+  /* ---- dataset's natural date range (drives smart presets) ---- */
+  const dataRange = useMemo(() => {
+    let lo = Infinity, hi = -Infinity;
+    for (const s of sessions) {
+      const t = parseDate(s.date);
+      if (!isFinite(t)) continue;
+      if (t < lo) lo = t;
+      if (t > hi) hi = t;
+    }
+    if (!isFinite(lo) || !isFinite(hi)) return null;
+    return { loMs: lo, hiMs: hi, lo: new Date(lo), hi: new Date(hi) };
+  }, [sessions]);
+
+  const dateFromMs = useMemo(() => dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : NaN, [dateFrom]);
+  const dateToMs = useMemo(() => dateTo ? new Date(dateTo + "T23:59:59").getTime() : NaN, [dateTo]);
+
   const filteredSessions = useMemo(() => sessions.filter(s => {
     if (month !== "all" && monthOf(s.date) !== month) return false;
     if (stateF !== "all" && s.state !== stateF) return false;
@@ -782,8 +828,33 @@ export default function BcbaProductivityReport() {
     if (dirF !== "all" && s.director !== dirF) return false;
     if (payorF !== "all" && s.payor !== payorF) return false;
     if (codesF.length > 0 && !codesF.includes(classifyCode(s.code))) return false;
+    if (isFinite(dateFromMs) || isFinite(dateToMs)) {
+      const t = parseDate(s.date);
+      if (!isFinite(t)) return false;
+      if (isFinite(dateFromMs) && t < dateFromMs) return false;
+      if (isFinite(dateToMs) && t > dateToMs) return false;
+    }
     return true;
-  }), [sessions, month, stateF, bcbaF, dirF, payorF, codesF]);
+  }), [sessions, month, stateF, bcbaF, dirF, payorF, codesF, dateFromMs, dateToMs]);
+
+  /* ---- period summary for KPI clarity ---- */
+  const periodInfo = useMemo(() => {
+    const monthsInView = new Set<string>();
+    let lo = Infinity, hi = -Infinity;
+    for (const s of filteredSessions) {
+      const m = monthOf(s.date);
+      if (m) monthsInView.add(m);
+      const t = parseDate(s.date);
+      if (isFinite(t)) { if (t < lo) lo = t; if (t > hi) hi = t; }
+    }
+    const nMonths = monthsInView.size || 1;
+    const fmt = (ms: number) => new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return {
+      nMonths,
+      label: isFinite(lo) && isFinite(hi) ? `${fmt(lo)} – ${fmt(hi)}` : "—",
+      span: nMonths === 1 ? "1 month" : `${nMonths} months`,
+    };
+  }, [filteredSessions]);
 
   /* ---- aggregate ---- */
   const aggregates = useMemo<BcbaAgg[]>(() => {
@@ -1094,15 +1165,114 @@ export default function BcbaProductivityReport() {
       {!empty && (
         <>
           {/* ===== Filters ===== */}
-          <section className="mt-4 rounded-xl border border-border/60 bg-card p-3 print:hidden">
-            <div className="flex flex-wrap items-center gap-2">
+          <section className="mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_24px_-16px_hsl(265_60%_50%/0.18)] print:hidden">
+            {/* header strip */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-gradient-to-r from-[hsl(265_100%_99%)] via-card to-[hsl(225_100%_99%)] px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-[hsl(265_100%_96%)] text-[hsl(265_70%_55%)]">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                </span>
+                <p className="text-[12px] font-semibold tracking-tight">Filters</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary/60 px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+                  <CalendarRange className="h-3 w-3" />
+                  {periodInfo.label} · {periodInfo.span}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>{filteredSessions.length.toLocaleString()} sessions</span>
+                <span>·</span>
+                <span>{exceptions.length.toLocaleString()} exception{exceptions.length === 1 ? "" : "s"}</span>
+                <Button variant="ghost" size="sm" onClick={resetUpload} className="h-7 text-[11px]">
+                  <Trash2 className="mr-1 h-3 w-3" />Reset
+                </Button>
+              </div>
+            </div>
+
+            {/* date range row */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Date range</span>
+              {[
+                { id: "all", label: "All data" },
+                { id: "latest-month", label: "Latest month" },
+                { id: "last-3", label: "Last 3 mo (quarter)" },
+                { id: "last-6", label: "Last 6 mo" },
+                { id: "ytd", label: "YTD" },
+              ].map(p => {
+                const active = datePreset === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => applyDatePreset(p.id)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] font-medium transition",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition",
+                      datePreset === "custom" || (dateFrom || dateTo)
+                        ? "border-primary/70 bg-primary/5 text-foreground"
+                        : "border-border bg-card text-foreground hover:border-primary/40",
+                    )}
+                  >
+                    <CalendarRange className="h-3 w-3" />
+                    {dateFrom || dateTo ? `${dateFrom || "…"} → ${dateTo || "…"}` : "Custom"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Custom range</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <label className="text-[11px] text-muted-foreground">
+                      From
+                      <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setDatePreset("custom"); }} className="mt-1 h-8 text-xs" />
+                    </label>
+                    <label className="text-[11px] text-muted-foreground">
+                      To
+                      <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setDatePreset("custom"); }} className="mt-1 h-8 text-xs" />
+                    </label>
+                  </div>
+                  {dataRange && (
+                    <p className="mt-2 text-[10.5px] text-muted-foreground">
+                      Data covers {dataRange.lo.toLocaleDateString()} – {dataRange.hi.toLocaleDateString()}
+                    </p>
+                  )}
+                  {(dateFrom || dateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => { setDateFrom(""); setDateTo(""); setDatePreset("all"); }}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" /> Clear
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* selects row */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-2.5">
               <FilterSelect label="Month" value={month} onChange={setMonth} options={months} />
               <FilterSelect label="State" value={stateF} onChange={setStateF} options={states} />
               <FilterSelect label="BCBA" value={bcbaF} onChange={setBcbaF} options={bcbas} />
-              <FilterSelect label="State Director" value={dirF} onChange={setDirF} options={directors} />
+              <FilterSelect label="Director" value={dirF} onChange={setDirF} options={directors} />
               <FilterSelect label="Payor" value={payorF} onChange={setPayorF} options={payors} />
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Service Code</span>
+            </div>
+
+            {/* codes / min hours / search row */}
+            <div className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Codes</span>
                 <div className="flex flex-wrap gap-1">
                   {["97155", "97156", "97153", "97151"].map(code => {
                     const active = codesF.includes(code);
@@ -1133,49 +1303,91 @@ export default function BcbaProductivityReport() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-muted-foreground">Min hours</span>
-                <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Min hrs</span>
+                <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20 text-xs" />
               </div>
-              <div className="relative ml-auto w-56">
+              <div className="relative ml-auto w-64">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search BCBA…" className="h-8 pl-8 text-xs" />
               </div>
-              <Button variant="ghost" size="sm" onClick={resetUpload} className="text-xs">
-                <Trash2 className="mr-1 h-3.5 w-3.5" />Reset
-              </Button>
             </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
+
+            <p className="border-t border-border/60 bg-secondary/30 px-4 py-2 text-[10.5px] text-muted-foreground">
               Billing: <span className="font-medium text-foreground">{billingFileName || "—"}</span>
               {" · "}Auths: <span className="font-medium text-foreground">{authFileNames.length ? `${authFileNames.length} file${authFileNames.length === 1 ? "" : "s"}` : "not uploaded"}</span>
-              {" · "}{filteredSessions.length.toLocaleString()} session rows in view
-              {" · "}{exceptions.length.toLocaleString()} attribution exception{exceptions.length === 1 ? "" : "s"}
             </p>
           </section>
 
           {/* ===== KPI Summary ===== */}
-          <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-            <Kpi
-              label="Total 97153 Hours (RBT Direct)"
-              value={fmt1(kpis.t97153)}
-              icon={Stethoscope}
-              highlight
-              hint="Attributed to supervising BCBA via authorization"
-            />
-            <Kpi
-              label="Avg 97153 / BCBA"
-              value={fmt1(kpis.avg97153)}
-              highlight
-            />
-            <Kpi label="Total BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} />
-            <Kpi label="Total Clients Served" value={fmt0(kpis.totalClients)} icon={Stethoscope} />
-            <Kpi label="Total RBTs Supervised" value={fmt0(kpis.totalRbts)} />
-            <Kpi label="Total 97155 Hours" value={fmt1(kpis.t97155)} />
-            <Kpi label="Total 97156 Hours" value={fmt1(kpis.t97156)} icon={GraduationCap} />
-            <Kpi label="Average Caseload" value={fmt1(kpis.avgCaseload)} />
-            <Kpi label="Avg 97155 / BCBA" value={fmt1(kpis.avg97155)} />
-            <Kpi label="Avg 97156 / BCBA" value={fmt1(kpis.avg97156)} />
-            <Kpi label="Avg Clients / BCBA" value={fmt1(kpis.avgClientsPerBcba)} />
+          <section className="mt-4 space-y-3">
+            {/* Headline totals — period scope */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Kpi
+                label="97153 hours · RBT direct"
+                value={fmt1(kpis.t97153)}
+                unit="hrs"
+                icon={Stethoscope}
+                highlight
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97153 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97155 hours · supervision"
+                value={fmt1(kpis.t97155)}
+                unit="hrs"
+                icon={ShieldCheck}
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97155 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97156 hours · parent training"
+                value={fmt1(kpis.t97156)}
+                unit="hrs"
+                icon={GraduationCap}
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97156 / periodInfo.nMonths)} hrs / mo`}
+              />
+            </div>
+
+            {/* Roster counts */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Kpi label="BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} hint="In current view" />
+              <Kpi label="Clients served" value={fmt0(kpis.totalClients)} icon={Stethoscope} hint="Unique in period" />
+              <Kpi label="RBTs supervised" value={fmt0(kpis.totalRbts)} icon={Users} hint="Unique in period" />
+              <Kpi label="Avg caseload" value={fmt1(kpis.avgCaseload)} unit="clients" hint="Clients per BCBA" />
+            </div>
+
+            {/* Per-BCBA averages — clearly labeled */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Kpi
+                label="97153 / BCBA"
+                value={fmt1(kpis.avg97153)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97153 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97155 / BCBA"
+                value={fmt1(kpis.avg97155)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97155 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97156 / BCBA"
+                value={fmt1(kpis.avg97156)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97156 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="Clients / BCBA"
+                value={fmt1(kpis.avgClientsPerBcba)}
+                unit="clients"
+                hint="Per BCBA · in view"
+              />
+            </div>
           </section>
 
           {/* ===== AI Summary ===== */}
@@ -1306,21 +1518,45 @@ function FilterSelect({ label, value, onChange, options }: {
   );
 }
 
-function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; value: string; icon?: any; highlight?: boolean; hint?: string }) {
+function Kpi({ label, value, unit, icon: Icon, highlight, hint, sub }: {
+  label: string; value: string; unit?: string; icon?: any; highlight?: boolean; hint?: string; sub?: string;
+}) {
   return (
     <div className={cn(
-      "rounded-xl border bg-card p-3",
-      highlight ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20" : "border-border/60",
+      "group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border bg-card p-3.5 transition-all duration-300",
+      "shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_20px_-16px_hsl(265_60%_50%/0.18)] hover:-translate-y-0.5",
+      highlight
+        ? "border-primary/40 bg-gradient-to-br from-[hsl(265_100%_99%)] to-card ring-1 ring-primary/15"
+        : "border-border/60",
     )}>
-      <div className="flex items-center justify-between">
+      {highlight && (
+        <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[hsl(265_100%_92%)] opacity-60 blur-2xl" />
+      )}
+      <div className="relative flex items-start justify-between gap-2">
         <p className={cn(
-          "text-[10px] font-semibold uppercase tracking-[0.14em]",
-          highlight ? "text-primary" : "text-muted-foreground",
+          "text-[10.5px] font-semibold uppercase leading-tight tracking-[0.12em]",
+          highlight ? "text-[hsl(265_70%_45%)]" : "text-muted-foreground",
         )}>{label}</p>
-        {Icon && <Icon className={cn("h-3.5 w-3.5", highlight ? "text-primary" : "text-muted-foreground")} />}
+        {Icon && (
+          <span className={cn(
+            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+            highlight ? "bg-[hsl(265_100%_96%)] text-[hsl(265_70%_55%)]" : "bg-secondary/70 text-muted-foreground",
+          )}>
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        )}
       </div>
-      <p className={cn("mt-1 font-semibold tabular-nums tracking-tight", highlight ? "text-2xl text-primary" : "text-xl")}>{value}</p>
-      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
+      <div className="relative mt-2">
+        <p className="flex items-baseline gap-1">
+          <span className={cn(
+            "font-semibold tabular-nums tracking-tight",
+            highlight ? "text-[26px] text-foreground" : "text-[22px] text-foreground",
+          )}>{value}</span>
+          {unit && <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>}
+        </p>
+        {hint && <p className="mt-0.5 text-[10.5px] text-muted-foreground">{hint}</p>}
+        {sub && <p className="text-[10.5px] font-medium text-[hsl(265_70%_55%)]">{sub}</p>}
+      </div>
     </div>
   );
 }
