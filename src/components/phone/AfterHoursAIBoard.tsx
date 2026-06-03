@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const WEBHOOK_URL = "https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook";
 
@@ -89,6 +90,11 @@ export function AfterHoursAIBoard() {
   const [syncing, setSyncing] = useState(false);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [deptFilter, setDeptFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
+  const [rangeFilter, setRangeFilter] = useState<string>("7d");
+  const [quickView, setQuickView] = useState<"all" | "open" | "urgent" | "unverified" | "today" | "resolved">("all");
   const [selected, setSelected] = useState<Call | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [routing, setRouting] = useState<Routing[]>([]);
@@ -119,22 +125,74 @@ export function AfterHoursAIBoard() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const isUrgent = (c: Call) => !!c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high";
+  const isOpen = (c: Call) => !["resolved", "no_action"].includes(c.follow_up_status ?? "new");
+  const isToday = (c: Call) => {
+    const d = new Date(c.call_started_at ?? c.created_at);
+    const n = new Date();
+    return d.toDateString() === n.toDateString();
+  };
+  const inRange = (c: Call, range: string) => {
+    if (range === "all") return true;
+    const d = new Date(c.call_started_at ?? c.created_at).getTime();
+    const now = Date.now();
+    const days = range === "today" ? 1 : range === "7d" ? 7 : range === "30d" ? 30 : 9999;
+    if (range === "today") return isToday(c);
+    return now - d <= days * 86400000;
+  };
+
+  const rangeScoped = useMemo(() => calls.filter((c) => inRange(c, rangeFilter)), [calls, rangeFilter]);
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return calls.filter((c) => {
+    return rangeScoped.filter((c) => {
+      // quick view
+      if (quickView === "open" && !isOpen(c)) return false;
+      if (quickView === "urgent" && !isUrgent(c)) return false;
+      if (quickView === "unverified" && c.verification_status !== "unverified" && !!c.call_summary) return false;
+      if (quickView === "today" && !isToday(c)) return false;
+      if (quickView === "resolved" && (c.follow_up_status ?? "new") !== "resolved") return false;
+      // filters
       if (statusFilter !== "all" && (c.follow_up_status ?? "new") !== statusFilter) return false;
+      if (deptFilter !== "all" && deptMeta(c).key !== deptFilter) return false;
+      if (stateFilter !== "all" && (c.state ?? "") !== stateFilter) return false;
+      if (urgencyFilter !== "all" && (c.urgency_level ?? "").toLowerCase() !== urgencyFilter) return false;
       if (!term) return true;
       return [c.caller_name, c.phone_number, c.state, c.reason_for_call, c.call_summary]
         .filter(Boolean).join(" ").toLowerCase().includes(term);
     });
-  }, [calls, q, statusFilter]);
+  }, [rangeScoped, q, statusFilter, deptFilter, stateFilter, urgencyFilter, quickView]);
 
   const counts = useMemo(() => ({
-    total: calls.length,
-    open: calls.filter((c) => !["resolved", "no_action"].includes(c.follow_up_status ?? "new")).length,
-    urgent: calls.filter((c) => c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high").length,
-    unverified: calls.filter((c) => c.verification_status === "unverified").length,
-  }), [calls]);
+    total: rangeScoped.length,
+    open: rangeScoped.filter(isOpen).length,
+    urgent: rangeScoped.filter(isUrgent).length,
+    unverified: rangeScoped.filter((c) => c.verification_status === "unverified" || !c.call_summary).length,
+    today: rangeScoped.filter(isToday).length,
+    resolved: rangeScoped.filter((c) => (c.follow_up_status ?? "") === "resolved").length,
+  }), [rangeScoped]);
+
+  const deptBreakdown = useMemo(() => {
+    const map: Record<string, number> = {};
+    rangeScoped.forEach((c) => {
+      const k = deptMeta(c).key;
+      map[k] = (map[k] ?? 0) + 1;
+    });
+    return map;
+  }, [rangeScoped]);
+
+  const stateOptions = useMemo(() => {
+    const set = new Set<string>();
+    calls.forEach((c) => { if (c.state) set.add(c.state); });
+    return Array.from(set).sort();
+  }, [calls]);
+
+  const clearFilters = () => {
+    setQ(""); setStatusFilter("all"); setDeptFilter("all");
+    setStateFilter("all"); setUrgencyFilter("all"); setQuickView("all");
+  };
+  const filtersActive = q || statusFilter !== "all" || deptFilter !== "all" ||
+    stateFilter !== "all" || urgencyFilter !== "all" || quickView !== "all";
 
   const updateStatus = async (call: Call, status: string) => {
     const { error } = await supabase
@@ -249,25 +307,84 @@ export function AfterHoursAIBoard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <StatPill label="Total calls" value={counts.total} />
-        <StatPill label="Needs follow-up" value={counts.open} accent="text-primary" />
-        <StatPill label="Urgent" value={counts.urgent} accent="text-destructive" />
-        <StatPill label="Unverified webhook" value={counts.unverified} accent="text-amber-600" />
+      {/* Time range + scorecards */}
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+        <div className="text-xs text-muted-foreground">
+          Reception desk · showing <span className="font-medium text-foreground">{filtered.length}</span> of {counts.total}
+        </div>
+        <Tabs value={rangeFilter} onValueChange={setRangeFilter}>
+          <TabsList className="h-8">
+            <TabsTrigger value="today" className="text-xs px-2.5">Today</TabsTrigger>
+            <TabsTrigger value="7d" className="text-xs px-2.5">7d</TabsTrigger>
+            <TabsTrigger value="30d" className="text-xs px-2.5">30d</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs px-2.5">All</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+        <Scorecard label="All calls" value={counts.total} active={quickView === "all"} onClick={() => setQuickView("all")} />
+        <Scorecard label="Today" value={counts.today} active={quickView === "today"} onClick={() => setQuickView("today")} accent="text-foreground" />
+        <Scorecard label="Needs follow-up" value={counts.open} active={quickView === "open"} onClick={() => setQuickView("open")} accent="text-primary" />
+        <Scorecard label="Urgent" value={counts.urgent} active={quickView === "urgent"} onClick={() => setQuickView("urgent")} accent="text-destructive" />
+        <Scorecard label="Unverified / AI pending" value={counts.unverified} active={quickView === "unverified"} onClick={() => setQuickView("unverified")} accent="text-amber-600" />
+        <Scorecard label="Resolved" value={counts.resolved} active={quickView === "resolved"} onClick={() => setQuickView("resolved")} accent="text-emerald-600" />
+      </div>
+
+      {/* Department drilldown */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-3">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-2 px-1">
+          Route by department
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <DeptChip label="All departments" count={counts.total} active={deptFilter === "all"} onClick={() => setDeptFilter("all")} />
+          {Object.entries(DEPARTMENT_META).map(([key, meta]) => (
+            <DeptChip
+              key={key}
+              label={meta.label}
+              count={deptBreakdown[key] ?? 0}
+              tone={meta.tone}
+              active={deptFilter === key}
+              onClick={() => setDeptFilter(key)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Filters row */}
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search caller, phone, state, reason…" className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Urgency" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All urgency</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={setStateFilter}>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All states</SelectItem>
+            {stateOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {filtersActive && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            <X className="mr-1 h-3.5 w-3.5" /> Clear
+          </Button>
+        )}
       </div>
 
       <Card>
