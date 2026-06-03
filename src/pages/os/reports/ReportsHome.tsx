@@ -63,8 +63,7 @@ export default function ReportsHome() {
     };
   }, []);
   function handleDeleteSaved(id: string) {
-    deleteSavedReport(id);
-    setSavedReports(readSavedReports());
+    void deleteSavedReport(id).then(() => setSavedReports(readSavedReports()));
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
