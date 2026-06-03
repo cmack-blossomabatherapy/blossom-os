@@ -511,6 +511,12 @@ function ReferralExportDialog({
 
   const selectedColumns = source.columns.filter((c) => selected.includes(c.key));
 
+  function chooseDataset(nextDataset: ExportDataset) {
+    const nextSource = sources[nextDataset];
+    setDataset(nextDataset);
+    setSelected(nextSource.columns.filter((c) => c.defaultSelected).map((c) => c.key));
+  }
+
   function toggleColumn(key: string, checked: boolean) {
     setSelected((current) => checked ? [...new Set([...current, key])] : current.filter((k) => k !== key));
   }
@@ -539,7 +545,7 @@ function ReferralExportDialog({
           <div className="grid gap-3 sm:grid-cols-[220px_1fr]">
             <div className="space-y-2">
               <Label>Data set</Label>
-              <Select value={dataset} onValueChange={(value) => setDataset(value as ExportDataset)}>
+              <Select value={dataset} onValueChange={(value) => chooseDataset(value as ExportDataset)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="contacts">Contacts</SelectItem>
