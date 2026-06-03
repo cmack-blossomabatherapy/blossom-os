@@ -59,6 +59,14 @@ export function permissionsForRole(role: string): Permissions {
         canViewReports: true, canImportStaff: true, canOverrideRules: true,
         scope: "all", roleScope: null,
       };
+    case "case_manager":
+      return {
+        canManageStaff: false, canManageForms: false,
+        canManageEmails: false, canManageSettings: false, canFinalize: false,
+        canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
+        canViewReports: true, canImportStaff: false, canOverrideRules: false,
+        scope: "all", roleScope: ["BCBA", "RBT"],
+      };
     case "bcba":
       return {
         canManageStaff: false, canManageForms: false,
