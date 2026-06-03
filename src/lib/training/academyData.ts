@@ -239,17 +239,17 @@ const SEED_TRAININGS: Training[] = [
     checklist: [], resources: [],
   },
 
-  /* ===================== QA Team Journey ===================== */
+  /* ===================== QA / Compliance Journey ===================== */
   {
     id: "qa-start-here",
     title: "Start Here",
-    description: "Welcome to the QA Team — how QA supports Blossom operations and connects across the org.",
+    description: "Welcome to QA / Compliance — how QA supports Blossom operations and connects across the org.",
     type: "Quick Guide", estimatedMinutes: 12, required: true,
     category: "role", department: "qa", owner: "QA Lead", lastUpdated: "2026-05-22",
     overview: "A calm introduction to the QA role at Blossom — what we own, who we work with, and how we keep operations quiet.",
     sopMarkdown: "## What QA owns\n- Authorization and treatment plan reviews\n- Progress report follow-ups\n- Missing-information workflows\n- Escalations and operational quality\n\n## How QA connects\nIntake → Authorizations → **QA** → BCBA → Scheduling.",
     checklist: [
-      { id: "s1", item: "Welcome to the QA Team", required: true },
+      { id: "s1", item: "Welcome to QA / Compliance", required: true },
       { id: "s2", item: "How QA Supports Blossom Operations", required: true },
       { id: "s3", item: "QA Role Expectations", required: true },
       { id: "s4", item: "Understanding Workflow Visibility", required: true },
@@ -765,7 +765,7 @@ const SEED_JOURNEYS: RoleJourney[] = [
   ] },
   { id: "j-auth", role: "authorization_coordinator", title: "Authorization Coordinator Journey", tagline: "Auths approved on time, every time.", icon: "ShieldCheck", tone: "sky", moduleIds: [] },
   { id: "j-scheduling", role: "scheduling_team", title: "Scheduling Journey", tagline: "Build clean schedules that hold up.", icon: "CalendarClock", tone: "mint", moduleIds: [] },
-  { id: "j-qa", role: "qa_team", title: "QA Team Journey",
+  { id: "j-qa", role: "qa_team", title: "QA / Compliance Journey",
     tagline: "Learn Blossom QA workflows, review systems, escalation processes, and operational quality standards.",
     icon: "CheckCircle2", tone: "violet", moduleIds: [
       "qa-start-here",

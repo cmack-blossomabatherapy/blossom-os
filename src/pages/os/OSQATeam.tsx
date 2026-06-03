@@ -11,7 +11,7 @@ import { useLiveAuthorizations } from "@/hooks/useLiveAuthorizations";
 import type { Authorization } from "@/data/authorizations";
 import { cn } from "@/lib/utils";
 
-// QA Team — operational awareness dashboard.
+// QA / Compliance — operational awareness dashboard.
 // Real data only: sourced from monday_authorizations_raw via useLiveAuthorizations.
 
 const QA_TEAM = [
@@ -304,7 +304,7 @@ export default function OSQATeam() {
               )}
               <span className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-medium">
                 <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
-                QA Team
+                QA / Compliance
               </span>
             </div>
           </div>
@@ -603,7 +603,7 @@ export default function OSQATeam() {
 
             {/* SECTION 5 — Team Workload */}
             <section>
-              <SectionHeader title="QA Team Workload" />
+              <SectionHeader title="QA / Compliance Workload" />
               <Card className="divide-y divide-border/60">
                 {QA_TEAM.map(name => {
                   const s = data.ownerStats.get(name)!;

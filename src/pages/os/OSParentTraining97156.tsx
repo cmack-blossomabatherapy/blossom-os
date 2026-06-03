@@ -266,9 +266,9 @@ function escalationPlan(kind: EscalationKind, item: PT97156Item): {
       return {
         toStatus: "QA Review Needed",
         toTone: "info",
-        routedTo: item.auth.qaOwner ?? "QA Team",
+        routedTo: item.auth.qaOwner ?? "QA / Compliance",
         note: `Sent to QA for 97156 continuation review.`,
-        automation: `Routed to ${item.auth.qaOwner ?? "QA Team"} — added to QA queue.`,
+        automation: `Routed to ${item.auth.qaOwner ?? "QA / Compliance"} — added to QA queue.`,
       };
     case "State Director":
       return {

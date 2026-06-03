@@ -40,7 +40,7 @@ export const OS_ROLES: { id: OSRole; label: string; tier: "platform" | "leadersh
   { id: "recruiting_team", label: "Recruiting Team", tier: "operations" },
   { id: "hr_team", label: "HR Team", tier: "operations" },
   { id: "billing_finance", label: "Billing / Finance", tier: "operations" },
-  { id: "qa_team", label: "QA Team", tier: "operations" },
+  { id: "qa_team", label: "QA / Compliance", tier: "operations" },
   { id: "payroll_coordinator", label: "Payroll Coordinator", tier: "operations" },
   { id: "bcba", label: "BCBA", tier: "field" },
   { id: "rbt", label: "RBT", tier: "field" },

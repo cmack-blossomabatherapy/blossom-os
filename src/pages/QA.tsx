@@ -107,7 +107,7 @@ interface StarterQaSettings {
   qaOwner: string;
 }
 
-const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA Team", "Clinical Director"];
+const QA_OWNERS = ["Anje", "Mordy G.", "Lisa W.", "Priya N.", "QA / Compliance", "Clinical Director"];
 const BCBAS = ["Dr. Mia Hart", "Elena Ruiz", "Jordan Klein", "Nora Patel", "Caleb Stone", "Avery Brooks"];
 const RBTS = ["Sofia Miles", "Noah Grant", "Camila Reed", "Ethan Fox", "Maya Chen", "Liam Price", "Harper Cole"];
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
@@ -334,7 +334,7 @@ export default function QA() {
   const [comment, setComment] = useState("");
   const [newReviewOpen, setNewReviewOpen] = useState(false);
   const [newReviewClientId, setNewReviewClientId] = useState(clients[0]?.id ?? "");
-  const [starterSettings, setStarterSettings] = useState<StarterQaSettings>({ taskTitle: "Start treatment plan QA review", dueOffsetDays: 1, qaOwner: "QA Team" });
+  const [starterSettings, setStarterSettings] = useState<StarterQaSettings>({ taskTitle: "Start treatment plan QA review", dueOffsetDays: 1, qaOwner: "QA / Compliance" });
 
   useEffect(() => {
     const want = deepLink.focus;
@@ -547,7 +547,7 @@ export default function QA() {
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={() => setNewReviewOpen(true)}><Plus className="h-4 w-4" />New QA Review</Button>
-          <Button size="sm" variant="outline" onClick={() => selectedIds.length ? bulkPatch({ qaOwner: "QA Team" }, "Bulk assigned QA owner") : toast.info("Select rows first")}>Bulk Actions</Button>
+          <Button size="sm" variant="outline" onClick={() => selectedIds.length ? bulkPatch({ qaOwner: "QA / Compliance" }, "Bulk assigned QA owner") : toast.info("Select rows first")}>Bulk Actions</Button>
           <Button size="sm" variant="outline"><Download className="h-4 w-4" />Export</Button>
           <Button size="sm" variant="outline"><Sparkles className="h-4 w-4" />Saved Views</Button>
           <Button size="sm" variant="outline"><ListChecks className="h-4 w-4" />QA Checklist Templates</Button>

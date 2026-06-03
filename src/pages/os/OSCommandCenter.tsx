@@ -267,7 +267,7 @@ export default function OSCommandCenter() {
         urgency: worst >= 7 ? "critical" : "high",
         title: `${qaStalled.length} progress report${qaStalled.length === 1 ? "" : "s"} stalled in QA`,
         detail: `Oldest in QA review ${worst} days. SLA past 48h.`,
-        owner: "QA Team", region: regions[1], daysOverdue: worst,
+        owner: "QA / Compliance", region: regions[1], daysOverdue: worst,
         impact: "QA + billing held",
         actions: [
           { label: "Open QA Queue", icon: ClipboardCheck },

@@ -297,7 +297,7 @@ const roleLabels: Record<string, string> = {
   intake: "Intake Team",
   finance: "Financial / Benefits",
   auth_team: "Authorization Team",
-  qa: "QA Team",
+  qa: "QA / Compliance",
   staffing: "Staffing Team",
   scheduling: "Scheduling Team",
   clinic: "Clinic Team",
@@ -370,7 +370,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
   const isBcbaOnly =
     osRole === "bcba" ||
     (roles.includes("bcba") && !roles.includes("admin") && !roles.includes("exec") && !roles.includes("ops_manager"));
-  // QA Team gets a curated operational menu focused on auth/PR review, client oversight,
+  // QA / Compliance gets a curated operational menu focused on auth/PR review, client oversight,
   // BCBA coordination, escalations, and supervision visibility.
   const isQaOnly =
     osRole === "qa_team" ||
@@ -481,7 +481,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     },
   ];
 
-  // QA Team curated sections.
+  // QA / Compliance curated sections.
   const qaSections: NavSection[] = [
     {
       title: "Home",

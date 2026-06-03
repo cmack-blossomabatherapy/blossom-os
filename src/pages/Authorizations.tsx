@@ -200,7 +200,7 @@ const buildWorkspaceRecords = (clients: Client[]): AuthWorkspaceRecord[] => {
         status,
         coordinator: coordinatorFor(client, auth, serial),
         bcba: client.bcba || ["Dr. Kim", "Avery Stone", "Dr. Patel", "Maya Reynolds"][serial % 4],
-        qaOwner: auth.qaOwner || ["QA Team", "Dr. Kim", "Nina Brooks", "Clinical QA"][serial % 4],
+        qaOwner: auth.qaOwner || ["QA / Compliance", "Dr. Kim", "Nina Brooks", "Clinical QA"][serial % 4],
         qaStatus: status === "In QA Review" ? "In Review" : auth.qaStatus || (auth.treatmentPlanLinked ? "Complete" : "Not Started"),
         submissionMethod: payorRules.find((rule) => payor.includes(rule.payor))?.submissionMethod || "Portal submission",
         submittedDate: auth.submittedDate,
@@ -225,7 +225,7 @@ const buildWorkspaceRecords = (clients: Client[]): AuthWorkspaceRecord[] => {
         blockers: auth.blockers || (missingDocs.length ? ["Missing documentation"] : []),
         tasks: [
           { id: `${client.id}-task-${authIndex}-1`, title: status === "Submitted" ? "Call payor for status" : "Prepare auth packet", owner: coordinatorFor(client, auth, serial), dueDate: addDays(serial % 4), completed: status === "Approved" },
-          { id: `${client.id}-task-${authIndex}-2`, title: auth.type === "Reauth" ? "Request progress report" : "Verify required documents", owner: auth.qaOwner || "QA Team", dueDate: addDays(3 + serial), completed: auth.treatmentPlanLinked || false },
+          { id: `${client.id}-task-${authIndex}-2`, title: auth.type === "Reauth" ? "Request progress report" : "Verify required documents", owner: auth.qaOwner || "QA / Compliance", dueDate: addDays(3 + serial), completed: auth.treatmentPlanLinked || false },
         ],
         timeline: [
           { id: `${client.id}-tl-${authIndex}-1`, label: `${auth.type} authorization created`, at: "2026-04-01", owner: "System" },

@@ -597,7 +597,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
-  // QA Team — only Evaluations and Reports are active. Everything else is
+  // QA / Compliance — only Evaluations and Reports are active. Everything else is
   // disabled and shown as Coming Soon.
   const QA_TEAM_SECTIONS: NavSection[] = [
     {
