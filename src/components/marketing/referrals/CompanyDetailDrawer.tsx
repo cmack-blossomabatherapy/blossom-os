@@ -16,6 +16,7 @@ import { LogActivityDialog } from "./LogActivityDialog";
 import { AddReferralDialog } from "./AddReferralDialog";
 import { ContactDetailDrawer } from "./ContactDetailDrawer";
 import { toast } from "@/hooks/use-toast";
+import { OwnerCombobox, ownersToText } from "./OwnerCombobox";
 
 export function CompanyDetailDrawer({
   company,
@@ -100,7 +101,12 @@ export function CompanyDetailDrawer({
                   <SelectContent>{COMPANY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Owner"><Input value={draft.relationship_owner ?? ""} onChange={(e) => setField("relationship_owner", e.target.value)} /></Field>
+              <Field label="Owner">
+                <OwnerCombobox
+                  value={(draft.relationship_owner as string[] | null | undefined) ?? []}
+                  onChange={(next) => setField("relationship_owner", (next.length ? next : null) as never)}
+                />
+              </Field>
               <Field label="Website"><Input value={draft.website_url ?? ""} onChange={(e) => setField("website_url", e.target.value)} /></Field>
               <Field label="Main email"><Input type="email" value={draft.main_email ?? ""} onChange={(e) => setField("main_email", e.target.value)} /></Field>
               <Field label="Main phone"><Input value={draft.main_phone ?? ""} onChange={(e) => setField("main_phone", e.target.value)} /></Field>
@@ -131,7 +137,7 @@ export function CompanyDetailDrawer({
             <Mini label="Referrals sent" value={company.referral_count ?? 0} />
             <Mini label="Last contacted" value={fmtRelative(company.last_contacted_at)} />
             <Mini label="Next follow-up" value={fmtDate(company.next_follow_up_at)} />
-            <Mini label="Owner" value={company.relationship_owner ?? "—"} />
+            <Mini label="Owner" value={ownersToText(company.relationship_owner as never)} />
             <Mini label="State" value={company.state ?? "—"} />
           </section>
 
