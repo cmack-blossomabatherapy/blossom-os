@@ -603,7 +603,7 @@ export default function BcbaProductivityReport() {
     setAuthFileNames([]); setAuthRecords([]); setAuthMissing([]);
     if (inputRef.current) inputRef.current.value = "";
     if (authInputRef.current) authInputRef.current.value = "";
-    try { localStorage.removeItem(BCBA_LAST_SESSION_KEY); } catch {}
+    void clearLastSession();
   }
 
   /* ---- Load saved report from ?saved=<id>, otherwise auto-restore last session ---- */
@@ -611,45 +611,40 @@ export default function BcbaProductivityReport() {
   useEffect(() => {
     pushRecent("bcba-productivity-report");
     const savedId = searchParams.get("saved");
-    try {
-      if (savedId) {
-        const r = getSavedReport(savedId);
-        if (r) {
-          setBillingFileName(r.billingFileName);
-          setAuthFileNames(r.authFileNames);
-          setBillingRaws(r.billingRaws as BillingRaw[]);
-          setAuthRecords(r.authRecords as AuthRecord[]);
-          toast.success(`Loaded saved report: ${r.name}`);
-          return;
+    (async () => {
+      try {
+        if (savedId) {
+          const r = await getSavedReport(savedId);
+          if (r) {
+            setBillingFileName(r.billingFileName);
+            setAuthFileNames(r.authFileNames);
+            setBillingRaws(r.billingRaws as BillingRaw[]);
+            setAuthRecords(r.authRecords as AuthRecord[]);
+            toast.success(`Loaded saved report: ${r.name}`);
+            return;
+          }
+          toast.error("Saved report not found");
         }
-        toast.error("Saved report not found");
-      }
-      const raw = localStorage.getItem(BCBA_LAST_SESSION_KEY);
-      if (raw) {
-        const d = JSON.parse(raw);
+        const d = await loadLastSession();
         if (d?.billingRaws?.length) {
           setBillingFileName(d.billingFileName || "");
           setAuthFileNames(d.authFileNames || []);
-          setBillingRaws(d.billingRaws);
-          setAuthRecords(d.authRecords || []);
+          setBillingRaws(d.billingRaws as BillingRaw[]);
+          setAuthRecords(d.authRecords as AuthRecord[]);
         }
-      }
-    } catch {}
+      } catch {}
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---- Auto-persist current session so leaving the page doesn't lose work ---- */
   useEffect(() => {
     if (!billingRaws.length && !authRecords.length) return;
-    try {
-      localStorage.setItem(BCBA_LAST_SESSION_KEY, JSON.stringify({
-        billingFileName, authFileNames, billingRaws, authRecords,
-      }));
-    } catch {}
+    void saveLastSession({ billingFileName, authFileNames, billingRaws, authRecords });
   }, [billingFileName, authFileNames, billingRaws, authRecords]);
 
   /* ---- Save current report under a name ---- */
-  function handleSaveReport() {
+  async function handleSaveReport() {
     if (!billingRaws.length) {
       toast.error("Upload a billing report before saving");
       return;
@@ -661,7 +656,7 @@ export default function BcbaProductivityReport() {
     if (!name) return;
     try {
       const insights = computeBcbaInsights(billingRaws, authRecords);
-      const rec = saveReport({
+      const rec = await saveReport({
         name: name.trim(),
         billingFileName, authFileNames, billingRaws, authRecords, insights,
       });
@@ -670,7 +665,7 @@ export default function BcbaProductivityReport() {
       toast.success(`Saved "${rec.name}" to Saved Reports`);
     } catch (err) {
       console.error("Failed to save report", err);
-      toast.error("Couldn't save report — file may be too large for local storage.");
+      toast.error("Couldn't save report — please try again.");
     }
   }
 
