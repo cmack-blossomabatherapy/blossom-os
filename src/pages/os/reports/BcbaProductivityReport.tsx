@@ -779,6 +779,22 @@ export default function BcbaProductivityReport() {
   const directors = useMemo(() => [...new Set(sessions.map(s => s.director).filter(Boolean))].sort(), [sessions]);
   const payors = useMemo(() => [...new Set(sessions.map(s => s.payor).filter(Boolean))].sort(), [sessions]);
 
+  /* ---- dataset's natural date range (drives smart presets) ---- */
+  const dataRange = useMemo(() => {
+    let lo = Infinity, hi = -Infinity;
+    for (const s of sessions) {
+      const t = parseDate(s.date);
+      if (!isFinite(t)) continue;
+      if (t < lo) lo = t;
+      if (t > hi) hi = t;
+    }
+    if (!isFinite(lo) || !isFinite(hi)) return null;
+    return { loMs: lo, hiMs: hi, lo: new Date(lo), hi: new Date(hi) };
+  }, [sessions]);
+
+  const dateFromMs = useMemo(() => dateFrom ? new Date(dateFrom + "T00:00:00").getTime() : NaN, [dateFrom]);
+  const dateToMs = useMemo(() => dateTo ? new Date(dateTo + "T23:59:59").getTime() : NaN, [dateTo]);
+
   const filteredSessions = useMemo(() => sessions.filter(s => {
     if (month !== "all" && monthOf(s.date) !== month) return false;
     if (stateF !== "all" && s.state !== stateF) return false;
@@ -786,8 +802,33 @@ export default function BcbaProductivityReport() {
     if (dirF !== "all" && s.director !== dirF) return false;
     if (payorF !== "all" && s.payor !== payorF) return false;
     if (codesF.length > 0 && !codesF.includes(classifyCode(s.code))) return false;
+    if (isFinite(dateFromMs) || isFinite(dateToMs)) {
+      const t = parseDate(s.date);
+      if (!isFinite(t)) return false;
+      if (isFinite(dateFromMs) && t < dateFromMs) return false;
+      if (isFinite(dateToMs) && t > dateToMs) return false;
+    }
     return true;
-  }), [sessions, month, stateF, bcbaF, dirF, payorF, codesF]);
+  }), [sessions, month, stateF, bcbaF, dirF, payorF, codesF, dateFromMs, dateToMs]);
+
+  /* ---- period summary for KPI clarity ---- */
+  const periodInfo = useMemo(() => {
+    const monthsInView = new Set<string>();
+    let lo = Infinity, hi = -Infinity;
+    for (const s of filteredSessions) {
+      const m = monthOf(s.date);
+      if (m) monthsInView.add(m);
+      const t = parseDate(s.date);
+      if (isFinite(t)) { if (t < lo) lo = t; if (t > hi) hi = t; }
+    }
+    const nMonths = monthsInView.size || 1;
+    const fmt = (ms: number) => new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return {
+      nMonths,
+      label: isFinite(lo) && isFinite(hi) ? `${fmt(lo)} – ${fmt(hi)}` : "—",
+      span: nMonths === 1 ? "1 month" : `${nMonths} months`,
+    };
+  }, [filteredSessions]);
 
   /* ---- aggregate ---- */
   const aggregates = useMemo<BcbaAgg[]>(() => {
