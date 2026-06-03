@@ -167,6 +167,82 @@ function normName(s: string) {
   return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/* ----- Canonical name resolution -----
+ * People appear with inconsistent formats across CR/auth exports:
+ *   "J. Smith", "John Smith", "Smith, John", "Smith, J.", "JOHN SMITH".
+ * We build a single canonical display name per person by grouping on
+ * (last name + first initial) and picking the most complete form.
+ */
+function tidyName(raw: string): string {
+  let s = (raw || "").trim().replace(/\s+/g, " ");
+  if (!s) return "";
+  // "Last, First M." -> "First M. Last"
+  if (s.includes(",")) {
+    const [last, rest] = s.split(",", 2).map(x => x.trim());
+    if (last && rest) s = `${rest} ${last}`;
+  }
+  // Title-case ALL CAPS / lowercase tokens
+  s = s.split(" ").map(tok => {
+    if (!tok) return tok;
+    const isInit = /^[A-Za-z]\.?$/.test(tok);
+    if (isInit) return tok.replace(/\.?$/, ".").toUpperCase();
+    if (tok === tok.toUpperCase() || tok === tok.toLowerCase()) {
+      return tok[0].toUpperCase() + tok.slice(1).toLowerCase();
+    }
+    return tok;
+  }).join(" ");
+  return s;
+}
+function nameKey(tidy: string): string {
+  // Group by (lastNameLower + firstInitialLower)
+  const toks = tidy.split(" ").filter(Boolean);
+  if (!toks.length) return "";
+  const last = toks[toks.length - 1].toLowerCase().replace(/[^a-z]/g, "");
+  const first = toks[0].toLowerCase().replace(/[^a-z]/g, "");
+  const init = first ? first[0] : "";
+  return `${last}|${init}`;
+}
+function buildCanonicalMap(names: Iterable<string>): Map<string, string> {
+  // raw (lowercased+trimmed) -> canonical display name
+  const groups = new Map<string, { display: string; counts: Map<string, number> }>();
+  for (const raw of names) {
+    if (!raw) continue;
+    const tidy = tidyName(raw);
+    if (!tidy) continue;
+    const key = nameKey(tidy);
+    if (!key) continue;
+    let g = groups.get(key);
+    if (!g) { g = { display: tidy, counts: new Map() }; groups.set(key, g); }
+    g.counts.set(tidy, (g.counts.get(tidy) || 0) + 1);
+  }
+  // Pick canonical per group: prefer longest first token (full first name over initial),
+  // then most frequent, then alphabetic.
+  for (const g of groups.values()) {
+    const entries = [...g.counts.entries()];
+    entries.sort((a, b) => {
+      const aTok = a[0].split(" ")[0] || "";
+      const bTok = b[0].split(" ")[0] || "";
+      const aIsInit = /^[A-Za-z]\.?$/.test(aTok) ? 1 : 0;
+      const bIsInit = /^[A-Za-z]\.?$/.test(bTok) ? 1 : 0;
+      if (aIsInit !== bIsInit) return aIsInit - bIsInit;        // full name beats initial
+      if (bTok.length !== aTok.length) return bTok.length - aTok.length; // longer first token
+      if (b[1] !== a[1]) return b[1] - a[1];                    // more frequent
+      return a[0].localeCompare(b[0]);
+    });
+    g.display = entries[0][0];
+  }
+  // Map every original raw form to its canonical display.
+  const out = new Map<string, string>();
+  for (const raw of names) {
+    if (!raw) continue;
+    const tidy = tidyName(raw);
+    const key = nameKey(tidy);
+    const g = groups.get(key);
+    if (g) out.set(normName(raw), g.display);
+  }
+  return out;
+}
+
 /* ------- Authorization records (separate upload) ------- */
 interface AuthRecord {
   client: string;
