@@ -36,19 +36,21 @@ function StatTile({ label, value, icon: Icon, hint }: { label: string; value: Re
 
 type ExportDataset = "contacts" | "companies" | "followups" | "history";
 
-type ExportColumn<T> = {
+type ExportRow = ReferralContact | ReferralCompany | ReferralImportBatch;
+
+type ExportColumn<T = ExportRow> = {
   key: string;
   label: string;
   value: (row: T) => unknown;
   defaultSelected?: boolean;
 };
 
-type ExportSource<T> = {
+type ExportSource = {
   label: string;
   description: string;
   fileName: string;
-  rows: T[];
-  columns: ExportColumn<T>[];
+  rows: ExportRow[];
+  columns: ExportColumn[];
 };
 
 function exportCsv<T>(filename: string, rows: T[], columns: ExportColumn<T>[]) {
@@ -150,7 +152,7 @@ function ReferralsInner() {
     return companies.find((c) => c.id === id)?.company_name ?? "—";
   }
 
-  const exportSources = useMemo((): Record<ExportDataset, ExportSource<ReferralContact | ReferralCompany | ReferralImportBatch>> => {
+  const exportSources = useMemo((): Record<ExportDataset, ExportSource> => {
     const contactColumns: ExportColumn<ReferralContact>[] = [
       { key: "full_name", label: "Name", value: (c) => c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(), defaultSelected: true },
       { key: "company", label: "Company", value: (c) => companyName(c.company_id), defaultSelected: true },
@@ -197,10 +199,10 @@ function ReferralsInner() {
     ];
 
     return {
-      contacts: { label: "Referral contacts", description: "Filtered contacts currently shown in the Contacts tab.", fileName: "referral-contacts.csv", rows: visibleContacts, columns: contactColumns },
-      companies: { label: "Referral companies", description: "Filtered organizations currently shown in the Companies tab.", fileName: "referral-companies.csv", rows: visibleCompanies, columns: companyColumns },
-      followups: { label: "Follow-up queue", description: "Overdue, due-today, and upcoming referral follow-ups.", fileName: "referral-follow-ups.csv", rows: [...followUps.overdueRows, ...followUps.todayRows, ...followUps.upcomingRows], columns: contactColumns },
-      history: { label: "Import history", description: "CSV import history and row outcomes.", fileName: "referral-import-history.csv", rows: batches, columns: batchColumns },
+      contacts: { label: "Referral contacts", description: "Filtered contacts currently shown in the Contacts tab.", fileName: "referral-contacts.csv", rows: visibleContacts, columns: contactColumns as ExportColumn[] },
+      companies: { label: "Referral companies", description: "Filtered organizations currently shown in the Companies tab.", fileName: "referral-companies.csv", rows: visibleCompanies, columns: companyColumns as ExportColumn[] },
+      followups: { label: "Follow-up queue", description: "Overdue, due-today, and upcoming referral follow-ups.", fileName: "referral-follow-ups.csv", rows: [...followUps.overdueRows, ...followUps.todayRows, ...followUps.upcomingRows], columns: contactColumns as ExportColumn[] },
+      history: { label: "Import history", description: "CSV import history and row outcomes.", fileName: "referral-import-history.csv", rows: batches, columns: batchColumns as ExportColumn[] },
     };
   }, [batches, companies, contacts, followUps.overdueRows, followUps.todayRows, followUps.upcomingRows, visibleCompanies, visibleContacts]);
 
