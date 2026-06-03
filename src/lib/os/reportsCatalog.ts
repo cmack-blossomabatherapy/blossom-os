@@ -126,10 +126,14 @@ export const REPORTS: ReportDef[] = [
 ];
 
 export function visibleReportsForRole(role: OSRole): ReportDef[] {
-  if (role === "state_director") {
-    return REPORTS.filter(r => r.id === "bcba-productivity-report");
-  }
-  return REPORTS.filter(r => r.visibleTo === "all" || (r.visibleTo as OSRole[]).includes(role));
+  // Reports is currently a shared experience across every role: only the
+  // BCBA Productivity Report and the Cancellation Command Center are surfaced.
+  // Role-based scoping will be re-introduced in a later iteration.
+  void role;
+  const SHARED_IDS = ["bcba-productivity-report", "cancellation-command-center"];
+  return SHARED_IDS
+    .map(id => REPORTS.find(r => r.id === id))
+    .filter((r): r is ReportDef => Boolean(r));
 }
 
 export function visibleCategoriesForRole(role: OSRole): (ReportCategoryDef & { count: number; mostViewed?: ReportDef })[] {
