@@ -231,6 +231,18 @@ function ReferralsInner() {
       </div>
 
       {/* Filters */}
+      {dataError && (
+        <MktgCard>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-1">
+            <div>
+              <p className="text-sm font-semibold text-destructive">Referral data could not finish loading.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{dataError.message}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={refreshAll}>Retry</Button>
+          </div>
+        </MktgCard>
+      )}
+
       <MktgCard>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
