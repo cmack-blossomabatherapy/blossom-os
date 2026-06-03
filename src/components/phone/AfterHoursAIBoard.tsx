@@ -11,7 +11,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X } from "lucide-react";
+import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const WEBHOOK_URL = "https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook";
 
@@ -48,6 +49,21 @@ type Call = {
 };
 
 const STATUS_OPTIONS = ["new", "in_progress", "called_back", "resolved", "no_action"] as const;
+
+const DEPARTMENT_META: Record<string, { label: string; tone: string }> = {
+  intake: { label: "Intake", tone: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30" },
+  scheduling: { label: "Scheduling", tone: "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30" },
+  state_director: { label: "State Director", tone: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30" },
+  hr: { label: "HR", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
+  urgent: { label: "Urgent", tone: "bg-destructive/10 text-destructive border-destructive/30" },
+  unverified: { label: "Unverified — Manual review", tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+};
+
+function deptMeta(call: Pick<Call, "department_to_notify" | "call_summary" | "verification_status">) {
+  const needsReview = call.verification_status === "unverified_failed" || (!call.call_summary);
+  const key = needsReview ? "unverified" : (call.department_to_notify || "intake");
+  return { key, ...(DEPARTMENT_META[key] ?? DEPARTMENT_META.intake) };
+}
 
 type Routing = {
   id: string;
@@ -267,6 +283,8 @@ export function AfterHoursAIBoard() {
               {filtered.map((c) => {
                 const status = c.follow_up_status ?? "new";
                 const urgent = c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high";
+                const dept = deptMeta(c);
+                const aiReviewed = !!c.call_summary;
                 return (
                   <button
                     key={c.id}
@@ -285,6 +303,20 @@ export function AfterHoursAIBoard() {
                           {c.verification_status === "unverified" && (
                             <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-600/40">unverified</Badge>
                           )}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                          {aiReviewed ? (
+                            <Badge variant="outline" className="text-[10px] gap-1 border-primary/40 text-primary bg-primary/5">
+                              <Sparkles className="h-2.5 w-2.5" /> AI Reviewed
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] gap-1 border-amber-500/40 text-amber-600">
+                              <AlertTriangle className="h-2.5 w-2.5" /> AI pending
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className={`text-[10px] gap-1 ${dept.tone}`}>
+                            <Building2 className="h-2.5 w-2.5" /> Route → {dept.label}
+                          </Badge>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">
                           <span className="font-mono">{c.phone_number ?? "—"}</span>
@@ -323,71 +355,14 @@ export function AfterHoursAIBoard() {
       </Card>
 
       <Sheet open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0">
           {selected && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selected.caller_name ?? "Unknown caller"}</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <Info label="Call successful" value={fmt(pick(selected, "call_successful") ?? selected.call_outcome)} />
-                  <Info label="User sentiment" value={selected.sentiment} />
-                  <Info label="Caller type" value={selected.caller_type} />
-                  <Info label="Parent / caller name" value={pick(selected, "parent_or_caller_name") ?? selected.caller_name} />
-                  <Info label="Callback number" value={pick(selected, "callback_number") ?? selected.phone_number} />
-                  <Info label="Preferred callback time" value={selected.preferred_callback_time} />
-                  <Info label="State" value={selected.state} />
-                  <Info label="Child age" value={selected.child_age} />
-                  <Info label="Insurance provider" value={selected.insurance_provider} />
-                  <Info label="Insurance type" value={selected.insurance_type} />
-                  <Info label="Urgency level" value={selected.urgency_level} />
-                  <Info label="Needs intake follow-up" value={fmt(selected.needs_intake_follow_up)} />
-                  <Info label="Emergency flag" value={fmt(selected.emergency_flag)} />
-                  <Info label="Callback confirmed" value={fmt(pick(selected, "callback_confirmed"))} />
-                  <Info label="Caller emotion" value={selected.caller_emotion ?? pick(selected, "caller_emotion")} />
-                  <Info label="Transcript quality" value={pick(selected, "transcript_quality")} />
-                  <Info label="Intake readiness" value={pick(selected, "intake_readiness")} />
-                  <Info label="Callback priority" value={pick(selected, "callback_priority")} />
-                  <Info label="Call outcome" value={selected.call_outcome ?? pick(selected, "call_outcome")} />
-                  <Info label="Department" value={selected.department_to_notify} />
-                  <Info label="Source" value={selected.source} />
-                  <Info label="Verification" value={selected.verification_status} />
-                </div>
-                {selected.reason_for_call && (
-                  <Section title="Reason">{selected.reason_for_call}</Section>
-                )}
-                {selected.call_summary && (
-                  <Section title="AI summary">{selected.call_summary}</Section>
-                )}
-                {selected.transcript && (
-                  <Section title="Transcript">
-                    <pre className="whitespace-pre-wrap text-xs font-mono">{selected.transcript}</pre>
-                  </Section>
-                )}
-                {selected.recording_url && (
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={selected.recording_url} target="_blank" rel="noreferrer">
-                      Listen to recording <ExternalLink className="ml-1 h-3 w-3" />
-                    </a>
-                  </Button>
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" disabled={resending} onClick={() => resendNotification(selected)}>
-                    <Send className="mr-2 h-3.5 w-3.5" /> {resending ? "Sending…" : "Send email notification"}
-                  </Button>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Follow-up notes</label>
-                  <Input
-                    defaultValue={selected.follow_up_notes ?? ""}
-                    onBlur={(e) => updateNotes(selected, e.target.value)}
-                    placeholder="Add internal notes…"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-            </>
+            <CallDetail
+              call={selected}
+              resending={resending}
+              onResend={() => resendNotification(selected)}
+              onSaveNotes={async (notes) => { await updateNotes(selected, notes); }}
+            />
           )}
         </SheetContent>
       </Sheet>
@@ -511,6 +486,178 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div>
       <div className="text-xs font-medium text-muted-foreground mb-1">{title}</div>
       <div className="rounded-md bg-muted/40 p-3 text-sm">{children}</div>
+    </div>
+  );
+}
+
+function CallDetail({
+  call,
+  resending,
+  onResend,
+  onSaveNotes,
+}: {
+  call: Call;
+  resending: boolean;
+  onResend: () => void;
+  onSaveNotes: (notes: string) => Promise<void> | void;
+}) {
+  const dept = deptMeta(call);
+  const aiReviewed = !!call.call_summary;
+  const urgent = call.emergency_flag || (call.urgency_level ?? "").toLowerCase() === "high";
+  const [notes, setNotes] = useState(call.follow_up_notes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+  useEffect(() => { setNotes(call.follow_up_notes ?? ""); }, [call.id]);
+
+  const saveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      await onSaveNotes(notes);
+      toast.success("Notes saved");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Hero header */}
+      <div className={`px-6 pt-6 pb-5 border-b border-border ${urgent ? "bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent" : "bg-gradient-to-br from-primary/10 via-primary/5 to-transparent"}`}>
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+          <PhoneIcon className="h-3 w-3" /> After-Hours Call
+          <span>·</span>
+          <span>{new Date(call.call_started_at ?? call.created_at).toLocaleString()}</span>
+        </div>
+        <SheetHeader className="text-left space-y-1 p-0">
+          <SheetTitle className="text-2xl font-semibold tracking-tight">
+            {call.caller_name ?? "Unknown caller"}
+          </SheetTitle>
+          <p className="text-sm text-muted-foreground">
+            {call.phone_number ? <span className="font-mono">{call.phone_number}</span> : "No callback number"}
+            {call.state && <> · {call.state}</>}
+            {call.caller_type && <> · {call.caller_type}</>}
+          </p>
+        </SheetHeader>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {aiReviewed ? (
+            <Badge variant="outline" className="gap-1 border-primary/40 text-primary bg-background">
+              <Sparkles className="h-3 w-3" /> AI Reviewed
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 bg-background">
+              <AlertTriangle className="h-3 w-3" /> AI processing
+            </Badge>
+          )}
+          <Badge variant="outline" className={`gap-1 ${dept.tone} bg-background`}>
+            <Building2 className="h-3 w-3" /> Routes to {dept.label}
+          </Badge>
+          {urgent && (
+            <Badge className="gap-1 bg-destructive text-destructive-foreground">
+              <AlertTriangle className="h-3 w-3" /> Urgent
+            </Badge>
+          )}
+          {call.verification_status && (
+            <Badge variant="outline" className="gap-1 text-muted-foreground">
+              {call.verification_status === "verified" ? <CheckCircle2 className="h-3 w-3" /> : null}
+              {call.verification_status}
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="p-6 space-y-5">
+        {/* AI Summary card */}
+        {call.call_summary && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide text-primary mb-2">
+              <Sparkles className="h-3 w-3" /> AI Summary
+            </div>
+            <p className="text-sm leading-relaxed text-foreground">{call.call_summary}</p>
+          </div>
+        )}
+
+        {/* Send notification CTA */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-sm font-medium flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                Notify {dept.label}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Manual send while we validate the AI. Recipients are configured in Routing & Notifications.
+              </div>
+            </div>
+            <Button size="sm" disabled={resending} onClick={onResend}>
+              <Send className="mr-2 h-3.5 w-3.5" /> {resending ? "Sending…" : "Send email notification"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Key facts */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-3">Call details</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <Info label="Call successful" value={fmt(pick(call, "call_successful") ?? call.call_outcome)} />
+            <Info label="User sentiment" value={call.sentiment} />
+            <Info label="Parent / caller" value={pick(call, "parent_or_caller_name") ?? call.caller_name} />
+            <Info label="Callback number" value={pick(call, "callback_number") ?? call.phone_number} />
+            <Info label="Preferred callback" value={call.preferred_callback_time} />
+            <Info label="State" value={call.state} />
+            <Info label="Child age" value={call.child_age} />
+            <Info label="Insurance provider" value={call.insurance_provider} />
+            <Info label="Insurance type" value={call.insurance_type} />
+            <Info label="Urgency level" value={call.urgency_level} />
+            <Info label="Needs intake follow-up" value={fmt(call.needs_intake_follow_up)} />
+            <Info label="Emergency flag" value={fmt(call.emergency_flag)} />
+            <Info label="Callback confirmed" value={fmt(pick(call, "callback_confirmed"))} />
+            <Info label="Caller emotion" value={call.caller_emotion ?? pick(call, "caller_emotion")} />
+            <Info label="Transcript quality" value={pick(call, "transcript_quality")} />
+            <Info label="Intake readiness" value={pick(call, "intake_readiness")} />
+            <Info label="Callback priority" value={pick(call, "callback_priority")} />
+            <Info label="Source" value={call.source} />
+          </div>
+        </div>
+
+        {call.reason_for_call && (
+          <Section title="Reason">{call.reason_for_call}</Section>
+        )}
+
+        {call.transcript && (
+          <Section title="Transcript">
+            <pre className="whitespace-pre-wrap text-xs font-mono max-h-72 overflow-auto">{call.transcript}</pre>
+          </Section>
+        )}
+
+        {call.recording_url && (
+          <Button size="sm" variant="outline" asChild>
+            <a href={call.recording_url} target="_blank" rel="noreferrer">
+              Listen to recording <ExternalLink className="ml-1 h-3 w-3" />
+            </a>
+          </Button>
+        )}
+
+        {/* Follow-up notes — proper textarea */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Follow-up notes
+            </label>
+            <span className="text-[11px] text-muted-foreground">{notes.length} chars</span>
+          </div>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Document what happened on the callback, the family's response, next steps…"
+            rows={5}
+            className="resize-none text-sm"
+          />
+          <div className="mt-2 flex justify-end">
+            <Button size="sm" variant="outline" disabled={savingNotes || notes === (call.follow_up_notes ?? "")} onClick={saveNotes}>
+              {savingNotes ? "Saving…" : "Save notes"}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
