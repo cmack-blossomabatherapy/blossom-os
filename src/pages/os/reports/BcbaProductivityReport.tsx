@@ -1236,7 +1236,9 @@ export default function BcbaProductivityReport() {
                 type="file"
                 accept={SUPPORTED_EXTENSIONS}
                 onChange={(e) => handleFiles(e.target.files)}
-                className="hidden"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
               />
             </div>
             {billingLoaded && (
@@ -1277,7 +1279,9 @@ export default function BcbaProductivityReport() {
                 multiple
                 accept={SUPPORTED_EXTENSIONS}
                 onChange={(e) => handleAuthFiles(e.target.files)}
-                className="hidden"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
               />
             </div>
             {authFileNames.length > 0 && (
