@@ -327,6 +327,7 @@ import {
   PhoneRequestList, PhoneRequestNew, PhoneRequestDetail, PhoneAdmin,
   PhoneAfterHoursAI,
 } from "./pages/phone/PhonePages";
+import PhoneAiCallAudit from "./pages/phone/PhoneAiCallAudit";
 import MarketingDashboard from "./pages/os/marketing/MarketingDashboard";
 import MarketingTraining from "./pages/os/marketing/MarketingTraining";
 import MarketingCampaigns from "./pages/os/marketing/Campaigns";
@@ -682,6 +683,7 @@ const App = () => (
                   <Route path="/phone/requests/:id" element={<PhoneRequestDetail />} />
                   <Route path="/phone/admin" element={<PhoneAdmin />} />
                   <Route path="/phone/ai-calls" element={<PhoneAfterHoursAI />} />
+                  <Route path="/phone/ai-calls/audit" element={<PhoneAiCallAudit />} />
                   {/* Marketing Team */}
                   <Route path="/marketing-dashboard" element={<Navigate to="/marketing" replace />} />
                   <Route path="/marketing" element={<MarketingDashboard />} />

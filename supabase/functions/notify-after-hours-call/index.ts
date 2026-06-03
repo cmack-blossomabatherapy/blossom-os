@@ -28,7 +28,15 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const body = await req.json()
-    const { call_id, force, test, department: testDept, to: testTo } = body ?? {}
+    const {
+      call_id, force, test,
+      department: testDept, to: testTo,
+      triggered_by_user_id = null,
+      triggered_by_email = null,
+      triggered_by_name = null,
+    } = body ?? {}
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
 
     // ---- Test mode: send a sample email to a specific address ----
     if (test) {
@@ -86,7 +94,6 @@ Deno.serve(async (req) => {
         ok: resendRes.ok,
         body: respBody,
       })
-      const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
       const { error: logErr } = await supabase.from('phone_ai_call_notifications').insert({
         call_id: null,
         retell_call_id: null,
@@ -94,6 +101,13 @@ Deno.serve(async (req) => {
         recipients: [recipient],
         status: resendRes.ok ? 'sent' : 'failed',
         error: resendRes.ok ? null : JSON.stringify(respBody).slice(0, 500),
+        subject,
+        trigger_source: 'test',
+        triggered_by_user_id,
+        triggered_by_email,
+        triggered_by_name,
+        resend_message_id: (respBody as any)?.id ?? null,
+        caller_snapshot: { test: true, department: dept, recipient },
       })
       if (logErr) console.error('[notify-after-hours-call:test] notification log insert failed', logErr.message)
       if (!resendRes.ok) {
@@ -116,7 +130,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'call_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
     const { data: call, error: cErr } = await supabase.from('phone_ai_calls').select('*').eq('id', call_id).single()
     if (cErr || !call) {
       return new Response(JSON.stringify({ error: cErr?.message ?? 'call not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
@@ -142,10 +155,35 @@ Deno.serve(async (req) => {
       recipients = (fallback?.emails ?? []).filter((e: string) => !!e)
     }
 
+    const triggerSource: string = force ? 'manual_resend' : 'auto_webhook'
+    const callerSnapshot = {
+      caller_name: call.caller_name ?? null,
+      caller_type: call.caller_type ?? null,
+      phone_number: call.phone_number ?? null,
+      state: call.state ?? null,
+      insurance_provider: call.insurance_provider ?? null,
+      insurance_type: call.insurance_type ?? null,
+      child_age: call.child_age ?? null,
+      reason_for_call: call.reason_for_call ?? null,
+      urgency_level: call.urgency_level ?? null,
+      verification_status: call.verification_status ?? null,
+      department_to_notify: call.department_to_notify ?? null,
+      preferred_callback_time: call.preferred_callback_time ?? null,
+      patient_ref: (call as any).patient_ref ?? null,
+      referral_ref: (call as any).referral_ref ?? null,
+      bcba_id: (call as any).bcba_id ?? null,
+      rbt_id: (call as any).rbt_id ?? null,
+      call_started_at: call.call_started_at ?? null,
+    }
+
     if (!enabled || recipients.length === 0) {
       await supabase.from('phone_ai_call_notifications').insert({
         call_id: call.id, retell_call_id: call.retell_call_id, department: deptKey,
         recipients: [], status: 'skipped', error: !enabled ? 'department disabled' : 'no recipients configured',
+        subject: null,
+        trigger_source: triggerSource,
+        triggered_by_user_id, triggered_by_email, triggered_by_name,
+        caller_snapshot: callerSnapshot,
       })
       return new Response(JSON.stringify({ ok: true, skipped: true, reason: !enabled ? 'disabled' : 'no recipients' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -208,6 +246,11 @@ Deno.serve(async (req) => {
     await supabase.from('phone_ai_call_notifications').insert({
       call_id: call.id, retell_call_id: call.retell_call_id, department: deptKey,
       recipients, status: ok ? 'sent' : 'failed', error: ok ? null : JSON.stringify(respBody).slice(0, 500),
+      subject,
+      trigger_source: triggerSource,
+      triggered_by_user_id, triggered_by_email, triggered_by_name,
+      resend_message_id: (respBody as any)?.id ?? null,
+      caller_snapshot: callerSnapshot,
     })
 
     if (!ok) {

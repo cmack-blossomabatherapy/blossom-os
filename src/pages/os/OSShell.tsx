@@ -54,6 +54,7 @@ const PHONE_SYSTEM_SECTION: NavSection = {
     { to: "/phone/directory", label: "Routing Directory", icon: Headphones, module: "phone_system" },
     { to: "/phone/requests", label: "Change Requests", icon: ClipboardList, module: "phone_system" },
     { to: "/phone/ai-calls", label: "After-Hours AI Calls", icon: Moon, module: "phone_system" },
+    { to: "/phone/ai-calls/audit", label: "AI Calls — Email Audit", icon: ShieldCheck, module: "phone_system" },
   ],
 };
 type NavSection = { id: string; label: string; items: NavEntry[] };
