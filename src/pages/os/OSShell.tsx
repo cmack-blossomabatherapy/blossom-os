@@ -372,81 +372,34 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
-  // Operations Leadership gets a calm, executive-focused menu.
+  // Operations Leadership — focused menu: Workforce (Evaluations) + Resources.
   const OPS_LEADERSHIP_SECTIONS: NavSection[] = [
     {
-      id: "home", label: "Home", items: [
-        { to: "/operations", label: "Executive Dashboard", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/operations/command-center", label: "Operations Command Center", icon: Radio, module: "dashboard" },
-        { to: "/operations/briefing", label: "Leadership Briefing", icon: Sparkles, module: "dashboard" },
-      ],
-    },
-    {
-      id: "oversight", label: "Operations Oversight", items: [
-        { to: "/operations/department-health", label: "Department Health", icon: Activity, module: "dashboard" },
-        { to: "/operations/workflow-risks", label: "Workflow Risks", icon: ShieldAlert, module: "dashboard" },
-        { to: "/operations/escalations", label: "Escalations & Blockers", icon: AlertTriangle, module: "dashboard" },
-      ],
-    },
-    {
-      id: "people", label: "People & Performance", items: [
-        { to: "/operations/accountability", label: "Team Accountability", icon: ClipboardCheck, module: "dashboard" },
-        { to: "/operations/staffing-capacity", label: "Staffing & Capacity", icon: Users2, module: "dashboard" },
-        { to: "/operations/training-adoption", label: "Training & Adoption", icon: GraduationCap, module: "dashboard" },
-      ],
-    },
-    {
-      id: "communication", label: "Communication", items: [
-        { to: "/operations/updates", label: "Leadership Updates", icon: BellRing, module: "dashboard" },
+      id: "workforce", label: "Workforce", items: [
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
       ],
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/operations/resources", label: "Resource Library", icon: BookOpen, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
   ];
 
+  // Executive Leadership — focused menu: Workforce (Evaluations) + Resources.
   const EXEC_LEADERSHIP_SECTIONS: NavSection[] = [
     {
-      id: "home", label: "Home", items: [
-        { to: "/executive", label: "Executive Overview", icon: LayoutDashboard, module: "dashboard", end: true },
-        { to: "/executive/pulse", label: "Company Pulse", icon: Activity, module: "dashboard" },
-        { to: "/executive/briefing", label: "Executive Briefing", icon: Sparkles, module: "dashboard" },
-      ],
-    },
-    {
-      id: "oversight", label: "Organizational Oversight", items: [
-        { to: "/executive/organizational-health", label: "Organizational Health", icon: Activity, module: "dashboard" },
-        { to: "/executive/strategic-risks", label: "Strategic Risks", icon: ShieldAlert, module: "dashboard" },
-        { to: "/executive/growth-readiness", label: "Growth & Readiness", icon: TrendingUp, module: "dashboard" },
-      ],
-    },
-    {
-      id: "people", label: "People & Operations", items: [
-        { to: "/executive/leadership-accountability", label: "Leadership Accountability", icon: ClipboardCheck, module: "dashboard" },
-        { to: "/executive/staffing-expansion", label: "Staffing & Expansion", icon: Users2, module: "dashboard" },
-        { to: "/executive/operational-consistency", label: "Operational Consistency", icon: Workflow, module: "dashboard" },
-      ],
-    },
-    {
-      id: "communication", label: "Communication", items: [
-        { to: "/executive/updates", label: "Executive Updates", icon: BellRing, module: "dashboard" },
+      id: "workforce", label: "Workforce", items: [
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
       ],
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/executive/resources", label: "Resource Library", icon: BookOpen, module: "dashboard" },
-      ],
-    },
-    {
-      id: "ai", label: "AI", items: [
-        { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
   ];
