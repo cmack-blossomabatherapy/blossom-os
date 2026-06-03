@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { listContacts, listCompanies, listActivities, listBatches } from "./api";
 import type { ReferralCompany, ReferralContact, ReferralActivity, ReferralImportBatch } from "./types";
 
 function useChannelRefresh(table: string, refresh: () => void) {
+  const channelNameRef = useRef(`realtime-${table}-${Math.random().toString(36).slice(2)}`);
+
   useEffect(() => {
     const ch = supabase
-      .channel(`realtime-${table}`)
+      .channel(channelNameRef.current)
       .on("postgres_changes", { event: "*", schema: "public", table }, () => refresh())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -16,44 +18,48 @@ function useChannelRefresh(table: string, refresh: () => void) {
 export function useReferralContacts() {
   const [data, setData] = useState<ReferralContact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const refresh = useCallback(async () => {
-    try { setData(await listContacts()); } finally { setLoading(false); }
+    try { setError(null); setData(await listContacts()); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_contacts", refresh);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }
 
 export function useReferralCompanies() {
   const [data, setData] = useState<ReferralCompany[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const refresh = useCallback(async () => {
-    try { setData(await listCompanies()); } finally { setLoading(false); }
+    try { setError(null); setData(await listCompanies()); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_companies", refresh);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }
 
 export function useReferralActivities(filter: { contactId?: string; companyId?: string } = {}) {
   const [data, setData] = useState<ReferralActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const key = `${filter.contactId ?? ""}|${filter.companyId ?? ""}`;
   const refresh = useCallback(async () => {
-    try { setData(await listActivities(filter)); } finally { setLoading(false); }
+    try { setError(null); setData(await listActivities(filter)); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   useEffect(() => { refresh(); }, [refresh]);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }
 
 export function useReferralBatches() {
   const [data, setData] = useState<ReferralImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const refresh = useCallback(async () => {
-    try { setData(await listBatches()); } finally { setLoading(false); }
+    try { setError(null); setData(await listBatches()); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_import_batches", refresh);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }

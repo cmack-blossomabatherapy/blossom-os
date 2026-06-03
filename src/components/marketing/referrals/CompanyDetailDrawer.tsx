@@ -8,6 +8,7 @@ import type { ReferralCompany } from "@/lib/os/referrals/types";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { LogActivityDialog } from "./LogActivityDialog";
 import { AddReferralDialog } from "./AddReferralDialog";
+import { ContactDetailDrawer } from "./ContactDetailDrawer";
 
 export function CompanyDetailDrawer({
   company,
@@ -17,9 +18,11 @@ export function CompanyDetailDrawer({
 }: { company: ReferralCompany | null; open: boolean; onOpenChange: (o: boolean) => void; onChanged?: () => void }) {
   const [logOpen, setLogOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const { data: activities } = useReferralActivities({ companyId: company?.id });
   const { data: allContacts } = useReferralContacts();
   const contacts = useMemo(() => allContacts.filter((c) => c.company_id === company?.id), [allContacts, company]);
+  const selectedContact = useMemo(() => allContacts.find((c) => c.id === selectedContactId) ?? null, [allContacts, selectedContactId]);
 
   if (!company) return null;
 
@@ -63,7 +66,7 @@ export function CompanyDetailDrawer({
             ) : (
               <ul className="space-y-2">
                 {contacts.map((c) => (
-                  <li key={c.id} className="rounded-lg border p-3 text-sm flex items-center justify-between">
+                  <li key={c.id} className="rounded-lg border p-3 text-sm flex items-center justify-between cursor-pointer hover:bg-muted/30" onClick={() => setSelectedContactId(c.id)}>
                     <div>
                       <p className="font-medium">{c.full_name ?? `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim()}</p>
                       <p className="text-xs text-muted-foreground">{c.role_type ?? c.title ?? "—"}{c.email ? ` · ${c.email}` : ""}</p>
@@ -97,6 +100,7 @@ export function CompanyDetailDrawer({
       </SheetContent>
       <LogActivityDialog open={logOpen} onOpenChange={setLogOpen} companyId={company.id} onLogged={onChanged} />
       <AddReferralDialog open={addOpen} onOpenChange={setAddOpen} presetCompanyId={company.id} onCreated={onChanged} />
+      <ContactDetailDrawer contact={selectedContact} open={Boolean(selectedContact)} onOpenChange={(o) => { if (!o) setSelectedContactId(null); }} onChanged={onChanged} />
     </Sheet>
   );
 }

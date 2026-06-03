@@ -1,21 +1,25 @@
-import { useMemo, useState, Component, type ReactNode, type ErrorInfo } from "react";
+import { useEffect, useMemo, useState, Component, type ReactNode, type ErrorInfo } from "react";
 import {
-  Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle,
+  Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle, Settings2,
 } from "lucide-react";
 import { MktgPage, MktgCard } from "./_shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
-import type { ReferralCompany, ReferralContact } from "@/lib/os/referrals/types";
+import type { ReferralCompany, ReferralContact, ReferralImportBatch } from "@/lib/os/referrals/types";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
 import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
 import { ImportReferralsDialog } from "@/components/marketing/referrals/ImportReferralsDialog";
 import { ContactDetailDrawer } from "@/components/marketing/referrals/ContactDetailDrawer";
 import { CompanyDetailDrawer } from "@/components/marketing/referrals/CompanyDetailDrawer";
+import { toast } from "@/hooks/use-toast";
 
 function StatTile({ label, value, icon: Icon, hint }: { label: string; value: React.ReactNode; icon: React.ElementType; hint?: string }) {
   return (
@@ -30,11 +34,29 @@ function StatTile({ label, value, icon: Icon, hint }: { label: string; value: Re
   );
 }
 
-function exportCsv(filename: string, rows: Record<string, unknown>[]) {
-  if (!rows.length) return;
-  const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+type ExportDataset = "contacts" | "companies" | "followups" | "history";
+
+type ExportRow = ReferralContact | ReferralCompany | ReferralImportBatch;
+
+type ExportColumn<T = ExportRow> = {
+  key: string;
+  label: string;
+  value: (row: T) => unknown;
+  defaultSelected?: boolean;
+};
+
+type ExportSource = {
+  label: string;
+  description: string;
+  fileName: string;
+  rows: ExportRow[];
+  columns: ExportColumn[];
+};
+
+function exportCsv<T>(filename: string, rows: T[], columns: ExportColumn<T>[]) {
+  const headers = columns.map((c) => c.label);
   const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [headers.join(","), ...rows.map((r) => headers.map((h) => esc(r[h])).join(","))];
+  const lines = [headers.map(esc).join(","), ...rows.map((r) => columns.map((c) => esc(c.value(r))).join(","))];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
@@ -50,15 +72,17 @@ export default function Referrals() {
 }
 
 function ReferralsInner() {
-  const { data: contacts, loading: lc, refresh: refreshContacts } = useReferralContacts();
-  const { data: companies, loading: lo, refresh: refreshCompanies } = useReferralCompanies();
-  const { data: batches } = useReferralBatches();
+  const { data: contacts, loading: lc, error: contactsError, refresh: refreshContacts } = useReferralContacts();
+  const { data: companies, loading: lo, error: companiesError, refresh: refreshCompanies } = useReferralCompanies();
+  const { data: batches, error: batchesError } = useReferralBatches();
 
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [contactDrawer, setContactDrawer] = useState<ReferralContact | null>(null);
   const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
+  const [activeTab, setActiveTab] = useState<ExportDataset>("contacts");
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -97,8 +121,8 @@ function ReferralsInner() {
   }, [companies, search, stateFilter]);
 
   // Stats
-  const activeContacts = contacts.filter((c) => c.status !== "Archived");
-  const activeCompanies = companies.filter((c) => c.status !== "Archived");
+  const activeContacts = useMemo(() => contacts.filter((c) => c.status !== "Archived"), [contacts]);
+  const activeCompanies = useMemo(() => companies.filter((c) => c.status !== "Archived"), [companies]);
   const needsFollowUp = activeContacts.filter((c) => c.relationship_stage === "Needs Follow-Up" || c.status === "Needs Follow-Up").length;
   const strongPartners = activeContacts.filter((c) => c.relationship_stage === "Strong Partner").length;
   const referralsSent = activeContacts.reduce((s, c) => s + (c.number_of_referrals_sent ?? 0), 0);
@@ -128,6 +152,62 @@ function ReferralsInner() {
     return companies.find((c) => c.id === id)?.company_name ?? "—";
   }
 
+  const dataError = contactsError ?? companiesError ?? batchesError;
+
+  const exportSources = useMemo((): Record<ExportDataset, ExportSource> => {
+    const contactColumns: ExportColumn<ReferralContact>[] = [
+      { key: "full_name", label: "Name", value: (c) => c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(), defaultSelected: true },
+      { key: "company", label: "Company", value: (c) => companyName(c.company_id), defaultSelected: true },
+      { key: "role", label: "Role", value: (c) => c.role_type ?? c.title, defaultSelected: true },
+      { key: "email", label: "Email", value: (c) => c.email, defaultSelected: true },
+      { key: "phone", label: "Phone", value: (c) => c.phone ?? c.mobile_phone ?? c.direct_phone, defaultSelected: true },
+      { key: "state", label: "State", value: (c) => c.state, defaultSelected: true },
+      { key: "stage", label: "Stage", value: (c) => c.relationship_stage, defaultSelected: true },
+      { key: "status", label: "Status", value: (c) => c.status },
+      { key: "referrals", label: "Referrals Sent", value: (c) => c.number_of_referrals_sent, defaultSelected: true },
+      { key: "times_contacted", label: "Times Contacted", value: (c) => c.number_of_times_contacted },
+      { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
+      { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at), defaultSelected: true },
+      { key: "owner", label: "Owner", value: (c) => c.contact_owner, defaultSelected: true },
+      { key: "source", label: "Source", value: (c) => c.source },
+      { key: "notes", label: "Notes", value: (c) => c.notes },
+    ];
+
+    const companyColumns: ExportColumn<ReferralCompany>[] = [
+      { key: "company_name", label: "Company", value: (c) => c.company_name, defaultSelected: true },
+      { key: "type", label: "Type", value: (c) => c.company_type, defaultSelected: true },
+      { key: "website", label: "Website", value: (c) => c.website_url ?? c.domain, defaultSelected: true },
+      { key: "phone", label: "Main Phone", value: (c) => c.main_phone },
+      { key: "email", label: "Main Email", value: (c) => c.main_email },
+      { key: "state", label: "State", value: (c) => c.state, defaultSelected: true },
+      { key: "contact_count", label: "Contacts", value: (c) => contacts.filter((k) => k.company_id === c.id).length, defaultSelected: true },
+      { key: "referrals", label: "Referrals Sent", value: (c) => c.referral_count, defaultSelected: true },
+      { key: "stage", label: "Stage", value: (c) => c.relationship_stage, defaultSelected: true },
+      { key: "status", label: "Status", value: (c) => c.status },
+      { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
+      { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at) },
+      { key: "owner", label: "Owner", value: (c) => c.relationship_owner, defaultSelected: true },
+      { key: "notes", label: "Notes", value: (c) => c.notes },
+    ];
+
+    const batchColumns: ExportColumn<ReferralImportBatch>[] = [
+      { key: "file", label: "File", value: (b) => b.file_name, defaultSelected: true },
+      { key: "uploaded", label: "Uploaded", value: (b) => fmtDate(b.uploaded_at), defaultSelected: true },
+      { key: "total", label: "Total Rows", value: (b) => b.total_rows, defaultSelected: true },
+      { key: "successful", label: "Successful Rows", value: (b) => b.successful_rows, defaultSelected: true },
+      { key: "duplicates", label: "Duplicate Contacts", value: (b) => b.duplicate_contacts, defaultSelected: true },
+      { key: "failed", label: "Failed Rows", value: (b) => b.failed_rows, defaultSelected: true },
+      { key: "status", label: "Status", value: (b) => b.status, defaultSelected: true },
+    ];
+
+    return {
+      contacts: { label: "Referral contacts", description: "Filtered contacts currently shown in the Contacts tab.", fileName: "referral-contacts.csv", rows: visibleContacts, columns: contactColumns as ExportColumn[] },
+      companies: { label: "Referral companies", description: "Filtered organizations currently shown in the Companies tab.", fileName: "referral-companies.csv", rows: visibleCompanies, columns: companyColumns as ExportColumn[] },
+      followups: { label: "Follow-up queue", description: "Overdue, due-today, and upcoming referral follow-ups.", fileName: "referral-follow-ups.csv", rows: [...followUps.overdueRows, ...followUps.todayRows, ...followUps.upcomingRows], columns: contactColumns as ExportColumn[] },
+      history: { label: "Import history", description: "CSV import history and row outcomes.", fileName: "referral-import-history.csv", rows: batches, columns: batchColumns as ExportColumn[] },
+    };
+  }, [batches, companies, contacts, followUps.overdueRows, followUps.todayRows, followUps.upcomingRows, visibleCompanies, visibleContacts]);
+
   return (
     <MktgPage
       title="Referrals"
@@ -151,6 +231,18 @@ function ReferralsInner() {
       </div>
 
       {/* Filters */}
+      {dataError && (
+        <MktgCard>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-1">
+            <div>
+              <p className="text-sm font-semibold text-destructive">Referral data could not finish loading.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{dataError.message}</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={refreshAll}>Retry</Button>
+          </div>
+        </MktgCard>
+      )}
+
       <MktgCard>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
@@ -173,14 +265,14 @@ function ReferralsInner() {
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={() => exportCsv("referrals.csv", visibleContacts as unknown as Record<string, unknown>[])}>
-            <Download className="size-4 mr-1.5" />Export
+          <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+            <Settings2 className="size-4 mr-1.5" />Export Builder
           </Button>
         </div>
       </MktgCard>
 
       {/* Tabs */}
-      <Tabs defaultValue="contacts">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ExportDataset)}>
         <TabsList>
           <TabsTrigger value="contacts">Contacts ({visibleContacts.length})</TabsTrigger>
           <TabsTrigger value="companies">Companies ({visibleCompanies.length})</TabsTrigger>
@@ -362,6 +454,12 @@ function ReferralsInner() {
       {addContactOpen && <AddReferralDialog open onOpenChange={setAddContactOpen} onCreated={refreshAll} />}
       {addCompanyOpen && <AddCompanyDialog open onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />}
       {importOpen && <ImportReferralsDialog open onOpenChange={setImportOpen} onComplete={refreshAll} />}
+      <ReferralExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        sources={exportSources}
+        initialDataset={activeTab}
+      />
       {contactDrawer && (
         <ContactDetailDrawer
           contact={contactDrawer}
@@ -379,6 +477,112 @@ function ReferralsInner() {
         />
       )}
     </MktgPage>
+  );
+}
+
+function ReferralExportDialog({
+  open,
+  onOpenChange,
+  sources,
+  initialDataset,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  sources: Record<ExportDataset, ExportSource>;
+  initialDataset: ExportDataset;
+}) {
+  const [dataset, setDataset] = useState<ExportDataset>(initialDataset);
+  const [selected, setSelected] = useState<string[]>([]);
+  const source = sources[dataset];
+
+  useEffect(() => {
+    if (!open) return;
+    const nextSource = sources[initialDataset];
+    setDataset(initialDataset);
+    setSelected(nextSource.columns.filter((c) => c.defaultSelected).map((c) => c.key));
+  }, [initialDataset, open, sources]);
+
+  useEffect(() => {
+    setSelected((current) => {
+      const valid = current.filter((key) => source.columns.some((c) => c.key === key));
+      return valid.length ? valid : source.columns.filter((c) => c.defaultSelected).map((c) => c.key);
+    });
+  }, [source]);
+
+  const selectedColumns = source.columns.filter((c) => selected.includes(c.key));
+
+  function chooseDataset(nextDataset: ExportDataset) {
+    const nextSource = sources[nextDataset];
+    setDataset(nextDataset);
+    setSelected(nextSource.columns.filter((c) => c.defaultSelected).map((c) => c.key));
+  }
+
+  function toggleColumn(key: string, checked: boolean) {
+    setSelected((current) => checked ? [...new Set([...current, key])] : current.filter((k) => k !== key));
+  }
+
+  function handleExport() {
+    if (!source.rows.length) {
+      toast({ title: "Nothing to export", description: "There are no rows in this referral view yet." });
+      return;
+    }
+    if (!selectedColumns.length) {
+      toast({ title: "Choose at least one column", variant: "destructive" });
+      return;
+    }
+    exportCsv(source.fileName, source.rows, selectedColumns);
+    toast({ title: "Export ready", description: `${source.rows.length} rows exported from ${source.label}.` });
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Build referral export</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr]">
+            <div className="space-y-2">
+              <Label>Data set</Label>
+              <Select value={dataset} onValueChange={(value) => chooseDataset(value as ExportDataset)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="contacts">Contacts</SelectItem>
+                  <SelectItem value="companies">Companies</SelectItem>
+                  <SelectItem value="followups">Follow-ups</SelectItem>
+                  <SelectItem value="history">Import history</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="rounded-xl border bg-muted/30 p-3">
+              <p className="text-sm font-medium">{source.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{source.description}</p>
+              <p className="mt-2 text-xs font-medium tabular-nums">{source.rows.length} rows · {selectedColumns.length} columns</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setSelected(source.columns.map((c) => c.key))}>Select all</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(source.columns.filter((c) => c.defaultSelected).map((c) => c.key))}>Recommended</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelected([])}>Clear</Button>
+          </div>
+
+          <div className="grid max-h-[42vh] gap-2 overflow-y-auto rounded-xl border p-3 sm:grid-cols-2">
+            {source.columns.map((column) => (
+              <label key={column.key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50">
+                <Checkbox checked={selected.includes(column.key)} onCheckedChange={(checked) => toggleColumn(column.key, checked === true)} />
+                <span className="text-sm">{column.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleExport}><Download className="mr-1.5 size-4" />Export CSV</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
