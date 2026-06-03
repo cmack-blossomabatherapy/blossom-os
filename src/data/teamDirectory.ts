@@ -95,6 +95,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
   { id: "levi-garfunkel", name: "Levi Garfunkel", title: "Systems & Operations", blurb: "Keeps operational systems aligned with team workflows.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: leviGarfunkel },
   { id: "yosef-aharonoff", name: "Yosef Aharonoff", title: "Systems & Software", blurb: "Supports Blossom's internal systems and technology operations.", department: "operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], photo: yosefAharonoff },
 
+  { id: "shira-lasry", name: "Shira Lasry", title: "Executive Operations", blurb: "Executive operations support across leadership initiatives.", department: "executive-operations", states: ["GA", "NC", "VA", "TN", "MD", "NJ"], leadership: true, photo: shiraLasry },
+
   { id: "kayla-brown", name: "Kayla Brown", title: "State Director", blurb: "State-level operational leadership and escalation support.", department: "state-directors", states: ["GA"], leadership: true, photo: kaylaBrown },
   { id: "nicky-newman", name: "Nicky Newman", title: "State Director", blurb: "State-level operational leadership and family support coordination.", department: "state-directors", states: ["NC"], leadership: true, photo: nickyNewman },
   { id: "sarah-rebuelta", name: "Sarah Rebuelta", title: "State Director", blurb: "State-level operational leadership for clinical and staffing workflows.", department: "state-directors", states: ["TN"], leadership: true, photo: sarahRebuelta },
