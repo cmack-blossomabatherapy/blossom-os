@@ -870,6 +870,8 @@ function TangosGrid() {
 }
 
 function AssignmentsTable() {
+  const userList = useUserAssignments();
+  const all = [...userList, ...trainingAssignments];
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
@@ -893,7 +895,7 @@ function AssignmentsTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
-          {trainingAssignments.map((a) => (
+          {all.map((a) => (
             <tr key={a.id} className="hover:bg-muted/40">
               <td className="px-5 py-3 font-medium text-foreground">
                 {a.trainingTitle}
