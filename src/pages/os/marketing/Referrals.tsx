@@ -545,7 +545,6 @@ function ReferralsInner() {
         kind="contacts"
         stages={CONTACT_STAGES as readonly string[]}
         states={states}
-        owners={contactOwners}
         onApply={(patch) => applyContactBulk({
           ...(patch.state !== undefined ? { state: patch.state } : {}),
           ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
@@ -559,7 +558,6 @@ function ReferralsInner() {
         kind="companies"
         stages={COMPANY_STAGES as readonly string[]}
         states={states}
-        owners={companyOwners}
         onApply={(patch) => applyCompanyBulk({
           ...(patch.state !== undefined ? { state: patch.state } : {}),
           ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
@@ -754,7 +752,7 @@ function BulkEditBar({
 }
 
 function BulkEditDialog({
-  open, onOpenChange, count, kind, stages, states, owners, onApply,
+  open, onOpenChange, count, kind, stages, states, onApply,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -762,26 +760,26 @@ function BulkEditDialog({
   kind: "contacts" | "companies";
   stages: readonly string[];
   states: string[];
-  owners: string[];
-  onApply: (patch: { state?: string | null; stage?: string; owner?: string | null }) => void;
+  onApply: (patch: { state?: string | null; stage?: string; owner?: string[] | null }) => void;
 }) {
   const KEEP = "__keep";
   const CLEAR = "__clear";
+  const SET = "__set";
   const [stateVal, setStateVal] = useState<string>(KEEP);
   const [stateCustom, setStateCustom] = useState("");
   const [stageVal, setStageVal] = useState<string>(KEEP);
   const [ownerVal, setOwnerVal] = useState<string>(KEEP);
-  const [ownerCustom, setOwnerCustom] = useState("");
+  const [ownerList, setOwnerList] = useState<string[]>([]);
 
   useEffect(() => {
-    if (open) { setStateVal(KEEP); setStageVal(KEEP); setOwnerVal(KEEP); setStateCustom(""); setOwnerCustom(""); }
+    if (open) { setStateVal(KEEP); setStageVal(KEEP); setOwnerVal(KEEP); setStateCustom(""); setOwnerList([]); }
   }, [open]);
 
   function handleApply() {
-    const patch: { state?: string | null; stage?: string; owner?: string | null } = {};
+    const patch: { state?: string | null; stage?: string; owner?: string[] | null } = {};
     if (stateVal !== KEEP) patch.state = stateVal === CLEAR ? null : stateVal === "__custom" ? stateCustom.trim() : stateVal;
     if (stageVal !== KEEP) patch.stage = stageVal;
-    if (ownerVal !== KEEP) patch.owner = ownerVal === CLEAR ? null : ownerVal === "__custom" ? ownerCustom.trim() : ownerVal;
+    if (ownerVal !== KEEP) patch.owner = ownerVal === CLEAR ? null : ownerList.length ? ownerList : null;
     if (Object.keys(patch).length === 0) {
       toast({ title: "Nothing to update", description: "Pick at least one field to change." });
       return;
@@ -828,12 +826,11 @@ function BulkEditDialog({
               <SelectContent>
                 <SelectItem value={KEEP}>Keep current</SelectItem>
                 <SelectItem value={CLEAR}>Clear</SelectItem>
-                <SelectItem value="__custom">Custom…</SelectItem>
-                {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                <SelectItem value={SET}>Set owners…</SelectItem>
               </SelectContent>
             </Select>
-            {ownerVal === "__custom" && (
-              <Input className="mt-2" value={ownerCustom} onChange={(e) => setOwnerCustom(e.target.value)} placeholder="Owner name" />
+            {ownerVal === SET && (
+              <div className="mt-2"><OwnerCombobox value={ownerList} onChange={setOwnerList} /></div>
             )}
           </div>
         </div>
