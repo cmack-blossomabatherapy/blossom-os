@@ -189,6 +189,7 @@ export function PhoneDashboard() {
             <QuickLink to="/phone/shared"    label="Shared Routing" />
             <QuickLink to="/phone/requests"  label="Change Requests" />
             <QuickLink to="/phone/ai-calls"  label="After-Hours AI Calls" />
+            <QuickLink to="/phone/ai-calls/audit" label="AI Calls — Email Audit Log" />
             <QuickLink to="/phone/admin"     label="Admin Settings" />
           </CardContent>
         </Card>
