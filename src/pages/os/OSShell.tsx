@@ -446,6 +446,11 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
   // Case Manager — warm, supportive, family-relationship oriented.
   const CASE_MANAGER_SECTIONS: NavSection[] = [
     {
+      id: "workforce", label: "Workforce", items: [
+        { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
+      ],
+    },
+    {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
