@@ -132,12 +132,20 @@ function tidyName(raw: string): string {
     : tok
   ).join(" ");
 }
-function classifyStatus(reasonRaw: string, statusRaw: string): { status: CancelStatus; isCancelled: boolean; isExcused: boolean } {
+function classifyStatus(
+  reasonRaw: string,
+  statusRaw: string,
+  opts: { explicitCancelled?: boolean; explicitRendered?: boolean } = {},
+): { status: CancelStatus; isCancelled: boolean; isExcused: boolean } {
   const r = (reasonRaw || "").toLowerCase();
   const s = (statusRaw || "").toLowerCase();
   const both = `${s} ${r}`;
+  // Explicit rendered (e.g. Cancelled=0 + Present=1, or TypeName "Direct Service" with no cancel flag)
+  if (opts.explicitRendered && !opts.explicitCancelled) {
+    return { status: "Rendered", isCancelled: false, isExcused: false };
+  }
   if (/render|complete|attended|kept/.test(s)) return { status: "Rendered", isCancelled: false, isExcused: false };
-  if (!s && !r) return { status: "Scheduled", isCancelled: false, isExcused: false };
+  if (!opts.explicitCancelled && !s && !r) return { status: "Scheduled", isCancelled: false, isExcused: false };
   if (/no[\s-]?show|nos\b/.test(both)) return { status: "No Show", isCancelled: true, isExcused: false };
   if (/weather|snow|storm|hurricane|ice/.test(both)) return { status: "Weather", isCancelled: true, isExcused: true };
   if (/hospital|admitted|ER\b/i.test(both)) return { status: "Hospitalization", isCancelled: true, isExcused: true };
@@ -153,7 +161,9 @@ function classifyStatus(reasonRaw: string, statusRaw: string): { status: CancelS
   if (/excused/.test(both)) return { status: "Excused", isCancelled: true, isExcused: true };
   if (/unexcused/.test(both)) return { status: "Unexcused", isCancelled: true, isExcused: false };
   if (/cancel/.test(both)) return { status: "Cancelled", isCancelled: true, isExcused: false };
-  return { status: "Other", isCancelled: true, isExcused: false };
+  if (opts.explicitCancelled) return { status: "Other", isCancelled: true, isExcused: false };
+  // No cancellation signal at all — treat as rendered/completed session.
+  return { status: "Rendered", isCancelled: false, isExcused: false };
 }
 
 function downloadBlob(filename: string, mime: string, data: string) {
