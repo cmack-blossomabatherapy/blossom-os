@@ -260,6 +260,32 @@ export default function BcbaProductivityReport() {
   const [dateTo, setDateTo] = useState<string>("");     // YYYY-MM-DD
   const [datePreset, setDatePreset] = useState<string>("all");
 
+  function applyDatePreset(preset: string) {
+    setDatePreset(preset);
+    if (!dataRange) { setDateFrom(""); setDateTo(""); return; }
+    const hi = new Date(dataRange.hiMs);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    if (preset === "all") { setDateFrom(""); setDateTo(""); return; }
+    if (preset === "latest-month") {
+      const start = new Date(hi.getFullYear(), hi.getMonth(), 1);
+      const end = new Date(hi.getFullYear(), hi.getMonth() + 1, 0);
+      setDateFrom(iso(start)); setDateTo(iso(end)); return;
+    }
+    if (preset === "last-3" || preset === "last-6") {
+      const months = preset === "last-3" ? 3 : 6;
+      const start = new Date(hi.getFullYear(), hi.getMonth() - (months - 1), 1);
+      const end = new Date(hi.getFullYear(), hi.getMonth() + 1, 0);
+      setDateFrom(iso(start)); setDateTo(iso(end)); return;
+    }
+    if (preset === "ytd") {
+      const start = new Date(hi.getFullYear(), 0, 1);
+      setDateFrom(iso(start)); setDateTo(iso(hi)); return;
+    }
+    if (preset === "full") {
+      setDateFrom(iso(new Date(dataRange.loMs))); setDateTo(iso(hi)); return;
+    }
+  }
+
   const [sortKey, setSortKey] = useState<keyof BcbaAgg | "">("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
