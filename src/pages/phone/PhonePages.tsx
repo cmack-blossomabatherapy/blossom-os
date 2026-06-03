@@ -1757,5 +1757,5 @@ export { Phone as PhoneIcon };
 // ---------- /phone/ai-calls ----------
 
 export function PhoneAfterHoursAI() {
-  return <AfterHoursAIBoard />;
+  return <Shell><AfterHoursAIBoard /></Shell>;
 }
