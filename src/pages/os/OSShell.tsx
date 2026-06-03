@@ -536,6 +536,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // State Director — only Resources section for now.
+  const STATE_DIRECTOR_SECTIONS: NavSection[] = [
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+  ];
+
   // QA / Compliance — only Evaluations and Reports are active. Everything else is
   // disabled and shown as Coming Soon.
   const QA_TEAM_SECTIONS: NavSection[] = [
@@ -559,6 +570,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? RBT_SECTIONS
     : role === "payroll_coordinator"
     ? PAYROLL_SECTIONS
+    : role === "state_director"
+    ? STATE_DIRECTOR_SECTIONS
     : role === "operations_leadership"
     ? OPS_LEADERSHIP_SECTIONS
     : role === "case_manager"
@@ -580,30 +593,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
 
-  // State Director: gray out core operational items as Coming Soon, and
-  // remove the AI & Automations section entirely.
-  if (role === "state_director") {
-    const COMING_SOON_PATHS = new Set<string>([
-      "/state-director",       // Dashboard
-      "/intake",                // Intake Workspace
-      "/command-center",        // Command Center
-      "/leads",
-      "/vob-decision-center",
-      "/clients",
-      "/authorizations",
-      "/scheduling",
-      "/cases",                 // Case Management
-      "/staff",                 // BCBA / RBT
-      "/evaluations",
-      "/kpi",                   // KPI Tracking
-    ]);
-    sections = sections
-      .filter((s) => s.id !== "ai")
-      .map((s) => ({
-        ...s,
-        items: s.items.map((i) => (COMING_SOON_PATHS.has(i.to) ? { ...i, disabled: true } : i)),
-      }));
-  }
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
