@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
 import type { ReferralCompany, ReferralContact, ReferralImportBatch } from "@/lib/os/referrals/types";
+import { CONTACT_STAGES, COMPANY_STAGES } from "@/lib/os/referrals/types";
+import { updateContact, updateCompany } from "@/lib/os/referrals/api";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
 import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
@@ -83,6 +85,10 @@ function ReferralsInner() {
   const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
   const [activeTab, setActiveTab] = useState<ExportDataset>("contacts");
   const [exportOpen, setExportOpen] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+  const [bulkContactsOpen, setBulkContactsOpen] = useState(false);
+  const [bulkCompaniesOpen, setBulkCompaniesOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -153,6 +159,45 @@ function ReferralsInner() {
   }
 
   const dataError = contactsError ?? companiesError ?? batchesError;
+
+  // Clear selections when filters trim them out
+  useEffect(() => {
+    setSelectedContactIds((ids) => ids.filter((id) => visibleContacts.some((c) => c.id === id)));
+  }, [visibleContacts]);
+  useEffect(() => {
+    setSelectedCompanyIds((ids) => ids.filter((id) => visibleCompanies.some((c) => c.id === id)));
+  }, [visibleCompanies]);
+
+  const contactOwners = useMemo(() => Array.from(new Set(contacts.map((c) => c.contact_owner).filter(Boolean) as string[])).sort(), [contacts]);
+  const companyOwners = useMemo(() => Array.from(new Set(companies.map((c) => c.relationship_owner).filter(Boolean) as string[])).sort(), [companies]);
+
+  async function applyContactBulk(patch: Partial<ReferralContact>) {
+    if (!selectedContactIds.length) return;
+    try {
+      await Promise.all(selectedContactIds.map((id) => updateContact(id, patch)));
+      toast({ title: `Updated ${selectedContactIds.length} contacts` });
+      setSelectedContactIds([]);
+      setBulkContactsOpen(false);
+      refreshContacts();
+    } catch (e) {
+      toast({ title: "Bulk update failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    }
+  }
+  async function applyCompanyBulk(patch: Partial<ReferralCompany>) {
+    if (!selectedCompanyIds.length) return;
+    try {
+      await Promise.all(selectedCompanyIds.map((id) => updateCompany(id, patch)));
+      toast({ title: `Updated ${selectedCompanyIds.length} companies` });
+      setSelectedCompanyIds([]);
+      setBulkCompaniesOpen(false);
+      refreshCompanies();
+    } catch (e) {
+      toast({ title: "Bulk update failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    }
+  }
+
+  const allContactsChecked = visibleContacts.length > 0 && visibleContacts.every((c) => selectedContactIds.includes(c.id));
+  const allCompaniesChecked = visibleCompanies.length > 0 && visibleCompanies.every((c) => selectedCompanyIds.includes(c.id));
 
   const exportSources = useMemo((): Record<ExportDataset, ExportSource> => {
     const contactColumns: ExportColumn<ReferralContact>[] = [
@@ -301,6 +346,12 @@ function ReferralsInner() {
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b">
+                      <th className="w-8 px-3 py-2">
+                        <Checkbox
+                          checked={allContactsChecked}
+                          onCheckedChange={(checked) => setSelectedContactIds(checked === true ? visibleContacts.map((c) => c.id) : [])}
+                        />
+                      </th>
                       <th className="text-left px-3 py-2">Name</th>
                       <th className="text-left px-3 py-2">Company</th>
                       <th className="text-left px-3 py-2">Role</th>
@@ -315,6 +366,12 @@ function ReferralsInner() {
                   <tbody>
                     {visibleContacts.map((c) => (
                       <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setContactDrawer(c)}>
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedContactIds.includes(c.id)}
+                            onCheckedChange={(checked) => setSelectedContactIds((ids) => checked === true ? [...ids, c.id] : ids.filter((i) => i !== c.id))}
+                          />
+                        </td>
                         <td className="px-3 py-2 font-medium">{c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">{companyName(c.company_id)}</td>
                         <td className="px-3 py-2 text-muted-foreground">{c.role_type ?? c.title ?? "—"}</td>
@@ -349,6 +406,12 @@ function ReferralsInner() {
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b">
+                      <th className="w-8 px-3 py-2">
+                        <Checkbox
+                          checked={allCompaniesChecked}
+                          onCheckedChange={(checked) => setSelectedCompanyIds(checked === true ? visibleCompanies.map((c) => c.id) : [])}
+                        />
+                      </th>
                       <th className="text-left px-3 py-2">Company</th>
                       <th className="text-left px-3 py-2">Type</th>
                       <th className="text-left px-3 py-2">Website</th>
@@ -365,6 +428,12 @@ function ReferralsInner() {
                       const contactCount = contacts.filter((k) => k.company_id === c.id).length;
                       return (
                         <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setCompanyDrawer(c)}>
+                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedCompanyIds.includes(c.id)}
+                              onCheckedChange={(checked) => setSelectedCompanyIds((ids) => checked === true ? [...ids, c.id] : ids.filter((i) => i !== c.id))}
+                            />
+                          </td>
                           <td className="px-3 py-2 font-medium">{c.company_name}</td>
                           <td className="px-3 py-2 text-muted-foreground">{c.company_type ?? "—"}</td>
                           <td className="px-3 py-2 text-muted-foreground">{c.domain ?? c.website_url ?? "—"}</td>
@@ -454,6 +523,48 @@ function ReferralsInner() {
       {addContactOpen && <AddReferralDialog open onOpenChange={setAddContactOpen} onCreated={refreshAll} />}
       {addCompanyOpen && <AddCompanyDialog open onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />}
       {importOpen && <ImportReferralsDialog open onOpenChange={setImportOpen} onComplete={refreshAll} />}
+      <BulkEditBar
+        count={selectedContactIds.length}
+        label="contacts"
+        visible={activeTab === "contacts"}
+        onClear={() => setSelectedContactIds([])}
+        onOpen={() => setBulkContactsOpen(true)}
+      />
+      <BulkEditBar
+        count={selectedCompanyIds.length}
+        label="companies"
+        visible={activeTab === "companies"}
+        onClear={() => setSelectedCompanyIds([])}
+        onOpen={() => setBulkCompaniesOpen(true)}
+      />
+      <BulkEditDialog
+        open={bulkContactsOpen}
+        onOpenChange={setBulkContactsOpen}
+        count={selectedContactIds.length}
+        kind="contacts"
+        stages={CONTACT_STAGES as readonly string[]}
+        states={states}
+        owners={contactOwners}
+        onApply={(patch) => applyContactBulk({
+          ...(patch.state !== undefined ? { state: patch.state } : {}),
+          ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
+          ...(patch.owner !== undefined ? { contact_owner: patch.owner } : {}),
+        })}
+      />
+      <BulkEditDialog
+        open={bulkCompaniesOpen}
+        onOpenChange={setBulkCompaniesOpen}
+        count={selectedCompanyIds.length}
+        kind="companies"
+        stages={COMPANY_STAGES as readonly string[]}
+        states={states}
+        owners={companyOwners}
+        onApply={(patch) => applyCompanyBulk({
+          ...(patch.state !== undefined ? { state: patch.state } : {}),
+          ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
+          ...(patch.owner !== undefined ? { relationship_owner: patch.owner } : {}),
+        })}
+      />
       <ReferralExportDialog
         open={exportOpen}
         onOpenChange={setExportOpen}
