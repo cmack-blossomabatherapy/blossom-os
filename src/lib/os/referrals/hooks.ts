@@ -18,23 +18,25 @@ function useChannelRefresh(table: string, refresh: () => void) {
 export function useReferralContacts() {
   const [data, setData] = useState<ReferralContact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const refresh = useCallback(async () => {
-    try { setData(await listContacts()); } finally { setLoading(false); }
+    try { setError(null); setData(await listContacts()); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_contacts", refresh);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }
 
 export function useReferralCompanies() {
   const [data, setData] = useState<ReferralCompany[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const refresh = useCallback(async () => {
-    try { setData(await listCompanies()); } finally { setLoading(false); }
+    try { setError(null); setData(await listCompanies()); } catch (e) { setError(e instanceof Error ? e : new Error(String(e))); } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
   useChannelRefresh("referral_companies", refresh);
-  return { data, loading, refresh };
+  return { data, loading, error, refresh };
 }
 
 export function useReferralActivities(filter: { contactId?: string; companyId?: string } = {}) {
