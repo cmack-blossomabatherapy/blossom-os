@@ -951,231 +951,199 @@ export default function CancellationCommandCenter() {
             </div>
           </section>
 
-          {/* EXECUTIVE SUMMARY */}
-          <section className="mt-6">
-            <SectionHeader title="Executive summary" subtitle="Cancellation health at a glance." />
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Kpi label="Scheduled" value={fmt0(rows.length)} />
-              <Kpi label="Completed" value={fmt0(agg.rendered.length)} tone="emerald" />
-              <Kpi label="Cancelled" value={fmt0(agg.cancelled.length)} tone="rose" />
-              <Kpi label="Cancellation Rate" value={fmtPct(agg.cancRate)} tone={agg.cancRate > 0.2 ? "rose" : "default"} />
-              <Kpi
-                label="MoM Trend"
-                value={agg.momDelta === 0 ? "—" : `${agg.momDelta > 0 ? "+" : ""}${(agg.momDelta * 100).toFixed(1)}%`}
-                tone={agg.momDelta > 0 ? "rose" : agg.momDelta < 0 ? "emerald" : "default"}
-                icon={agg.momDelta > 0 ? TrendingUp : TrendingDown}
-              />
-              <Kpi label="Lost Hours" value={fmt1(agg.lostHours)} tone="rose" icon={Clock} />
-              <Kpi label="Lost Revenue" value={fmtMoney(agg.lostRevenue)} tone="rose" icon={DollarSign} />
-              <Kpi label="Excused" value={fmt0(agg.excused)} />
-              <Kpi label="Unexcused" value={fmt0(agg.unexcused)} tone="rose" />
-              <Kpi label="Avg Hrs / Cancel" value={fmt1(agg.avgHoursLost)} />
-            </div>
-          </section>
-
-          {/* REASON ANALYSIS */}
-          <section className="mt-8">
-            <SectionHeader title="Cancellation reason analysis" subtitle="Drill in by reason — see lost hours and revenue impact." />
-            <DataTable
-              columns={[
-                { key: "reason", label: "Reason" },
-                { key: "sessions", label: "Sessions Lost", align: "right" },
-                { key: "hours", label: "Hours Lost", align: "right", formatter: fmt1 },
-                { key: "pct", label: "% of Cancels", align: "right", formatter: fmtPct },
-                { key: "revenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
-              ]}
-              rows={reasonRows}
-              onRowClick={(r) => setStatusFilter(r.reason as string)}
+          {/* COMPACT KPI STRIP */}
+          <section className="mt-4 flex flex-wrap items-center gap-2">
+            <KpiPill label="Scheduled" value={fmt0(rows.length)} />
+            <KpiPill label="Completed" value={fmt0(agg.rendered.length)} tone="emerald" />
+            <KpiPill label="Cancelled" value={fmt0(agg.cancelled.length)} tone="rose" />
+            <KpiPill label="Cancel Rate" value={fmtPct(agg.cancRate)} tone={agg.cancRate > 0.2 ? "rose" : "default"} />
+            <KpiPill label="Lost Hrs" value={fmt1(agg.lostHours)} tone="rose" />
+            <KpiPill label="Lost $" value={fmtMoney(agg.lostRevenue)} tone="rose" />
+            <KpiPill label="Unexcused" value={fmt0(agg.unexcused)} tone="rose" />
+            <KpiPill
+              label="MoM"
+              value={agg.momDelta === 0 ? "—" : `${agg.momDelta > 0 ? "+" : ""}${(agg.momDelta * 100).toFixed(1)}%`}
+              tone={agg.momDelta > 0 ? "rose" : agg.momDelta < 0 ? "emerald" : "default"}
             />
           </section>
 
-          {/* LOST HOURS + LOST REVENUE */}
-          <section className="mt-8 grid gap-4 lg:grid-cols-2">
-            <Panel title="Lost Hours Analysis">
-              <div className="grid grid-cols-2 gap-3">
-                <Stat label="Total Scheduled" value={`${fmt1(agg.totalHours)} hrs`} />
-                <Stat label="Total Completed" value={`${fmt1(agg.completedHours)} hrs`} />
-                <Stat label="Total Cancelled" value={`${fmt1(agg.lostHours)} hrs`} tone="rose" />
-                <Stat label="Lost Hours %" value={fmtPct(agg.totalHours ? agg.lostHours / agg.totalHours : 0)} tone="rose" />
-              </div>
-              <p className="mt-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">By month</p>
-              <MiniTrend months={agg.months} metric={(m) => m.lostHours} formatter={fmt1} />
-            </Panel>
-            <Panel title="Lost Revenue Analysis" tone="emerald">
-              <div className="grid grid-cols-3 gap-3">
-                <Stat label="This Month" value={fmtMoney(agg.months[agg.months.length - 1]?.[1].lostRev || 0)} tone="rose" />
-                <Stat label="Trailing 90d" value={fmtMoney(agg.months.slice(-3).reduce((s, [, v]) => s + v.lostRev, 0))} tone="rose" />
-                <Stat label="Year-to-date" value={fmtMoney(agg.lostRevenue)} tone="rose" />
-              </div>
-              <p className="mt-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">By month</p>
-              <MiniTrend months={agg.months} metric={(m) => m.lostRev} formatter={fmtMoney} />
-              {!billing.length && (
-                <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
-                  Upload a Billing Report to compute precise lost-revenue figures.
+          {/* PRIMARY: CANCELLATION LOG (≈70% of screen) */}
+          <section className="mt-4">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-[18px] font-semibold tracking-tight">Cancellation log</h2>
+                <p className="text-[12px] text-muted-foreground">
+                  Every cancellation in the selected range. Click any row's status to advance follow-up · click a name to filter.
                 </p>
-              )}
-            </Panel>
-          </section>
-
-          {/* CLIENT REPORT */}
-          <section className="mt-8">
-            <SectionHeader title="Client cancellations" subtitle="High-risk clients flagged red (≥10 cancellations or ≥25% rate)." />
-            <DataTable
-              columns={[
-                { key: "label", label: "Client" },
-                { key: "scheduled", label: "Scheduled", align: "right" },
-                { key: "cancellations", label: "Cancelled", align: "right" },
-                { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
-                { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
-                { key: "lostRevenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
-                { key: "risk", label: "Risk", align: "center", formatter: (v) => <RiskBadge level={v as string} /> },
-              ]}
-              rows={clientRows.sort((a, b) => b.cancellations - a.cancellations).slice(0, 50)}
-              onRowClick={(r) => setClientFilter(r.label as string)}
-            />
-          </section>
-
-          {/* PROVIDER (RBT) REPORT */}
-          <section className="mt-8">
-            <SectionHeader title="RBT / Provider cancellations" subtitle="Identify staffing concerns." />
-            <DataTable
-              columns={[
-                { key: "label", label: "RBT" },
-                { key: "scheduled", label: "Scheduled", align: "right" },
-                { key: "cancellations", label: "Cancelled", align: "right" },
-                { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
-                { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
-                { key: "providerCancels", label: "Provider Cancels", align: "right" },
-              ]}
-              rows={rbtRows.sort((a, b) => b.cancellations - a.cancellations).slice(0, 50)}
-              onRowClick={(r) => setRbtFilter(r.label as string)}
-            />
-          </section>
-
-          {/* BCBA IMPACT */}
-          <section className="mt-8">
-            <SectionHeader title="BCBA impact" subtitle="Cancellations attributed to each BCBA via authorization match." />
-            <DataTable
-              columns={[
-                { key: "label", label: "BCBA" },
-                { key: "scheduled", label: "Scheduled", align: "right" },
-                { key: "rendered", label: "Completed", align: "right" },
-                { key: "cancellations", label: "Cancelled", align: "right" },
-                { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
-                { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
-                { key: "lostRevenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
-                { key: "clientCount", label: "Active Clients", align: "right" },
-              ]}
-              rows={bcbaRows.sort((a, b) => b.lostRevenue - a.lostRevenue).slice(0, 50)}
-              onRowClick={(r) => setBcbaFilter(r.label as string)}
-            />
-          </section>
-
-          {/* STATE + LOCATION */}
-          <section className="mt-8 grid gap-4 lg:grid-cols-2">
-            <Panel title="State performance">
-              <DataTable
-                compact
-                columns={[
-                  { key: "label", label: "State" },
-                  { key: "scheduled", label: "Sched.", align: "right" },
-                  { key: "cancellations", label: "Cancel", align: "right" },
-                  { key: "cancRate", label: "%", align: "right", formatter: (v) => (
-                    <span className={cn(
-                      "tabular-nums font-medium",
-                      (v as number) >= 0.25 ? "text-rose-600" :
-                      (v as number) >= 0.15 ? "text-amber-600" : "text-emerald-600",
-                    )}>{fmtPct(v as number)}</span>
-                  ) },
-                  { key: "lostHours", label: "Hrs Lost", align: "right", formatter: fmt1 },
-                  { key: "lostRevenue", label: "$ Lost", align: "right", formatter: fmtMoney },
-                ]}
-                rows={stateRows.sort((a, b) => b.lostRevenue - a.lostRevenue)}
-                onRowClick={(r) => setStateFilter(r.label as string)}
-              />
-            </Panel>
-            <Panel title="Location performance">
-              <DataTable
-                compact
-                columns={[
-                  { key: "label", label: "Location" },
-                  { key: "scheduled", label: "Sched.", align: "right" },
-                  { key: "cancellations", label: "Cancel", align: "right" },
-                  { key: "cancRate", label: "%", align: "right", formatter: fmtPct },
-                  { key: "lostHours", label: "Hrs Lost", align: "right", formatter: fmt1 },
-                  { key: "lostRevenue", label: "$ Lost", align: "right", formatter: fmtMoney },
-                ]}
-                rows={locationRows.sort((a, b) => b.lostHours - a.lostHours)}
-                onRowClick={(r) => setLocationFilter(r.label as string)}
-              />
-            </Panel>
-          </section>
-
-          {/* TIMING + HIGH RISK */}
-          <section className="mt-8 grid gap-4 lg:grid-cols-3">
-            <Panel title="Cancellation timing">
-              <p className="text-[11px] text-muted-foreground">Hours between cancellation and session start.</p>
-              <div className="mt-3 space-y-2">
-                <TimingBar label="Same day (< 8h)" value={timing.sameDay} tone="rose" />
-                <TimingBar label="Under 24h" value={timing.under24} tone="amber" />
-                <TimingBar label="24–48h" value={timing.h24_48} tone="default" />
-                <TimingBar label="48h+" value={timing.over48} tone="emerald" />
-                <TimingBar label="Unknown" value={timing.unknown} tone="default" />
               </div>
-            </Panel>
-
-            <Panel title="High-risk client monitor" tone="rose">
-              {highRiskClients.length === 0 ? (
-                <p className="text-[12px] text-muted-foreground">No high-risk clients in current filter.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {highRiskClients.slice(0, 8).map(c => (
-                    <li key={c.label} className="flex items-center justify-between rounded-md border border-rose-200 bg-rose-50/50 px-2.5 py-1.5">
-                      <button className="text-[12.5px] font-medium hover:underline" onClick={() => setClientFilter(c.label)}>
-                        {c.label}
-                      </button>
-                      <div className="flex items-center gap-3 text-[11px]">
-                        <span className="tabular-nums text-rose-700">{c.cancellations} ({fmtPct(c.cancRate)})</span>
-                        <span className="tabular-nums text-muted-foreground">{fmt1(c.lostHours)}h</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Panel>
-
-            <Panel title="High-risk RBT monitor" tone="rose">
-              {highRiskRbts.length === 0 ? (
-                <p className="text-[12px] text-muted-foreground">No elevated RBT cancellation rates in current filter.</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {highRiskRbts.slice(0, 8).map(r => (
-                    <li key={r.label} className="flex items-center justify-between rounded-md border border-rose-200 bg-rose-50/50 px-2.5 py-1.5">
-                      <button className="text-[12.5px] font-medium hover:underline" onClick={() => setRbtFilter(r.label)}>
-                        {r.label}
-                      </button>
-                      <div className="flex items-center gap-3 text-[11px]">
-                        <span className="tabular-nums text-rose-700">{fmtPct(r.cancRate)}</span>
-                        <span className="tabular-nums text-muted-foreground">{fmt1(r.lostHours)}h</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Panel>
+              <div className="hidden text-[11px] text-muted-foreground md:flex items-center gap-3">
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Todo</span>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-500" />Contacted</span>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />Resolved</span>
+              </div>
+            </div>
+            <CancellationLogTable
+              rows={rows.filter(r => r.isCancelled)}
+              billing={billing}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={(key) => {
+                if (sortBy === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+                else { setSortBy(key); setSortDir("desc"); }
+              }}
+              followUps={followUps}
+              onFollowUpClick={(r) => cycleFollowUp(rowKey(r))}
+              rowKey={rowKey}
+              onClientClick={(c) => setClientFilter(c)}
+              onRbtClick={(rb) => setRbtFilter(rb)}
+              onBcbaClick={(b) => setBcbaFilter(b)}
+            />
           </section>
 
-          {/* AI INSIGHTS */}
-          <section className="mt-8 rounded-2xl border border-[hsl(345_70%_50%/0.18)] bg-[hsl(345_100%_99%)] p-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[hsl(345_70%_50%)]" />
-              <h3 className="text-[14px] font-semibold tracking-tight">Blossom AI insights</h3>
-            </div>
-            <ul className="mt-2 space-y-1">
+          {/* SECONDARY: tabbed breakdowns */}
+          <section className="mt-6">
+            <Tabs defaultValue="reason">
+              <div className="flex items-center justify-between gap-3">
+                <SectionHeader title="Breakdowns" subtitle="Supporting analysis. Click any row to filter the log above." />
+                <TabsList className="h-9">
+                  <TabsTrigger value="reason" className="text-xs">Reasons</TabsTrigger>
+                  <TabsTrigger value="clients" className="text-xs">Clients</TabsTrigger>
+                  <TabsTrigger value="rbts" className="text-xs">RBTs</TabsTrigger>
+                  <TabsTrigger value="bcbas" className="text-xs">BCBAs</TabsTrigger>
+                  <TabsTrigger value="states" className="text-xs">States · Locations</TabsTrigger>
+                  <TabsTrigger value="timing" className="text-xs">Timing · Trend</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="reason" className="mt-3">
+                <DataTable
+                  columns={[
+                    { key: "reason", label: "Reason" },
+                    { key: "sessions", label: "Sessions Lost", align: "right" },
+                    { key: "hours", label: "Hours Lost", align: "right", formatter: fmt1 },
+                    { key: "pct", label: "% of Cancels", align: "right", formatter: fmtPct },
+                    { key: "revenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
+                  ]}
+                  rows={reasonRows}
+                  onRowClick={(r) => setStatusFilter(r.reason as string)}
+                />
+              </TabsContent>
+
+              <TabsContent value="clients" className="mt-3">
+                <DataTable
+                  columns={[
+                    { key: "label", label: "Client" },
+                    { key: "scheduled", label: "Scheduled", align: "right" },
+                    { key: "cancellations", label: "Cancelled", align: "right" },
+                    { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
+                    { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
+                    { key: "lostRevenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
+                    { key: "risk", label: "Risk", align: "center", formatter: (v) => <RiskBadge level={v as string} /> },
+                  ]}
+                  rows={clientRows.sort((a, b) => b.cancellations - a.cancellations).slice(0, 100)}
+                  onRowClick={(r) => setClientFilter(r.label as string)}
+                />
+              </TabsContent>
+
+              <TabsContent value="rbts" className="mt-3">
+                <DataTable
+                  columns={[
+                    { key: "label", label: "RBT" },
+                    { key: "scheduled", label: "Scheduled", align: "right" },
+                    { key: "cancellations", label: "Cancelled", align: "right" },
+                    { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
+                    { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
+                    { key: "providerCancels", label: "Provider Cancels", align: "right" },
+                  ]}
+                  rows={rbtRows.sort((a, b) => b.cancellations - a.cancellations).slice(0, 100)}
+                  onRowClick={(r) => setRbtFilter(r.label as string)}
+                />
+              </TabsContent>
+
+              <TabsContent value="bcbas" className="mt-3">
+                <DataTable
+                  columns={[
+                    { key: "label", label: "BCBA" },
+                    { key: "scheduled", label: "Scheduled", align: "right" },
+                    { key: "rendered", label: "Completed", align: "right" },
+                    { key: "cancellations", label: "Cancelled", align: "right" },
+                    { key: "cancRate", label: "Cancel %", align: "right", formatter: fmtPct },
+                    { key: "lostHours", label: "Hours Lost", align: "right", formatter: fmt1 },
+                    { key: "lostRevenue", label: "Lost Revenue", align: "right", formatter: fmtMoney },
+                    { key: "clientCount", label: "Active Clients", align: "right" },
+                  ]}
+                  rows={bcbaRows.sort((a, b) => b.lostRevenue - a.lostRevenue).slice(0, 100)}
+                  onRowClick={(r) => setBcbaFilter(r.label as string)}
+                />
+              </TabsContent>
+
+              <TabsContent value="states" className="mt-3 grid gap-4 lg:grid-cols-2">
+                <Panel title="State performance">
+                  <DataTable
+                    compact
+                    columns={[
+                      { key: "label", label: "State" },
+                      { key: "scheduled", label: "Sched.", align: "right" },
+                      { key: "cancellations", label: "Cancel", align: "right" },
+                      { key: "cancRate", label: "%", align: "right", formatter: fmtPct },
+                      { key: "lostHours", label: "Hrs Lost", align: "right", formatter: fmt1 },
+                      { key: "lostRevenue", label: "$ Lost", align: "right", formatter: fmtMoney },
+                    ]}
+                    rows={stateRows.sort((a, b) => b.lostRevenue - a.lostRevenue)}
+                    onRowClick={(r) => setStateFilter(r.label as string)}
+                  />
+                </Panel>
+                <Panel title="Location performance">
+                  <DataTable
+                    compact
+                    columns={[
+                      { key: "label", label: "Location" },
+                      { key: "scheduled", label: "Sched.", align: "right" },
+                      { key: "cancellations", label: "Cancel", align: "right" },
+                      { key: "cancRate", label: "%", align: "right", formatter: fmtPct },
+                      { key: "lostHours", label: "Hrs Lost", align: "right", formatter: fmt1 },
+                      { key: "lostRevenue", label: "$ Lost", align: "right", formatter: fmtMoney },
+                    ]}
+                    rows={locationRows.sort((a, b) => b.lostHours - a.lostHours)}
+                    onRowClick={(r) => setLocationFilter(r.label as string)}
+                  />
+                </Panel>
+              </TabsContent>
+
+              <TabsContent value="timing" className="mt-3 grid gap-4 lg:grid-cols-2">
+                <Panel title="Cancellation timing">
+                  <p className="text-[11px] text-muted-foreground">Hours between cancellation and session start.</p>
+                  <div className="mt-3 space-y-2">
+                    <TimingBar label="Same day (< 8h)" value={timing.sameDay} tone="rose" />
+                    <TimingBar label="Under 24h" value={timing.under24} tone="amber" />
+                    <TimingBar label="24–48h" value={timing.h24_48} tone="default" />
+                    <TimingBar label="48h+" value={timing.over48} tone="emerald" />
+                    <TimingBar label="Unknown" value={timing.unknown} tone="default" />
+                  </div>
+                </Panel>
+                <Panel title="Lost hours by month">
+                  <MiniTrend months={agg.months} metric={(m) => m.lostHours} formatter={fmt1} />
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    <Stat label="This Month" value={fmt1(agg.months[agg.months.length - 1]?.[1].lostHours || 0)} tone="rose" />
+                    <Stat label="Trailing 90d" value={fmt1(agg.months.slice(-3).reduce((s, [, v]) => s + v.lostHours, 0))} tone="rose" />
+                    <Stat label="Year-to-date" value={fmt1(agg.lostHours)} tone="rose" />
+                  </div>
+                </Panel>
+              </TabsContent>
+            </Tabs>
+          </section>
+
+          {/* AI INSIGHTS — compact footer */}
+          <section className="mt-6 rounded-2xl border border-[hsl(345_70%_50%/0.18)] bg-[hsl(345_100%_99%)] p-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[hsl(345_70%_50%)]" />
+                <span className="text-[12px] font-semibold tracking-tight">Blossom AI</span>
+              </div>
               {buildInsights(rows, agg.lostRevenue).map((t, i) => (
-                <li key={i} className="text-[12.5px] text-[hsl(345_30%_30%)]">• {t}</li>
+                <span key={i} className="text-[12px] text-[hsl(345_30%_30%)]">• {t}</span>
               ))}
-            </ul>
+            </div>
           </section>
         </>
       )}
