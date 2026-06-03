@@ -11,7 +11,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X } from "lucide-react";
+import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const WEBHOOK_URL = "https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook";
 
@@ -48,6 +49,21 @@ type Call = {
 };
 
 const STATUS_OPTIONS = ["new", "in_progress", "called_back", "resolved", "no_action"] as const;
+
+const DEPARTMENT_META: Record<string, { label: string; tone: string }> = {
+  intake: { label: "Intake", tone: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30" },
+  scheduling: { label: "Scheduling", tone: "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30" },
+  state_director: { label: "State Director", tone: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30" },
+  hr: { label: "HR", tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
+  urgent: { label: "Urgent", tone: "bg-destructive/10 text-destructive border-destructive/30" },
+  unverified: { label: "Unverified — Manual review", tone: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+};
+
+function deptMeta(call: Pick<Call, "department_to_notify" | "call_summary" | "verification_status">) {
+  const needsReview = call.verification_status === "unverified_failed" || (!call.call_summary);
+  const key = needsReview ? "unverified" : (call.department_to_notify || "intake");
+  return { key, ...(DEPARTMENT_META[key] ?? DEPARTMENT_META.intake) };
+}
 
 type Routing = {
   id: string;
