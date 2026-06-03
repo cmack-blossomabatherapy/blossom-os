@@ -635,6 +635,15 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     ? HR_TEAM_SECTIONS
     : role === "qa_team"
     ? QA_TEAM_SECTIONS
+    : role === "behavioral_support"
+    ? [
+        {
+          id: "resources", label: "Resources", items: [
+            { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+            { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
+          ],
+        },
+      ]
     : [homeSection, ...NAV_SECTIONS]
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
