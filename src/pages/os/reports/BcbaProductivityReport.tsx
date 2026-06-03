@@ -16,6 +16,7 @@ import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/exc
 import {
   BCBA_LAST_SESSION_KEY, getSavedReport, saveReport,
 } from "@/lib/os/bcbaSavedReports";
+import { pushRecent } from "@/lib/os/reportsCatalog";
 
 /* ============================================================
  * BCBA Productivity Report (Standard Report)
@@ -515,10 +516,12 @@ export default function BcbaProductivityReport() {
       : `BCBA Productivity · ${new Date().toLocaleDateString()}`;
     const name = typeof window !== "undefined" ? window.prompt("Name this saved report", defaultName) : defaultName;
     if (!name) return;
+    const insights = computeBcbaInsights(billingRaws, authRecords);
     const rec = saveReport({
       name: name.trim(),
-      billingFileName, authFileNames, billingRaws, authRecords,
+      billingFileName, authFileNames, billingRaws, authRecords, insights,
     });
+    pushRecent("bcba-productivity-report");
     setSearchParams({ saved: rec.id }, { replace: true });
     toast.success(`Saved "${rec.name}" to Saved Reports`);
   }
