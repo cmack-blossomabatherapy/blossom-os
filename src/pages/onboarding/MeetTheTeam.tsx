@@ -8,6 +8,7 @@ import type { DepartmentId } from "@/data/teamDirectory";
 
 const ICONS: Record<DepartmentId, React.ComponentType<{ className?: string }>> = {
   "operations": Briefcase,
+  "executive-operations": Briefcase,
   "state-directors": Building2,
   "asst-state-directors": ShieldCheck,
   "intake": Phone,
@@ -32,6 +33,16 @@ const RESPONSIBILITIES: Record<DepartmentId, { mission: string; responsibilities
       "Hold every department accountable to outcomes",
     ],
     whoToCall: "Escalations that span more than one department, strategic decisions, or anything that doesn't have a clear owner yet.",
+  },
+  "executive-operations": {
+    mission: "Executive operations partners — supporting leadership across cross-functional initiatives and day-to-day execution.",
+    responsibilities: [
+      "Support executive leadership across cross-functional work",
+      "Drive operational follow-through on strategic initiatives",
+      "Coordinate communication across departments",
+      "Keep leadership focused on the highest-priority work",
+    ],
+    whoToCall: "Executive-level coordination, leadership follow-ups, and cross-department alignment.",
   },
   "state-directors": {
     mission: "The face of Blossom in each state — building local presence, owning state-level performance, and ensuring families and clinicians are well supported.",
