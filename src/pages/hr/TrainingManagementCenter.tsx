@@ -946,33 +946,72 @@ function AISuggestionsView() {
 }
 
 function OnboardingView() {
-  const { phaseOverrides, moduleOverrides } = useJourneyOverrides();
-  const phases = ONBOARDING_PHASES.map((p) =>
-    applyOverridesToPhase(p, phaseOverrides, moduleOverrides),
-  );
-  const home = phaseOverrides["__home"];
-  const totalModules = phases.reduce((s, p) => s + p.modules.length, 0);
-  const customized =
-    Object.keys(phaseOverrides).length + Object.keys(moduleOverrides).length;
+  const { phaseOverrides, moduleOverrides, refresh } = useJourneyOverrides();
+  const baseWelcome = ONBOARDING_PHASES.find((p) => p.id === "welcome")!;
+  const welcome = applyOverridesToPhase(baseWelcome, phaseOverrides, moduleOverrides);
+  const customized = baseWelcome.modules.filter(
+    (m) => moduleOverrides[`welcome:${m.key}`],
+  ).length + (phaseOverrides["welcome"] ? 1 : 0);
+
+  // Local drafts for inline editing
+  const [drafts, setDrafts] = useState<Record<string, { title: string; blurb: string }>>(() => {
+    const init: Record<string, { title: string; blurb: string }> = {};
+    baseWelcome.modules.forEach((m) => {
+      const o = moduleOverrides[`welcome:${m.key}`];
+      init[m.key] = { title: o?.title ?? m.title, blurb: o?.blurb ?? m.blurb };
+    });
+    return init;
+  });
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  // Re-hydrate drafts when overrides arrive from Supabase
+  useMemo(() => {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      baseWelcome.modules.forEach((m) => {
+        const o = moduleOverrides[`welcome:${m.key}`];
+        if (!prev[m.key]) {
+          next[m.key] = { title: o?.title ?? m.title, blurb: o?.blurb ?? m.blurb };
+        }
+      });
+      return next;
+    });
+  }, [moduleOverrides, baseWelcome.modules]);
+
+  const saveModule = async (moduleKey: string) => {
+    const d = drafts[moduleKey];
+    if (!d) return;
+    setSavingKey(moduleKey);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase
+      .from("journey_module_overrides")
+      .upsert(
+        { phase_id: "welcome", module_key: moduleKey, title: d.title, blurb: d.blurb },
+        { onConflict: "phase_id,module_key" },
+      );
+    setSavingKey(null);
+    if (error) {
+      toast.error("Couldn't save step", { description: error.message });
+      return;
+    }
+    toast.success("Step saved");
+    void refresh();
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header card */}
+      {/* Header */}
       <section className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Onboarding · 6 phases
+              Onboarding · Phase 0
             </p>
             <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-foreground">
-              {home?.title ?? "Your First 4 Weeks at"}{" "}
-              <span className="text-primary">
-                {home?.title_highlight ?? "Blossom"}
-              </span>
+              Welcome to <span className="text-primary">Blossom</span>
             </h2>
             <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
-              {home?.objective ??
-                "The Welcome to Blossom journey every new hire walks through. Edit phase copy, swap intro videos, and curate modules from one place."}
+              Every new hire's first day at Blossom. Edit the steps below — what new hires read, watch, and acknowledge on day one.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -981,79 +1020,92 @@ function OnboardingView() {
                 <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Preview
               </Link>
             </Button>
-            <Button asChild size="sm" className="rounded-xl">
-              <Link to="/admin/journey-editor">
-                <PenSquare className="mr-1.5 h-3.5 w-3.5" /> Open editor
-              </Link>
-            </Button>
           </div>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-          <Stat label="Phases" value={String(phases.length)} />
-          <Stat label="Modules" value={String(totalModules)} />
-          <Stat label="Customizations" value={String(customized)} />
+          <Stat label="Steps" value={String(welcome.modules.length)} />
+          <Stat label="Est. time" value={`${welcome.modules.reduce((s, m) => s + (m.estMinutes || 0), 0)} min`} />
+          <Stat label="Customized" value={String(customized)} />
         </div>
       </section>
 
-      {/* Phase list */}
+      {/* Steps list */}
       <section>
-        <h3 className="text-[14px] font-semibold tracking-tight">
-          Onboarding phases
-        </h3>
-        <p className="text-[12.5px] text-muted-foreground">
-          Click a phase to edit copy, modules, and intro videos.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {phases.map((p, idx) => {
-            const PhaseIcon = p.icon;
-            const customizedHere =
-              (phaseOverrides[p.id] ? 1 : 0) +
-              p.modules.filter(
-                (m) => moduleOverrides[`${p.id}:${m.key}`],
-              ).length;
+        <div className="flex items-end justify-between">
+          <div>
+            <h3 className="text-[14px] font-semibold tracking-tight">
+              Welcome to Blossom — steps
+            </h3>
+            <p className="text-[12.5px] text-muted-foreground">
+              Reorder, rename, or rewrite each step. Changes apply to every new hire instantly.
+            </p>
+          </div>
+        </div>
+
+        <ol className="mt-4 space-y-3">
+          {baseWelcome.modules.map((m, idx) => {
+            const ModIcon = m.icon;
+            const k = `welcome:${m.key}`;
+            const edited = !!moduleOverrides[k];
+            const d = drafts[m.key] ?? { title: m.title, blurb: m.blurb };
             return (
-              <Link
-                key={p.id}
-                to={`/admin/journey-editor?phase=${p.id}`}
-                className="group rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40"
+              <li
+                key={m.key}
+                className="rounded-2xl border border-border/70 bg-card p-5"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <PhaseIcon className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        {p.weekLabel}
-                      </p>
-                      <h4 className="mt-0.5 text-[14.5px] font-semibold tracking-tight text-foreground">
-                        {p.title}
-                      </h4>
-                    </div>
-                  </div>
-                  {customizedHere > 0 && (
-                    <Badge
-                      variant="outline"
-                      className="border-primary/30 bg-primary/5 text-[10px] text-primary"
-                    >
-                      Edited
-                    </Badge>
-                  )}
-                </div>
-                <p className="mt-3 line-clamp-2 text-[12.5px] text-muted-foreground">
-                  {p.objective}
-                </p>
-                <div className="mt-4 flex items-center justify-between text-[11.5px] text-muted-foreground">
-                  <span>{p.modules.length} modules</span>
-                  <span className="inline-flex items-center gap-1 font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                    Edit phase <ArrowRight className="h-3 w-3" />
+                <div className="flex items-start gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted text-[12px] font-semibold text-foreground">
+                    {idx + 1}
                   </span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <ModIcon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {m.kind}
+                      </Badge>
+                      <span className="text-[11.5px] text-muted-foreground">
+                        ~{m.estMinutes} min
+                      </span>
+                      {edited && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          Edited
+                        </Badge>
+                      )}
+                    </div>
+                    <Input
+                      value={d.title}
+                      onChange={(e) =>
+                        setDrafts((s) => ({ ...s, [m.key]: { ...s[m.key], title: e.target.value } }))
+                      }
+                      className="rounded-xl text-[14px] font-semibold"
+                    />
+                    <Textarea
+                      value={d.blurb}
+                      rows={2}
+                      onChange={(e) =>
+                        setDrafts((s) => ({ ...s, [m.key]: { ...s[m.key], blurb: e.target.value } }))
+                      }
+                      className="rounded-xl text-[12.5px]"
+                    />
+                  </div>
                 </div>
-              </Link>
+                <div className="mt-3 flex items-center justify-end">
+                  <Button
+                    size="sm"
+                    className="rounded-xl"
+                    disabled={savingKey === m.key}
+                    onClick={() => saveModule(m.key)}
+                  >
+                    {savingKey === m.key ? "Saving…" : "Save step"}
+                  </Button>
+                </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </section>
     </div>
   );
