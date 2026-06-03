@@ -103,7 +103,7 @@ export function BulkProvisionDialog({ open, onOpenChange, onComplete }: Props) {
       const displayName = `${emp.first_name} ${emp.last_name}`;
       try {
         const { data, error } = await supabase.functions.invoke("admin-invite-user", {
-          body: { email: emp.email, displayName, roles },
+          body: { email: emp.email, displayName, roles, siteUrl: window.location.origin },
         });
         if (error || !data?.ok) {
           out.push({
