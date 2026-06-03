@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { OSNotificationsBell } from "@/components/os/OSNotificationsBell";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Heart, UserCog, CalendarDays, ClipboardList,
@@ -1032,10 +1033,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
               })()}
             </div>
             <div className="flex-1 md:hidden" />
-            <button className="os-glass-icon relative">
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-[hsl(265_85%_65%)] px-1 text-[9px] font-bold text-white">3</span>
-            </button>
+            <OSNotificationsBell />
             <Tooltip delayDuration={120}>
               <TooltipTrigger asChild>
                 <button
