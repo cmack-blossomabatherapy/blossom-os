@@ -593,30 +593,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         .map((s) => ({ ...s, items: s.items.filter((i) => canSee(i.module)) }))
         .filter((s) => s.items.length > 0);
 
-  // State Director: gray out core operational items as Coming Soon, and
-  // remove the AI & Automations section entirely.
-  if (role === "state_director") {
-    const COMING_SOON_PATHS = new Set<string>([
-      "/state-director",       // Dashboard
-      "/intake",                // Intake Workspace
-      "/command-center",        // Command Center
-      "/leads",
-      "/vob-decision-center",
-      "/clients",
-      "/authorizations",
-      "/scheduling",
-      "/cases",                 // Case Management
-      "/staff",                 // BCBA / RBT
-      "/evaluations",
-      "/kpi",                   // KPI Tracking
-    ]);
-    sections = sections
-      .filter((s) => s.id !== "ai")
-      .map((s) => ({
-        ...s,
-        items: s.items.map((i) => (COMING_SOON_PATHS.has(i.to) ? { ...i, disabled: true } : i)),
-      }));
-  }
 
   const mobileSections = (() => {
     const q = mobileSearch.trim().toLowerCase();
