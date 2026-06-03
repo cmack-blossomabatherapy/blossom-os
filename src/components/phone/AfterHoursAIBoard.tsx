@@ -688,6 +688,22 @@ function DeptChip({ label, count, tone, active, onClick }: { label: string; coun
   );
 }
 
+function StageTab({ label, count, dot, active, onClick }: { label: string; count: number; dot?: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${
+        active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      }`}
+    >
+      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />}
+      <span>{label}</span>
+      <span className={`tabular-nums text-[11px] ${active ? "opacity-80" : "text-muted-foreground/80"}`}>{count}</span>
+    </button>
+  );
+}
+
 function Info({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
