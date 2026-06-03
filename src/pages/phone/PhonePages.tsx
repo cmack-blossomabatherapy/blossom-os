@@ -34,6 +34,7 @@ import {
   appendAudit, buildRollbackItems, buildVendorEmail,
   computeImpacts, detectRequestConflicts,
 } from "@/data/phoneSystem";
+import { AfterHoursAIBoard } from "@/components/phone/AfterHoursAIBoard";
 
 // ---------- shared chrome ----------
 
