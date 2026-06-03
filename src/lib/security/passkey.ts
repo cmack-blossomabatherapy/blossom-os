@@ -78,11 +78,12 @@ function b64ToBytes(input: string): Uint8Array {
   else if (pad === 1) s = s.slice(0, -1); // malformed — drop stray char
   try {
     const bin = atob(s);
-    const out = new Uint8Array(bin.length);
+    const buf = new ArrayBuffer(bin.length);
+    const out = new Uint8Array(buf);
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
   } catch {
-    return new Uint8Array(0);
+    return new Uint8Array(new ArrayBuffer(0));
   }
 }
 
