@@ -1518,21 +1518,45 @@ function FilterSelect({ label, value, onChange, options }: {
   );
 }
 
-function Kpi({ label, value, icon: Icon, highlight, hint }: { label: string; value: string; icon?: any; highlight?: boolean; hint?: string }) {
+function Kpi({ label, value, unit, icon: Icon, highlight, hint, sub }: {
+  label: string; value: string; unit?: string; icon?: any; highlight?: boolean; hint?: string; sub?: string;
+}) {
   return (
     <div className={cn(
-      "rounded-xl border bg-card p-3",
-      highlight ? "border-primary/50 bg-primary/5 shadow-sm ring-1 ring-primary/20" : "border-border/60",
+      "group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border bg-card p-3.5 transition-all duration-300",
+      "shadow-[0_1px_0_hsl(0_0%_100%/0.6)_inset,0_8px_20px_-16px_hsl(265_60%_50%/0.18)] hover:-translate-y-0.5",
+      highlight
+        ? "border-primary/40 bg-gradient-to-br from-[hsl(265_100%_99%)] to-card ring-1 ring-primary/15"
+        : "border-border/60",
     )}>
-      <div className="flex items-center justify-between">
+      {highlight && (
+        <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[hsl(265_100%_92%)] opacity-60 blur-2xl" />
+      )}
+      <div className="relative flex items-start justify-between gap-2">
         <p className={cn(
-          "text-[10px] font-semibold uppercase tracking-[0.14em]",
-          highlight ? "text-primary" : "text-muted-foreground",
+          "text-[10.5px] font-semibold uppercase leading-tight tracking-[0.12em]",
+          highlight ? "text-[hsl(265_70%_45%)]" : "text-muted-foreground",
         )}>{label}</p>
-        {Icon && <Icon className={cn("h-3.5 w-3.5", highlight ? "text-primary" : "text-muted-foreground")} />}
+        {Icon && (
+          <span className={cn(
+            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+            highlight ? "bg-[hsl(265_100%_96%)] text-[hsl(265_70%_55%)]" : "bg-secondary/70 text-muted-foreground",
+          )}>
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        )}
       </div>
-      <p className={cn("mt-1 font-semibold tabular-nums tracking-tight", highlight ? "text-2xl text-primary" : "text-xl")}>{value}</p>
-      {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
+      <div className="relative mt-2">
+        <p className="flex items-baseline gap-1">
+          <span className={cn(
+            "font-semibold tabular-nums tracking-tight",
+            highlight ? "text-[26px] text-foreground" : "text-[22px] text-foreground",
+          )}>{value}</span>
+          {unit && <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>}
+        </p>
+        {hint && <p className="mt-0.5 text-[10.5px] text-muted-foreground">{hint}</p>}
+        {sub && <p className="text-[10.5px] font-medium text-[hsl(265_70%_55%)]">{sub}</p>}
+      </div>
     </div>
   );
 }
