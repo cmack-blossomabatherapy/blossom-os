@@ -79,6 +79,8 @@ function ReferralsInner() {
   const [importOpen, setImportOpen] = useState(false);
   const [contactDrawer, setContactDrawer] = useState<ReferralContact | null>(null);
   const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
+  const [activeTab, setActiveTab] = useState<ExportDataset>("contacts");
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -147,6 +149,60 @@ function ReferralsInner() {
     if (!id) return "—";
     return companies.find((c) => c.id === id)?.company_name ?? "—";
   }
+
+  const exportSources = useMemo((): Record<ExportDataset, ExportSource<ReferralContact | ReferralCompany | ReferralImportBatch>> => {
+    const contactColumns: ExportColumn<ReferralContact>[] = [
+      { key: "full_name", label: "Name", value: (c) => c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(), defaultSelected: true },
+      { key: "company", label: "Company", value: (c) => companyName(c.company_id), defaultSelected: true },
+      { key: "role", label: "Role", value: (c) => c.role_type ?? c.title, defaultSelected: true },
+      { key: "email", label: "Email", value: (c) => c.email, defaultSelected: true },
+      { key: "phone", label: "Phone", value: (c) => c.phone ?? c.mobile_phone ?? c.direct_phone, defaultSelected: true },
+      { key: "state", label: "State", value: (c) => c.state, defaultSelected: true },
+      { key: "stage", label: "Stage", value: (c) => c.relationship_stage, defaultSelected: true },
+      { key: "status", label: "Status", value: (c) => c.status },
+      { key: "referrals", label: "Referrals Sent", value: (c) => c.number_of_referrals_sent, defaultSelected: true },
+      { key: "times_contacted", label: "Times Contacted", value: (c) => c.number_of_times_contacted },
+      { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
+      { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at), defaultSelected: true },
+      { key: "owner", label: "Owner", value: (c) => c.contact_owner, defaultSelected: true },
+      { key: "source", label: "Source", value: (c) => c.source },
+      { key: "notes", label: "Notes", value: (c) => c.notes },
+    ];
+
+    const companyColumns: ExportColumn<ReferralCompany>[] = [
+      { key: "company_name", label: "Company", value: (c) => c.company_name, defaultSelected: true },
+      { key: "type", label: "Type", value: (c) => c.company_type, defaultSelected: true },
+      { key: "website", label: "Website", value: (c) => c.website_url ?? c.domain, defaultSelected: true },
+      { key: "phone", label: "Main Phone", value: (c) => c.main_phone },
+      { key: "email", label: "Main Email", value: (c) => c.main_email },
+      { key: "state", label: "State", value: (c) => c.state, defaultSelected: true },
+      { key: "contact_count", label: "Contacts", value: (c) => contacts.filter((k) => k.company_id === c.id).length, defaultSelected: true },
+      { key: "referrals", label: "Referrals Sent", value: (c) => c.referral_count, defaultSelected: true },
+      { key: "stage", label: "Stage", value: (c) => c.relationship_stage, defaultSelected: true },
+      { key: "status", label: "Status", value: (c) => c.status },
+      { key: "last_contacted", label: "Last Contacted", value: (c) => fmtDate(c.last_contacted_at), defaultSelected: true },
+      { key: "next_follow_up", label: "Next Follow-Up", value: (c) => fmtDate(c.next_follow_up_at) },
+      { key: "owner", label: "Owner", value: (c) => c.relationship_owner, defaultSelected: true },
+      { key: "notes", label: "Notes", value: (c) => c.notes },
+    ];
+
+    const batchColumns: ExportColumn<ReferralImportBatch>[] = [
+      { key: "file", label: "File", value: (b) => b.file_name, defaultSelected: true },
+      { key: "uploaded", label: "Uploaded", value: (b) => fmtDate(b.uploaded_at), defaultSelected: true },
+      { key: "total", label: "Total Rows", value: (b) => b.total_rows, defaultSelected: true },
+      { key: "successful", label: "Successful Rows", value: (b) => b.successful_rows, defaultSelected: true },
+      { key: "duplicates", label: "Duplicate Contacts", value: (b) => b.duplicate_contacts, defaultSelected: true },
+      { key: "failed", label: "Failed Rows", value: (b) => b.failed_rows, defaultSelected: true },
+      { key: "status", label: "Status", value: (b) => b.status, defaultSelected: true },
+    ];
+
+    return {
+      contacts: { label: "Referral contacts", description: "Filtered contacts currently shown in the Contacts tab.", fileName: "referral-contacts.csv", rows: visibleContacts, columns: contactColumns },
+      companies: { label: "Referral companies", description: "Filtered organizations currently shown in the Companies tab.", fileName: "referral-companies.csv", rows: visibleCompanies, columns: companyColumns },
+      followups: { label: "Follow-up queue", description: "Overdue, due-today, and upcoming referral follow-ups.", fileName: "referral-follow-ups.csv", rows: [...followUps.overdueRows, ...followUps.todayRows, ...followUps.upcomingRows], columns: contactColumns },
+      history: { label: "Import history", description: "CSV import history and row outcomes.", fileName: "referral-import-history.csv", rows: batches, columns: batchColumns },
+    };
+  }, [batches, companies, contacts, followUps.overdueRows, followUps.todayRows, followUps.upcomingRows, visibleCompanies, visibleContacts]);
 
   return (
     <MktgPage
