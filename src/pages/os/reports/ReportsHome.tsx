@@ -17,6 +17,10 @@ import {
 import { OS_ROLES } from "@/lib/os/permissions";
 import { RequestReportDialog } from "@/components/os/reports/RequestReportDialog";
 import { readSavedReports, deleteSavedReport, type BcbaSavedReport } from "@/lib/os/bcbaSavedReports";
+import {
+  readCancellationSavedReports, deleteCancellationSavedReport,
+  type CancellationSavedReport,
+} from "@/lib/os/cancellationSavedReports";
 
 export default function ReportsHome() {
   const { role } = useOSRole();
@@ -50,20 +54,30 @@ export default function ReportsHome() {
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
   const [savedReports, setSavedReports] = useState<BcbaSavedReport[]>([]);
+  const [cancelSaved, setCancelSaved] = useState<CancellationSavedReport[]>([]);
   useEffect(() => {
     setSavedReports(readSavedReports());
-    const refresh = () => setSavedReports(readSavedReports());
+    setCancelSaved(readCancellationSavedReports());
+    const refresh = () => {
+      setSavedReports(readSavedReports());
+      setCancelSaved(readCancellationSavedReports());
+    };
     window.addEventListener("bcba-saved-reports-changed", refresh);
+    window.addEventListener("cancellation-saved-reports-changed", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("focus", refresh);
     return () => {
       window.removeEventListener("bcba-saved-reports-changed", refresh);
+      window.removeEventListener("cancellation-saved-reports-changed", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("focus", refresh);
     };
   }, []);
   function handleDeleteSaved(id: string) {
     void deleteSavedReport(id).then(() => setSavedReports(readSavedReports()));
+  }
+  function handleDeleteCancelSaved(id: string) {
+    void deleteCancellationSavedReport(id).then(() => setCancelSaved(readCancellationSavedReports()));
   }
 
   // Recently viewed = real recent IDs only (no padding with featured — keeps it honest).
@@ -191,11 +205,11 @@ export default function ReportsHome() {
       </section>
 
       {/* ============== SAVED REPORTS ============== */}
-      {savedReports.length > 0 && (
+      {(savedReports.length > 0 || cancelSaved.length > 0) && (
         <section className="mt-8">
           <SectionHeader
             title="Saved reports"
-            subtitle="Pick up where you left off — your uploaded BCBA Productivity reports."
+            subtitle="Pick up where you left off — your uploaded reports."
           />
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {savedReports.map(sr => (
@@ -227,6 +241,42 @@ export default function ReportsHome() {
                 <button
                   type="button"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteSaved(sr.id); }}
+                  className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                  aria-label="Delete saved report"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </article>
+            ))}
+            {cancelSaved.map(sr => (
+              <article
+                key={sr.id}
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 transition hover:-translate-y-0.5 hover:border-[hsl(345_70%_50%/0.35)] hover:shadow-[0_20px_40px_-25px_hsl(345_60%_50%/0.4)]"
+              >
+                <Link to={`/os/reports/cancellation-command-center?saved=${sr.id}`} className="block">
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full bg-[hsl(345_100%_97%)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[hsl(345_70%_50%)]"
+                  >
+                    Cancellation Command Center
+                  </Badge>
+                  <h3 className="mt-2 line-clamp-1 text-[14.5px] font-semibold tracking-tight">{sr.name}</h3>
+                  <p className="mt-1 line-clamp-1 text-[11.5px] text-muted-foreground">
+                    {sr.scheduleFileName || "Scheduling export"} · {sr.authFileNames.length} auth file{sr.authFileNames.length === 1 ? "" : "s"}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(sr.savedAt).toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-medium text-[hsl(345_70%_50%)] transition group-hover:translate-x-0.5">
+                      Open <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (window.confirm(`Delete "${sr.name}"?`)) handleDeleteCancelSaved(sr.id); }}
                   className="absolute right-2 top-2 rounded-full p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   aria-label="Delete saved report"
                 >

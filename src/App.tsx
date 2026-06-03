@@ -44,6 +44,7 @@ import HrEmployeeComplianceDashboard from "./pages/os/reports/HrEmployeeComplian
 import HrEmployeeOnboardingCommandCenter from "./pages/os/reports/HrEmployeeOnboardingCommandCenter";
 import HrBcbaProductivityDashboard from "./pages/os/reports/HrBcbaProductivityDashboard";
 import BcbaProductivityReport from "./pages/os/reports/BcbaProductivityReport";
+import CancellationCommandCenter from "./pages/os/reports/CancellationCommandCenter";
 import OSComingSoon from "./pages/os/OSComingSoon";
 import AiDashboardNew from "./pages/os/dashboards/AiDashboardNew";
 import AiDashboardView from "./pages/os/dashboards/AiDashboardView";
@@ -638,6 +639,7 @@ const App = () => (
                   <Route path="/reports/hr-employee-onboarding" element={<HrEmployeeOnboardingCommandCenter />} />
                   <Route path="/reports/hr-bcba-productivity" element={<HrBcbaProductivityDashboard />} />
                  <Route path="/reports/bcba-productivity-report" element={<BcbaProductivityReport />} />
+                  <Route path="/reports/cancellation-command-center" element={<CancellationCommandCenter />} />
                   <Route path="/dashboards/ai/new" element={<AiDashboardNew />} />
                   <Route path="/dashboards/ai/:id" element={<AiDashboardView />} />
                   <Route path="/reports/ai/new" element={<Navigate to="/dashboards/ai/new" replace />} />
