@@ -78,6 +78,7 @@ export function SecurityKeysCard() {
       }
       toast.success("Security key registered.");
       await load();
+      try { window.dispatchEvent(new CustomEvent("blossom-passkey-changed")); } catch {}
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't register security key.");
     } finally {
@@ -99,6 +100,7 @@ export function SecurityKeysCard() {
     }
     toast.success("Security key removed.");
     await load();
+    try { window.dispatchEvent(new CustomEvent("blossom-passkey-changed")); } catch {}
   }
 
   return (
