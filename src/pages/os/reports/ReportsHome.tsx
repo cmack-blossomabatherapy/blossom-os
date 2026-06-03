@@ -50,7 +50,18 @@ export default function ReportsHome() {
   function onFav(id: string) { setFavs(toggleFavorite(id)); }
 
   const [savedReports, setSavedReports] = useState<BcbaSavedReport[]>([]);
-  useEffect(() => { setSavedReports(readSavedReports()); }, []);
+  useEffect(() => {
+    setSavedReports(readSavedReports());
+    const refresh = () => setSavedReports(readSavedReports());
+    window.addEventListener("bcba-saved-reports-changed", refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("bcba-saved-reports-changed", refresh);
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
   function handleDeleteSaved(id: string) {
     deleteSavedReport(id);
     setSavedReports(readSavedReports());
