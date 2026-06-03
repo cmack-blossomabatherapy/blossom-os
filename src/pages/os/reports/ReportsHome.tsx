@@ -39,8 +39,6 @@ export default function ReportsHome() {
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
   const [favs, setFavs] = useState<string[]>(() => readFavorites());
-  const recentIds = useMemo(() => readRecent(), []);
-  const recent = recentIds.map(id => reports.find(r => r.id === id)).filter(Boolean) as ReportDef[];
   const favReports = favs.map(id => reports.find(r => r.id === id)).filter(Boolean) as ReportDef[];
 
   const [requestOpen, setRequestOpen] = useState(false);
@@ -57,6 +55,28 @@ export default function ReportsHome() {
     deleteSavedReport(id);
     setSavedReports(readSavedReports());
   }
+
+  // Recently viewed = real recent IDs, padded with featured dashboards (dedup).
+  const recent = useMemo(() => {
+    const recentIds = readRecent();
+    const ordered: ReportDef[] = [];
+    const seen = new Set<string>();
+    for (const id of recentIds) {
+      const r = reports.find(x => x.id === id);
+      if (r && !seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
+    }
+    for (const r of featured) {
+      if (!seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
+    }
+    return ordered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reports, featured, savedReports]);
+
+  // Blossom AI · Today — surface insights from reports generated today.
+  const todaysGenerated = useMemo(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    return savedReports.filter(s => s.savedAt >= start.getTime());
+  }, [savedReports]);
 
   return (
     <OSShell>
