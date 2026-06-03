@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/excelParser";
 import {
-  BCBA_LAST_SESSION_KEY, getSavedReport, saveReport,
+  getSavedReport, saveReport, saveLastSession, loadLastSession, clearLastSession,
 } from "@/lib/os/bcbaSavedReports";
 import { pushRecent } from "@/lib/os/reportsCatalog";
 import { exportBcbaProductivityPdf } from "@/lib/os/bcbaProductivityPdf";
