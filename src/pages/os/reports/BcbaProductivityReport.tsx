@@ -167,6 +167,82 @@ function normName(s: string) {
   return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/* ----- Canonical name resolution -----
+ * People appear with inconsistent formats across CR/auth exports:
+ *   "J. Smith", "John Smith", "Smith, John", "Smith, J.", "JOHN SMITH".
+ * We build a single canonical display name per person by grouping on
+ * (last name + first initial) and picking the most complete form.
+ */
+function tidyName(raw: string): string {
+  let s = (raw || "").trim().replace(/\s+/g, " ");
+  if (!s) return "";
+  // "Last, First M." -> "First M. Last"
+  if (s.includes(",")) {
+    const [last, rest] = s.split(",", 2).map(x => x.trim());
+    if (last && rest) s = `${rest} ${last}`;
+  }
+  // Title-case ALL CAPS / lowercase tokens
+  s = s.split(" ").map(tok => {
+    if (!tok) return tok;
+    const isInit = /^[A-Za-z]\.?$/.test(tok);
+    if (isInit) return tok.replace(/\.?$/, ".").toUpperCase();
+    if (tok === tok.toUpperCase() || tok === tok.toLowerCase()) {
+      return tok[0].toUpperCase() + tok.slice(1).toLowerCase();
+    }
+    return tok;
+  }).join(" ");
+  return s;
+}
+function nameKey(tidy: string): string {
+  // Group by (lastNameLower + firstInitialLower)
+  const toks = tidy.split(" ").filter(Boolean);
+  if (!toks.length) return "";
+  const last = toks[toks.length - 1].toLowerCase().replace(/[^a-z]/g, "");
+  const first = toks[0].toLowerCase().replace(/[^a-z]/g, "");
+  const init = first ? first[0] : "";
+  return `${last}|${init}`;
+}
+function buildCanonicalMap(names: Iterable<string>): Map<string, string> {
+  // raw (lowercased+trimmed) -> canonical display name
+  const groups = new Map<string, { display: string; counts: Map<string, number> }>();
+  for (const raw of names) {
+    if (!raw) continue;
+    const tidy = tidyName(raw);
+    if (!tidy) continue;
+    const key = nameKey(tidy);
+    if (!key) continue;
+    let g = groups.get(key);
+    if (!g) { g = { display: tidy, counts: new Map() }; groups.set(key, g); }
+    g.counts.set(tidy, (g.counts.get(tidy) || 0) + 1);
+  }
+  // Pick canonical per group: prefer longest first token (full first name over initial),
+  // then most frequent, then alphabetic.
+  for (const g of groups.values()) {
+    const entries = [...g.counts.entries()];
+    entries.sort((a, b) => {
+      const aTok = a[0].split(" ")[0] || "";
+      const bTok = b[0].split(" ")[0] || "";
+      const aIsInit = /^[A-Za-z]\.?$/.test(aTok) ? 1 : 0;
+      const bIsInit = /^[A-Za-z]\.?$/.test(bTok) ? 1 : 0;
+      if (aIsInit !== bIsInit) return aIsInit - bIsInit;        // full name beats initial
+      if (bTok.length !== aTok.length) return bTok.length - aTok.length; // longer first token
+      if (b[1] !== a[1]) return b[1] - a[1];                    // more frequent
+      return a[0].localeCompare(b[0]);
+    });
+    g.display = entries[0][0];
+  }
+  // Map every original raw form to its canonical display.
+  const out = new Map<string, string>();
+  for (const raw of names) {
+    if (!raw) continue;
+    const tidy = tidyName(raw);
+    const key = nameKey(tidy);
+    const g = groups.get(key);
+    if (g) out.set(normName(raw), g.display);
+  }
+  return out;
+}
+
 /* ------- Authorization records (separate upload) ------- */
 interface AuthRecord {
   client: string;
@@ -603,6 +679,14 @@ export default function BcbaProductivityReport() {
     const exc: AttributionException[] = [];
     const rows: SessionRow[] = [];
 
+    // Build canonical name map across all observed BCBA / provider names so
+    // "J. Smith", "John Smith", and "Smith, John" all resolve to one person.
+    const allNames: string[] = [];
+    for (const b of billingRaws) if (b.provider) allNames.push(b.provider);
+    for (const a of authRecords) if (a.bcba) allNames.push(a.bcba);
+    const canon = buildCanonicalMap(allNames);
+    const C = (n: string) => (n ? (canon.get(normName(n)) || tidyName(n)) : "");
+
     // Index auths by clientId AND by normalized client name so we can match
     // even when the billing export uses one but not the other.
     const authsByClientId = new Map<string, AuthRecord[]>();
@@ -758,7 +842,7 @@ export default function BcbaProductivityReport() {
         isRbtDirect = true;
         if (hasAuths) {
           const r = matchAuth(x);
-          if (r.bcba) bcba = r.bcba;
+          if (r.bcba) bcba = C(r.bcba);
           else {
             exc.push({
               client: x.client, clientId: x.clientId, date: x.date,
@@ -771,25 +855,25 @@ export default function BcbaProductivityReport() {
           }
         } else {
           // No auths uploaded — fall back to rendering provider so we don't drop rows.
-          bcba = x.provider;
+          bcba = C(x.provider);
         }
       } else if (x.bucket === "97155" || x.bucket === "97156" || x.bucket === "97151") {
         // BCBA codes: rendering provider is the BCBA when present.
-        bcba = x.provider;
+        bcba = C(x.provider);
         if (!bcba && hasAuths) {
           const r = matchAuth(x);
-          if (r.bcba) bcba = r.bcba;
+          if (r.bcba) bcba = C(r.bcba);
         }
       } else {
         // Other codes: use rendering provider.
-        bcba = x.provider;
+        bcba = C(x.provider);
       }
 
       if (!bcba) continue;
       rows.push({
         bcba,
         client: x.client,
-        rbt: isRbtDirect ? x.provider : "",
+        rbt: isRbtDirect ? C(x.provider) : "",
         code: x.code,
         hours: x.hours,
         date: x.date,
