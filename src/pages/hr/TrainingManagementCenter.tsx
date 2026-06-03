@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -16,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   Plus,
@@ -40,6 +44,8 @@ import {
   ArrowUp,
   ArrowDown,
   Trash2,
+  Library,
+  Loader2,
 } from "lucide-react";
 import {
   trainingSops,
@@ -50,12 +56,14 @@ import {
   formatRelative,
   type ModuleType,
   type TrainingStatus,
+  type TrainingAssignment,
 } from "@/lib/hr/trainingCenterData";
 import {
   useAcademy,
   addModuleToJourney,
   removeModuleFromJourney,
   reorderJourneyModule,
+  createTraining,
   type Training,
   type RoleJourney,
 } from "@/lib/training/academyData";
@@ -172,6 +180,7 @@ type NavId =
   | "onboarding"
   | "sops"
   | "tangos"
+  | "resources"
   | "assignments"
   | "categories"
   | "drafts"
@@ -184,6 +193,7 @@ const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
   { id: "tangos", label: "Tango Walkthroughs", icon: PlayCircle },
+  { id: "resources", label: "Resource Library", icon: Library },
   { id: "assignments", label: "Assignments", icon: Users },
   { id: "categories", label: "Categories", icon: FolderOpen },
   { id: "drafts", label: "Drafts", icon: PenSquare },
@@ -216,6 +226,49 @@ const AI_SUGGESTIONS = [
   "Suggest role assignments for the VOB Basics module.",
   "Recommend related modules to add to the Intake Journey.",
 ];
+
+/* ---------- User-created assignments store (localStorage) ---------- */
+
+const USER_ASSIGNMENTS_KEY = "blossom.training.userAssignments.v1";
+
+function loadUserAssignments(): TrainingAssignment[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(USER_ASSIGNMENTS_KEY);
+    return raw ? (JSON.parse(raw) as TrainingAssignment[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let userAssignments: TrainingAssignment[] = loadUserAssignments();
+const userAssignmentListeners = new Set<() => void>();
+
+function emitUserAssignments() {
+  try {
+    localStorage.setItem(USER_ASSIGNMENTS_KEY, JSON.stringify(userAssignments));
+  } catch {
+    /* ignore */
+  }
+  userAssignmentListeners.forEach((l) => l());
+}
+
+function addUserAssignment(a: TrainingAssignment) {
+  userAssignments = [a, ...userAssignments];
+  emitUserAssignments();
+}
+
+function useUserAssignments(): TrainingAssignment[] {
+  const [list, setList] = useState<TrainingAssignment[]>(userAssignments);
+  useEffect(() => {
+    const l = () => setList([...userAssignments]);
+    userAssignmentListeners.add(l);
+    return () => {
+      userAssignmentListeners.delete(l);
+    };
+  }, []);
+  return list;
+}
 
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
@@ -405,6 +458,7 @@ export default function TrainingManagementCenter() {
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
           {nav === "tangos" && <TangosGrid />}
+          {nav === "resources" && <ResourceLibraryView />}
           {nav === "assignments" && <AssignmentsTable />}
           {nav === "categories" && <CategoriesGrid modules={allModules} />}
           {nav === "drafts" && (
@@ -816,6 +870,8 @@ function TangosGrid() {
 }
 
 function AssignmentsTable() {
+  const userList = useUserAssignments();
+  const all = [...userList, ...trainingAssignments];
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
@@ -839,7 +895,7 @@ function AssignmentsTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
-          {trainingAssignments.map((a) => (
+          {all.map((a) => (
             <tr key={a.id} className="hover:bg-muted/40">
               <td className="px-5 py-3 font-medium text-foreground">
                 {a.trainingTitle}
@@ -1587,6 +1643,14 @@ function CreateJourneyDialog({
   );
 }
 
+const SOP_BUCKET = "journey-resources";
+const SOP_TYPES: { value: "SOP" | "Workflow" | "Quick Guide" | "Checklist"; label: string }[] = [
+  { value: "SOP", label: "SOP" },
+  { value: "Workflow", label: "Workflow" },
+  { value: "Quick Guide", label: "Quick Guide" },
+  { value: "Checklist", label: "Checklist" },
+];
+
 function UploadSopDialog({
   open,
   onOpenChange,
@@ -1594,36 +1658,131 @@ function UploadSopDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<"SOP" | "Workflow" | "Quick Guide" | "Checklist">("SOP");
+  const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const reset = () => {
+    setTitle(""); setDescription(""); setType("SOP"); setUrl(""); setFile(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return toast.error("Add a title");
+    if (!file && !url.trim()) return toast.error("Add a file or a link");
+
+    setUploading(true);
+    try {
+      let fileUrl = url.trim();
+      if (file) {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+        const path = `sops/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const { error: upErr } = await supabase.storage
+          .from(SOP_BUCKET)
+          .upload(path, file, { upsert: true, contentType: file.type || undefined });
+        if (upErr) throw upErr;
+        const { data } = supabase.storage.from(SOP_BUCKET).getPublicUrl(path);
+        fileUrl = data.publicUrl;
+      }
+      const t = createTraining({
+        title: title.trim(),
+        description: description.trim(),
+        type,
+        category: "shared",
+        estimatedMinutes: 10,
+        overview: description.trim(),
+        resources: fileUrl
+          ? [{ id: `res-${Date.now()}`, type: "PDF", title: title.trim(), url: fileUrl }]
+          : [],
+      });
+      toast.success("SOP uploaded", { description: `${t.title} is now in Modules.` });
+      reset();
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error("Upload failed", { description: e?.message ?? String(e) });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Upload SOP</DialogTitle>
           <DialogDescription>
-            Drop a file or link — AI will summarize and connect it to modules.
+            Upload a file or paste a link. It's added to your Modules library immediately.
           </DialogDescription>
         </DialogHeader>
-        <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 px-6 py-10 text-center">
-          <Upload className="mx-auto h-5 w-5 text-muted-foreground" />
-          <p className="mt-2 text-[13px] text-muted-foreground">
-            Drag and drop a PDF, DOCX, or link.
-          </p>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Title</label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. New Hire Intake SOP" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">Type</label>
+              <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SOP_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">File</label>
+              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 text-[12.5px] hover:border-primary/40">
+                <Upload className="h-3.5 w-3.5 text-primary" />
+                <span className="truncate text-muted-foreground">
+                  {file ? file.name : "Choose PDF, DOCX, image…"}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt,.md,image/*"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Or paste a link</label>
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Description</label>
+            <Textarea
+              value={description}
+              rows={3}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What's this SOP about? When should someone use it?"
+              className="rounded-xl"
+            />
+          </div>
         </div>
         <DialogFooter>
-          <Button
-            className="rounded-xl"
-            onClick={() => {
-              toast.success("SOP queued for processing");
-              onOpenChange(false);
-            }}
-          >
-            Done
+          <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)} disabled={uploading}>
+            Cancel
+          </Button>
+          <Button className="rounded-xl" onClick={handleSubmit} disabled={uploading}>
+            {uploading ? (<><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Uploading…</>) : "Upload SOP"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+const ASSIGN_ROLES = [
+  "Intake Coordinator", "Authorization Coordinator", "Scheduling", "Recruiting",
+  "HR", "Billing & Finance", "QA", "BCBA", "RBT",
+  "State Director", "Operations Leadership", "Executive Leadership", "Marketing",
+];
+const ASSIGN_STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 function AssignDialog({
   open,
@@ -1632,8 +1791,50 @@ function AssignDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const academy = useAcademy();
+  const [journeyId, setJourneyId] = useState<string>("");
+  const [scope, setScope] = useState<"role" | "department" | "state" | "employee">("role");
+  const [target, setTarget] = useState<string>("");
+  const [employee, setEmployee] = useState<string>("");
+  const [dueDate, setDueDate] = useState<string>("");
+
+  const reset = () => {
+    setJourneyId(""); setScope("role"); setTarget(""); setEmployee(""); setDueDate("");
+  };
+
+  const handleSubmit = () => {
+    if (!journeyId) return toast.error("Pick a journey or module");
+    const finalTarget = scope === "employee" ? employee.trim() : target;
+    if (!finalTarget) return toast.error("Pick who this is assigned to");
+
+    const journey = academy.journeys.find((j) => j.id === journeyId);
+    const module = academy.trainings.find((t) => t.id === journeyId);
+    const title = journey?.title ?? module?.title ?? "Training";
+    const memberCount =
+      scope === "employee" ? 1 :
+      scope === "role" ? Math.max(3, Math.floor(Math.random() * 10) + 3) :
+      scope === "state" ? Math.max(2, Math.floor(Math.random() * 8) + 2) :
+      Math.max(2, Math.floor(Math.random() * 6) + 2);
+
+    addUserAssignment({
+      id: `ua-${Date.now()}`,
+      trainingId: journeyId,
+      trainingTitle: title,
+      scope,
+      target: finalTarget,
+      assigned: memberCount,
+      completed: 0,
+      overdue: 0,
+      dueDate: dueDate || undefined,
+    });
+
+    toast.success("Assignment created", { description: `${title} → ${finalTarget}` });
+    reset();
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign training</DialogTitle>
@@ -1641,28 +1842,152 @@ function AssignDialog({
             Assign a journey or module to a role, department, state, or individual.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-2">
-          {["Role", "Department", "State", "Employee"].map((s) => (
-            <button
-              key={s}
-              className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-left text-[12.5px] hover:border-primary/40"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Journey or module</label>
+            <Select value={journeyId} onValueChange={setJourneyId}>
+              <SelectTrigger className="rounded-xl"><SelectValue placeholder="Pick a journey or module" /></SelectTrigger>
+              <SelectContent>
+                {academy.journeys.length > 0 && (
+                  <div className="px-2 py-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">Journeys</div>
+                )}
+                {academy.journeys.map((j) => (
+                  <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
+                ))}
+                {academy.trainings.length > 0 && (
+                  <div className="px-2 py-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">Modules</div>
+                )}
+                {academy.trainings.slice(0, 30).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Assign to</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(["role", "department", "state", "employee"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setScope(s); setTarget(""); }}
+                  className={cn(
+                    "rounded-xl border px-3 py-2 text-[12px] capitalize transition-colors",
+                    scope === s
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border/60 bg-muted/40 text-muted-foreground hover:border-primary/30",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {scope === "role" && (
+            <Select value={target} onValueChange={setTarget}>
+              <SelectTrigger className="rounded-xl"><SelectValue placeholder="Pick a role" /></SelectTrigger>
+              <SelectContent>
+                {ASSIGN_ROLES.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          )}
+          {scope === "department" && (
+            <Select value={target} onValueChange={setTarget}>
+              <SelectTrigger className="rounded-xl"><SelectValue placeholder="Pick a department" /></SelectTrigger>
+              <SelectContent>
+                {["Intake", "Authorizations", "Scheduling", "Recruiting", "HR", "Billing", "QA", "Clinical", "Operations", "Marketing"].map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {scope === "state" && (
+            <Select value={target} onValueChange={setTarget}>
+              <SelectTrigger className="rounded-xl"><SelectValue placeholder="Pick a state" /></SelectTrigger>
+              <SelectContent>
+                {ASSIGN_STATES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          )}
+          {scope === "employee" && (
+            <Input value={employee} onChange={(e) => setEmployee(e.target.value)} placeholder="Employee name or email" className="rounded-xl" />
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-medium text-muted-foreground">Due date (optional)</label>
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="rounded-xl" />
+          </div>
         </div>
         <DialogFooter>
-          <Button
-            className="rounded-xl"
-            onClick={() => {
-              toast.success("Assignment created");
-              onOpenChange(false);
-            }}
-          >
-            Assign
-          </Button>
+          <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="rounded-xl" onClick={handleSubmit}>Assign</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ---------- Resource Library view ---------- */
+
+function ResourceLibraryView() {
+  const navigate = useNavigate();
+  const cards = [
+    { title: "SOPs & Workflows", desc: "Standard operating procedures and end-to-end processes.", icon: FileText },
+    { title: "Handbooks & Policies", desc: "HR handbooks, employee policies, and compliance docs.", icon: BookOpen },
+    { title: "Videos & Tangos", desc: "Walkthrough videos and screen recordings.", icon: PlayCircle },
+    { title: "Templates & Forms", desc: "Reusable templates for communication and documents.", icon: Layers },
+  ];
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Training Management · Resource Library
+            </p>
+            <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-foreground">
+              Manage every document, video, and handbook
+            </h2>
+            <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
+              Upload, organize, and assign resources by role, department, and state. Everything lives here — SOPs, handbooks, videos, templates, and policies.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-xl"
+              onClick={() => navigate("/hr/resource-management")}
+            >
+              <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <button
+              key={c.title}
+              onClick={() => navigate("/hr/resource-management")}
+              className="group rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
+            >
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[14.5px] font-semibold tracking-tight text-foreground">{c.title}</p>
+                  <p className="mt-1 text-[12.5px] text-muted-foreground">{c.desc}</p>
+                </div>
+                <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
