@@ -270,8 +270,23 @@ export default function ReportsHome() {
           {recent.slice(0, 5).map(r => <MiniReportRow key={r.id} report={r} />)}
         </SidePanel>
 
-        <SidePanel title="Favorites" icon={Star} empty="Star a report card to pin it here.">
-          {favReports.slice(0, 5).map(r => <MiniReportRow key={r.id} report={r} />)}
+        <SidePanel title="Saves" icon={Bookmark} empty="Generate and save a report to pin it here.">
+          {savedReports.slice(0, 5).map(sr => (
+            <Link
+              key={sr.id}
+              to={`/os/reports/bcba-productivity-report?saved=${sr.id}`}
+              className="group flex items-center justify-between rounded-xl border border-border/40 bg-card/70 px-3 py-2.5 transition hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-sm"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(265_70%_55%)]" />
+                  <span className="truncate text-[12.5px] font-medium">{sr.name}</span>
+                </div>
+                <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">BCBA Productivity · {new Date(sr.savedAt).toLocaleDateString()}</p>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5" />
+            </Link>
+          ))}
         </SidePanel>
       </section>
 
