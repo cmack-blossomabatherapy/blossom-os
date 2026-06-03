@@ -279,11 +279,10 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
       isCancelled,
       isExcused,
       raw: r,
-    } as ScheduleRow & { _deleted?: boolean };
-  }).filter(() => true).filter((_row, i) => {
-    const r = rows[i];
+    };
+  }).filter((row, i) => {
     if (!deletedFlagH) return true;
-    const v = String(r[deletedFlagH] ?? "").trim().toLowerCase();
+    const v = String(rows[i][deletedFlagH] ?? "").trim().toLowerCase();
     return !(v === "1" || v === "true" || v === "yes");
   });
 }
