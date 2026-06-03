@@ -679,6 +679,14 @@ export default function BcbaProductivityReport() {
     const exc: AttributionException[] = [];
     const rows: SessionRow[] = [];
 
+    // Build canonical name map across all observed BCBA / provider names so
+    // "J. Smith", "John Smith", and "Smith, John" all resolve to one person.
+    const allNames: string[] = [];
+    for (const b of billingRaws) if (b.provider) allNames.push(b.provider);
+    for (const a of authRecords) if (a.bcba) allNames.push(a.bcba);
+    const canon = buildCanonicalMap(allNames);
+    const C = (n: string) => (n ? (canon.get(normName(n)) || tidyName(n)) : "");
+
     // Index auths by clientId AND by normalized client name so we can match
     // even when the billing export uses one but not the other.
     const authsByClientId = new Map<string, AuthRecord[]>();
@@ -834,7 +842,7 @@ export default function BcbaProductivityReport() {
         isRbtDirect = true;
         if (hasAuths) {
           const r = matchAuth(x);
-          if (r.bcba) bcba = r.bcba;
+          if (r.bcba) bcba = C(r.bcba);
           else {
             exc.push({
               client: x.client, clientId: x.clientId, date: x.date,
@@ -847,25 +855,25 @@ export default function BcbaProductivityReport() {
           }
         } else {
           // No auths uploaded — fall back to rendering provider so we don't drop rows.
-          bcba = x.provider;
+          bcba = C(x.provider);
         }
       } else if (x.bucket === "97155" || x.bucket === "97156" || x.bucket === "97151") {
         // BCBA codes: rendering provider is the BCBA when present.
-        bcba = x.provider;
+        bcba = C(x.provider);
         if (!bcba && hasAuths) {
           const r = matchAuth(x);
-          if (r.bcba) bcba = r.bcba;
+          if (r.bcba) bcba = C(r.bcba);
         }
       } else {
         // Other codes: use rendering provider.
-        bcba = x.provider;
+        bcba = C(x.provider);
       }
 
       if (!bcba) continue;
       rows.push({
         bcba,
         client: x.client,
-        rbt: isRbtDirect ? x.provider : "",
+        rbt: isRbtDirect ? C(x.provider) : "",
         code: x.code,
         hours: x.hours,
         date: x.date,
