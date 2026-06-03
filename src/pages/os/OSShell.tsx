@@ -400,7 +400,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "resources", label: "Resources", items: [
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/payroll/resources", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
+        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
       ],
     },
   ];
@@ -608,7 +608,6 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     {
       id: "quality", label: "Quality & Compliance", items: [
         { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
-        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
       ],
     },
     {
@@ -621,8 +620,8 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
     {
       id: "resources", label: "Resources", items: [
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
-        { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi", disabled: true },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "#", label: "Training (Coming Soon)", icon: GraduationCap, module: "training", disabled: true },
       ],
     },
   ];
