@@ -249,14 +249,14 @@ function ReferralsInner() {
               ))}
             </SelectContent>
           </Select>
-          <Button size="sm" variant="outline" onClick={() => exportCsv("referrals.csv", visibleContacts as unknown as Record<string, unknown>[])}>
-            <Download className="size-4 mr-1.5" />Export
+          <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+            <Settings2 className="size-4 mr-1.5" />Export Builder
           </Button>
         </div>
       </MktgCard>
 
       {/* Tabs */}
-      <Tabs defaultValue="contacts">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ExportDataset)}>
         <TabsList>
           <TabsTrigger value="contacts">Contacts ({visibleContacts.length})</TabsTrigger>
           <TabsTrigger value="companies">Companies ({visibleCompanies.length})</TabsTrigger>
