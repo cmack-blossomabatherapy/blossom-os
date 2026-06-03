@@ -8567,7 +8567,7 @@ export type Database = {
           normalized_name: string | null
           notes: string | null
           referral_count: number
-          relationship_owner: string | null
+          relationship_owner: string[] | null
           relationship_stage: string
           service_area: string | null
           source: string | null
@@ -8596,7 +8596,7 @@ export type Database = {
           normalized_name?: string | null
           notes?: string | null
           referral_count?: number
-          relationship_owner?: string | null
+          relationship_owner?: string[] | null
           relationship_stage?: string
           service_area?: string | null
           source?: string | null
@@ -8625,7 +8625,7 @@ export type Database = {
           normalized_name?: string | null
           notes?: string | null
           referral_count?: number
-          relationship_owner?: string | null
+          relationship_owner?: string[] | null
           relationship_stage?: string
           service_area?: string | null
           source?: string | null
@@ -8651,7 +8651,7 @@ export type Database = {
           address_line_2: string | null
           city: string | null
           company_id: string | null
-          contact_owner: string | null
+          contact_owner: string[] | null
           created_at: string
           direct_phone: string | null
           email: string | null
@@ -8690,7 +8690,7 @@ export type Database = {
           address_line_2?: string | null
           city?: string | null
           company_id?: string | null
-          contact_owner?: string | null
+          contact_owner?: string[] | null
           created_at?: string
           direct_phone?: string | null
           email?: string | null
@@ -8729,7 +8729,7 @@ export type Database = {
           address_line_2?: string | null
           city?: string | null
           company_id?: string | null
-          contact_owner?: string | null
+          contact_owner?: string[] | null
           created_at?: string
           direct_phone?: string | null
           email?: string | null

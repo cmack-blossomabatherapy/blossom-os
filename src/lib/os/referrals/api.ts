@@ -47,7 +47,7 @@ export async function findOrCreateCompany(input: {
   website_url?: string | null;
   main_phone?: string | null;
   full_address?: string | null;
-  relationship_owner?: string | null;
+  relationship_owner?: string[] | null;
   source?: string | null;
   import_batch_id?: string | null;
 }): Promise<string> {

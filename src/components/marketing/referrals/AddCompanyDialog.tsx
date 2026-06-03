@@ -9,6 +9,7 @@ import { createCompany } from "@/lib/os/referrals/api";
 import { COMPANY_TYPES, COMPANY_STAGES } from "@/lib/os/referrals/types";
 import { extractDomain } from "@/lib/os/referrals/utils";
 import { toast } from "@/hooks/use-toast";
+import { OwnerCombobox } from "./OwnerCombobox";
 
 export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: () => void }) {
   const [name, setName] = useState("");
@@ -19,7 +20,7 @@ export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: bool
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [stage, setStage] = useState<string>("New");
-  const [owner, setOwner] = useState("");
+  const [owners, setOwners] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -37,12 +38,12 @@ export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: bool
         state: state || null,
         city: city || null,
         relationship_stage: stage as never,
-        relationship_owner: owner || null,
+        relationship_owner: owners.length ? owners : null,
         notes: notes || null,
         source: "Manual",
       });
       toast({ title: "Company added" });
-      setName(""); setType(""); setWebsite(""); setEmail(""); setPhone(""); setState(""); setCity(""); setStage("New"); setOwner(""); setNotes("");
+      setName(""); setType(""); setWebsite(""); setEmail(""); setPhone(""); setState(""); setCity(""); setStage("New"); setOwners([]); setNotes("");
       onCreated?.();
       onOpenChange(false);
     } catch (e) {
@@ -73,7 +74,7 @@ export function AddCompanyDialog({ open, onOpenChange, onCreated }: { open: bool
           <div><Label>Website</Label><Input value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
           <div><Label>Main email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
           <div><Label>Main phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-          <div><Label>Owner</Label><Input value={owner} onChange={(e) => setOwner(e.target.value)} /></div>
+          <div><Label>Owner</Label><OwnerCombobox value={owners} onChange={setOwners} /></div>
           <div><Label>City</Label><Input value={city} onChange={(e) => setCity(e.target.value)} /></div>
           <div><Label>State</Label><Input value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g. NC" /></div>
           <div className="col-span-2"><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>

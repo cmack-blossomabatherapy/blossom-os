@@ -14,6 +14,7 @@ import { CONTACT_STAGES, CONTACT_STATUSES, CONTACT_ROLE_TYPES } from "@/lib/os/r
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { LogActivityDialog } from "./LogActivityDialog";
 import { toast } from "@/hooks/use-toast";
+import { OwnerCombobox, ownersToText } from "./OwnerCombobox";
 
 export function ContactDetailDrawer({
   contact,
@@ -121,7 +122,12 @@ export function ContactDetailDrawer({
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Owner"><Input value={draft.contact_owner ?? ""} onChange={(e) => setField("contact_owner", e.target.value)} /></Field>
+              <Field label="Owner" className="col-span-2">
+                <OwnerCombobox
+                  value={(draft.contact_owner as string[] | null | undefined) ?? []}
+                  onChange={(next) => setField("contact_owner", (next.length ? next : null) as never)}
+                />
+              </Field>
               <Field label="Email"><Input type="email" value={draft.email ?? ""} onChange={(e) => setField("email", e.target.value)} /></Field>
               <Field label="Phone"><Input value={draft.phone ?? ""} onChange={(e) => setField("phone", e.target.value)} /></Field>
               <Field label="City"><Input value={draft.city ?? ""} onChange={(e) => setField("city", e.target.value)} /></Field>
@@ -153,7 +159,7 @@ export function ContactDetailDrawer({
             <Mini label="Last contacted" value={fmtRelative(contact.last_contacted_at)} />
             <Mini label="Next follow-up" value={fmtDate(contact.next_follow_up_at)} />
             <Mini label="Last meeting" value={fmtRelative(contact.last_meeting_booked_at)} />
-            <Mini label="Owner" value={contact.contact_owner ?? "—"} />
+            <Mini label="Owner" value={ownersToText(contact.contact_owner as never)} />
           </section>
 
           {/* Actions */}

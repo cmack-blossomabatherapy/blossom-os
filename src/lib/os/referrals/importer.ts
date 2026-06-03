@@ -82,7 +82,7 @@ export async function importReferralRows(
             state: row.state,
             website_url: row.website_url,
             full_address: row.full_address,
-            relationship_owner: row.contact_owner,
+            relationship_owner: row.contact_owner ? [row.contact_owner] : null,
             source: "HubSpot Import",
             import_batch_id: batch.id,
           });
@@ -130,7 +130,7 @@ export async function importReferralRows(
         website_url: row.website_url,
         full_address: row.full_address,
         state: row.state,
-        contact_owner: row.contact_owner,
+        contact_owner: row.contact_owner ? [row.contact_owner] : null,
         status: coerceContactStatus(row.status),
         last_activity_date: row.last_activity_date,
         last_contacted_at: row.last_contacted_at,
