@@ -32,7 +32,7 @@ export const ALL_ROLE_DASHBOARDS: { to: string; label: string }[] = [
   { to: "/recruiting-team", label: "Recruiting Team" },
   { to: "/hr-team", label: "HR Team" },
   { to: "/billing-finance", label: "Billing & Finance" },
-  { to: "/qa-team", label: "QA Team" },
+  { to: "/qa-team", label: "QA / Compliance" },
   { to: "/payroll-coordinator", label: "Payroll Coordinator" },
   { to: "/bcba", label: "BCBA" },
   { to: "/rbt", label: "RBT" },

@@ -279,7 +279,7 @@ type AuthModal =
 
 const ESCALATION_LABELS: Record<string, string> = {
   auth: "Authorization Team",
-  qa: "QA Team",
+  qa: "QA / Compliance",
   ops: "Operations Leadership",
   state: "State Director",
 };

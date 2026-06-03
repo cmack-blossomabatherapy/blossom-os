@@ -175,7 +175,7 @@ export const resources: Resource[] = [
   { id:"r-safety", title:"Safety Resources", description:"Safety protocols, incident response, and escalation paths.",
     type:"PDF", category:"operational", status:"Published",
     roles:["rbt","bcba","qa_team"], departments:["Clinical","QA"], states:[],
-    tags:["safety","incident"], uploadedBy:"QA Team", createdAt:daysAgo(160), updatedAt:daysAgo(30) },
+    tags:["safety","incident"], uploadedBy:"QA / Compliance", createdAt:daysAgo(160), updatedAt:daysAgo(30) },
 
   // ============ Recruiting ============
   { id:"r-recruiting-sop", title:"Recruiting SOP", description:"End-to-end hiring workflow for RBTs and BCBAs.",

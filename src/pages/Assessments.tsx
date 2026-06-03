@@ -136,7 +136,7 @@ export default function Assessments() {
   };
 
   const createAssessment = async (client: Client) => {
-    const payload: AssessmentInsert = { client_id: client.id, assigned_bcba: client.bcba, assessment_type: "Initial", location: "Clinic", scheduler: client.intakeOwner, qa_owner: "QA Team" };
+    const payload: AssessmentInsert = { client_id: client.id, assigned_bcba: client.bcba, assessment_type: "Initial", location: "Clinic", scheduler: client.intakeOwner, qa_owner: "QA / Compliance" };
     const { error } = await supabase.from("client_assessments").insert(payload);
     if (error) { toast.error("Could not create assessment"); return; }
     await addTask(client.id, { id: `assessment-${Date.now()}`, title: "Schedule Assessment", completed: false, dueDate: todayIso() });
