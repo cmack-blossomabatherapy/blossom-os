@@ -24,7 +24,28 @@ export function readSavedReports(): BcbaSavedReport[] {
 
 export function writeSavedReports(list: BcbaSavedReport[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+  } catch (err) {
+    // Likely QuotaExceededError — raw billing/auth payloads can be very large.
+    // Retry with a slimmed-down version that drops the raw arrays so the
+    // report still appears in Saved/Recently Viewed and AI insights survive.
+    const slim = list.map((r) => ({
+      ...r,
+      billingRaws: [],
+      authRecords: [],
+    }));
+    try {
+      localStorage.setItem(SAVED_KEY, JSON.stringify(slim));
+    } catch {
+      // Last resort: keep only the most recent 5 slim entries.
+      try {
+        localStorage.setItem(SAVED_KEY, JSON.stringify(slim.slice(0, 5)));
+      } catch {
+        throw err;
+      }
+    }
+  }
 }
 
 export function saveReport(entry: Omit<BcbaSavedReport, "id" | "savedAt"> & { id?: string }): BcbaSavedReport {
@@ -43,6 +64,9 @@ export function saveReport(entry: Omit<BcbaSavedReport, "id" | "savedAt"> & { id
   const idx = list.findIndex(r => r.id === id);
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   writeSavedReports(list);
+  try {
+    window.dispatchEvent(new CustomEvent("bcba-saved-reports-changed"));
+  } catch {}
   return record;
 }
 
