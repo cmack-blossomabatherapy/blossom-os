@@ -4,7 +4,7 @@ import { listContacts, listCompanies, listActivities, listBatches } from "./api"
 import type { ReferralCompany, ReferralContact, ReferralActivity, ReferralImportBatch } from "./types";
 
 function useChannelRefresh(table: string, refresh: () => void) {
-  const channelNameRef = useRef(`realtime-${table}-${crypto.randomUUID()}`);
+  const channelNameRef = useRef(`realtime-${table}-${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
     const ch = supabase
