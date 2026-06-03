@@ -433,7 +433,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -468,7 +468,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -530,7 +530,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -583,7 +583,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
@@ -631,7 +631,7 @@ export function AppSidebar({ mobileOpen = false, onMobileOpenChange }: { mobileO
     {
       title: "AI",
       items: [
-        { label: "Ask Blossom AI", icon: Sparkles, path: "/ai/assistant", perm: "" },
+        { label: "Ask Blossom AI (Coming Soon)", icon: Sparkles, path: "#", perm: "", disabled: true },
       ],
     },
   ];
