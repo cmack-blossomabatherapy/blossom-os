@@ -1320,28 +1320,74 @@ export default function BcbaProductivityReport() {
           </section>
 
           {/* ===== KPI Summary ===== */}
-          <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-            <Kpi
-              label="Total 97153 Hours (RBT Direct)"
-              value={fmt1(kpis.t97153)}
-              icon={Stethoscope}
-              highlight
-              hint="Attributed to supervising BCBA via authorization"
-            />
-            <Kpi
-              label="Avg 97153 / BCBA"
-              value={fmt1(kpis.avg97153)}
-              highlight
-            />
-            <Kpi label="Total BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} />
-            <Kpi label="Total Clients Served" value={fmt0(kpis.totalClients)} icon={Stethoscope} />
-            <Kpi label="Total RBTs Supervised" value={fmt0(kpis.totalRbts)} />
-            <Kpi label="Total 97155 Hours" value={fmt1(kpis.t97155)} />
-            <Kpi label="Total 97156 Hours" value={fmt1(kpis.t97156)} icon={GraduationCap} />
-            <Kpi label="Average Caseload" value={fmt1(kpis.avgCaseload)} />
-            <Kpi label="Avg 97155 / BCBA" value={fmt1(kpis.avg97155)} />
-            <Kpi label="Avg 97156 / BCBA" value={fmt1(kpis.avg97156)} />
-            <Kpi label="Avg Clients / BCBA" value={fmt1(kpis.avgClientsPerBcba)} />
+          <section className="mt-4 space-y-3">
+            {/* Headline totals — period scope */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Kpi
+                label="97153 hours · RBT direct"
+                value={fmt1(kpis.t97153)}
+                unit="hrs"
+                icon={Stethoscope}
+                highlight
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97153 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97155 hours · supervision"
+                value={fmt1(kpis.t97155)}
+                unit="hrs"
+                icon={ShieldCheck}
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97155 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97156 hours · parent training"
+                value={fmt1(kpis.t97156)}
+                unit="hrs"
+                icon={GraduationCap}
+                hint={`Period total · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.t97156 / periodInfo.nMonths)} hrs / mo`}
+              />
+            </div>
+
+            {/* Roster counts */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Kpi label="BCBAs" value={fmt0(kpis.totalBcbas)} icon={Users} hint="In current view" />
+              <Kpi label="Clients served" value={fmt0(kpis.totalClients)} icon={Stethoscope} hint="Unique in period" />
+              <Kpi label="RBTs supervised" value={fmt0(kpis.totalRbts)} icon={Users} hint="Unique in period" />
+              <Kpi label="Avg caseload" value={fmt1(kpis.avgCaseload)} unit="clients" hint="Clients per BCBA" />
+            </div>
+
+            {/* Per-BCBA averages — clearly labeled */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Kpi
+                label="97153 / BCBA"
+                value={fmt1(kpis.avg97153)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97153 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97155 / BCBA"
+                value={fmt1(kpis.avg97155)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97155 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="97156 / BCBA"
+                value={fmt1(kpis.avg97156)}
+                unit="hrs"
+                hint={`Per BCBA · ${periodInfo.span}`}
+                sub={`≈ ${fmt1(kpis.avg97156 / periodInfo.nMonths)} hrs / mo`}
+              />
+              <Kpi
+                label="Clients / BCBA"
+                value={fmt1(kpis.avgClientsPerBcba)}
+                unit="clients"
+                hint="Per BCBA · in view"
+              />
+            </div>
           </section>
 
           {/* ===== AI Summary ===== */}
