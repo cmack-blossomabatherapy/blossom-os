@@ -358,6 +358,26 @@ export default function CancellationCommandCenter() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // Cancellation log: sort + follow-up tracking
+  const [sortBy, setSortBy] = useState<string>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [followUps, setFollowUps] = useState<Record<string, "todo" | "contacted" | "resolved">>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(localStorage.getItem("cancellation-cc-followups") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("cancellation-cc-followups", JSON.stringify(followUps)); } catch {}
+  }, [followUps]);
+  const rowKey = (r: ScheduleRow) =>
+    `${r.date?.toISOString().slice(0,10) || ""}|${r.client}|${r.rbt}|${r.code}`;
+  const cycleFollowUp = (key: string) => setFollowUps(prev => {
+    const cur = prev[key] || "todo";
+    const next: Record<string, "todo" | "contacted" | "resolved"> = {
+      todo: "contacted" as const, contacted: "resolved" as const, resolved: "todo" as const,
+    } as any;
+    return { ...prev, [key]: next[cur] };
+  });
+
   const activeFilterCount = [
     stateFilter, bcbaFilter, rbtFilter, clientFilter,
     payorFilter, codeFilter, statusFilter, locationFilter,
