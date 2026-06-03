@@ -577,6 +577,40 @@ function StatPill({ label, value, accent }: { label: string; value: number; acce
   );
 }
 
+function Scorecard({ label, value, active, onClick, accent }: { label: string; value: number; active?: boolean; onClick?: () => void; accent?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`text-left rounded-xl border p-3 transition hover:-translate-y-0.5 hover:shadow-sm ${
+        active ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30" : "border-border bg-card hover:border-border"
+      }`}
+    >
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-2xl font-semibold mt-0.5 ${accent ?? "text-foreground"}`}>{value}</div>
+    </button>
+  );
+}
+
+function DeptChip({ label, count, tone, active, onClick }: { label: string; count: number; tone?: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : tone
+            ? `${tone} hover:opacity-90`
+            : "border-border bg-muted/40 text-foreground hover:bg-muted"
+      }`}
+    >
+      <span className="font-medium">{label}</span>
+      <span className={`tabular-nums ${active ? "opacity-90" : "text-muted-foreground"}`}>{count}</span>
+    </button>
+  );
+}
+
 function Info({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
