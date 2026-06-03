@@ -129,6 +129,24 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Fetch the row id so notify can join routing & log per-call notifications.
+    const { data: stored } = await supabase
+      .from('phone_ai_calls').select('id').eq('retell_call_id', retell_call_id).maybeSingle()
+    if (stored?.id) {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-after-hours-call`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+          },
+          body: JSON.stringify({ call_id: stored.id }),
+        })
+      } catch (e) {
+        console.error('[retell-webhook] notify dispatch failed', e)
+      }
+    }
+
     return new Response(JSON.stringify({ ok: true, retell_call_id, verification_status }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

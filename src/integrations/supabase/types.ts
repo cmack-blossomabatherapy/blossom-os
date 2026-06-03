@@ -7632,6 +7632,77 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_ai_call_notifications: {
+        Row: {
+          call_id: string | null
+          created_at: string
+          department: string | null
+          error: string | null
+          id: string
+          recipients: string[]
+          retell_call_id: string | null
+          status: string
+        }
+        Insert: {
+          call_id?: string | null
+          created_at?: string
+          department?: string | null
+          error?: string | null
+          id?: string
+          recipients?: string[]
+          retell_call_id?: string | null
+          status?: string
+        }
+        Update: {
+          call_id?: string | null
+          created_at?: string
+          department?: string | null
+          error?: string | null
+          id?: string
+          recipients?: string[]
+          retell_call_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_ai_call_notifications_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "phone_ai_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_ai_call_routing: {
+        Row: {
+          created_at: string
+          department: string
+          emails: string[]
+          enabled: boolean
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          emails?: string[]
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          emails?: string[]
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       phone_ai_calls: {
         Row: {
           agent_id: string | null
