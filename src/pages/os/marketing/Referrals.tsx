@@ -72,9 +72,9 @@ export default function Referrals() {
 }
 
 function ReferralsInner() {
-  const { data: contacts, loading: lc, refresh: refreshContacts } = useReferralContacts();
-  const { data: companies, loading: lo, refresh: refreshCompanies } = useReferralCompanies();
-  const { data: batches } = useReferralBatches();
+  const { data: contacts, loading: lc, error: contactsError, refresh: refreshContacts } = useReferralContacts();
+  const { data: companies, loading: lo, error: companiesError, refresh: refreshCompanies } = useReferralCompanies();
+  const { data: batches, error: batchesError } = useReferralBatches();
 
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addCompanyOpen, setAddCompanyOpen] = useState(false);
@@ -121,8 +121,8 @@ function ReferralsInner() {
   }, [companies, search, stateFilter]);
 
   // Stats
-  const activeContacts = contacts.filter((c) => c.status !== "Archived");
-  const activeCompanies = companies.filter((c) => c.status !== "Archived");
+  const activeContacts = useMemo(() => contacts.filter((c) => c.status !== "Archived"), [contacts]);
+  const activeCompanies = useMemo(() => companies.filter((c) => c.status !== "Archived"), [companies]);
   const needsFollowUp = activeContacts.filter((c) => c.relationship_stage === "Needs Follow-Up" || c.status === "Needs Follow-Up").length;
   const strongPartners = activeContacts.filter((c) => c.relationship_stage === "Strong Partner").length;
   const referralsSent = activeContacts.reduce((s, c) => s + (c.number_of_referrals_sent ?? 0), 0);
@@ -151,6 +151,8 @@ function ReferralsInner() {
     if (!id) return "—";
     return companies.find((c) => c.id === id)?.company_name ?? "—";
   }
+
+  const dataError = contactsError ?? companiesError ?? batchesError;
 
   const exportSources = useMemo((): Record<ExportDataset, ExportSource> => {
     const contactColumns: ExportColumn<ReferralContact>[] = [
