@@ -11,7 +11,9 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon } from "lucide-react";
+import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy } from "lucide-react";
+
+const WEBHOOK_URL = "https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook";
 
 type Call = {
   id: string;
@@ -147,6 +149,28 @@ export function AfterHoursAIBoard() {
           Sync from Retell
         </Button>
       </div>
+
+      <Card className="mb-4 border-primary/30 bg-primary/5">
+        <CardContent className="py-3 flex items-center gap-3 flex-wrap">
+          <div className="flex-1 min-w-[260px]">
+            <div className="text-xs font-medium text-foreground">Retell Webhook URL</div>
+            <div className="text-[11px] text-muted-foreground mb-1">
+              Paste this into Retell → Agent <span className="font-mono">agent_fb8aaca447d2a6c6703d40d77a</span> → Webhook settings. Event: <span className="font-mono">call_analyzed</span>.
+            </div>
+            <code className="text-[11px] font-mono break-all text-foreground">{WEBHOOK_URL}</code>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(WEBHOOK_URL);
+              toast.success("Webhook URL copied");
+            }}
+          >
+            <Copy className="mr-2 h-3.5 w-3.5" /> Copy
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <StatPill label="Total calls" value={counts.total} />
