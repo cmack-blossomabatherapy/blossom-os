@@ -16,6 +16,42 @@ import { parseAnyFile, SUPPORTED_EXTENSIONS } from "@/lib/os/dashboardEngine/exc
 import {
   BCBA_LAST_SESSION_KEY, getSavedReport, saveReport,
 } from "@/lib/os/bcbaSavedReports";
+import { pushRecent } from "@/lib/os/reportsCatalog";
+
+/* ---- Lightweight insights computed at save time for the Blossom AI Today panel ---- */
+function computeBcbaInsights(billingRaws: BillingRaw[], authRecords: AuthRecord[]): string[] {
+  if (!billingRaws.length) return [];
+  const bcbaSet = new Set<string>();
+  const clientSet = new Set<string>();
+  const hoursByBcba = new Map<string, number>();
+  let totalHours = 0;
+  let h97155 = 0;
+  let h97156 = 0;
+  let ptClients = new Set<string>();
+  let allPtClients = new Set<string>();
+  for (const b of billingRaws) {
+    if (b.provider) { bcbaSet.add(b.provider); hoursByBcba.set(b.provider, (hoursByBcba.get(b.provider) || 0) + (b.hours || 0)); }
+    if (b.clientKey) {
+      clientSet.add(b.clientKey);
+      allPtClients.add(b.clientKey);
+      if (b.pt) ptClients.add(b.clientKey);
+    }
+    totalHours += b.hours || 0;
+    if (b.code === "97155") h97155 += b.hours || 0;
+    if (b.code === "97156") h97156 += b.hours || 0;
+  }
+  const topBcba = [...hoursByBcba.entries()].sort((a, b) => b[1] - a[1])[0];
+  const insights: string[] = [];
+  insights.push(`${bcbaSet.size} BCBA${bcbaSet.size === 1 ? "" : "s"} across ${clientSet.size} client${clientSet.size === 1 ? "" : "s"} · ${totalHours.toFixed(1)} hrs analyzed.`);
+  if (h97155 || h97156) insights.push(`Supervision ${h97155.toFixed(1)} hrs · Parent training ${h97156.toFixed(1)} hrs.`);
+  if (topBcba) insights.push(`Top BCBA by hours: ${topBcba[0]} (${topBcba[1].toFixed(1)} hrs).`);
+  if (allPtClients.size) {
+    const pct = Math.round((ptClients.size / allPtClients.size) * 100);
+    insights.push(`Parent training completed for ${ptClients.size}/${allPtClients.size} clients (${pct}%).`);
+  }
+  if (authRecords.length) insights.push(`${authRecords.length} authorization record${authRecords.length === 1 ? "" : "s"} cross-referenced.`);
+  return insights;
+}
 
 /* ============================================================
  * BCBA Productivity Report (Standard Report)
@@ -466,6 +502,7 @@ export default function BcbaProductivityReport() {
   /* ---- Load saved report from ?saved=<id>, otherwise auto-restore last session ---- */
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
+    pushRecent("bcba-productivity-report");
     const savedId = searchParams.get("saved");
     try {
       if (savedId) {
@@ -515,10 +552,12 @@ export default function BcbaProductivityReport() {
       : `BCBA Productivity · ${new Date().toLocaleDateString()}`;
     const name = typeof window !== "undefined" ? window.prompt("Name this saved report", defaultName) : defaultName;
     if (!name) return;
+    const insights = computeBcbaInsights(billingRaws, authRecords);
     const rec = saveReport({
       name: name.trim(),
-      billingFileName, authFileNames, billingRaws, authRecords,
+      billingFileName, authFileNames, billingRaws, authRecords, insights,
     });
+    pushRecent("bcba-productivity-report");
     setSearchParams({ saved: rec.id }, { replace: true });
     toast.success(`Saved "${rec.name}" to Saved Reports`);
   }

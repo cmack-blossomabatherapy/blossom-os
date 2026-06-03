@@ -6,6 +6,7 @@ export type BcbaSavedReport = {
   authFileNames: string[];
   billingRaws: any[];
   authRecords: any[];
+  insights?: string[];
 };
 
 const SAVED_KEY = "bcba-productivity-saved-reports";
@@ -37,6 +38,7 @@ export function saveReport(entry: Omit<BcbaSavedReport, "id" | "savedAt"> & { id
     authFileNames: entry.authFileNames,
     billingRaws: entry.billingRaws,
     authRecords: entry.authRecords,
+    insights: entry.insights,
   };
   const idx = list.findIndex(r => r.id === id);
   if (idx >= 0) list[idx] = record; else list.unshift(record);

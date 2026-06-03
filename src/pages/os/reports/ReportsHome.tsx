@@ -39,8 +39,6 @@ export default function ReportsHome() {
   const roleLabel = OS_ROLES.find(r => r.id === role)?.label || role;
 
   const [favs, setFavs] = useState<string[]>(() => readFavorites());
-  const recentIds = useMemo(() => readRecent(), []);
-  const recent = recentIds.map(id => reports.find(r => r.id === id)).filter(Boolean) as ReportDef[];
   const favReports = favs.map(id => reports.find(r => r.id === id)).filter(Boolean) as ReportDef[];
 
   const [requestOpen, setRequestOpen] = useState(false);
@@ -57,6 +55,28 @@ export default function ReportsHome() {
     deleteSavedReport(id);
     setSavedReports(readSavedReports());
   }
+
+  // Recently viewed = real recent IDs, padded with featured dashboards (dedup).
+  const recent = useMemo(() => {
+    const recentIds = readRecent();
+    const ordered: ReportDef[] = [];
+    const seen = new Set<string>();
+    for (const id of recentIds) {
+      const r = reports.find(x => x.id === id);
+      if (r && !seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
+    }
+    for (const r of featured) {
+      if (!seen.has(r.id)) { ordered.push(r); seen.add(r.id); }
+    }
+    return ordered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reports, featured, savedReports]);
+
+  // Blossom AI · Today — surface insights from reports generated today.
+  const todaysGenerated = useMemo(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    return savedReports.filter(s => s.savedAt >= start.getTime());
+  }, [savedReports]);
 
   return (
     <OSShell>
@@ -91,9 +111,39 @@ export default function ReportsHome() {
                 </span>
                 <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[hsl(265_70%_55%)]">Blossom AI · Today</p>
               </div>
-              <p className="mt-2 text-[14px] font-medium leading-snug">{aiSummary.headline}</p>
-              <div className="mt-3 grid gap-1.5">
-                {aiSummary.insights.map((ins, i) => {
+              {todaysGenerated.length > 0 ? (
+                <>
+                  <p className="mt-2 text-[14px] font-medium leading-snug">
+                    {todaysGenerated.length} report{todaysGenerated.length === 1 ? "" : "s"} generated today · live insights from your uploads.
+                  </p>
+                  <div className="mt-3 grid gap-2">
+                    {todaysGenerated.slice(0, 3).map(sr => (
+                      <div key={sr.id} className="rounded-xl border border-[hsl(265_70%_55%/0.18)] bg-[hsl(265_100%_99%)] p-2.5">
+                        <Link to={`/os/reports/bcba-productivity-report?saved=${sr.id}`} className="flex items-center justify-between gap-2 text-[12px] font-semibold tracking-tight text-foreground hover:text-[hsl(265_70%_55%)]">
+                          <span className="truncate">{sr.name}</span>
+                          <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{new Date(sr.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                        </Link>
+                        {(sr.insights && sr.insights.length > 0) ? (
+                          <ul className="mt-1.5 space-y-1">
+                            {sr.insights.slice(0, 3).map((t, i) => (
+                              <li key={i} className="flex items-start gap-2 text-[11.5px] leading-snug text-[hsl(265_30%_30%)]">
+                                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[hsl(265_70%_55%)]" />
+                                <span>{t}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-1 text-[11.5px] text-muted-foreground">Open the report to view insights.</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mt-2 text-[14px] font-medium leading-snug">{aiSummary.headline}</p>
+                  <div className="mt-3 grid gap-1.5">
+                    {aiSummary.insights.map((ins, i) => {
                   const Icon = ins.icon;
                   const tones: Record<string, string> = {
                     emerald: "text-emerald-600 bg-emerald-50",
@@ -111,13 +161,15 @@ export default function ReportsHome() {
                     </div>
                   );
                 })}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
               <StatTile label="Reports for you" value={String(reports.length)} icon={FileSpreadsheet} />
               <StatTile label="Recently viewed" value={String(recent.length)} icon={History} />
-              <StatTile label="Favorites" value={String(favs.length)} icon={Star} />
+              <StatTile label="Saves" value={String(savedReports.length)} icon={Bookmark} />
               <StatTile label="Categories" value={String(categories.length)} icon={Brain} />
             </div>
           </div>
@@ -218,8 +270,23 @@ export default function ReportsHome() {
           {recent.slice(0, 5).map(r => <MiniReportRow key={r.id} report={r} />)}
         </SidePanel>
 
-        <SidePanel title="Favorites" icon={Star} empty="Star a report card to pin it here.">
-          {favReports.slice(0, 5).map(r => <MiniReportRow key={r.id} report={r} />)}
+        <SidePanel title="Saves" icon={Bookmark} empty="Generate and save a report to pin it here.">
+          {savedReports.slice(0, 5).map(sr => (
+            <Link
+              key={sr.id}
+              to={`/os/reports/bcba-productivity-report?saved=${sr.id}`}
+              className="group flex items-center justify-between rounded-xl border border-border/40 bg-card/70 px-3 py-2.5 transition hover:border-[hsl(265_70%_55%/0.4)] hover:shadow-sm"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(265_70%_55%)]" />
+                  <span className="truncate text-[12.5px] font-medium">{sr.name}</span>
+                </div>
+                <p className="mt-0.5 truncate text-[10.5px] text-muted-foreground">BCBA Productivity · {new Date(sr.savedAt).toLocaleDateString()}</p>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5" />
+            </Link>
+          ))}
         </SidePanel>
       </section>
 
