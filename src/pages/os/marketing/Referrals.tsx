@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReferralCompanies, useReferralContacts, useReferralBatches } from "@/lib/os/referrals/hooks";
 import type { ReferralCompany, ReferralContact, ReferralImportBatch } from "@/lib/os/referrals/types";
+import { CONTACT_STAGES, COMPANY_STAGES } from "@/lib/os/referrals/types";
+import { updateContact, updateCompany } from "@/lib/os/referrals/api";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { AddReferralDialog } from "@/components/marketing/referrals/AddReferralDialog";
 import { AddCompanyDialog } from "@/components/marketing/referrals/AddCompanyDialog";
@@ -83,6 +85,10 @@ function ReferralsInner() {
   const [companyDrawer, setCompanyDrawer] = useState<ReferralCompany | null>(null);
   const [activeTab, setActiveTab] = useState<ExportDataset>("contacts");
   const [exportOpen, setExportOpen] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+  const [bulkContactsOpen, setBulkContactsOpen] = useState(false);
+  const [bulkCompaniesOpen, setBulkCompaniesOpen] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -153,6 +159,45 @@ function ReferralsInner() {
   }
 
   const dataError = contactsError ?? companiesError ?? batchesError;
+
+  // Clear selections when filters trim them out
+  useEffect(() => {
+    setSelectedContactIds((ids) => ids.filter((id) => visibleContacts.some((c) => c.id === id)));
+  }, [visibleContacts]);
+  useEffect(() => {
+    setSelectedCompanyIds((ids) => ids.filter((id) => visibleCompanies.some((c) => c.id === id)));
+  }, [visibleCompanies]);
+
+  const contactOwners = useMemo(() => Array.from(new Set(contacts.map((c) => c.contact_owner).filter(Boolean) as string[])).sort(), [contacts]);
+  const companyOwners = useMemo(() => Array.from(new Set(companies.map((c) => c.relationship_owner).filter(Boolean) as string[])).sort(), [companies]);
+
+  async function applyContactBulk(patch: Partial<ReferralContact>) {
+    if (!selectedContactIds.length) return;
+    try {
+      await Promise.all(selectedContactIds.map((id) => updateContact(id, patch)));
+      toast({ title: `Updated ${selectedContactIds.length} contacts` });
+      setSelectedContactIds([]);
+      setBulkContactsOpen(false);
+      refreshContacts();
+    } catch (e) {
+      toast({ title: "Bulk update failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    }
+  }
+  async function applyCompanyBulk(patch: Partial<ReferralCompany>) {
+    if (!selectedCompanyIds.length) return;
+    try {
+      await Promise.all(selectedCompanyIds.map((id) => updateCompany(id, patch)));
+      toast({ title: `Updated ${selectedCompanyIds.length} companies` });
+      setSelectedCompanyIds([]);
+      setBulkCompaniesOpen(false);
+      refreshCompanies();
+    } catch (e) {
+      toast({ title: "Bulk update failed", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    }
+  }
+
+  const allContactsChecked = visibleContacts.length > 0 && visibleContacts.every((c) => selectedContactIds.includes(c.id));
+  const allCompaniesChecked = visibleCompanies.length > 0 && visibleCompanies.every((c) => selectedCompanyIds.includes(c.id));
 
   const exportSources = useMemo((): Record<ExportDataset, ExportSource> => {
     const contactColumns: ExportColumn<ReferralContact>[] = [
@@ -301,6 +346,12 @@ function ReferralsInner() {
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b">
+                      <th className="w-8 px-3 py-2">
+                        <Checkbox
+                          checked={allContactsChecked}
+                          onCheckedChange={(checked) => setSelectedContactIds(checked === true ? visibleContacts.map((c) => c.id) : [])}
+                        />
+                      </th>
                       <th className="text-left px-3 py-2">Name</th>
                       <th className="text-left px-3 py-2">Company</th>
                       <th className="text-left px-3 py-2">Role</th>
@@ -315,6 +366,12 @@ function ReferralsInner() {
                   <tbody>
                     {visibleContacts.map((c) => (
                       <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setContactDrawer(c)}>
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedContactIds.includes(c.id)}
+                            onCheckedChange={(checked) => setSelectedContactIds((ids) => checked === true ? [...ids, c.id] : ids.filter((i) => i !== c.id))}
+                          />
+                        </td>
                         <td className="px-3 py-2 font-medium">{c.full_name || `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim() || "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">{companyName(c.company_id)}</td>
                         <td className="px-3 py-2 text-muted-foreground">{c.role_type ?? c.title ?? "—"}</td>
@@ -349,6 +406,12 @@ function ReferralsInner() {
                 <table className="w-full text-sm">
                   <thead className="text-xs uppercase tracking-wide text-muted-foreground">
                     <tr className="border-b">
+                      <th className="w-8 px-3 py-2">
+                        <Checkbox
+                          checked={allCompaniesChecked}
+                          onCheckedChange={(checked) => setSelectedCompanyIds(checked === true ? visibleCompanies.map((c) => c.id) : [])}
+                        />
+                      </th>
                       <th className="text-left px-3 py-2">Company</th>
                       <th className="text-left px-3 py-2">Type</th>
                       <th className="text-left px-3 py-2">Website</th>
@@ -365,6 +428,12 @@ function ReferralsInner() {
                       const contactCount = contacts.filter((k) => k.company_id === c.id).length;
                       return (
                         <tr key={c.id} className="border-b hover:bg-muted/30 cursor-pointer" onClick={() => setCompanyDrawer(c)}>
+                          <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedCompanyIds.includes(c.id)}
+                              onCheckedChange={(checked) => setSelectedCompanyIds((ids) => checked === true ? [...ids, c.id] : ids.filter((i) => i !== c.id))}
+                            />
+                          </td>
                           <td className="px-3 py-2 font-medium">{c.company_name}</td>
                           <td className="px-3 py-2 text-muted-foreground">{c.company_type ?? "—"}</td>
                           <td className="px-3 py-2 text-muted-foreground">{c.domain ?? c.website_url ?? "—"}</td>
@@ -454,6 +523,48 @@ function ReferralsInner() {
       {addContactOpen && <AddReferralDialog open onOpenChange={setAddContactOpen} onCreated={refreshAll} />}
       {addCompanyOpen && <AddCompanyDialog open onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />}
       {importOpen && <ImportReferralsDialog open onOpenChange={setImportOpen} onComplete={refreshAll} />}
+      <BulkEditBar
+        count={selectedContactIds.length}
+        label="contacts"
+        visible={activeTab === "contacts"}
+        onClear={() => setSelectedContactIds([])}
+        onOpen={() => setBulkContactsOpen(true)}
+      />
+      <BulkEditBar
+        count={selectedCompanyIds.length}
+        label="companies"
+        visible={activeTab === "companies"}
+        onClear={() => setSelectedCompanyIds([])}
+        onOpen={() => setBulkCompaniesOpen(true)}
+      />
+      <BulkEditDialog
+        open={bulkContactsOpen}
+        onOpenChange={setBulkContactsOpen}
+        count={selectedContactIds.length}
+        kind="contacts"
+        stages={CONTACT_STAGES as readonly string[]}
+        states={states}
+        owners={contactOwners}
+        onApply={(patch) => applyContactBulk({
+          ...(patch.state !== undefined ? { state: patch.state } : {}),
+          ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
+          ...(patch.owner !== undefined ? { contact_owner: patch.owner } : {}),
+        })}
+      />
+      <BulkEditDialog
+        open={bulkCompaniesOpen}
+        onOpenChange={setBulkCompaniesOpen}
+        count={selectedCompanyIds.length}
+        kind="companies"
+        stages={COMPANY_STAGES as readonly string[]}
+        states={states}
+        owners={companyOwners}
+        onApply={(patch) => applyCompanyBulk({
+          ...(patch.state !== undefined ? { state: patch.state } : {}),
+          ...(patch.stage !== undefined ? { relationship_stage: patch.stage as never } : {}),
+          ...(patch.owner !== undefined ? { relationship_owner: patch.owner } : {}),
+        })}
+      />
       <ReferralExportDialog
         open={exportOpen}
         onOpenChange={setExportOpen}
@@ -620,6 +731,117 @@ function EmptyBox({ title, body, actions }: { title: string; body: string; actio
       <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">{body}</p>
       {actions && <div className="mt-4 flex justify-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+function BulkEditBar({
+  count, label, visible, onClear, onOpen,
+}: { count: number; label: string; visible: boolean; onClear: () => void; onOpen: () => void }) {
+  if (!visible || count === 0) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-foreground text-background rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-lg animate-fade-in">
+      <span className="text-sm font-medium">{count} {label} selected</span>
+      <div className="h-4 w-px bg-background/20" />
+      <Button size="sm" variant="ghost" className="h-7 text-xs text-background hover:bg-background/10" onClick={onOpen}>
+        <Settings2 className="size-3.5 mr-1.5" /> Bulk edit
+      </Button>
+      <Button size="sm" variant="ghost" className="h-7 text-xs text-background hover:bg-background/10" onClick={onClear}>
+        Clear
+      </Button>
+    </div>
+  );
+}
+
+function BulkEditDialog({
+  open, onOpenChange, count, kind, stages, states, owners, onApply,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  count: number;
+  kind: "contacts" | "companies";
+  stages: readonly string[];
+  states: string[];
+  owners: string[];
+  onApply: (patch: { state?: string | null; stage?: string; owner?: string | null }) => void;
+}) {
+  const KEEP = "__keep";
+  const CLEAR = "__clear";
+  const [stateVal, setStateVal] = useState<string>(KEEP);
+  const [stateCustom, setStateCustom] = useState("");
+  const [stageVal, setStageVal] = useState<string>(KEEP);
+  const [ownerVal, setOwnerVal] = useState<string>(KEEP);
+  const [ownerCustom, setOwnerCustom] = useState("");
+
+  useEffect(() => {
+    if (open) { setStateVal(KEEP); setStageVal(KEEP); setOwnerVal(KEEP); setStateCustom(""); setOwnerCustom(""); }
+  }, [open]);
+
+  function handleApply() {
+    const patch: { state?: string | null; stage?: string; owner?: string | null } = {};
+    if (stateVal !== KEEP) patch.state = stateVal === CLEAR ? null : stateVal === "__custom" ? stateCustom.trim() : stateVal;
+    if (stageVal !== KEEP) patch.stage = stageVal;
+    if (ownerVal !== KEEP) patch.owner = ownerVal === CLEAR ? null : ownerVal === "__custom" ? ownerCustom.trim() : ownerVal;
+    if (Object.keys(patch).length === 0) {
+      toast({ title: "Nothing to update", description: "Pick at least one field to change." });
+      return;
+    }
+    onApply(patch);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Bulk edit {count} {kind}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-xs">State</Label>
+            <Select value={stateVal} onValueChange={setStateVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                <SelectItem value={CLEAR}>Clear</SelectItem>
+                <SelectItem value="__custom">Custom…</SelectItem>
+                {states.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {stateVal === "__custom" && (
+              <Input className="mt-2" value={stateCustom} onChange={(e) => setStateCustom(e.target.value)} placeholder="e.g. NC" />
+            )}
+          </div>
+          <div>
+            <Label className="text-xs">Stage</Label>
+            <Select value={stageVal} onValueChange={setStageVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                {stages.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Owner</Label>
+            <Select value={ownerVal} onValueChange={setOwnerVal}>
+              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>Keep current</SelectItem>
+                <SelectItem value={CLEAR}>Clear</SelectItem>
+                <SelectItem value="__custom">Custom…</SelectItem>
+                {owners.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {ownerVal === "__custom" && (
+              <Input className="mt-2" value={ownerCustom} onChange={(e) => setOwnerCustom(e.target.value)} placeholder="Owner name" />
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleApply}>Apply to {count}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

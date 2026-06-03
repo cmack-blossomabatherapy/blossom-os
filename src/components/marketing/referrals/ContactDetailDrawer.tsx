@@ -1,11 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Mail, Phone, MapPin, Calendar, Archive, MessageSquare, Edit } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Mail, Phone, MapPin, Calendar, Archive, MessageSquare, Edit, Save, X } from "lucide-react";
 import { useReferralActivities, useReferralCompanies } from "@/lib/os/referrals/hooks";
-import { archiveContact } from "@/lib/os/referrals/api";
+import { archiveContact, updateContact } from "@/lib/os/referrals/api";
 import type { ReferralContact } from "@/lib/os/referrals/types";
+import { CONTACT_STAGES, CONTACT_STATUSES, CONTACT_ROLE_TYPES } from "@/lib/os/referrals/types";
 import { fmtDate, fmtRelative } from "@/lib/os/referrals/utils";
 import { LogActivityDialog } from "./LogActivityDialog";
 import { toast } from "@/hooks/use-toast";
@@ -21,11 +26,50 @@ export function ContactDetailDrawer({
   const { data: companies } = useReferralCompanies();
   const company = useMemo(() => companies.find((c) => c.id === contact?.company_id) ?? null, [companies, contact]);
 
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<Partial<ReferralContact>>({});
+
+  useEffect(() => {
+    if (!contact) return;
+    setDraft({
+      first_name: contact.first_name, last_name: contact.last_name,
+      title: contact.title, role_type: contact.role_type,
+      email: contact.email, phone: contact.phone, mobile_phone: contact.mobile_phone, direct_phone: contact.direct_phone,
+      state: contact.state, city: contact.city, full_address: contact.full_address,
+      relationship_stage: contact.relationship_stage, status: contact.status,
+      contact_owner: contact.contact_owner, company_id: contact.company_id,
+      next_follow_up_at: contact.next_follow_up_at, notes: contact.notes,
+    });
+    setEditing(false);
+  }, [contact?.id]);
+
   if (!contact) return null;
 
   async function handleArchive() {
     try { await archiveContact(contact!.id); toast({ title: "Archived" }); onChanged?.(); onOpenChange(false); }
     catch (e) { toast({ title: "Failed", description: String(e), variant: "destructive" }); }
+  }
+
+  function setField<K extends keyof ReferralContact>(key: K, value: ReferralContact[K] | null | string) {
+    setDraft((d) => ({ ...d, [key]: (value === "" ? null : value) as ReferralContact[K] }));
+  }
+
+  async function handleSave() {
+    if (!contact) return;
+    setSaving(true);
+    try {
+      const patch: Partial<ReferralContact> = { ...draft };
+      if (patch.next_follow_up_at && typeof patch.next_follow_up_at === "string" && patch.next_follow_up_at.length === 10) {
+        patch.next_follow_up_at = new Date(patch.next_follow_up_at).toISOString();
+      }
+      await updateContact(contact.id, patch);
+      toast({ title: "Contact updated" });
+      setEditing(false);
+      onChanged?.();
+    } catch (e) {
+      toast({ title: "Failed to update", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+    } finally { setSaving(false); }
   }
 
   return (
@@ -42,21 +86,65 @@ export function ContactDetailDrawer({
             {contact.status && <Badge variant="outline">{contact.status}</Badge>}
           </div>
 
-          {/* Contact info */}
-          <section className="space-y-2 text-sm">
-            {contact.title && <p className="text-muted-foreground">{contact.title}</p>}
-            {company && (
-              <div className="flex items-center gap-2 text-sm">
-                <Building2 className="size-4 text-muted-foreground" />
-                <span>{company.company_name}</span>
-              </div>
-            )}
-            {contact.email && <div className="flex items-center gap-2"><Mail className="size-4 text-muted-foreground" />{contact.email}</div>}
-            {contact.phone && <div className="flex items-center gap-2"><Phone className="size-4 text-muted-foreground" />{contact.phone}</div>}
-            {(contact.full_address || contact.state) && (
-              <div className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" />{[contact.full_address, contact.state].filter(Boolean).join(", ")}</div>
-            )}
-          </section>
+          {!editing ? (
+            <section className="space-y-2 text-sm">
+              {contact.title && <p className="text-muted-foreground">{contact.title}</p>}
+              {company && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Building2 className="size-4 text-muted-foreground" />
+                  <span>{company.company_name}</span>
+                </div>
+              )}
+              {contact.email && <div className="flex items-center gap-2"><Mail className="size-4 text-muted-foreground" />{contact.email}</div>}
+              {contact.phone && <div className="flex items-center gap-2"><Phone className="size-4 text-muted-foreground" />{contact.phone}</div>}
+              {(contact.full_address || contact.state) && (
+                <div className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" />{[contact.full_address, contact.state].filter(Boolean).join(", ")}</div>
+              )}
+            </section>
+          ) : (
+            <section className="grid grid-cols-2 gap-3 rounded-xl border bg-muted/20 p-3">
+              <Field label="First name"><Input value={draft.first_name ?? ""} onChange={(e) => setField("first_name", e.target.value)} /></Field>
+              <Field label="Last name"><Input value={draft.last_name ?? ""} onChange={(e) => setField("last_name", e.target.value)} /></Field>
+              <Field label="Title"><Input value={draft.title ?? ""} onChange={(e) => setField("title", e.target.value)} /></Field>
+              <Field label="Role">
+                <Select value={draft.role_type ?? ""} onValueChange={(v) => setField("role_type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                  <SelectContent>{CONTACT_ROLE_TYPES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Company">
+                <Select value={draft.company_id ?? "__none"} onValueChange={(v) => setField("company_id", v === "__none" ? null : v)}>
+                  <SelectTrigger><SelectValue placeholder="No company" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">No company</SelectItem>
+                    {companies.map((co) => <SelectItem key={co.id} value={co.id}>{co.company_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Owner"><Input value={draft.contact_owner ?? ""} onChange={(e) => setField("contact_owner", e.target.value)} /></Field>
+              <Field label="Email"><Input type="email" value={draft.email ?? ""} onChange={(e) => setField("email", e.target.value)} /></Field>
+              <Field label="Phone"><Input value={draft.phone ?? ""} onChange={(e) => setField("phone", e.target.value)} /></Field>
+              <Field label="City"><Input value={draft.city ?? ""} onChange={(e) => setField("city", e.target.value)} /></Field>
+              <Field label="State"><Input value={draft.state ?? ""} onChange={(e) => setField("state", e.target.value)} placeholder="e.g. NC" /></Field>
+              <Field label="Stage">
+                <Select value={draft.relationship_stage ?? ""} onValueChange={(v) => setField("relationship_stage", v as never)}>
+                  <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
+                  <SelectContent>{CONTACT_STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Status">
+                <Select value={draft.status ?? ""} onValueChange={(v) => setField("status", v as never)}>
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectContent>{CONTACT_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Next follow-up">
+                <Input type="date" value={draft.next_follow_up_at ? String(draft.next_follow_up_at).slice(0, 10) : ""} onChange={(e) => setField("next_follow_up_at", e.target.value)} />
+              </Field>
+              <Field label="Address" className="col-span-2"><Input value={draft.full_address ?? ""} onChange={(e) => setField("full_address", e.target.value)} /></Field>
+              <Field label="Notes" className="col-span-2"><Textarea rows={3} value={draft.notes ?? ""} onChange={(e) => setField("notes", e.target.value)} /></Field>
+            </section>
+          )}
 
           {/* Relationship intelligence */}
           <section className="grid grid-cols-2 gap-3">
@@ -70,9 +158,18 @@ export function ContactDetailDrawer({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setLogOpen(true)}><MessageSquare className="size-4 mr-1.5" />Log activity</Button>
-            <Button size="sm" variant="outline" disabled><Edit className="size-4 mr-1.5" />Edit</Button>
-            <Button size="sm" variant="outline" onClick={handleArchive}><Archive className="size-4 mr-1.5" />Archive</Button>
+            {!editing ? (
+              <>
+                <Button size="sm" onClick={() => setLogOpen(true)}><MessageSquare className="size-4 mr-1.5" />Log activity</Button>
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Edit className="size-4 mr-1.5" />Edit</Button>
+                <Button size="sm" variant="outline" onClick={handleArchive}><Archive className="size-4 mr-1.5" />Archive</Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" onClick={handleSave} disabled={saving}><Save className="size-4 mr-1.5" />{saving ? "Saving…" : "Save changes"}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving}><X className="size-4 mr-1.5" />Cancel</Button>
+              </>
+            )}
           </div>
 
           {/* Timeline */}
@@ -107,6 +204,15 @@ function Mini({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="rounded-lg border bg-card p-2.5">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-sm font-medium mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={className}>
+      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</Label>
+      <div className="mt-1">{children}</div>
     </div>
   );
 }
