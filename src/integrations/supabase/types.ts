@@ -7632,6 +7632,132 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_ai_calls: {
+        Row: {
+          agent_id: string | null
+          call_ended_at: string | null
+          call_outcome: string | null
+          call_started_at: string | null
+          call_status: string | null
+          call_summary: string | null
+          caller_emotion: string | null
+          caller_name: string | null
+          caller_type: string | null
+          child_age: string | null
+          created_at: string
+          custom_analysis_data: Json | null
+          department_to_notify: string | null
+          duration_seconds: number | null
+          emergency_flag: boolean | null
+          follow_up_notes: string | null
+          follow_up_status: string | null
+          handling_instructions: string | null
+          id: string
+          insurance_provider: string | null
+          insurance_type: string | null
+          needs_intake_follow_up: boolean | null
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          owner_id: string | null
+          phone_number: string | null
+          preferred_callback_time: string | null
+          raw_retell_payload: Json | null
+          reason_for_call: string | null
+          recording_url: string | null
+          retell_call_id: string
+          sentiment: string | null
+          source: string | null
+          state: string | null
+          transcript: string | null
+          transcript_object: Json | null
+          updated_at: string
+          urgency_level: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          call_ended_at?: string | null
+          call_outcome?: string | null
+          call_started_at?: string | null
+          call_status?: string | null
+          call_summary?: string | null
+          caller_emotion?: string | null
+          caller_name?: string | null
+          caller_type?: string | null
+          child_age?: string | null
+          created_at?: string
+          custom_analysis_data?: Json | null
+          department_to_notify?: string | null
+          duration_seconds?: number | null
+          emergency_flag?: boolean | null
+          follow_up_notes?: string | null
+          follow_up_status?: string | null
+          handling_instructions?: string | null
+          id?: string
+          insurance_provider?: string | null
+          insurance_type?: string | null
+          needs_intake_follow_up?: boolean | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          preferred_callback_time?: string | null
+          raw_retell_payload?: Json | null
+          reason_for_call?: string | null
+          recording_url?: string | null
+          retell_call_id: string
+          sentiment?: string | null
+          source?: string | null
+          state?: string | null
+          transcript?: string | null
+          transcript_object?: Json | null
+          updated_at?: string
+          urgency_level?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          call_ended_at?: string | null
+          call_outcome?: string | null
+          call_started_at?: string | null
+          call_status?: string | null
+          call_summary?: string | null
+          caller_emotion?: string | null
+          caller_name?: string | null
+          caller_type?: string | null
+          child_age?: string | null
+          created_at?: string
+          custom_analysis_data?: Json | null
+          department_to_notify?: string | null
+          duration_seconds?: number | null
+          emergency_flag?: boolean | null
+          follow_up_notes?: string | null
+          follow_up_status?: string | null
+          handling_instructions?: string | null
+          id?: string
+          insurance_provider?: string | null
+          insurance_type?: string | null
+          needs_intake_follow_up?: boolean | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          owner_id?: string | null
+          phone_number?: string | null
+          preferred_callback_time?: string | null
+          raw_retell_payload?: Json | null
+          reason_for_call?: string | null
+          recording_url?: string | null
+          retell_call_id?: string
+          sentiment?: string | null
+          source?: string | null
+          state?: string | null
+          transcript?: string | null
+          transcript_object?: Json | null
+          updated_at?: string
+          urgency_level?: string | null
+          verification_status?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active: boolean
