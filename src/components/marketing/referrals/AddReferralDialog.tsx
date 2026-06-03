@@ -10,6 +10,7 @@ import { createContact, findOrCreateCompany } from "@/lib/os/referrals/api";
 import { CONTACT_ROLE_TYPES, CONTACT_STAGES, CONTACT_STATUSES, COMPANY_TYPES, PREFERRED_CONTACT_METHODS } from "@/lib/os/referrals/types";
 import { extractDomain } from "@/lib/os/referrals/utils";
 import { toast } from "@/hooks/use-toast";
+import { OwnerCombobox } from "./OwnerCombobox";
 
 interface Props { open: boolean; onOpenChange: (o: boolean) => void; onCreated?: () => void; presetCompanyId?: string }
 
@@ -26,7 +27,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
   const [preferred, setPreferred] = useState<string>("");
   const [stage, setStage] = useState<string>("New Contact");
   const [status, setStatus] = useState<string>("New");
-  const [owner, setOwner] = useState("");
+  const [owners, setOwners] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [nextFollowUp, setNextFollowUp] = useState("");
 
@@ -46,6 +47,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
   function reset() {
     setFirstName(""); setLastName(""); setTitle(""); setRoleType(""); setEmail(""); setPhone("");
     setPreferred(""); setStage("New Contact"); setStatus("New"); setOwner(""); setNotes(""); setNextFollowUp("");
+    setOwners([]);
     setCompanyMode("existing"); setCompanyId(""); setNewCompanyName(""); setNewCompanyType("");
     setNewCompanyWebsite(""); setNewCompanyState(""); setNewCompanyPhone("");
   }
@@ -67,7 +69,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
           domain: extractDomain(email, newCompanyWebsite),
           state: newCompanyState || null,
           main_phone: newCompanyPhone || null,
-          relationship_owner: owner || null,
+          relationship_owner: owners.length ? owners : null,
           source: "Manual",
         });
       }
@@ -82,7 +84,7 @@ export function AddReferralDialog({ open, onOpenChange, onCreated, presetCompany
         preferred_contact_method: (preferred || null) as never,
         relationship_stage: stage as never,
         status: status as never,
-        contact_owner: owner || null,
+        contact_owner: owners.length ? owners : null,
         notes: notes || null,
         next_follow_up_at: nextFollowUp ? new Date(nextFollowUp).toISOString() : null,
         source: "Manual",
