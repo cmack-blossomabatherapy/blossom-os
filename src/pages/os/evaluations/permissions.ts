@@ -29,10 +29,10 @@ export function permissionsForRole(role: string): Permissions {
       };
     case "executive_leadership":
       return {
-        canManageStaff: false, canManageForms: false,
-        canManageEmails: false, canManageSettings: false, canFinalize: false,
-        canReopen: false, canDeleteCompleted: false, canViewAllStates: true,
-        canViewReports: true, canImportStaff: false, canOverrideRules: false,
+        canManageStaff: true, canManageForms: true,
+        canManageEmails: true, canManageSettings: true, canFinalize: true,
+        canReopen: true, canDeleteCompleted: false, canViewAllStates: true,
+        canViewReports: true, canImportStaff: true, canOverrideRules: true,
         scope: "all", roleScope: null,
       };
     case "hr_team":
@@ -52,6 +52,13 @@ export function permissionsForRole(role: string): Permissions {
         scope: "all", roleScope: ["BCBA", "RBT"],
       };
     case "operations_leadership":
+      return {
+        canManageStaff: true, canManageForms: true,
+        canManageEmails: true, canManageSettings: true, canFinalize: true,
+        canReopen: true, canDeleteCompleted: false, canViewAllStates: true,
+        canViewReports: true, canImportStaff: true, canOverrideRules: true,
+        scope: "all", roleScope: null,
+      };
     case "bcba":
       return {
         canManageStaff: false, canManageForms: false,
