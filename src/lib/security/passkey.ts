@@ -38,7 +38,7 @@ export async function verifyWithPasskey(credentialIdB64?: string | null): Promis
     crypto.getRandomValues(challenge);
     const allow = credentialIdB64
       ? [{
-          id: Uint8Array.from(atob(credentialIdB64), (c) => c.charCodeAt(0)),
+          id: b64ToBytes(credentialIdB64).buffer as ArrayBuffer,
           type: "public-key" as const,
         }]
       : undefined;
@@ -63,6 +63,28 @@ function bufToB64(buf: ArrayBuffer): string {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);
+}
+
+/**
+ * Decode a credential id that may be standard base64 OR base64url
+ * (WebAuthn `PublicKeyCredential.id` is base64url without padding).
+ * Falls back gracefully so a malformed/legacy value doesn't throw.
+ */
+function b64ToBytes(input: string): Uint8Array {
+  let s = (input || "").trim().replace(/-/g, "+").replace(/_/g, "/");
+  const pad = s.length % 4;
+  if (pad === 2) s += "==";
+  else if (pad === 3) s += "=";
+  else if (pad === 1) s = s.slice(0, -1); // malformed — drop stray char
+  try {
+    const bin = atob(s);
+    const buf = new ArrayBuffer(bin.length);
+    const out = new Uint8Array(buf);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch {
+    return new Uint8Array(new ArrayBuffer(0));
+  }
 }
 
 /**
