@@ -35,10 +35,11 @@ function pickAnalysis(call: any) {
 
 function classifyDepartment(reason: string, custom: any): string {
   const r = (reason ?? '').toLowerCase()
-  if (custom?.emergency_flag === true || r.includes('emergency')) return 'urgent'
-  if (r.includes('schedul')) return 'scheduling'
-  if (r.includes('billing') || r.includes('insurance')) return 'billing'
-  if (r.includes('staff') || r.includes('hr') || r.includes('employee')) return 'hr'
+  const urg = (custom?.urgency_level ?? '').toString().toLowerCase()
+  if (custom?.emergency_flag === true || urg === 'high' || r.includes('emergency')) return 'urgent'
+  if (r.includes('complaint') || r.includes('escalat') || r.includes('manager') || r.includes('director') || r.includes('supervisor')) return 'state_director'
+  if (r.includes('schedul') || r.includes('cancel') || r.includes('reschedule') || r.includes('appointment')) return 'scheduling'
+  if (r.includes('staff') || r.includes('hr') || r.includes('employee') || r.includes('payroll') || r.includes('job')) return 'hr'
   return 'intake'
 }
 
@@ -129,23 +130,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Fetch the row id so notify can join routing & log per-call notifications.
-    const { data: stored } = await supabase
-      .from('phone_ai_calls').select('id').eq('retell_call_id', retell_call_id).maybeSingle()
-    if (stored?.id) {
-      try {
-        await fetch(`${SUPABASE_URL}/functions/v1/notify-after-hours-call`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${SERVICE_ROLE}`,
-          },
-          body: JSON.stringify({ call_id: stored.id }),
-        })
-      } catch (e) {
-        console.error('[retell-webhook] notify dispatch failed', e)
-      }
-    }
+    // Auto email notifications are intentionally disabled while we validate the
+    // AI classification. Intake sends manually from the After-Hours board for now.
 
     return new Response(JSON.stringify({ ok: true, retell_call_id, verification_status }), {
       status: 200,
