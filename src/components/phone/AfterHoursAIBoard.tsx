@@ -372,6 +372,11 @@ export function AfterHoursAIBoard() {
                     </a>
                   </Button>
                 )}
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" disabled={resending} onClick={() => resendNotification(selected)}>
+                    <Send className="mr-2 h-3.5 w-3.5" /> {resending ? "Sending…" : "Send email notification"}
+                  </Button>
+                </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Follow-up notes</label>
                   <Input
@@ -386,7 +391,88 @@ export function AfterHoursAIBoard() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2"><Mail className="h-4 w-4" /> Email Routing</SheetTitle>
+          </SheetHeader>
+          <div className="mt-2 text-xs text-muted-foreground">
+            Each call is auto-classified by AI into a department. Add the email addresses that should be notified when a call comes in for that department. The <span className="font-medium">unverified</span> bucket also catches webhook-unverified or unprocessable calls.
+          </div>
+          <div className="mt-5 space-y-4">
+            {routing.length === 0 && (
+              <div className="text-sm text-muted-foreground py-6 text-center">Loading routing…</div>
+            )}
+            {routing.map((r) => (
+              <RoutingCard key={r.id} routing={r} onSave={saveRouting} />
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routing, patch: Partial<Routing>) => void }) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const email = draft.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (routing.emails.includes(email)) {
+      setDraft("");
+      return;
+    }
+    onSave(routing, { emails: [...routing.emails, email] });
+    setDraft("");
+  };
+  const remove = (email: string) => onSave(routing, { emails: routing.emails.filter((e) => e !== email) });
+  return (
+    <Card>
+      <CardContent className="pt-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <div className="font-medium capitalize text-sm">{routing.department}</div>
+            {routing.notes && <div className="text-xs text-muted-foreground mt-0.5">{routing.notes}</div>}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={routing.enabled}
+              onChange={(e) => onSave(routing, { enabled: e.target.checked })}
+              className="h-3.5 w-3.5"
+            />
+            Enabled
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {routing.emails.length === 0 && (
+            <span className="text-xs text-muted-foreground italic">No recipients configured</span>
+          )}
+          {routing.emails.map((e) => (
+            <Badge key={e} variant="secondary" className="gap-1 pr-1">
+              {e}
+              <button onClick={() => remove(e)} className="ml-1 rounded hover:bg-muted-foreground/10 p-0.5">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add())}
+            placeholder="name@blossomabatherapy.com"
+            className="h-8 text-sm"
+          />
+          <Button size="sm" variant="outline" onClick={add}><Plus className="h-3.5 w-3.5" /></Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
