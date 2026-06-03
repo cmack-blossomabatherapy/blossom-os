@@ -49,7 +49,13 @@ type Call = {
   raw_retell_payload: Record<string, any> | null;
 };
 
-const STATUS_OPTIONS = ["new", "in_progress", "called_back", "resolved", "no_action"] as const;
+const STATUS_OPTIONS = ["new", "resolved", "no_action"] as const;
+
+const STAGE_META: Record<(typeof STATUS_OPTIONS)[number], { label: string; tone: string; dot: string }> = {
+  new: { label: "New", tone: "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground", dot: "bg-primary" },
+  resolved: { label: "Resolved", tone: "data-[state=active]:bg-emerald-500 data-[state=active]:text-white", dot: "bg-emerald-500" },
+  no_action: { label: "No action", tone: "data-[state=active]:bg-muted-foreground data-[state=active]:text-background", dot: "bg-muted-foreground" },
+};
 
 const DEPARTMENT_META: Record<string, { label: string; tone: string }> = {
   intake: { label: "Intake", tone: "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30" },
@@ -87,8 +93,6 @@ type TestSendResponse = {
 function statusColor(s: string | null) {
   switch (s) {
     case "resolved": return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
-    case "called_back": return "bg-sky-500/15 text-sky-700 dark:text-sky-300";
-    case "in_progress": return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
     case "no_action": return "bg-muted text-muted-foreground";
     default: return "bg-primary/15 text-primary";
   }
