@@ -38,7 +38,7 @@ export async function verifyWithPasskey(credentialIdB64?: string | null): Promis
     crypto.getRandomValues(challenge);
     const allow = credentialIdB64
       ? [{
-          id: b64ToBytes(credentialIdB64),
+          id: b64ToBytes(credentialIdB64).buffer,
           type: "public-key" as const,
         }]
       : undefined;
