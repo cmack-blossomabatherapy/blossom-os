@@ -536,6 +536,17 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
     },
   ];
 
+  // State Director — only Resources section for now.
+  const STATE_DIRECTOR_SECTIONS: NavSection[] = [
+    {
+      id: "resources", label: "Resources", items: [
+        { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+        { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
+        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+      ],
+    },
+  ];
+
   // QA / Compliance — only Evaluations and Reports are active. Everything else is
   // disabled and shown as Coming Soon.
   const QA_TEAM_SECTIONS: NavSection[] = [
