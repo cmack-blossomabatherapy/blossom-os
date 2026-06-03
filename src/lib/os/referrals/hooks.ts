@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { listContacts, listCompanies, listActivities, listBatches } from "./api";
 import type { ReferralCompany, ReferralContact, ReferralActivity, ReferralImportBatch } from "./types";
 
 function useChannelRefresh(table: string, refresh: () => void) {
+  const channelNameRef = useRef(`realtime-${table}-${crypto.randomUUID()}`);
+
   useEffect(() => {
     const ch = supabase
-      .channel(`realtime-${table}`)
+      .channel(channelNameRef.current)
       .on("postgres_changes", { event: "*", schema: "public", table }, () => refresh())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
