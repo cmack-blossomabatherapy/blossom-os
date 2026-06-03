@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, Component, type ReactNode, type ErrorInfo } from "react";
 import {
   Plus, Upload, Building2, Download, History, Search, Users, HandHeart, Calendar, TrendingUp, AlertCircle,
 } from "lucide-react";
@@ -42,6 +42,14 @@ function exportCsv(filename: string, rows: Record<string, unknown>[]) {
 }
 
 export default function Referrals() {
+  return (
+    <ReferralsErrorBoundary>
+      <ReferralsInner />
+    </ReferralsErrorBoundary>
+  );
+}
+
+function ReferralsInner() {
   const { data: contacts, loading: lc, refresh: refreshContacts } = useReferralContacts();
   const { data: companies, loading: lo, refresh: refreshCompanies } = useReferralCompanies();
   const { data: batches } = useReferralBatches();
@@ -351,23 +359,54 @@ export default function Referrals() {
       </MktgCard>
 
       {/* Dialogs */}
-      <AddReferralDialog open={addContactOpen} onOpenChange={setAddContactOpen} onCreated={refreshAll} />
-      <AddCompanyDialog open={addCompanyOpen} onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />
-      <ImportReferralsDialog open={importOpen} onOpenChange={setImportOpen} onComplete={refreshAll} />
-      <ContactDetailDrawer
-        contact={contactDrawer}
-        open={!!contactDrawer}
-        onOpenChange={(o) => { if (!o) setContactDrawer(null); }}
-        onChanged={refreshAll}
-      />
-      <CompanyDetailDrawer
-        company={companyDrawer}
-        open={!!companyDrawer}
-        onOpenChange={(o) => { if (!o) setCompanyDrawer(null); }}
-        onChanged={refreshAll}
-      />
+      {addContactOpen && <AddReferralDialog open onOpenChange={setAddContactOpen} onCreated={refreshAll} />}
+      {addCompanyOpen && <AddCompanyDialog open onOpenChange={setAddCompanyOpen} onCreated={refreshAll} />}
+      {importOpen && <ImportReferralsDialog open onOpenChange={setImportOpen} onComplete={refreshAll} />}
+      {contactDrawer && (
+        <ContactDetailDrawer
+          contact={contactDrawer}
+          open
+          onOpenChange={(o) => { if (!o) setContactDrawer(null); }}
+          onChanged={refreshAll}
+        />
+      )}
+      {companyDrawer && (
+        <CompanyDetailDrawer
+          company={companyDrawer}
+          open
+          onOpenChange={(o) => { if (!o) setCompanyDrawer(null); }}
+          onChanged={refreshAll}
+        />
+      )}
     </MktgPage>
   );
+}
+
+class ReferralsErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    // eslint-disable-next-line no-console
+    console.error("[Referrals] render error", error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <MktgPage title="Referrals" subtitle="Something went wrong loading this page.">
+          <MktgCard>
+            <div className="p-6 space-y-3">
+              <p className="text-sm font-semibold text-destructive">The Referrals page hit an error.</p>
+              <pre className="text-xs whitespace-pre-wrap bg-muted/40 rounded-md p-3 overflow-auto">
+                {String(this.state.error?.message ?? this.state.error)}
+              </pre>
+              <Button size="sm" variant="outline" onClick={() => this.setState({ error: null })}>Try again</Button>
+            </div>
+          </MktgCard>
+        </MktgPage>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function EmptyBox({ title, body, actions }: { title: string; body: string; actions?: React.ReactNode }) {
