@@ -79,6 +79,15 @@ export function AvatarUploader({
           .eq("id", employeeId);
         if (dbErr) throw dbErr;
       }
+      // Always update the auth profile so the header dropdown / nav avatar pick it up.
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("user_id", ownerUserId);
+      if (profErr) console.warn("Could not update profile avatar_url:", profErr.message);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("profile:updated", { detail: { userId: ownerUserId, avatarUrl: url } }));
+      }
       setPreview(url);
       onChange?.(url);
       toast.success("Profile photo updated");
@@ -96,6 +105,10 @@ export function AvatarUploader({
     try {
       if (employeeId) {
         await supabase.from("employees").update({ photo_url: null, avatar_url: null }).eq("id", employeeId);
+      }
+      await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", ownerUserId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("profile:updated", { detail: { userId: ownerUserId, avatarUrl: null } }));
       }
       setPreview(null);
       onChange?.(null);
