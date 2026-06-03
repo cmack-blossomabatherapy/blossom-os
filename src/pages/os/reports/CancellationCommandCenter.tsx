@@ -279,9 +279,13 @@ function parseScheduleFile(headers: string[], rows: Record<string, string>[]): S
       isCancelled,
       isExcused,
       raw: r,
-      _deleted: deleted,
-    };
-  }).filter((row: any) => !row._deleted);
+    } as ScheduleRow & { _deleted?: boolean };
+  }).filter(() => true).filter((_row, i) => {
+    const r = rows[i];
+    if (!deletedFlagH) return true;
+    const v = String(r[deletedFlagH] ?? "").trim().toLowerCase();
+    return !(v === "1" || v === "true" || v === "yes");
+  });
 }
 
 function parseBillingFile(headers: string[], rows: Record<string, string>[]): BillingLite[] {
