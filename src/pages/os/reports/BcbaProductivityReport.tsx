@@ -1307,10 +1307,6 @@ export default function BcbaProductivityReport() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Min hrs</span>
                 <Input type="number" value={minHours} onChange={e => setMinHours(num(e.target.value) || DEFAULT_MIN)} className="h-8 w-20 text-xs" />
               </div>
-              <div className="relative ml-auto w-64">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search BCBA…" className="h-8 pl-8 text-xs" />
-              </div>
             </div>
 
             <p className="border-t border-border/60 bg-secondary/30 px-4 py-2 text-[10.5px] text-muted-foreground">
@@ -1405,10 +1401,54 @@ export default function BcbaProductivityReport() {
 
           {/* ===== Main Table ===== */}
           <section className="mt-4 overflow-hidden rounded-xl border border-border/60 bg-card">
-            <div className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
-              <h2 className="text-sm font-semibold">BCBA Productivity ({visible.length})</h2>
-              <span className="text-[11px] text-muted-foreground">Click a row to expand client &amp; RBT breakdowns</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold tracking-tight">BCBA Productivity</h2>
+                <span className="inline-flex items-center rounded-full bg-secondary/70 px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+                  {search ? `${visible.length} of ${aggregates.length}` : visible.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden text-[11px] text-muted-foreground md:inline">Click a row to expand client &amp; RBT breakdowns</span>
+                <div className="relative w-64">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search BCBAs in this table…"
+                    className={cn(
+                      "h-8 rounded-full pl-8 pr-8 text-xs transition",
+                      search && "border-primary/50 ring-2 ring-primary/15",
+                    )}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-1.5 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+            {search && (
+              <div className="flex items-center justify-between border-b border-border/60 bg-[hsl(265_100%_99%)] px-4 py-1.5 text-[11px]">
+                <span className="text-[hsl(265_30%_35%)]">
+                  Showing <span className="font-semibold text-foreground">{visible.length}</span> result{visible.length === 1 ? "" : "s"} for
+                  <span className="ml-1 rounded bg-card px-1.5 py-0.5 font-medium text-foreground shadow-sm">"{search}"</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="inline-flex items-center gap-1 font-medium text-[hsl(265_70%_55%)] hover:text-[hsl(265_70%_45%)]"
+                >
+                  <X className="h-3 w-3" /> Clear search
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-secondary/40 text-[11px] uppercase tracking-wide text-muted-foreground">
