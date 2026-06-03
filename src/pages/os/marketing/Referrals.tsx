@@ -466,6 +466,106 @@ function ReferralsInner() {
   );
 }
 
+function ReferralExportDialog({
+  open,
+  onOpenChange,
+  sources,
+  initialDataset,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  sources: Record<ExportDataset, ExportSource>;
+  initialDataset: ExportDataset;
+}) {
+  const [dataset, setDataset] = useState<ExportDataset>(initialDataset);
+  const [selected, setSelected] = useState<string[]>([]);
+  const source = sources[dataset];
+
+  useEffect(() => {
+    if (!open) return;
+    const nextSource = sources[initialDataset];
+    setDataset(initialDataset);
+    setSelected(nextSource.columns.filter((c) => c.defaultSelected).map((c) => c.key));
+  }, [initialDataset, open, sources]);
+
+  useEffect(() => {
+    setSelected((current) => {
+      const valid = current.filter((key) => source.columns.some((c) => c.key === key));
+      return valid.length ? valid : source.columns.filter((c) => c.defaultSelected).map((c) => c.key);
+    });
+  }, [source]);
+
+  const selectedColumns = source.columns.filter((c) => selected.includes(c.key));
+
+  function toggleColumn(key: string, checked: boolean) {
+    setSelected((current) => checked ? [...new Set([...current, key])] : current.filter((k) => k !== key));
+  }
+
+  function handleExport() {
+    if (!source.rows.length) {
+      toast({ title: "Nothing to export", description: "There are no rows in this referral view yet." });
+      return;
+    }
+    if (!selectedColumns.length) {
+      toast({ title: "Choose at least one column", variant: "destructive" });
+      return;
+    }
+    exportCsv(source.fileName, source.rows, selectedColumns);
+    toast({ title: "Export ready", description: `${source.rows.length} rows exported from ${source.label}.` });
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Build referral export</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr]">
+            <div className="space-y-2">
+              <Label>Data set</Label>
+              <Select value={dataset} onValueChange={(value) => setDataset(value as ExportDataset)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="contacts">Contacts</SelectItem>
+                  <SelectItem value="companies">Companies</SelectItem>
+                  <SelectItem value="followups">Follow-ups</SelectItem>
+                  <SelectItem value="history">Import history</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="rounded-xl border bg-muted/30 p-3">
+              <p className="text-sm font-medium">{source.label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{source.description}</p>
+              <p className="mt-2 text-xs font-medium tabular-nums">{source.rows.length} rows · {selectedColumns.length} columns</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setSelected(source.columns.map((c) => c.key))}>Select all</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(source.columns.filter((c) => c.defaultSelected).map((c) => c.key))}>Recommended</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelected([])}>Clear</Button>
+          </div>
+
+          <div className="grid max-h-[42vh] gap-2 overflow-y-auto rounded-xl border p-3 sm:grid-cols-2">
+            {source.columns.map((column) => (
+              <label key={column.key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50">
+                <Checkbox checked={selected.includes(column.key)} onCheckedChange={(checked) => toggleColumn(column.key, checked === true)} />
+                <span className="text-sm">{column.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleExport}><Download className="mr-1.5 size-4" />Export CSV</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 class ReferralsErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) { return { error }; }
