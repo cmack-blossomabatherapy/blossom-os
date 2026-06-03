@@ -941,6 +941,9 @@ export default function BcbaProductivityReport() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <Button variant="outline" size="sm" onClick={handleSaveReport} disabled={!billingRaws.length}>
+              <Save className="mr-1.5 h-3.5 w-3.5" />Save Report
+            </Button>
             <Button variant="outline" size="sm" onClick={() => exportAs("csv")}>
               <Download className="mr-1.5 h-3.5 w-3.5" />CSV
             </Button>
