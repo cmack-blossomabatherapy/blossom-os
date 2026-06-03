@@ -74,6 +74,16 @@ type Routing = {
   notes: string | null;
 };
 
+type TestSendResponse = {
+  ok?: boolean;
+  error?: string;
+  resend?: {
+    status?: number;
+    id?: string | null;
+    message?: string | null;
+  };
+};
+
 function statusColor(s: string | null) {
   switch (s) {
     case "resolved": return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
@@ -529,7 +539,7 @@ function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routin
       const { data, error } = await supabase.functions.invoke("notify-after-hours-call", {
         body: { test: true, department: routing.department, to: "cmack@blossomabatherapy.com" },
       });
-      const result = data as any;
+      const result = data as TestSendResponse | null;
       const resend = result?.resend;
       const providerFailed = resend?.status >= 400 || result?.ok === false;
       const messageId = resend?.id ? String(resend.id) : null;
@@ -542,8 +552,8 @@ function RoutingCard({ routing, onSave }: { routing: Routing; onSave: (r: Routin
           description: `Sent to cmack@blossomabatherapy.com · Message ${messageId}`,
         });
       }
-    } catch (e: any) {
-      toast.error(`Test failed: ${e?.message ?? String(e)}`);
+    } catch (e: unknown) {
+      toast.error(`Test failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setTesting(false);
     }
