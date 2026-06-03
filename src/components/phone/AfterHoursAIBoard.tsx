@@ -467,9 +467,21 @@ export function AfterHoursAIBoard() {
                           </SelectContent>
                         </Select>
                         {c.phone_number && (
-                          <a href={`tel:${c.phone_number}`} className="text-xs text-primary inline-flex items-center gap-1">
-                            <PhoneIcon className="h-3 w-3" /> Call back
-                          </a>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-[170px] h-8 gap-1.5 text-xs font-medium border-primary/30 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(c.phone_number!);
+                              toast.success("Number copied to clipboard", {
+                                description: c.phone_number!,
+                              });
+                            }}
+                          >
+                            <PhoneIcon className="h-3.5 w-3.5" />
+                            Call back
+                          </Button>
                         )}
                       </div>
                     </div>
