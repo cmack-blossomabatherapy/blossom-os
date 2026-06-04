@@ -12,6 +12,7 @@ import {
   ChevronRight,
   CircleDot,
   Cloud,
+  Copy,
   Database,
   FileText,
   Filter,
@@ -402,7 +403,7 @@ const INTEGRATIONS: Integration[] = [
     id: "retell",
     name: "Retell AI",
     category: "comms",
-    description: "AI voice agents for inbound and after-hours. Webhook URL: https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook  •  TODO: configure RETELL_WEBHOOK_SECRET in Retell + Lovable secrets to enable signature verification (calls currently accepted as 'unverified').",
+    description: "AI voice agents for inbound and after-hours calls. Captures caller details and routes to the right department.",
     purpose: ["AI calls", "After-hours intake"],
     status: "connected",
     account: "blossom-retell",
@@ -903,16 +904,60 @@ function IntegrationDrawer({
             </TabsContent>
 
             <TabsContent value="webhooks" className="mt-6">
-              <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
-                <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
-                <div className="text-sm font-medium">No webhooks configured</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Add a webhook to receive real-time events from {integration.name}.
-                </p>
-                <Button size="sm" className="mt-3 h-8 rounded-xl">
-                  Add webhook
-                </Button>
-              </Card>
+              {integration.id === "retell" ? (
+                <div className="space-y-4">
+                  <Card className="rounded-2xl border border-border/60 bg-card/60 p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="grid size-10 place-items-center rounded-xl bg-violet-500/10 text-violet-500">
+                        <Globe className="size-5" strokeWidth={1.75} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold">Retell Webhook URL</div>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Paste this into Retell → Agent <span className="font-mono">agent_fb8aaca447d2a6c6703d40d77a</span> → Webhook settings. Event: <span className="font-mono">call_analyzed</span>.
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <code className="flex-1 rounded-lg bg-muted/60 px-3 py-2 text-[11px] font-mono text-foreground break-all">
+                            https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 gap-1.5 rounded-lg shrink-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText("https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook");
+                              // Use a simple toast-like approach or just rely on visual feedback
+                            }}
+                          >
+                            <Copy className="size-3.5" /> Copy
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-5 text-center">
+                    <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
+                    <div className="text-sm font-medium">Additional webhooks</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Add more webhooks to receive real-time events from Retell.
+                    </p>
+                    <Button size="sm" className="mt-3 h-8 rounded-xl">
+                      Add webhook
+                    </Button>
+                  </Card>
+                </div>
+              ) : (
+                <Card className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6 text-center">
+                  <Plug className="mx-auto mb-2 size-5 text-muted-foreground" />
+                  <div className="text-sm font-medium">No webhooks configured</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add a webhook to receive real-time events from {integration.name}.
+                  </p>
+                  <Button size="sm" className="mt-3 h-8 rounded-xl">
+                    Add webhook
+                  </Button>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="advanced" className="mt-6 space-y-3">

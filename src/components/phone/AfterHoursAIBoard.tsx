@@ -11,11 +11,11 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Copy, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
+import { ExternalLink, RefreshCw, Search, Phone as PhoneIcon, Settings as SettingsIcon, Mail, Send, Plus, X, Sparkles, AlertTriangle, CheckCircle2, Building2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const WEBHOOK_URL = "https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook";
+
 
 type Call = {
   id: string;
@@ -327,29 +327,6 @@ export function AfterHoursAIBoard() {
         </div>
       </div>
 
-      <Card className="mb-4 border-primary/30 bg-primary/5">
-        <CardContent className="py-3 flex items-center gap-3 flex-wrap">
-          <div className="flex-1 min-w-[260px]">
-            <div className="text-xs font-medium text-foreground">Retell Webhook URL</div>
-            <div className="text-[11px] text-muted-foreground mb-1">
-              Paste this into Retell → Agent <span className="font-mono">agent_fb8aaca447d2a6c6703d40d77a</span> → Webhook settings. Event: <span className="font-mono">call_analyzed</span>.
-            </div>
-            <code className="text-[11px] font-mono break-all text-foreground">{WEBHOOK_URL}</code>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(WEBHOOK_URL);
-              toast.success("Webhook URL copied");
-            }}
-          >
-            <Copy className="mr-2 h-3.5 w-3.5" /> Copy
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Time range + scorecards */}
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="text-xs text-muted-foreground">
           Reception desk · showing <span className="font-medium text-foreground">{filtered.length}</span> of {counts.total}
