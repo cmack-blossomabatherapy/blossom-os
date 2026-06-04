@@ -63,7 +63,20 @@ export async function resolveMfaStatus(userId: string | undefined): Promise<MfaS
     (f) => f.status === "verified",
   );
 
-  if (verifiedTotp.length === 0) return { state: "needs_enroll" };
+  // Email MFA is a custom factor stored in user_email_mfa.
+  let hasEmailMfa = false;
+  try {
+    const { data: emailRow } = await supabase
+      .from("user_email_mfa")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    hasEmailMfa = !!emailRow;
+  } catch {
+    /* no-op */
+  }
+
+  if (verifiedTotp.length === 0 && !hasEmailMfa) return { state: "needs_enroll" };
 
   // Trust this device for 30 days based on the local stamp, regardless of
   // session AAL. A fresh email+password sign-in always starts at aal1, so

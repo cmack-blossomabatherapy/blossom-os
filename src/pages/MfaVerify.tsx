@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Loader2, LogOut, ShieldCheck, Fingerprint } from "lucide-react";
+import { Loader2, LogOut, ShieldCheck, Fingerprint, Mail, Smartphone } from "lucide-react";
 import { MfaBrandShell } from "@/components/auth/MfaBrandShell";
 import { markMfaVerified } from "@/lib/mfa";
 import { isPasskeyAvailable, verifyWithPasskey } from "@/lib/security/passkey";
+import { cn } from "@/lib/utils";
 
 export default function MfaVerify() {
   const { user, loading, signOut } = useAuth();
@@ -27,6 +28,11 @@ export default function MfaVerify() {
   const [passkeyCredId, setPasskeyCredId] = useState<string | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const passkeySupported = isPasskeyAvailable();
+  const [emailMfaEnrolled, setEmailMfaEnrolled] = useState(false);
+  const [emailMfaTarget, setEmailMfaTarget] = useState<string | null>(null);
+  const [method, setMethod] = useState<"app" | "email">("app");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -35,7 +41,21 @@ export default function MfaVerify() {
       try {
         const { data: list } = await supabase.auth.mfa.listFactors();
         const verified = (list?.totp ?? []).find((f) => f.status === "verified");
+        // Check email enrollment as fallback / alternative.
+        const { data: emailRow } = await supabase
+          .from("user_email_mfa")
+          .select("email")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled && emailRow) {
+          setEmailMfaEnrolled(true);
+          setEmailMfaTarget(emailRow.email);
+        }
         if (!verified) {
+          if (emailRow) {
+            if (!cancelled) setMethod("email");
+            return;
+          }
           if (!cancelled) navigate("/mfa/setup", { replace: true });
           return;
         }
@@ -70,8 +90,39 @@ export default function MfaVerify() {
 
   if (!loading && !user) return <Navigate to="/auth" replace />;
 
+  const handleSendEmail = async () => {
+    setEmailSending(true);
+    const { data, error } = await supabase.functions.invoke("email-mfa", {
+      body: { action: "send" },
+    });
+    setEmailSending(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.message ?? error?.message ?? "Could not send code.");
+      return;
+    }
+    setEmailSent(true);
+    toast.success(`Code sent to ${emailMfaTarget ?? user?.email}`);
+  };
+
   const handleVerify = async () => {
-    if (!factorId || !challengeId || code.length !== 6 || !user) return;
+    if (code.length !== 6 || !user) return;
+    if (method === "email") {
+      setVerifying(true);
+      const { data, error } = await supabase.functions.invoke("email-mfa", {
+        body: { action: "verify", code },
+      });
+      setVerifying(false);
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.message ?? error?.message ?? "Invalid code");
+        setCode("");
+        return;
+      }
+      markMfaVerified(user.id);
+      toast.success("Verified — welcome back.");
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+    if (!factorId || !challengeId) return;
     setVerifying(true);
     const { error } = await supabase.auth.mfa.verify({
       factorId,
@@ -143,6 +194,31 @@ export default function MfaVerify() {
             if (code.length === 6) handleVerify();
           }}
         >
+          {(factorId && emailMfaEnrolled) && (
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+              {([
+                { id: "app", label: "Authenticator", icon: Smartphone },
+                { id: "email", label: "Email code", icon: Mail },
+              ] as const).map((opt) => {
+                const Icon = opt.icon;
+                const selected = method === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => { setMethod(opt.id); setCode(""); }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
+                      selected ? "bg-white text-[#0c2340] shadow-sm" : "text-slate-500 hover:text-slate-800",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" /> {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2d8a9e]/10 text-[#2d8a9e]">
               <ShieldCheck className="h-5 w-5" />
@@ -151,6 +227,19 @@ export default function MfaVerify() {
               Signed in as <span className="font-medium text-[#0c2340]">{user?.email}</span>
             </div>
           </div>
+
+          {method === "email" && (
+            <Button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={emailSending}
+              variant="outline"
+              className="w-full rounded-xl"
+            >
+              {emailSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {emailSent ? `Resend code to ${emailMfaTarget ?? user?.email}` : `Send code to ${emailMfaTarget ?? user?.email}`}
+            </Button>
+          )}
 
           <div className="flex justify-center">
             <InputOTP
@@ -170,7 +259,7 @@ export default function MfaVerify() {
 
           <Button
             type="submit"
-            disabled={code.length !== 6 || verifying || !challengeId}
+            disabled={code.length !== 6 || verifying || (method === "app" && !challengeId) || (method === "email" && !emailSent)}
             className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
             style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
           >
@@ -178,7 +267,7 @@ export default function MfaVerify() {
             Verify
           </Button>
 
-          {passkeyCredId && passkeySupported && (
+          {method === "app" && passkeyCredId && passkeySupported && (
             <div className="space-y-3">
               <div className="relative flex items-center">
                 <div className="flex-1 border-t border-slate-200" />
