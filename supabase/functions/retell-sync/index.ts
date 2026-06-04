@@ -62,12 +62,14 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
-  let total = 0
-  let inserted = 0
-  let pagination_key: string | undefined
 
-  try {
-    for (let i = 0; i < 20; i++) {
+  // Run the sync in the background so the client doesn't time out.
+  const work = (async () => {
+    let total = 0
+    let inserted = 0
+    let pagination_key: string | undefined
+    try {
+      for (let i = 0; i < 20; i++) {
       const body: any = {
         filter_criteria: { agent_id: [AGENT_ID] },
         limit: 100,
@@ -86,9 +88,7 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         const txt = await res.text()
         console.error('[retell-sync] api error', res.status, txt)
-        return new Response(JSON.stringify({ error: 'retell api error', status: res.status, body: txt }), {
-          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return
       }
       const data = await res.json()
       const calls: any[] = Array.isArray(data) ? data : (data?.calls ?? data?.data ?? [])
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       const rows = calls.filter((c) => c?.call_id).map(callToRow)
       total += rows.length
       // Chunk upserts to avoid statement timeouts on large payloads.
-      const CHUNK = 10
+      const CHUNK = 5
       for (let j = 0; j < rows.length; j += CHUNK) {
         const slice = rows.slice(j, j + CHUNK)
         const { error, count } = await supabase
@@ -105,24 +105,24 @@ Deno.serve(async (req) => {
           .upsert(slice, { onConflict: 'retell_call_id', count: 'exact' })
         if (error) {
           console.error('[retell-sync] upsert error', error)
-          return new Response(JSON.stringify({ error: error.message, inserted, total }), {
-            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          })
+          continue
         }
         inserted += count ?? slice.length
       }
 
       pagination_key = data?.pagination_key
       if (!pagination_key || calls.length < 100) break
+      }
+      console.log('[retell-sync] done', { total, inserted })
+    } catch (e) {
+      console.error('[retell-sync] background error', e)
     }
+  })()
 
-    return new Response(JSON.stringify({ ok: true, total, inserted }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (e) {
-    console.error('[retell-sync] error', e)
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
+  // @ts-ignore - EdgeRuntime is available in Supabase edge runtime
+  try { (globalThis as any).EdgeRuntime?.waitUntil?.(work) } catch { /* ignore */ }
+
+  return new Response(JSON.stringify({ ok: true, queued: true }), {
+    status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
 })
