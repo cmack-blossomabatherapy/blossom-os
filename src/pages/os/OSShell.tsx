@@ -397,6 +397,12 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       ],
     },
     {
+      id: "relationships", label: "Relationships", items: [
+        { to: "/marketing/referrals", label: "Referrals", icon: HeartHandshake, module: "referrals" },
+      ],
+    },
+    PHONE_SYSTEM_SECTION,
+    {
       id: "resources", label: "Resources", items: [
         { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
