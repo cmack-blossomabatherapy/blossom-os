@@ -402,7 +402,7 @@ const INTEGRATIONS: Integration[] = [
     id: "retell",
     name: "Retell AI",
     category: "comms",
-    description: "AI voice agents for inbound and after-hours. Webhook URL: https://uvkhjfjknnndunxcdbel.functions.supabase.co/retell-webhook  •  TODO: configure RETELL_WEBHOOK_SECRET in Retell + Lovable secrets to enable signature verification (calls currently accepted as 'unverified').",
+    description: "AI voice agents for inbound and after-hours calls. Captures caller details and routes to the right department.",
     purpose: ["AI calls", "After-hours intake"],
     status: "connected",
     account: "blossom-retell",
