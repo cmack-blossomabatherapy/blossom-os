@@ -139,6 +139,16 @@ export function AfterHoursAIBoard() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Deep-link: open a specific call via ?call=<id> (used by email CTA).
+  useEffect(() => {
+    if (!calls.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get("call");
+    if (!target) return;
+    const match = calls.find((c) => c.id === target || c.retell_call_id === target);
+    if (match) setSelected(match);
+  }, [calls]);
+
   const isUrgent = (c: Call) => !!c.emergency_flag || (c.urgency_level ?? "").toLowerCase() === "high";
   const isOpen = (c: Call) => !["resolved", "no_action"].includes(c.follow_up_status ?? "new");
   const isToday = (c: Call) => {
