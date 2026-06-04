@@ -5,9 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Loader2, Copy, Check, LogOut } from "lucide-react";
+import { Loader2, Copy, Check, LogOut, Mail, Smartphone } from "lucide-react";
 import { MfaBrandShell } from "@/components/auth/MfaBrandShell";
 import { markMfaVerified, unenrollAllTotp } from "@/lib/mfa";
+import { cn } from "@/lib/utils";
 
 // Module-scoped guard so React StrictMode / HMR double-invokes don't fire
 // two concurrent POST /factors calls (which would collide on friendly_name).
@@ -58,6 +59,7 @@ export default function MfaSetup() {
     ? `${fromState.pathname}${fromState.search ?? ""}${fromState.hash ?? ""}`
     : "/";
 
+  const [method, setMethod] = useState<"app" | "email">("app");
   const [factorId, setFactorId] = useState<string | null>(null);
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
@@ -66,8 +68,12 @@ export default function MfaSetup() {
   const [copied, setCopied] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
 
+  // Email-method state
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || !user || method !== "app") return;
     let cancelled = false;
     (async () => {
       try {
@@ -96,7 +102,7 @@ export default function MfaSetup() {
     return () => {
       cancelled = true;
     };
-  }, [loading, user]);
+  }, [loading, user, method]);
 
   if (!loading && !user) return <Navigate to="/auth" replace />;
 
@@ -111,8 +117,40 @@ export default function MfaSetup() {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!user?.email) return;
+    setEmailSending(true);
+    const { data, error } = await supabase.functions.invoke("email-mfa", {
+      body: { action: "send", email: user.email },
+    });
+    setEmailSending(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.message ?? error?.message ?? "Could not send code.");
+      return;
+    }
+    setEmailSent(true);
+    toast.success(`Code sent to ${user.email}`);
+  };
+
   const handleVerify = async () => {
-    if (!factorId || code.length !== 6 || !user) return;
+    if (code.length !== 6 || !user) return;
+    if (method === "email") {
+      setVerifying(true);
+      const { data, error } = await supabase.functions.invoke("email-mfa", {
+        body: { action: "verify", code, enroll: true },
+      });
+      setVerifying(false);
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.message ?? error?.message ?? "Invalid code");
+        setCode("");
+        return;
+      }
+      markMfaVerified(user.id);
+      toast.success("Email 2FA enabled — you're all set.");
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+    if (!factorId) return;
     setVerifying(true);
     const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId });
     if (chErr || !ch) {
@@ -151,8 +189,10 @@ export default function MfaSetup() {
   return (
     <MfaBrandShell
       eyebrow="Set up two-factor"
-      title="Add an authenticator app"
-      description="Open Google Authenticator, Authy, or 1Password and scan the QR code below. Then enter the 6-digit code your app shows to finish."
+      title={method === "app" ? "Add an authenticator app" : "Verify by email"}
+      description={method === "app"
+        ? "Open Google Authenticator, Authy, or 1Password and scan the QR code below. Then enter the 6-digit code your app shows to finish."
+        : "We'll send a 6-digit code to your account email. Enter it here to enable email-based two-factor."}
       footer={
         <button
           onClick={handleSignOut}
@@ -162,9 +202,72 @@ export default function MfaSetup() {
         </button>
       }
     >
+      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        {([
+          { id: "app", label: "Authenticator app", icon: Smartphone },
+          { id: "email", label: "Email code", icon: Mail },
+        ] as const).map((opt) => {
+          const Icon = opt.icon;
+          const selected = method === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => { setMethod(opt.id); setCode(""); }}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
+                selected ? "bg-white text-[#0c2340] shadow-sm" : "text-slate-500 hover:text-slate-800",
+              )}
+            >
+              <Icon className="h-4 w-4" /> {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       {bootError ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           {bootError}
+        </div>
+      ) : method === "email" ? (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Send code to</div>
+            <div className="mt-1 text-sm font-medium text-foreground">{user?.email}</div>
+            <Button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={emailSending}
+              variant="outline"
+              className="mt-3 w-full rounded-xl"
+            >
+              {emailSending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {emailSent ? "Resend code" : "Send 6-digit code"}
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="text-xs font-medium text-foreground/80">Enter the 6-digit code from your email</div>
+            <div className="flex justify-center sm:justify-start">
+              <InputOTP maxLength={6} value={code} onChange={setCode}>
+                <InputOTPGroup>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <InputOTPSlot key={i} index={i} className="h-12 w-11 text-lg" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleVerify}
+            disabled={code.length !== 6 || verifying || !emailSent}
+            className="h-[52px] w-full rounded-xl bg-[#2d8a9e] text-base font-semibold text-white shadow-lg shadow-[#2d8a9e]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1a4a6e] hover:shadow-xl hover:shadow-[#1a4a6e]/25 active:scale-[0.98]"
+            style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
+          >
+            {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Verify & finish setup
+          </Button>
         </div>
       ) : !qrSvg ? (
         <div className="flex h-56 items-center justify-center rounded-2xl border border-border/60 bg-card">
