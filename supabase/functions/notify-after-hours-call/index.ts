@@ -15,8 +15,8 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const FROM_ADDRESS = 'Blossom OS <noreply@blossom.abacommandcenter.com>'
 const APP_URL = 'https://blossom.abacommandcenter.com/phone/ai-calls'
 const LOGO_URL = 'https://uvkhjfjknnndunxcdbel.supabase.co/storage/v1/object/public/email-assets/blossom-logo.png'
-const BRAND = '#2B7BD5'
-const BRAND_DARK = '#1E5BA8'
+const BRAND = '#2BA8B0'
+const BRAND_DARK = '#1F8A91'
 const URGENT = '#dc2626'
 const URGENT_DARK = '#991b1b'
 
@@ -96,15 +96,81 @@ Deno.serve(async (req) => {
         hasLovableApiKey: Boolean(LOVABLE_API_KEY),
         hasResendApiKey: Boolean(RESEND_API_KEY),
       })
-      const subject = `✅ Test — Blossom OS After-Hours routing (${dept})`
+      // Sample call so the recipient can see what a real after-hours notification looks like.
+      const sample = {
+        id: 'sample-call-0001',
+        caller_name: 'Jessica Martinez',
+        caller_type: 'Parent / Guardian',
+        phone_number: '+17705551842',
+        state: 'Georgia',
+        child_age: '4 years old',
+        insurance_provider: 'Aetna',
+        insurance_type: 'Commercial PPO',
+        urgency_level: 'High',
+        sentiment: 'Concerned',
+        call_outcome: 'Callback requested',
+        department_to_notify: dept,
+        verification_status: 'verified',
+        preferred_callback_time: 'Tomorrow morning, 8–10 AM ET',
+        call_started_at: new Date(Date.now() - 12 * 60_000).toISOString(),
+        call_summary: 'Parent of a 4-year-old recently diagnosed with autism is seeking ABA services in the Atlanta area. Insurance is Aetna PPO with active authorization. She would like to start as soon as possible and prefers a center-based program with in-home support.',
+        reason_for_call: 'New client intake — wants to schedule a VOB and tour of the Atlanta clinic.',
+        recording_url: 'https://example.com/recordings/sample-call-0001.mp3',
+        transcript: 'AI: Thank you for calling Blossom ABA Therapy, this is Bloom. How can I help?\nCaller: Hi, my son was just diagnosed with autism and I was hoping to get him started in therapy. We have Aetna and live in Marietta.\nAI: Wonderful — congratulations on taking this step. Let me gather a few details so our intake team can call you back first thing in the morning…',
+        emergency_flag: false,
+      }
+
+      const subject = `✅ Sample after-hours call — ${sample.caller_name} (${sample.state})`
+      const urgent = false
+      const transcriptPreview = sample.transcript.slice(0, 600)
       const html = `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;background:#f1f5f9;padding:24px;">
-          <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px -12px rgba(15,23,42,0.1);">
-            ${header(false, dept, 'Test notification')}
-            <div style="padding:26px 28px;color:#0f172a;font-size:14px;line-height:1.6;">
-              <p style="margin:0 0 14px 0;">This is a test from the After-Hours AI Calls page. If you received this, email routing for <strong>${esc(dept)}</strong> is working correctly.</p>
-              <p style="margin:0;color:#64748b;font-size:13px;">Sent at ${new Date().toLocaleString()}</p>
-              ${ctaBlock(null, null, false)}
+          <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px -12px rgba(15,23,42,0.1);">
+            ${header(urgent, dept, 'Sample after-hours call (test)')}
+            <div style="padding:24px 28px 8px;">
+              <div style="background:#ecfeff;border:1px solid #a5f3fc;border-radius:10px;padding:10px 14px;margin-bottom:16px;color:#0e7490;font-size:12px;">
+                <strong>This is a test email</strong> showing what a real after-hours notification looks like. Caller details below are sample data. Routing for <strong>${esc(dept)}</strong> is working correctly.
+              </div>
+
+              <div style="display:block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px 18px;margin-bottom:18px;">
+                <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:${BRAND_DARK};font-weight:600;margin-bottom:4px;">Caller</div>
+                <div style="font-size:18px;font-weight:700;color:#0f172a;">${esc(sample.caller_name)} <span style="font-weight:500;color:#64748b;font-size:14px;">· ${esc(sample.caller_type)}</span></div>
+                <div style="margin-top:6px;font-size:14px;color:#334155;"><a href="tel:${esc(sample.phone_number)}" style="color:${BRAND};text-decoration:none;font-weight:600;">${esc(sample.phone_number)}</a> <span style="color:#64748b;">· prefers ${esc(sample.preferred_callback_time)}</span></div>
+              </div>
+
+              <div style="background:#f8fafc;border-left:3px solid ${BRAND};border-radius:8px;padding:14px 16px;margin-bottom:18px;color:#0f172a;font-size:14px;line-height:1.6;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:${BRAND_DARK};font-weight:700;margin-bottom:6px;">AI Summary</div>
+                ${esc(sample.call_summary)}
+              </div>
+
+              <div style="margin-bottom:18px;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;margin-bottom:4px;">Reason for call</div>
+                <div style="color:#0f172a;font-size:14px;line-height:1.6;">${esc(sample.reason_for_call)}</div>
+              </div>
+
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700;margin-bottom:8px;">Call details</div>
+              <table style="width:100%;border-collapse:collapse;border-top:1px solid #eef2f7;">
+                ${row('Called at', new Date(sample.call_started_at).toLocaleString())}
+                ${row('State', sample.state)}
+                ${row('Child age', sample.child_age)}
+                ${row('Insurance', `${sample.insurance_provider} · ${sample.insurance_type}`)}
+                ${row('Urgency', sample.urgency_level)}
+                ${row('Sentiment', sample.sentiment)}
+                ${row('Outcome', sample.call_outcome)}
+                ${row('Department', sample.department_to_notify)}
+                ${row('Verification', sample.verification_status)}
+              </table>
+
+              <details style="margin-top:18px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;">
+                <summary style="cursor:pointer;font-size:12px;font-weight:600;color:${BRAND_DARK};text-transform:uppercase;letter-spacing:.06em;">Transcript preview</summary>
+                <div style="margin-top:10px;color:#334155;font-size:13px;line-height:1.6;white-space:pre-wrap;">${esc(transcriptPreview)}</div>
+              </details>
+
+              <div style="margin-top:14px;font-size:13px;"><a href="${esc(sample.recording_url)}" style="color:${BRAND};font-weight:600;text-decoration:none;">🎧 Listen to the full recording →</a></div>
+
+              ${ctaBlock(null, sample.phone_number, urgent)}
+
+              <p style="margin:22px 0 0;color:#94a3b8;font-size:12px;text-align:center;">Sent at ${new Date().toLocaleString()}</p>
             </div>
             ${footer()}
           </div>
