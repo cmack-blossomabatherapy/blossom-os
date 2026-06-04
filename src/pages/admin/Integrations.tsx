@@ -12,6 +12,7 @@ import {
   ChevronRight,
   CircleDot,
   Cloud,
+  Copy,
   Database,
   FileText,
   Filter,
