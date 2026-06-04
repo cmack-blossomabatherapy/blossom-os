@@ -209,21 +209,11 @@ export const ROLE_PROFILES: Record<OSRole, RoleProfile> = {
     platform: { managePermissions: true, impersonate: true, accessOldVersion: true, configureWorkflows: true },
   },
   executive_leadership: {
-    modules: [
-      "dashboard", "command_center", "leads", "intake", "clients", "authorizations", "scheduling", "cases",
-      "staff", "recruiting", "credentialing", "employee_ops", "evaluations", "training",
-      "reports", "kpi", "vob", "workflows", "sop", "marketing", "analytics_hub",
-      "billing", "payroll", "revenue", "insurance",
-      "ai_assistant", "ai_insights", "automation_center", "predictive_alerts", "ai_workflows",
-      "hr", "state_management",
-    ],
+    modules: ALL_MODULES,
     scope: "company",
-    actions: {
-      dashboard: VIEW, leads: ["view", "export"], clients: ["view", "export"], staff: ["view", "export"],
-      scheduling: VIEW, cases: ["view", "approve"], billing: ["view", "approve", "export"],
-      reports: ["view", "export"], hr: ["view", "export"], training: VIEW,
-    },
+    actions: Object.fromEntries(ALL_MODULES.map((m) => [m, ALL_ACTIONS])) as Record<OSModule, OSAction[]>,
     leadership: { kpis: true, operationalAnalytics: true, staffingAlerts: true, workflowBottlenecks: true, aiInsights: true },
+    platform: { managePermissions: false, impersonate: false, accessOldVersion: true, configureWorkflows: true },
   },
   operations_leadership: {
     modules: [
