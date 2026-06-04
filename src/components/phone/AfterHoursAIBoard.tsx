@@ -250,8 +250,10 @@ export function AfterHoursAIBoard() {
     try {
       const { data, error } = await supabase.functions.invoke("retell-sync", { body: {} });
       if (error) throw error;
-      toast.success(`Synced ${data?.inserted ?? 0} calls`);
-      await load();
+      toast.success("Sync started — new calls will appear shortly");
+      // Refresh the list a few times as background sync inserts rows.
+      setTimeout(() => { load(); }, 4000);
+      setTimeout(() => { load(); }, 15000);
     } catch (e: any) {
       toast.error(e.message ?? "Sync failed");
     } finally {
