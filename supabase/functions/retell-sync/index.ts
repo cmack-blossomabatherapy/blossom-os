@@ -96,16 +96,21 @@ Deno.serve(async (req) => {
 
       const rows = calls.filter((c) => c?.call_id).map(callToRow)
       total += rows.length
-      const { error, count } = await supabase
-        .from('phone_ai_calls')
-        .upsert(rows, { onConflict: 'retell_call_id', count: 'exact' })
-      if (error) {
-        console.error('[retell-sync] upsert error', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      // Chunk upserts to avoid statement timeouts on large payloads.
+      const CHUNK = 10
+      for (let j = 0; j < rows.length; j += CHUNK) {
+        const slice = rows.slice(j, j + CHUNK)
+        const { error, count } = await supabase
+          .from('phone_ai_calls')
+          .upsert(slice, { onConflict: 'retell_call_id', count: 'exact' })
+        if (error) {
+          console.error('[retell-sync] upsert error', error)
+          return new Response(JSON.stringify({ error: error.message, inserted, total }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        inserted += count ?? slice.length
       }
-      inserted += count ?? rows.length
 
       pagination_key = data?.pagination_key
       if (!pagination_key || calls.length < 100) break
