@@ -30,6 +30,7 @@ function row(label: string, value: unknown) {
 }
 
 function header(urgent: boolean, deptLabel: string, title: string) {
+  const fallback = urgent ? URGENT : BRAND
   const bg = urgent
     ? `linear-gradient(135deg, ${URGENT}, ${URGENT_DARK})`
     : `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`
@@ -37,7 +38,7 @@ function header(urgent: boolean, deptLabel: string, title: string) {
     <div style="background:#ffffff;padding:28px 24px 14px;text-align:center;border-bottom:1px solid #eef2f7;">
       <img src="${LOGO_URL}" alt="Blossom ABA Therapy" width="180" style="display:inline-block;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
     </div>
-    <div style="background:${bg};padding:22px 24px;color:#ffffff;">
+    <div style="background:${fallback};background:${bg};padding:22px 24px;color:#ffffff;">
       <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.9;">After-Hours AI Receptionist</div>
       <div style="font-size:22px;font-weight:700;margin-top:6px;line-height:1.25;">${esc(title)}</div>
       <div style="font-size:13px;opacity:.95;margin-top:4px;">Routed to <strong>${esc(deptLabel)}</strong></div>
