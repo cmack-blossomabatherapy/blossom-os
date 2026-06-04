@@ -15,8 +15,8 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const FROM_ADDRESS = 'Blossom OS <noreply@blossom.abacommandcenter.com>'
 const APP_URL = 'https://blossom.abacommandcenter.com/phone/ai-calls'
 const LOGO_URL = 'https://uvkhjfjknnndunxcdbel.supabase.co/storage/v1/object/public/email-assets/blossom-logo.png'
-const BRAND = '#2B7BD5'
-const BRAND_DARK = '#1E5BA8'
+const BRAND = '#2BA8B0'
+const BRAND_DARK = '#1F8A91'
 const URGENT = '#dc2626'
 const URGENT_DARK = '#991b1b'
 
