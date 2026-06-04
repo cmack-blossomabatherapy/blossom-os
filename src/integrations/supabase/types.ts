@@ -2554,6 +2554,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_mfa_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          purpose: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          purpose?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_bonuses: {
         Row: {
           amount: number
@@ -10261,6 +10297,27 @@ export type Database = {
           name?: string
           role_targets?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_email_mfa: {
+        Row: {
+          email: string
+          enrolled_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          enrolled_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          enrolled_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
