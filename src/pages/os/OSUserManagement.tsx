@@ -295,6 +295,20 @@ function EditUserSheet({
         .eq("user_id", form.user_id);
       if (pErr) throw pErr;
 
+      // Sync the central employees record so the directory + employee profile
+      // header (which read from `employees.state` / `states_supported`)
+      // reflect the state chosen here. Only updates if a linked employee row
+      // exists for this user_id — silently no-op otherwise.
+      await supabase
+        .from("employees")
+        .update({
+          state: form.state,
+          states_supported: form.state ? [form.state] : [],
+        })
+        .eq("user_id", form.user_id);
+      window.dispatchEvent(new Event("employee-directory:refresh"));
+      window.dispatchEvent(new Event("team-directory:refresh"));
+
       const current = new Set(user?.roles ?? []);
       const toAdd = [...selectedRoles].filter((r) => !current.has(r));
       const toRemove = [...current].filter((r) => !selectedRoles.has(r));

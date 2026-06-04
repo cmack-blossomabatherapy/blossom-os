@@ -273,6 +273,7 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
         job_title: cleanTitle,
         department_id: departmentId === "unassigned" ? null : departmentId,
         state,
+        states_supported: state ? [state] : [],
         status,
         employment_type: employmentType,
         pay_type: payType,
