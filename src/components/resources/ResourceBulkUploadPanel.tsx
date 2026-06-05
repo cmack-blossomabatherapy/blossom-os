@@ -105,6 +105,7 @@ export function ResourceBulkUploadPanel({
           category === "insurance" ? "reference" :
           category === "systems" ? "guide" :
           "sop",
+        category,
         type: /\.pdf$/i.test(f.name) ? "PDF" : /\.docx?$/i.test(f.name) ? "DOCX" : /\.xlsx?$/i.test(f.name) ? "XLSX" : "PDF",
         roles,
         departments: [],
