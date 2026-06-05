@@ -625,7 +625,7 @@ const App = () => (
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
-                  <Route path="/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
+                  <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />
                   <Route path="/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
                   <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/reports" element={<ReportsHome />} />
