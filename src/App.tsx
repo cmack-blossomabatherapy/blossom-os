@@ -760,6 +760,7 @@ const App = () => (
                   <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
                   <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
                   <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
+                  {LegacyDashboardRedirects}
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
