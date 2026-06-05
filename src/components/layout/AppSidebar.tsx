@@ -125,7 +125,7 @@ const operationsSections: NavSection[] = [
       { label: "Scheduling", icon: Calendar, path: "/scheduling", perm: "scheduling.view" },
       { label: "Staffing", icon: UserPlus, path: "/staffing", perm: "staffing.view" },
       { label: "QA & Compliance", icon: ClipboardCheck, path: "/qa", perm: "qa.view" },
-      { label: "Recruiting", icon: Briefcase, path: "/recruiting", perm: "recruiting.view" },
+      { label: "Recruiting", icon: Briefcase, path: "/recruiting/workspace", perm: "recruiting.view" },
       { label: "Clinics", icon: Building2, path: "/clinics", perm: "clinics.view" },
       { label: "Pipeline", icon: Workflow, path: "/pipeline", perm: "clients.view" },
       { label: "Phone Calls", icon: Phone, path: "/phone", perm: "phone.view" },

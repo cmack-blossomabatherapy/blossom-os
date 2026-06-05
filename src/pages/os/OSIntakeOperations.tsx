@@ -182,7 +182,7 @@ function OSIntakeOperationsInner({ title, subtitle }: Required<OSIntakeOperation
               <Link to="/vob-decision-center"><ShieldCheck className="mr-1.5 h-4 w-4" /> Open VOB Center</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/sop?category=intake"><BookOpen className="mr-1.5 h-4 w-4" /> Open SOPs</Link>
+              <Link to="/resource-library?category=intake"><BookOpen className="mr-1.5 h-4 w-4" /> Open SOPs</Link>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => modals.open({ kind: "sendPacket" })}>
               <Send className="mr-1.5 h-4 w-4" /> Send Intake Packet

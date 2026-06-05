@@ -44,7 +44,7 @@ export default function CandidateDetail() {
   if (!candidate) {
     return (
       <div className="p-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/recruiting")}>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/recruiting/workspace")}>
           <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Recruiting
         </Button>
         <p className="mt-6 text-sm text-muted-foreground">Candidate not found.</p>
@@ -58,7 +58,7 @@ export default function CandidateDetail() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div>
-        <Button variant="ghost" size="sm" className="mb-3 -ml-2" onClick={() => navigate("/recruiting")}>
+        <Button variant="ghost" size="sm" className="mb-3 -ml-2" onClick={() => navigate("/recruiting/workspace")}>
           <ArrowLeft className="h-4 w-4 mr-1.5" /> Recruiting
         </Button>
 

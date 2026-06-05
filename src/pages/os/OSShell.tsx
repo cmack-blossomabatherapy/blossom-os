@@ -82,7 +82,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     id: "staffing", label: "Clinical Staff", items: [
       { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
-      { to: "/recruiting", label: "Recruiting", icon: UserPlus, module: "recruiting" },
+      { to: "/recruiting/workspace", label: "Recruiting", icon: UserPlus, module: "recruiting" },
       { to: "/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
       { to: "/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
       { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
@@ -124,7 +124,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     id: "financial", label: "Financial Operations", items: [
       { to: "/billing", label: "Billing", icon: DollarSign, module: "billing" },
-      { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll" },
+      { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll" },
       { to: "/revenue", label: "Revenue Analytics", icon: TrendingUp, module: "revenue" },
       { to: "/insurance", label: "Insurance Tracking", icon: ShieldAlert, module: "insurance" },
     ],
@@ -494,7 +494,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
         { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
         { to: "/hr/org-chart/manage", label: "Org Chart Settings", icon: Network, module: "hr", disabled: true },
-        { to: "/payroll", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
+        { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll", disabled: true },
         { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", disabled: true },
         { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
       ],
