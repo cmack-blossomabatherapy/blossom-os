@@ -188,7 +188,7 @@ export default function OSTraining() {
                 </Button>
               ) : (
                 <Button size="sm" className="rounded-full" onClick={() => navigate("/resource-library")}>
-                  <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
+                  <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
                 </Button>
               )}
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
