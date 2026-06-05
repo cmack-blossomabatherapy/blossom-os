@@ -336,7 +336,6 @@ import OSTrainingManage from "./pages/os/OSTrainingManage";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
-import NfcPublicProfile from "./pages/nfc/NfcPublicProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
