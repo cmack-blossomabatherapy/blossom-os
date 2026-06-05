@@ -22,6 +22,7 @@ import {
 } from "@/lib/resources/resourceData";
 import type { OSRole } from "@/lib/os/permissions";
 import { toast } from "@/hooks/use-toast";
+import { ResourceBulkUploadPanel } from "@/components/resources/ResourceBulkUploadPanel";
 
 const ALL_ROLES: OSRole[] = [
   "intake_coordinator","authorization_coordinator","scheduling_team","recruiting_team",
@@ -104,6 +105,14 @@ export default function ResourceManagement() {
           <StatCard label="Drafts" value={counts.drafts} tone="amber" />
           <StatCard label="Archived" value={counts.archived} tone="slate" />
         </div>
+
+        {/* Pass 2 — bulk upload + review queues */}
+        <ResourceBulkUploadPanel
+          onPublish={(added) => {
+            setItems((prev) => [...added, ...prev]);
+            toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
+          }}
+        />
 
         {/* MAIN */}
         <div className="grid gap-6 lg:grid-cols-[240px_1fr_320px]">

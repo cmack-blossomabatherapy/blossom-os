@@ -69,6 +69,95 @@ export interface Resource {
   attachmentStatus?: "available" | "pending_upload" | "excluded";
   /** Friendly note about where the source lives (no sensitive file paths). */
   sourceNote?: string;
+  /**
+   * Pass 2 — upload workflow lifecycle for bulk-imported resources.
+   * Resources without an `uploadStatus` are treated as `published` (legacy seed).
+   * Only `published` items appear in the standard Resource Library.
+   */
+  uploadStatus?: ResourceUploadStatus;
+}
+
+/**
+ * Pass 2 — Bulk-upload workflow states.
+ *
+ *  - ready_to_upload  → metadata complete, awaiting storage wiring
+ *  - pending_review   → generic admin review needed
+ *  - needs_conversion → wrong file type (e.g. heic → jpg)
+ *  - privacy_review   → may contain PII/PHI or a named-person message
+ *  - business_review  → leadership / business approval needed
+ *  - vault_only       → credential/login/portal material — admin-vault only
+ *  - excluded         → never publish (e.g. `_Sensitive_Not_For_Shared_Context`)
+ *  - published        → live in the standard Resource Library
+ */
+export type ResourceUploadStatus =
+  | "ready_to_upload"
+  | "pending_review"
+  | "needs_conversion"
+  | "privacy_review"
+  | "business_review"
+  | "vault_only"
+  | "excluded"
+  | "published";
+
+export const UPLOAD_STATUS_LABEL: Record<ResourceUploadStatus, string> = {
+  ready_to_upload:  "Ready to upload",
+  pending_review:   "Pending review",
+  needs_conversion: "Needs conversion",
+  privacy_review:   "Privacy review",
+  business_review:  "Business review",
+  vault_only:       "Vault only",
+  excluded:         "Excluded",
+  published:        "Published",
+};
+
+/** Statuses that should never appear in the standard, user-facing Resource Library. */
+export const NON_PUBLIC_UPLOAD_STATUSES: ResourceUploadStatus[] = [
+  "pending_review",
+  "needs_conversion",
+  "privacy_review",
+  "business_review",
+  "vault_only",
+  "excluded",
+  "ready_to_upload",
+];
+
+/** Keywords that indicate a credential / vault / portal-access document. */
+export const CREDENTIAL_KEYWORDS = [
+  "login",
+  "password",
+  "credential",
+  "credentials",
+  "vault",
+  "account",
+  "portal",
+  "passcode",
+  "ssn",
+] as const;
+
+/** Keywords that indicate a file needs privacy review before publishing. */
+export const PRIVACY_REVIEW_KEYWORDS = [
+  "filled in",
+  "filled-in",
+  "completed",
+  "signed",
+  "consent",
+  "phi",
+  "client name",
+  "named-person",
+  "personal message",
+  "generic document",
+] as const;
+
+/** True if the given text mentions any credential/vault keyword. */
+export function containsCredentialKeywords(text: string): boolean {
+  const t = (text || "").toLowerCase();
+  return CREDENTIAL_KEYWORDS.some((kw) => t.includes(kw));
+}
+
+/** True if the given text mentions a privacy-review keyword. */
+export function containsPrivacyReviewKeywords(text: string): boolean {
+  const t = (text || "").toLowerCase();
+  return PRIVACY_REVIEW_KEYWORDS.some((kw) => t.includes(kw));
 }
 
 export const resourceCategories: ResourceCategory[] = [
@@ -485,9 +574,15 @@ export const roleLabel = (r: OSRole) => ROLE_LABEL[r] ?? r;
 /** Role-aware filter: empty roles[] means visible to everyone. */
 export function isVisibleToRole(r: Resource, role: OSRole, state?: string): boolean {
   if (r.status !== "Published") return false;
+  // Pass 2 — bulk-upload workflow: only `published` (or unset legacy) items
+  // appear in the standard Resource Library. Pending/review/vault stay in
+  // Resource Management until promoted.
+  if (r.uploadStatus && r.uploadStatus !== "published") return false;
   // Hard-exclude vault / credential / login-style resources from the standard library.
   if (r.sensitivity === "excluded" || r.attachmentStatus === "excluded") return false;
   if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
+  // Hard safety net — defensive keyword check on title/tags.
+  if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
   const roleOk = r.roles.length === 0 || r.roles.includes(role) || role === "super_admin";
   const stateOk = r.states.length === 0 || (state ? r.states.includes(state) : true);
   return roleOk && stateOk;
@@ -545,3 +640,134 @@ export const aiSamplePrompts = [
   "Find scheduling templates.",
   "Where is the insurance cheat sheet?",
 ];
+
+// ============================================================================
+// Pass 2 — Bulk upload workflow helpers
+// ============================================================================
+
+/** A candidate resource awaiting bulk upload to the Resource Library. */
+export interface UploadCandidate {
+  /** Local file name (no filesystem path leaks into user-facing UI). */
+  fileName: string;
+  title: string;
+  description: string;
+  resourceType: NonNullable<Resource["resourceType"]>;
+  category: ResourceCategoryId;
+  type: ResourceType;
+  roles: OSRole[];
+  departments: string[];
+  states: string[];
+  tags: string[];
+  sensitivity: NonNullable<Resource["sensitivity"]>;
+  uploadStatus: ResourceUploadStatus;
+  /** Free-form note for reviewers (why it's held, what's needed). */
+  reviewNote?: string;
+}
+
+/** Default role assignments by Resource Library category. */
+export const CATEGORY_ROLE_DEFAULTS: Record<ResourceCategoryId, OSRole[]> = {
+  hr:            ["hr_team", "operations_leadership", "executive_leadership", "super_admin"],
+  leadership:    ["state_director", "operations_leadership", "executive_leadership", "hr_team", "super_admin"],
+  insurance:     ["authorization_coordinator", "bcba", "state_director", "operations_leadership", "super_admin"],
+  workflows:     ["operations_leadership", "state_director", "super_admin"],
+  templates:     ["operations_leadership", "state_director", "super_admin"],
+  systems:       ["operations_leadership", "state_director", "super_admin"],
+  training:      [],
+  sops:          ["operations_leadership", "state_director", "super_admin"],
+  communication: [],
+  operational:   ["operations_leadership", "state_director", "super_admin"],
+};
+
+/** Tag-driven role overrides applied on top of category defaults. */
+const TAG_ROLE_RULES: { match: RegExp; roles: OSRole[] }[] = [
+  { match: /\brbt\b/i,               roles: ["rbt", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\bbcba\b/i,              roles: ["bcba", "qa_team", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(scheduling|centralreach|central reach)\b/i,
+                                     roles: ["scheduling_team", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(recruiting|interview|offer letter)\b/i,
+                                     roles: ["recruiting_team", "hr_team", "operations_leadership", "super_admin"] },
+  { match: /\b(authorization|auth|payer|reauth)\b/i,
+                                     roles: ["authorization_coordinator", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(payroll|finance|bonus|billing)\b/i,
+                                     roles: ["billing_finance", "payroll_coordinator", "hr_team", "operations_leadership", "executive_leadership", "super_admin"] },
+  { match: /\b(state director|leadership|playbook)\b/i,
+                                     roles: ["state_director", "operations_leadership", "executive_leadership", "hr_team", "super_admin"] },
+  { match: /\b(phone system|retell|call routing)\b/i,
+                                     roles: ["intake_coordinator", "scheduling_team", "authorization_coordinator", "recruiting_team", "hr_team", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\bhandbook|hr policy|hr policies|hr forms\b/i,
+                                     roles: ["hr_team", "operations_leadership", "executive_leadership", "super_admin"] },
+];
+
+/** Infer a sensible role assignment from a candidate's category + tags + title. */
+export function inferRolesForUpload(input: {
+  category: ResourceCategoryId;
+  title?: string;
+  tags?: string[];
+}): OSRole[] {
+  const base = new Set<OSRole>(CATEGORY_ROLE_DEFAULTS[input.category] ?? []);
+  const haystack = [input.title ?? "", ...(input.tags ?? [])].join(" ").toLowerCase();
+  for (const rule of TAG_ROLE_RULES) {
+    if (rule.match.test(haystack)) for (const r of rule.roles) base.add(r);
+  }
+  // Super admin always sees everything via the visibility helper, but include
+  // it explicitly so the chips read correctly.
+  base.add("super_admin");
+  return Array.from(base);
+}
+
+/** Decide an initial `uploadStatus` for a freshly added candidate. */
+export function classifyUploadCandidate(input: {
+  fileName: string;
+  title?: string;
+  tags?: string[];
+  path?: string;
+}): { uploadStatus: ResourceUploadStatus; sensitivity: NonNullable<Resource["sensitivity"]>; reason: string } {
+  const haystack = [input.fileName, input.title ?? "", input.path ?? "", ...(input.tags ?? [])].join(" ");
+
+  if (/_Sensitive_Not_For_Shared_Context/i.test(haystack)) {
+    return { uploadStatus: "excluded", sensitivity: "excluded", reason: "Source marked sensitive — never publish." };
+  }
+  if (containsCredentialKeywords(haystack)) {
+    return { uploadStatus: "vault_only", sensitivity: "admin_only", reason: "Credential / login / vault material — admin vault only." };
+  }
+  if (containsPrivacyReviewKeywords(haystack)) {
+    return { uploadStatus: "privacy_review", sensitivity: "role_restricted", reason: "May contain PHI/PII or a filled-in/personal document." };
+  }
+  if (/\.heic$|\.pages$|\.numbers$|\.key$/i.test(input.fileName)) {
+    return { uploadStatus: "needs_conversion", sensitivity: "public_internal", reason: "File format must be converted before publishing." };
+  }
+  return { uploadStatus: "ready_to_upload", sensitivity: "public_internal", reason: "Metadata looks safe — ready to publish." };
+}
+
+/** Convert a published Resource to an admin-visible `Resource` with `pending_upload`. */
+export function candidateToResource(c: UploadCandidate, uploadedBy = "Bulk import"): Resource {
+  const now = new Date().toISOString();
+  return {
+    id: `r-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title: c.title,
+    description: c.description || "—",
+    type: c.type,
+    category: c.category,
+    status: c.uploadStatus === "published" ? "Published" : "Draft",
+    roles: c.roles,
+    departments: c.departments,
+    states: c.states,
+    tags: c.tags,
+    uploadedBy,
+    createdAt: now,
+    updatedAt: now,
+    resourceType: c.resourceType,
+    sensitivity: c.sensitivity,
+    attachmentStatus: "pending_upload",
+    uploadStatus: c.uploadStatus,
+    sourceNote: "Pending storage upload — metadata only.",
+  };
+}
+
+/** Summary counts used by the review queue UI. */
+export function summarizeUploadQueue(candidates: UploadCandidate[]) {
+  const byStatus = {} as Record<ResourceUploadStatus, number>;
+  for (const s of Object.keys(UPLOAD_STATUS_LABEL) as ResourceUploadStatus[]) byStatus[s] = 0;
+  for (const c of candidates) byStatus[c.uploadStatus] += 1;
+  return byStatus;
+}
