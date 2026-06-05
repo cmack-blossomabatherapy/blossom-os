@@ -27,6 +27,7 @@ import {
   type Resource, type ResourceCategoryId,
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
+import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -540,7 +541,9 @@ export default function OSResourceLibrary() {
                 <div className="flex flex-wrap gap-2 pt-2">
                   {(() => {
                     const href = selected.url || selected.fileUrl;
-                    const pending = !href || selected.attachmentStatus === "pending_upload";
+                    const hasStorage = Boolean((selected as any).storagePath);
+                    const pending =
+                      (!href && !hasStorage) || selected.attachmentStatus === "pending_upload";
                     if (pending) {
                       return (
                         <div
@@ -553,10 +556,15 @@ export default function OSResourceLibrary() {
                       );
                     }
                     return (
-                      <Button asChild>
-                        <a href={href} target="_blank" rel="noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" /> Open resource
-                        </a>
+                      <Button
+                        data-testid="resource-open-button"
+                        onClick={async () => {
+                          const url = await resolveResourceOpenUrl(selected);
+                          if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          else toast.error("This resource could not be opened. Try again or contact an admin.");
+                        }}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" /> Open resource
                       </Button>
                     );
                   })()}

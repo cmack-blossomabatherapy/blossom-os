@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from "react";
-import { Upload, ShieldAlert, FileWarning, ScanLine, Lock, Ban, CheckCircle2, Send, RefreshCcw } from "lucide-react";
+import {
+  Upload, ShieldAlert, FileWarning, ScanLine, Lock, Ban,
+  CheckCircle2, Send, RefreshCcw, AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  candidateToResource,
   classifyUploadCandidate,
   inferRolesForUpload,
   summarizeUploadQueue,
@@ -16,6 +18,10 @@ import {
   type UploadCandidate,
 } from "@/lib/resources/resourceData";
 import { resourceCategories, roleLabel } from "@/lib/resources/resourceData";
+import {
+  uploadAndPublishResource,
+  isUploadable,
+} from "@/lib/resources/resourceStorage";
 
 const QUEUES: { id: ResourceUploadStatus | "all"; label: string; icon: any }[] = [
   { id: "ready_to_upload",  label: "Ready to publish",  icon: CheckCircle2 },
@@ -53,10 +59,10 @@ function guessCategory(name: string): ResourceCategoryId {
 /**
  * Calm bulk upload + review panel for the Resource Library.
  *
- * Mock-safe: candidates are held in component state. Publishing a candidate
- * promotes it into the parent's resource list with `attachmentStatus:
- * "pending_upload"` — no fake URLs are created. Once Supabase Storage is
- * wired up, swap the publish handler for the real upload.
+ * Pass 3: real Supabase Storage upload + metadata persistence. Held statuses
+ * (vault_only, privacy_review, business_review, needs_conversion, excluded,
+ * pending_review) are never uploaded. Upload failures keep the candidate in
+ * the queue with a calm error chip — no broken resource records are created.
  */
 export function ResourceBulkUploadPanel({
   onPublish,
@@ -65,14 +71,18 @@ export function ResourceBulkUploadPanel({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [candidates, setCandidates] = useState<UploadCandidate[]>([]);
+  const [fileMap, setFileMap] = useState<Record<string, File>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
   const [activeQueue, setActiveQueue] = useState<ResourceUploadStatus | "all">("ready_to_upload");
 
   const counts = useMemo(() => summarizeUploadQueue(candidates), [candidates]);
 
-  function addFiles(files: FileList | null) {
-    if (!files) return;
+  function addFiles(list: FileList | null) {
+    if (!list) return;
     const next: UploadCandidate[] = [];
-    for (const f of Array.from(files)) {
+    const added: Record<string, File> = {};
+    for (const f of Array.from(list)) {
       const title = titleFromFile(f.name);
       const category = guessCategory(f.name);
       const tags = title.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6);
@@ -105,8 +115,10 @@ export function ResourceBulkUploadPanel({
         uploadStatus: classified.uploadStatus,
         reviewNote: classified.reason,
       });
+      added[f.name] = f;
     }
     setCandidates((prev) => [...next, ...prev]);
+    setFileMap((prev) => ({ ...added, ...prev }));
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -114,12 +126,34 @@ export function ResourceBulkUploadPanel({
     setCandidates((prev) => prev.map((c, i) => (i === index ? { ...c, ...p } : c)));
   }
 
-  function publishReady() {
-    const ready = candidates.filter((c) => c.uploadStatus === "ready_to_upload");
+  async function publishReady() {
+    if (uploading) return;
+    const ready = candidates.filter(isUploadable);
     if (ready.length === 0) return;
-    const added = ready.map((c) => candidateToResource({ ...c, uploadStatus: "published" }));
-    onPublish?.(added);
-    setCandidates((prev) => prev.filter((c) => c.uploadStatus !== "ready_to_upload"));
+    setUploading(true);
+    const added: Resource[] = [];
+    const newErrors: Record<string, string> = {};
+    const successFiles = new Set<string>();
+    for (const c of ready) {
+      const f = fileMap[c.fileName];
+      if (!f) {
+        newErrors[c.fileName] = "File handle missing — re-add the file and retry.";
+        continue;
+      }
+      const res = await uploadAndPublishResource(c, f);
+      if (res.ok && res.resource) {
+        added.push(res.resource);
+        successFiles.add(c.fileName);
+      } else {
+        newErrors[c.fileName] = res.error ?? "Upload failed.";
+      }
+    }
+    if (added.length > 0) onPublish?.(added);
+    setCandidates((prev) =>
+      prev.filter((c) => !(isUploadable(c) && successFiles.has(c.fileName))),
+    );
+    setErrors((prev) => ({ ...prev, ...newErrors }));
+    setUploading(false);
   }
 
   const filtered = candidates.filter((c) =>
@@ -136,10 +170,11 @@ export function ResourceBulkUploadPanel({
         <div>
           <h2 className="text-[15px] font-semibold tracking-tight">Bulk upload &amp; import</h2>
           <p className="mt-1 text-[12.5px] text-muted-foreground">
-            Drop multiple files at once. Each candidate is auto-classified, routed
-            to the right review queue, and held until you publish or vault it.
-            Persistence is pending storage — publishing marks the resource as
-            attachment pending, no fake URLs are created.
+            Drop multiple files at once. Each candidate is auto-classified and
+            routed to the right review queue. Ready resources upload to the
+            Resource Library bucket and persist with role, state, and
+            sensitivity metadata. Held items stay in their queue until you
+            promote or vault them.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -154,8 +189,9 @@ export function ResourceBulkUploadPanel({
           <Button variant="outline" onClick={() => inputRef.current?.click()}>
             <Upload className="mr-2 h-4 w-4" /> Choose files
           </Button>
-          <Button onClick={publishReady} disabled={counts.ready_to_upload === 0}>
-            <Send className="mr-2 h-4 w-4" /> Publish ready resources
+          <Button onClick={publishReady} disabled={counts.ready_to_upload === 0 || uploading}>
+            <Send className="mr-2 h-4 w-4" />
+            {uploading ? "Uploading…" : "Publish ready resources"}
             {counts.ready_to_upload > 0 && (
               <span className="ml-1.5 rounded-full bg-primary-foreground/20 px-1.5 text-[11px]">
                 {counts.ready_to_upload}
@@ -203,6 +239,7 @@ export function ResourceBulkUploadPanel({
         )}
         {filtered.map((c) => {
           const idx = candidates.indexOf(c);
+          const err = errors[c.fileName];
           return (
             <article
               key={`${c.fileName}-${idx}`}
@@ -216,6 +253,15 @@ export function ResourceBulkUploadPanel({
                     {resourceCategories.find((cat) => cat.id === c.category)?.name} · {c.fileName}
                   </p>
                   <p className="mt-1.5 text-[12px] text-muted-foreground">{c.reviewNote}</p>
+                  {err && (
+                    <div
+                      data-testid="upload-candidate-error"
+                      className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11.5px] text-rose-700"
+                    >
+                      <AlertTriangle className="h-3 w-3" />
+                      Upload failed — {err}
+                    </div>
+                  )}
                 </div>
                 <Badge variant="secondary" className="rounded-full text-[10.5px]">
                   {UPLOAD_STATUS_LABEL[c.uploadStatus]}
