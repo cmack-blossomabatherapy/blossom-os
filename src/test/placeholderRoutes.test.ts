@@ -4,26 +4,31 @@ import fs from "node:fs";
 const appSrc = fs.readFileSync("src/App.tsx", "utf8");
 const shellSrc = fs.readFileSync("src/pages/os/OSShell.tsx", "utf8");
 
-// Routes that render OSPlaceholder / OSComingSoon. Must still resolve directly
-// (no deletion in Pass 6A) even though most are now hidden from primary nav.
-const PLACEHOLDER_ROUTES = [
+// Pass 6B decisions per docs/placeholder-route-inventory.md.
+
+// Routes that still render OSPlaceholder / OSComingSoon directly.
+const DIRECT_ONLY_PLACEHOLDER_ROUTES = [
   "/credentialing",
   "/employee-ops",
-  "/billing",
-  "/revenue",
-  "/insurance",
   "/workflows",
-  "/analytics",
   "/tech-requests",
   "/internal-requests",
   "/open-issues",
   "/projects",
   "/ai/assistant",
-  "/ai/automations",
   "/ai/predictive",
   "/ai/workflows",
   "/state-management",
 ];
+
+// Routes converted in Pass 6B to redirects.
+const REDIRECTED_PLACEHOLDER_ROUTES: Record<string, string> = {
+  "/billing": "/billing-finance",
+  "/revenue": "/billing-finance",
+  "/insurance": "/authorizations",
+  "/analytics": "/reports",
+  "/ai/automations": "/automations",
+};
 
 // Subset that Pass 6A removed from the OS sidebar (DEFAULT_SECTIONS).
 // `/ai/assistant` stays visible — it's the canonical AI CTA target.
@@ -61,10 +66,27 @@ const CANONICAL_ROUTES = [
 ];
 
 describe("Pass 6A — placeholder governance", () => {
-  for (const path of PLACEHOLDER_ROUTES) {
-    it(`placeholder route ${path} still resolves`, () => {
+  for (const path of DIRECT_ONLY_PLACEHOLDER_ROUTES) {
+    it(`direct-only placeholder ${path} still resolves`, () => {
       const re = new RegExp(`<Route\\s+path="${path.replace(/\//g, "\\/")}"`);
       expect(appSrc).toMatch(re);
+    });
+  }
+
+  for (const [from, to] of Object.entries(REDIRECTED_PLACEHOLDER_ROUTES)) {
+    it(`redirected placeholder ${from} → ${to}`, () => {
+      // Route element must be a <Navigate to="…" replace /> matching the canonical target.
+      const re = new RegExp(
+        `<Route\\s+path="${from.replace(/\//g, "\\/")}"\\s+element=\\{<Navigate\\s+to="${to.replace(/\//g, "\\/")}"\\s+replace\\s*/>}\\s*/>`,
+      );
+      expect(appSrc).toMatch(re);
+    });
+
+    it(`redirected placeholder ${from} no longer renders OSPlaceholder/OSComingSoon`, () => {
+      const re = new RegExp(
+        `<Route\\s+path="${from.replace(/\//g, "\\/")}"\\s+element=\\{<OS(Placeholder|ComingSoon)`,
+      );
+      expect(appSrc).not.toMatch(re);
     });
   }
 
