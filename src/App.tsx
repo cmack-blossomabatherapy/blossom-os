@@ -454,13 +454,7 @@ const App = () => (
                 <PhoneSystemProvider>
                 <PushNavigationListener />
                 <Routes>
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/mfa/setup" element={<MfaSetup />} />
-                <Route path="/mfa/verify" element={<MfaVerify />} />
-                <Route path="/evaluations/form/:token" element={<PublicEvalFormPage />} />
-                <Route path="/nfc/:code" element={<NfcPublicProfile />} />
-                <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
+                {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
