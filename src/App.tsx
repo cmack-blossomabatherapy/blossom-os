@@ -358,6 +358,8 @@ import OSSchedulingRosterRBTs from "./pages/os/OSSchedulingRosterRBTs";
 import OSSchedulingRosterBCBAs from "./pages/os/OSSchedulingRosterBCBAs";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
+import { PublicRoutes } from "./routes/publicRoutes";
+import { LegacyDashboardRedirects } from "./routes/legacyRoutes";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
   BarChart3, GraduationCap, Building2, Settings as SIcon,
