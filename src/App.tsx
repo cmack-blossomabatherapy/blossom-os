@@ -730,7 +730,7 @@ const App = () => (
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
                   <Route path="/onboarding/week/2" element={<WeekTwo />} />
                   <Route path="/onboarding/week/3" element={<WeekThree />} />
-                  <Route path="/onboarding/week/4" element={<WeeksFourFive />} />
+                  <Route path="/onboarding/week/4" element={<Navigate to="/onboarding/week/4-5" replace />} />
                   <Route path="/onboarding/week/4-5" element={<WeeksFourFive />} />
                   <Route path="/onboarding/graduation" element={<Graduation />} />
                   <Route path="/onboarding/welcome" element={<OnboardingWelcome />} />
