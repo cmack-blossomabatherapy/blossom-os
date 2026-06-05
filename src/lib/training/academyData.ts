@@ -10,7 +10,19 @@ import {
   Wallet, Stethoscope, Crown, Workflow, BookOpen, Sparkles, type LucideIcon,
 } from "lucide-react";
 
-export type TrainingType = "SOP" | "Workflow" | "Tango" | "Video" | "Checklist" | "Quick Guide";
+export type TrainingType =
+  | "SOP"
+  | "Workflow"
+  | "Tango"
+  | "Video"
+  | "Checklist"
+  | "Quick Guide"
+  | "Training"
+  | "Task"
+  | "Meeting"
+  | "Shadowing"
+  | "Quiz"
+  | "Reflection";
 export type TrainingStatus = "not_started" | "in_progress" | "completed" | "overdue";
 export type JourneyTone = "violet" | "sky" | "mint" | "rose" | "peach" | "lilac";
 
@@ -57,6 +69,14 @@ export interface Training {
   videoUrl?: string;
   checklist?: TrainingChecklistItem[];
   resources?: TrainingResource[];
+  /** Why this module matters operationally. */
+  whyItMatters?: string;
+  /** What the learner should actually do. */
+  whatToDo?: string;
+  /** How completion is verified (evidence / proof). */
+  completionEvidence?: string;
+  /** Optional written reflection prompt. */
+  reflectionPrompt?: string;
 }
 
 export interface RoleJourney {
@@ -719,29 +739,406 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 }
 
-/** Build a single placeholder Training for a day-module. */
-function buildSdModule(weekNum: number, dayNum: number, title: string): Training {
+/**
+ * SOP resource names, in module-position order per week.
+ * Source: State Director Training Academy SOP catalog.
+ */
+const SD_SOPS_BY_WEEK: Record<number, Record<number, string[]>> = {
+  1: {
+    1: [],
+    2: [
+      "Understanding Blossom Organizational Structure SOP",
+      "State Director Role & Responsibilities SOP",
+      "Leadership Expectations for State Directors SOP",
+      "Department Functions & Operational Ecosystem SOP",
+    ],
+    3: [
+      "Intake Department Operations SOP",
+      "Authorizations Department Operations SOP",
+      "Scheduling Department Operations SOP",
+      "Recruiting Department Operations SOP",
+      "Quality Assurance Department Operations SOP",
+      "Billing Department Operations SOP",
+    ],
+    4: [
+      "Communication Standards & Professional Expectations SOP",
+      "Operational Escalation Management SOP",
+      "Accountability & Performance Ownership SOP",
+      "State Director Operational Ownership SOP",
+    ],
+    5: [
+      "Data Integrity & Source of Truth Management SOP",
+      "Utilization Management Philosophy SOP",
+      "State Ownership Framework SOP",
+      "Operational Leadership Philosophy SOP",
+    ],
+  },
+  2: {
+    1: [
+      "CentralReach System Overview SOP",
+      "CentralReach Navigation & User Experience SOP",
+      "CentralReach Calendar Management SOP",
+      "CentralReach User Permissions & Security SOP",
+    ],
+    2: [
+      "Calendar Views & Filtering SOP",
+      "Scheduling Labels & Workflow Filters SOP",
+      "Session Tracking & Monitoring SOP",
+      "Scheduling Oversight & Capacity Management SOP",
+    ],
+    3: [
+      "Session Conversion Management SOP",
+      "Non-Converted Session Resolution SOP",
+      "Session Integrity & Fraud Prevention SOP",
+      "Schedule Monitoring & Operational Visibility SOP",
+    ],
+    4: [
+      "Lead Lifecycle Management SOP",
+      "Phone Calls & Lead Follow-Up Process SOP",
+      "Intake Workflow Management SOP",
+      "Consent Form Management SOP",
+    ],
+    5: [
+      "Verification of Benefits (VOB) Process SOP",
+      "Assessment Scheduling & Oversight SOP",
+      "Client Lifecycle Management SOP",
+      "Active Client Oversight SOP",
+    ],
+  },
+  3: {
+    1: [
+      "Authorization Lifecycle Management SOP",
+      "Authorization Status Management SOP",
+      "Authorization Submission Process SOP",
+    ],
+    2: [
+      "Initial Authorization Management SOP",
+      "Treatment Authorization Management SOP",
+      "Reassessment Management SOP",
+      "Progress Report Management SOP",
+    ],
+    3: [
+      "Actual Hours Monitoring SOP",
+      "Pending Hours Management SOP",
+      "Remaining Hours Tracking SOP",
+      "Utilization Percentage Management SOP",
+    ],
+    4: [
+      "Expiring Authorization Management SOP",
+      "Missing Progress Report Resolution SOP",
+      "Delayed Assessment Resolution SOP",
+      "Coverage Risk Management SOP",
+    ],
+    5: [
+      "Utilization Management & Recovery SOP",
+      "Revenue Awareness for State Directors SOP",
+      "Lost Hours Prevention SOP",
+      "Operational Visibility & Reporting SOP",
+    ],
+  },
+  4: {
+    1: [
+      "Staffing Structure & Workforce Planning SOP",
+      "BCBA Oversight & Management SOP",
+      "RBT Oversight & Management SOP",
+      "Capacity Management & Forecasting SOP",
+    ],
+    2: [
+      "Coverage Gap Management SOP",
+      "Cancellation Management SOP",
+      "Therapist Pairing Process SOP",
+      "Schedule Optimization SOP",
+    ],
+    3: [
+      "Recruiting Workflow Management SOP",
+      "Candidate Pipeline Management SOP",
+      "Interview Process Management SOP",
+      "Hiring & Offer Management SOP",
+    ],
+    4: [
+      "New Employee Orientation Process SOP",
+      "Background Check Management SOP",
+      "Viventium Onboarding Process SOP",
+      "Workforce Readiness Validation SOP",
+    ],
+    5: [
+      "Scheduling Shadow Program SOP",
+      "Recruiting Shadow Program SOP",
+      "BCBA Shadow Program SOP",
+      "State Director Shadow Program SOP",
+    ],
+  },
+  5: {
+    1: [
+      "Utilization KPI Management SOP",
+      "Staffing KPI Management SOP",
+      "Client KPI Management SOP",
+      "Recruiting KPI Management SOP",
+    ],
+    2: [
+      "Weekly State Operations Meetings SOP",
+      "Department Follow-Up Process SOP",
+      "Accountability Review Process SOP",
+      "Escalation Tracking Process SOP",
+    ],
+    3: [
+      "Parent Escalation Management SOP",
+      "BCBA Escalation Management SOP",
+      "Staffing Escalation Management SOP",
+      "Operational Issue Resolution SOP",
+    ],
+    4: [
+      "Cross-Department Management SOP",
+      "Operational Prioritization SOP",
+      "State Health Monitoring SOP",
+      "Leadership Decision Making SOP",
+    ],
+    5: [
+      "Final Knowledge Assessment SOP",
+      "State Director Readiness Evaluation SOP",
+      "Leadership Sign-Off Process SOP",
+      "State Director Certification Process SOP",
+    ],
+  },
+};
+
+interface SdModuleSpec {
+  type: TrainingType;
+  minutes: number;
+  description: string;
+  whyItMatters: string;
+  whatToDo: string;
+  completionEvidence: string;
+  reflectionPrompt?: string;
+  sopName?: string;
+}
+
+const SD_W1D1_SPECS: Record<string, SdModuleSpec> = {
+  "Welcome Video from Blossom": {
+    type: "Video", minutes: 8,
+    description: "Short welcome video from Blossom leadership — who we are, who we serve, and why this work matters.",
+    whyItMatters: "Sets the tone for everything you'll learn. You'll hear our purpose in our own words.",
+    whatToDo: "Watch the welcome video end-to-end. Capture one thing that stood out.",
+    completionEvidence: "Mark the video as watched and bring your takeaway to your first mentor check-in.",
+  },
+  "Mission & Vision": {
+    type: "Training", minutes: 10,
+    description: "Blossom's mission, vision, and the operational philosophy behind them.",
+    whyItMatters: "Every operational decision you make should ladder up to this.",
+    whatToDo: "Read the mission & vision overview and be able to restate it in your own words.",
+    completionEvidence: "Confirm understanding with your mentor in your Week 1 check-in.",
+    reflectionPrompt: "In one sentence — what is Blossom here to do, and why does it matter to families?",
+  },
+  "Core Values": {
+    type: "Training", minutes: 10,
+    description: "The values that drive how we work, communicate, and lead.",
+    whyItMatters: "Values are how leaders make calls when there's no playbook.",
+    whatToDo: "Review each value and connect it to a moment from your past leadership experience.",
+    completionEvidence: "Discuss values in mentor check-in and pick one value to focus on this week.",
+    reflectionPrompt: "Which value will be hardest for you to live in week 1? Why?",
+  },
+  "Meet the Team": {
+    type: "Training", minutes: 12,
+    description: "Org overview — leadership team, department leads, and the people you'll partner with day-to-day.",
+    whyItMatters: "You can't run a state if you don't know who owns what.",
+    whatToDo: "Review the team directory and identify your peer State Directors and department partners.",
+    completionEvidence: "Bookmark the team directory and intro yourself to at least 3 department leads.",
+  },
+  "How Blossom Works": {
+    type: "Training", minutes: 15,
+    description: "End-to-end operational flow — lead → intake → VOB → assessment → authorization → scheduling → active client → utilization.",
+    whyItMatters: "Every problem you'll solve is somewhere on this flow.",
+    whatToDo: "Walk through the flow. Identify where your state currently has friction.",
+    completionEvidence: "Sketch the flow from memory and share with your mentor.",
+  },
+  "Welcome from Chad Kaufman": {
+    type: "Video", minutes: 6,
+    description: "Personal welcome from Chad Kaufman — Blossom's origin story and what we expect from leaders.",
+    whyItMatters: "Hearing directly from leadership grounds you in the why.",
+    whatToDo: "Watch the message. No notes required — just listen.",
+    completionEvidence: "Mark as watched.",
+  },
+  "A Note from Shira Lasry": {
+    type: "Video", minutes: 5,
+    description: "Personal note from Shira Lasry on operational leadership and what makes a strong State Director at Blossom.",
+    whyItMatters: "Shira's lens on operations is the bar you'll be measured against.",
+    whatToDo: "Watch and write down one expectation that surprised you.",
+    completionEvidence: "Mark as watched and bring your note to your first mentor check-in.",
+  },
+};
+
+const SD_SPECIAL_TYPES: Record<string, TrainingType> = {
+  "Weekly Meetings": "Meeting",
+  "Department Follow-Up": "Meeting",
+  "Accountability Reviews": "Meeting",
+  "Scheduling Shadow": "Shadowing",
+  "Recruiting Shadow": "Shadowing",
+  "BCBA Shadow": "Shadowing",
+  "State Director Shadow": "Shadowing",
+  "Final Knowledge Review": "Quiz",
+  "Readiness Assessment": "Reflection",
+  "Leadership Sign-Off": "Meeting",
+  "State Director Certification": "Task",
+};
+
+function specForModule(weekNum: number, dayNum: number, position: number, title: string): SdModuleSpec {
+  if (weekNum === 1 && dayNum === 1 && SD_W1D1_SPECS[title]) {
+    return SD_W1D1_SPECS[title];
+  }
+
+  const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
+  const overrideType = SD_SPECIAL_TYPES[title];
+
+  if (overrideType === "Shadowing") {
+    return {
+      type: "Shadowing", minutes: 90, sopName,
+      description: `Live shadow session with the ${title.replace(" Shadow", "")} team to see the operational workflow in real time.`,
+      whyItMatters: "Reading SOPs is not enough. Shadowing builds operational intuition.",
+      whatToDo: `Schedule and complete a shadow session with the ${title.replace(" Shadow", "")} team. Take notes on what surprised you.`,
+      completionEvidence: "Log a shadow session entry with date, host, hours, and 2-3 observations. Mentor sign-off required.",
+      reflectionPrompt: "What did you see that you wouldn't have learned from the SOP alone?",
+    };
+  }
+  if (overrideType === "Meeting") {
+    return {
+      type: "Meeting", minutes: 45, sopName,
+      description: `${title} — operational meeting cadence that drives accountability and follow-through.`,
+      whyItMatters: "Operational meetings are how a State Director keeps the system honest.",
+      whatToDo: `Sit in on (or run) the relevant ${title.toLowerCase()} session and capture decisions, owners, and follow-ups.`,
+      completionEvidence: "Log the check-in with date, attendees, and 1-line summary. Mentor verifies attendance.",
+    };
+  }
+  if (overrideType === "Quiz") {
+    return {
+      type: "Quiz", minutes: 30, sopName,
+      description: "Final knowledge review across the 5-week State Director curriculum.",
+      whyItMatters: "Confirms you can recall and apply what you've learned before sign-off.",
+      whatToDo: "Complete the knowledge review. Aim for ≥80% on the first attempt; review missed items with your mentor.",
+      completionEvidence: "Quiz score ≥80% recorded. Missed items reviewed in mentor check-in.",
+    };
+  }
+  if (overrideType === "Reflection") {
+    return {
+      type: "Reflection", minutes: 20, sopName,
+      description: "Written readiness reflection — strengths, gaps, and what you'll own first.",
+      whyItMatters: "Self-awareness is the difference between a manager and a leader.",
+      whatToDo: "Submit a written readiness reflection answering the prompts in the template.",
+      completionEvidence: "Reflection submitted and reviewed in mentor check-in.",
+      reflectionPrompt: "What's the first operational call you'll make in your state in week 1, and why?",
+    };
+  }
+  if (overrideType === "Task") {
+    return {
+      type: "Task", minutes: 15, sopName,
+      description: "Final certification step — leadership sign-off and your activation as State Director.",
+      whyItMatters: "Marks the formal transition from trainee to operational owner of your state.",
+      whatToDo: "Confirm all weeks/modules complete, mentor sign-off received, and leadership approval logged.",
+      completionEvidence: "Certification record stored with mentor and leadership signatures.",
+    };
+  }
+
+  const weekTheme: Record<number, string> = {
+    1: "Foundations & Welcome to Blossom",
+    2: "Systems & Client Flow",
+    3: "Authorizations & Utilization",
+    4: "Staffing, Recruiting & Operations",
+    5: "State Ownership & Leadership",
+  };
+
+  return {
+    type: "SOP",
+    minutes: 20,
+    sopName,
+    description: `${title} — part of ${weekTheme[weekNum]}. Read the named SOP and connect it to how your state currently runs this area.`,
+    whyItMatters: `${title} is load-bearing for week ${weekNum} (${weekTheme[weekNum]}). Weak here, weak everywhere downstream.`,
+    whatToDo: `Read the ${sopName} end-to-end. Note 1 thing your state already does well and 1 thing that needs tightening.`,
+    completionEvidence: "Acknowledge SOP read + capture 2 notes (1 strength, 1 gap) in your mentor check-in.",
+  };
+}
+
+function buildSdModule(weekNum: number, dayNum: number, position: number, title: string): Training {
   const id = `sd-w${weekNum}d${dayNum}-${slugify(title)}`;
+  const spec = specForModule(weekNum, dayNum, position, title);
+  const resources: TrainingResource[] = spec.sopName
+    ? [{
+        id: `${id}-sop`,
+        type: spec.type === "Video" ? "Video" : "PDF",
+        title: spec.sopName,
+        url: "",
+      }]
+    : [];
+
+  const checklist: TrainingChecklistItem[] = [];
+  if (spec.type === "SOP" || spec.type === "Training") {
+    checklist.push(
+      { id: "c1", item: "Read the named SOP / module content", required: true },
+      { id: "c2", item: "Capture 1 strength and 1 gap for your state", required: true },
+      { id: "c3", item: "Confirm understanding in mentor check-in", required: true },
+    );
+  } else if (spec.type === "Shadowing") {
+    checklist.push(
+      { id: "c1", item: "Schedule the shadow session", required: true },
+      { id: "c2", item: "Attend and take field notes", required: true },
+      { id: "c3", item: "Log shadow session with mentor sign-off", required: true },
+    );
+  } else if (spec.type === "Meeting") {
+    checklist.push(
+      { id: "c1", item: "Attend the meeting", required: true },
+      { id: "c2", item: "Log decisions, owners, follow-ups", required: true },
+    );
+  } else if (spec.type === "Video") {
+    checklist.push(
+      { id: "c1", item: "Watch the video end-to-end", required: true },
+      { id: "c2", item: "Capture 1 takeaway", required: false },
+    );
+  } else if (spec.type === "Quiz") {
+    checklist.push({ id: "c1", item: "Complete the quiz with score ≥ 80%", required: true });
+  } else if (spec.type === "Reflection") {
+    checklist.push({ id: "c1", item: "Submit written reflection", required: true });
+  } else if (spec.type === "Task") {
+    checklist.push({ id: "c1", item: "Complete the task and upload evidence", required: true });
+  }
+
+  const overview = [
+    spec.description,
+    "",
+    `**Why this matters:** ${spec.whyItMatters}`,
+    "",
+    `**What to do:** ${spec.whatToDo}`,
+    "",
+    `**How to complete:** ${spec.completionEvidence}`,
+    spec.reflectionPrompt ? `\n**Reflection prompt:** ${spec.reflectionPrompt}` : "",
+  ].filter(Boolean).join("\n");
+
+  const sopMarkdown = spec.sopName
+    ? `## ${spec.sopName}\n\nThe SOP is the source of truth for this module. If the link below is empty, the SOP write-up lives in the Resource Library under State Director Operations and will be wired up here as it's published.`
+    : "";
+
   return {
     id,
     title: `W${weekNum} · D${dayNum} — ${title}`,
-    description: "Placeholder — content to be added.",
-    type: "Quick Guide",
-    estimatedMinutes: 10,
+    description: spec.description,
+    type: spec.type,
+    estimatedMinutes: spec.minutes,
     required: true,
     category: "role",
     department: "state_operations",
     owner: SD_OWNER,
     lastUpdated: SD_DATE,
-    overview: "This module is a placeholder. SOPs, videos, quizzes, and resources will be added in a later step.",
-    sopMarkdown: "",
-    checklist: [],
-    resources: [],
+    overview,
+    sopMarkdown,
+    videoUrl: spec.type === "Video" ? "" : undefined,
+    checklist,
+    resources,
+    whyItMatters: spec.whyItMatters,
+    whatToDo: spec.whatToDo,
+    completionEvidence: spec.completionEvidence,
+    reflectionPrompt: spec.reflectionPrompt,
   };
 }
 
 const STATE_DIRECTOR_TRAININGS: Training[] = SD_JOURNEY_STRUCTURE.flatMap((w) =>
-  w.days.flatMap((d) => d.modules.map((m) => buildSdModule(w.week, d.day, m))),
+  w.days.flatMap((d) => d.modules.map((m, idx) => buildSdModule(w.week, d.day, idx, m))),
 );
 
 /** Flat ordered moduleIds for the SD journey (W1D1 → W5D5). */
@@ -813,7 +1210,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v8";
+const STORAGE_KEY = "blossom.training.academy.v9";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
