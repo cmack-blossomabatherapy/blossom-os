@@ -382,8 +382,8 @@ export default function TrainingManagementCenter() {
                   Training Management Center
                 </h1>
                 <p className="mt-1.5 max-w-2xl text-[14px] text-muted-foreground">
-                  Build journeys, modules, SOPs, and operational learning paths
-                  across Blossom.
+                  Assign, monitor, and fix training. Active trainees, launch readiness,
+                  setup gaps, journeys, and admin actions in one calm workspace.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
