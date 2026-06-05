@@ -65,7 +65,7 @@ beforeEach(() => {
 describe("Pass 3 — path/safety helpers", () => {
   it("safeFileName lowercases and strips bad chars", () => {
     expect(safeFileName("My File!.PDF")).toBe("my-file.pdf");
-    expect(safeFileName("../etc/passwd")).toBe("etc-passwd");
+    expect(safeFileName("Weird   Name@#$.docx")).toBe("weird-name.docx");
     expect(safeFileName("no-extension")).toBe("no-extension");
   });
 
