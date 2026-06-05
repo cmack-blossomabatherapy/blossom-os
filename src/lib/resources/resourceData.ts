@@ -297,9 +297,19 @@ export const roleLabel = (r: OSRole) => ROLE_LABEL[r] ?? r;
 /** Role-aware filter: empty roles[] means visible to everyone. */
 export function isVisibleToRole(r: Resource, role: OSRole, state?: string): boolean {
   if (r.status !== "Published") return false;
+  // Hard-exclude vault / credential / login-style resources from the standard library.
+  if (r.sensitivity === "excluded" || r.attachmentStatus === "excluded") return false;
+  if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
   const roleOk = r.roles.length === 0 || r.roles.includes(role) || role === "super_admin";
   const stateOk = r.states.length === 0 || (state ? r.states.includes(state) : true);
   return roleOk && stateOk;
+}
+
+/** True when a resource has no attachable URL and is awaiting upload. */
+export function isAttachmentPending(r: Resource): boolean {
+  if (r.attachmentStatus === "pending_upload") return true;
+  if (r.attachmentStatus === "available") return false;
+  return !r.url && !r.fileUrl;
 }
 
 export function visibleResources(role: OSRole, state?: string): Resource[] {
