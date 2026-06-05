@@ -815,6 +815,7 @@ function ModulesGrid({
 }
 
 function SopsList() {
+  const navigate = useNavigate();
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
