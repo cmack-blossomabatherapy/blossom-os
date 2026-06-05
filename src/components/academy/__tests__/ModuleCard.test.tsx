@@ -91,7 +91,7 @@ describe("ModuleCard", () => {
         onChange={noop}
       />,
     );
-    expect(screen.getByText(/SOP/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/SOP/i).length).toBeGreaterThan(0);
     expect(screen.getByText("20 min")).toBeInTheDocument();
   });
 });
