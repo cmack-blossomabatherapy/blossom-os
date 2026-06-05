@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare, Loader2, ExternalLink, Link2 } from "lucide-react";
+import { Check, BookOpen, Eye, Users, PlayCircle, FileText, ClipboardCheck, Pencil, CheckSquare, Loader2, ExternalLink, Link2, Lightbulb, Target, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODULE_TYPE_META, type AcademyModule, type AcademyProgress } from "@/lib/academy/types";
 import { upsertProgress } from "@/lib/academy/api";
@@ -31,6 +31,7 @@ export interface ModuleResource { id: string; label: string; url: string | null;
 
 export function ModuleCard({
   module, progress, enrollmentId, onShadow, onCheckin, onChange, readOnly, resources,
+  whyItMatters, whatToDo, completionEvidence,
 }: {
   module: AcademyModule;
   progress?: AcademyProgress;
@@ -40,6 +41,10 @@ export function ModuleCard({
   onChange: () => void;
   readOnly?: boolean;
   resources?: ModuleResource[];
+  /** Optional rich guidance — shown when supplied (e.g. State Director journey). */
+  whyItMatters?: string;
+  whatToDo?: string;
+  completionEvidence?: string;
 }) {
   const meta = MODULE_TYPE_META[module.module_type];
   const Icon = ICON[meta.icon] ?? BookOpen;
@@ -153,10 +158,50 @@ export function ModuleCard({
             </div>
           )}
 
-          {(module.module_type === "video" || module.module_type === "sop") && (!resources || resources.length === 0) && (
-            <p className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
-              {module.module_type === "video" ? "No video link added yet." : "No document attached yet."} An admin can add one in Training Admin → Operations Academy.
+          {module.module_type === "video" && !module.video_url && !module.link_url && (!resources || resources.every((r) => !r.url)) && (
+            <p
+              data-testid="video-pending"
+              className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/10 p-2.5 text-[11px] text-muted-foreground"
+            >
+              Video link pending. You can continue with the written guidance and mark complete when reviewed with your mentor.
             </p>
+          )}
+          {module.module_type === "sop" && (!resources || resources.length === 0) && (
+            <p className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
+              SOP attachment pending — the named SOP will appear here once linked from the Resource Library.
+            </p>
+          )}
+
+          {(whyItMatters || whatToDo || completionEvidence) && (
+            <div className="mt-3 space-y-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+              {whyItMatters && (
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <p className="text-[11.5px] leading-relaxed text-foreground">
+                    <span className="font-semibold">Why this matters · </span>
+                    <span className="text-muted-foreground">{whyItMatters}</span>
+                  </p>
+                </div>
+              )}
+              {whatToDo && (
+                <div className="flex items-start gap-2">
+                  <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <p className="text-[11.5px] leading-relaxed text-foreground">
+                    <span className="font-semibold">What to do · </span>
+                    <span className="text-muted-foreground">{whatToDo}</span>
+                  </p>
+                </div>
+              )}
+              {completionEvidence && (
+                <div className="flex items-start gap-2">
+                  <ClipboardList className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <p className="text-[11.5px] leading-relaxed text-foreground">
+                    <span className="font-semibold">How to complete · </span>
+                    <span className="text-muted-foreground">{completionEvidence}</span>
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {module.module_type === "reflection" && !isComplete && !readOnly && (
