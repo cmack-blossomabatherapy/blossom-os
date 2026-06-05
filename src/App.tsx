@@ -607,8 +607,8 @@ const App = () => (
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
-                  <Route path="/intake/leads" element={<OSLeadsV2 />} />
-                  <Route path="/intake/vob-decision" element={<OSPlaceholder title="VOB Decision Center" description="VOB review, payment plan decisions, and financial readiness for intake." icon={ShieldCheck} />} />
+                  <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
+                  <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
