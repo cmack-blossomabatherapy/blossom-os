@@ -18,6 +18,11 @@ const EXCLUDED = new Set([
   "src/test/legacyRedirects.test.ts",
   "src/test/canonicalRoutes.test.ts",
   "src/lib/navigationAccess.test.ts",
+  // RBAC source-of-truth + its tests reference the legacy bare paths
+  // (/recruiting, /payroll, /intake/vob-decision, etc.) as department
+  // path mappings, not as live link destinations.
+  "src/lib/rbac.ts",
+  "src/lib/rbac.test.ts",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
