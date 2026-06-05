@@ -784,21 +784,23 @@ export function isDuplicateCandidate(
   candidate: UploadCandidate,
   existing: Resource[],
 ): boolean {
+  if (!candidate || !Array.isArray(existing) || existing.length === 0) return false;
   const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
   const t = norm(candidate.title);
   return existing.some((r) => {
+    if (!r) return false;
     if ((r.uploadStatus ?? "published") !== "published") return false;
     if (r.category !== candidate.category) return false;
     if (norm(r.title) !== t) return false;
     // Role/state overlap (empty = all)
     const roleOverlap =
-      candidate.roles.length === 0 ||
-      r.roles.length === 0 ||
-      candidate.roles.some((cr) => r.roles.includes(cr));
+      (candidate.roles ?? []).length === 0 ||
+      (r.roles ?? []).length === 0 ||
+      (candidate.roles ?? []).some((cr) => (r.roles ?? []).includes(cr));
     const stateOverlap =
-      candidate.states.length === 0 ||
-      r.states.length === 0 ||
-      candidate.states.some((cs) => r.states.includes(cs));
+      (candidate.states ?? []).length === 0 ||
+      (r.states ?? []).length === 0 ||
+      (candidate.states ?? []).some((cs) => (r.states ?? []).includes(cs));
     return roleOverlap && stateOverlap;
   });
 }
