@@ -407,9 +407,9 @@ export default function TrainingManagementCenter() {
                   variant="outline"
                   size="sm"
                   className="rounded-xl"
-                  onClick={() => setUploadSopOpen(true)}
+                  onClick={() => navigate("/hr/resource-management#bulk-upload")}
                 >
-                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload SOP
+                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
                 </Button>
                 <Button
                   variant="outline"
@@ -817,7 +817,7 @@ function SopsList() {
           </p>
         </div>
         <Button variant="outline" size="sm" className="rounded-xl">
-          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload SOP
+          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
         </Button>
       </div>
       <ul className="divide-y divide-border/60">
