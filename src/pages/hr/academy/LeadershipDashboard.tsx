@@ -191,7 +191,7 @@ export default function LeadershipDashboard() {
       ) : (
         <div className="space-y-4">
           {rows.map((r) => (
-            <TraineeCard key={r.enrollment.id} row={r} />
+            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} />
           ))}
         </div>
       )}
