@@ -23,6 +23,8 @@ const EXCLUDED = new Set([
   // path mappings, not as live link destinations.
   "src/lib/rbac.ts",
   "src/lib/rbac.test.ts",
+  // navigationAccess uses bare paths internally for route gating (not as links).
+  "src/lib/navigationAccess.ts",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
