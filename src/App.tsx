@@ -127,16 +127,8 @@ import CeoDashboardV2 from "./pages/CeoDashboardV2";
 import CeoDashboardV2Logic from "./pages/CeoDashboardV2Logic";
 import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
 import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
-import IntakeDashboard from "./pages/IntakeDashboard";
-import AuthorizationsDashboard from "./pages/AuthorizationsDashboard";
-import OSAuthorizations from "./pages/os/OSAuthorizations";
-import SchedulingDashboard from "./pages/SchedulingDashboard";
-import StaffingDashboard from "./pages/StaffingDashboard";
 import ClinicDashboard from "./pages/ClinicDashboard";
-import QADashboard from "./pages/QADashboard";
-import FinanceDashboard from "./pages/FinanceDashboard";
-import RecruitingDashboard from "./pages/RecruitingDashboard";
-import OperationsAcademy from "./pages/blossom/OperationsAcademy";
+import OSAuthorizations from "./pages/os/OSAuthorizations";
 import TrackDetail from "./pages/blossom/TrackDetail";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
@@ -778,21 +770,20 @@ const App = () => (
                   <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
                   <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
                   <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
-                  <Route path="/intake-dashboard" element={<PermissionRoute permission="leads.view"><IntakeDashboard /></PermissionRoute>} />
-                  <Route path="/authorizations-dashboard" element={<PermissionRoute permission="dashboard.view"><AuthorizationsDashboard /></PermissionRoute>} />
-                  <Route path="/scheduling-dashboard" element={<PermissionRoute permission="dashboard.view"><SchedulingDashboard /></PermissionRoute>} />
-                  <Route path="/staffing-dashboard" element={<PermissionRoute permission="dashboard.view"><StaffingDashboard /></PermissionRoute>} />
+                  <Route path="/intake-dashboard" element={<Navigate to="/intake" replace />} />
+                  <Route path="/authorizations-dashboard" element={<Navigate to="/authorizations" replace />} />
+                  <Route path="/scheduling-dashboard" element={<Navigate to="/scheduling" replace />} />
+                  <Route path="/staffing-dashboard" element={<Navigate to="/staffing" replace />} />
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
-                  <Route path="/qa-dashboard" element={<PermissionRoute permission="dashboard.view"><QADashboard /></PermissionRoute>} />
-                  <Route path="/finance-dashboard" element={<PermissionRoute permission="dashboard.view"><FinanceDashboard /></PermissionRoute>} />
-                  <Route path="/recruiting-dashboard" element={<PermissionRoute permission="dashboard.view"><RecruitingDashboard /></PermissionRoute>} />
+                  <Route path="/qa-dashboard" element={<Navigate to="/qa-workspace" replace />} />
+                  <Route path="/finance-dashboard" element={<Navigate to="/billing-finance" replace />} />
+                  <Route path="/recruiting-dashboard" element={<Navigate to="/recruiting/workspace" replace />} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/qa" element={<QA />} />
                   <Route path="/qa/:id" element={<QADetail />} />
-                  <Route path="/clinics" element={<Clinics />} />
-                  <Route path="/phone-calls" element={<PhoneCalls />} />
+                  <Route path="/phone-calls" element={<Navigate to="/phone" replace />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
