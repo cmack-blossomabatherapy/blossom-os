@@ -12,7 +12,7 @@ import {
 
 const RUNBOOK_PATH = "docs/resource-library-operational-upload-runbook.md";
 const RUNBOOK = fs.existsSync(RUNBOOK_PATH) ? fs.readFileSync(RUNBOOK_PATH, "utf8") : "";
-const MGMT = fs.readFileSync("src/pages/hr/ResourceManagement.tsx", "utf8");
+const MGMT = fs.readFileSync("src/pages/hr/ResourceUploadCenter.tsx", "utf8");
 const PANEL = fs.readFileSync("src/components/resources/ResourceBulkUploadPanel.tsx", "utf8");
 const LIBRARY = fs.readFileSync("src/pages/os/OSResourceLibrary.tsx", "utf8");
 

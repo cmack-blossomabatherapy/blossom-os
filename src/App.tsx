@@ -9,8 +9,10 @@ import { PushNavigationListener } from "@/components/push/PushNavigationListener
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
+import { Unauthorized } from "@/components/auth/Unauthorized";
 import { canAccessRouteForRoles, hasFullNavigationAccess, TRAINING_ADMIN_ROLES, ANALYTICS_ROLES, COURSE_AUTHOR_ROLES, AUTOMATIONS_ROLES } from "@/lib/navigationAccess";
 import { ROLE_HOME } from "@/lib/os/roleHome";
+import { Loader2 } from "lucide-react";
 import Leads from "./pages/Leads";
 import LeadDetail from "./pages/LeadDetail";
 import Clients from "./pages/Clients";
@@ -83,8 +85,7 @@ import Reviews from "./pages/hr/Reviews";
 import Training from "./pages/hr/Training";
 import Payroll from "./pages/hr/Payroll";
 import Announcements from "./pages/hr/Announcements";
-import ResourceHub from "./pages/hr/ResourceHub";
-import ResourceManagement from "./pages/hr/ResourceManagement";
+import ResourceUploadCenter from "./pages/hr/ResourceUploadCenter";
 import HRReports from "./pages/hr/HRReports";
 import HRSettings from "./pages/hr/HRSettings";
 import NotificationSettings from "./pages/hr/NotificationSettings";
@@ -441,6 +442,31 @@ function OsPrefixRedirect() {
   return <Navigate to={`${stripped}${search}${hash}`} replace />;
 }
 
+const RESOURCE_UPLOAD_ALLOWED_ROLES = new Set([
+  ...TRAINING_ADMIN_ROLES,
+  "super_admin",
+  "hr_team",
+  "ops_manager",
+  "operations_leadership",
+  "exec",
+  "executive_leadership",
+]);
+
+function ResourceUploadAdminRoute() {
+  const { user, loading, roles, isAdmin } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/auth" replace />;
+  const canOpen = isAdmin || roles.some((role) => RESOURCE_UPLOAD_ALLOWED_ROLES.has(role));
+  if (!canOpen) return <Unauthorized area="Resource Upload Center" />;
+  return <ResourceUploadCenter />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -783,7 +809,7 @@ const App = () => (
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
-                  <Route path="/resources" element={<ResourceHub readOnly />} />
+                  <Route path="/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/team" element={<PermissionRoute><Team /></PermissionRoute>} />
                   <Route path="/admin/training-dashboard" element={<Navigate to="/hr/training-center" replace />} />
                   <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingStatistics /></PermissionRoute>} />
@@ -820,17 +846,10 @@ const App = () => (
                   <Route path="/admin/track-analytics" element={<Navigate to="/hr/track-analytics" replace />} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
-                  <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
+                  <Route path="/hr/resources" element={<Navigate to="/hr/resource-management" replace />} />
                   <Route
                     path="/hr/resource-management"
-                    element={
-                      <PermissionRoute
-                        permission="hr.resources.view"
-                        allowedRoles={TRAINING_ADMIN_ROLES}
-                      >
-                        <ResourceManagement />
-                      </PermissionRoute>
-                    }
+                    element={<ResourceUploadAdminRoute />}
                   />
                   {/* Legacy aliases — always land on the canonical admin workspace */}
                   <Route path="/resource-management" element={<Navigate to="/hr/resource-management" replace />} />

@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 const APP = fs.readFileSync("src/App.tsx", "utf8");
 const TMC = fs.readFileSync("src/pages/hr/TrainingManagementCenter.tsx", "utf8");
-const RM = fs.readFileSync("src/pages/hr/ResourceManagement.tsx", "utf8");
+const RUC = fs.readFileSync("src/pages/hr/ResourceUploadCenter.tsx", "utf8");
 const TRAINING = fs.readFileSync("src/pages/os/OSTraining.tsx", "utf8");
 const WELCOME = fs.readFileSync("src/pages/os/OSWelcomeToBlossom.tsx", "utf8");
 const SD = fs.readFileSync("src/lib/training/academyData.ts", "utf8");
@@ -50,9 +50,9 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
   });
 
   it("Resource Management header upload button is renamed and scrolls to bulk panel", () => {
-    expect(RM).toContain("Upload Resource");
-    expect(RM).not.toMatch(/Upload File/);
-    expect(RM).toContain('id="bulk-upload"');
+    expect(RUC).toContain("Resource Upload Center");
+    expect(RUC).not.toMatch(/Upload File/);
+    expect(RUC).toContain('id="bulk-upload"');
   });
 
   it("Training Academy hero links to Welcome to Blossom and Resource Library", () => {
@@ -86,7 +86,7 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
   });
 
   it("no href=\"#\" appears in Training Management / Resource Management / Welcome", () => {
-    for (const src of [TMC, RM, WELCOME]) {
+    for (const src of [TMC, RUC, WELCOME]) {
       expect(src).not.toMatch(/href="#"/);
     }
   });

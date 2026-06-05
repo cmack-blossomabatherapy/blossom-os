@@ -18,7 +18,7 @@ const PANEL = fs.readFileSync(
   "src/components/resources/ResourceBulkUploadPanel.tsx",
   "utf8",
 );
-const MGMT = fs.readFileSync("src/pages/hr/ResourceManagement.tsx", "utf8");
+const MGMT = fs.readFileSync("src/pages/hr/ResourceUploadCenter.tsx", "utf8");
 const LIBRARY = fs.readFileSync("src/pages/os/OSResourceLibrary.tsx", "utf8");
 
 function makeCandidate(overrides: Partial<UploadCandidate> = {}): UploadCandidate {

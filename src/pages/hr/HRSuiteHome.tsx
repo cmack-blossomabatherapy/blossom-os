@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,11 @@ import {
   trainingAssignments,
   formatRelative,
 } from "@/lib/hr/trainingCenterData";
+import type { AppRole } from "@/lib/roles";
+
+const RESOURCE_UPLOAD_ADMIN_ROLES: AppRole[] = [
+  "admin", "training_admin", "hr", "hr_admin", "hr_manager", "ops_manager", "exec",
+];
 
 const newHires = [
   { name: "Aiden Brooks", role: "RBT", state: "GA", startedDaysAgo: 3 },
@@ -35,6 +41,8 @@ const complianceAlerts = [
 
 export default function HRSuiteHome() {
   const navigate = useNavigate();
+  const { isAdmin, roles } = useAuth();
+  const canUploadResources = isAdmin || roles.some((role) => RESOURCE_UPLOAD_ADMIN_ROLES.includes(role));
 
   const totalAssigned = trainingAssignments.reduce((s, a) => s + a.assigned, 0);
   const totalCompleted = trainingAssignments.reduce((s, a) => s + a.completed, 0);
@@ -258,11 +266,13 @@ export default function HRSuiteHome() {
               label="Assign training"
               onClick={() => navigate("/hr/training-center?action=assign")}
             />
-            <QuickAction
-              icon={Upload}
-              label="Upload Resource"
-              onClick={() => navigate("/hr/resource-management#bulk-upload")}
-            />
+            {canUploadResources && (
+              <QuickAction
+                icon={Upload}
+                label="Upload Resource"
+                onClick={() => navigate("/hr/resource-management#bulk-upload")}
+              />
+            )}
             <QuickAction
               icon={BookOpen}
               label="Open Training Academy"
