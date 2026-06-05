@@ -573,7 +573,7 @@ export default function OSBCBA() {
               <Quick to="/parent-training" icon={Baby} label="Parent training" />
               <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/authorizations" icon={FileSignature} label="View PRs" />
-              <Quick to="/ask-blossom" icon={Sparkles} label="Ask Blossom AI" />
+              <Quick to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
             </div>
           </Card>
 
@@ -596,7 +596,7 @@ export default function OSBCBA() {
               ].map((q) => (
                 <li key={q}>
                   <Link
-                    to={`/ask-blossom?q=${encodeURIComponent(q)}`}
+                    to={`/ai/assistant?q=${encodeURIComponent(q)}`}
                     className="group flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm text-foreground transition hover:bg-muted"
                   >
                     <span className="truncate">{q}</span>

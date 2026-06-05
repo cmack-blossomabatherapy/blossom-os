@@ -11,7 +11,7 @@ export const ROLE_HOME: Record<OSRole, string> = {
   scheduling_team: "/scheduling-workspace",
   recruiting_team: "/recruiting/workspace",
   hr_team: "/evaluations",
-  billing_finance: "/finance-dashboard",
+  billing_finance: "/billing-finance",
   qa_team: "/reports",
   payroll_coordinator: "/reports",
   bcba: "/training/journeys/bcba",

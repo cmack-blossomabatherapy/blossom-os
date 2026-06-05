@@ -731,7 +731,7 @@ export default function OSCommandCenter() {
               </div>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 <QuickAction icon={CalendarDays} label="Open Scheduling" onClick={() => navigate("/scheduling")} />
-                <QuickAction icon={UserPlus} label="Open Recruiting" onClick={() => navigate("/recruiting")} />
+                <QuickAction icon={UserPlus} label="Open Recruiting" onClick={() => navigate("/recruiting/workspace")} />
                 <QuickAction icon={ShieldAlert} label="Escalate" />
               </div>
             </div>
@@ -776,7 +776,7 @@ export default function OSCommandCenter() {
               icon={UserPlus}
               title="Recruiting Snapshot"
               sub="Lightweight visibility — not an ATS"
-              action={<button onClick={() => navigate("/recruiting")} className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold text-foreground/70 hover:text-foreground">Open <ChevronRight className="h-3 w-3" /></button>}
+              action={<button onClick={() => navigate("/recruiting/workspace")} className="inline-flex items-center gap-0.5 text-[11.5px] font-semibold text-foreground/70 hover:text-foreground">Open <ChevronRight className="h-3 w-3" /></button>}
             />
             <div className="grid grid-cols-2 gap-3 px-5 pb-5 pt-4 sm:grid-cols-3">
               <MiniStat label="Active applicants" value={recruitingStats.activeApplicants} tone="neutral" />

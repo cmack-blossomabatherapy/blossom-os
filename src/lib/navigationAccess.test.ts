@@ -25,9 +25,9 @@ describe("navigationAccess", () => {
     expect(canAccessRouteForRoles("/resources", ["rbt"])).toBe(true);
   });
 
-  it("hr can access /hr/directory and /phone-calls but not /clients", () => {
+  it("hr can access /hr/directory and /phone but not /clients", () => {
     expect(canAccessRouteForRoles("/hr/directory", ["hr"])).toBe(true);
-    expect(canAccessRouteForRoles("/phone-calls", ["hr"])).toBe(true);
+    expect(canAccessRouteForRoles("/phone", ["hr"])).toBe(true);
     expect(canAccessRouteForRoles("/clients", ["hr"])).toBe(false);
   });
 });

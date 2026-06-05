@@ -163,7 +163,7 @@ export default function OSRBTTrainingAcademy() {
           </div>
           <p className="mt-2 text-sm text-foreground">Stuck on something? We're here.</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <SupportLink to="/ask-blossom" icon={Sparkles} label="Ask Blossom AI" />
+            <SupportLink to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
             <SupportLink to="/rbt/help" icon={LifeBuoy} label="Get help" />
             <SupportLink to="/rbt/messages?focus=training" icon={MessageSquare} label="Contact training" />
           </div>

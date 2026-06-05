@@ -577,7 +577,7 @@ export default function OpsResourceLibrary() {
 
       <div className="text-[12px] text-muted-foreground">
         Looking for company-wide SOPs?{" "}
-        <Link to="/sop" className="text-primary hover:opacity-80">
+        <Link to="/resource-library" className="text-primary hover:opacity-80">
           Open the full Resource Library
         </Link>
         .

@@ -193,7 +193,7 @@ export default function OSAuthorizationResources() {
               <Bookmark className="mr-1.5 h-3.5 w-3.5" /> Saved ({saved.size})
             </Button>
             <Button asChild size="sm" className="rounded-full">
-              <Link to="/ask-blossom"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ask Blossom AI</Link>
             </Button>
           </div>
         </header>

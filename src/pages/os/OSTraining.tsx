@@ -181,7 +181,7 @@ export default function OSTraining() {
                   <Play className="mr-1.5 h-3.5 w-3.5" /> Continue Learning
                 </Button>
               ) : (
-                <Button size="sm" className="rounded-full" onClick={() => navigate("/sop")}>
+                <Button size="sm" className="rounded-full" onClick={() => navigate("/resource-library")}>
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open SOP Library
                 </Button>
               )}

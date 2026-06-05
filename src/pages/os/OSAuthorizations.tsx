@@ -273,7 +273,7 @@ export default function OSAuthorizations() {
               <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/ask-blossom"><Sparkles className="mr-1.5 h-4 w-4" /> Ask Blossom AI</Link>
+              <Link to="/ai/assistant"><Sparkles className="mr-1.5 h-4 w-4" /> Ask Blossom AI</Link>
             </Button>
             <Button size="sm" onClick={() => toast("New authorization — coming soon")}>
               <Plus className="mr-1.5 h-4 w-4" /> New Authorization

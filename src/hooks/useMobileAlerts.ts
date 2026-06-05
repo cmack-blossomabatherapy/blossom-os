@@ -231,7 +231,7 @@ async function fetchAlerts(): Promise<MobileAlert[]> {
       title: denied ? "Authorization denied" : `${a.kind} auth expiring`,
       body: [child && `Client: ${child}`, payor, a.next_action].filter(Boolean).join(" · "),
       source: "Authorizations",
-      href: a.client_id ? `/authorizations-dashboard?focus=${a.client_id}&tab=submission&alert=au-${a.id}` : undefined,
+      href: a.client_id ? `/authorizations?focus=${a.client_id}&tab=submission&alert=au-${a.id}` : undefined,
       dueLabel: a.expiration_date ? dueLabelFor(a.expiration_date) : undefined,
       createdAt: a.updated_at as string,
     });

@@ -20,7 +20,7 @@ export const sdStatePerformance: SdReport = {
     { id: "p3", label: "Retention 90d", value: "94%", rawValue: 94, change: "+1pt", trend: "up", drillTo: "/clients" },
     { id: "p4", label: "Cancellation Rate", value: "8.1%", rawValue: 8.1, change: "-0.6pt", trend: "up", drillTo: "/scheduling" },
     { id: "p5", label: "Auth Risks", value: "9", rawValue: 9, change: "+2", trend: "down", drillTo: "/authorizations" },
-    { id: "p6", label: "Recruiting Pipeline", value: "27", rawValue: 27, change: "+5", trend: "up", drillTo: "/recruiting" },
+    { id: "p6", label: "Recruiting Pipeline", value: "27", rawValue: 27, change: "+5", trend: "up", drillTo: "/recruiting/workspace" },
   ],
   insights: [
     { tone: "ok", text: "Hours/active client trending up — operational efficiency improving." },
@@ -51,7 +51,7 @@ export const sdStaffing: SdReport = {
   ],
   actions: [
     { label: "Open Scheduling", tone: "primary", href: "/scheduling" },
-    { label: "Open Recruiting", href: "/recruiting" },
+    { label: "Open Recruiting", href: "/recruiting/workspace" },
     { label: "Assign Staff", href: "/staff" },
     { label: "Escalate to Ops", href: "/operations" },
   ],
@@ -110,10 +110,10 @@ export const sdAuthPrRiskAlerts: RiskAlert[] = [];
 /* ---------- 5. Recruiting Pipeline ---------- */
 export const sdRecruiting: SdReport = {
   kpis: [
-    { id: "r1", label: "Active Applicants", value: "62", rawValue: 62, change: "+8", trend: "up", drillTo: "/recruiting" },
-    { id: "r2", label: "BCBA Pipeline", value: "9", rawValue: 9, change: "+2", trend: "up", drillTo: "/recruiting" },
-    { id: "r3", label: "RBT Pipeline", value: "53", rawValue: 53, change: "+6", trend: "up", drillTo: "/recruiting" },
-    { id: "r4", label: "Interviews / Wk", value: "21", rawValue: 21, change: "+3", trend: "up", drillTo: "/recruiting" },
+    { id: "r1", label: "Active Applicants", value: "62", rawValue: 62, change: "+8", trend: "up", drillTo: "/recruiting/workspace" },
+    { id: "r2", label: "BCBA Pipeline", value: "9", rawValue: 9, change: "+2", trend: "up", drillTo: "/recruiting/workspace" },
+    { id: "r3", label: "RBT Pipeline", value: "53", rawValue: 53, change: "+6", trend: "up", drillTo: "/recruiting/workspace" },
+    { id: "r4", label: "Interviews / Wk", value: "21", rawValue: 21, change: "+3", trend: "up", drillTo: "/recruiting/workspace" },
     { id: "r5", label: "Onboarding", value: "12", rawValue: 12, change: "−1", trend: "neutral", drillTo: "/employee-ops" },
     { id: "r6", label: "Orientation Done", value: "84%", rawValue: 84, change: "+4pt", trend: "up", drillTo: "/training" },
   ],
@@ -123,7 +123,7 @@ export const sdRecruiting: SdReport = {
     { tone: "info", text: "Indeed converting 2x ZipRecruiter — rebalance spend." },
   ],
   actions: [
-    { label: "Open Recruiting", tone: "primary", href: "/recruiting" },
+    { label: "Open Recruiting", tone: "primary", href: "/recruiting/workspace" },
     { label: "Open Onboarding", href: "/employee-ops" },
     { label: "Pull Indeed Funnel" },
   ],
@@ -220,7 +220,7 @@ export const sdBottlenecks: SdReport = {
     { id: "k1", label: "Intake Stuck", value: "4", rawValue: 4, change: "+1", trend: "down", drillTo: "/intake" },
     { id: "k2", label: "Auth Stuck", value: "6", rawValue: 6, change: "0", trend: "neutral", drillTo: "/authorizations" },
     { id: "k3", label: "Onboarding Stuck", value: "3", rawValue: 3, change: "−1", trend: "up", drillTo: "/employee-ops" },
-    { id: "k4", label: "Recruiting Stuck", value: "2", rawValue: 2, change: "0", trend: "neutral", drillTo: "/recruiting" },
+    { id: "k4", label: "Recruiting Stuck", value: "2", rawValue: 2, change: "0", trend: "neutral", drillTo: "/recruiting/workspace" },
     { id: "k5", label: "Staffing Stuck", value: "8", rawValue: 8, change: "+2", trend: "down", drillTo: "/staff" },
     { id: "k6", label: "QA Delays", value: "5", rawValue: 5, change: "+1", trend: "down", drillTo: "/qa" },
   ],
@@ -253,7 +253,7 @@ export const sdComparison: SdReport = {
   ],
   actions: [
     { label: "Open State Benchmarks", tone: "primary", href: "/analytics" },
-    { label: "Share Playbook", href: "/sop" },
+    { label: "Share Playbook", href: "/resource-library" },
   ],
 };
 

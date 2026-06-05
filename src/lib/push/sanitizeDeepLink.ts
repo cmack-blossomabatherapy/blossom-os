@@ -12,8 +12,8 @@ const CATEGORY_FALLBACKS: Record<string, string> = {
   qa: "/qa",
   staffing: "/staffing",
   intake: "/leads",
-  billing: "/finance-dashboard",
-  compliance: "/qa-dashboard",
+  billing: "/billing-finance",
+  compliance: "/qa-workspace",
   tasks: "/tasks",
 };
 

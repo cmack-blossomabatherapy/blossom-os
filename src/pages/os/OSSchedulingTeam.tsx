@@ -337,7 +337,7 @@ export default function OSSchedulingTeam() {
                 ].map(({ label, q }) => (
                   <Link
                     key={label}
-                    to={`/ask-blossom?scope=scheduling&q=${encodeURIComponent(q)}`}
+                    to={`/ai/assistant?scope=scheduling&q=${encodeURIComponent(q)}`}
                     className="rounded-full border border-border/70 bg-card px-2.5 py-1 text-[11.5px] text-foreground/80 hover:bg-muted/40"
                   >
                     {label}
