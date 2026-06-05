@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Lock, CheckCircle2, Play, ChevronRight, Calendar } from "lucide-react";
+import { Lock, CheckCircle2, Play, ChevronRight, Calendar, Sparkles, ArrowRight, Clock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -54,10 +54,16 @@ export function SDJourneyView({ trainings }: Props) {
 
   // Current week/day = first incomplete day
   const currentDayState = dayStates.find((s) => s.completed < s.total) ?? dayStates[dayStates.length - 1];
+  const currentDayDef = SD_JOURNEY_STRUCTURE
+    .find((w) => w.week === currentDayState.week)?.days
+    .find((d) => d.day === currentDayState.day);
+  const currentWeekDef = SD_JOURNEY_STRUCTURE.find((w) => w.week === currentDayState.week);
+  const nextModuleId = currentDayState.ids.find((id) => getProgress(id).status !== "completed");
+  const nextTraining = nextModuleId ? byId.get(nextModuleId) : undefined;
 
   return (
     <div className="space-y-6">
-      {/* Journey summary */}
+      {/* Journey summary + current focus */}
       <div className="rounded-3xl border border-border/70 bg-card p-6">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
@@ -67,6 +73,7 @@ export function SDJourneyView({ trainings }: Props) {
             <h3 className="mt-1 text-[18px] font-semibold tracking-tight">State Director Training Journey</h3>
             <p className="mt-0.5 text-[13px] text-muted-foreground">
               Currently on <span className="font-medium text-foreground">Week {currentDayState.week}, Day {currentDayState.day}</span>
+              {currentDayDef ? <> · <span className="text-foreground">{currentDayDef.title}</span></> : null}
             </p>
           </div>
           <div className="text-right">
@@ -79,6 +86,51 @@ export function SDJourneyView({ trainings }: Props) {
           <span>{totalDone} of {allIds.length} modules complete</span>
           <span>Days unlock sequentially</span>
         </div>
+
+        {(currentWeekDef || nextTraining) && (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {currentWeekDef && (
+              <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+                <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Sparkles className="h-3 w-3" /> Current focus
+                </p>
+                <p className="mt-1.5 text-[13px] font-semibold text-foreground">
+                  Week {currentWeekDef.week} · {currentWeekDef.title}
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{currentWeekDef.goal}</p>
+              </div>
+            )}
+            {nextTraining ? (
+              <Link
+                to={`/training/${nextTraining.id}`}
+                className="group rounded-2xl border border-primary/30 bg-primary/[0.04] p-4 transition-colors hover:bg-primary/[0.08]"
+              >
+                <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <ArrowRight className="h-3 w-3" /> Next action
+                </p>
+                <p className="mt-1.5 text-[13px] font-semibold text-foreground">{nextTraining.title}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="rounded-full border border-border/60 bg-background px-2 py-0.5">{nextTraining.type}</span>
+                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {nextTraining.estimatedMinutes} min</span>
+                  {nextTraining.required && <span className="text-primary">Required</span>}
+                </div>
+                <p className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-primary group-hover:underline">
+                  Open module <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                </p>
+              </Link>
+            ) : (
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+                <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3" /> All caught up
+                </p>
+                <p className="mt-1.5 text-[13px] font-semibold text-foreground">No outstanding modules.</p>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  You're up to date on the State Director journey. Reach out to your mentor for next steps.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Weeks */}
@@ -133,7 +185,7 @@ export function SDJourneyView({ trainings }: Props) {
                         <div className="min-w-0">
                           <p className="text-[13px] font-medium">Day {d.day} · {d.title}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {state.completed}/{state.total} modules · {d.modules.length} placeholder{d.modules.length === 1 ? "" : "s"}
+                            {state.completed}/{state.total} modules
                           </p>
                         </div>
                       </div>
