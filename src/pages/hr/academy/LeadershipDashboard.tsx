@@ -356,6 +356,70 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
         </div>
       </div>
 
+      {/* Launch Setup */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-teal-600" />
+          <p className="text-sm font-medium">Launch Setup</p>
+          <span className="text-[11px] text-muted-foreground">
+            Day-one readiness for this trainee.
+          </span>
+        </div>
+        <ul className="divide-y rounded-xl border bg-card">
+          {launchSetup.map((c) => (
+            <li key={c.key} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm">{c.label}</p>
+                <p className="text-[11px] text-muted-foreground">{c.note}</p>
+              </div>
+              <SetupStatusChip status={c.status} />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Welcome assets */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Welcome to Blossom — assets</p>
+        <ul className="divide-y rounded-xl border bg-card">
+          {welcomeAssets.map((a) => (
+            <li key={a.key} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm">{a.label}</p>
+                <p className="text-[11px] text-muted-foreground">{a.note}</p>
+              </div>
+              <AssetStatusChip status={a.status} />
+            </li>
+          ))}
+        </ul>
+        <p className="text-[11px] text-muted-foreground">
+          Pending videos do not block training — the learner can continue with written guidance and mentor review.
+        </p>
+      </div>
+
+      {/* Pending SOP resources */}
+      {pendingSops.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">SOP resources pending</p>
+          <ul className="divide-y rounded-xl border bg-card">
+            {pendingSops.slice(0, 8).map((s) => (
+              <li key={s.key} className="flex items-center justify-between gap-3 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm truncate">{s.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{s.note}</p>
+                </div>
+                <AssetStatusChip status={s.status} />
+              </li>
+            ))}
+          </ul>
+          {pendingSops.length > 8 && (
+            <p className="text-[11px] text-muted-foreground">
+              +{pendingSops.length - 8} more SOP resources pending.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Launch readiness checklist */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
