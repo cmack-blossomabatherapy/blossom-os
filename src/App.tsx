@@ -821,7 +821,19 @@ const App = () => (
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
-                  <Route path="/hr/resource-management" element={<ResourceManagement />} />
+                  <Route
+                    path="/hr/resource-management"
+                    element={
+                      <PermissionRoute
+                        permission="hr.resources.view"
+                        allowedRoles={TRAINING_ADMIN_ROLES}
+                      >
+                        <ResourceManagement />
+                      </PermissionRoute>
+                    }
+                  />
+                  {/* Legacy aliases — always land on the canonical admin workspace */}
+                  <Route path="/resource-management" element={<Navigate to="/hr/resource-management" replace />} />
                   <Route path="/hr/assistant" element={<HRAssistant />} />
                   <Route path="/hr/welcome" element={<Welcome />} />
                   <Route path="/hr/recognition" element={<Recognition />} />

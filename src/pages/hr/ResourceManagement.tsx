@@ -29,6 +29,7 @@ import {
   computeBatchSummary,
 } from "@/components/resources/UploadBatchSummary";
 import type { ResourceUploadStatus } from "@/lib/resources/resourceData";
+import { SafeBoundary } from "@/components/common/SafeBoundary";
 
 const ALL_ROLES: OSRole[] = [
   "intake_coordinator","authorization_coordinator","scheduling_team","recruiting_team",
@@ -39,7 +40,9 @@ const ALL_ROLES: OSRole[] = [
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 export default function ResourceManagement() {
-  const [items, setItems] = useState<Resource[]>(seedResources);
+  const [items, setItems] = useState<Resource[]>(() =>
+    Array.isArray(seedResources) ? seedResources : [],
+  );
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<ResourceCategoryId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ResourceStatus | "all">("all");
@@ -54,11 +57,23 @@ export default function ResourceManagement() {
   // actually happens.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.hash !== "#bulk-upload") return;
-    const t = window.setTimeout(() => {
-      uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
-    return () => window.clearTimeout(t);
+    const scrollIfRequested = () => {
+      if (window.location.hash !== "#bulk-upload") return;
+      // Wait for the panel to mount before scrolling — guards against
+      // hash arriving before #bulk-upload exists in the tree.
+      const tryScroll = (attempt = 0) => {
+        const el = uploadRef.current ?? document.getElementById("bulk-upload");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (attempt < 10) {
+          window.setTimeout(() => tryScroll(attempt + 1), 80);
+        }
+      };
+      tryScroll();
+    };
+    scrollIfRequested();
+    window.addEventListener("hashchange", scrollIfRequested);
+    return () => window.removeEventListener("hashchange", scrollIfRequested);
   }, []);
 
   const filtered = useMemo(() => {
@@ -133,27 +148,33 @@ export default function ResourceManagement() {
         </div>
 
         {/* Pass 4 — upload batch summary cards */}
-        <UploadBatchSummary
-          counts={computeBatchSummary(items, queueCounts ?? {}, failedUploads)}
-        />
+        <SafeBoundary label="Upload batch summary">
+          <UploadBatchSummary
+            counts={computeBatchSummary(items ?? [], queueCounts ?? {}, failedUploads ?? 0)}
+          />
+        </SafeBoundary>
 
         {/* Pass 2 — bulk upload + review queues */}
         <div id="bulk-upload" ref={uploadRef} className="scroll-mt-24">
-        <ResourceBulkUploadPanel
-          existingResources={items}
-          onCountsChange={({ counts: c, failed }) => {
-            setQueueCounts(c);
-            setFailedUploads(failed);
-          }}
-          onPublish={(added) => {
-            setItems((prev) => [...added, ...prev]);
-            toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
-          }}
-        />
+        <SafeBoundary label="Resource upload panel" retryHref="/hr/resource-management">
+          <ResourceBulkUploadPanel
+            existingResources={items ?? []}
+            onCountsChange={({ counts: c, failed }) => {
+              setQueueCounts(c);
+              setFailedUploads(failed);
+            }}
+            onPublish={(added) => {
+              setItems((prev) => [...added, ...prev]);
+              toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
+            }}
+          />
+        </SafeBoundary>
         </div>
 
         {/* Pass 4 — per-batch QA checklist */}
-        <UploadQAChecklist />
+        <SafeBoundary label="Upload QA checklist">
+          <UploadQAChecklist />
+        </SafeBoundary>
 
         {/* MAIN */}
         <div className="grid gap-6 lg:grid-cols-[240px_1fr_320px]">
