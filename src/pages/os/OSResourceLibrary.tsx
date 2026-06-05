@@ -538,11 +538,28 @@ export default function OSResourceLibrary() {
                 )}
 
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button asChild>
-                    <a href={selected.url || selected.fileUrl || "#"} target="_blank" rel="noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" /> Open resource
-                    </a>
-                  </Button>
+                  {(() => {
+                    const href = selected.url || selected.fileUrl;
+                    const pending = !href || selected.attachmentStatus === "pending_upload";
+                    if (pending) {
+                      return (
+                        <div
+                          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 h-10 text-xs text-muted-foreground"
+                          data-testid="resource-attachment-pending"
+                        >
+                          <ClipboardList className="h-4 w-4" />
+                          Attachment pending — file will be linked once it's added to the Resource Library.
+                        </div>
+                      );
+                    }
+                    return (
+                      <Button asChild>
+                        <a href={href} target="_blank" rel="noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" /> Open resource
+                        </a>
+                      </Button>
+                    );
+                  })()}
                   <Button variant="outline" onClick={() => toggleFavorite(selected.id)}>
                     <Star className={cn("mr-2 h-4 w-4", favorites.has(selected.id) && "fill-current text-amber-500")} />
                     {favorites.has(selected.id) ? "Favorited" : "Favorite"}
