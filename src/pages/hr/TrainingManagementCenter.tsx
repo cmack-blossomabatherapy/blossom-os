@@ -276,6 +276,7 @@ function useUserAssignments(): TrainingAssignment[] {
 
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
+  const navigate = useNavigate();
   const [nav, setNav] = useState<NavId>("control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
