@@ -272,9 +272,16 @@ export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
   // ---------------------------------------------------------------------------
   const profile = getUserAccessProfile({ roles });
   const isAdminLike = roles.includes("admin");
+  const trainingAdminPrefixes = ["/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"];
+  const isTrainingAdminSubRoute = trainingAdminPrefixes.some((p) => routeMatches(pathname, p));
   const sensitivePrefixes = ["/admin", "/integrations", "/permissions"];
   for (const prefix of sensitivePrefixes) {
-    if (routeMatches(pathname, prefix) && !isAdminLike && !rbacCanAccessRoute(profile, pathname)) {
+    if (
+      routeMatches(pathname, prefix) &&
+      !isAdminLike &&
+      !isTrainingAdminSubRoute &&
+      !rbacCanAccessRoute(profile, pathname)
+    ) {
       return false;
     }
   }
