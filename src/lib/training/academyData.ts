@@ -833,7 +833,7 @@ interface AcademyState {
   journeys: RoleJourney[];
 }
 
-const STORAGE_KEY = "blossom.training.academy.v8";
+const STORAGE_KEY = "blossom.training.academy.v9";
 
 function loadInitial(): AcademyState {
   if (typeof window === "undefined") {
