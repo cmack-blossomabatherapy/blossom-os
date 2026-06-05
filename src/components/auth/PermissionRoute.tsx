@@ -4,6 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import type { AppRole } from "@/lib/roles";
 import { Unauthorized } from "./Unauthorized";
+// RBAC Pass 2 TODO:
+// PermissionRoute still consults useAuth().hasPerm + allowedRoles directly.
+// Migrating it to consult getUserAccessProfile(roles, state) from
+// @/lib/rbac risks regressing per-feature permission gating (every route
+// would need a mapped department/permission). Defer until route ↔ RBAC
+// permission mapping is exhaustive. See docs/department-access-model.md
+// "Pass 2 Integration Notes".
 
 interface Props {
   children: ReactNode;
