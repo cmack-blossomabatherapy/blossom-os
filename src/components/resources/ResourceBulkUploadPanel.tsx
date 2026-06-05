@@ -12,6 +12,7 @@ import {
   inferRolesForUpload,
   summarizeUploadQueue,
   UPLOAD_STATUS_LABEL,
+  isDuplicateCandidate,
   type Resource,
   type ResourceCategoryId,
   type ResourceUploadStatus,
@@ -66,8 +67,15 @@ function guessCategory(name: string): ResourceCategoryId {
  */
 export function ResourceBulkUploadPanel({
   onPublish,
+  existingResources = [],
+  onCountsChange,
 }: {
   onPublish?: (added: Resource[]) => void;
+  existingResources?: Resource[];
+  onCountsChange?: (info: {
+    counts: Record<ResourceUploadStatus, number>;
+    failed: number;
+  }) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [candidates, setCandidates] = useState<UploadCandidate[]>([]);
@@ -77,6 +85,11 @@ export function ResourceBulkUploadPanel({
   const [activeQueue, setActiveQueue] = useState<ResourceUploadStatus | "all">("ready_to_upload");
 
   const counts = useMemo(() => summarizeUploadQueue(candidates), [candidates]);
+
+  useMemo(() => {
+    onCountsChange?.({ counts, failed: Object.keys(errors).length });
+    return null;
+  }, [counts, errors, onCountsChange]);
 
   function addFiles(list: FileList | null) {
     if (!list) return;
@@ -160,6 +173,12 @@ export function ResourceBulkUploadPanel({
     activeQueue === "all" ? true : c.uploadStatus === activeQueue,
   );
 
+  const duplicateNames = new Set(
+    candidates
+      .filter((c) => isDuplicateCandidate(c, existingResources))
+      .map((c) => c.fileName),
+  );
+
   return (
     <section
       data-testid="resource-bulk-upload-panel"
@@ -240,6 +259,7 @@ export function ResourceBulkUploadPanel({
         {filtered.map((c) => {
           const idx = candidates.indexOf(c);
           const err = errors[c.fileName];
+          const isDup = duplicateNames.has(c.fileName);
           return (
             <article
               key={`${c.fileName}-${idx}`}
@@ -253,6 +273,15 @@ export function ResourceBulkUploadPanel({
                     {resourceCategories.find((cat) => cat.id === c.category)?.name} · {c.fileName}
                   </p>
                   <p className="mt-1.5 text-[12px] text-muted-foreground">{c.reviewNote}</p>
+                  {isDup && (
+                    <div
+                      data-testid="upload-candidate-duplicate"
+                      className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11.5px] text-amber-800"
+                    >
+                      <AlertTriangle className="h-3 w-3" />
+                      Possible duplicate — a published resource with this title already exists in this category. Review before publishing.
+                    </div>
+                  )}
                   {err && (
                     <div
                       data-testid="upload-candidate-error"
