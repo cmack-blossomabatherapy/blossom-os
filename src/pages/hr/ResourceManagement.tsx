@@ -23,6 +23,12 @@ import {
 import type { OSRole } from "@/lib/os/permissions";
 import { toast } from "@/hooks/use-toast";
 import { ResourceBulkUploadPanel } from "@/components/resources/ResourceBulkUploadPanel";
+import { UploadQAChecklist } from "@/components/resources/UploadQAChecklist";
+import {
+  UploadBatchSummary,
+  computeBatchSummary,
+} from "@/components/resources/UploadBatchSummary";
+import type { ResourceUploadStatus } from "@/lib/resources/resourceData";
 
 const ALL_ROLES: OSRole[] = [
   "intake_coordinator","authorization_coordinator","scheduling_team","recruiting_team",
@@ -39,6 +45,8 @@ export default function ResourceManagement() {
   const [statusFilter, setStatusFilter] = useState<ResourceStatus | "all">("all");
   const [selected, setSelected] = useState<Resource | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [queueCounts, setQueueCounts] = useState<Record<ResourceUploadStatus, number> | null>(null);
+  const [failedUploads, setFailedUploads] = useState(0);
 
   const filtered = useMemo(() => {
     const s = query.trim().toLowerCase();
@@ -106,13 +114,26 @@ export default function ResourceManagement() {
           <StatCard label="Archived" value={counts.archived} tone="slate" />
         </div>
 
+        {/* Pass 4 — upload batch summary cards */}
+        <UploadBatchSummary
+          counts={computeBatchSummary(items, queueCounts ?? {}, failedUploads)}
+        />
+
         {/* Pass 2 — bulk upload + review queues */}
         <ResourceBulkUploadPanel
+          existingResources={items}
+          onCountsChange={({ counts: c, failed }) => {
+            setQueueCounts(c);
+            setFailedUploads(failed);
+          }}
           onPublish={(added) => {
             setItems((prev) => [...added, ...prev]);
             toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
           }}
         />
+
+        {/* Pass 4 — per-batch QA checklist */}
+        <UploadQAChecklist />
 
         {/* MAIN */}
         <div className="grid gap-6 lg:grid-cols-[240px_1fr_320px]">
