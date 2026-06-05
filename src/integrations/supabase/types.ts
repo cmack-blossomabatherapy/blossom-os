@@ -5358,18 +5358,29 @@ export type Database = {
       }
       hr_resources: {
         Row: {
+          attachment_status: string
           category: Database["public"]["Enums"]["hr_resource_category"]
           created_at: string
+          departments: string[]
           description: string | null
+          file_name: string | null
+          file_size: number | null
           id: string
           is_active: boolean
           is_pinned: boolean
           kind: Database["public"]["Enums"]["hr_resource_kind"]
+          mime_type: string | null
           parent_id: string | null
           position: number
+          resource_type: string | null
+          sensitivity: string
+          source_note: string | null
+          storage_bucket: string | null
           storage_path: string | null
+          tags: string[]
           title: string
           updated_at: string
+          upload_status: string
           uploaded_by: string | null
           uploaded_by_name: string | null
           url: string | null
@@ -5378,18 +5389,29 @@ export type Database = {
           visibility_states: string[]
         }
         Insert: {
+          attachment_status?: string
           category?: Database["public"]["Enums"]["hr_resource_category"]
           created_at?: string
+          departments?: string[]
           description?: string | null
+          file_name?: string | null
+          file_size?: number | null
           id?: string
           is_active?: boolean
           is_pinned?: boolean
           kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          mime_type?: string | null
           parent_id?: string | null
           position?: number
+          resource_type?: string | null
+          sensitivity?: string
+          source_note?: string | null
+          storage_bucket?: string | null
           storage_path?: string | null
+          tags?: string[]
           title: string
           updated_at?: string
+          upload_status?: string
           uploaded_by?: string | null
           uploaded_by_name?: string | null
           url?: string | null
@@ -5398,18 +5420,29 @@ export type Database = {
           visibility_states?: string[]
         }
         Update: {
+          attachment_status?: string
           category?: Database["public"]["Enums"]["hr_resource_category"]
           created_at?: string
+          departments?: string[]
           description?: string | null
+          file_name?: string | null
+          file_size?: number | null
           id?: string
           is_active?: boolean
           is_pinned?: boolean
           kind?: Database["public"]["Enums"]["hr_resource_kind"]
+          mime_type?: string | null
           parent_id?: string | null
           position?: number
+          resource_type?: string | null
+          sensitivity?: string
+          source_note?: string | null
+          storage_bucket?: string | null
           storage_path?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
+          upload_status?: string
           uploaded_by?: string | null
           uploaded_by_name?: string | null
           url?: string | null
