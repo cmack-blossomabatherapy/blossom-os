@@ -640,3 +640,134 @@ export const aiSamplePrompts = [
   "Find scheduling templates.",
   "Where is the insurance cheat sheet?",
 ];
+
+// ============================================================================
+// Pass 2 — Bulk upload workflow helpers
+// ============================================================================
+
+/** A candidate resource awaiting bulk upload to the Resource Library. */
+export interface UploadCandidate {
+  /** Local file name (no filesystem path leaks into user-facing UI). */
+  fileName: string;
+  title: string;
+  description: string;
+  resourceType: NonNullable<Resource["resourceType"]>;
+  category: ResourceCategoryId;
+  type: ResourceType;
+  roles: OSRole[];
+  departments: string[];
+  states: string[];
+  tags: string[];
+  sensitivity: NonNullable<Resource["sensitivity"]>;
+  uploadStatus: ResourceUploadStatus;
+  /** Free-form note for reviewers (why it's held, what's needed). */
+  reviewNote?: string;
+}
+
+/** Default role assignments by Resource Library category. */
+export const CATEGORY_ROLE_DEFAULTS: Record<ResourceCategoryId, OSRole[]> = {
+  hr:            ["hr_team", "operations_leadership", "executive_leadership", "super_admin"],
+  leadership:    ["state_director", "operations_leadership", "executive_leadership", "hr_team", "super_admin"],
+  insurance:     ["authorization_coordinator", "bcba", "state_director", "operations_leadership", "super_admin"],
+  workflows:     ["operations_leadership", "state_director", "super_admin"],
+  templates:     ["operations_leadership", "state_director", "super_admin"],
+  systems:       ["operations_leadership", "state_director", "super_admin"],
+  training:      [],
+  sops:          ["operations_leadership", "state_director", "super_admin"],
+  communication: [],
+  operational:   ["operations_leadership", "state_director", "super_admin"],
+};
+
+/** Tag-driven role overrides applied on top of category defaults. */
+const TAG_ROLE_RULES: { match: RegExp; roles: OSRole[] }[] = [
+  { match: /\brbt\b/i,               roles: ["rbt", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\bbcba\b/i,              roles: ["bcba", "qa_team", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(scheduling|centralreach|central reach)\b/i,
+                                     roles: ["scheduling_team", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(recruiting|interview|offer letter)\b/i,
+                                     roles: ["recruiting_team", "hr_team", "operations_leadership", "super_admin"] },
+  { match: /\b(authorization|auth|payer|reauth)\b/i,
+                                     roles: ["authorization_coordinator", "bcba", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\b(payroll|finance|bonus|billing)\b/i,
+                                     roles: ["billing_finance", "payroll_coordinator", "hr_team", "operations_leadership", "executive_leadership", "super_admin"] },
+  { match: /\b(state director|leadership|playbook)\b/i,
+                                     roles: ["state_director", "operations_leadership", "executive_leadership", "hr_team", "super_admin"] },
+  { match: /\b(phone system|retell|call routing)\b/i,
+                                     roles: ["intake_coordinator", "scheduling_team", "authorization_coordinator", "recruiting_team", "hr_team", "state_director", "operations_leadership", "super_admin"] },
+  { match: /\bhandbook|hr policy|hr policies|hr forms\b/i,
+                                     roles: ["hr_team", "operations_leadership", "executive_leadership", "super_admin"] },
+];
+
+/** Infer a sensible role assignment from a candidate's category + tags + title. */
+export function inferRolesForUpload(input: {
+  category: ResourceCategoryId;
+  title?: string;
+  tags?: string[];
+}): OSRole[] {
+  const base = new Set<OSRole>(CATEGORY_ROLE_DEFAULTS[input.category] ?? []);
+  const haystack = [input.title ?? "", ...(input.tags ?? [])].join(" ").toLowerCase();
+  for (const rule of TAG_ROLE_RULES) {
+    if (rule.match.test(haystack)) for (const r of rule.roles) base.add(r);
+  }
+  // Super admin always sees everything via the visibility helper, but include
+  // it explicitly so the chips read correctly.
+  base.add("super_admin");
+  return Array.from(base);
+}
+
+/** Decide an initial `uploadStatus` for a freshly added candidate. */
+export function classifyUploadCandidate(input: {
+  fileName: string;
+  title?: string;
+  tags?: string[];
+  path?: string;
+}): { uploadStatus: ResourceUploadStatus; sensitivity: NonNullable<Resource["sensitivity"]>; reason: string } {
+  const haystack = [input.fileName, input.title ?? "", input.path ?? "", ...(input.tags ?? [])].join(" ");
+
+  if (/_Sensitive_Not_For_Shared_Context/i.test(haystack)) {
+    return { uploadStatus: "excluded", sensitivity: "excluded", reason: "Source marked sensitive — never publish." };
+  }
+  if (containsCredentialKeywords(haystack)) {
+    return { uploadStatus: "vault_only", sensitivity: "admin_only", reason: "Credential / login / vault material — admin vault only." };
+  }
+  if (containsPrivacyReviewKeywords(haystack)) {
+    return { uploadStatus: "privacy_review", sensitivity: "role_restricted", reason: "May contain PHI/PII or a filled-in/personal document." };
+  }
+  if (/\.heic$|\.pages$|\.numbers$|\.key$/i.test(input.fileName)) {
+    return { uploadStatus: "needs_conversion", sensitivity: "public_internal", reason: "File format must be converted before publishing." };
+  }
+  return { uploadStatus: "ready_to_upload", sensitivity: "public_internal", reason: "Metadata looks safe — ready to publish." };
+}
+
+/** Convert a published Resource to an admin-visible `Resource` with `pending_upload`. */
+export function candidateToResource(c: UploadCandidate, uploadedBy = "Bulk import"): Resource {
+  const now = new Date().toISOString();
+  return {
+    id: `r-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title: c.title,
+    description: c.description || "—",
+    type: c.type,
+    category: c.category,
+    status: c.uploadStatus === "published" ? "Published" : "Draft",
+    roles: c.roles,
+    departments: c.departments,
+    states: c.states,
+    tags: c.tags,
+    uploadedBy,
+    createdAt: now,
+    updatedAt: now,
+    resourceType: c.resourceType,
+    sensitivity: c.sensitivity,
+    attachmentStatus: "pending_upload",
+    uploadStatus: c.uploadStatus,
+    sourceNote: "Pending storage upload — metadata only.",
+  };
+}
+
+/** Summary counts used by the review queue UI. */
+export function summarizeUploadQueue(candidates: UploadCandidate[]) {
+  const byStatus = {} as Record<ResourceUploadStatus, number>;
+  for (const s of Object.keys(UPLOAD_STATUS_LABEL) as ResourceUploadStatus[]) byStatus[s] = 0;
+  for (const c of candidates) byStatus[c.uploadStatus] += 1;
+  return byStatus;
+}
