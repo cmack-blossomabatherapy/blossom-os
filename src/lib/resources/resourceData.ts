@@ -224,7 +224,9 @@ export const resources: Resource[] = [
   { id:"r-system-logins", title:"Systems & Logins Directory", description:"All Blossom platforms with login URLs and access notes.",
     type:"Link", category:"systems", status:"Published",
     roles:[], departments:[], states:[],
-    tags:["systems","logins"], uploadedBy:"IT", createdAt:daysAgo(140), updatedAt:daysAgo(11), url:"#" },
+    tags:["systems","logins"], uploadedBy:"IT", createdAt:daysAgo(140), updatedAt:daysAgo(11),
+    sensitivity:"admin_only", attachmentStatus:"excluded",
+    sourceNote:"Stored in admin-only vault. Not surfaced in the standard Resource Library." },
 
   // ============ HR (visible only to HR roles) ============
   { id:"r-pto-policy", title:"PTO Policy", description:"Paid time off rules, accruals, and request workflow.",
