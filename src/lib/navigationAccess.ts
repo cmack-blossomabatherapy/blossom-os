@@ -1,4 +1,9 @@
 import type { AppRole } from "@/lib/roles";
+import {
+  canAccessRoute as rbacCanAccessRoute,
+  getUserAccessProfile,
+  hasPermission as rbacHasPermission,
+} from "@/lib/rbac";
 
 export interface RoleNavigationException {
   sectionTitles?: string[];
@@ -256,6 +261,28 @@ export const getSidebarPreviewForRoles = (roles: AppRole[], hasPermission: (perm
 };
 
 export const canAccessRouteForRoles = (pathname: string, roles: AppRole[]) => {
+  // ---------------------------------------------------------------------------
+  // RBAC Pass 2: layer RBAC denials on top of legacy path-based gating.
+  // - Sensitive paths (admin/integrations/permissions/payroll) are denied
+  //   when the RBAC profile says so, regardless of full-nav status.
+  // - Payroll explicitly grants access to roles with view_payroll
+  //   (payroll_admin) without changing other rules.
+  // - For all other paths we still defer to the legacy logic below, so
+  //   navigation behavior remains identical for existing roles.
+  // ---------------------------------------------------------------------------
+  const profile = getUserAccessProfile({ roles });
+  const isAdminLike = roles.includes("admin");
+  const sensitivePrefixes = ["/admin", "/integrations", "/permissions"];
+  for (const prefix of sensitivePrefixes) {
+    if (routeMatches(pathname, prefix) && !isAdminLike && !rbacCanAccessRoute(profile, pathname)) {
+      return false;
+    }
+  }
+  if (routeMatches(pathname, "/payroll") || routeMatches(pathname, "/hr/payroll")) {
+    if (!rbacCanAccessRoute(profile, pathname)) return false;
+    if (rbacHasPermission(profile, "view_payroll")) return true;
+  }
+
   if (hasFullNavigationAccess(roles)) return true;
   const isTrainingAdminRoute = ["/hr/training", "/admin/training-dashboard", "/admin/training-statistics", "/admin/training-assign"].some((prefix) => routeMatches(pathname, prefix));
   if (isTrainingAdminRoute && !roles.some((role) => TRAINING_ADMIN_ROLES.includes(role))) return false;
