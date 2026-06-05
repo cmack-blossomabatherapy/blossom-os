@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin,
   X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
-  FileType2, MessageSquare, Cpu, PlayCircle, Link2,
+  FileType2, MessageSquare, Cpu, PlayCircle, Link2, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOSRole } from "@/contexts/OSRoleContext";
