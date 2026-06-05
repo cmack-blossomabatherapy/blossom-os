@@ -254,6 +254,193 @@ export const resources: Resource[] = [
     tags:["state","playbook","escalation"], uploadedBy:"Operations", createdAt:daysAgo(60), updatedAt:daysAgo(10) },
 ];
 
+// ============================================================================
+// Pass 1 expansion — sanitized shared-folder catalog.
+//
+// These entries represent the documentation that lives in the shared drive
+// (handbooks, SOPs, workflows, templates, payer references, etc.) and the
+// canonical State Director SOPs referenced by the Training Academy. Each
+// entry is created with `attachmentStatus: "pending_upload"` until the
+// actual file or URL is wired up. They render calmly as "Attachment pending"
+// in the Resource Library.
+//
+// Sensitive credential / login / portal-access materials are NOT seeded.
+// ============================================================================
+
+const HR_ROLES: OSRole[] = ["hr_team", "operations_leadership", "executive_leadership", "super_admin"];
+const LEADERSHIP_ROLES: OSRole[] = ["state_director", "operations_leadership", "executive_leadership", "super_admin"];
+const RECRUITING_ROLES: OSRole[] = ["recruiting_team", "hr_team", "operations_leadership", "super_admin"];
+const SCHEDULING_ROLES: OSRole[] = ["scheduling_team", "state_director", "operations_leadership", "super_admin"];
+const AUTH_ROLES: OSRole[] = ["authorization_coordinator", "state_director", "operations_leadership", "super_admin"];
+
+function pending(
+  partial: Omit<Resource, "createdAt" | "updatedAt" | "status" | "attachmentStatus"> &
+    Partial<Pick<Resource, "createdAt" | "updatedAt" | "status" | "attachmentStatus">>,
+): Resource {
+  return {
+    status: "Published",
+    createdAt: daysAgo(7),
+    updatedAt: daysAgo(1),
+    attachmentStatus: "pending_upload",
+    sensitivity: partial.sensitivity ?? "public_internal",
+    sourceNote:
+      partial.sourceNote ??
+      "Attachment pending — file will be linked once it's added to the Resource Library.",
+    ...partial,
+  } as Resource;
+}
+
+// ---- HR Handbooks & policies ----
+const HR_HANDBOOKS: Resource[] = [
+  pending({ id: "r-hr-employee-handbook", title: "Employee Handbook", description: "Company-wide handbook covering conduct, expectations, and policies for all employees.",
+    type: "PDF", category: "hr", roles: [], departments: ["HR"], states: [],
+    tags: ["handbook","hr","policies"], uploadedBy: "HR Team", resourceType: "handbook" }),
+  pending({ id: "r-hr-rbt-handbook", title: "RBT Handbook", description: "Handbook for Registered Behavior Technicians — role expectations, session conduct, and growth path.",
+    type: "PDF", category: "hr", roles: [], departments: ["HR","Clinical"], states: [],
+    tags: ["handbook","rbt"], uploadedBy: "HR Team", resourceType: "handbook" }),
+  pending({ id: "r-hr-bcba-handbook", title: "BCBA Handbook", description: "Handbook for BCBAs — supervision, documentation, and clinical leadership expectations.",
+    type: "PDF", category: "hr", roles: [], departments: ["HR","Clinical"], states: [],
+    tags: ["handbook","bcba"], uploadedBy: "HR Team", resourceType: "handbook" }),
+  pending({ id: "r-hr-state-director-handbook", title: "State Director Handbook", description: "Handbook for State Directors — leadership, accountability, and state ownership expectations.",
+    type: "PDF", category: "hr", roles: LEADERSHIP_ROLES, departments: ["HR","Leadership"], states: [],
+    tags: ["handbook","state director","leadership"], uploadedBy: "HR Team", resourceType: "handbook" }),
+  pending({ id: "r-hr-policies-procedures", title: "HR Policies & Procedures", description: "All current HR policies and operational procedures.",
+    type: "PDF", category: "hr", roles: [], departments: ["HR"], states: [],
+    tags: ["policy","procedures"], uploadedBy: "HR Team", resourceType: "policy" }),
+  pending({ id: "r-hr-forms-templates", title: "HR Forms & Templates", description: "Standard HR forms — change requests, acknowledgements, and templates.",
+    type: "Template", category: "templates", roles: HR_ROLES, departments: ["HR"], states: [],
+    tags: ["forms","templates","hr"], uploadedBy: "HR Team", resourceType: "template" }),
+  pending({ id: "r-hr-rbt-cert-pay-guide", title: "RBT Certification & Pay/Wage Guidance", description: "Certification timelines, wage tiers, and growth path for RBTs.",
+    type: "PDF", category: "hr", roles: [], departments: ["HR","Clinical"], states: [],
+    tags: ["rbt","certification","pay"], uploadedBy: "HR Team", resourceType: "guide" }),
+];
+
+// ---- Recruiting ----
+const RECRUITING_DOCS: Resource[] = [
+  pending({ id: "r-recruiting-workflow", title: "Recruiting Workflow", description: "End-to-end recruiting workflow — sourcing, screening, interview, offer, onboarding.",
+    type: "Workflow", category: "workflows", roles: RECRUITING_ROLES, departments: ["Recruiting"], states: [],
+    tags: ["recruiting","workflow"], uploadedBy: "Recruiting", resourceType: "workflow" }),
+  pending({ id: "r-recruiting-offer-template", title: "Offer Letter Template", description: "Standard offer letter template used by Recruiting.",
+    type: "Template", category: "templates", roles: RECRUITING_ROLES, departments: ["Recruiting"], states: [],
+    tags: ["offer","template"], uploadedBy: "Recruiting", resourceType: "template" }),
+  pending({ id: "r-recruiting-onboarding-checklist", title: "Recruiting Onboarding Checklist", description: "Checklist from accepted offer through Day 30.",
+    type: "Checklist", category: "workflows", roles: RECRUITING_ROLES, departments: ["Recruiting","HR"], states: [],
+    tags: ["onboarding","checklist"], uploadedBy: "Recruiting", resourceType: "checklist" }),
+];
+
+// ---- Scheduling / CentralReach ----
+const SCHEDULING_DOCS: Resource[] = [
+  pending({ id: "r-scheduling-cr-guide", title: "CentralReach Scheduling Guide", description: "Operational guide for scheduling sessions in CentralReach.",
+    type: "PDF", category: "systems", roles: SCHEDULING_ROLES, departments: ["Scheduling"], states: [],
+    tags: ["centralreach","scheduling","guide"], uploadedBy: "Scheduling", resourceType: "guide" }),
+  pending({ id: "r-scheduling-coverage-sop", title: "Coverage Gap Management SOP", description: "How to detect, escalate, and resolve scheduling coverage gaps.",
+    type: "SOP", category: "sops", roles: SCHEDULING_ROLES, departments: ["Scheduling"], states: [],
+    tags: ["coverage","scheduling","sop"], uploadedBy: "Scheduling", resourceType: "sop" }),
+];
+
+// ---- Authorizations ----
+const AUTH_DOCS: Resource[] = [
+  pending({ id: "r-auth-utilization-sop", title: "Utilization Management SOP", description: "Operational utilization management — monitoring actual vs. authorized hours.",
+    type: "SOP", category: "sops", roles: AUTH_ROLES, departments: ["Authorizations"], states: [],
+    tags: ["utilization","authorizations","sop"], uploadedBy: "Auth Team", resourceType: "sop" }),
+  pending({ id: "r-auth-payer-reference", title: "Payer Reference Guide", description: "Per-payer reference — auth windows, documentation requirements, common denials.",
+    type: "PDF", category: "insurance", roles: AUTH_ROLES, departments: ["Authorizations","Billing"], states: [],
+    tags: ["payer","insurance","reference"], uploadedBy: "Auth Team", resourceType: "reference" }),
+];
+
+// ---- Intake / VOB / EOB / Leads ----
+const INTAKE_DOCS_EXTRA: Resource[] = [
+  pending({ id: "r-intake-vob-eob-workflow", title: "VOB / EOB Workflow", description: "Workflow for verifying benefits and reading EOBs for new clients.",
+    type: "Workflow", category: "workflows", roles: INTAKE_ROLES, departments: ["Intake","Billing"], states: [],
+    tags: ["vob","eob","insurance","workflow"], uploadedBy: "Intake", resourceType: "workflow" }),
+  pending({ id: "r-intake-lead-workflow", title: "Lead Lifecycle Workflow", description: "Lead capture through intake conversion.",
+    type: "Workflow", category: "workflows", roles: INTAKE_ROLES, departments: ["Intake"], states: [],
+    tags: ["leads","intake","workflow"], uploadedBy: "Intake", resourceType: "workflow" }),
+];
+
+// ---- Phone system ----
+const PHONE_DOCS: Resource[] = [
+  pending({ id: "r-phone-system-guide", title: "Phone System Operational Guide", description: "How to use the phone system — call routing, voicemail, and call notes.",
+    type: "PDF", category: "systems", roles: [], departments: ["Operations","Intake"], states: [],
+    tags: ["phone","systems","guide"], uploadedBy: "Operations", resourceType: "guide" }),
+];
+
+// ---- Training Academy operational SOPs ----
+const TRAINING_DOCS: Resource[] = [
+  pending({ id: "r-training-academy-sop", title: "Training Academy Operations SOP", description: "How the Training Academy is structured, maintained, and assigned.",
+    type: "SOP", category: "training", roles: HR_ROLES, departments: ["HR","Training"], states: [],
+    tags: ["training","academy","sop"], uploadedBy: "Training", resourceType: "sop" }),
+];
+
+// ---- State Director onboarding / launch readiness ----
+const SD_LAUNCH_DOCS: Resource[] = [
+  pending({ id: "r-sd-launch-checklist", title: "State Director Launch Readiness Checklist", description: "Pre-launch checklist for new State Directors. Mirrors docs/state-director-training-launch-checklist.md.",
+    type: "Checklist", category: "leadership", roles: LEADERSHIP_ROLES, departments: ["Leadership"], states: [],
+    tags: ["state director","launch","checklist"], uploadedBy: "Operations", resourceType: "checklist" }),
+  pending({ id: "r-sd-onboarding-sop", title: "State Director Onboarding SOP", description: "Full onboarding SOP for new State Directors.",
+    type: "SOP", category: "sops", roles: LEADERSHIP_ROLES, departments: ["Leadership","HR"], states: [],
+    tags: ["state director","onboarding","sop"], uploadedBy: "Operations", resourceType: "sop" }),
+];
+
+// ---- Finance / billing / payroll (safe operational refs only) ----
+const FINANCE_DOCS: Resource[] = [
+  pending({ id: "r-billing-overview-guide", title: "Billing Operations Overview", description: "High-level overview of the billing operational flow.",
+    type: "PDF", category: "operational", roles: ["billing_finance","operations_leadership","super_admin"],
+    departments: ["Billing"], states: [], tags: ["billing","overview"], uploadedBy: "Billing", resourceType: "guide" }),
+  pending({ id: "r-payroll-overview-guide", title: "Payroll Operations Overview", description: "High-level overview of payroll operational responsibilities. No PII or rates included.",
+    type: "PDF", category: "operational", roles: ["payroll_coordinator","hr_team","operations_leadership","super_admin"],
+    departments: ["Payroll","HR"], states: [], tags: ["payroll","overview"], uploadedBy: "Payroll", resourceType: "guide" }),
+];
+
+// ---- Auto-generate one Resource per canonical State Director SOP ----
+const SD_SOP_RESOURCES: Resource[] = (() => {
+  const out: Resource[] = [];
+  const seen = new Set<string>();
+  for (const [weekStr, days] of Object.entries(SD_SOPS_BY_WEEK)) {
+    const week = Number(weekStr);
+    for (const [dayStr, list] of Object.entries(days)) {
+      const day = Number(dayStr);
+      for (const sopName of list) {
+        if (seen.has(sopName)) continue;
+        seen.add(sopName);
+        const id = "r-sd-sop-" + sopName
+          .toLowerCase()
+          .replace(/&/g, "and")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        out.push(pending({
+          id,
+          title: sopName,
+          description: `Canonical State Director SOP. Referenced by the Training Academy (Week ${week}, Day ${day}). Source-of-truth document — attachment pending.`,
+          type: "SOP",
+          category: "sops",
+          roles: LEADERSHIP_ROLES,
+          departments: ["State Director Operations"],
+          states: [],
+          tags: ["state director","sop","training academy", `week ${week}`],
+          uploadedBy: "Operations Leadership",
+          resourceType: "sop",
+          sourceNote: "Referenced by the State Director Training Academy. Attachment will be linked once the SOP is published.",
+        }));
+      }
+    }
+  }
+  return out;
+})();
+
+resources.push(
+  ...HR_HANDBOOKS,
+  ...RECRUITING_DOCS,
+  ...SCHEDULING_DOCS,
+  ...AUTH_DOCS,
+  ...INTAKE_DOCS_EXTRA,
+  ...PHONE_DOCS,
+  ...TRAINING_DOCS,
+  ...SD_LAUNCH_DOCS,
+  ...FINANCE_DOCS,
+  ...SD_SOP_RESOURCES,
+);
+
 export const TYPE_ICON: Record<ResourceType, LucideIcon> = {
   SOP: FileText, Workflow: Workflow, Form: ClipboardList, Template: FileType2, Checklist: ClipboardList,
   PDF: FileText, DOCX: FileText, XLSX: FileSpreadsheet, CSV: FileSpreadsheet,
