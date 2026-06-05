@@ -11,6 +11,14 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RETELL_API_KEY = Deno.env.get('RETELL_API_KEY') ?? ''
 const AGENT_ID = 'agent_fb8aaca447d2a6c6703d40d77a'
+const MAX_CALLS_PER_SYNC = 50
+
+function json(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
 
 function pickAnalysis(call: any) {
   const a = call?.call_analysis ?? {}
@@ -59,75 +67,75 @@ function callToRow(call: any) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   if (!RETELL_API_KEY) {
-    return new Response(JSON.stringify({ error: 'RETELL_API_KEY not configured' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'RETELL_API_KEY not configured' }, 500)
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
 
-  // Run the sync in the background so the client doesn't time out.
-  const work = (async () => {
-    let total = 0
-    let inserted = 0
-    let pagination_key: string | undefined
-    try {
-      for (let i = 0; i < 20; i++) {
-      const body: any = {
+  try {
+    const res = await fetch('https://api.retellai.com/v2/list-calls', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RETELL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         filter_criteria: { agent_id: [AGENT_ID] },
-        limit: 100,
+        limit: MAX_CALLS_PER_SYNC,
         sort_order: 'descending',
-      }
-      if (pagination_key) body.pagination_key = pagination_key
+      }),
+    })
 
-      const res = await fetch('https://api.retellai.com/v2/list-calls', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RETELL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const txt = await res.text()
-        console.error('[retell-sync] api error', res.status, txt)
-        return
-      }
-      const data = await res.json()
-      const calls: any[] = Array.isArray(data) ? data : (data?.calls ?? data?.data ?? [])
-      if (!calls.length) break
-
-      const rows = calls.filter((c) => c?.call_id).map(callToRow)
-      total += rows.length
-      // Chunk upserts to avoid statement timeouts on large payloads.
-      const CHUNK = 5
-      for (let j = 0; j < rows.length; j += CHUNK) {
-        const slice = rows.slice(j, j + CHUNK)
-        const { error, count } = await supabase
-          .from('phone_ai_calls')
-          .upsert(slice, { onConflict: 'retell_call_id', count: 'exact' })
-        if (error) {
-          console.error('[retell-sync] upsert error', error)
-          continue
-        }
-        inserted += count ?? slice.length
-      }
-
-      pagination_key = data?.pagination_key
-      if (!pagination_key || calls.length < 100) break
-      }
-      console.log('[retell-sync] done', { total, inserted })
-    } catch (e) {
-      console.error('[retell-sync] background error', e)
+    if (!res.ok) {
+      const txt = await res.text()
+      console.error('[retell-sync] api error', res.status, txt)
+      return json({ error: `Retell API error ${res.status}` }, 502)
     }
-  })()
 
-  // @ts-ignore - EdgeRuntime is available in Supabase edge runtime
-  try { (globalThis as any).EdgeRuntime?.waitUntil?.(work) } catch { /* ignore */ }
+    const data = await res.json()
+    const calls: any[] = Array.isArray(data) ? data : (data?.calls ?? data?.data ?? [])
+    const rows = calls.filter((c) => c?.call_id).map(callToRow)
+    if (rows.length === 0) return json({ ok: true, fetched: 0, inserted: 0, skippedExisting: 0 })
 
-  return new Response(JSON.stringify({ ok: true, queued: true }), {
-    status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+    const ids = rows.map((row) => row.retell_call_id)
+    const { data: existing, error: existingError } = await supabase
+      .from('phone_ai_calls')
+      .select('retell_call_id')
+      .in('retell_call_id', ids)
+
+    if (existingError) {
+      console.error('[retell-sync] existing lookup error', existingError)
+      return json({ error: existingError.message }, 500)
+    }
+
+    const existingIds = new Set((existing ?? []).map((row: any) => row.retell_call_id))
+    const missingRows = rows.filter((row) => !existingIds.has(row.retell_call_id))
+    let inserted = 0
+
+    for (const row of missingRows) {
+      const { error } = await supabase
+        .from('phone_ai_calls')
+        .upsert(row, { onConflict: 'retell_call_id', ignoreDuplicates: true })
+      if (error) {
+        console.error('[retell-sync] insert error', row.retell_call_id, error)
+        continue
+      }
+      inserted += 1
+    }
+
+    const result = {
+      ok: true,
+      fetched: rows.length,
+      inserted,
+      skippedExisting: rows.length - missingRows.length,
+    }
+    console.log('[retell-sync] done', result)
+    return json(result)
+  } catch (e) {
+    console.error('[retell-sync] error', e)
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
+  }
 })
