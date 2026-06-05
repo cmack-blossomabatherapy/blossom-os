@@ -216,12 +216,18 @@ export function SDJourneyView({ trainings }: Props) {
                                 )}>
                                   {done ? <CheckCircle2 className="h-3 w-3" /> : <Play className="h-2.5 w-2.5" />}
                                 </span>
-                                <span className={cn(
-                                  "flex-1 truncate text-[12.5px]",
+                                <div className={cn(
+                                  "flex min-w-0 flex-1 items-center gap-2 text-[12.5px]",
                                   done ? "text-muted-foreground line-through" : "text-foreground",
                                 )}>
-                                  {m}
-                                </span>
+                                  <span className="truncate">{m}</span>
+                                  <span className="hidden sm:inline-flex shrink-0 rounded-full border border-border/60 bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                    {training.type}
+                                  </span>
+                                  <span className="hidden md:inline text-[10.5px] text-muted-foreground">
+                                    {training.estimatedMinutes}m
+                                  </span>
+                                </div>
                                 <span className="text-[10.5px] text-muted-foreground tabular-nums">
                                   {p.progressPercent}%
                                 </span>
