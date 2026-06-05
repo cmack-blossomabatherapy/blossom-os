@@ -45,6 +45,29 @@ export interface Resource {
   fileUrl?: string;
   featured?: boolean;
   pinned?: boolean;
+  /**
+   * Higher-level resource taxonomy used by the Resource Library and Training
+   * Academy. Optional — falls back to `type` when not provided.
+   */
+  resourceType?:
+    | "sop"
+    | "handbook"
+    | "template"
+    | "workflow"
+    | "guide"
+    | "policy"
+    | "checklist"
+    | "training"
+    | "reference";
+  /**
+   * Sensitivity classification. `excluded` and `admin_only` are kept out of
+   * the standard Resource Library by `visibleResources`.
+   */
+  sensitivity?: "public_internal" | "role_restricted" | "admin_only" | "excluded";
+  /** Attachment lifecycle status. `pending_upload` renders as a calm placeholder. */
+  attachmentStatus?: "available" | "pending_upload" | "excluded";
+  /** Friendly note about where the source lives (no sensitive file paths). */
+  sourceNote?: string;
 }
 
 export const resourceCategories: ResourceCategory[] = [
