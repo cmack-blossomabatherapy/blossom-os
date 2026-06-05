@@ -129,7 +129,7 @@ import CeoDashboardV2Insights from "./pages/CeoDashboardV2Insights";
 import CeoDashboardV2RevenueLeaks from "./pages/CeoDashboardV2RevenueLeaks";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import OSAuthorizations from "./pages/os/OSAuthorizations";
-import TrackDetail from "./pages/blossom/TrackDetail";
+import OperationsAcademy from "./pages/blossom/OperationsAcademy";
 import Departments from "./pages/blossom/Departments";
 import DepartmentDetail from "./pages/blossom/DepartmentDetail";
 import BlossomLocations from "./pages/blossom/Locations";
