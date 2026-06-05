@@ -239,6 +239,35 @@ function RiskChip({ risk }: { risk: RiskSignal }) {
   );
 }
 
+function SetupStatusChip({ status }: { status: LaunchSetupStatus }) {
+  const map: Record<LaunchSetupStatus, { label: string; cls: string; Icon: any }> = {
+    ready:   { label: "Ready",   cls: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",       Icon: CheckCircle2 },
+    pending: { label: "Pending", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",   Icon: Clock },
+    missing: { label: "Missing", cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",       Icon: AlertTriangle },
+  };
+  const { label, cls, Icon } = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+      <Icon className="h-3 w-3" /> {label}
+    </span>
+  );
+}
+
+function AssetStatusChip({ status }: { status: AssetStatus }) {
+  const map: Record<AssetStatus, { label: string; cls: string }> = {
+    linked:      { label: "Linked",      cls: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20" },
+    pending:     { label: "Pending",     cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" },
+    optional:    { label: "Optional",    cls: "bg-muted text-muted-foreground border-border" },
+    needs_admin: { label: "Needs admin", cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20" },
+  };
+  const { label, cls } = map[status];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 function ReadinessBar({ value }: { value: number }) {
   const tone = value >= 70 ? "bg-teal-500" : value >= 50 ? "bg-violet-500" : "bg-amber-500";
   return (
