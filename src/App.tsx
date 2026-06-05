@@ -617,7 +617,7 @@ const App = () => (
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />
                   <Route path="/cases" element={<OSCaseManagement />} />
                   <Route path="/staff" element={<OSWorkforce />} />
-                  <Route path="/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
+                  <Route path="/recruiting" element={<Navigate to="/recruiting/workspace" replace />} />
                   <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
                   <Route path="/evaluations" element={<OSEvaluations />} />
