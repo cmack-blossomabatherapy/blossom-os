@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PushNavigationListener } from "@/components/push/PushNavigationListener";
-import MobilePermissions from "./pages/MobilePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionRoute } from "@/components/auth/PermissionRoute";
@@ -57,8 +56,6 @@ import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
 import HRDashboard from "./pages/hr/HRDashboard";
 import HRSuiteHome from "./pages/hr/HRSuiteHome";
 import TrainingManagementCenter from "./pages/hr/TrainingManagementCenter";
@@ -155,8 +152,6 @@ import MyLearning from "./pages/MyLearning";
 import TrainingCatalog from "./pages/TrainingCatalog";
 import Profile from "./pages/Profile";
 import AccountSettings from "./pages/account/AccountSettings";
-import MfaSetup from "./pages/MfaSetup";
-import MfaVerify from "./pages/MfaVerify";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import AdminHub from "./pages/AdminHub";
 import AccessRequests from "./pages/admin/AccessRequests";
@@ -341,7 +336,6 @@ import OSTrainingManage from "./pages/os/OSTrainingManage";
 import OSUserManagement from "./pages/os/OSUserManagement";
 import UsersHome from "./pages/os/users/UsersHome";
 import EmployeeProfilePage from "./pages/os/users/EmployeeProfile";
-import NfcPublicProfile from "./pages/nfc/NfcPublicProfile";
 import IdentityDashboard from "./pages/admin/IdentityDashboard";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import OSKpiScorecards from "./pages/os/OSKpiScorecards";
@@ -353,7 +347,6 @@ import OSBCBATrainingAcademy from "./pages/os/OSBCBATrainingAcademy";
 import OSVobDecisionCenter from "./pages/os/OSVobDecisionCenter";
 import OSCaseManagement from "./pages/os/OSCaseManagement";
 import OSEvaluations from "./pages/os/OSHREvaluations";
-import PublicEvalFormPage from "./pages/os/evaluations/PublicFormPage";
 import OSAiInsights from "./pages/os/OSAiInsights";
 import OSNotifications from "./pages/os/OSNotifications";
 import OSSettings from "./pages/os/OSSettings";
@@ -365,6 +358,8 @@ import OSSchedulingRosterRBTs from "./pages/os/OSSchedulingRosterRBTs";
 import OSSchedulingRosterBCBAs from "./pages/os/OSSchedulingRosterBCBAs";
 import { OSRoleProvider } from "./contexts/OSRoleContext";
 import { useOSRole } from "./contexts/OSRoleContext";
+import { PublicRoutes } from "./routes/publicRoutes";
+import { LegacyDashboardRedirects } from "./routes/legacyRoutes";
 import {
   UserCog, CalendarDays as CIcon, ClipboardList, FolderKanban, DollarSign as DIcon,
   BarChart3, GraduationCap, Building2, Settings as SIcon,
@@ -459,13 +454,7 @@ const App = () => (
                 <PhoneSystemProvider>
                 <PushNavigationListener />
                 <Routes>
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/mfa/setup" element={<MfaSetup />} />
-                <Route path="/mfa/verify" element={<MfaVerify />} />
-                <Route path="/evaluations/form/:token" element={<PublicEvalFormPage />} />
-                <Route path="/nfc/:code" element={<NfcPublicProfile />} />
-                <Route path="/mobile/permissions" element={<ProtectedRoute><MobilePermissions /></ProtectedRoute>} />
+                {PublicRoutes}
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
@@ -771,20 +760,13 @@ const App = () => (
                   <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
                   <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
                   <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
-                  <Route path="/intake-dashboard" element={<Navigate to="/intake" replace />} />
-                  <Route path="/authorizations-dashboard" element={<Navigate to="/authorizations" replace />} />
-                  <Route path="/scheduling-dashboard" element={<Navigate to="/scheduling" replace />} />
-                  <Route path="/staffing-dashboard" element={<Navigate to="/staffing" replace />} />
+                  {LegacyDashboardRedirects}
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
-                  <Route path="/qa-dashboard" element={<Navigate to="/qa-workspace" replace />} />
-                  <Route path="/finance-dashboard" element={<Navigate to="/billing-finance" replace />} />
-                  <Route path="/recruiting-dashboard" element={<Navigate to="/recruiting/workspace" replace />} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/qa" element={<QA />} />
                   <Route path="/qa/:id" element={<QADetail />} />
-                  <Route path="/phone-calls" element={<Navigate to="/phone" replace />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />

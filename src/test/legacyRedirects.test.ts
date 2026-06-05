@@ -3,7 +3,10 @@ import { describe, it, expect } from "vitest";
 describe("App.tsx legacy dashboard redirects", () => {
   it("redirects legacy dashboard routes to canonical OS pages", async () => {
     const fs = await import("node:fs");
-    const src = fs.readFileSync("src/App.tsx", "utf8");
+    const src =
+      fs.readFileSync("src/App.tsx", "utf8") +
+      "\n" +
+      fs.readFileSync("src/routes/legacyRoutes.tsx", "utf8");
 
     const redirects = [
       { from: '"/intake-dashboard"', to: '"/intake"' },
@@ -26,7 +29,10 @@ describe("App.tsx legacy dashboard redirects", () => {
 
   it("does not render legacy dashboard components directly", async () => {
     const fs = await import("node:fs");
-    const src = fs.readFileSync("src/App.tsx", "utf8");
+    const src =
+      fs.readFileSync("src/App.tsx", "utf8") +
+      "\n" +
+      fs.readFileSync("src/routes/legacyRoutes.tsx", "utf8");
 
     const legacyComponents = [
       "IntakeDashboard",
