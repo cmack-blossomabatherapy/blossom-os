@@ -32,6 +32,16 @@ import {
   type RiskSignal,
   type ReadinessStatus,
 } from "@/lib/academy/leadershipReadiness";
+import {
+  computeLaunchSetup,
+  computeWelcomeAssetStatus,
+  computePendingSops,
+  type LaunchSetupCheck,
+  type LaunchSetupStatus,
+  type LaunchAsset,
+  type PendingSop,
+  type AssetStatus,
+} from "@/lib/academy/launchAssets";
 import { toast } from "sonner";
 
 interface Row {
