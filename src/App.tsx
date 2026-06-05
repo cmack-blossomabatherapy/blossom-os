@@ -748,7 +748,7 @@ const App = () => (
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
-                  <Route path="/blossom/academy" element={<OperationsAcademy />} />
+                  <Route path="/blossom/academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />
                   <Route path="/blossom/departments/:id" element={<DepartmentDetail />} />
@@ -831,7 +831,7 @@ const App = () => (
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />
                   {/* Blossom Identity System — top-level Operations route alias */}
-                  <Route path="/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
+                  <Route path="/org-chart" element={<Navigate to="/hr/org-chart" replace />} />
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
                   <Route path="/hr/time-clock" element={<PermissionRoute permission="hr.timeclock.view"><TimeClock /></PermissionRoute>} />
                   <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
@@ -840,7 +840,7 @@ const App = () => (
                   <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><Training /></PermissionRoute>} />
                   <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingDashboard /></PermissionRoute>} />
                   <Route path="/hr/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
-                  <Route path="/admin/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
+                  <Route path="/admin/track-analytics" element={<Navigate to="/hr/track-analytics" replace />} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
