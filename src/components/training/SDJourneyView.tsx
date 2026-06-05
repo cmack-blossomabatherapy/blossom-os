@@ -87,6 +87,12 @@ export function SDJourneyView({ trainings }: Props) {
           <span>Days unlock sequentially</span>
         </div>
 
+        <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">
+          {nextTraining
+            ? "Start here. Review with your mentor as you go — if anything is unclear, ask your mentor."
+            : "No blockers right now — you're all caught up."}
+        </p>
+
         {(currentWeekDef || nextTraining) && (
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {currentWeekDef && (

@@ -32,6 +32,16 @@ import {
   type RiskSignal,
   type ReadinessStatus,
 } from "@/lib/academy/leadershipReadiness";
+import {
+  computeLaunchSetup,
+  computeWelcomeAssetStatus,
+  computePendingSops,
+  type LaunchSetupCheck,
+  type LaunchSetupStatus,
+  type LaunchAsset,
+  type PendingSop,
+  type AssetStatus,
+} from "@/lib/academy/launchAssets";
 import { toast } from "sonner";
 
 interface Row {
@@ -181,7 +191,7 @@ export default function LeadershipDashboard() {
       ) : (
         <div className="space-y-4">
           {rows.map((r) => (
-            <TraineeCard key={r.enrollment.id} row={r} />
+            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} />
           ))}
         </div>
       )}
@@ -229,6 +239,35 @@ function RiskChip({ risk }: { risk: RiskSignal }) {
   );
 }
 
+function SetupStatusChip({ status }: { status: LaunchSetupStatus }) {
+  const map: Record<LaunchSetupStatus, { label: string; cls: string; Icon: any }> = {
+    ready:   { label: "Ready",   cls: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",       Icon: CheckCircle2 },
+    pending: { label: "Pending", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",   Icon: Clock },
+    missing: { label: "Missing", cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",       Icon: AlertTriangle },
+  };
+  const { label, cls, Icon } = map[status];
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+      <Icon className="h-3 w-3" /> {label}
+    </span>
+  );
+}
+
+function AssetStatusChip({ status }: { status: AssetStatus }) {
+  const map: Record<AssetStatus, { label: string; cls: string }> = {
+    linked:      { label: "Linked",      cls: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20" },
+    pending:     { label: "Pending",     cls: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20" },
+    optional:    { label: "Optional",    cls: "bg-muted text-muted-foreground border-border" },
+    needs_admin: { label: "Needs admin", cls: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20" },
+  };
+  const { label, cls } = map[status];
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 function ReadinessBar({ value }: { value: number }) {
   const tone = value >= 70 ? "bg-teal-500" : value >= 50 ? "bg-violet-500" : "bg-amber-500";
   return (
@@ -238,7 +277,15 @@ function ReadinessBar({ value }: { value: number }) {
   );
 }
 
-function TraineeCard({ row }: { row: Row }) {
+function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurriculum | null }) {
+  const launchSetup = computeLaunchSetup({
+    enrollment: row.enrollment,
+    curriculum,
+    hasLeadershipVisibility: true,
+  });
+  const welcomeAssets = computeWelcomeAssetStatus(curriculum);
+  const pendingSops = computePendingSops(curriculum);
+
   function copySummary() {
     const text = buildReadinessSummaryText({
       traineeName: row.traineeName,
@@ -337,6 +384,70 @@ function TraineeCard({ row }: { row: Row }) {
           ))}
         </div>
       </div>
+
+      {/* Launch Setup */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-teal-600" />
+          <p className="text-sm font-medium">Launch Setup</p>
+          <span className="text-[11px] text-muted-foreground">
+            Day-one readiness for this trainee.
+          </span>
+        </div>
+        <ul className="divide-y rounded-xl border bg-card">
+          {launchSetup.map((c) => (
+            <li key={c.key} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm">{c.label}</p>
+                <p className="text-[11px] text-muted-foreground">{c.note}</p>
+              </div>
+              <SetupStatusChip status={c.status} />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Welcome assets */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Welcome to Blossom — assets</p>
+        <ul className="divide-y rounded-xl border bg-card">
+          {welcomeAssets.map((a) => (
+            <li key={a.key} className="flex items-center justify-between gap-3 px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm">{a.label}</p>
+                <p className="text-[11px] text-muted-foreground">{a.note}</p>
+              </div>
+              <AssetStatusChip status={a.status} />
+            </li>
+          ))}
+        </ul>
+        <p className="text-[11px] text-muted-foreground">
+          Pending videos do not block training — the learner can continue with written guidance and mentor review.
+        </p>
+      </div>
+
+      {/* Pending SOP resources */}
+      {pendingSops.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">SOP resources pending</p>
+          <ul className="divide-y rounded-xl border bg-card">
+            {pendingSops.slice(0, 8).map((s) => (
+              <li key={s.key} className="flex items-center justify-between gap-3 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm truncate">{s.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{s.note}</p>
+                </div>
+                <AssetStatusChip status={s.status} />
+              </li>
+            ))}
+          </ul>
+          {pendingSops.length > 8 && (
+            <p className="text-[11px] text-muted-foreground">
+              +{pendingSops.length - 8} more SOP resources pending.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Launch readiness checklist */}
       <div className="space-y-2">
