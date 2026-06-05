@@ -93,8 +93,8 @@ export default function AcademyHome() {
         <GlassHero
           eyebrow="Operations Academy"
           eyebrowIcon={Sparkles}
-          title="Curriculum not yet seeded"
-          subtitle="Once your admin loads the academy curriculum, your five-week immersion will appear here."
+          title="Your academy is almost ready"
+          subtitle="The curriculum hasn't been loaded yet. Once your training admin publishes it, your five-week journey will appear here — including welcome, foundations, systems, authorizations, staffing, and leadership."
         />
       </PageWrap>
     );
@@ -131,7 +131,8 @@ export default function AcademyHome() {
                 </div>
               ) : (
                 <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
-                  No employee record linked to your account. Ask HR to link your login.
+                  We can't find an employee record linked to your account yet, so we can't enroll you in the academy.
+                  Ping HR (or your training coordinator) and ask them to link your login — once that's done, refresh this page and your journey will appear.
                 </div>
               )}
               {hasPerm("hr.training.manage") ? (
