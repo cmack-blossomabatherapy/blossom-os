@@ -248,7 +248,15 @@ function ReadinessBar({ value }: { value: number }) {
   );
 }
 
-function TraineeCard({ row }: { row: Row }) {
+function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurriculum | null }) {
+  const launchSetup = computeLaunchSetup({
+    enrollment: row.enrollment,
+    curriculum,
+    hasLeadershipVisibility: true,
+  });
+  const welcomeAssets = computeWelcomeAssetStatus(curriculum);
+  const pendingSops = computePendingSops(curriculum);
+
   function copySummary() {
     const text = buildReadinessSummaryText({
       traineeName: row.traineeName,
