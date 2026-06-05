@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
+import { SD_JOURNEY_STRUCTURE } from "@/lib/training/academyData";
 
 const APP_TSX = fs.readFileSync("src/App.tsx", "utf8");
 const CONTROL_ROOM = fs.readFileSync(
@@ -38,8 +39,6 @@ describe("Training Management Pass 1 — State Director structure preserved", ()
   });
 
   it("State Director journey export has 5 weeks / 25 days", () => {
-    // Import lazily to avoid loading whole app
-    const { SD_JOURNEY_STRUCTURE } = require("@/lib/training/academyData");
     expect(SD_JOURNEY_STRUCTURE).toHaveLength(5);
     const totalDays = SD_JOURNEY_STRUCTURE.reduce(
       (sum: number, w: any) => sum + w.days.length,
