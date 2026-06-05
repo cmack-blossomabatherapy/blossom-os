@@ -41,6 +41,7 @@ import { useAcademy } from "@/lib/training/academyData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AssignTrainingModal } from "@/components/training/AssignTrainingModal";
 
 interface TraineeRow {
   enrollment: any;
@@ -78,6 +79,7 @@ export default function TrainingControlRoom() {
   const [rows, setRows] = useState<TraineeRow[]>([]);
   const [welcomeAssets, setWelcomeAssets] = useState<LaunchAsset[]>([]);
   const [pendingSops, setPendingSops] = useState<PendingSop[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   useEffect(() => { void load(); }, []);
 
@@ -453,13 +455,20 @@ export default function TrainingControlRoom() {
             title="Open Resource Library"
             detail="Link SOPs and resources to pending modules."
           />
-          <ActionCard
-            to="/admin/training-assign"
+          <ActionCardButton
+            onClick={() => setAssignOpen(true)}
             title="Assign training"
-            detail="Enroll an employee into a journey or module."
+            detail="Enroll an employee into a journey — opens the Assign Training modal."
+            testId="assign-training-action"
           />
         </div>
       </Section>
+      <AssignTrainingModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        welcomeAssets={welcomeAssets}
+        pendingSops={pendingSops}
+      />
     </div>
   );
 }
