@@ -771,3 +771,34 @@ export function summarizeUploadQueue(candidates: UploadCandidate[]) {
   for (const c of candidates) byStatus[c.uploadStatus] += 1;
   return byStatus;
 }
+
+/**
+ * Pass 4 — Duplicate detection.
+ *
+ * Returns true if the existing catalog already contains a published resource
+ * with the same normalized title + category. We intentionally key on
+ * (title, category) rather than file name so re-uploads under a different
+ * file name are still caught. State/role overlap is checked as a tiebreaker.
+ */
+export function isDuplicateCandidate(
+  candidate: UploadCandidate,
+  existing: Resource[],
+): boolean {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const t = norm(candidate.title);
+  return existing.some((r) => {
+    if ((r.uploadStatus ?? "published") !== "published") return false;
+    if (r.category !== candidate.category) return false;
+    if (norm(r.title) !== t) return false;
+    // Role/state overlap (empty = all)
+    const roleOverlap =
+      candidate.roles.length === 0 ||
+      r.roles.length === 0 ||
+      candidate.roles.some((cr) => r.roles.includes(cr));
+    const stateOverlap =
+      candidate.states.length === 0 ||
+      r.states.length === 0 ||
+      candidate.states.some((cs) => r.states.includes(cs));
+    return roleOverlap && stateOverlap;
+  });
+}
