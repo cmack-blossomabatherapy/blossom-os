@@ -606,10 +606,10 @@ const App = () => (
                   <Route path="/training" element={<OSTraining />} />
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
-                  <Route path="/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
+                  <Route path="/billing" element={<Navigate to="/billing-finance" replace />} />
                   <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />
-                  <Route path="/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
-                  <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
+                  <Route path="/revenue" element={<Navigate to="/billing-finance" replace />} />
+                  <Route path="/insurance" element={<Navigate to="/authorizations" replace />} />
                   <Route path="/reports" element={<ReportsHome />} />
                   <Route path="/reports/bcba-performance" element={<OSReportBcbaPerformance />} />
                   <Route path="/reports/qa-supervision-pt" element={<QaSupervisionPtDashboard />} />
@@ -633,7 +633,7 @@ const App = () => (
                   <Route path="/sop" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/resource-library" element={<OSResourceLibrary />} />
                   <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
-                  <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
+                  <Route path="/analytics" element={<Navigate to="/reports" replace />} />
                   <Route path="/tech-requests" element={<OSPlaceholder title="Tech Requests" description="Internal technology support requests." icon={LifeBuoy} />} />
                   <Route path="/internal-requests" element={<OSPlaceholder title="Internal Requests" description="Operational and internal forms and approvals." icon={Inbox} />} />
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
@@ -641,7 +641,7 @@ const App = () => (
                   <Route path="/ai/assistant" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
                   <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
-                  <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
+                  <Route path="/ai/automations" element={<Navigate to="/automations" replace />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/hr" element={<HRSuiteHome />} />
