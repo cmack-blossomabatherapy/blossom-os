@@ -260,8 +260,8 @@ export default function HRSuiteHome() {
             />
             <QuickAction
               icon={Upload}
-              label="Upload SOP"
-              onClick={() => navigate("/hr/training-center?action=upload")}
+              label="Upload Resource"
+              onClick={() => navigate("/hr/resource-management#bulk-upload")}
             />
             <QuickAction
               icon={BookOpen}

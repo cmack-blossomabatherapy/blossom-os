@@ -285,10 +285,17 @@ export default function TrainingManagementCenter() {
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
     search.get("action") === "journey",
   );
-  const [uploadSopOpen, setUploadSopOpen] = useState(
-    search.get("action") === "upload",
-  );
+  const [uploadSopOpen, setUploadSopOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
+
+  // Legacy `?action=upload` used to open an inline upload dialog that
+  // could white-screen on failure. Redirect to the canonical Resource
+  // Management bulk upload panel instead.
+  useEffect(() => {
+    if (search.get("action") === "upload") {
+      navigate("/hr/resource-management#bulk-upload", { replace: true });
+    }
+  }, [search, navigate]);
 
   // Live academy data — single source of truth shared with the Training Academy.
   const academy = useAcademy();
@@ -808,6 +815,7 @@ function ModulesGrid({
 }
 
 function SopsList() {
+  const navigate = useNavigate();
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
@@ -817,7 +825,12 @@ function SopsList() {
             The connective tissue between training and workflows.
           </p>
         </div>
-        <Button variant="outline" size="sm" className="rounded-xl">
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl"
+          onClick={() => navigate("/hr/resource-management#bulk-upload")}
+        >
           <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
         </Button>
       </div>
