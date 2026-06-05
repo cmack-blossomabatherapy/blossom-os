@@ -648,7 +648,7 @@ const App = () => (
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
-                  <Route path="/sop" element={<OSResourceLibrary />} />
+                  <Route path="/sop" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/resource-library" element={<OSResourceLibrary />} />
                   <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
                   <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
