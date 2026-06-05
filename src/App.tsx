@@ -657,7 +657,7 @@ const App = () => (
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
                   <Route path="/ai/assistant" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
-                  <Route path="/ask-blossom" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
+                  <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
