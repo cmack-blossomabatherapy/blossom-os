@@ -71,6 +71,8 @@ import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import TrainingControlRoom from "@/components/training/TrainingControlRoom";
+import { LayoutDashboard } from "lucide-react";
 
 /* ------- Local view-model adapters (Academy → Management Center) ------- */
 
@@ -175,6 +177,7 @@ function toViewJourney(j: RoleJourney): ViewJourney {
 }
 
 type NavId =
+  | "control-room"
   | "journeys"
   | "modules"
   | "onboarding"
@@ -188,6 +191,7 @@ type NavId =
   | "ai";
 
 const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
+  { id: "control-room", label: "Control Room", icon: LayoutDashboard },
   { id: "journeys", label: "Journeys", icon: Compass },
   { id: "modules", label: "Modules", icon: Layers },
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
