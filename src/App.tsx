@@ -760,20 +760,12 @@ const App = () => (
                   <Route path="/ceo-dashboard-v2/logic" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/logic" />} />
                   <Route path="/ceo-dashboard-v2/insights" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/insights" />} />
                   <Route path="/ceo-dashboard-v2/revenue-leaks" element={<LegacyBcbaDashboardRedirect to="/bcba-performance-dashboard/revenue-leaks" />} />
-                  <Route path="/intake-dashboard" element={<Navigate to="/intake" replace />} />
-                  <Route path="/authorizations-dashboard" element={<Navigate to="/authorizations" replace />} />
-                  <Route path="/scheduling-dashboard" element={<Navigate to="/scheduling" replace />} />
-                  <Route path="/staffing-dashboard" element={<Navigate to="/staffing" replace />} />
                   <Route path="/clinic-dashboard" element={<PermissionRoute permission="dashboard.view"><ClinicDashboard /></PermissionRoute>} />
-                  <Route path="/qa-dashboard" element={<Navigate to="/qa-workspace" replace />} />
-                  <Route path="/finance-dashboard" element={<Navigate to="/billing-finance" replace />} />
-                  <Route path="/recruiting-dashboard" element={<Navigate to="/recruiting/workspace" replace />} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/qa" element={<QA />} />
                   <Route path="/qa/:id" element={<QADetail />} />
-                  <Route path="/phone-calls" element={<Navigate to="/phone" replace />} />
                   <Route path="/documents" element={<Documents />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/automations" element={<PermissionRoute permission="automations.view" allowedRoles={AUTOMATIONS_ROLES}><Automations /></PermissionRoute>} />
