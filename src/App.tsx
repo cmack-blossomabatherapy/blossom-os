@@ -667,12 +667,12 @@ const App = () => (
                   <Route path="/user-management" element={<UsersHome />} />
                   <Route path="/user-management/admin" element={<OSUserManagement />} />
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
-                  <Route path="/admin/device-inventory" element={<DeviceInventory />} />
+                  <Route path="/admin/device-inventory" element={<AdminRoute><DeviceInventory /></AdminRoute>} />
                   <Route path="/notifications" element={<OSNotifications />} />
                   <Route path="/settings" element={<OSSettings />} />
                   <Route path="/state-management" element={<OSPlaceholder title="State Management" description="Multi-state operational setup and configuration." icon={MapPin} />} />
-                  <Route path="/permissions" element={<OSPermissions />} />
-                  <Route path="/integrations" element={<Integrations />} />
+                  <Route path="/permissions" element={<AdminRoute><OSPermissions /></AdminRoute>} />
+                  <Route path="/integrations" element={<AdminRoute><Integrations /></AdminRoute>} />
                   <Route path="/phone" element={<PhoneDashboard />} />
                   <Route path="/phone/lookup" element={<PhoneLookup />} />
                   <Route path="/phone/shared" element={<PhoneShared />} />
@@ -713,11 +713,11 @@ const App = () => (
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/notification-preferences" element={<NotificationPreferences />} />
                   <Route path="/account/settings" element={<AccountSettings />} />
-                  <Route path="/admin" element={<AdminHub />} />
-                  <Route path="/admin/access-requests" element={<AccessRequests />} />
-                  <Route path="/admin/login-vault" element={<LoginVaultAdmin />} />
-                  <Route path="/admin/onboarding-progress" element={<AdminOnboardingProgress />} />
-                  <Route path="/admin/journey-editor" element={<JourneyEditor />} />
+                  <Route path="/admin" element={<AdminRoute><AdminHub /></AdminRoute>} />
+                  <Route path="/admin/access-requests" element={<AdminRoute><AccessRequests /></AdminRoute>} />
+                  <Route path="/admin/login-vault" element={<AdminRoute><LoginVaultAdmin /></AdminRoute>} />
+                  <Route path="/admin/onboarding-progress" element={<AdminRoute><AdminOnboardingProgress /></AdminRoute>} />
+                  <Route path="/admin/journey-editor" element={<AdminRoute><JourneyEditor /></AdminRoute>} />
                   <Route path="/admin/identity" element={<AdminRoute><IdentityDashboard /></AdminRoute>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Onboarding journey */}
