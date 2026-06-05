@@ -476,7 +476,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
-                  <Route path="/executive/overview" element={<ExecutiveOverview />} />
+                  <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
                   <Route path="/executive/briefing" element={<ExecutiveBriefing />} />
                   <Route path="/executive/organizational-health" element={<OrganizationalHealth />} />
@@ -607,8 +607,8 @@ const App = () => (
                   <Route path="/intake" element={<OSIntakeWorkspace />} />
                   <Route path="/clients" element={<ClientsRouter />} />
                   <Route path="/intake/clients" element={<OSIntakeClients />} />
-                  <Route path="/intake/leads" element={<OSLeadsV2 />} />
-                  <Route path="/intake/vob-decision" element={<OSPlaceholder title="VOB Decision Center" description="VOB review, payment plan decisions, and financial readiness for intake." icon={ShieldCheck} />} />
+                  <Route path="/intake/leads" element={<Navigate to="/leads" replace />} />
+                  <Route path="/intake/vob-decision" element={<Navigate to="/vob-decision-center" replace />} />
                   <Route path="/intake/authorizations" element={<OSIntakeAuthorizations />} />
                   <Route path="/authorizations" element={<AuthorizationsRouter />} />
                   <Route path="/scheduling" element={<OSScheduling />} />
@@ -617,7 +617,7 @@ const App = () => (
                   <Route path="/scheduling/bcbas" element={<OSSchedulingRosterBCBAs />} />
                   <Route path="/cases" element={<OSCaseManagement />} />
                   <Route path="/staff" element={<OSWorkforce />} />
-                  <Route path="/recruiting" element={<OSPlaceholder title="Recruiting" description="Hiring pipeline, applicants, interviews, offers." icon={UserPlus} />} />
+                  <Route path="/recruiting" element={<Navigate to="/recruiting/workspace" replace />} />
                   <Route path="/credentialing" element={<OSPlaceholder title="Credentialing" description="Insurance + provider credentialing status and renewals." icon={BadgeCheck} />} />
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
                   <Route path="/evaluations" element={<OSEvaluations />} />
@@ -625,7 +625,7 @@ const App = () => (
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<OSPlaceholder title="Billing" description="Revenue overview, payment plan tracking, outstanding balances, auth/payment indicators." icon={DIcon} />} />
-                  <Route path="/payroll" element={<OSPlaceholder title="Payroll" description="Payroll operations, runs, and adjustments." icon={Wallet} />} />
+                  <Route path="/payroll" element={<Navigate to="/payroll/workspace" replace />} />
                   <Route path="/revenue" element={<OSPlaceholder title="Revenue Analytics" description="Financial performance and revenue trends." icon={TrendingUp} />} />
                   <Route path="/insurance" element={<OSPlaceholder title="Insurance Tracking" description="Insurance status, coverage visibility, payer mix." icon={ShieldAlert} />} />
                   <Route path="/reports" element={<ReportsHome />} />
@@ -648,7 +648,7 @@ const App = () => (
                   <Route path="/kpi" element={<OSKpiScorecards />} />
                   <Route path="/vob-decision-center" element={<OSVobDecisionCenter />} />
                   <Route path="/workflows" element={<OSPlaceholder title="Workflow Center" description="Operational automations and workflow management." icon={Workflow} />} />
-                  <Route path="/sop" element={<OSResourceLibrary />} />
+                  <Route path="/sop" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/resource-library" element={<OSResourceLibrary />} />
                   <Route path="/authorizations/resources" element={<OSAuthorizationResources />} />
                   <Route path="/analytics" element={<OSPlaceholder title="Analytics Hub" description="Advanced operational analytics and dashboards." icon={PieChart} />} />
@@ -657,7 +657,7 @@ const App = () => (
                   <Route path="/open-issues" element={<OSPlaceholder title="Open Issues" description="Operational blockers and issue tracking." icon={AlertTriangle} />} />
                   <Route path="/projects" element={<OSPlaceholder title="Project Tracking" description="Internal projects and initiatives." icon={KanbanSquare} />} />
                   <Route path="/ai/assistant" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
-                  <Route path="/ask-blossom" element={<OSComingSoon title="Ask Blossom AI" description="Your operational AI copilot is on the way. Soon you'll be able to ask Blossom anything about your workflows, reports, and operations." icon={Sparkles} />} />
+                  <Route path="/ask-blossom" element={<Navigate to="/ai/assistant" replace />} />
                   <Route path="/ai/insights" element={<OSAiInsights />} />
                   <Route path="/ai/automations" element={<OSPlaceholder title="Automation Center" description="Automation management and runs." icon={Zap} />} />
                   <Route path="/ai/predictive" element={<OSPlaceholder title="Predictive Alerts" description="Future bottleneck and risk detection." icon={Activity} />} />
@@ -730,7 +730,7 @@ const App = () => (
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
                   <Route path="/onboarding/week/2" element={<WeekTwo />} />
                   <Route path="/onboarding/week/3" element={<WeekThree />} />
-                  <Route path="/onboarding/week/4" element={<WeeksFourFive />} />
+                  <Route path="/onboarding/week/4" element={<Navigate to="/onboarding/week/4-5" replace />} />
                   <Route path="/onboarding/week/4-5" element={<WeeksFourFive />} />
                   <Route path="/onboarding/graduation" element={<Graduation />} />
                   <Route path="/onboarding/welcome" element={<OnboardingWelcome />} />
@@ -748,7 +748,7 @@ const App = () => (
                   <Route path="/onboarding/complete" element={<OnboardingComplete />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/dashboard" element={<RoleDashboardRedirect />} />
-                  <Route path="/blossom/academy" element={<OperationsAcademy />} />
+                  <Route path="/blossom/academy" element={<Navigate to="/academy" replace />} />
                   <Route path="/blossom/academy/:trackId" element={<TrackDetail />} />
                   <Route path="/blossom/departments" element={<Departments />} />
                   <Route path="/blossom/departments/:id" element={<DepartmentDetail />} />
@@ -831,7 +831,7 @@ const App = () => (
                   <Route path="/hr/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
                   <Route path="/hr/org-chart/manage" element={<PermissionRoute permission="hr.employees.edit"><OrgChartManage /></PermissionRoute>} />
                   {/* Blossom Identity System — top-level Operations route alias */}
-                  <Route path="/org-chart" element={<PermissionRoute><OrgChart /></PermissionRoute>} />
+                  <Route path="/org-chart" element={<Navigate to="/hr/org-chart" replace />} />
                   <Route path="/hr/onboarding" element={<PermissionRoute permission="hr.onboarding.manage"><OnboardingCenter /></PermissionRoute>} />
                   <Route path="/hr/time-clock" element={<PermissionRoute permission="hr.timeclock.view"><TimeClock /></PermissionRoute>} />
                   <Route path="/hr/hours" element={<PermissionRoute permission="hr.hours.view"><Hours /></PermissionRoute>} />
@@ -840,7 +840,7 @@ const App = () => (
                   <Route path="/hr/training" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><Training /></PermissionRoute>} />
                   <Route path="/hr/training-dashboard" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingDashboard /></PermissionRoute>} />
                   <Route path="/hr/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
-                  <Route path="/admin/track-analytics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrackAnalytics /></PermissionRoute>} />
+                  <Route path="/admin/track-analytics" element={<Navigate to="/hr/track-analytics" replace />} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
                   <Route path="/hr/resources" element={<PermissionRoute permission="hr.resources.view"><ResourceHub /></PermissionRoute>} />
