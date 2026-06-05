@@ -510,7 +510,7 @@ export default function OSBCBAWorkspace() {
               <Quick to="/scheduling" icon={CalendarDays} label="Scheduling" />
               <Quick to="/clients" icon={ClipboardCheck} label="Clients" />
               <Quick to="/authorizations" icon={NotebookPen} label="Authorizations" />
-              <Quick to="/ask-blossom" icon={Sparkles} label="Ask Blossom AI" />
+              <Quick to="/ai/assistant" icon={Sparkles} label="Ask Blossom AI" />
             </div>
           </Card>
 
@@ -532,7 +532,7 @@ export default function OSBCBAWorkspace() {
                 "Summarize scheduling problems on my caseload.",
               ].map((q) => (
                 <li key={q}>
-                  <Link to={`/ask-blossom?q=${encodeURIComponent(q)}`} className="group flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm text-foreground hover:bg-muted">
+                  <Link to={`/ai/assistant?q=${encodeURIComponent(q)}`} className="group flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm text-foreground hover:bg-muted">
                     <span className="truncate">{q}</span>
                     <ChevronRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-foreground" />
                   </Link>

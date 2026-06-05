@@ -253,7 +253,7 @@ export const sdComparison: SdReport = {
   ],
   actions: [
     { label: "Open State Benchmarks", tone: "primary", href: "/analytics" },
-    { label: "Share Playbook", href: "/sop" },
+    { label: "Share Playbook", href: "/resource-library" },
   ],
 };
 

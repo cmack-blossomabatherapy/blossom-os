@@ -94,7 +94,7 @@ const SEED_TRAININGS: Training[] = [
       { id: "c3", item: "Log your first lead end-to-end", required: true },
     ],
     resources: [
-      { id: "r1", type: "Link", title: "Resource Library entry", url: "/sop" },
+      { id: "r1", type: "Link", title: "Resource Library entry", url: "/resource-library" },
     ],
   },
   {
@@ -397,7 +397,7 @@ const SEED_TRAININGS: Training[] = [
     resources: [
       { id: "r1", type: "Link", title: "QA Dashboard", url: "/qa-team" },
       { id: "r2", type: "Link", title: "QA Workspace", url: "/qa-workspace" },
-      { id: "r3", type: "Link", title: "Ask Blossom AI", url: "/ask-blossom-ai" },
+      { id: "r3", type: "Link", title: "Ask Blossom AI", url: "/ai/assistant" },
     ],
   },
   {

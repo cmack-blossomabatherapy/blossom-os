@@ -298,7 +298,7 @@ export default function CeoDashboardV2RevenueLeaks() {
   function authsUrl(kpi: string, focus?: string) {
     const p = new URLSearchParams({ kpi });
     if (focus) p.set("focus", focus);
-    return `/authorizations-dashboard?${p.toString()}`;
+    return `/authorizations?${p.toString()}`;
   }
   // Deep-link into V2 dashboard; we already wired ?bcba=&drawer= there.
   function v2Url(opts: { bcba?: string; drawer?: string } = {}) {

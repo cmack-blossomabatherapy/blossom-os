@@ -134,7 +134,7 @@ export const MODULE_ROUTES: Record<OSModule, string> = {
   kpi: "/kpi",
   vob: "/vob-decision-center",
   workflows: "/workflows",
-  sop: "/sop",
+  sop: "/resource-library",
   marketing: "/marketing",
   analytics_hub: "/analytics",
   marketing_dashboard: "/marketing-dashboard",

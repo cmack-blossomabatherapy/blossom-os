@@ -582,7 +582,7 @@ function AskBlossomPanel({
         {prompts.map((p) => (
           <Link
             key={p.label}
-            to={`/ask-blossom?scope=scheduling&q=${encodeURIComponent(p.q)}`}
+            to={`/ai/assistant?scope=scheduling&q=${encodeURIComponent(p.q)}`}
             className="block w-full text-left text-xs text-foreground rounded-lg bg-card border border-border/60 px-2.5 py-2 hover:border-primary/40 hover:bg-primary/5 transition"
           >
             {p.label}

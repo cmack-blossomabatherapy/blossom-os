@@ -93,7 +93,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
       { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
       { to: "/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
-      { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+      { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
       { to: "/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
     ],
   },
@@ -384,7 +384,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       id: "resources", label: "Resources", items: [
         { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
   ];
@@ -406,7 +406,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       id: "resources", label: "Resources", items: [
         { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
   ];
@@ -485,7 +485,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
         { to: "/hr/org-chart", label: "Org Chart", icon: Network, module: "hr", disabled: true },
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
         { to: "/hr/training-academy", label: "Training Academy", icon: GraduationCap, module: "training" },
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
+        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop", disabled: true },
       ],
     },
     PHONE_SYSTEM_SECTION,
@@ -507,7 +507,7 @@ export function OSShell({ children, rightRail }: { children: ReactNode; rightRai
       id: "resources", label: "Resources", items: [
         { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
         { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
-        { to: "/sop", label: "Resource Library", icon: BookOpen, module: "sop" },
+        { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
       ],
     },
   ];

@@ -101,7 +101,7 @@ const INTENTS: Intent[] = [
       content: `**VOB process — quick walkthrough:**\n\n1. Confirm payer + member ID\n2. Run eligibility (real-time or payer portal)\n3. Capture deductible, OOP max, copay, coinsurance\n4. Document auth requirements & supervision ratios\n5. Post decision in VOB Decision Center\n6. Escalate ambiguous payers to the Auth Lead\n\nFull SOP lives in the SOP Library.`,
       suggestedActions: [
         ACT("v1", "open_workflow", "Open VOB Decision Center", "/vob-decision-center"),
-        ACT("v2", "open_record", "View full SOP", "/sop"),
+        ACT("v2", "open_record", "View full SOP", "/resource-library"),
       ],
       recordsAccessed: ["sop:vob"],
     }),
