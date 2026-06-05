@@ -5,6 +5,7 @@ import {
   FileType2, BookOpen, type LucideIcon,
 } from "lucide-react";
 import type { OSRole } from "@/lib/os/permissions";
+import { SD_SOPS_BY_WEEK } from "@/lib/training/academyData";
 
 export type ResourceType =
   | "SOP" | "Workflow" | "Form" | "Template" | "Checklist"
