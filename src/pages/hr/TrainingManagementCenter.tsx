@@ -288,7 +288,7 @@ export default function TrainingManagementCenter() {
   const [uploadSopOpen, setUploadSopOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
 
-  // Legacy `?action=upload` used to open an inline Upload SOP dialog that
+  // Legacy `?action=upload` used to open an inline upload dialog that
   // could white-screen on failure. Redirect to the canonical Resource
   // Management bulk upload panel instead.
   useEffect(() => {
