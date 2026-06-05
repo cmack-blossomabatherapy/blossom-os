@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OSShell } from "@/pages/os/OSShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,19 @@ export default function ResourceManagement() {
   const [addOpen, setAddOpen] = useState(false);
   const [queueCounts, setQueueCounts] = useState<Record<ResourceUploadStatus, number> | null>(null);
   const [failedUploads, setFailedUploads] = useState(0);
+  const uploadRef = useRef<HTMLDivElement | null>(null);
+
+  // Deep-link support: /hr/resource-management#bulk-upload scrolls/focuses
+  // the bulk upload panel so admin Upload Resource CTAs land where work
+  // actually happens.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#bulk-upload") return;
+    const t = window.setTimeout(() => {
+      uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const filtered = useMemo(() => {
     const s = query.trim().toLowerCase();
@@ -101,7 +114,12 @@ export default function ResourceManagement() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline"><FolderPlus className="mr-2 h-4 w-4" />Create Category</Button>
-            <Button variant="outline"><Upload className="mr-2 h-4 w-4" />Upload File</Button>
+            <Button
+              variant="outline"
+              onClick={() => uploadRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              <Upload className="mr-2 h-4 w-4" />Upload Resource
+            </Button>
             <Button onClick={() => setAddOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Resource</Button>
           </div>
         </header>
@@ -120,6 +138,7 @@ export default function ResourceManagement() {
         />
 
         {/* Pass 2 — bulk upload + review queues */}
+        <div id="bulk-upload" ref={uploadRef} className="scroll-mt-24">
         <ResourceBulkUploadPanel
           existingResources={items}
           onCountsChange={({ counts: c, failed }) => {
@@ -131,6 +150,7 @@ export default function ResourceManagement() {
             toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
           }}
         />
+        </div>
 
         {/* Pass 4 — per-batch QA checklist */}
         <UploadQAChecklist />

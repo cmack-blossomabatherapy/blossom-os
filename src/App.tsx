@@ -604,6 +604,9 @@ const App = () => (
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
                   <Route path="/evaluations" element={<OSEvaluations />} />
                   <Route path="/training" element={<OSTraining />} />
+                  {/* Canonical alias — /training/welcome routes into the same
+                      Welcome to Blossom ceremonial onboarding page. */}
+                  <Route path="/training/welcome" element={<Navigate to="/onboarding/phase/welcome" replace />} />
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<Navigate to="/billing-finance" replace />} />

@@ -276,6 +276,7 @@ function useUserAssignments(): TrainingAssignment[] {
 
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
+  const navigate = useNavigate();
   const [nav, setNav] = useState<NavId>("control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
@@ -407,9 +408,9 @@ export default function TrainingManagementCenter() {
                   variant="outline"
                   size="sm"
                   className="rounded-xl"
-                  onClick={() => setUploadSopOpen(true)}
+                  onClick={() => navigate("/hr/resource-management#bulk-upload")}
                 >
-                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload SOP
+                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
                 </Button>
                 <Button
                   variant="outline"
@@ -817,7 +818,7 @@ function SopsList() {
           </p>
         </div>
         <Button variant="outline" size="sm" className="rounded-xl">
-          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload SOP
+          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
         </Button>
       </div>
       <ul className="divide-y divide-border/60">
@@ -1955,16 +1956,34 @@ function ResourceLibraryView() {
               Manage every document, video, and handbook
             </h2>
             <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
-              Upload, organize, and assign resources by role, department, and state. Everything lives here — SOPs, handbooks, videos, templates, and policies.
+              Upload, organize, and assign resources by role, department, and state. Supports SOPs,
+              handbooks, policies, templates, videos, guides, checklists, and workflows. Only
+              published resources are visible to employees — sensitive items stay in review queues.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               className="rounded-xl"
+              onClick={() => navigate("/hr/resource-management#bulk-upload")}
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
               onClick={() => navigate("/hr/resource-management")}
             >
-              <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
+              <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => navigate("/hr/resource-management#bulk-upload")}
+            >
+              <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Upload first document batch
             </Button>
           </div>
         </div>
