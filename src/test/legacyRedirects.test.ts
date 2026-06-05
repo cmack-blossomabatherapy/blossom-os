@@ -50,7 +50,7 @@ describe("App.tsx legacy dashboard redirects", () => {
     const src = fs.readFileSync("src/App.tsx", "utf8");
 
     expect(src).toMatch(
-      /<Route path="\/clinic-dashboard" element=\{<PermissionRoute permission="dashboard\.view"><ClinicDashboard \/>\]<\/PermissionRoute>\} \/>/,
+      /<Route path="\/clinic-dashboard" element=\{<PermissionRoute permission="dashboard\.view"><ClinicDashboard \/><\/PermissionRoute>\} \/>/,
     );
   });
 });
