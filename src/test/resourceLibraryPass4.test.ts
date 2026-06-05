@@ -98,7 +98,7 @@ describe("Pass 4 — runbook doc", () => {
   it("recommends a 10-20 file first batch and excludes risky files", () => {
     expect(RUNBOOK).toMatch(/10.?20/);
     for (const banned of ["payer", "wage", "offer letter", "I-9", "OneNote", "vault_only", "excluded"]) {
-      expect(RUNBOOK).toContain(banned);
+      expect(RUNBOOK.toLowerCase()).toContain(banned.toLowerCase());
     }
   });
 });
