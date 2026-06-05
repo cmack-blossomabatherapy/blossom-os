@@ -69,6 +69,95 @@ export interface Resource {
   attachmentStatus?: "available" | "pending_upload" | "excluded";
   /** Friendly note about where the source lives (no sensitive file paths). */
   sourceNote?: string;
+  /**
+   * Pass 2 — upload workflow lifecycle for bulk-imported resources.
+   * Resources without an `uploadStatus` are treated as `published` (legacy seed).
+   * Only `published` items appear in the standard Resource Library.
+   */
+  uploadStatus?: ResourceUploadStatus;
+}
+
+/**
+ * Pass 2 — Bulk-upload workflow states.
+ *
+ *  - ready_to_upload  → metadata complete, awaiting storage wiring
+ *  - pending_review   → generic admin review needed
+ *  - needs_conversion → wrong file type (e.g. heic → jpg)
+ *  - privacy_review   → may contain PII/PHI or a named-person message
+ *  - business_review  → leadership / business approval needed
+ *  - vault_only       → credential/login/portal material — admin-vault only
+ *  - excluded         → never publish (e.g. `_Sensitive_Not_For_Shared_Context`)
+ *  - published        → live in the standard Resource Library
+ */
+export type ResourceUploadStatus =
+  | "ready_to_upload"
+  | "pending_review"
+  | "needs_conversion"
+  | "privacy_review"
+  | "business_review"
+  | "vault_only"
+  | "excluded"
+  | "published";
+
+export const UPLOAD_STATUS_LABEL: Record<ResourceUploadStatus, string> = {
+  ready_to_upload:  "Ready to upload",
+  pending_review:   "Pending review",
+  needs_conversion: "Needs conversion",
+  privacy_review:   "Privacy review",
+  business_review:  "Business review",
+  vault_only:       "Vault only",
+  excluded:         "Excluded",
+  published:        "Published",
+};
+
+/** Statuses that should never appear in the standard, user-facing Resource Library. */
+export const NON_PUBLIC_UPLOAD_STATUSES: ResourceUploadStatus[] = [
+  "pending_review",
+  "needs_conversion",
+  "privacy_review",
+  "business_review",
+  "vault_only",
+  "excluded",
+  "ready_to_upload",
+];
+
+/** Keywords that indicate a credential / vault / portal-access document. */
+export const CREDENTIAL_KEYWORDS = [
+  "login",
+  "password",
+  "credential",
+  "credentials",
+  "vault",
+  "account",
+  "portal",
+  "passcode",
+  "ssn",
+] as const;
+
+/** Keywords that indicate a file needs privacy review before publishing. */
+export const PRIVACY_REVIEW_KEYWORDS = [
+  "filled in",
+  "filled-in",
+  "completed",
+  "signed",
+  "consent",
+  "phi",
+  "client name",
+  "named-person",
+  "personal message",
+  "generic document",
+] as const;
+
+/** True if the given text mentions any credential/vault keyword. */
+export function containsCredentialKeywords(text: string): boolean {
+  const t = (text || "").toLowerCase();
+  return CREDENTIAL_KEYWORDS.some((kw) => t.includes(kw));
+}
+
+/** True if the given text mentions a privacy-review keyword. */
+export function containsPrivacyReviewKeywords(text: string): boolean {
+  const t = (text || "").toLowerCase();
+  return PRIVACY_REVIEW_KEYWORDS.some((kw) => t.includes(kw));
 }
 
 export const resourceCategories: ResourceCategory[] = [
