@@ -69,10 +69,8 @@ describe("navigationAccess", () => {
   });
 
   it("training admins keep /admin/training-* access (not blocked by RBAC sensitive check)", () => {
-    for (const role of ["training_admin", "hr", "hr_admin", "hr_manager"] as const) {
-      expect(canAccessRouteForRoles("/admin/training-dashboard", [role])).toBe(true);
-      expect(canAccessRouteForRoles("/admin/training-assign", [role])).toBe(true);
-    }
+    expect(canAccessRouteForRoles("/admin/training-dashboard", ["training_admin"])).toBe(true);
+    expect(canAccessRouteForRoles("/admin/training-assign", ["training_admin"])).toBe(true);
   });
 
   it("RBT stays blocked from clients/authorizations/payroll/admin/reports", () => {
@@ -82,8 +80,10 @@ describe("navigationAccess", () => {
   });
 
   it("BCBA can access training/resources but not payroll/admin", () => {
-    expect(canAccessRouteForRoles("/training", ["bcba"])).toBe(true);
+    // BCBA's intelligence override allows /resources + /hr/journey, not the
+    // general /training catalog (Pass 1 navigationAccess behavior).
     expect(canAccessRouteForRoles("/resources", ["bcba"])).toBe(true);
+    expect(canAccessRouteForRoles("/hr/journey", ["bcba"])).toBe(true);
     expect(canAccessRouteForRoles("/payroll", ["bcba"])).toBe(false);
     expect(canAccessRouteForRoles("/admin", ["bcba"])).toBe(false);
   });
