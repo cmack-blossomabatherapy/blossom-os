@@ -70,8 +70,15 @@ describe("Resource Upload hotfix — routing & navigation", () => {
 
   it("/hr/resource-management is admin-gated", () => {
     const block = appSource.split('path="/hr/resource-management"')[1] ?? "";
-    expect(block.slice(0, 400)).toMatch(/PermissionRoute/);
-    expect(block.slice(0, 400)).toMatch(/TRAINING_ADMIN_ROLES/);
+    expect(block.slice(0, 400)).toMatch(/ResourceUploadAdminRoute/);
+    expect(appSource).toMatch(/RESOURCE_UPLOAD_ALLOWED_ROLES/);
+    expect(block.slice(0, 400)).not.toMatch(/hr\.resources\.view/);
+  });
+
+  it("App route bypasses legacy ResourceManagement for the upload path", () => {
+    expect(appSource).toMatch(/ResourceUploadCenter/);
+    expect(appSource).not.toMatch(/import ResourceManagement/);
+    expect(appSource).not.toMatch(/<ResourceManagement\s*\/>/);
   });
 
   it("legacy /resource-management redirects to canonical route", () => {
@@ -89,12 +96,13 @@ describe("Resource Upload hotfix — routing & navigation", () => {
     expect(tmc).not.toMatch(/href="#"/);
   });
 
-  it("Resource Management page anchors #bulk-upload", () => {
+  it("Resource Upload Center page anchors #bulk-upload", () => {
     const rm = fs.readFileSync(
-      path.resolve(__dirname, "../pages/hr/ResourceManagement.tsx"),
+      path.resolve(__dirname, "../pages/hr/ResourceUploadCenter.tsx"),
       "utf8",
     );
     expect(rm).toMatch(/id="bulk-upload"/);
+    expect(rm).toMatch(/Resource Upload Center/);
     expect(rm).not.toMatch(/href="#"/);
   });
 });

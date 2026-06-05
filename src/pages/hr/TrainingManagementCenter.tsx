@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   Plus,
@@ -45,7 +44,6 @@ import {
   ArrowDown,
   Trash2,
   Library,
-  Loader2,
 } from "lucide-react";
 import {
   trainingSops,
@@ -63,7 +61,6 @@ import {
   addModuleToJourney,
   removeModuleFromJourney,
   reorderJourneyModule,
-  createTraining,
   type Training,
   type RoleJourney,
 } from "@/lib/training/academyData";
@@ -73,6 +70,8 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import TrainingControlRoom from "@/components/training/TrainingControlRoom";
 import { LayoutDashboard } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import type { AppRole } from "@/lib/roles";
 
 /* ------- Local view-model adapters (Academy → Management Center) ------- */
 
@@ -231,6 +230,15 @@ const AI_SUGGESTIONS = [
   "Recommend related modules to add to the Intake Journey.",
 ];
 
+const RESOURCE_UPLOAD_ADMIN_ROLES: AppRole[] = [
+  "admin", "training_admin", "hr", "hr_admin", "hr_manager", "ops_manager", "exec",
+];
+
+function useCanUploadResources() {
+  const { isAdmin, roles } = useAuth();
+  return isAdmin || roles.some((role) => RESOURCE_UPLOAD_ADMIN_ROLES.includes(role));
+}
+
 /* ---------- User-created assignments store (localStorage) ---------- */
 
 const USER_ASSIGNMENTS_KEY = "blossom.training.userAssignments.v1";
@@ -285,8 +293,8 @@ export default function TrainingManagementCenter() {
   const [createJourneyOpen, setCreateJourneyOpen] = useState(
     search.get("action") === "journey",
   );
-  const [uploadSopOpen, setUploadSopOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(search.get("action") === "assign");
+  const canUploadResources = useCanUploadResources();
 
   // Legacy `?action=upload` used to open an inline upload dialog that
   // could white-screen on failure. Redirect to the canonical Resource
@@ -411,14 +419,16 @@ export default function TrainingManagementCenter() {
                 >
                   <Compass className="mr-1.5 h-3.5 w-3.5" /> Create Journey
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => navigate("/hr/resource-management#bulk-upload")}
-                >
-                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
-                </Button>
+                {canUploadResources && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => navigate("/hr/resource-management#bulk-upload")}
+                  >
+                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -540,7 +550,6 @@ export default function TrainingManagementCenter() {
         open={createJourneyOpen}
         onOpenChange={setCreateJourneyOpen}
       />
-      <UploadSopDialog open={uploadSopOpen} onOpenChange={setUploadSopOpen} />
       <AssignDialog open={assignOpen} onOpenChange={setAssignOpen} />
     </OSShell>
   );
@@ -816,6 +825,7 @@ function ModulesGrid({
 
 function SopsList() {
   const navigate = useNavigate();
+  const canUploadResources = useCanUploadResources();
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
@@ -825,14 +835,16 @@ function SopsList() {
             The connective tissue between training and workflows.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-xl"
-          onClick={() => navigate("/hr/resource-management#bulk-upload")}
-        >
-          <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
-        </Button>
+        {canUploadResources && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => navigate("/hr/resource-management#bulk-upload")}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+          </Button>
+        )}
       </div>
       <ul className="divide-y divide-border/60">
         {trainingSops.map((s) => (
@@ -1662,140 +1674,6 @@ function CreateJourneyDialog({
   );
 }
 
-const SOP_BUCKET = "journey-resources";
-const SOP_TYPES: { value: "SOP" | "Workflow" | "Quick Guide" | "Checklist"; label: string }[] = [
-  { value: "SOP", label: "SOP" },
-  { value: "Workflow", label: "Workflow" },
-  { value: "Quick Guide", label: "Quick Guide" },
-  { value: "Checklist", label: "Checklist" },
-];
-
-function UploadSopDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"SOP" | "Workflow" | "Quick Guide" | "Checklist">("SOP");
-  const [url, setUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const reset = () => {
-    setTitle(""); setDescription(""); setType("SOP"); setUrl(""); setFile(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!title.trim()) return toast.error("Add a title");
-    if (!file && !url.trim()) return toast.error("Add a file or a link");
-
-    setUploading(true);
-    try {
-      let fileUrl = url.trim();
-      if (file) {
-        const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-        const path = `sops/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-        const { error: upErr } = await supabase.storage
-          .from(SOP_BUCKET)
-          .upload(path, file, { upsert: true, contentType: file.type || undefined });
-        if (upErr) throw upErr;
-        const { data } = supabase.storage.from(SOP_BUCKET).getPublicUrl(path);
-        fileUrl = data.publicUrl;
-      }
-      const t = createTraining({
-        title: title.trim(),
-        description: description.trim(),
-        type,
-        category: "shared",
-        estimatedMinutes: 10,
-        overview: description.trim(),
-        resources: fileUrl
-          ? [{ id: `res-${Date.now()}`, type: "PDF", title: title.trim(), url: fileUrl }]
-          : [],
-      });
-      toast.success("SOP uploaded", { description: `${t.title} is now in Modules.` });
-      reset();
-      onOpenChange(false);
-    } catch (e: any) {
-      toast.error("Upload failed", { description: e?.message ?? String(e) });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Upload SOP</DialogTitle>
-          <DialogDescription>
-            Upload a file or paste a link. It's added to your Modules library immediately.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. New Hire Intake SOP" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-muted-foreground">Type</label>
-              <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SOP_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-muted-foreground">File</label>
-              <label className="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 text-[12.5px] hover:border-primary/40">
-                <Upload className="h-3.5 w-3.5 text-primary" />
-                <span className="truncate text-muted-foreground">
-                  {file ? file.name : "Choose PDF, DOCX, image…"}
-                </span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.md,image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">Or paste a link</label>
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">Description</label>
-            <Textarea
-              value={description}
-              rows={3}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What's this SOP about? When should someone use it?"
-              className="rounded-xl"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)} disabled={uploading}>
-            Cancel
-          </Button>
-          <Button className="rounded-xl" onClick={handleSubmit} disabled={uploading}>
-            {uploading ? (<><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Uploading…</>) : "Upload SOP"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 const ASSIGN_ROLES = [
   "Intake Coordinator", "Authorization Coordinator", "Scheduling", "Recruiting",
   "HR", "Billing & Finance", "QA", "BCBA", "RBT",
@@ -1951,6 +1829,7 @@ function AssignDialog({
 
 function ResourceLibraryView() {
   const navigate = useNavigate();
+  const canUploadResources = useCanUploadResources();
   const cards = [
     { title: "SOPs & Workflows", desc: "Standard operating procedures and end-to-end processes.", icon: FileText },
     { title: "Handbooks & Policies", desc: "HR handbooks, employee policies, and compliance docs.", icon: BookOpen },
@@ -1974,31 +1853,33 @@ function ResourceLibraryView() {
               published resources are visible to employees — sensitive items stay in review queues.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              className="rounded-xl"
-              onClick={() => navigate("/hr/resource-management#bulk-upload")}
-            >
-              <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => navigate("/hr/resource-management")}
-            >
-              <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => navigate("/hr/resource-management#bulk-upload")}
-            >
-              <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Upload first document batch
-            </Button>
-          </div>
+          {canUploadResources && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                className="rounded-xl"
+                onClick={() => navigate("/hr/resource-management#bulk-upload")}
+              >
+                <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => navigate("/hr/resource-management")}
+              >
+                <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => navigate("/hr/resource-management#bulk-upload")}
+              >
+                <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Upload first document batch
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -2008,7 +1889,7 @@ function ResourceLibraryView() {
           return (
             <button
               key={c.title}
-              onClick={() => navigate("/hr/resource-management")}
+              onClick={() => navigate(canUploadResources ? "/hr/resource-management" : "/resource-library")}
               className="group rounded-2xl border border-border/70 bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40"
             >
               <div className="flex items-start gap-3">
