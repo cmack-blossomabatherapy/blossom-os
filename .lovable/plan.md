@@ -1,37 +1,35 @@
-## Problem
+I found the likely loop:
 
-You pressed **Send test** on the After-Hours AI Calls page and got a "Test sent" toast, but no email landed in `cmack@blossomabatherapy.com`.
+- The page sets `loading=true` every time it reloads calls, so the list visibly blinks to `Loading…`.
+- Realtime is subscribed to every `phone_ai_calls` database change and calls `load()` immediately for each inserted/upserted Retell call.
+- The sync function upserts many calls in chunks, which can trigger many realtime reloads plus the two manual timed reloads at 4s and 15s.
+- Backend logs show the Retell sync is also hitting database statement timeouts during upsert, so the button can create a noisy partial sync that keeps making the UI refresh/reload.
 
-Two findings from the investigation:
-- The verified Lovable email domain on this project is `notify.oceancountyconnect.com`, but `notify-after-hours-call` sends from `noreply@blossom.abacommandcenter.com` via the **Resend connector** (you confirmed that domain is verified in Resend, so the FROM should be acceptable).
-- Edge function logs for `notify-after-hours-call` show only boot/shutdown — no invocation entries tied to the test click. That means either the deployed function is stale, the call never actually hit the function, or Resend returned a 2xx but didn't deliver and we have no visibility because we don't log anything.
+Plan to fix this permanently:
 
-The toast can show "sent" even when delivery fails because the code only checks `resendRes.ok`, and we never log the Resend response or persist a record of test sends.
+1. Stabilize the After-Hours AI Calls UI
+   - Split initial page loading from background refresh.
+   - Only show the big `Loading…` state on first page load.
+   - For sync/realtime refreshes, keep the existing list visible and show a small syncing/refreshing state instead of blanking the list.
+   - Remove the 4s/15s forced reload timers.
 
-## Fix plan
+2. Debounce realtime updates
+   - Replace `() => load()` on every database event with one debounced refresh.
+   - If 50 calls are inserted/upserted, the UI refreshes once instead of blinking/reloading 50 times.
+   - Prevent overlapping `load()` calls from stacking.
 
-### 1. Make the test path observable (edge function)
-In `supabase/functions/notify-after-hours-call/index.ts`, in the `test` branch:
-- `console.log` the recipient, FROM address, env-key presence (booleans only, never the values), Resend HTTP status, and full Resend response JSON.
-- Include the Resend response body and status in the JSON returned to the client (`{ ok, test, to, department, resend: { status, id, message } }`) so the toast can surface the real result.
-- Insert a row into `phone_ai_call_notifications` for test sends too (with `call_id = null`, `department`, `recipients`, `status`, `error`) so there's an audit trail.
+3. Make the Sync Retell button safe
+   - Guard against double-clicks and repeated syncs while one is in progress.
+   - Add a short client-side cooldown so it cannot accidentally start multiple backend sync jobs.
+   - On success, do one quiet refresh and show a clear success/error toast.
 
-### 2. Make the UI surface real failures
-In `src/components/phone/AfterHoursAIBoard.tsx` `sendTest`:
-- If `data.resend.status >= 400` or `data.resend.id` is missing, show `toast.error` with the Resend message instead of success.
-- On success, show the Resend message id in the toast so you can cross-reference it in the Resend dashboard.
+4. Make the edge function bounded and predictable
+   - Change `retell-sync` from a broad background history job into a short, recent-calls sync.
+   - Fetch a limited recent batch from Retell instead of paging through many records.
+   - Check existing `retell_call_id`s first and insert only missing calls where possible, avoiding heavy repeated upserts of existing rows.
+   - Return a real result with counts, for example `{ fetched, inserted, skippedExisting }`, instead of “queued” while background work continues unseen.
 
-### 3. Redeploy + retest
-- Deploy `notify-after-hours-call`.
-- Trigger Send test once.
-- Pull edge function logs and the new `phone_ai_call_notifications` row, and report back:
-  - what Resend actually returned (200 + id ⇒ check spam/blocklist; 4xx ⇒ FROM/domain/API-key scope problem),
-  - whether `LOVABLE_API_KEY` and `RESEND_API_KEY` are present in the function env.
-
-### 4. Likely follow-ups based on what the logs show
-- **Resend 2xx with id but no inbox delivery** → it's a deliverability problem (spam folder, Resend suppression list for that recipient, or your domain's DMARC/DKIM). Action: check Resend → Emails for that message id and Resend → Suppressions for `cmack@blossomabatherapy.com`.
-- **Resend 401/403** → the linked Resend connection's API key isn't scoped to `blossom.abacommandcenter.com`. Action: reconnect the Resend connector with a key that has full sending access for that domain.
-- **Resend 422 "domain not verified"** → switch FROM to a verified address (e.g. `noreply@notify.blossom.abacommandcenter.com` once verified, or temporarily `onboarding@resend.dev` to prove the path).
-- **Function not invoked at all** → confirm the latest function version is deployed and that the browser request isn't being blocked.
-
-No UI redesign, no routing logic changes — only diagnostics and a more accurate success/failure signal.
+5. Deploy and verify
+   - Deploy the updated `retell-sync` function.
+   - Test the function response directly.
+   - Verify the frontend no longer blanks/blinks during sync and the button returns to normal state.
