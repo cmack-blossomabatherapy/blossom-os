@@ -602,3 +602,30 @@ function ActionCard({ to, title, detail }: { to: string; title: string; detail: 
     </Link>
   );
 }
+
+function ActionCardButton({
+  onClick,
+  title,
+  detail,
+  testId,
+}: {
+  onClick: () => void;
+  title: string;
+  detail: string;
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className="group flex w-full flex-col rounded-2xl border border-border/70 bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/30"
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[13.5px] font-semibold tracking-tight">{title}</p>
+        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      </div>
+      <p className="mt-1 text-[12px] text-muted-foreground">{detail}</p>
+    </button>
+  );
+}
