@@ -29,7 +29,7 @@ describe("State Director Training launch checklist doc", () => {
   });
 
   it("verifies Week 1 Day 1 starts with Welcome to Blossom", () => {
-    expect(md).toMatch(/Week 1 Day 1 .* Welcome to Blossom/i);
+    expect(md).toMatch(/Week 1 Day 1[^\n]*Welcome to Blossom/i);
   });
 
   it("verifies leadership dashboard and readiness summary", () => {
