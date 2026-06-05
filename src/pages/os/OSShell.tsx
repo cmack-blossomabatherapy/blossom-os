@@ -83,8 +83,6 @@ const NAV_SECTIONS: NavSection[] = [
     id: "staffing", label: "Clinical Staff", items: [
       { to: "/staff", label: "BCBA / RBT", icon: UserCog, module: "staff" },
       { to: "/recruiting/workspace", label: "Recruiting", icon: UserPlus, module: "recruiting" },
-      { to: "/credentialing", label: "Credentialing", icon: BadgeCheck, module: "credentialing" },
-      { to: "/employee-ops", label: "Employee Ops", icon: Briefcase, module: "employee_ops" },
       { to: "/evaluations", label: "Evaluations", icon: ClipboardCheck, module: "evaluations" },
     ],
   },
@@ -92,7 +90,6 @@ const NAV_SECTIONS: NavSection[] = [
     id: "operations", label: "Operations & Intelligence", items: [
       { to: "/reports", label: "Reports", icon: BarChart3, module: "reports" },
       { to: "/kpi", label: "KPI Tracking", icon: Target, module: "kpi" },
-      { to: "/workflows", label: "Workflow Center", icon: Workflow, module: "workflows" },
       { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
       { to: "/marketing", label: "Marketing Ops", icon: Megaphone, module: "marketing" },
     ],
@@ -123,26 +120,17 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "financial", label: "Financial Operations", items: [
-      { to: "/billing", label: "Billing", icon: DollarSign, module: "billing" },
       { to: "/payroll/workspace", label: "Payroll", icon: Wallet, module: "payroll" },
-      { to: "/revenue", label: "Revenue Analytics", icon: TrendingUp, module: "revenue" },
-      { to: "/insurance", label: "Insurance Tracking", icon: ShieldAlert, module: "insurance" },
     ],
   },
   {
     id: "internal", label: "Internal Operations", items: [
-      { to: "/tech-requests", label: "Tech Requests", icon: LifeBuoy, module: "tech_requests" },
-      { to: "/internal-requests", label: "Internal Requests", icon: Inbox, module: "internal_requests" },
-      { to: "/open-issues", label: "Open Issues", icon: AlertTriangle, module: "open_issues" },
     ],
   },
   {
     id: "ai", label: "AI & Automations", items: [
       { to: "/ai/assistant", label: "Ask Blossom AI", icon: Bot, module: "ai_assistant" },
       { to: "/ai/insights", label: "AI Insights", icon: Brain, module: "ai_insights" },
-      { to: "/ai/automations", label: "Automation Center", icon: Zap, module: "automation_center" },
-      { to: "/ai/predictive", label: "Predictive Alerts", icon: Activity, module: "predictive_alerts" },
-      { to: "/ai/workflows", label: "AI Workflows", icon: Wand2, module: "ai_workflows" },
     ],
   },
   {
@@ -160,7 +148,6 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "system", label: "System", items: [
-      { to: "/state-management", label: "State Management", icon: MapPin, module: "state_management" },
       { to: "/settings", label: "Settings", icon: Settings, module: "settings" },
       { to: "/permissions", label: "Permissions", icon: ShieldCheck, module: "permissions" },
       { to: "/integrations", label: "Integrations", icon: Plug, module: "integrations" },
