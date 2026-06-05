@@ -56,8 +56,6 @@ import Automations from "./pages/Automations";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
 import HRDashboard from "./pages/hr/HRDashboard";
 import HRSuiteHome from "./pages/hr/HRSuiteHome";
 import TrainingManagementCenter from "./pages/hr/TrainingManagementCenter";
