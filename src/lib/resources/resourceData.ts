@@ -574,9 +574,15 @@ export const roleLabel = (r: OSRole) => ROLE_LABEL[r] ?? r;
 /** Role-aware filter: empty roles[] means visible to everyone. */
 export function isVisibleToRole(r: Resource, role: OSRole, state?: string): boolean {
   if (r.status !== "Published") return false;
+  // Pass 2 — bulk-upload workflow: only `published` (or unset legacy) items
+  // appear in the standard Resource Library. Pending/review/vault stay in
+  // Resource Management until promoted.
+  if (r.uploadStatus && r.uploadStatus !== "published") return false;
   // Hard-exclude vault / credential / login-style resources from the standard library.
   if (r.sensitivity === "excluded" || r.attachmentStatus === "excluded") return false;
   if (r.sensitivity === "admin_only" && role !== "super_admin") return false;
+  // Hard safety net — defensive keyword check on title/tags.
+  if (containsCredentialKeywords(r.title) || r.tags.some(containsCredentialKeywords)) return false;
   const roleOk = r.roles.length === 0 || r.roles.includes(role) || role === "super_admin";
   const stateOk = r.states.length === 0 || (state ? r.states.includes(state) : true);
   return roleOk && stateOk;
