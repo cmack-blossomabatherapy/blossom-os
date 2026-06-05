@@ -476,7 +476,7 @@ const App = () => (
                 <Route element={<ProtectedRoute><OSOutlet /></ProtectedRoute>}>
                   <Route path="/" element={<OSDashboard />} />
                   <Route path="/executive" element={<ExecutiveOverview />} />
-                  <Route path="/executive/overview" element={<ExecutiveOverview />} />
+                  <Route path="/executive/overview" element={<Navigate to="/executive" replace />} />
                   <Route path="/executive/pulse" element={<CompanyPulse />} />
                   <Route path="/executive/briefing" element={<ExecutiveBriefing />} />
                   <Route path="/executive/organizational-health" element={<OrganizationalHealth />} />
