@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Upload, ShieldAlert, FileWarning, ScanLine, Lock, Ban,
   CheckCircle2, Send, RefreshCcw, AlertTriangle,
@@ -86,9 +86,8 @@ export function ResourceBulkUploadPanel({
 
   const counts = useMemo(() => summarizeUploadQueue(candidates), [candidates]);
 
-  useMemo(() => {
+  useEffect(() => {
     onCountsChange?.({ counts, failed: Object.keys(errors).length });
-    return null;
   }, [counts, errors, onCountsChange]);
 
   function addFiles(list: FileList | null) {
