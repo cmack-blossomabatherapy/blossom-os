@@ -319,14 +319,14 @@ export const ROLE_RBAC: Partial<Record<AppRole, RoleRbacMapping>> = {
   },
   hr: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
+    additionalDepartments: ["recruiting", "training_clinical_support"],
     level: "staff",
     scope: "department",
     permissions: ["view_department_workspace"],
   },
   hr_admin: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
+    additionalDepartments: ["recruiting", "training_clinical_support"],
     level: "director",
     scope: "department",
     permissions: [
@@ -339,7 +339,7 @@ export const ROLE_RBAC: Partial<Record<AppRole, RoleRbacMapping>> = {
   },
   hr_manager: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
+    additionalDepartments: ["recruiting", "training_clinical_support"],
     level: "manager",
     scope: "department",
     permissions: [
@@ -529,7 +529,6 @@ const PATH_TO_DEPARTMENT: Array<[string, Department]> = [
   ["/billing", "billing_revenue_cycle"],
   ["/finance", "finance"],
   ["/reports", "reports_analytics"],
-  ["/phone", "intake_leads"],
 ];
 
 export function departmentForPath(pathname: string): Department | null {
