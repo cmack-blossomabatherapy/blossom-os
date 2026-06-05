@@ -30,6 +30,12 @@ const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   Video: Play,
   Checklist: CheckCircle2,
   "Quick Guide": BookOpen,
+  Training: GraduationCap,
+  Task: CheckCircle2,
+  Meeting: MessageSquare,
+  Shadowing: Compass,
+  Quiz: BookMarked,
+  Reflection: BookOpen,
 };
 
 /** Map a role to its primary department for required-module scoping. */
