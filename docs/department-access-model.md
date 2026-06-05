@@ -164,3 +164,45 @@ Executive-and-above additionally inherit:
 - **Unchanged:** route declarations, `navigationAccess.ts` behavior, all
   `PermissionRoute` / `AdminRoute` gates, sidebar configs, placeholder route
   visibility. Pass 2 will start migrating gates to consult the RBAC profile.
+
+---
+
+## 10. Pass 2 Integration Notes
+
+**Now enforced by RBAC** (via `navigationAccess.canAccessRouteForRoles`):
+
+- Admin-only paths (`/admin`, `/integrations`, `/permissions`) are denied
+  for any role whose RBAC profile lacks them, in addition to the existing
+  legacy logic. `admin` role bypasses, and `/admin/training-*` is excluded
+  so existing training-admin allowances keep working.
+- `/payroll` and `/hr/payroll` consult the RBAC profile: roles with the
+  `view_payroll` permission (`payroll_admin`, `admin`) are explicitly
+  granted; everyone else is denied. Previously only full-nav `admin` could
+  reach payroll through navigation gates.
+
+**Still legacy / compatibility (unchanged in Pass 2):**
+
+- Full-navigation roles (`admin`, `exec`, `ops_manager`) continue to use
+  `hasFullNavigationAccess` for every non-sensitive path.
+- Sidebar visibility (`getSidebarPreviewForRoles`) still uses the per-role
+  exception map (`roleNavigationExceptions`) — not the RBAC profile.
+- `PermissionRoute` and `AdminRoute` still consult
+  `useAuth().hasPerm` / `isAdmin` directly. A TODO note in
+  `PermissionRoute.tsx` records why migration is deferred (per-route
+  permission mapping is not yet exhaustive).
+- Per-feature permission strings (e.g. `clients.view`) remain the
+  authoritative gate for in-page actions.
+
+**Migrate later (Pass 3+):**
+
+1. Move `getSidebarPreviewForRoles` to derive section/item visibility from
+   the RBAC profile (`departments`, `permissions`) instead of the static
+   `roleNavigationExceptions` map.
+2. Replace `PermissionRoute`'s `allowedRoles` checks with
+   `hasDepartmentAccess` / `hasPermission` once every route is mapped in
+   `PATH_TO_DEPARTMENT`.
+3. Fold `TRAINING_ADMIN_ROLES`, `ANALYTICS_ROLES`, `COURSE_AUTHOR_ROLES`,
+   `AUTOMATIONS_ROLES` into RBAC permissions
+   (`manage_workflows`, `view_company_reports`, etc.).
+4. Thread the authenticated user's `state` through `getUserAccessProfile`
+   so State Director scoping actually filters state-bound dashboards.
