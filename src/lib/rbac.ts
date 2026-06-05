@@ -319,14 +319,14 @@ export const ROLE_RBAC: Partial<Record<AppRole, RoleRbacMapping>> = {
   },
   hr: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support"],
+    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
     level: "staff",
     scope: "department",
     permissions: ["view_department_workspace"],
   },
   hr_admin: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support"],
+    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
     level: "director",
     scope: "department",
     permissions: [
@@ -339,7 +339,7 @@ export const ROLE_RBAC: Partial<Record<AppRole, RoleRbacMapping>> = {
   },
   hr_manager: {
     department: "hr",
-    additionalDepartments: ["recruiting", "training_clinical_support"],
+    additionalDepartments: ["recruiting", "training_clinical_support", "intake_leads"],
     level: "manager",
     scope: "department",
     permissions: [
