@@ -10,7 +10,19 @@ import {
   Wallet, Stethoscope, Crown, Workflow, BookOpen, Sparkles, type LucideIcon,
 } from "lucide-react";
 
-export type TrainingType = "SOP" | "Workflow" | "Tango" | "Video" | "Checklist" | "Quick Guide";
+export type TrainingType =
+  | "SOP"
+  | "Workflow"
+  | "Tango"
+  | "Video"
+  | "Checklist"
+  | "Quick Guide"
+  | "Training"
+  | "Task"
+  | "Meeting"
+  | "Shadowing"
+  | "Quiz"
+  | "Reflection";
 export type TrainingStatus = "not_started" | "in_progress" | "completed" | "overdue";
 export type JourneyTone = "violet" | "sky" | "mint" | "rose" | "peach" | "lilac";
 
@@ -57,6 +69,14 @@ export interface Training {
   videoUrl?: string;
   checklist?: TrainingChecklistItem[];
   resources?: TrainingResource[];
+  /** Why this module matters operationally. */
+  whyItMatters?: string;
+  /** What the learner should actually do. */
+  whatToDo?: string;
+  /** How completion is verified (evidence / proof). */
+  completionEvidence?: string;
+  /** Optional written reflection prompt. */
+  reflectionPrompt?: string;
 }
 
 export interface RoleJourney {
