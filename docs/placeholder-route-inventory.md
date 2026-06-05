@@ -19,24 +19,32 @@ All routes below are declared in `src/App.tsx` (lines 603–655) and render
 the shared placeholder shells `src/pages/os/OSPlaceholder.tsx` and
 `src/pages/os/OSComingSoon.tsx`.
 
-| # | Path | Component | Source (route) | Nav visibility | Business area | Recommendation | Reason |
-|---|------|-----------|----------------|----------------|---------------|----------------|--------|
-| 1 | `/credentialing` | `OSPlaceholder` (Credentialing) | `src/App.tsx:603` | OSShell `Clinical Staff` (`OSShell.tsx:86`) | Clinical Staff / Credentialing | **Hide from nav** | Stub page; not yet built. Removed from OS sidebar — route still reachable. |
-| 2 | `/employee-ops` | `OSPlaceholder` (Employee Operations) | `src/App.tsx:604` | OSShell `Clinical Staff` (`OSShell.tsx:87`); also drilled to from `data/stateDirectorReports.ts` | HR / Employee Ops | **Hide from nav** | Stub; drill-ins from state director KPIs left intact (they navigate by URL). |
-| 3 | `/billing` | `OSPlaceholder` (Billing) | `src/App.tsx:609` | OSShell `Financial Operations` (`OSShell.tsx:126`) | Finance / Billing | **Hide from nav** | Real billing surface is `/billing-finance`. Push deep link in `lib/push/sanitizeDeepLink.ts` already targets `/billing-finance`. |
-| 4 | `/revenue` | `OSPlaceholder` (Revenue Analytics) | `src/App.tsx:611` | OSShell `Financial Operations` (`OSShell.tsx:128`) | Finance / Analytics | **Hide from nav** | Stub; covered by Reports + Finance Dashboard today. Revisit when revenue analytics is scoped. |
-| 5 | `/insurance` | `OSPlaceholder` (Insurance Tracking) | `src/App.tsx:612` | OSShell `Financial Operations` (`OSShell.tsx:129`) | Finance / Insurance | **Hide from nav** | Stub; payer / insurance tracking is currently surfaced through Authorizations + VOB. |
-| 6 | `/workflows` | `OSPlaceholder` (Workflow Center) | `src/App.tsx:632` | OSShell `Operations & Intelligence` (`OSShell.tsx:95`); drilled to from state director KPIs | Operations / Workflow Engine | **Hide from nav** | Concept exists at platform level; surface is not yet built. |
-| 7 | `/analytics` | `OSPlaceholder` (Analytics Hub) | `src/App.tsx:636` | Not in primary nav; drilled to from state director KPIs (`data/stateDirectorReports.ts:255`) | Intelligence | **Keep visible** (not in nav) | Already not in sidebar. Existing drill-ins are fine while we decide the canonical analytics home. |
-| 8 | `/tech-requests` | `OSPlaceholder` (Tech Requests) | `src/App.tsx:637` | OSShell `Internal Operations` (`OSShell.tsx:134`) | Internal Ops | **Hide from nav** | Stub. |
-| 9 | `/internal-requests` | `OSPlaceholder` (Internal Requests) | `src/App.tsx:638` | OSShell `Internal Operations` (`OSShell.tsx:135`) | Internal Ops | **Hide from nav** | Stub. |
-| 10 | `/open-issues` | `OSPlaceholder` (Open Issues) | `src/App.tsx:639` | OSShell `Internal Operations` (`OSShell.tsx:136`); drilled to from state director KPIs | Internal Ops | **Hide from nav** | Stub; keep drill-ins working. |
-| 11 | `/projects` | `OSPlaceholder` (Project Tracking) | `src/App.tsx:640` | Not in any nav surface | Internal Ops | **Keep visible** (not in nav) | Already invisible. Needs product decision before nav placement. |
-| 12 | `/ai/assistant` | `OSComingSoon` (Ask Blossom AI) | `src/App.tsx:641` | OSShell `AI & Automations` + many in-page CTAs (Authorizations, BCBA, QA, Recruiting, Payroll, Resource Library, Academy) | AI / Operational Copilot | **Keep visible** — needs product decision | Heavily integrated as the target for every "Ask Blossom AI" CTA across working pages. The page itself is `OSComingSoon`, which is intentional — it's the published landing for the upcoming assistant. Do not hide. |
-| 13 | `/ai/automations` | `OSPlaceholder` (Automation Center) | `src/App.tsx:644` | OSShell `AI & Automations` (`OSShell.tsx:143`) | AI / Automation | **Hide from nav** | Stub; `/automations` already exists for the working automations page. |
-| 14 | `/ai/predictive` | `OSPlaceholder` (Predictive Alerts) | `src/App.tsx:645` | OSShell `AI & Automations` (`OSShell.tsx:144`) | AI / Alerts | **Hide from nav** | Stub. |
-| 15 | `/ai/workflows` | `OSPlaceholder` (AI Workflows) | `src/App.tsx:646` | OSShell `AI & Automations` (`OSShell.tsx:145`) | AI / Workflows | **Hide from nav** | Stub. |
-| 16 | `/state-management` | `OSPlaceholder` (State Management) | `src/App.tsx:655` | OSShell `System` (`OSShell.tsx:163`) | Admin / Multi-state | **Hide from nav** | Stub; multi-state setup not yet built. |
+| # | Path | Pass 6A status | **Pass 6B decision** | Target (if redirected) | Reason |
+|---|------|----------------|----------------------|------------------------|--------|
+| 1  | `/credentialing`      | Hidden from nav | **direct-only placeholder** | — | May become a real Credentialing module (clinical staff + provider credentialing). No existing canonical home — do not redirect. |
+| 2  | `/employee-ops`       | Hidden from nav | **direct-only placeholder** | — | Drill-ins from State Director KPIs land here. Needs product decision before folding into HR Suite. Keep route as a stable target. |
+| 3  | `/billing`            | Hidden from nav | **redirect** | `/billing-finance` | Real billing surface already lives at `/billing-finance`; push deep links already target it. No distinct billing module planned. |
+| 4  | `/revenue`            | Hidden from nav | **redirect** | `/billing-finance` | Revenue analytics is covered by the Finance Dashboard today. No distinct revenue module. |
+| 5  | `/insurance`          | Hidden from nav | **redirect** | `/authorizations` | Payer / insurance tracking is currently surfaced through Authorizations + VOB. No standalone insurance workspace. |
+| 6  | `/workflows`          | Hidden from nav | **direct-only placeholder** | — | Workflow Engine is a platform concept with no canonical workspace yet. Drill-ins from State Director KPIs must keep resolving. |
+| 7  | `/analytics`          | Not in nav | **redirect** | `/reports` | Reports Center is the canonical analytics home. State Director KPI drill-ins ("Open State Benchmarks") now land in Reports. |
+| 8  | `/tech-requests`      | Hidden from nav | **needs product decision** | — | Belongs in HR Suite or a future Internal Ops module; do not redirect blindly. |
+| 9  | `/internal-requests`  | Hidden from nav | **needs product decision** | — | Same as above. |
+| 10 | `/open-issues`        | Hidden from nav | **direct-only placeholder** | — | State Director KPI drill-ins target this path. Keep route stable until Internal Ops is scoped. |
+| 11 | `/projects`           | Not in nav | **needs product decision** | — | Internal projects module is not scoped. |
+| 12 | `/ai/assistant`       | Visible in nav | **keep visible** | — | Canonical landing for every "Ask Blossom AI" CTA across the app. `OSComingSoon` is intentional. |
+| 13 | `/ai/automations`     | Hidden from nav | **redirect** | `/automations` | The real Automations page already exists at `/automations`. |
+| 14 | `/ai/predictive`      | Hidden from nav | **direct-only placeholder** | — | No existing predictive-alerts surface to redirect to. |
+| 15 | `/ai/workflows`       | Hidden from nav | **direct-only placeholder** | — | No existing AI-workflow surface to redirect to. |
+| 16 | `/state-management`   | Hidden from nav | **direct-only placeholder** | — | Multi-state setup module needs design before redirecting. |
+
+### Decision legend
+
+- **direct-only placeholder** — route still resolves to `OSPlaceholder`; hidden from primary nav; reachable via direct URL / drill-ins.
+- **redirect** — route now `<Navigate to="…" replace />` to the canonical workspace.
+- **keep visible** — left in primary nav, no behavior change.
+- **needs product decision** — direct-only for now; should not be linked from anywhere until the product call is made.
+- **ready for buildout** — placeholder is the next slot to build into a real workspace (none in this pass).
 
 ---
 
@@ -90,3 +98,17 @@ These are intentional and visibly marked. **No action.**
 - `src/test/placeholderRoutes.test.ts` · new test verifying (a) placeholder routes still exist in `App.tsx`, (b) hidden placeholder paths no longer appear in `OSShell.tsx` `DEFAULT_SECTIONS`, (c) canonical routes from prior passes still resolve.
 
 No components were deleted. No permissions were changed. No legacy redirect routes were touched.
+
+---
+
+## 6 · Code changes shipped in Pass 6B
+
+- `src/App.tsx` · converted 5 placeholder routes into redirects:
+  - `/billing` → `/billing-finance`
+  - `/revenue` → `/billing-finance`
+  - `/insurance` → `/authorizations`
+  - `/analytics` → `/reports`
+  - `/ai/automations` → `/automations`
+- `src/test/placeholderRoutes.test.ts` · updated to verify redirects, direct-only placeholders, and canonical routes.
+
+No components were deleted. No permissions were changed. `/ai/assistant` remains visible in the primary OS sidebar. Hidden placeholder paths from Pass 6A remain hidden.
