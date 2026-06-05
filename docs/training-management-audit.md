@@ -74,3 +74,48 @@ All other builder tabs (Journeys, Modules, Onboarding, SOPs, Tangos, Resource Li
 - Move `/admin/training-assign` and `/admin/track-assign` behind a single "Assign" modal on the Control Room.
 - Surface non-State-Director journey readiness (BCBA, Authorizations, etc.) once per-journey readiness math is generalized.
 - Add an "Assign mentor" quick-action to each Setup Needed row.
+
+## Pass 2 — Legacy redirects + Assign modal consolidation
+
+### Routes redirected in Pass 2
+
+| Legacy route | Behavior | Target |
+|---|---|---|
+| `/admin/training-dashboard` | `<Navigate replace>` | `/hr/training-center` |
+| `/hr/training-dashboard` | `<Navigate replace>` | `/hr/training-center` |
+| `/hr/training` | `<Navigate replace>` | `/hr/training-center` |
+
+Old links and bookmarks resolve to the Control Room. No RBAC was changed —
+`/hr/training-center` continues to gate access through its existing workspace.
+
+### Assignment surfaces consolidated
+
+| Surface | Status after Pass 2 |
+|---|---|
+| `/admin/training-assign` (`TrainingAssign`) | **Deprecated.** Remains reachable for direct links; superseded by Control Room → "Assign training" modal. |
+| `/admin/track-assign` (`TrackAssign`) | **Deprecated.** Same as above. |
+| `StaffAssignDialog` (track-scoped) | Unchanged for in-track usage; not the canonical assign entry point. |
+| **`AssignTrainingModal`** (Control Room) | **Canonical assign entry point** — single modal launched from Control Room → Admin Actions → "Assign training". |
+
+### Assign modal — live vs pending integration
+
+| Behavior | Status |
+|---|---|
+| Select trainee/employee (text) | Live UI |
+| Select training path (from `useAcademy().journeys`) | Live UI |
+| Assign mentor (text) | Live UI |
+| Assign state (text) | Live UI |
+| Set start date | Live UI |
+| Setup warnings (missing trainee, mentor, state, pending welcome assets, pending SOP/resource links) | Live — derived from `computeWelcomeAssetStatus` + `computePendingSops` already loaded in the Control Room |
+| Confirmation + calm next-step state | Live UI |
+| Database write of assignment | **Pending integration** — modal is mock-safe, no DB writes, labeled "Pending integration" in the UI |
+
+Pending welcome videos and pending SOP/resource attachments remain
+**non-blocking** — they surface as warnings and admin action items only.
+
+### Recommended Pass 3
+
+- Wire `AssignTrainingModal` to real persistence: employee search → `enrollEmployee` in `@/lib/academy/api`, mentor lookup from `employees`, state from `state_locations`.
+- Replace the text trainee field with a real employee picker (with employee/auth-user link check).
+- Replace deprecated `/admin/training-assign` and `/admin/track-assign` with `<Navigate>` redirects once Pass 3 persistence is verified.
+- Generalize per-journey readiness math so non-State-Director paths surface readiness chips in the Control Room.
