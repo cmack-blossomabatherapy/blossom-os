@@ -23,6 +23,16 @@ interface HrResourceRow {
   uploaded_by_name: string | null;
   created_at: string;
   updated_at: string;
+  upload_status?: string | null;
+  attachment_status?: string | null;
+  sensitivity?: string | null;
+  resource_type?: string | null;
+  tags?: string[] | null;
+  departments?: string[] | null;
+  file_name?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  source_note?: string | null;
 }
 
 const KIND_TO_TYPE: Record<string, ResourceType> = {
@@ -54,14 +64,21 @@ function mapRow(r: HrResourceRow): Resource {
     category: CATEGORY_MAP[r.category] ?? "operational",
     status: (r.is_active ? "Published" : "Archived") as ResourceStatus,
     roles: ((r.visibility_roles ?? []) as OSRole[]),
-    departments: [],
+    departments: r.departments ?? [],
     states: r.visibility_states ?? [],
-    tags: [],
+    tags: r.tags ?? [],
     uploadedBy: r.uploaded_by_name ?? "—",
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    url: r.url ?? r.storage_path ?? undefined,
+    url: r.url ?? undefined,
     pinned: r.is_pinned,
+    resourceType: (r.resource_type as Resource["resourceType"]) ?? undefined,
+    sensitivity: (r.sensitivity as Resource["sensitivity"]) ?? undefined,
+    attachmentStatus: (r.attachment_status as Resource["attachmentStatus"]) ?? undefined,
+    uploadStatus: (r.upload_status as Resource["uploadStatus"]) ?? "published",
+    sourceNote: r.source_note ?? undefined,
+    // Stash storage path on the resource so the open handler can sign it.
+    ...(r.storage_path ? { storagePath: r.storage_path } : {}),
   };
 }
 
@@ -81,12 +98,13 @@ export function useLibraryResources(): LibraryResourcesResult {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data, error } = await supabase
-        .from("hr_resources")
+      const { data, error } = await (supabase
+        .from("hr_resources") as any)
         .select(
-          "id,title,description,kind,category,url,storage_path,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at",
+          "id,title,description,kind,category,url,storage_path,visibility_states,visibility_roles,is_pinned,is_active,uploaded_by_name,created_at,updated_at,upload_status,attachment_status,sensitivity,resource_type,tags,departments,file_name,file_size,mime_type,source_note",
         )
         .eq("is_active", true)
+        .eq("upload_status", "published")
         .order("is_pinned", { ascending: false })
         .order("updated_at", { ascending: false });
       if (cancelled) return;
