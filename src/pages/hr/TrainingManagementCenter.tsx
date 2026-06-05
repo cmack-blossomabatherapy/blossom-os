@@ -276,7 +276,7 @@ function useUserAssignments(): TrainingAssignment[] {
 
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
-  const [nav, setNav] = useState<NavId>("journeys");
+  const [nav, setNav] = useState<NavId>("control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
@@ -445,6 +445,7 @@ export default function TrainingManagementCenter() {
           </header>
 
           {/* Content by nav */}
+          {nav === "control-room" && <TrainingControlRoom />}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
               journeys={allJourneys}
