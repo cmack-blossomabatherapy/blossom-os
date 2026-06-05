@@ -20,7 +20,6 @@ import Pipeline from "./pages/Pipeline";
 import Authorizations from "./pages/Authorizations";
 import AuthDetail from "./pages/AuthDetail";
 import Scheduling from "./pages/Scheduling";
-import Staffing from "./pages/Staffing";
 import RBTDetail from "./pages/RBTDetail";
 import Recruiting from "./pages/Recruiting";
 import CandidateDetail from "./pages/CandidateDetail";
@@ -789,7 +788,6 @@ const App = () => (
                   <Route path="/recruiting-dashboard" element={<PermissionRoute permission="dashboard.view"><RecruitingDashboard /></PermissionRoute>} />
                   <Route path="/leadership-dashboard/clinics/:clinicId" element={<PermissionRoute permission="dashboard.view"><LeadershipDashboard /></PermissionRoute>} />
                   <Route path="/pipeline" element={<Pipeline />} />
-                  <Route path="/staffing" element={<Staffing />} />
                   <Route path="/staffing/:id" element={<RBTDetail />} />
                   <Route path="/qa" element={<QA />} />
                   <Route path="/qa/:id" element={<QADetail />} />
