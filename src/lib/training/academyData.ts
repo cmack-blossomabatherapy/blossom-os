@@ -743,7 +743,7 @@ function slugify(s: string): string {
  * SOP resource names, in module-position order per week.
  * Source: State Director Training Academy SOP catalog.
  */
-const SD_SOPS_BY_WEEK: Record<number, Record<number, string[]>> = {
+export const SD_SOPS_BY_WEEK: Record<number, Record<number, string[]>> = {
   1: {
     1: [],
     2: [
