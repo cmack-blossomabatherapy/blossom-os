@@ -71,6 +71,8 @@ import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
+import TrainingControlRoom from "@/components/training/TrainingControlRoom";
+import { LayoutDashboard } from "lucide-react";
 
 /* ------- Local view-model adapters (Academy → Management Center) ------- */
 
@@ -175,6 +177,7 @@ function toViewJourney(j: RoleJourney): ViewJourney {
 }
 
 type NavId =
+  | "control-room"
   | "journeys"
   | "modules"
   | "onboarding"
@@ -188,6 +191,7 @@ type NavId =
   | "ai";
 
 const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
+  { id: "control-room", label: "Control Room", icon: LayoutDashboard },
   { id: "journeys", label: "Journeys", icon: Compass },
   { id: "modules", label: "Modules", icon: Layers },
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
@@ -272,7 +276,7 @@ function useUserAssignments(): TrainingAssignment[] {
 
 export default function TrainingManagementCenter() {
   const [search] = useSearchParams();
-  const [nav, setNav] = useState<NavId>("journeys");
+  const [nav, setNav] = useState<NavId>("control-room");
   const [query, setQuery] = useState("");
   const [selectedJourneyId, setSelectedJourneyId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(search.get("action") === "create");
@@ -378,8 +382,8 @@ export default function TrainingManagementCenter() {
                   Training Management Center
                 </h1>
                 <p className="mt-1.5 max-w-2xl text-[14px] text-muted-foreground">
-                  Build journeys, modules, SOPs, and operational learning paths
-                  across Blossom.
+                  Assign, monitor, and fix training. Active trainees, launch readiness,
+                  setup gaps, journeys, and admin actions in one calm workspace.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -441,6 +445,7 @@ export default function TrainingManagementCenter() {
           </header>
 
           {/* Content by nav */}
+          {nav === "control-room" && <TrainingControlRoom />}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
               journeys={allJourneys}
