@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,7 @@ function statusColor(s: string | null) {
 export function AfterHoursAIBoard() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -113,31 +114,59 @@ export function AfterHoursAIBoard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [routing, setRouting] = useState<Routing[]>([]);
   const [resending, setResending] = useState(false);
+  const loadInFlightRef = useRef(false);
+  const queuedLoadRef = useRef(false);
+  const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncStartedRef = useRef(0);
 
-  const load = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("phone_ai_calls")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (error) toast.error(error.message);
-    else setCalls((data as any) ?? []);
-    setLoading(false);
-  };
+  const load = useCallback(async (mode: "initial" | "refresh" = "refresh") => {
+    if (loadInFlightRef.current) {
+      queuedLoadRef.current = true;
+      return;
+    }
+
+    loadInFlightRef.current = true;
+    if (mode === "initial") setLoading(true);
+    else setRefreshing(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("phone_ai_calls")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) toast.error(error.message);
+      else setCalls((data as any) ?? []);
+    } finally {
+      loadInFlightRef.current = false;
+      if (mode === "initial") setLoading(false);
+      else setRefreshing(false);
+
+      if (queuedLoadRef.current) {
+        queuedLoadRef.current = false;
+        void load("refresh");
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    load();
+    void load("initial");
     const channel = supabase
       .channel("phone_ai_calls_live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "phone_ai_calls" },
-        () => load(),
+        () => {
+          if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current);
+          realtimeTimerRef.current = setTimeout(() => void load("refresh"), 1200);
+        },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+    return () => {
+      if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
 
   // Deep-link: open a specific call via ?call=<id> (used by email CTA).
   useEffect(() => {
@@ -246,14 +275,21 @@ export function AfterHoursAIBoard() {
   };
 
   const runSync = async () => {
+    const now = Date.now();
+    if (syncing || now - lastSyncStartedRef.current < 10000) {
+      toast.info("Sync is already running. Please wait a moment.");
+      return;
+    }
+    lastSyncStartedRef.current = now;
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("retell-sync", { body: {} });
       if (error) throw error;
-      toast.success("Sync started — new calls will appear shortly");
-      // Refresh the list a few times as background sync inserts rows.
-      setTimeout(() => { load(); }, 4000);
-      setTimeout(() => { load(); }, 15000);
+      const result = data as { inserted?: number; skippedExisting?: number; fetched?: number } | null;
+      toast.success("Retell sync complete", {
+        description: `Fetched ${result?.fetched ?? 0}, added ${result?.inserted ?? 0}, skipped ${result?.skippedExisting ?? 0}.`,
+      });
+      await load("refresh");
     } catch (e: any) {
       toast.error(e.message ?? "Sync failed");
     } finally {
@@ -332,6 +368,7 @@ export function AfterHoursAIBoard() {
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="text-xs text-muted-foreground">
           Reception desk · showing <span className="font-medium text-foreground">{filtered.length}</span> of {counts.total}
+          {refreshing && !loading ? <span className="ml-2">Refreshing…</span> : null}
         </div>
         <Tabs value={rangeFilter} onValueChange={setRangeFilter}>
           <TabsList className="h-8">
