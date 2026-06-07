@@ -58,8 +58,13 @@ describe("Training Academy Redesign Pass 2 — learner surface", () => {
   });
 
   it("Welcome to Blossom page includes leadership letters from Chad and Shira and a CTA back to the SD journey", () => {
-    expect(welcome).toMatch(/Chad Kaufman/);
-    expect(welcome).toMatch(/Shira Lasry/);
+    const content = require("node:fs").readFileSync(
+      "src/lib/training/welcomeToBlossomContent.ts",
+      "utf8",
+    );
+    expect(content).toMatch(/Chad Kaufman/);
+    expect(content).toMatch(/Shira Lasry/);
+    expect(welcome).toMatch(/WELCOME_LEADERSHIP_LETTERS/);
     expect(welcome).toMatch(/A note from leadership/);
     expect(welcome).toMatch(/Continue to State Director Journey/);
   });

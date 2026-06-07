@@ -40,9 +40,14 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/\/resource-library/);
   });
 
-  it("keeps Chad and Shira leadership letters", () => {
-    expect(WELCOME).toContain("Chad Kaufman");
-    expect(WELCOME).toContain("Shira Lasry");
+  it("keeps Chad and Shira leadership letters (via content module)", () => {
+    const CONTENT = fs.readFileSync(
+      "src/lib/training/welcomeToBlossomContent.ts",
+      "utf8",
+    );
+    expect(CONTENT).toContain("Chad Kaufman");
+    expect(CONTENT).toContain("Shira Lasry");
+    expect(WELCOME).toMatch(/WELCOME_LEADERSHIP_LETTERS/);
   });
 
   it("includes completion handoff copy to the State Director Journey", () => {

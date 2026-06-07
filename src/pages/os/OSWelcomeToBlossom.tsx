@@ -12,6 +12,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { markModuleComplete } from "@/lib/onboarding/storage";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import {
+  WELCOME_TO_BLOSSOM_HERO,
+  WELCOME_TO_BLOSSOM_MODULES,
+  WELCOME_CORE_VALUES,
+  WELCOME_BLOSSOM_FLOW,
+  WELCOME_LEADERSHIP_LETTERS,
+  WELCOME_COMPLETION,
+} from "@/lib/training/welcomeToBlossomContent";
 
 /**
  * Welcome video configuration.
@@ -63,53 +71,15 @@ export default function OSWelcomeToBlossom() {
     { icon: Users, title: "Your team", body: "You're joining people who care deeply about the work and about each other. You're never doing this alone." },
   ];
 
-  const leaders = [
-    {
-      name: "Chad Kaufman",
-      role: "Chief Executive Officer",
-      initial: "C",
-      title: "A Welcome From Chad Kaufman",
-      paragraphs: [
-        "Welcome to Blossom.",
-        "I want you to know from the beginning that this company was built with a very real responsibility in mind. Families come to us at important moments in their lives. They are looking for care, clarity, and trust. They are often trying to understand insurance, schedules, assessments, staffing, and clinical recommendations all at once. Our job is to make that experience feel more supported, not more confusing.",
-        "That is why operations matter so much here.",
-        "Great ABA therapy does not happen through good intentions alone. It happens when families are communicated with, when authorizations are watched, when schedules are clean, when staff are supported, when clinical teams have what they need, and when leaders follow through. Blossom is building the systems to make that possible at scale.",
-        "As a State Director, you are stepping into one of the most important leadership seats in the company. You will not personally do every task in the state, but you will be responsible for knowing whether the state is healthy. You will learn to see where the flow is stuck, where families are waiting, where staff need support, and where leadership needs to step in.",
-        "Do not pressure yourself to know everything on day one. That is not the expectation.",
-        "The expectation is that you learn the system, ask good questions, communicate clearly, and build trust through follow-through. If you do those things consistently, you will become the kind of leader this role requires.",
-        "We are glad you are here. Take the training seriously, lean on your mentor, and remember that this work matters because the families matter.",
-        "Welcome to Blossom.",
-      ],
-      signoff: "Chad Kaufman, Chief Executive Officer",
-    },
-    {
-      name: "Shira Lasry",
-      role: "Director of Operations",
-      initial: "S",
-      title: "A Note From Shira Lasry",
-      paragraphs: [
-        "Welcome.",
-        "If you are reading this on your first day, I want you to take a breath. You are going to learn a lot, but you are not expected to absorb it all at once.",
-        "The State Director role is built around rhythm, ownership, and communication. You will learn the dashboards, the SOPs, the meetings, the departments, and the escalation paths. Those tools matter. But the deeper skill is learning how to keep a state moving without creating panic.",
-        "When something is stuck, we name it. When ownership is unclear, we assign it. When a family is waiting, we follow up. When a process breaks, we fix the system. When a team member needs support, we do not leave them guessing.",
-        "That is the kind of operational leadership Blossom needs.",
-        "Your training path is designed to give you structure. Start with Welcome to Blossom. Then move through the State Director journey one day at a time. Read the SOPs. Ask your mentor what the work looks like in real life. Pay attention to the handoffs between departments, because that is where many operational issues begin.",
-        "You do not have to become perfect. You do have to become clear, consistent, and accountable.",
-        "My hope is that by the end of this journey, you understand not only what a State Director does, but why the role matters. A healthy state creates better experiences for families, clinicians, staff, and leaders. That is the work.",
-        "Welcome to the team. We are going to build this with you.",
-      ],
-      signoff: "Shira Lasry, Director of Operations",
-    },
-  ];
+  const leaders = WELCOME_LEADERSHIP_LETTERS.map((l) => ({
+    ...l,
+    initial: l.initials.slice(0, 1),
+  }));
 
-  const values = [
-    { title: "Family-Centered Care", body: "Families should not have to chase us for clarity. We communicate, follow through, and treat every family interaction as part of care." },
-    { title: "Clinical Excellence", body: "ABA services must be clinically sound, ethical, and individualized. Operations exist to support quality, not replace it." },
-    { title: "Operational Accountability", body: "If something is stuck, unclear, overdue, or at risk, we name it and assign ownership. Calm accountability prevents crisis." },
-    { title: "Clear Communication", body: "We say what is happening, who owns the next step, and when follow-up will happen. We do not let silence become the system." },
-    { title: "Team Support", body: "People do better work when they know where to go, what is expected, and who will help them solve problems." },
-    { title: "Continuous Improvement", body: "If the same problem happens more than once, we look at the system. Blossom OS, SOPs, training, and dashboards are tools for making the work better." },
-  ];
+  const values = WELCOME_CORE_VALUES;
+  void WELCOME_TO_BLOSSOM_HERO;
+  void WELCOME_TO_BLOSSOM_MODULES;
+  void WELCOME_COMPLETION;
 
   const leadershipRoles = [
     { role: "Chief Executive Officer", body: "Sets company direction, growth strategy, and organizational standards." },
@@ -121,19 +91,7 @@ export default function OSWelcomeToBlossom() {
     { role: "Billing / Finance / Authorizations", body: "Protects revenue continuity, payer requirements, authorization health, billing accuracy, and reimbursement." },
   ];
 
-  const blossomFlow = [
-    "A family reaches out or is referred.",
-    "Intake captures the lead and confirms basic fit.",
-    "Benefits are verified.",
-    "Assessment is scheduled.",
-    "Clinical team completes assessment and treatment planning.",
-    "Authorization is requested and approved.",
-    "Scheduling and staffing build the service plan.",
-    "The client becomes active.",
-    "Utilization is monitored.",
-    "Progress reports and reauthorizations keep treatment moving.",
-    "The State Director watches the health of the whole flow.",
-  ];
+  const flowSteps = WELCOME_BLOSSOM_FLOW;
 
   const watchPoints = [
     "Leads aging without next steps.",
@@ -400,12 +358,12 @@ export default function OSWelcomeToBlossom() {
           <SectionHeader icon={Workflow} eyebrow="How Blossom Works" title="The Blossom flow, at a glance"
             description="Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal." />
           <ol className="mt-5 space-y-2.5">
-            {blossomFlow.map((step, idx) => (
+            {flowSteps.map(({ step, text }) => (
               <li key={step} className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                  {idx + 1}
+                  {step}
                 </span>
-                <span className="text-[13.5px] leading-relaxed text-foreground">{step}</span>
+                <span className="text-[13.5px] leading-relaxed text-foreground">{text}</span>
               </li>
             ))}
           </ol>
@@ -455,8 +413,8 @@ export default function OSWelcomeToBlossom() {
                     {l.initial}
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-foreground">{l.title}</p>
-                    <p className="text-[12px] text-muted-foreground">{l.role}</p>
+                    <p className="text-[14px] font-semibold text-foreground">{l.displayTitle}</p>
+                    <p className="text-[12px] text-muted-foreground">{l.subtitle}</p>
                   </div>
                 </div>
                 <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">

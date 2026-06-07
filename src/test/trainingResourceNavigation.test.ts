@@ -63,9 +63,13 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
   });
 
   it("Welcome to Blossom page keeps leadership content + mentor/HR note + journey CTA", () => {
+    const CONTENT = require("node:fs").readFileSync(
+      "src/lib/training/welcomeToBlossomContent.ts",
+      "utf8",
+    );
     expect(WELCOME).toMatch(/Who we are|Your team/);
-    expect(WELCOME).toMatch(/Chad Kaufman/);
-    expect(WELCOME).toMatch(/Shira Lasry/);
+    expect(CONTENT).toMatch(/Chad Kaufman/);
+    expect(CONTENT).toMatch(/Shira Lasry/);
     expect(WELCOME).toMatch(/HR partner|mentor/i);
     expect(WELCOME).toMatch(/Continue to State Director Journey/);
   });
