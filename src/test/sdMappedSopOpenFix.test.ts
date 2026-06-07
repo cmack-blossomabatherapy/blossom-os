@@ -96,7 +96,7 @@ describe("sdSopCoverage classifies storagePath and file-repair correctly", () =>
 
 describe("Training Management SD coverage adds verification copy", () => {
   it("explains what Published means to admins", () => {
-    expect(TMC).toMatch(/Published means the resource is visible to learners/);
+    expect(TMC).toMatch(/Live in the Resource Library and visible to State Director learners/);
   });
   it("renders the needs-file-repair panel", () => {
     expect(TMC).toMatch(/data-testid="sd-coverage-needs-file-repair"/);
