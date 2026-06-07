@@ -412,6 +412,8 @@ function TraineeCard({ row, curriculum, onMutate }: { row: Row; curriculum: Acad
   const setupGapLabels = launchSetup
     .filter((c) => c.status !== "ready")
     .map((c) => c.label);
+  const blockers = computeReadinessBlockers(row.checklist);
+  const certReady = isCertificationReady(row.checklist);
 
   function copySummary() {
     const text = buildReadinessSummaryText({
