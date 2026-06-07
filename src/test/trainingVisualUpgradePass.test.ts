@@ -19,7 +19,7 @@ describe("Training Academy visual upgrade — State Director first", () => {
 
   it("SD home uses warmer day-checklist copy (no mechanical 'clicks shut')", () => {
     expect(SD_HOME).not.toMatch(/clicks shut/);
-    expect(SD_HOME).toMatch(/state director instincts/i);
+    expect(SD_HOME).toMatch(/state director\s+instincts/i);
     expect(SD_HOME).toMatch(/use in the field/i);
   });
 
