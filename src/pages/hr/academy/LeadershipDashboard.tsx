@@ -241,7 +241,7 @@ export default function LeadershipDashboard() {
       ) : (
         <div className="space-y-4">
           {rows.map((r) => (
-            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} />
+            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} onMutate={load} />
           ))}
         </div>
       )}
@@ -324,6 +324,30 @@ function ReadinessBar({ value }: { value: number }) {
     <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
       <div className={`h-full ${tone}`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
     </div>
+  );
+}
+
+function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border bg-muted/30 p-2.5">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function ActionButton({
+  icon: Icon, label, onClick,
+}: { icon: any; label: string; onClick: () => void | Promise<void> }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 h-8 text-[12px] font-medium hover:bg-muted transition"
+    >
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </button>
   );
 }
 
