@@ -343,15 +343,29 @@ function ResourcesBlock({ resources }: { resources: ReturnType<typeof getResourc
       <h2 className="text-[18px] font-semibold tracking-tight">Resources</h2>
       <p className="text-[12.5px] text-muted-foreground">Templates, links, and walkthroughs.</p>
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {resources.map((r) => (
-          <a key={r.id} href={r.url} className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-[13px] hover:border-primary/40 hover:bg-muted/40">
-            <span className="inline-flex items-center gap-2">
-              {r.type === "PDF" ? <Download className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
-              {r.title}
-            </span>
-            <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
-          </a>
-        ))}
+        {resources.map((r) =>
+          isPendingResource(r) ? (
+            <div
+              key={r.id}
+              data-testid="resource-pending"
+              className="flex items-center justify-between rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-3 text-[13px] text-muted-foreground"
+            >
+              <span className="inline-flex items-center gap-2">
+                <BookMarked className="h-4 w-4" />
+                {r.title}
+              </span>
+              <span className="text-[10px]">Attachment pending — this resource will appear once published.</span>
+            </div>
+          ) : (
+            <a key={r.id} href={r.url} className="flex items-center justify-between rounded-xl border border-border/60 bg-card px-4 py-3 text-[13px] hover:border-primary/40 hover:bg-muted/40">
+              <span className="inline-flex items-center gap-2">
+                {r.type === "PDF" ? <Download className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                {r.title}
+              </span>
+              <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
+            </a>
+          ),
+        )}
       </div>
     </div>
   );
