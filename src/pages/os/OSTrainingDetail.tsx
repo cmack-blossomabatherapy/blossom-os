@@ -440,3 +440,404 @@ function QuizSection() {
     </div>
   );
 }
+
+/* =============== State Director Module Detail Panel =============== */
+
+function pickModuleFlow(title: string): { label: string; steps: string[] } | null {
+  const t = title.toLowerCase();
+  if (/(lead|intake|client lifecycle|vob|assessment|active client)/.test(t)) {
+    return {
+      label: "How a lead becomes an active client",
+      steps: ["Lead", "Intake", "VOB", "BCBA Assignment", "Assessment", "Auth", "Staffing", "Treatment", "Utilization"],
+    };
+  }
+  if (/(recruit|apploi|interview|offer|viventium|orientation|onboard|hiring)/.test(t)) {
+    return {
+      label: "How a candidate becomes an active staff member",
+      steps: ["Candidate", "Apploi", "Cert Check", "Interview", "Offer", "Viventium", "Orientation", "Training"],
+    };
+  }
+  if (/(auth|utilization|progress report|pr|reassessment)/.test(t)) {
+    return {
+      label: "Authorization lifecycle",
+      steps: ["Awaiting Submission", "Submitted", "Approved", "Expiring Soon", "QA Review"],
+    };
+  }
+  if (/(schedul|coverage|cancellation|pairing)/.test(t)) {
+    return {
+      label: "Schedule health checks",
+      steps: ["Coverage Gaps", "Cancellations", "Unconverted Sessions", "Pairing Risks", "Utilization"],
+    };
+  }
+  return null;
+}
+
+interface KCheckQ { id: string; question: string; options: string[]; answerIndex: number; }
+
+function defaultKnowledgeCheck(t: Training): KCheckQ[] {
+  // Generic 2-question scenario quiz — used when no DB quiz exists.
+  return [
+    {
+      id: `${t.id}-q1`,
+      question: `${t.title}: who owns the next move when this workflow stalls in your state?`,
+      options: ["The State Director alone", "The department that owns the step, escalated by the State Director", "Nobody — wait for it to resolve"],
+      answerIndex: 1,
+    },
+    {
+      id: `${t.id}-q2`,
+      question: "A State Director's role in this workflow is best described as:",
+      options: ["Performing every task personally", "Understanding ownership, metrics, and where it gets stuck", "Approving every decision"],
+      answerIndex: 1,
+    },
+  ];
+}
+
+function SDModuleDetailPanel({ training }: { training: Training }) {
+  const { user } = useAuth();
+  const [learnerHome, setLearnerHome] = useState<LearnerHome>(() => emptyLearnerHome());
+  const [busy, setBusy] = useState<null | "start" | "complete" | "notes">(null);
+  const [notes, setNotes] = useState("");
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  async function refresh() {
+    if (!user?.id) return;
+    try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
+  }
+  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  const dbMatch = useMemo(() => {
+    const title = training.title.trim().toLowerCase();
+    for (const w of learnerHome.weeks) {
+      for (const m of w.modules) {
+        if (m.title.trim().toLowerCase() === title) return { module: m, week: w };
+      }
+    }
+    return null;
+  }, [learnerHome, training.title]);
+
+  const dbProgress = useMemo(() => {
+    if (!dbMatch) return null;
+    return learnerHome.rawProgress.find((p) => p.module_id === dbMatch.module.id) ?? null;
+  }, [dbMatch, learnerHome.rawProgress]);
+
+  useEffect(() => {
+    if (dbProgress?.reflection && !notes) setNotes(dbProgress.reflection);
+    // eslint-disable-next-line
+  }, [dbProgress?.reflection]);
+
+  const hasDb = !!learnerHome.enrollment && !!dbMatch;
+  const requiresMentorSignoff = /shadow|signoff|sign-off|mentor|certification/i.test(training.title)
+    || /^Shadowing$|^Meeting$/.test(training.type);
+  const hasSignoff = !!dbProgress?.verified_at;
+  const completed = dbProgress?.status === "completed";
+
+  async function handleStart() {
+    if (!hasDb) {
+      toast.success("Started locally — connect an enrollment to sync with leadership.");
+      return;
+    }
+    setBusy("start");
+    const res = await startLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
+    setBusy(null);
+    if ((res as any)?.error) toast.error("Could not start module");
+    else { toast.success("Started — visible in Training Management"); await refresh(); }
+  }
+
+  async function handleComplete() {
+    if (requiresMentorSignoff && !hasSignoff) {
+      toast.info("Mentor signoff required before this can be marked complete.");
+      return;
+    }
+    if (!hasDb) {
+      toast.success("Marked complete locally — connect an enrollment to sync.");
+      return;
+    }
+    setBusy("complete");
+    const res = await completeLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
+    setBusy(null);
+    if ((res as any)?.error) toast.error("Could not complete module");
+    else { toast.success("Complete — synced to Training Management"); await refresh(); }
+  }
+
+  async function handleSaveNotes() {
+    if (!hasDb) {
+      toast.success("Notes saved locally");
+      return;
+    }
+    setBusy("notes");
+    const res = await upsertProgress(learnerHome.enrollment!.id, dbMatch!.module.id, { reflection: notes });
+    setBusy(null);
+    if ((res as any)?.error) toast.error("Could not save notes");
+    else toast.success("Reflection saved");
+  }
+
+  async function handleSubmitQuiz() {
+    const qs = quizQs;
+    const correct = qs.filter((q) => answers[q.id] === q.answerIndex).length;
+    const score = Math.round((correct / qs.length) * 100);
+    setSubmitted(true);
+    if (hasDb) {
+      await upsertProgress(learnerHome.enrollment!.id, dbMatch!.module.id, { score });
+    }
+    toast.success(`Knowledge check: ${correct}/${qs.length}`);
+  }
+
+  const weekDay = (() => {
+    const m = /^sd-w(\d+)d(\d+)-/.exec(training.id);
+    return m ? `Week ${m[1]} · Day ${m[2]}` : "State Director Academy";
+  })();
+
+  const flow = pickModuleFlow(training.title);
+  const quizQs: KCheckQ[] = (dbMatch?.module?.quiz?.questions as KCheckQ[] | undefined) ?? defaultKnowledgeCheck(training);
+
+  return (
+    <section data-testid="sd-module-detail-panel" className="mt-6 space-y-6">
+      {/* SD module header summary */}
+      <div className="rounded-3xl border border-border/70 bg-card p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{weekDay}</p>
+            <h2 className="mt-1 text-[18px] font-semibold tracking-tight">{training.title}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <Badge variant="outline" className="text-[10px]">{training.type}</Badge>
+              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
+              {requiresMentorSignoff && (
+                <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
+                  <ShieldCheck className="mr-1 h-3 w-3" /> Mentor signoff required
+                </Badge>
+              )}
+              {completed && (
+                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">Complete</Badge>
+              )}
+              {!hasDb && (
+                <span className="text-[10.5px] text-muted-foreground">Local-only progress (no enrollment linked)</span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" className="rounded-full" onClick={handleStart} disabled={busy !== null}>
+              <Play className="mr-1.5 h-3.5 w-3.5" />
+              {busy === "start" ? "Starting…" : "Mark started"}
+            </Button>
+            <Button size="sm" className="rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+              {busy === "complete" ? "Saving…" : "Mark complete"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6 min-w-0">
+          {/* Why this matters */}
+          <div data-testid="sd-why-matters" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Why this matters</h3>
+            </div>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/90">
+              {training.whyItMatters
+                ?? "A State Director does not perform every task. Your job is to understand who owns this workflow, what the metrics should look like, and where it tends to get stuck — so you can unblock it fast."}
+            </p>
+          </div>
+
+          {/* What to do */}
+          <div data-testid="sd-what-to-do" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4 text-primary" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">What to do</h3>
+            </div>
+            <ul className="mt-3 space-y-2 text-[13px]">
+              {(training.whatToDo
+                ? training.whatToDo.split(/\n+/).filter(Boolean)
+                : [
+                    "Review the linked SOP and any attached resources.",
+                    "Watch the walkthrough (Tango / video) if one is attached.",
+                    "Walk the simulation below — say out loud who owns each step.",
+                    "Capture notes/reflection on what surprised you.",
+                    "Ask your mentor one specific question before marking complete.",
+                  ]
+              ).map((step, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{i + 1}</span>
+                  <span className="text-foreground/90">{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Workflow content */}
+          {flow && (
+            <div data-testid="sd-workflow-content" className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Workflow · {flow.label}</h3>
+              </div>
+              <div className="mt-4 -mx-1 flex flex-wrap items-center gap-y-3 overflow-x-auto pb-1">
+                {flow.steps.map((step, idx) => (
+                  <div key={step} className="flex items-center">
+                    <div className="rounded-2xl border border-border/70 bg-background px-3 py-2 text-[12.5px] font-medium text-foreground">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1.5">{String(idx + 1).padStart(2, "0")}</span>
+                      {step}
+                    </div>
+                    {idx < flow.steps.length - 1 && <ChevronRight className="mx-1.5 h-4 w-4 shrink-0 text-muted-foreground/70" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Knowledge check */}
+          <div data-testid="sd-knowledge-check" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-primary" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Knowledge check</h3>
+            </div>
+            <div className="mt-3 space-y-3">
+              {quizQs.map((q, qi) => (
+                <div key={q.id} className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[13px] font-medium">{qi + 1}. {q.question}</p>
+                  <div className="mt-2 space-y-1.5">
+                    {q.options.map((opt, i) => {
+                      const selected = answers[q.id] === i;
+                      const isCorrect = submitted && i === q.answerIndex;
+                      const isWrong = submitted && selected && i !== q.answerIndex;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => setAnswers({ ...answers, [q.id]: i })}
+                          disabled={submitted}
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-lg border px-3 py-1.5 text-left text-[12.5px] transition",
+                            selected ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted/40",
+                            isCorrect && "border-emerald-400 bg-emerald-50",
+                            isWrong && "border-red-300 bg-red-50",
+                          )}
+                        >
+                          {opt}
+                          {isCorrect && <Check className="h-4 w-4 text-emerald-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-[11.5px] text-muted-foreground">
+                {submitted
+                  ? `Saved score: ${Math.round((quizQs.filter((q) => answers[q.id] === q.answerIndex).length / quizQs.length) * 100)}%`
+                  : "Choose answers and submit. Score is logged to your enrollment."}
+              </p>
+              <Button size="sm" onClick={handleSubmitQuiz} disabled={submitted || Object.keys(answers).length < quizQs.length}>
+                Submit
+              </Button>
+            </div>
+          </div>
+
+          {/* Notes / reflection */}
+          <div data-testid="sd-notes" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-primary" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Notes & reflection</h3>
+            </div>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What surprised you? What would you do differently when you own a state?"
+              rows={4}
+              className="mt-3"
+            />
+            <div className="mt-3 flex justify-end">
+              <Button size="sm" variant="outline" onClick={handleSaveNotes} disabled={busy !== null}>
+                {busy === "notes" ? "Saving…" : "Save reflection"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right rail — Resources + Signoff */}
+        <aside className="space-y-4">
+          <div data-testid="sd-resources" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Resources</h3>
+            </div>
+            <div className="mt-3 space-y-2 text-[12.5px]">
+              {(training.resources ?? []).length === 0 && (
+                <p className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-3 text-[12px] text-muted-foreground">
+                  Attachment pending — this resource will appear here once published.
+                </p>
+              )}
+              {(training.resources ?? []).map((r) =>
+                isPendingResource(r) ? (
+                  <div key={r.id} data-testid="resource-pending" className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-muted-foreground">
+                    <p className="font-medium text-foreground/80">{r.title}</p>
+                    <p className="text-[11px]">Attachment pending — this resource will appear once published.</p>
+                  </div>
+                ) : (
+                  <a
+                    key={r.id}
+                    href={r.url}
+                    className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-2 hover:bg-muted/40"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {r.type === "PDF" ? <Download className="h-3.5 w-3.5" /> : <ExternalLink className="h-3.5 w-3.5" />}
+                      {r.title}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
+                  </a>
+                ),
+              )}
+              <Link
+                to="/resource-library"
+                className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-2 hover:bg-muted/40"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Library className="h-3.5 w-3.5" />
+                  Open Resource Library
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </Link>
+            </div>
+          </div>
+
+          <div data-testid="sd-signoff" className="rounded-2xl border border-border/70 bg-card p-5">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Completion evidence</h3>
+            </div>
+            <ul className="mt-3 space-y-1.5 text-[12.5px]">
+              <SignoffRow label="Started" done={!!dbProgress?.started_at || dbProgress?.status === "in_progress"} />
+              <SignoffRow label="Knowledge check submitted" done={submitted} />
+              <SignoffRow label="Reflection captured" done={!!notes.trim()} />
+              <SignoffRow
+                label={requiresMentorSignoff ? "Mentor signoff" : "Mentor signoff (not required)"}
+                done={requiresMentorSignoff ? hasSignoff : true}
+              />
+              <SignoffRow label="Module marked complete" done={completed} />
+            </ul>
+            {requiresMentorSignoff && !hasSignoff && (
+              <p className="mt-3 text-[11.5px] text-muted-foreground">
+                Ask your mentor to log a check-in or shadow signoff before this module is considered complete.
+              </p>
+            )}
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function SignoffRow({ label, done }: { label: string; done: boolean }) {
+  return (
+    <li className="flex items-center justify-between rounded-lg px-2 py-1">
+      <span className="text-foreground/90">{label}</span>
+      <span className={cn("inline-flex items-center gap-1 text-[11px]", done ? "text-emerald-600" : "text-muted-foreground")}>
+        {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+        {done ? "Done" : "Pending"}
+      </span>
+    </li>
+  );
+}
