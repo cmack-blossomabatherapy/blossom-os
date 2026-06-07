@@ -478,8 +478,8 @@ export default function TrainingManagementCenter() {
 
           {/* Content by nav */}
           {nav === "control-room" && (
-            <div className="space-y-6">
-              <SDLaunchCoveragePanel />
+            <div className="space-y-6" data-testid="training-control-room-wide">
+              <SDSopReadinessPanel />
               <TrainingControlRoom />
             </div>
           )}
