@@ -748,6 +748,7 @@ export type SDModuleCompleteness =
   | "needs_sop_link"
   | "needs_screenshot"
   | "needs_video"
+  | "welcome_non_sop"
   | "missing";
 
 export interface SDModuleReadiness {
@@ -781,9 +782,16 @@ export function classifyStateDirectorModule(
     hasScreenshot && screenshots.every((s) => s.resourceStatus !== "available");
   const sopName = SD_SOPS_BY_WEEK[week]?.[day]?.[0];
   const isVideoModule = /^video$/i.test((training as { type?: string }).type ?? "");
+  // Welcome modules (Phase 0) are explicitly non-SOP — never count against
+  // State Director SOP upload coverage.
+  const isWelcome =
+    training.id.startsWith("welcome-") ||
+    /welcome[- ](video|to[- ]blossom|letter|mission|values|team|how[- ]blossom)/i.test(training.id);
 
   let status: SDModuleCompleteness;
-  if (hasCurated) {
+  if (isWelcome) {
+    status = "welcome_non_sop";
+  } else if (hasCurated) {
     status = "curated";
   } else if (isVideoModule) {
     status = "needs_video";
