@@ -35,6 +35,7 @@ import {
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
+import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -1075,18 +1076,48 @@ function SdMappedSopCard({ moduleId }: { moduleId: string }) {
   const { resources } = useLibraryResources();
   if (!sopTitle) return null;
   const resource = findResourceForSopTitle(resources, sopTitle);
-  const isPublished =
+  const hasUsableUrl = !!(resource?.url || resource?.fileUrl);
+  const hasStoragePath = !!resource?.storagePath;
+  const isPublishedRecord =
     !!resource &&
     resource.uploadStatus === "published" &&
     resource.status !== "Archived" &&
-    resource.attachmentStatus !== "pending_upload" &&
-    !!(resource.url || resource.fileUrl);
-  const isPending = !!resource && !isPublished;
+    resource.attachmentStatus !== "pending_upload";
+  const isOpenable = isPublishedRecord && (hasUsableUrl || hasStoragePath);
+  const needsFileRepair = isPublishedRecord && !hasUsableUrl && !hasStoragePath;
+  const isPending = !!resource && !isOpenable && !needsFileRepair;
+
+  const status: "published" | "needs_file_repair" | "pending" | "missing" = isOpenable
+    ? "published"
+    : needsFileRepair
+      ? "needs_file_repair"
+      : isPending
+        ? "pending"
+        : "missing";
+
+  const handleOpen = async () => {
+    if (!resource) return;
+    // External URL — open directly.
+    if (resource.url && /^https?:\/\//i.test(resource.url)) {
+      window.open(resource.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (resource.fileUrl && /^https?:\/\//i.test(resource.fileUrl)) {
+      window.open(resource.fileUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const signed = await resolveResourceOpenUrl(resource);
+    if (signed) {
+      window.open(signed, "_blank", "noopener,noreferrer");
+    } else {
+      toast.error("Could not open SOP — please try again or contact Training Management.");
+    }
+  };
 
   return (
     <div
       data-testid="sd-mapped-sop"
-      data-sop-status={isPublished ? "published" : isPending ? "pending" : "missing"}
+      data-sop-status={status}
       className="rounded-2xl border border-border/70 bg-card p-5"
     >
       <div className="flex items-center gap-2">
@@ -1096,16 +1127,22 @@ function SdMappedSopCard({ moduleId }: { moduleId: string }) {
         </h3>
       </div>
       <p className="mt-2 text-[13.5px] font-medium text-foreground">{sopTitle}</p>
-      {isPublished ? (
-        <a
-          href={resource!.url || resource!.fileUrl}
-          target="_blank"
-          rel="noreferrer"
+      {isOpenable ? (
+        <button
+          type="button"
+          onClick={handleOpen}
           data-testid="sd-mapped-sop-open"
           className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-[12.5px] font-medium hover:bg-muted/40"
         >
           <ExternalLink className="h-3.5 w-3.5" /> Open SOP
-        </a>
+        </button>
+      ) : needsFileRepair ? (
+        <p
+          data-testid="sd-mapped-sop-needs-repair"
+          className="mt-3 rounded-xl border border-dashed border-amber-300/60 bg-amber-50/60 px-3 py-2 text-[12px] text-amber-900"
+        >
+          SOP record exists, file link missing — ask Training Management to repair the upload.
+        </p>
       ) : isPending ? (
         <p
           data-testid="sd-mapped-sop-pending"

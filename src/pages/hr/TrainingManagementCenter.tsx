@@ -1949,6 +1949,7 @@ function SDLaunchCoveragePanel() {
     { label: "Pending", value: String(live.pending), tone: "text-amber-600" },
     { label: "Held / review", value: String(live.held), tone: "text-amber-600" },
     { label: "Missing", value: String(live.missing), tone: "text-rose-600" },
+    { label: "File repair", value: String(live.needsFileRepair), tone: "text-amber-600" },
     { label: "Screenshots", value: String(screenshotsAll.length) },
     { label: "SS uploaded", value: String(screenshotUploaded), tone: "text-emerald-600" },
     { label: "SS pending", value: String(screenshotPending), tone: "text-amber-600" },
@@ -1973,6 +1974,9 @@ function SDLaunchCoveragePanel() {
           </p>
           <p className="mt-1 text-[11.5px] text-muted-foreground">
             Learners only see published resources assigned to their role and state.
+          </p>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            Published means the resource is visible to learners and can be opened from the module.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -2076,6 +2080,34 @@ function SDLaunchCoveragePanel() {
                 <li
                   key={e.entry.id}
                   className="rounded-lg border border-border/60 bg-card px-3 py-1.5 text-foreground/90"
+                >
+                  {e.entry.title}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      </div>
+      <div className="mt-4">
+        <div
+          data-testid="sd-coverage-needs-file-repair"
+          className="rounded-2xl border border-amber-300/50 bg-amber-50/40 p-4"
+        >
+          <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-amber-900">
+            Needs file repair ({live.needsFileRepair})
+          </h3>
+          <p className="mt-1 text-[11.5px] text-amber-900/80">
+            Published records that are missing both an external URL and a storage file —
+            re-upload from Resource Management so learners can open the SOP.
+          </p>
+          <ul className="mt-3 max-h-48 space-y-1 overflow-auto text-[12.5px]">
+            {live.needsFileRepairEntries.length === 0 ? (
+              <li className="text-amber-900/70">No file repairs needed.</li>
+            ) : (
+              live.needsFileRepairEntries.slice(0, 30).map((e) => (
+                <li
+                  key={e.entry.id}
+                  className="rounded-lg border border-amber-300/50 bg-background px-3 py-1.5 text-foreground/90"
                 >
                   {e.entry.title}
                 </li>

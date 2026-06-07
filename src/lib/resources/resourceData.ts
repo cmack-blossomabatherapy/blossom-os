@@ -44,6 +44,8 @@ export interface Resource {
   updatedAt: string;
   url?: string;
   fileUrl?: string;
+  /** Supabase Storage path (private bucket). Resolved to a signed URL on open. */
+  storagePath?: string;
   featured?: boolean;
   pinned?: boolean;
   /**
