@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Sparkles, ArrowRight, Play, CheckCircle2, Clock, ChevronRight, BookMarked,
   Library, Users as UsersIcon, Heart, Compass, GraduationCap, MessageSquare,
-  FileText, BookOpen, Workflow as WorkflowIcon, ShieldCheck, Award,
+  FileText, BookOpen, Workflow as WorkflowIcon, ShieldCheck, Award, ListChecks,
+  Calendar,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -136,8 +137,9 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
                 Welcome back, <span className="capitalize">{firstName}</span>.
               </h1>
               <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
-                Your job is to learn how a Blossom state runs. Start with Welcome to Blossom, then follow
-                the launch path one step at a time — your mentor and leadership are with you the whole way.
+                Today is a guided day. Begin with Welcome to Blossom, then follow your launch path one
+                module at a time. Your mentor and leadership move with you — nothing here has to be
+                solved alone.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 md:w-[340px] shrink-0">
@@ -188,12 +190,26 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
           </div>
         </section>
 
-        {/* 3 · Today in your state */}
-        <section data-testid="sd-today">
+        {/* 3 · Today's Launch Plan */}
+        <section data-testid="sd-today-launch-plan" className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                Today&apos;s Launch Plan
+              </p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-foreground">
+                One day at a time — here is yours.
+              </h2>
+            </div>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+              W{currentDayState.week} · D{currentDayState.day}
+            </span>
+          </div>
+          <div data-testid="sd-today">
           <div className="rounded-3xl border border-border/70 bg-card p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Today in your state</p>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Today&apos;s focus</p>
                 <h2 className="mt-1 text-[18px] font-semibold tracking-tight">
                   Week {currentDayState.week}, Day {currentDayState.day} · {currentDayDef.title}
                 </h2>
@@ -210,24 +226,31 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
             {nextTraining ? (
               <Link
                 to={`/training/${nextTraining.id}`}
-                className="mt-5 block rounded-2xl border border-primary/30 bg-primary/[0.04] p-4 transition-colors hover:bg-primary/[0.08]"
+                className="mt-5 block rounded-2xl border-2 border-primary/40 bg-primary/[0.06] p-5 shadow-[0_8px_24px_-16px_hsl(var(--primary)/0.35)] transition-all hover:-translate-y-0.5 hover:bg-primary/[0.10]"
                 data-testid="sd-today-next-action"
               >
                 <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                  <ArrowRight className="h-3 w-3" /> Next action
+                  <ArrowRight className="h-3 w-3" /> Your next step
                 </p>
-                <p className="mt-1.5 text-[14px] font-semibold text-foreground">{nextTraining.title}</p>
+                <p className="mt-1.5 text-[15px] font-semibold text-foreground">{nextTraining.title}</p>
+                {nextTraining.description && (
+                  <p className="mt-1 line-clamp-2 text-[12.5px] text-muted-foreground">{nextTraining.description}</p>
+                )}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground">
                   <span className="rounded-full border border-border/60 bg-background px-2 py-0.5">{nextTraining.type}</span>
                   <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {nextTraining.estimatedMinutes} min</span>
                   {nextTraining.required && <span className="text-primary">Required</span>}
                 </div>
+                <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
+                  Start now <ArrowRight className="h-3 w-3" />
+                </span>
               </Link>
             ) : (
               <div className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-[12.5px] text-foreground">
                 You're caught up for today — reach out to your mentor for what's next.
               </div>
             )}
+          </div>
           </div>
         </section>
 
@@ -262,12 +285,73 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
           <section data-testid="sd-current-day-modules">
             <div className="mb-4 flex items-end justify-between">
               <div>
-                <h2 className="text-[17px] font-semibold tracking-tight">Today's modules</h2>
-                <p className="mt-0.5 text-[12.5px] text-muted-foreground">Finish today before moving on — that's how the day clicks shut.</p>
+                <h2 className="text-[17px] font-semibold tracking-tight">Today&apos;s day checklist</h2>
+                <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                  Complete today&apos;s modules before moving ahead. Each day builds the state director
+                  instincts you&apos;ll use in the field.
+                </p>
               </div>
               <span className="text-[11px] text-muted-foreground">{currentDayModules.length} module{currentDayModules.length === 1 ? "" : "s"}</span>
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ol className="space-y-2">
+              {currentDayModules.slice(0, 8).map((t, idx) => {
+                const Icon = TYPE_ICON[t.type] ?? FileText;
+                const p = getProgress(t.id);
+                const done = p.status === "completed";
+                const isNext = !done && t.id === nextModuleId;
+                const cta = done ? "Review" : p.progressPercent > 0 ? "Continue" : "Start";
+                const purpose = (t.description ?? "").split(/[.!?]/)[0]?.trim();
+                return (
+                  <li key={t.id}>
+                  <Link
+                    key={t.id}
+                    to={`/training/${t.id}`}
+                    className={cn(
+                      "group flex items-center gap-4 rounded-2xl border bg-card p-4 transition-all hover:-translate-y-0.5",
+                      done && "border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-950/10",
+                      isNext && "border-primary/40 bg-primary/[0.04] shadow-[0_6px_20px_-14px_hsl(var(--primary)/0.4)]",
+                      !done && !isNext && "border-border/70",
+                    )}
+                    data-testid={isNext ? "sd-day-checklist-next" : undefined}
+                  >
+                    <span className={cn(
+                      "grid h-9 w-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold",
+                      done ? "bg-emerald-100 text-emerald-700"
+                        : isNext ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground",
+                    )}>
+                      {done ? <CheckCircle2 className="h-4 w-4" /> : String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-1.5 py-0.5">
+                          <Icon className="h-3 w-3" /> {t.type}
+                        </span>
+                        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {t.estimatedMinutes} min</span>
+                        {done && <span className="text-emerald-700">Complete</span>}
+                        {isNext && <span className="font-semibold text-primary">Next up</span>}
+                      </div>
+                      <p className={cn(
+                        "mt-1 truncate text-[14px] font-semibold leading-snug",
+                        done && "text-muted-foreground",
+                      )}>{t.title}</p>
+                      {purpose && (
+                        <p className="mt-0.5 line-clamp-1 text-[12px] text-muted-foreground">{purpose}.</p>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "ml-2 inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-medium",
+                      isNext ? "bg-primary text-primary-foreground" : "text-primary",
+                    )}>
+                      {cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                  </li>
+                );
+              })}
+            </ol>
+            {/* Hidden legacy markup kept for compatibility */}
+            <div className="hidden">
               {currentDayModules.slice(0, 6).map((t) => {
                 const Icon = TYPE_ICON[t.type] ?? FileText;
                 const p = getProgress(t.id);
@@ -277,7 +361,7 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
                   <Link
                     key={t.id}
                     to={`/training/${t.id}`}
-                    className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border"
+                    className="group flex h-full flex-col rounded-2xl border border-border/70 bg-card p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-muted-foreground">
@@ -318,9 +402,13 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
 
         {/* 6 · Five-week roadmap (current week expanded; future collapsed) */}
         <section data-testid="sd-roadmap">
-          <div className="mb-4">
-            <h2 className="text-[17px] font-semibold tracking-tight">Five-week roadmap</h2>
-            <p className="mt-0.5 text-[12.5px] text-muted-foreground">A calm map of your launch. Future weeks open as you get there.</p>
+          <div className="mb-4 flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Your launch path</p>
+              <h2 className="text-[17px] font-semibold tracking-tight">Five-week roadmap</h2>
+              <p className="mt-0.5 text-[12.5px] text-muted-foreground">A calm map of your launch — current week open, future weeks waiting for you.</p>
+            </div>
           </div>
           <SDJourneyView trainings={trainings} />
         </section>

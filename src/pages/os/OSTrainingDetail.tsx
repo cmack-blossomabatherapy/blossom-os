@@ -674,6 +674,42 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
   return (
     <section data-testid="sd-module-detail-panel" className="mt-6 space-y-6">
+      {/* Sticky progress strip */}
+      <div
+        data-testid="sd-progress-strip"
+        className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-2.5 backdrop-blur"
+      >
+        <div className="flex items-center gap-2 text-[11.5px] text-muted-foreground">
+          <span className="font-semibold text-foreground">{weekDay}</span>
+          <span>·</span>
+          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
+          {training.required && <span className="text-primary">· Required</span>}
+          {requiresMentorSignoff && <span>· Mentor signoff required</span>}
+          <span>·</span>
+          <span>{completed ? "Complete" : dbProgress?.status === "in_progress" ? "In progress" : "Not started"}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={handleStart} disabled={busy !== null}>
+            <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
+          </Button>
+          <Button size="sm" className="h-7 rounded-full" onClick={handleComplete} disabled={busy !== null}>
+            <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
+          </Button>
+        </div>
+      </div>
+
+      {/* Start here intro */}
+      <div data-testid="sd-start-here" className="rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:p-6">
+        <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-primary">
+          <Sparkles className="h-3 w-3" /> Start here
+        </div>
+        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">{training.title}</h3>
+        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+          Take this one calmly. Read the &quot;Why this matters&quot; below, walk the steps, then capture
+          a short reflection before you mark it complete. Your mentor is here for any question.
+        </p>
+      </div>
+
       {/* SD module header summary */}
       <div className="rounded-3xl border border-border/70 bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -876,12 +912,12 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
             </div>
           )}
 
-          {/* Scenario practice */}
+          {/* Practice scenario */}
           {fullContent && (
             <div data-testid="sd-scenario" className="rounded-2xl border border-border/70 bg-card p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Scenario practice</h3>
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Practice scenario</h3>
               </div>
               <div className="mt-3 space-y-3 text-[13px]">
                 <div className="rounded-xl border border-border/60 bg-background p-3">
