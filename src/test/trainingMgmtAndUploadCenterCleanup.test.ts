@@ -108,16 +108,19 @@ describe("Resource Upload Center — filters, summary, SD match column", () => {
     expect(RUC).toContain("resource-upload-status-summary");
     expect(RUC).toContain("resource-upload-filters");
     expect(RUC).toContain("resource-upload-admin-table");
+    // Filter tabs are rendered via a template literal — verify the test-id
+    // prefix + each tab id appears literally in the source.
+    expect(RUC).toContain("resource-filter-${id}");
     for (const id of [
-      "all",
-      "published",
-      "sd_sops",
-      "unmatched",
-      "privacy_review",
-      "vault_excluded",
-      "needs_file_repair",
+      '"all"',
+      '"published"',
+      '"sd_sops"',
+      '"unmatched"',
+      '"privacy_review"',
+      '"vault_excluded"',
+      '"needs_file_repair"',
     ]) {
-      expect(RUC).toContain(`resource-filter-${id}`);
+      expect(RUC).toContain(id);
     }
     expect(RUC).toContain("State Director match");
     expect(RUC).toContain("Matched");
