@@ -6,7 +6,7 @@
  * curriculum. Entries default to `pending_upload` / `pending_review` until a
  * real file is attached in Resource Management. We never fabricate URLs.
  */
-import { SD_SOPS_BY_WEEK } from "@/lib/training/academyData";
+import { SD_MODULE_SOP_LINKS } from "@/lib/training/stateDirectorModuleSopMap";
 import type { OSRole } from "@/lib/os/permissions";
 
 export type SDSopUploadStatus =
@@ -76,42 +76,36 @@ function fileNameFor(title: string): string {
  */
 function buildManifest(): SDSopManifestEntry[] {
   const byTitle = new Map<string, SDSopManifestEntry>();
-  for (const [weekStr, days] of Object.entries(SD_SOPS_BY_WEEK)) {
-    const week = Number(weekStr);
-    for (const [dayStr, list] of Object.entries(days)) {
-      const day = Number(dayStr);
-      list.forEach((title, position) => {
-        const id = "sd-sop-" + slugify(title);
-        const moduleId = `sd-w${week}d${day}-pos${position}`;
-        const existing = byTitle.get(title);
-        if (existing) {
-          if (!existing.moduleIds.includes(moduleId)) {
-            existing.moduleIds.push(moduleId);
-            existing.matchedTrainingTitles.push(title.replace(/ SOP$/i, ""));
-          }
-          return;
-        }
-        byTitle.set(title, {
-          id,
-          title,
-          fileName: fileNameFor(title),
-          sourceNote:
-            "Source-of-truth State Director SOP. Upload via Resource Management → State Director Launch SOPs.",
-          category: "state-director-launch",
-          resourceType: "sop",
-          roles: SD_LAUNCH_ROLES,
-          departments: ["state_operations"],
-          sensitivity: "role_restricted",
-          uploadStatus: "pending_review",
-          attachmentStatus: "pending_upload",
-          week,
-          day,
-          position,
-          moduleIds: [moduleId],
-          matchedTrainingTitles: [title.replace(/ SOP$/i, "")],
-        });
-      });
+  for (const link of SD_MODULE_SOP_LINKS) {
+    if (!link.sopTitle) continue;
+    const title = link.sopTitle;
+    const existing = byTitle.get(title);
+    if (existing) {
+      if (!existing.moduleIds.includes(link.moduleId)) {
+        existing.moduleIds.push(link.moduleId);
+        existing.matchedTrainingTitles.push(link.moduleTitle);
+      }
+      continue;
     }
+    byTitle.set(title, {
+      id: "sd-sop-" + slugify(title),
+      title,
+      fileName: fileNameFor(title),
+      sourceNote:
+        "Source-of-truth State Director SOP. Upload via Resource Management → State Director Launch SOPs.",
+      category: "state-director-launch",
+      resourceType: "sop",
+      roles: SD_LAUNCH_ROLES,
+      departments: ["state_operations"],
+      sensitivity: "role_restricted",
+      uploadStatus: "pending_review",
+      attachmentStatus: "pending_upload",
+      week: link.week,
+      day: link.day,
+      position: link.position,
+      moduleIds: [link.moduleId],
+      matchedTrainingTitles: [link.moduleTitle],
+    });
   }
   return Array.from(byTitle.values());
 }
