@@ -23,6 +23,7 @@ import {
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "@/components/training/SDJourneyView";
+import { SDLearnerHome } from "@/components/training/SDLearnerHome";
 import {
   loadLearnerHome,
   startLearnerModule,
@@ -191,6 +192,9 @@ export default function OSTraining() {
 
   return (
     <OSShell>
+      {isSD ? (
+        <SDLearnerHome firstName={firstName} trainings={journeyModules} learnerHome={learnerHome} />
+      ) : (
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
         <div className="min-w-0 space-y-12">
           {/* HERO */}
