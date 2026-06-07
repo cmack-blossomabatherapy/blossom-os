@@ -17,6 +17,7 @@
 import type { Training } from "./academyData";
 import { SD_SOPS_BY_WEEK } from "./academyData";
 import { SD_W1_FULL_CONTENT } from "./sdWeek1Content";
+import { SD_W23_FULL_CONTENT } from "./sdWeek23Content";
 
 export interface SDWalkStep {
   action: string;
@@ -735,12 +736,21 @@ export function isStateDirectorModule(training: Pick<Training, "id" | "departmen
  */
 export function getStateDirectorFullContent(training: Training): SDFullContent | null {
   if (!isStateDirectorModule(training)) return null;
-  return CURATED[training.id] ?? SD_W1_FULL_CONTENT[training.id] ?? deriveContent(training);
+  return (
+    CURATED[training.id] ??
+    SD_W1_FULL_CONTENT[training.id] ??
+    SD_W23_FULL_CONTENT[training.id] ??
+    deriveContent(training)
+  );
 }
 
 /** Exposed for tests — list of curated module ids. */
 export const SD_CURATED_MODULE_IDS = Array.from(
-  new Set([...Object.keys(CURATED), ...Object.keys(SD_W1_FULL_CONTENT)]),
+  new Set([
+    ...Object.keys(CURATED),
+    ...Object.keys(SD_W1_FULL_CONTENT),
+    ...Object.keys(SD_W23_FULL_CONTENT),
+  ]),
 );
 
 /* ---------------- completeness classifier ---------------- */
@@ -780,6 +790,7 @@ export function classifyStateDirectorModule(
   const day = parsed?.day ?? 1;
   const hasCurated = !!CURATED[training.id];
   const hasWeek1Full = !!SD_W1_FULL_CONTENT[training.id];
+  const hasWeek23Full = !!SD_W23_FULL_CONTENT[training.id];
   const screenshots = getStateDirectorScreenshots(training.id);
   const hasScreenshot = screenshots.length > 0;
   const screenshotPending =
@@ -794,7 +805,7 @@ export function classifyStateDirectorModule(
   let status: SDModuleCompleteness;
   if (isWelcome) {
     status = "welcome_non_sop";
-  } else if (hasCurated || hasWeek1Full) {
+  } else if (hasCurated || hasWeek1Full || hasWeek23Full) {
     status = "curated";
   } else if (isVideoModule) {
     status = "needs_video";
@@ -812,7 +823,7 @@ export function classifyStateDirectorModule(
     week,
     day,
     status,
-    hasCuratedContent: hasCurated || hasWeek1Full,
+    hasCuratedContent: hasCurated || hasWeek1Full || hasWeek23Full,
     hasScreenshot,
     screenshotPending,
     sopName,
