@@ -37,6 +37,12 @@ export const SD_W1_TRAINING_SPECS: Record<string, SDTrainingSpecOverride> = {
     completionEvidence: "Bring your one-sentence restatement and one mapped metric to your mentor check-in.",
     reflectionPrompt: "Which part of the mission will be hardest to protect when the state is busy?",
   },
+  "Core Values": {
+    whyItMatters: "Values are how leaders make calls when there's no playbook. Your team will learn the values by watching your decisions.",
+    whatToDo: "Read each value. Pick the one that comes naturally and the one that will require discipline. Write one observable behavior for each.",
+    completionEvidence: "Share your two chosen values and one action with your mentor.",
+    reflectionPrompt: "Which value will your team most need from you during your first month?",
+  },
   "Welcome Video from Blossom": {
     whyItMatters: "Sets the tone for everything you'll learn. You'll hear our purpose in our own words.",
     whatToDo: "Watch the welcome video end-to-end. Capture one thing that stood out and one question you want to bring back to your mentor.",
