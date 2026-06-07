@@ -10,6 +10,7 @@ import {
   Wallet, Stethoscope, Crown, Workflow, BookOpen, Sparkles, type LucideIcon,
 } from "lucide-react";
 import { SD_W1_TRAINING_SPECS } from "./sdWeek1Content";
+import { SD_W23_TRAINING_SPECS } from "./sdWeek23Content";
 
 export type TrainingType =
   | "SOP"
