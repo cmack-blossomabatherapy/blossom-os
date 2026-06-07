@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { SD_W1_TRAINING_SPECS } from "./sdWeek1Content";
 import { SD_W23_TRAINING_SPECS } from "./sdWeek23Content";
+import { SD_W45_TRAINING_SPECS } from "./sdWeek45Content";
 
 export type TrainingType =
   | "SOP"
