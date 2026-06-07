@@ -151,6 +151,46 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
           </div>
         </header>
 
+        {/* 1.5 · Start here today — day-one anchor */}
+        <section
+          data-testid="sd-start-here-today"
+          className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                Start here today
+              </p>
+              <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+                Five small wins for your first day
+              </h2>
+              <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
+                You do not have to finish the journey today. Take these five steps and you have
+                had a strong first day — really.
+              </p>
+            </div>
+          </div>
+          <ol className="mt-4 grid gap-2 md:grid-cols-2">
+            {[
+              "Open Welcome to Blossom and read both leadership letters.",
+              "Complete the Week 1 · Day 1 modules.",
+              "Write one short reflection on what stood out.",
+              "Ask your mentor one question — any question.",
+              "Close the laptop. Do not worry about future weeks yet.",
+            ].map((step, idx) => (
+              <li
+                key={step}
+                className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/60 px-3 py-2.5"
+              >
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[11.5px] font-semibold text-primary">
+                  {idx + 1}
+                </span>
+                <span className="text-[13px] leading-snug text-foreground">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         {/* 2 · Welcome to Blossom anchor */}
         <section data-testid="sd-welcome-anchor">
           <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card p-6 sm:p-7">

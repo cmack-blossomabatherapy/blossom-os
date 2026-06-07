@@ -77,6 +77,11 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import TrainingControlRoom from "@/components/training/TrainingControlRoom";
 import { LayoutDashboard } from "lucide-react";
+import {
+  SDLaunchReadinessPanel,
+  SDDayOneAdminGuide,
+  SDMentorCheckInGuide,
+} from "@/components/training/SDLaunchReadinessPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
 
@@ -480,6 +485,11 @@ export default function TrainingManagementCenter() {
           {nav === "control-room" && (
             <div className="space-y-6" data-testid="training-control-room-wide">
               <SDSopReadinessPanel />
+              <SDLaunchReadinessPanel />
+              <div className="grid gap-6 xl:grid-cols-2">
+                <SDDayOneAdminGuide />
+                <SDMentorCheckInGuide />
+              </div>
               <TrainingControlRoom />
             </div>
           )}
