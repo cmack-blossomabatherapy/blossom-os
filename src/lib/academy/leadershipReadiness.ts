@@ -382,11 +382,35 @@ export function buildReadinessSummaryText(opts: {
   checklist: LaunchChecklistItem[];
   risks: RiskSignal[];
   nextAction: string;
+  weekNumber?: number;
+  dayNumber?: number;
+  shadowHours?: number;
+  checkinCount?: number;
+  certificationStatus?: ReadinessStatus;
+  setupGaps?: string[];
 }): string {
   const missing = opts.checklist.filter((c) => c.status !== "complete");
+  const positionLine =
+    opts.weekNumber != null
+      ? `Position: Week ${opts.weekNumber}${opts.dayNumber != null ? ` · Day ${opts.dayNumber}` : ""}`
+      : null;
+  const evidenceLine =
+    opts.shadowHours != null || opts.checkinCount != null
+      ? `Evidence: ${opts.shadowHours ?? 0}h shadowing · ${opts.checkinCount ?? 0} mentor check-ins`
+      : null;
+  const certLine =
+    opts.certificationStatus
+      ? `Certification: ${opts.certificationStatus.replace("_", " ")}`
+      : null;
   const lines = [
     `State Director Readiness — ${opts.traineeName} (${opts.state || "state TBD"})`,
     `Readiness: ${opts.readinessPct}%`,
+    ...(positionLine ? [positionLine] : []),
+    ...(evidenceLine ? [evidenceLine] : []),
+    ...(certLine ? [certLine] : []),
+    ...(opts.setupGaps && opts.setupGaps.length
+      ? [`Setup gaps: ${opts.setupGaps.join(", ")}`]
+      : []),
     "",
     "Category completion:",
     ...opts.cats.map((c) => `  • ${c.label}: ${c.completion}%`),
