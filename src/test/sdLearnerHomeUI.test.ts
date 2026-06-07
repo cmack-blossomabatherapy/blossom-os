@@ -67,6 +67,6 @@ describe("State Director learner home — spec sections present", () => {
 
   it("OSTraining renders SDLearnerHome for state directors", () => {
     expect(page).toMatch(/SDLearnerHome/);
-    expect(page).toMatch(/isSD \?\s*<SDLearnerHome/);
+    expect(page).toMatch(/isSD \?\s*\(?\s*<SDLearnerHome/);
   });
 });
