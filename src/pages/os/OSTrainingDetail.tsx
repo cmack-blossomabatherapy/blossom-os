@@ -1068,7 +1068,7 @@ function SignoffRow({ label, done }: { label: string; done: boolean }) {
 /**
  * Surfaces the SOP mapped to this State Director module from
  * `stateDirectorModuleSopMap`. Resolves the live Resource Library row by
- * normalized title match. Always renders a calm state — never href="#".
+ * normalized title match. Always renders a calm state — never a hash link.
  */
 function SdMappedSopCard({ moduleId }: { moduleId: string }) {
   const sopTitle = getSopTitleForModule(moduleId);
