@@ -30,7 +30,8 @@ export type SdSopRealStatus =
   | "pending"
   | "held"
   | "missing"
-  | "excluded";
+  | "excluded"
+  | "needs_file_repair";
 
 export interface SdSopCoverageEntry {
   entry: SDSopManifestEntry;
@@ -45,9 +46,11 @@ export interface SdSopCoverageReport {
   held: number;
   missing: number;
   excluded: number;
+  needsFileRepair: number;
   entries: SdSopCoverageEntry[];
   publishedEntries: SdSopCoverageEntry[];
   missingEntries: SdSopCoverageEntry[];
+  needsFileRepairEntries: SdSopCoverageEntry[];
 }
 
 function classify(resource: Resource | null): SdSopRealStatus {
@@ -71,7 +74,10 @@ function classify(resource: Resource | null): SdSopRealStatus {
     resource.status !== "Archived" &&
     resource.attachmentStatus !== "pending_upload"
   ) {
-    return "published";
+    const hasUsableUrl = !!(resource.url || resource.fileUrl);
+    const hasStoragePath = !!resource.storagePath;
+    if (hasUsableUrl || hasStoragePath) return "published";
+    return "needs_file_repair";
   }
   return "pending";
 }
@@ -95,17 +101,23 @@ export function computeSdSopCoverageFromResources(
       acc[e.status] += 1;
       return acc;
     },
-    { published: 0, pending: 0, held: 0, missing: 0, excluded: 0 } as Record<
+    { published: 0, pending: 0, held: 0, missing: 0, excluded: 0, needs_file_repair: 0 } as Record<
       SdSopRealStatus,
       number
     >,
   );
   return {
     total: manifest.length,
-    ...counts,
+    published: counts.published,
+    pending: counts.pending,
+    held: counts.held,
+    missing: counts.missing,
+    excluded: counts.excluded,
+    needsFileRepair: counts.needs_file_repair,
     entries,
     publishedEntries: entries.filter((e) => e.status === "published"),
     missingEntries: entries.filter((e) => e.status === "missing"),
+    needsFileRepairEntries: entries.filter((e) => e.status === "needs_file_repair"),
   };
 }
 
