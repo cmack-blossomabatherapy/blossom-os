@@ -1928,8 +1928,6 @@ function SDLaunchCoveragePanel() {
   const navigate = useNavigate();
   const { resources: liveResources, loading, error } = useAdminResources();
   const live = computeSdSopCoverageFromResources(liveResources);
-  // Manifest fallback so the panel never renders empty if Supabase is loading.
-  const fallback = computeSdSopCoverage();
   const screenshotsAll = SD_PRIORITY_SCREENSHOT_MODULES.flatMap((id) =>
     getStateDirectorScreenshots(id),
   );
@@ -1951,7 +1949,7 @@ function SDLaunchCoveragePanel() {
     { label: "Launch modules", value: String(moduleCount) },
     { label: "SD SOPs", value: String(live.total) },
     { label: "Published", value: String(live.published), tone: "text-emerald-600" },
-    { label: "Pending", value: String(live.pending + fallback.pending - fallback.pending), tone: "text-amber-600" },
+    { label: "Pending", value: String(live.pending), tone: "text-amber-600" },
     { label: "Held / review", value: String(live.held), tone: "text-amber-600" },
     { label: "Missing", value: String(live.missing), tone: "text-rose-600" },
     { label: "Screenshots", value: String(screenshotsAll.length) },
