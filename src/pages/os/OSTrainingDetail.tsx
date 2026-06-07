@@ -35,6 +35,7 @@ import {
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
+import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
