@@ -81,10 +81,13 @@ describe("leadershipReadiness — launch checklist", () => {
       "Staffing / recruiting / operations complete",
       "State ownership / leadership complete",
       "Required shadowing complete",
-      "Required mentor check-ins complete",
+      "Required shadow sign-offs complete",
+      "Mentor check-ins logged (≥ 3)",
+      "Knowledge checks ≥ 80%",
       "Final knowledge review complete",
       "Readiness assessment complete",
       "Leadership sign-off complete",
+      "State Director Certification module complete",
       "State Director certification complete",
     ]));
   });
