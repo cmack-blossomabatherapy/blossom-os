@@ -782,10 +782,18 @@ export function classifyStateDirectorModule(
   const sopName = SD_SOPS_BY_WEEK[week]?.[day]?.[0];
   const isVideoModule = /^video$/i.test((training as { type?: string }).type ?? "");
 
-  let status: SDModuleCompleteness = hasCurated ? "curated" : "derived";
-  if (!sopName) status = "needs_sop_link";
-  if (hasScreenshot && screenshotPending && status !== "needs_sop_link") status = "needs_screenshot";
-  if (isVideoModule && !hasCurated) status = "needs_video";
+  let status: SDModuleCompleteness;
+  if (hasCurated) {
+    status = "curated";
+  } else if (isVideoModule) {
+    status = "needs_video";
+  } else if (!sopName) {
+    status = "needs_sop_link";
+  } else if (hasScreenshot && screenshotPending) {
+    status = "needs_screenshot";
+  } else {
+    status = "derived";
+  }
 
   return {
     moduleId: training.id,
