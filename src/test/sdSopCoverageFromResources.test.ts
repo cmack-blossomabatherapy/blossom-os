@@ -31,8 +31,9 @@ function makeResource(overrides: Partial<Resource>): Resource {
 
 describe("normalizeSopTitle", () => {
   it("ignores case, the word SOP, and punctuation", () => {
-    expect(normalizeSopTitle("State Director Role & Responsibilities SOP"))
-      .toBe(normalizeSopTitle("state director role and responsibilities"));
+    const a = normalizeSopTitle("  State Director Role & Responsibilities SOP  ");
+    const b = normalizeSopTitle("state director role responsibilities");
+    expect(a).toBe(b);
   });
 });
 
