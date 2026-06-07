@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   ArrowRight, PlayCircle, Sparkles, Heart, Compass, Users, ArrowLeft,
-  CalendarDays, BookOpen, MessageSquare,
+  CalendarDays, BookOpen, MessageSquare, Quote,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,23 @@ export default function OSWelcomeToBlossom() {
       icon: Users,
       title: "Your team",
       body: "You're joining people who care deeply about the work and about each other. You're never doing this alone.",
+    },
+  ];
+
+  const leaders = [
+    {
+      name: "Chad Kaufman",
+      role: "Chief Executive Officer",
+      initial: "C",
+      letter:
+        "Welcome to Blossom. The reason this company exists is simple — we believe families deserve calm, structured, deeply caring ABA therapy, and the people delivering it deserve a real operational system behind them. You're not joining a startup figuring it out. You're joining a team that has done this work before, in multiple states, and that takes the responsibility seriously. Take your first week slow. Ask anything. We're glad you're here.",
+    },
+    {
+      name: "Shira Lasry",
+      role: "Director of Operations",
+      initial: "S",
+      letter:
+        "My job — and your mentor's job — is to make sure you never feel lost. Blossom OS, our SOPs, your training path, and your weekly check-ins exist so the operational work is clear. Your first job isn't to know everything. It's to get grounded. Follow the launch path, lean on your mentor, and tell us where the system is unclear so we can fix it for the next person.",
     },
   ];
 
@@ -129,6 +146,40 @@ export default function OSWelcomeToBlossom() {
           ))}
         </section>
 
+        {/* LEADERSHIP LETTERS */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-[18px] font-semibold tracking-tight text-foreground">
+              A note from leadership
+            </h2>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
+              Two short letters worth reading once.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {leaders.map((l) => (
+              <article
+                key={l.name}
+                className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm"
+              >
+                <Quote className="absolute right-5 top-5 h-5 w-5 text-primary/30" aria-hidden />
+                <div className="flex items-center gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-[14px] font-semibold text-primary">
+                    {l.initial}
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-semibold text-foreground">{l.name}</p>
+                    <p className="text-[12px] text-muted-foreground">{l.role}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-[13.5px] leading-relaxed text-muted-foreground">
+                  {l.letter}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
         {/* QUICK LINKS — calm, single column of subtle rows */}
         <section className="space-y-3">
           <div className="flex items-end justify-between">
@@ -181,13 +232,23 @@ export default function OSWelcomeToBlossom() {
                 a guided tour of the systems you'll use. Nothing to memorize — just look and ask.
               </p>
             </div>
-            <Button
-              size="lg"
-              className="self-start rounded-2xl shadow-md shadow-primary/20"
-              onClick={() => navigate("/onboarding/week/1")}
-            >
-              Start Week 1 <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
+            <div className="flex flex-col gap-2 self-start">
+              <Button
+                size="lg"
+                className="rounded-2xl shadow-md shadow-primary/20"
+                onClick={() => navigate("/onboarding/week/1")}
+              >
+                Start Week 1 <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => navigate("/training")}
+              >
+                Continue to State Director Journey
+              </Button>
+            </div>
           </div>
         </section>
 

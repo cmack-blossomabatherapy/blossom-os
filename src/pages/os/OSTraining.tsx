@@ -13,6 +13,7 @@ import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
   MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, GraduationCap,
+  PlayCircle, Heart, Users as UsersIcon, Lightbulb,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
@@ -68,6 +69,8 @@ export default function OSTraining() {
   const [query, setQuery] = useState("");
   const { trainings } = useAcademy(); // subscribe to store
 
+  const isSD = role === "state_director";
+
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
   // Continue Learning = next-up modules from the user's role journey that aren't completed.
@@ -118,6 +121,18 @@ export default function OSTraining() {
     };
   }, [trainings]);
 
+  // Launch-scoped progress for State Director: only the journey modules count,
+  // never the global "133 required" pile that anxiety-builds new hires.
+  const launch = useMemo(() => {
+    if (!journeyModules.length) return { done: 0, total: 0, pct: 0 };
+    const done = journeyModules.filter((m) => getProgress(m.id).status === "completed").length;
+    return {
+      done,
+      total: journeyModules.length,
+      pct: Math.round((done / journeyModules.length) * 100),
+    };
+  }, [journeyModules]);
+
   const nextModule = mastery.nextId ? journeyModules.find((m) => m.id === mastery.nextId) : undefined;
 
   return (
@@ -125,22 +140,42 @@ export default function OSTraining() {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
         <div className="min-w-0 space-y-12">
           {/* HERO */}
-          <header>
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              <span>Training Academy</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-              <span className="capitalize">{role.replace(/_/g, " ")}</span>
+          <header className={cn(
+            "relative overflow-hidden",
+            isSD && "rounded-3xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 md:p-8 shadow-sm",
+          )}>
+            {isSD && (
+              <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+            )}
+            <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  <span>Training Academy</span>
+                  <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                  <span className="capitalize">{role.replace(/_/g, " ")}</span>
+                </div>
+                <h1 className="mt-2 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
+                  {isSD ? "Welcome back" : greeting}, <span className="capitalize">{firstName}</span>.
+                </h1>
+                <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
+                  {isSD
+                    ? "Your first job is to get grounded. Start with Welcome to Blossom, then follow the launch path one step at a time. Your mentor and leadership can see your progress — you're not doing this alone."
+                    : overall.avg >= 80
+                    ? "You're nearly there — finish your remaining modules to complete your role journey."
+                    : overall.avg > 0
+                    ? `You're ${overall.avg}% through your training. Let's keep moving.`
+                    : "Welcome to the Blossom Academy. Start with your role journey below."}
+                </p>
+              </div>
+              {isSD && (
+                <div className="grid grid-cols-3 gap-2 md:w-[320px] shrink-0">
+                  <HeroStat label="Week" value={SDWeekLabel(launch.done, launch.total)} />
+                  <HeroStat label="Launch" value={`${launch.pct}%`} />
+                  <HeroStat label="Mentor" value="Assigned" />
+                </div>
+              )}
             </div>
-            <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
-              {greeting}, <span className="capitalize">{firstName}</span>.
-            </h1>
-            <p className="mt-1 text-[14px] text-muted-foreground">
-              {overall.avg >= 80
-                ? "You're nearly there — finish your remaining modules to complete your role journey."
-                : overall.avg > 0
-                ? `You're ${overall.avg}% through your training. Let's keep moving.`
-                : "Welcome to the Blossom Academy. Start with your role journey below."}
-            </p>
 
             <div className="relative mt-5 max-w-xl">
               <Search className="pointer-events-none absolute z-10 left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -194,7 +229,7 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resources")}>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resource-library")}>
                 <BookMarked className="mr-1.5 h-3.5 w-3.5" /> Resource Library
               </Button>
               {role === "super_admin" && (
@@ -204,6 +239,9 @@ export default function OSTraining() {
               )}
             </div>
           </header>
+
+          {/* WELCOME TO BLOSSOM — first emotional anchor */}
+          {isSD && <WelcomeAnchor onOpen={() => navigate("/onboarding/phase/welcome")} />}
 
           {/* CONTINUE LEARNING */}
           {cont.length > 0 && (
@@ -421,7 +459,7 @@ export default function OSTraining() {
             <SectionHeader title="Quick Access" subtitle="Jump straight into the tools and knowledge you need." />
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-2 max-w-xl">
               {[
-                { label: "Resource Library", icon: BookMarked, to: "/resources" },
+                { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
                 { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
               ].map((q) => {
                 const Icon = q.icon;
@@ -481,23 +519,59 @@ export default function OSTraining() {
           <div className="rounded-2xl border border-border/70 bg-card p-5">
             <div className="flex items-center gap-2">
               <BookMarked className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Progress</h3>
+              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {isSD ? "Your launch progress" : "Progress"}
+              </h3>
             </div>
             <div className="mt-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-[11px] text-muted-foreground">Overall</span>
-                <span className="text-[22px] font-semibold tabular-nums">{overall.avg}%</span>
+                <span className="text-[11px] text-muted-foreground">{isSD ? "Launch path" : "Overall"}</span>
+                <span className="text-[22px] font-semibold tabular-nums">{isSD ? launch.pct : overall.avg}%</span>
               </div>
-              <Progress value={overall.avg} className="mt-2 h-1.5" />
+              <Progress value={isSD ? launch.pct : overall.avg} className="mt-2 h-1.5" />
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
-              <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Required" value={`${overall.requiredDone}/${overall.requiredTotal}`} />
-              <Stat icon={<AlertCircle className="h-3.5 w-3.5 text-red-500" />} label="Overdue" value={overall.overdue} />
-            </div>
+            {isSD ? (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
+                <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Launch" value={`${launch.done}/${launch.total}`} />
+                <Stat icon={<Sparkles className="h-3.5 w-3.5 text-primary" />} label="Welcome" value={"In progress"} />
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
+                <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Required" value={`${overall.requiredDone}/${overall.requiredTotal}`} />
+                <Stat icon={<AlertCircle className="h-3.5 w-3.5 text-red-500" />} label="Overdue" value={overall.overdue} />
+              </div>
+            )}
           </div>
 
-          {/* Required Due */}
-          {required.length > 0 && (
+          {/* Need help? — SD-specific calm panel replaces anxiety-heavy Required Due */}
+          {isSD ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5">
+              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Need help?</h3>
+              <p className="mt-1 text-[11.5px] text-muted-foreground">
+                Nothing here has to be solved alone.
+              </p>
+              <div className="mt-3 space-y-1 text-[12.5px]">
+                {[
+                  { label: "Ask my mentor", icon: UsersIcon, to: "/messages" },
+                  { label: "HR partner", icon: Heart, to: "/messages" },
+                  { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
+                  { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
+                ].map(({ label, icon: Icon, to }) => (
+                  <Link
+                    key={label}
+                    to={to}
+                    className="flex items-center justify-between rounded-lg px-2 py-1.5 text-foreground hover:bg-muted/50"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      {label}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : required.length > 0 ? (
             <div className="rounded-2xl border border-border/70 bg-card p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Required Due</h3>
@@ -523,7 +597,7 @@ export default function OSTraining() {
                 })}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Quick Access */}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
@@ -531,7 +605,7 @@ export default function OSTraining() {
             <div className="mt-3 space-y-0.5 text-[12.5px]">
               {[
                 { label: "Ask Blossom AI", to: "/ai/assistant" },
-                { label: "Resource Library", to: "/resources" },
+                { label: "Resource Library", to: "/resource-library" },
               ].map((q) => (
                 <Link
                   key={q.label}
@@ -620,5 +694,61 @@ function SubGroup({
         })}
       </div>
     </div>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2.5 backdrop-blur">
+      <p className="text-[9.5px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-0.5 truncate text-[14px] font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function SDWeekLabel(done: number, total: number): string {
+  if (total === 0) return "—";
+  // ~5 weeks of launch; estimate which week the learner is in by progress.
+  const pct = done / total;
+  const week = Math.min(5, Math.max(1, Math.ceil(pct * 5) || 1));
+  return `Week ${week}`;
+}
+
+function WelcomeAnchor({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section>
+      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-sm sm:p-7">
+        <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                Phase 0 · For everyone
+              </p>
+              <h2 className="mt-0.5 text-[19px] font-semibold tracking-tight text-foreground">
+                Welcome to Blossom
+              </h2>
+              <p className="mt-1.5 max-w-xl text-[13.5px] leading-relaxed text-muted-foreground">
+                Meet the team, hear our mission, watch the welcome video, and read notes from Chad and Shira. Revisit anytime — this is your grounding.
+              </p>
+              <ul className="mt-3 grid gap-1.5 text-[12px] text-muted-foreground sm:grid-cols-2">
+                <li className="inline-flex items-center gap-1.5"><PlayCircle className="h-3.5 w-3.5 text-primary" /> Welcome video</li>
+                <li className="inline-flex items-center gap-1.5"><Heart className="h-3.5 w-3.5 text-primary" /> Mission & Vision</li>
+                <li className="inline-flex items-center gap-1.5"><Compass className="h-3.5 w-3.5 text-primary" /> Core Values</li>
+                <li className="inline-flex items-center gap-1.5"><UsersIcon className="h-3.5 w-3.5 text-primary" /> Meet the Team</li>
+                <li className="inline-flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> Notes from Chad & Shira</li>
+                <li className="inline-flex items-center gap-1.5"><Lightbulb className="h-3.5 w-3.5 text-primary" /> Revisit anytime</li>
+              </ul>
+            </div>
+          </div>
+          <Button onClick={onOpen} size="lg" className="self-start rounded-2xl shadow-md shadow-primary/20">
+            <PlayCircle className="mr-1.5 h-4 w-4" /> Start Welcome to Blossom <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
