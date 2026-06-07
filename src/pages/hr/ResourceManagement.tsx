@@ -60,11 +60,8 @@ export default function ResourceManagement() {
     if (Array.isArray(seedResources)) seedResources.forEach(push);
     return out;
   }, [liveResources, sessionItems]);
-  const setItems = (updater: (prev: Resource[]) => Resource[]) => {
-    // Mutations stay in the session layer; persistence happens via the
-    // bulk-upload flow, not by replacing live Supabase rows.
-    setSessionItems((prev) => updater(prev));
-  };
+  // Mutations stay in the session layer; persistence happens via the
+  // bulk-upload flow, not by replacing live Supabase rows directly.
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<ResourceCategoryId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ResourceStatus | "all">("all");
