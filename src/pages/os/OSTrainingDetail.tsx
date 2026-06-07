@@ -1,23 +1,37 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   ArrowLeft, Clock, FileText, Workflow, Play, CheckCircle2, BookOpen,
   BookMarked, Download, ExternalLink, Sparkles, ArrowRight, ListChecks,
-  HelpCircle, FolderOpen, Check,
+  HelpCircle, FolderOpen, Check, ShieldCheck, ChevronRight, Library,
+  Lightbulb, Compass, Pencil,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useAcademy, getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
-  trainingQuiz, type TrainingSection,
+  trainingQuiz, type TrainingSection, type TrainingResource, type Training,
 } from "@/lib/training/academyData";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  loadLearnerHome, startLearnerModule, completeLearnerModule,
+  emptyLearnerHome, type LearnerHome,
+} from "@/lib/academy/learnerHome";
+import { upsertProgress } from "@/lib/academy/api";
+
+/** A resource is "pending" when it has no usable destination yet. */
+function isPendingResource(r: TrainingResource): boolean {
+  const u = (r.url ?? "").trim();
+  return u === "" || u === "#";
+}
 
 const SECTION_ICON: Record<TrainingSection["type"], typeof FileText> = {
   Overview: BookMarked,
@@ -55,6 +69,8 @@ export default function OSTrainingDetail() {
   }
 
   const activeSection = sections.find((s) => s.id === activeSectionId) ?? sections[0];
+
+  const isSD = training.id.startsWith("sd-") || training.department === "state_director";
 
   return (
     <OSShell>
@@ -99,6 +115,8 @@ export default function OSTrainingDetail() {
           </div>
         </header>
       </div>
+
+      {isSD && <SDModuleDetailPanel training={training} />}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr_300px]">
         {/* Left nav */}
