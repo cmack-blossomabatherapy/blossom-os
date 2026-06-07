@@ -9,6 +9,7 @@ import {
   ClipboardList, ShieldCheck, CalendarClock, Users, Heart, CheckCircle2,
   Wallet, Stethoscope, Crown, Workflow, BookOpen, Sparkles, type LucideIcon,
 } from "lucide-react";
+import { SD_W1_TRAINING_SPECS } from "./sdWeek1Content";
 
 export type TrainingType =
   | "SOP"
