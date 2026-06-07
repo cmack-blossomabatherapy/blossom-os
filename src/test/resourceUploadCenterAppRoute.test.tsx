@@ -105,7 +105,7 @@ describe("Resource Upload Center actual App routes", () => {
     renderAt("/hr/resource-management", ["admin"]);
 
     expect(await screen.findByRole("heading", { name: "Resource Upload Center" })).toBeInTheDocument();
-    expect(screen.getByText("Upload SOPs, handbooks, policies, templates, videos, guides, checklists, and workflows.")).toBeInTheDocument();
+    expect(screen.getByText("Uploads here power Resource Library and Training Academy.")).toBeInTheDocument();
   });
 
   it("visiting /hr/resource-management#bulk-upload renders the bulk upload section", async () => {
