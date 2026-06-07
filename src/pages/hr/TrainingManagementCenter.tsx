@@ -335,7 +335,14 @@ export default function TrainingManagementCenter() {
 
   return (
     <OSShell>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[220px_1fr_300px]">
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-6",
+          nav === "control-room"
+            ? "xl:grid-cols-[220px_1fr]"
+            : "xl:grid-cols-[220px_1fr_300px]",
+        )}
+      >
         {/* LEFT NAV */}
         <aside className="hidden xl:block">
           <nav className="sticky top-4 space-y-0.5 rounded-2xl border border-border/70 bg-card p-2">
@@ -544,13 +551,15 @@ export default function TrainingManagementCenter() {
           </section>
         </main>
 
-        {/* RIGHT RAIL */}
-        <aside className="hidden xl:block">
-          <div className="sticky top-4 space-y-4">
-            <AIAssistantPanel />
-            <ProgressPanel />
-          </div>
-        </aside>
+        {/* RIGHT RAIL — hidden on Control Room to free up width */}
+        {nav !== "control-room" && (
+          <aside className="hidden xl:block">
+            <div className="sticky top-4 space-y-4">
+              <AIAssistantPanel />
+              <ProgressPanel />
+            </div>
+          </aside>
+        )}
       </div>
 
       <AIGenerateDialog open={aiOpen} onOpenChange={setAiOpen} />
