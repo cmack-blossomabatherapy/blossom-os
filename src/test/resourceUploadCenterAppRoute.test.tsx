@@ -36,6 +36,7 @@ function makeQuery(table: string) {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     in: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
     order: vi.fn(() => builder),
     insert: vi.fn(() => builder),
     update: vi.fn(() => builder),
