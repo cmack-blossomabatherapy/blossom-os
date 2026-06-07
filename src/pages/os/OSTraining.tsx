@@ -660,3 +660,59 @@ function SubGroup({
     </div>
   );
 }
+
+function HeroStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/70 px-3 py-2.5 backdrop-blur">
+      <p className="text-[9.5px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-0.5 truncate text-[14px] font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function SDWeekLabel(done: number, total: number): string {
+  if (total === 0) return "—";
+  // ~5 weeks of launch; estimate which week the learner is in by progress.
+  const pct = done / total;
+  const week = Math.min(5, Math.max(1, Math.ceil(pct * 5) || 1));
+  return `Week ${week}`;
+}
+
+function WelcomeAnchor({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section>
+      <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-sm sm:p-7">
+        <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                Phase 0 · For everyone
+              </p>
+              <h2 className="mt-0.5 text-[19px] font-semibold tracking-tight text-foreground">
+                Welcome to Blossom
+              </h2>
+              <p className="mt-1.5 max-w-xl text-[13.5px] leading-relaxed text-muted-foreground">
+                Meet the team, hear our mission, watch the welcome video, and read notes from Chad and Shira. Revisit anytime — this is your grounding.
+              </p>
+              <ul className="mt-3 grid gap-1.5 text-[12px] text-muted-foreground sm:grid-cols-2">
+                <li className="inline-flex items-center gap-1.5"><PlayCircle className="h-3.5 w-3.5 text-primary" /> Welcome video</li>
+                <li className="inline-flex items-center gap-1.5"><Heart className="h-3.5 w-3.5 text-primary" /> Mission & Vision</li>
+                <li className="inline-flex items-center gap-1.5"><Compass className="h-3.5 w-3.5 text-primary" /> Core Values</li>
+                <li className="inline-flex items-center gap-1.5"><UsersIcon className="h-3.5 w-3.5 text-primary" /> Meet the Team</li>
+                <li className="inline-flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5 text-primary" /> Notes from Chad & Shira</li>
+                <li className="inline-flex items-center gap-1.5"><Lightbulb className="h-3.5 w-3.5 text-primary" /> Revisit anytime</li>
+              </ul>
+            </div>
+          </div>
+          <Button onClick={onOpen} size="lg" className="self-start rounded-2xl shadow-md shadow-primary/20">
+            <PlayCircle className="mr-1.5 h-4 w-4" /> Start Welcome to Blossom <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
