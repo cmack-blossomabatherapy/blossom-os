@@ -45,7 +45,7 @@ export interface SDSopManifestEntry {
 const SD_LAUNCH_ROLES: OSRole[] = [
   "state_director",
   "operations_leadership",
-  "executive",
+  "executive_leadership",
   "super_admin",
 ];
 
@@ -53,8 +53,8 @@ const SD_LAUNCH_ROLES: OSRole[] = [
 export const SD_SOP_FORBIDDEN_ROLES: OSRole[] = [
   "rbt",
   "bcba",
-  "intake",
-  "scheduling",
+  "intake_coordinator",
+  "scheduling_team",
   "billing_finance",
 ];
 
