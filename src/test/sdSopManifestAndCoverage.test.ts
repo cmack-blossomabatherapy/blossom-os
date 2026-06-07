@@ -83,7 +83,10 @@ describe("State Director module completeness classifier", () => {
     ).toBeNull();
   });
 
-  it("flags derived modules with pending screenshot as needs_screenshot", () => {
+  it("curated content trumps pending-screenshot status for SD modules", () => {
+    // Week 4 modules are now fully curated; even when a screenshot is still
+    // pending upload, the module classifies as `curated` because the written
+    // content + walkthrough + SOP + scenario are complete.
     const r = classifyStateDirectorModule({
       id: "sd-w4d1-staffing-structure",
       title: "W4 · D1 — Staffing Structure",
@@ -93,7 +96,8 @@ describe("State Director module completeness classifier", () => {
     expect(r).not.toBeNull();
     expect(r!.hasScreenshot).toBe(true);
     expect(r!.screenshotPending).toBe(true);
-    expect(r!.status).toBe("needs_screenshot");
+    expect(r!.hasCuratedContent).toBe(true);
+    expect(r!.status).toBe("curated");
   });
 
   it("exposes a non-empty curated id list", () => {
