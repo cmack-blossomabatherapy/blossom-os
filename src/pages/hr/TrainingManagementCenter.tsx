@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
-import {
-  SD_SOP_MANIFEST,
-  computeSdSopCoverage,
-} from "@/lib/resources/stateDirectorSopManifest";
+import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import { useAdminResources } from "@/hooks/useAdminResources";
 import {
   SD_PRIORITY_SCREENSHOT_MODULES,
   getStateDirectorScreenshots,
@@ -1924,7 +1923,8 @@ function ResourceLibraryView() {
 }
 function SDLaunchCoveragePanel() {
   const navigate = useNavigate();
-  const coverage = computeSdSopCoverage();
+  const { resources: liveResources, loading, error } = useAdminResources();
+  const live = computeSdSopCoverageFromResources(liveResources);
   const screenshotsAll = SD_PRIORITY_SCREENSHOT_MODULES.flatMap((id) =>
     getStateDirectorScreenshots(id),
   );
@@ -1944,13 +1944,14 @@ function SDLaunchCoveragePanel() {
 
   const tiles: { label: string; value: string; tone?: string }[] = [
     { label: "Launch modules", value: String(moduleCount) },
-    { label: "SD SOPs", value: String(coverage.total) },
-    { label: "Uploaded", value: String(coverage.uploaded), tone: "text-emerald-600" },
-    { label: "Pending", value: String(coverage.pending), tone: "text-amber-600" },
+    { label: "SD SOPs", value: String(live.total) },
+    { label: "Published", value: String(live.published), tone: "text-emerald-600" },
+    { label: "Pending", value: String(live.pending), tone: "text-amber-600" },
+    { label: "Held / review", value: String(live.held), tone: "text-amber-600" },
+    { label: "Missing", value: String(live.missing), tone: "text-rose-600" },
     { label: "Screenshots", value: String(screenshotsAll.length) },
     { label: "SS uploaded", value: String(screenshotUploaded), tone: "text-emerald-600" },
     { label: "SS pending", value: String(screenshotPending), tone: "text-amber-600" },
-    { label: "Welcome video", value: "Pending", tone: "text-amber-600" },
   ];
 
   return (
@@ -1969,6 +1970,9 @@ function SDLaunchCoveragePanel() {
           <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
             Source of truth for the State Director launch. Pending items are surfaced calmly to
             learners and never render as broken links.
+          </p>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            Learners only see published resources assigned to their role and state.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1997,6 +2001,17 @@ function SDLaunchCoveragePanel() {
           </Button>
         </div>
       </div>
+      {error && (
+        <p
+          data-testid="sd-coverage-load-error"
+          className="mt-3 rounded-xl border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12px] text-amber-900"
+        >
+          Live resource sync unavailable — showing the SOP manifest only.
+        </p>
+      )}
+      {loading && !error && (
+        <p className="mt-3 text-[11.5px] text-muted-foreground">Loading live SOP coverage…</p>
+      )}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         {tiles.map((t) => (
           <div
@@ -2011,6 +2026,63 @@ function SDLaunchCoveragePanel() {
             </p>
           </div>
         ))}
+      </div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div
+          data-testid="sd-coverage-needs-upload"
+          className="rounded-2xl border border-border/60 bg-background p-4"
+        >
+          <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Needs upload ({live.missing})
+          </h3>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            SOPs in the manifest with no matching row in Resource Management yet.
+          </p>
+          <ul className="mt-3 max-h-64 space-y-1 overflow-auto text-[12.5px]">
+            {live.missingEntries.length === 0 ? (
+              <li className="text-muted-foreground">All SD SOPs are accounted for.</li>
+            ) : (
+              live.missingEntries.slice(0, 30).map((e) => (
+                <li
+                  key={e.entry.id}
+                  className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-3 py-1.5 text-foreground/90"
+                >
+                  {e.entry.title}
+                </li>
+              ))
+            )}
+            {live.missingEntries.length > 30 && (
+              <li className="text-[11px] text-muted-foreground">
+                + {live.missingEntries.length - 30} more — open Resource Management to review.
+              </li>
+            )}
+          </ul>
+        </div>
+        <div
+          data-testid="sd-coverage-published"
+          className="rounded-2xl border border-border/60 bg-background p-4"
+        >
+          <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Published & connected ({live.published})
+          </h3>
+          <p className="mt-1 text-[11.5px] text-muted-foreground">
+            Live in the Resource Library and visible to State Director learners.
+          </p>
+          <ul className="mt-3 max-h-64 space-y-1 overflow-auto text-[12.5px]">
+            {live.publishedEntries.length === 0 ? (
+              <li className="text-muted-foreground">No SOPs published yet.</li>
+            ) : (
+              live.publishedEntries.slice(0, 30).map((e) => (
+                <li
+                  key={e.entry.id}
+                  className="rounded-lg border border-border/60 bg-card px-3 py-1.5 text-foreground/90"
+                >
+                  {e.entry.title}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       </div>
     </section>
   );

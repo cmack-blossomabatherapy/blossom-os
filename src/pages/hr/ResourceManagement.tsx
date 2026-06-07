@@ -30,6 +30,7 @@ import {
 } from "@/components/resources/UploadBatchSummary";
 import type { ResourceUploadStatus } from "@/lib/resources/resourceData";
 import { SafeBoundary } from "@/components/common/SafeBoundary";
+import { useAdminResources } from "@/hooks/useAdminResources";
 
 const ALL_ROLES: OSRole[] = [
   "intake_coordinator","authorization_coordinator","scheduling_team","recruiting_team",
@@ -40,9 +41,27 @@ const ALL_ROLES: OSRole[] = [
 const STATES = ["GA", "NC", "VA", "TN", "MD", "NJ"];
 
 export default function ResourceManagement() {
-  const [items, setItems] = useState<Resource[]>(() =>
-    Array.isArray(seedResources) ? seedResources : [],
-  );
+  const { resources: liveResources, loading: liveLoading, error: liveError } = useAdminResources();
+  const [sessionItems, setSessionItems] = useState<Resource[]>([]);
+  // Admin sees the union of (a) live Supabase rows — every upload_status,
+  // including pending/held/privacy_review/business_review/vault_only/excluded
+  // and archived — and (b) any local seed that hasn't been migrated yet.
+  // Session-published uploads land in front.
+  const items = useMemo<Resource[]>(() => {
+    const seen = new Set<string>();
+    const out: Resource[] = [];
+    const push = (r: Resource) => {
+      if (seen.has(r.id)) return;
+      seen.add(r.id);
+      out.push(r);
+    };
+    sessionItems.forEach(push);
+    liveResources.forEach(push);
+    if (Array.isArray(seedResources)) seedResources.forEach(push);
+    return out;
+  }, [liveResources, sessionItems]);
+  // Mutations stay in the session layer; persistence happens via the
+  // bulk-upload flow, not by replacing live Supabase rows directly.
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<ResourceCategoryId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ResourceStatus | "all">("all");
@@ -98,15 +117,25 @@ export default function ResourceManagement() {
   };
 
   const handleCreate = (r: Resource) => {
-    setItems((prev) => [r, ...prev]);
+    setSessionItems((prev) => [r, ...prev]);
     toast({ title: "Resource added", description: r.title });
   };
 
   const togglePin = (id: string) => {
-    setItems((prev) => prev.map((r) => (r.id === id ? { ...r, pinned: !r.pinned } : r)));
+    setSessionItems((prev) => {
+      const existing = prev.find((r) => r.id === id);
+      if (existing) return prev.map((r) => (r.id === id ? { ...r, pinned: !r.pinned } : r));
+      const live = items.find((r) => r.id === id);
+      return live ? [{ ...live, pinned: !live.pinned }, ...prev] : prev;
+    });
   };
   const archive = (id: string) => {
-    setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: "Archived" as ResourceStatus } : r)));
+    setSessionItems((prev) => {
+      const existing = prev.find((r) => r.id === id);
+      if (existing) return prev.map((r) => (r.id === id ? { ...r, status: "Archived" as ResourceStatus } : r));
+      const live = items.find((r) => r.id === id);
+      return live ? [{ ...live, status: "Archived" as ResourceStatus }, ...prev] : prev;
+    });
     toast({ title: "Resource archived" });
     setSelected(null);
   };
@@ -139,6 +168,20 @@ export default function ResourceManagement() {
           </div>
         </header>
 
+        {liveError && (
+          <div
+            data-testid="resource-management-load-error"
+            role="alert"
+            className="rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-[13px] text-amber-900"
+          >
+            We couldn't load the latest resources from the library. Showing the
+            last cached snapshot. Try refreshing in a moment.
+          </div>
+        )}
+        {liveLoading && !liveError && (
+          <p className="text-[12px] text-muted-foreground">Loading live resources…</p>
+        )}
+
         {/* STATS */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="Total resources" value={counts.total} />
@@ -164,7 +207,7 @@ export default function ResourceManagement() {
               setFailedUploads(failed);
             }}
             onPublish={(added) => {
-              setItems((prev) => [...added, ...prev]);
+              setSessionItems((prev) => [...added, ...prev]);
               toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
             }}
           />

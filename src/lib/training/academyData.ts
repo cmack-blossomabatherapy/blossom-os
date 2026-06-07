@@ -748,9 +748,9 @@ export const SD_SOPS_BY_WEEK: Record<number, Record<number, string[]>> = {
     1: [],
     2: [
       "Understanding Blossom Organizational Structure SOP",
+      "Department Functions & Operational Ecosystem SOP",
       "State Director Role & Responsibilities SOP",
       "Leadership Expectations for State Directors SOP",
-      "Department Functions & Operational Ecosystem SOP",
     ],
     3: [
       "Intake Department Operations SOP",
