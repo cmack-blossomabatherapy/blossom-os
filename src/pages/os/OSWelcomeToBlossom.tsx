@@ -132,7 +132,8 @@ export default function OSWelcomeToBlossom() {
             <span>Day 1 — Welcome to Blossom</span>
           </div>
           <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground md:text-[34px]">
-            Welcome to Blossom<span className="text-muted-foreground">, {firstName}.</span>
+            Welcome to Blossom, <span className="capitalize">{firstName}</span>.
+            <span className="ml-2 text-muted-foreground">Start here.</span>
           </h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
             Before you learn the systems, dashboards, SOPs, and weekly rhythms, start here. This is the
@@ -448,9 +449,11 @@ export default function OSWelcomeToBlossom() {
                 size="lg"
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={() => navigate("/training")}
+                data-testid="welcome-continue-launch-path"
               >
-                Continue to State Director Journey <ArrowRight className="ml-1 h-4 w-4" />
+                Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
+              <span className="sr-only">Continue to State Director Journey</span>
               <Button
                 size="sm"
                 variant="outline"
@@ -461,6 +464,32 @@ export default function OSWelcomeToBlossom() {
               </Button>
             </div>
           </div>
+        </section>
+
+        {/* REFLECTION PROMPT */}
+        <section
+          data-testid="welcome-reflection-prompt"
+          className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8"
+        >
+          <SectionHeader
+            icon={MessageSquare}
+            eyebrow="Reflection prompt"
+            title="Before you move on, take five minutes."
+            description="Reflection is part of the work — not extra. Jot a few honest sentences and bring them to your first mentor check-in."
+          />
+          <ul className="mt-5 grid gap-2 text-[13.5px] leading-relaxed text-foreground sm:grid-cols-2">
+            {[
+              "What does Blossom feel like to you so far, in one sentence?",
+              "Which of our core values will be easiest for you to model? Which one will take work?",
+              "What kind of leader will families and staff need you to be in your first 30 days?",
+              "What is one question you want to bring to your mentor this week?",
+            ].map((q) => (
+              <li key={q} className="flex gap-2 rounded-2xl border border-border/60 bg-muted/30 p-4">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                <span>{q}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <p className="text-center text-[12px] text-muted-foreground">
