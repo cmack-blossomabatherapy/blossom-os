@@ -23,6 +23,14 @@ import {
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "@/components/training/SDJourneyView";
+import {
+  loadLearnerHome,
+  startLearnerModule,
+  completeLearnerModule,
+  emptyLearnerHome,
+  type LearnerHome,
+} from "@/lib/academy/learnerHome";
+import { toast } from "sonner";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText,
@@ -71,6 +79,49 @@ export default function OSTraining() {
   const { trainings } = useAcademy(); // subscribe to store
 
   const isSD = role === "state_director";
+
+  // --- DB-backed learner home (shared with Training Management) ---
+  const [learnerHome, setLearnerHome] = useState<LearnerHome>(() => emptyLearnerHome());
+  const [learnerLoading, setLearnerLoading] = useState<boolean>(false);
+  const [actionBusy, setActionBusy] = useState<"start" | "complete" | null>(null);
+
+  const refreshLearnerHome = async () => {
+    if (!user?.id) return;
+    setLearnerLoading(true);
+    try {
+      const home = await loadLearnerHome(user.id);
+      setLearnerHome(home);
+    } catch {
+      // non-fatal: fall back to local academyData path
+    } finally {
+      setLearnerLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshLearnerHome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const hasDbEnrollment = !!learnerHome.enrollment;
+  const dbNextModule = learnerHome.nextAction?.module ?? null;
+
+  async function onStartDbNext() {
+    if (!learnerHome.enrollment || !dbNextModule) return;
+    setActionBusy("start");
+    const res = await startLearnerModule(learnerHome.enrollment.id, dbNextModule.id);
+    setActionBusy(null);
+    if ((res as any)?.error) toast.error("Could not start module");
+    else { toast.success("Module started — visible in Training Management"); await refreshLearnerHome(); }
+  }
+  async function onCompleteDbNext() {
+    if (!learnerHome.enrollment || !dbNextModule) return;
+    setActionBusy("complete");
+    const res = await completeLearnerModule(learnerHome.enrollment.id, dbNextModule.id);
+    setActionBusy(null);
+    if ((res as any)?.error) toast.error("Could not complete module");
+    else { toast.success("Module completed — synced to Training Management"); await refreshLearnerHome(); }
+  }
 
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
