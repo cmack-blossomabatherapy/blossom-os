@@ -269,21 +269,32 @@ export function computeLaunchChecklist(
       source: "progress",
     },
     fromCat("final_signoff", "Leadership sign-off complete", "manual"),
-    {
-      key: "certification",
-      label: "State Director certification complete",
-      status:
-        byKey.get("final_signoff")?.status === "complete" &&
-        ctx.readinessPct >= 80
-          ? "complete"
-          : "not_started",
-      explanation:
-        byKey.get("final_signoff")?.status === "complete" &&
-        ctx.readinessPct >= 80
+    (() => {
+      // Certification only complete when ALL four are true:
+      //   1. Final knowledge review (state ownership category) complete
+      //   2. Readiness assessment complete (overall ≥ 80%)
+      //   3. Leadership sign-off complete
+      //   4. Welcome / certification module reviewed
+      const knowledgeDone = knowledgeStatus === "complete";
+      const readinessDone = ctx.readinessPct >= 80;
+      const signoffDone = byKey.get("final_signoff")?.status === "complete";
+      const welcomeDone = ctx.welcomeComplete;
+      const ready = knowledgeDone && readinessDone && signoffDone && welcomeDone;
+      const missing: string[] = [];
+      if (!welcomeDone) missing.push("welcome module");
+      if (!knowledgeDone) missing.push("final knowledge review");
+      if (!readinessDone) missing.push("readiness ≥ 80%");
+      if (!signoffDone) missing.push("leadership sign-off");
+      return {
+        key: "certification",
+        label: "State Director certification complete",
+        status: ready ? "complete" : "not_started",
+        explanation: ready
           ? "Certified — ready to lead state."
-          : "Pending readiness ≥ 80% and leadership sign-off.",
-      source: "manual",
-    },
+          : `Pending: ${missing.join(", ")}.`,
+        source: "manual",
+      } as LaunchChecklistItem;
+    })(),
   ];
 }
 
