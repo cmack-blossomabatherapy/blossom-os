@@ -748,6 +748,7 @@ export default function OSTraining() {
           )}
         </aside>
       </div>
+      )}
     </OSShell>
   );
 }
