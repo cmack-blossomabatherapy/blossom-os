@@ -195,13 +195,37 @@ export interface LaunchChecklistItem {
   source: "module" | "progress" | "shadow" | "checkin" | "manual";
 }
 
+/**
+ * Context for the launch checklist. Optional gating fields default to
+ * permissive values when not provided (back-compat), but the dashboard
+ * should populate them to enforce the strict State Director rules:
+ *
+ *  - quiz scores ≥ 80% across required knowledge checks
+ *  - all required shadow modules signed off
+ *  - mentor check-ins logged (≥ requiredCheckinCount, default 3)
+ *  - final knowledge review module complete
+ *  - readiness assessment module complete
+ *  - leadership sign-off recorded
+ *  - State Director Certification module marked complete
+ */
+export interface LaunchChecklistContext {
+  welcomeComplete: boolean;
+  readinessPct: number;
+  checkinCount: number;
+  quizScores?: number[];
+  requiredQuizCount?: number;
+  quizPassThreshold?: number;
+  requiredCheckinCount?: number;
+  shadowSignoffComplete?: boolean;
+  finalKnowledgeReviewComplete?: boolean;
+  readinessAssessmentComplete?: boolean;
+  leadershipSignoffComplete?: boolean;
+  certificationModuleComplete?: boolean;
+}
+
 export function computeLaunchChecklist(
   cats: ReadinessCategory[],
-  ctx: {
-    welcomeComplete: boolean;
-    readinessPct: number;
-    checkinCount: number;
-  },
+  ctx: LaunchChecklistContext,
 ): LaunchChecklistItem[] {
   const byKey = new Map(cats.map((c) => [c.key, c]));
   const fromCat = (
@@ -220,8 +244,50 @@ export function computeLaunchChecklist(
   };
 
   const finalKnowledge = byKey.get("state_ownership_leadership");
-  const knowledgeStatus: ReadinessStatus =
-    finalKnowledge?.completion === 100 ? "complete" : "not_started";
+  // Final knowledge review uses the explicit module flag if provided,
+  // otherwise falls back to "all Week 5 leadership modules complete".
+  const finalReviewExplicit = ctx.finalKnowledgeReviewComplete;
+  const knowledgeDone =
+    finalReviewExplicit !== undefined
+      ? finalReviewExplicit
+      : finalKnowledge?.completion === 100;
+  const knowledgeStatus: ReadinessStatus = knowledgeDone ? "complete" : "not_started";
+
+  // Quiz pass rate
+  const quizThreshold = ctx.quizPassThreshold ?? 80;
+  const quizScores = ctx.quizScores ?? [];
+  const requiredQuizCount = ctx.requiredQuizCount ?? quizScores.length;
+  const passedScores = quizScores.filter((s) => s >= quizThreshold).length;
+  const quizPassStatus: ReadinessStatus =
+    requiredQuizCount === 0 && quizScores.length === 0
+      ? "not_started"
+      : passedScores >= requiredQuizCount && requiredQuizCount > 0
+        ? "complete"
+        : quizScores.length > 0
+          ? "in_progress"
+          : "missing";
+
+  // Shadow sign-off rollup
+  const shadowCat = byKey.get("shadowing");
+  const shadowSignoffDone =
+    ctx.shadowSignoffComplete !== undefined
+      ? ctx.shadowSignoffComplete
+      : shadowCat?.status === "complete";
+
+  // Required mentor check-ins
+  const requiredCheckinCount = ctx.requiredCheckinCount ?? 3;
+  const checkinDone = ctx.checkinCount >= requiredCheckinCount;
+
+  // Readiness assessment + leadership sign-off + certification module
+  const readinessAssessmentDone =
+    ctx.readinessAssessmentComplete !== undefined
+      ? ctx.readinessAssessmentComplete
+      : ctx.readinessPct >= 80;
+  const leadershipSignoffDone =
+    ctx.leadershipSignoffComplete !== undefined
+      ? ctx.leadershipSignoffComplete
+      : byKey.get("final_signoff")?.status === "complete";
+  const certModuleDone = ctx.certificationModuleComplete ?? false;
 
   return [
     {
@@ -245,46 +311,115 @@ export function computeLaunchChecklist(
     ),
     fromCat("state_ownership_leadership", "State ownership / leadership complete"),
     fromCat("shadowing", "Required shadowing complete", "shadow"),
-    fromCat("mentor_checkins", "Required mentor check-ins complete", "checkin"),
+    {
+      key: "shadow_signoff",
+      label: "Required shadow sign-offs complete",
+      status: shadowSignoffDone ? "complete" : (shadowCat?.completion ?? 0) > 0 ? "in_progress" : "missing",
+      explanation: shadowSignoffDone
+        ? "Every required shadow module is signed off."
+        : "One or more required shadow modules still need mentor sign-off.",
+      source: "shadow",
+    },
+    {
+      key: "mentor_checkins_strict",
+      label: `Mentor check-ins logged (≥ ${requiredCheckinCount})`,
+      status: checkinDone ? "complete" : ctx.checkinCount > 0 ? "in_progress" : "missing",
+      explanation: `${ctx.checkinCount} of ${requiredCheckinCount} mentor check-ins logged.`,
+      source: "checkin",
+    },
+    {
+      key: "quiz_pass_rate",
+      label: `Knowledge checks ≥ ${quizThreshold}%`,
+      status: quizPassStatus,
+      explanation:
+        quizScores.length === 0
+          ? "No knowledge check scores recorded yet."
+          : `${passedScores} of ${requiredQuizCount || quizScores.length} required quizzes scored ≥ ${quizThreshold}%.`,
+      source: "progress",
+    },
     {
       key: "final_knowledge",
       label: "Final knowledge review complete",
       status: knowledgeStatus,
       explanation:
         knowledgeStatus === "complete"
-          ? "Leadership modules complete — knowledge review ready."
-          : "Pending completion of leadership modules.",
+          ? "Final knowledge review completed."
+          : "Final knowledge review not yet completed.",
       source: "module",
     },
     {
       key: "readiness_assessment",
       label: "Readiness assessment complete",
-      status:
-        ctx.readinessPct >= 80
-          ? "complete"
-          : ctx.readinessPct >= 50
-            ? "in_progress"
-            : "not_started",
+      status: readinessAssessmentDone
+        ? "complete"
+        : ctx.readinessPct >= 50
+          ? "in_progress"
+          : "not_started",
       explanation: `Overall readiness ${ctx.readinessPct}% (target 80%).`,
       source: "progress",
     },
-    fromCat("final_signoff", "Leadership sign-off complete", "manual"),
+    {
+      key: "leadership_signoff",
+      label: "Leadership sign-off complete",
+      status: leadershipSignoffDone ? "complete" : "not_started",
+      explanation: leadershipSignoffDone
+        ? "Leadership sign-off recorded."
+        : "Awaiting leadership sign-off.",
+      source: "manual",
+    },
+    {
+      key: "certification_module",
+      label: "State Director Certification module complete",
+      status: certModuleDone ? "complete" : "not_started",
+      explanation: certModuleDone
+        ? "Certification module marked complete."
+        : "Certification module not yet marked complete.",
+      source: "module",
+    },
     (() => {
-      // Certification only complete when ALL four are true:
-      //   1. Final knowledge review (state ownership category) complete
-      //   2. Readiness assessment complete (overall ≥ 80%)
-      //   3. Leadership sign-off complete
-      //   4. Welcome / certification module reviewed
-      const knowledgeDone = knowledgeStatus === "complete";
-      const readinessDone = ctx.readinessPct >= 80;
-      const signoffDone = byKey.get("final_signoff")?.status === "complete";
-      const welcomeDone = ctx.welcomeComplete;
-      const ready = knowledgeDone && readinessDone && signoffDone && welcomeDone;
+      // State Director Certification is only ready when EVERY gate is true:
+      //   1. Welcome to Blossom complete
+      //   2. All required launch categories complete (5 weeks)
+      //   3. Required shadow modules complete AND signed off
+      //   4. Mentor check-ins logged (≥ requiredCheckinCount)
+      //   5. All required knowledge checks ≥ threshold
+      //   6. Final knowledge review complete
+      //   7. Readiness assessment complete
+      //   8. Leadership sign-off recorded
+      //   9. State Director Certification module marked complete
+      const allCatsComplete = (
+        [
+          "foundations",
+          "systems_client_flow",
+          "authorizations_utilization",
+          "staffing_recruiting_operations",
+          "state_ownership_leadership",
+        ] as SDReadinessCategoryKey[]
+      ).every((k) => byKey.get(k)?.status === "complete");
+      const shadowCatDone = shadowCat?.status === "complete";
+      const quizPassDone = quizPassStatus === "complete";
+      const ready =
+        ctx.welcomeComplete &&
+        allCatsComplete &&
+        shadowCatDone &&
+        shadowSignoffDone &&
+        checkinDone &&
+        quizPassDone &&
+        knowledgeDone &&
+        readinessAssessmentDone &&
+        leadershipSignoffDone &&
+        certModuleDone;
       const missing: string[] = [];
-      if (!welcomeDone) missing.push("welcome module");
+      if (!ctx.welcomeComplete) missing.push("welcome module");
+      if (!allCatsComplete) missing.push("required launch modules");
+      if (!shadowCatDone) missing.push("required shadowing");
+      if (!shadowSignoffDone) missing.push("shadow sign-offs");
+      if (!checkinDone) missing.push(`mentor check-ins (≥ ${requiredCheckinCount})`);
+      if (!quizPassDone) missing.push(`knowledge checks ≥ ${quizThreshold}%`);
       if (!knowledgeDone) missing.push("final knowledge review");
-      if (!readinessDone) missing.push("readiness ≥ 80%");
-      if (!signoffDone) missing.push("leadership sign-off");
+      if (!readinessAssessmentDone) missing.push("readiness assessment");
+      if (!leadershipSignoffDone) missing.push("leadership sign-off");
+      if (!certModuleDone) missing.push("certification module");
       return {
         key: "certification",
         label: "State Director certification complete",
@@ -296,6 +431,23 @@ export function computeLaunchChecklist(
       } as LaunchChecklistItem;
     })(),
   ];
+}
+
+/**
+ * "Not ready because…" — display-ready blockers derived from the checklist.
+ * Excludes the synthetic certification rollup (which only summarizes blockers).
+ */
+export function computeReadinessBlockers(
+  checklist: LaunchChecklistItem[],
+): { key: string; label: string; explanation: string }[] {
+  return checklist
+    .filter((c) => c.key !== "certification" && c.status !== "complete")
+    .map((c) => ({ key: c.key, label: c.label, explanation: c.explanation }));
+}
+
+/** True when every gate (except the certification rollup) is complete. */
+export function isCertificationReady(checklist: LaunchChecklistItem[]): boolean {
+  return checklist.find((c) => c.key === "certification")?.status === "complete";
 }
 
 export type RiskSignal =
@@ -389,6 +541,7 @@ export function buildReadinessSummaryText(opts: {
   certificationStatus?: ReadinessStatus;
   setupGaps?: string[];
 }): string {
+  const blockers = computeReadinessBlockers(opts.checklist);
   const missing = opts.checklist.filter((c) => c.status !== "complete");
   const positionLine =
     opts.weekNumber != null
@@ -414,6 +567,11 @@ export function buildReadinessSummaryText(opts: {
     "",
     "Category completion:",
     ...opts.cats.map((c) => `  • ${c.label}: ${c.completion}%`),
+    "",
+    blockers.length
+      ? `Not ready because (${blockers.length}):`
+      : "All certification gates complete.",
+    ...blockers.map((b) => `  • ${b.label} — ${b.explanation}`),
     "",
     missing.length
       ? `Missing (${missing.length}):`

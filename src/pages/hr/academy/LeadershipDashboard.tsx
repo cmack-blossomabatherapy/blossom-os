@@ -35,6 +35,8 @@ import {
   computeLaunchChecklist,
   computeRiskSignals,
   buildReadinessSummaryText,
+  computeReadinessBlockers,
+  isCertificationReady,
   RISK_LABEL,
   type ReadinessCategory,
   type LaunchChecklistItem,
@@ -128,10 +130,60 @@ export default function LeadershipDashboard() {
       const welcomeComplete = welcomeModule
         ? completedSet.has(welcomeModule.id)
         : false;
+      // Strict gating signals
+      const requiredShadowMods = allModules.filter(
+        (m) => m.module_type === "shadowing" && m.is_required,
+      );
+      const shadowSignoffComplete =
+        requiredShadowMods.length > 0 &&
+        requiredShadowMods.every((m) => {
+          const prog = p.find((x) => x.module_id === m.id);
+          if (prog?.verified_at) return true;
+          // fall back: any shadow session with mentor_signoff covering required count
+          return s.some((sess) => sess.mentor_signoff);
+        });
+
+      const finalReviewModule = allModules.find((m) =>
+        /final knowledge (review|assessment)/i.test(m.title),
+      );
+      const readinessAssessmentModule = allModules.find((m) =>
+        /readiness assessment|readiness evaluation/i.test(m.title),
+      );
+      const leadershipSignoffModule = allModules.find((m) =>
+        /leadership sign[- ]?off/i.test(m.title),
+      );
+      const certificationModule = allModules.find((m) =>
+        /state director certification|^certification$/i.test(m.title),
+      );
+
+      const quizModsAll = allModules.filter((m) => m.module_type === "quiz");
+      const requiredQuizMods = quizModsAll.filter((m) => m.is_required);
+      const quizScoresAll = p
+        .filter((x) => quizModsAll.some((q) => q.id === x.module_id))
+        .map((x) => x.score)
+        .filter((x): x is number => typeof x === "number");
+
       const checklist = computeLaunchChecklist(cats, {
         welcomeComplete,
         readinessPct: r.overall,
         checkinCount: c.length,
+        quizScores: quizScoresAll,
+        requiredQuizCount: requiredQuizMods.length || quizScoresAll.length,
+        quizPassThreshold: 80,
+        requiredCheckinCount: 3,
+        shadowSignoffComplete,
+        finalKnowledgeReviewComplete: finalReviewModule
+          ? completedSet.has(finalReviewModule.id)
+          : undefined,
+        readinessAssessmentComplete: readinessAssessmentModule
+          ? completedSet.has(readinessAssessmentModule.id)
+          : undefined,
+        leadershipSignoffComplete: leadershipSignoffModule
+          ? completedSet.has(leadershipSignoffModule.id)
+          : s.some((sess) => sess.mentor_signoff),
+        certificationModuleComplete: certificationModule
+          ? completedSet.has(certificationModule.id)
+          : false,
       });
       const risks = computeRiskSignals({
         progress: p,
@@ -166,8 +218,6 @@ export default function LeadershipDashboard() {
       const sopCompleted = sopMods.filter((m) => completedSet.has(m.id)).length;
       const videoMods = allModules.filter((m) => m.module_type === "video");
       const videosWatched = videoMods.filter((m) => completedSet.has(m.id)).length;
-      const certificationModule =
-        allModules.find((m) => /certif/i.test(m.title)) ?? null;
       built.push({
         enrollment: e,
         readiness: r.overall,
@@ -362,6 +412,8 @@ function TraineeCard({ row, curriculum, onMutate }: { row: Row; curriculum: Acad
   const setupGapLabels = launchSetup
     .filter((c) => c.status !== "ready")
     .map((c) => c.label);
+  const blockers = computeReadinessBlockers(row.checklist);
+  const certReady = isCertificationReady(row.checklist);
 
   function copySummary() {
     const text = buildReadinessSummaryText({
@@ -653,6 +705,43 @@ function TraineeCard({ row, curriculum, onMutate }: { row: Row; curriculum: Acad
             </li>
           ))}
         </ul>
+      </div>
+
+      {/* Not ready because... */}
+      <div
+        data-testid="sd-not-ready-because"
+        className={`rounded-2xl border p-4 ${certReady ? "border-teal-500/30 bg-teal-500/5" : "border-amber-500/30 bg-amber-500/5"}`}
+      >
+        <div className="flex items-center gap-2">
+          {certReady ? (
+            <CheckCircle2 className="h-4 w-4 text-teal-600" />
+          ) : (
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          )}
+          <p className="text-sm font-medium">
+            {certReady
+              ? "Ready for State Director certification"
+              : `Not ready because (${blockers.length})`}
+          </p>
+        </div>
+        {!certReady && (
+          <ul className="mt-2 space-y-1 text-xs">
+            {blockers.map((b) => (
+              <li key={b.key} className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                <span>
+                  <span className="font-medium text-foreground">{b.label}</span>
+                  <span className="text-muted-foreground"> — {b.explanation}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {certReady && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Every certification gate is satisfied. Ready to lead a state.
+          </p>
+        )}
       </div>
     </div>
   );
