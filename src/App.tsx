@@ -747,7 +747,7 @@ const App = () => (
                   <Route path="/onboarding" element={<Journey />} />
                   {/* Legacy flat-roadmap removed — Journey is the canonical onboarding. */}
                   <Route path="/onboarding/roadmap" element={<Navigate to="/onboarding" replace />} />
-                  <Route path="/onboarding/phase/welcome" element={<OSWelcomeToBlossom />} />
+                  <Route path="/onboarding/phase/welcome" element={<OSRoleProvider><OSWelcomeToBlossom /></OSRoleProvider>} />
                   {/* Legacy /onboarding/phase/welcome/legacy route removed — the new OSWelcomeToBlossom is canonical. */}
                   <Route path="/onboarding/phase/welcome/legacy" element={<Navigate to="/onboarding/phase/welcome" replace />} />
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
