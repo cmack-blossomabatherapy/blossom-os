@@ -10,6 +10,7 @@ import {
   Wallet, Stethoscope, Crown, Workflow, BookOpen, Sparkles, type LucideIcon,
 } from "lucide-react";
 import { SD_W1_TRAINING_SPECS } from "./sdWeek1Content";
+import { SD_W23_TRAINING_SPECS } from "./sdWeek23Content";
 
 export type TrainingType =
   | "SOP"
@@ -1008,6 +1009,22 @@ function specForModule(weekNum: number, dayNum: number, position: number, title:
       minutes: 20,
       sopName,
       description: override.description ?? `${title} — Week 1 foundations module.`,
+      whyItMatters: override.whyItMatters,
+      whatToDo: override.whatToDo,
+      completionEvidence: override.completionEvidence,
+      reflectionPrompt: override.reflectionPrompt,
+    };
+  }
+
+  // Week 2 & Week 3 curated overrides
+  if ((weekNum === 2 || weekNum === 3) && SD_W23_TRAINING_SPECS[title]) {
+    const override = SD_W23_TRAINING_SPECS[title];
+    const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
+    return {
+      type: "SOP",
+      minutes: 20,
+      sopName,
+      description: override.description ?? `${title} — Week ${weekNum} module.`,
       whyItMatters: override.whyItMatters,
       whatToDo: override.whatToDo,
       completionEvidence: override.completionEvidence,
