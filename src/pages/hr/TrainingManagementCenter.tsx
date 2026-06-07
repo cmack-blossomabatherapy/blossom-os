@@ -5,6 +5,8 @@ import {
   SD_SOP_MANIFEST,
   computeSdSopCoverage,
 } from "@/lib/resources/stateDirectorSopManifest";
+import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import { useAdminResources } from "@/hooks/useAdminResources";
 import {
   SD_PRIORITY_SCREENSHOT_MODULES,
   getStateDirectorScreenshots,
