@@ -16,6 +16,7 @@
  */
 import type { Training } from "./academyData";
 import { SD_SOPS_BY_WEEK } from "./academyData";
+import { SD_W1_FULL_CONTENT } from "./sdWeek1Content";
 
 export interface SDWalkStep {
   action: string;
@@ -734,11 +735,13 @@ export function isStateDirectorModule(training: Pick<Training, "id" | "departmen
  */
 export function getStateDirectorFullContent(training: Training): SDFullContent | null {
   if (!isStateDirectorModule(training)) return null;
-  return CURATED[training.id] ?? deriveContent(training);
+  return CURATED[training.id] ?? SD_W1_FULL_CONTENT[training.id] ?? deriveContent(training);
 }
 
 /** Exposed for tests — list of curated module ids. */
-export const SD_CURATED_MODULE_IDS = Object.keys(CURATED);
+export const SD_CURATED_MODULE_IDS = Array.from(
+  new Set([...Object.keys(CURATED), ...Object.keys(SD_W1_FULL_CONTENT)]),
+);
 
 /* ---------------- completeness classifier ---------------- */
 
@@ -776,6 +779,7 @@ export function classifyStateDirectorModule(
   const week = parsed?.week ?? 1;
   const day = parsed?.day ?? 1;
   const hasCurated = !!CURATED[training.id];
+  const hasWeek1Full = !!SD_W1_FULL_CONTENT[training.id];
   const screenshots = getStateDirectorScreenshots(training.id);
   const hasScreenshot = screenshots.length > 0;
   const screenshotPending =
@@ -790,7 +794,7 @@ export function classifyStateDirectorModule(
   let status: SDModuleCompleteness;
   if (isWelcome) {
     status = "welcome_non_sop";
-  } else if (hasCurated) {
+  } else if (hasCurated || hasWeek1Full) {
     status = "curated";
   } else if (isVideoModule) {
     status = "needs_video";
@@ -808,7 +812,7 @@ export function classifyStateDirectorModule(
     week,
     day,
     status,
-    hasCuratedContent: hasCurated,
+    hasCuratedContent: hasCurated || hasWeek1Full,
     hasScreenshot,
     screenshotPending,
     sopName,
