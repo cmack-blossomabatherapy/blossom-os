@@ -85,8 +85,8 @@ describe("State Director module completeness classifier", () => {
 
   it("flags derived modules with pending screenshot as needs_screenshot", () => {
     const r = classifyStateDirectorModule({
-      id: "sd-w2d1-cr-overview",
-      title: "CentralReach System Overview",
+      id: "sd-w4d1-staffing-structure",
+      title: "W4 · D1 — Staffing Structure",
       type: "Training",
       department: "state_director",
     });
