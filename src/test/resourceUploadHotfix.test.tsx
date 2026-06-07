@@ -45,16 +45,22 @@ describe("Resource Upload hotfix — defensive rendering", () => {
     expect(isDuplicateCandidate(candidate, [])).toBe(false);
   });
 
-  it("SafeBoundary catches a crashing child and shows fallback", () => {
-    const Boom = () => {
-      throw new Error("boom");
+  it("ResourceBulkUploadPanel can throw and SafeBoundary catches it", () => {
+    const CrashingResourceBulkUploadPanel = () => {
+      throw new Error("upload panel exploded");
     };
-    const { getByTestId } = render(
-      <SafeBoundary label="Test panel">
-        <Boom />
+    const { getByTestId, getByText } = render(
+      <SafeBoundary
+        label="Resource upload panel"
+        fallbackTitle="Resource upload panel could not load"
+        showErrorDetails
+      >
+        <CrashingResourceBulkUploadPanel />
       </SafeBoundary>,
     );
     expect(getByTestId("safe-boundary-fallback")).toBeTruthy();
+    expect(getByText("Resource upload panel could not load")).toBeTruthy();
+    expect(getByText("upload panel exploded")).toBeTruthy();
   });
 });
 
@@ -71,7 +77,8 @@ describe("Resource Upload hotfix — routing & navigation", () => {
   it("/hr/resource-management is admin-gated", () => {
     const block = appSource.split('path="/hr/resource-management"')[1] ?? "";
     expect(block.slice(0, 400)).toMatch(/ResourceUploadAdminRoute/);
-    expect(appSource).toMatch(/RESOURCE_UPLOAD_ALLOWED_ROLES/);
+    expect(appSource).toMatch(/RESOURCE_UPLOAD_ALLOWED_APP_ROLES/);
+    expect(appSource).toMatch(/RESOURCE_UPLOAD_ALLOWED_OS_ROLES/);
     expect(block.slice(0, 400)).not.toMatch(/hr\.resources\.view/);
   });
 
