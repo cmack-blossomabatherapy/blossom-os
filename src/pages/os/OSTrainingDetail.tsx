@@ -1067,3 +1067,63 @@ function SignoffRow({ label, done }: { label: string; done: boolean }) {
     </li>
   );
 }
+
+/**
+ * Surfaces the SOP mapped to this State Director module from
+ * `stateDirectorModuleSopMap`. Resolves the live Resource Library row by
+ * normalized title match. Always renders a calm state — never href="#".
+ */
+function SdMappedSopCard({ moduleId }: { moduleId: string }) {
+  const sopTitle = getSopTitleForModule(moduleId);
+  const { resources } = useLibraryResources();
+  if (!sopTitle) return null;
+  const resource = findResourceForSopTitle(resources, sopTitle);
+  const isPublished =
+    !!resource &&
+    resource.uploadStatus === "published" &&
+    resource.status !== "Archived" &&
+    resource.attachmentStatus !== "pending_upload" &&
+    !!(resource.url || resource.fileUrl);
+  const isPending = !!resource && !isPublished;
+
+  return (
+    <div
+      data-testid="sd-mapped-sop"
+      data-sop-status={isPublished ? "published" : isPending ? "pending" : "missing"}
+      className="rounded-2xl border border-border/70 bg-card p-5"
+    >
+      <div className="flex items-center gap-2">
+        <BookMarked className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Mapped SOP
+        </h3>
+      </div>
+      <p className="mt-2 text-[13.5px] font-medium text-foreground">{sopTitle}</p>
+      {isPublished ? (
+        <a
+          href={resource!.url || resource!.fileUrl}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="sd-mapped-sop-open"
+          className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-[12.5px] font-medium hover:bg-muted/40"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Open SOP
+        </a>
+      ) : isPending ? (
+        <p
+          data-testid="sd-mapped-sop-pending"
+          className="mt-3 rounded-xl border border-dashed border-amber-300/60 bg-amber-50/60 px-3 py-2 text-[12px] text-amber-900"
+        >
+          SOP upload pending — continue with the written guidance and mentor review.
+        </p>
+      ) : (
+        <p
+          data-testid="sd-mapped-sop-missing"
+          className="mt-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-[12px] text-muted-foreground"
+        >
+          SOP not linked yet — your mentor can review this live.
+        </p>
+      )}
+    </div>
+  );
+}
