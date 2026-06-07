@@ -984,6 +984,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
         {/* Right rail — Resources + Signoff */}
         <aside className="space-y-4">
+          <SdMappedSopCard moduleId={training.id} />
           <div data-testid="sd-resources" className="rounded-2xl border border-border/70 bg-card p-5">
             <div className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
