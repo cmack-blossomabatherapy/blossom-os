@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   SD_JOURNEY_STRUCTURE,
-  TRAININGS,
+  getTrainings,
   type Training,
 } from "@/lib/training/academyData";
 import { getStateDirectorFullContent } from "@/lib/training/stateDirectorFullTraining";
@@ -29,7 +29,7 @@ describe("State Director Week 1 — full content pass", () => {
   const week1Modules: Training[] = week1.days.flatMap((d) =>
     d.modules.map((title) => {
       const id = moduleIdFor(1, d.day, title);
-      const t = TRAININGS.find((x: Training) => x.id === id);
+      const t = getTrainings().find((x: Training) => x.id === id);
       if (!t) throw new Error(`Week 1 training missing: ${id}`);
       return t;
     }),
