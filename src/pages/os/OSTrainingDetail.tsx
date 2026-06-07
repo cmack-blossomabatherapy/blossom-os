@@ -512,6 +512,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     [training.id],
   );
 
+  const stepScreenshots: SDScreenshotAsset[] = useMemo(
+    () => getStateDirectorScreenshots(training.id),
+    [training.id],
+  );
+
   async function refresh() {
     if (!user?.id) return;
     try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
