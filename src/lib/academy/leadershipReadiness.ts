@@ -541,6 +541,7 @@ export function buildReadinessSummaryText(opts: {
   certificationStatus?: ReadinessStatus;
   setupGaps?: string[];
 }): string {
+  const blockers = computeReadinessBlockers(opts.checklist);
   const missing = opts.checklist.filter((c) => c.status !== "complete");
   const positionLine =
     opts.weekNumber != null
@@ -566,6 +567,11 @@ export function buildReadinessSummaryText(opts: {
     "",
     "Category completion:",
     ...opts.cats.map((c) => `  • ${c.label}: ${c.completion}%`),
+    "",
+    blockers.length
+      ? `Not ready because (${blockers.length}):`
+      : "All certification gates complete.",
+    ...blockers.map((b) => `  • ${b.label} — ${b.explanation}`),
     "",
     missing.length
       ? `Missing (${missing.length}):`
