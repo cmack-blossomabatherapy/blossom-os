@@ -147,10 +147,32 @@ export default function LeadershipDashboard() {
         (m) => m.is_required && !completedSet.has(m.id),
       );
       const employee = (e as any).employee ?? {};
+      // Derive day number: weeks * 5 + completed required in current week (cap 5)
+      const completedInWeek = currentWeek.modules.filter(
+        (m) => m.is_required && completedSet.has(m.id),
+      ).length;
+      const dayNumber = Math.min(
+        25,
+        Math.max(1, (currentWeek.week_number - 1) * 5 + Math.min(5, completedInWeek + 1)),
+      );
+      // Quiz / SOP / Video metrics
+      const quizMods = allModules.filter((m) => m.module_type === "quiz");
+      const quizScores = p
+        .filter((x) => quizMods.some((q) => q.id === x.module_id))
+        .map((x) => x.score)
+        .filter((x): x is number => typeof x === "number");
+      const quizAvg = quizScores.length === 0 ? null : Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length);
+      const sopMods = allModules.filter((m) => m.module_type === "sop");
+      const sopCompleted = sopMods.filter((m) => completedSet.has(m.id)).length;
+      const videoMods = allModules.filter((m) => m.module_type === "video");
+      const videosWatched = videoMods.filter((m) => completedSet.has(m.id)).length;
+      const certificationModule =
+        allModules.find((m) => /certif/i.test(m.title)) ?? null;
       built.push({
         enrollment: e,
         readiness: r.overall,
         weekNumber: currentWeek.week_number,
+        dayNumber,
         phaseName: phase.name,
         phaseColor: phase.color_token,
         modulesCompleted: p.filter((x) => x.status === "completed").length,
@@ -164,6 +186,15 @@ export default function LeadershipDashboard() {
         mentorCheckinStatus: cats.find((x) => x.key === "mentor_checkins")?.status ?? "not_started",
         signoffStatus: cats.find((x) => x.key === "final_signoff")?.status ?? "not_started",
         certificationStatus: checklist.find((x) => x.key === "certification")?.status ?? "not_started",
+        shadowHours: Math.round(totalShadowHrs * 10) / 10,
+        checkinCount: c.length,
+        quizAvg,
+        quizCount: quizScores.length,
+        sopCompleted,
+        sopTotal: sopMods.length,
+        videosWatched,
+        videosTotal: videoMods.length,
+        certificationModuleId: certificationModule?.id ?? null,
         cats,
         checklist,
         risks,
