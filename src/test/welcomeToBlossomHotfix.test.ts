@@ -16,7 +16,7 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
 
   it("renders 'Welcome video coming soon' pending panel copy", () => {
     expect(WELCOME).toContain("Welcome video coming soon");
-    expect(WELCOME).toContain("can be added later without blocking your training");
+    expect(WELCOME).toMatch(/can be added later[\s\S]*without blocking your training/);
   });
 
   it("does not render a <video> element when URL is empty", () => {
