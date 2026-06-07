@@ -360,12 +360,12 @@ export default function OSWelcomeToBlossom() {
           <SectionHeader icon={Workflow} eyebrow="How Blossom Works" title="The Blossom flow, at a glance"
             description="Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal." />
           <ol className="mt-5 space-y-2.5">
-            {blossomFlow.map((step, idx) => (
+            {flowSteps.map(({ step, text }) => (
               <li key={step} className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
                 <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                  {idx + 1}
+                  {step}
                 </span>
-                <span className="text-[13.5px] leading-relaxed text-foreground">{step}</span>
+                <span className="text-[13.5px] leading-relaxed text-foreground">{text}</span>
               </li>
             ))}
           </ol>
@@ -415,8 +415,8 @@ export default function OSWelcomeToBlossom() {
                     {l.initial}
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-foreground">{l.title}</p>
-                    <p className="text-[12px] text-muted-foreground">{l.role}</p>
+                    <p className="text-[14px] font-semibold text-foreground">{l.displayTitle}</p>
+                    <p className="text-[12px] text-muted-foreground">{l.subtitle}</p>
                   </div>
                 </div>
                 <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">
