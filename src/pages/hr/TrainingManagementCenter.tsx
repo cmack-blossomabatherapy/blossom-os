@@ -1930,62 +1930,39 @@ function ResourceLibraryView() {
     </div>
   );
 }
-function SDLaunchCoveragePanel() {
+function SDSopReadinessPanel() {
   const navigate = useNavigate();
   const { resources: liveResources, loading, error } = useAdminResources();
   const live = computeSdSopCoverageFromResources(liveResources);
-  const screenshotsAll = SD_PRIORITY_SCREENSHOT_MODULES.flatMap((id) =>
-    getStateDirectorScreenshots(id),
-  );
-  const screenshotUploaded = screenshotsAll.filter(
-    (s) => s.resourceStatus === "available",
-  ).length;
-  const screenshotPending = screenshotsAll.filter(
-    (s) => s.resourceStatus === "pending_upload",
-  ).length;
-  const moduleCount = SD_SOP_MANIFEST.reduce(
-    (set, e) => {
-      for (const id of e.moduleIds) set.add(id);
-      return set;
-    },
-    new Set<string>(),
-  ).size;
 
   const tiles: { label: string; value: string; tone?: string }[] = [
-    { label: "Launch modules", value: String(moduleCount) },
-    { label: "SD SOPs", value: String(live.total) },
-    { label: "Published", value: String(live.published), tone: "text-emerald-600" },
-    { label: "Pending", value: String(live.pending), tone: "text-amber-600" },
-    { label: "Held / review", value: String(live.held), tone: "text-amber-600" },
-    { label: "Missing", value: String(live.missing), tone: "text-rose-600" },
-    { label: "File repair", value: String(live.needsFileRepair), tone: "text-amber-600" },
-    { label: "Screenshots", value: String(screenshotsAll.length) },
-    { label: "SS uploaded", value: String(screenshotUploaded), tone: "text-emerald-600" },
-    { label: "SS pending", value: String(screenshotPending), tone: "text-amber-600" },
+    { label: "Required SD SOPs", value: String(live.total) },
+    { label: "Published + connected", value: String(live.published), tone: "text-emerald-600" },
+    { label: "Privacy / business review", value: String(live.held), tone: "text-amber-600" },
+    { label: "Needs file repair", value: String(live.needsFileRepair), tone: "text-amber-600" },
+    { label: "Missing from upload center", value: String(live.missing), tone: "text-rose-600" },
+    { label: "Excluded / vault only", value: String(live.excluded), tone: "text-muted-foreground" },
   ];
 
   return (
     <section
-      data-testid="sd-launch-coverage-panel"
-      className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6"
+      data-testid="sd-sop-readiness-panel"
+      className="rounded-2xl border border-border/70 bg-card p-6"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-            State Director Academy · Launch readiness
+            Training Management · Readiness
           </p>
           <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
-            SOP & screenshot coverage
+            State Director SOP Readiness
           </h2>
-          <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
-            Source of truth for the State Director launch. Pending items are surfaced calmly to
-            learners and never render as broken links.
-          </p>
-          <p className="mt-1 text-[11.5px] text-muted-foreground">
-            Learners only see published resources assigned to their role and state.
-          </p>
-          <p className="mt-1 text-[11.5px] text-muted-foreground">
-            Published means the resource is visible to learners and can be opened from the module.
+          <p
+            data-testid="sd-readiness-helper"
+            className="mt-1.5 max-w-3xl text-[13px] text-muted-foreground"
+          >
+            These counts only include the {live.total} State Director SOPs required for the launch
+            journey. Resource Upload Center shows all company resources.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1994,7 +1971,7 @@ function SDLaunchCoveragePanel() {
             className="rounded-xl"
             onClick={() => navigate("/hr/resource-management#bulk-upload")}
           >
-            <Upload className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
+            <Upload className="mr-1.5 h-3.5 w-3.5" /> Open Resource Upload Center
           </Button>
           <Button
             size="sm"
@@ -2002,15 +1979,7 @@ function SDLaunchCoveragePanel() {
             className="rounded-xl"
             onClick={() => navigate("/training")}
           >
-            <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Review SD SOP gaps
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-xl"
-            onClick={() => navigate("/training/welcome")}
-          >
-            <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Open Welcome
+            <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Review SD journey
           </Button>
         </div>
       </div>
@@ -2025,13 +1994,13 @@ function SDLaunchCoveragePanel() {
       {loading && !error && (
         <p className="mt-3 text-[11.5px] text-muted-foreground">Loading live SOP coverage…</p>
       )}
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {tiles.map((t) => (
           <div
             key={t.label}
-            className="rounded-xl border border-border/60 bg-background p-3 text-center"
+            className="rounded-xl border border-border/60 bg-background p-3"
           >
-            <p className={cn("text-[18px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
+            <p className={cn("text-[20px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
               {t.value}
             </p>
             <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -2040,16 +2009,18 @@ function SDLaunchCoveragePanel() {
           </div>
         ))}
       </div>
+
       <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {/* Missing from upload center */}
         <div
           data-testid="sd-coverage-needs-upload"
           className="rounded-2xl border border-border/60 bg-background p-4"
         >
           <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Needs upload ({live.missing})
+            Missing from upload center ({live.missing})
           </h3>
           <p className="mt-1 text-[11.5px] text-muted-foreground">
-            SOPs in the manifest with no matching row in Resource Management yet.
+            Expected SOP titles with no matching row in Resource Upload Center yet.
           </p>
           <ul className="mt-3 max-h-64 space-y-1 overflow-auto text-[12.5px]">
             {live.missingEntries.length === 0 ? (
@@ -2060,23 +2031,28 @@ function SDLaunchCoveragePanel() {
                   key={e.entry.id}
                   className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-3 py-1.5 text-foreground/90"
                 >
-                  {e.entry.title}
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Expected
+                  </span>
+                  <div>{e.entry.title}</div>
                 </li>
               ))
             )}
             {live.missingEntries.length > 30 && (
               <li className="text-[11px] text-muted-foreground">
-                + {live.missingEntries.length - 30} more — open Resource Management to review.
+                + {live.missingEntries.length - 30} more.
               </li>
             )}
           </ul>
         </div>
+
+        {/* Published & connected — with matched resource title */}
         <div
           data-testid="sd-coverage-published"
           className="rounded-2xl border border-border/60 bg-background p-4"
         >
           <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Published & connected ({live.published})
+            Published &amp; connected ({live.published})
           </h3>
           <p className="mt-1 text-[11.5px] text-muted-foreground">
             Live in the Resource Library and visible to State Director learners.
@@ -2085,19 +2061,72 @@ function SDLaunchCoveragePanel() {
             {live.publishedEntries.length === 0 ? (
               <li className="text-muted-foreground">No SOPs published yet.</li>
             ) : (
-              live.publishedEntries.slice(0, 30).map((e) => (
+              live.publishedEntries.slice(0, 30).map((e) => {
+                const titleMatch =
+                  e.resource && e.resource.title.trim() !== e.entry.title.trim();
+                return (
+                  <li
+                    key={e.entry.id}
+                    className="rounded-lg border border-border/60 bg-card px-3 py-1.5 text-foreground/90"
+                  >
+                    <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      Manifest
+                    </span>
+                    <div>{e.entry.title}</div>
+                    {e.resource && (
+                      <div className="mt-0.5 flex items-center gap-2 text-[11.5px] text-muted-foreground">
+                        <span>Matched: {e.resource.title}</span>
+                        {titleMatch && (
+                          <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-700">
+                            title match
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        {/* Needs title cleanup */}
+        <div
+          data-testid="sd-coverage-needs-title-cleanup"
+          className="rounded-2xl border border-amber-300/50 bg-amber-50/30 p-4"
+        >
+          <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-amber-900">
+            Needs title cleanup ({live.needsTitleCleanupEntries.length})
+          </h3>
+          <p className="mt-1 text-[11.5px] text-amber-900/80">
+            Uploaded resources that look close to a required SOP but don't match the expected title.
+            Rename the upload to connect it.
+          </p>
+          <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-[12.5px]">
+            {live.needsTitleCleanupEntries.length === 0 ? (
+              <li className="text-amber-900/70">No likely renames detected.</li>
+            ) : (
+              live.needsTitleCleanupEntries.slice(0, 20).map((c) => (
                 <li
-                  key={e.entry.id}
-                  className="rounded-lg border border-border/60 bg-card px-3 py-1.5 text-foreground/90"
+                  key={c.entry.id}
+                  className="rounded-lg border border-amber-300/50 bg-background px-3 py-1.5 text-foreground/90"
                 >
-                  {e.entry.title}
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Expected
+                  </div>
+                  <div>{c.entry.title}</div>
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                    Uploaded as: {c.candidate.title}
+                  </div>
                 </li>
               ))
             )}
           </ul>
         </div>
-      </div>
-      <div className="mt-4">
+
+        {/* Needs file repair */}
         <div
           data-testid="sd-coverage-needs-file-repair"
           className="rounded-2xl border border-amber-300/50 bg-amber-50/40 p-4"
@@ -2107,9 +2136,9 @@ function SDLaunchCoveragePanel() {
           </h3>
           <p className="mt-1 text-[11.5px] text-amber-900/80">
             Published records that are missing both an external URL and a storage file —
-            re-upload from Resource Management so learners can open the SOP.
+            re-upload from Resource Upload Center so learners can open the SOP.
           </p>
-          <ul className="mt-3 max-h-48 space-y-1 overflow-auto text-[12.5px]">
+          <ul className="mt-3 max-h-56 space-y-1 overflow-auto text-[12.5px]">
             {live.needsFileRepairEntries.length === 0 ? (
               <li className="text-amber-900/70">No file repairs needed.</li>
             ) : (
@@ -2123,6 +2152,62 @@ function SDLaunchCoveragePanel() {
               ))
             )}
           </ul>
+        </div>
+      </div>
+
+      {/* Uploaded but not matched */}
+      <div className="mt-4">
+        <div
+          data-testid="sd-coverage-unmatched-uploads"
+          className="rounded-2xl border border-border/60 bg-background p-4"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Uploaded but not matched to State Director SOPs ({live.unmatchedResources.length})
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              These resources live in the upload center but don't match a required SD SOP title.
+            </p>
+          </div>
+          <div className="mt-3 overflow-auto">
+            <table className="w-full min-w-[640px] text-[12.5px]">
+              <thead className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b border-border/60">
+                  <th className="px-2 py-2 text-left font-medium">Title</th>
+                  <th className="px-2 py-2 text-left font-medium">Upload status</th>
+                  <th className="px-2 py-2 text-left font-medium">Type</th>
+                  <th className="px-2 py-2 text-left font-medium">Roles</th>
+                  <th className="px-2 py-2 text-left font-medium">Category</th>
+                </tr>
+              </thead>
+              <tbody>
+                {live.unmatchedResources.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-2 py-3 text-muted-foreground">
+                      All uploaded resources are matched or out of scope.
+                    </td>
+                  </tr>
+                ) : (
+                  live.unmatchedResources.slice(0, 30).map((r) => (
+                    <tr key={r.id} className="border-b border-border/40">
+                      <td className="px-2 py-2 text-foreground/90">{r.title}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{r.uploadStatus ?? "published"}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{r.resourceType ?? r.type}</td>
+                      <td className="px-2 py-2 text-muted-foreground">
+                        {r.roles.length ? r.roles.join(", ") : "All roles"}
+                      </td>
+                      <td className="px-2 py-2 text-muted-foreground">{r.category}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            {live.unmatchedResources.length > 30 && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                + {live.unmatchedResources.length - 30} more. Open Resource Upload Center to review.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </section>
