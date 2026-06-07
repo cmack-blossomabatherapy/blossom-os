@@ -297,6 +297,83 @@ export default function OSTraining() {
           {/* WELCOME TO BLOSSOM — first emotional anchor */}
           {isSD && <WelcomeAnchor onOpen={() => navigate("/onboarding/phase/welcome")} />}
 
+          {/* DB-BACKED LAUNCH TRACKER — only when a real enrollment exists.
+              Source of truth shared with Training Management / Leadership Dashboard. */}
+          {isSD && hasDbEnrollment && (
+            <section data-testid="sd-db-launch-tracker">
+              <div className="rounded-3xl border border-border/70 bg-card p-6">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Live launch tracker · synced with leadership
+                    </p>
+                    <h3 className="mt-1 text-[18px] font-semibold tracking-tight">
+                      Week {learnerHome.currentWeek?.week_number ?? "—"} · {learnerHome.currentWeek?.title ?? "Getting started"}
+                    </h3>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      {learnerHome.launchProgress.requiredCompleted} of {learnerHome.launchProgress.requiredTotal} launch modules complete
+                      {learnerHome.readiness ? <> · Readiness {Math.round(learnerHome.readiness.overall)}%</> : null}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Launch</p>
+                    <p className="text-[24px] font-semibold tabular-nums">{learnerHome.launchProgress.pct}%</p>
+                  </div>
+                </div>
+                <Progress value={learnerHome.launchProgress.pct} className="mt-4 h-1.5" />
+
+                {dbNextModule ? (
+                  <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.04] p-4">
+                    <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      <ArrowRight className="h-3 w-3" /> Next action
+                    </p>
+                    <p className="mt-1.5 text-[13.5px] font-semibold text-foreground">{dbNextModule.title}</p>
+                    <p className="mt-0.5 text-[11.5px] text-muted-foreground capitalize">
+                      {dbNextModule.module_type}
+                      {dbNextModule.duration_label ? <> · {dbNextModule.duration_label}</> : null}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        className="rounded-full"
+                        onClick={onStartDbNext}
+                        disabled={actionBusy !== null}
+                        data-testid="sd-db-start-next"
+                      >
+                        <Play className="mr-1.5 h-3.5 w-3.5" />
+                        {actionBusy === "start" ? "Starting…" : "Mark started"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        onClick={onCompleteDbNext}
+                        disabled={actionBusy !== null}
+                        data-testid="sd-db-complete-next"
+                      >
+                        <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                        {actionBusy === "complete" ? "Saving…" : "Mark complete"}
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Progress is logged to your enrollment — your mentor and leadership see it instantly.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-[12.5px] text-foreground">
+                    All launch-scoped modules complete. Reach out to your mentor for certification.
+                  </div>
+                )}
+
+                {learnerHome.setupGaps.length > 0 && (
+                  <p className="mt-4 text-[11.5px] text-muted-foreground">
+                    Setup pending: {learnerHome.setupGaps.join(", ").replace(/_/g, " ")}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* CONTINUE LEARNING */}
           {cont.length > 0 && (
             <section>
