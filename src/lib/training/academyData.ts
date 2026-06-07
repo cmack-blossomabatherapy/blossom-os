@@ -1016,6 +1016,22 @@ function specForModule(weekNum: number, dayNum: number, position: number, title:
     };
   }
 
+  // Week 2 & Week 3 curated overrides
+  if ((weekNum === 2 || weekNum === 3) && SD_W23_TRAINING_SPECS[title]) {
+    const override = SD_W23_TRAINING_SPECS[title];
+    const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
+    return {
+      type: "SOP",
+      minutes: 20,
+      sopName,
+      description: override.description ?? `${title} — Week ${weekNum} module.`,
+      whyItMatters: override.whyItMatters,
+      whatToDo: override.whatToDo,
+      completionEvidence: override.completionEvidence,
+      reflectionPrompt: override.reflectionPrompt,
+    };
+  }
+
   const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
   const overrideType = SD_SPECIAL_TYPES[title];
 
