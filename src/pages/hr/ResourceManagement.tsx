@@ -210,7 +210,7 @@ export default function ResourceManagement() {
               setFailedUploads(failed);
             }}
             onPublish={(added) => {
-              setItems((prev) => [...added, ...prev]);
+              setSessionItems((prev) => [...added, ...prev]);
               toast({ title: "Resources published", description: `${added.length} added to the Resource Library.` });
             }}
           />
