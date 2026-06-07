@@ -29,6 +29,8 @@ import { upsertProgress } from "@/lib/academy/api";
 import {
   getStateDirectorFullContent, isStateDirectorModule,
   type SDFullContent, type SDKnowledgeQ,
+  getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
+  type SDScreenshotAsset,
 } from "@/lib/training/stateDirectorFullTraining";
 
 /** A resource is "pending" when it has no usable destination yet. */
