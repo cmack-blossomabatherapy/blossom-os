@@ -49,7 +49,8 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/revisit Welcome to Blossom anytime/);
   });
 
-  it("/training/welcome still redirects to /onboarding/phase/welcome", () => {
-    expect(APP).toMatch(/path="\/training\/welcome"\s+element={<Navigate to="\/onboarding\/phase\/welcome"/);
+  it("/training/welcome renders OSWelcomeToBlossom directly (no redirect to /onboarding)", () => {
+    expect(APP).toMatch(/path="\/training\/welcome"\s+element={<OSWelcomeToBlossom/);
+    expect(APP).not.toMatch(/path="\/training\/welcome"\s+element={<Navigate to="\/onboarding\/phase\/welcome"/);
   });
 });

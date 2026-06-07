@@ -638,9 +638,9 @@ const App = () => (
                   <Route path="/employee-ops" element={<OSPlaceholder title="Employee Operations" description="Employee onboarding and operational workflows." icon={Briefcase} />} />
                   <Route path="/evaluations" element={<OSEvaluations />} />
                   <Route path="/training" element={<OSTraining />} />
-                  {/* Canonical alias — /training/welcome routes into the same
-                      Welcome to Blossom ceremonial onboarding page. */}
-                  <Route path="/training/welcome" element={<Navigate to="/onboarding/phase/welcome" replace />} />
+                  {/* Canonical Welcome to Blossom route — renders inside the OS shell,
+                      not the legacy AppLayout. */}
+                  <Route path="/training/welcome" element={<OSWelcomeToBlossom />} />
                   <Route path="/training/manage" element={<OSTrainingManage />} />
                   <Route path="/training/:id" element={<OSTrainingDetail />} />
                   <Route path="/billing" element={<Navigate to="/billing-finance" replace />} />
@@ -747,9 +747,10 @@ const App = () => (
                   <Route path="/onboarding" element={<Journey />} />
                   {/* Legacy flat-roadmap removed — Journey is the canonical onboarding. */}
                   <Route path="/onboarding/roadmap" element={<Navigate to="/onboarding" replace />} />
-                  <Route path="/onboarding/phase/welcome" element={<OSRoleProvider><OSWelcomeToBlossom /></OSRoleProvider>} />
-                  {/* Legacy /onboarding/phase/welcome/legacy route removed — the new OSWelcomeToBlossom is canonical. */}
-                  <Route path="/onboarding/phase/welcome/legacy" element={<Navigate to="/onboarding/phase/welcome" replace />} />
+                  {/* Legacy onboarding paths redirect to canonical /training/welcome
+                      so the page renders inside the OS shell, not AppLayout. */}
+                  <Route path="/onboarding/phase/welcome" element={<Navigate to="/training/welcome" replace />} />
+                  <Route path="/onboarding/phase/welcome/legacy" element={<Navigate to="/training/welcome" replace />} />
                   <Route path="/onboarding/week/1" element={<WeekOne />} />
                   <Route path="/onboarding/week/2" element={<WeekTwo />} />
                   <Route path="/onboarding/week/3" element={<WeekThree />} />
