@@ -23,6 +23,7 @@ import {
   type Training, type TrainingType,
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "@/components/training/SDJourneyView";
+import { SDLearnerHome } from "@/components/training/SDLearnerHome";
 import {
   loadLearnerHome,
   startLearnerModule,
@@ -191,6 +192,9 @@ export default function OSTraining() {
 
   return (
     <OSShell>
+      {isSD ? (
+        <SDLearnerHome firstName={firstName} trainings={journeyModules} learnerHome={learnerHome} />
+      ) : (
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
         <div className="min-w-0 space-y-12">
           {/* HERO */}
@@ -423,9 +427,6 @@ export default function OSTraining() {
           {/* MY ROLE JOURNEY */}
           <section>
             <SectionHeader title="My Role Journey" subtitle="A guided path for your role." />
-            {role === "state_director" ? (
-              <SDJourneyView trainings={journeyModules} />
-            ) : (
             <div className="rounded-3xl border border-border/70 bg-card p-6">
               <div className="flex items-start justify-between gap-6">
                 <div className="flex min-w-0 items-start gap-4">
@@ -507,7 +508,6 @@ export default function OSTraining() {
                 })}
               </div>
             </div>
-            )}
           </section>
 
           {/* ADDITIONAL LEARNING — Systems + Cross-department */}
@@ -744,6 +744,7 @@ export default function OSTraining() {
           )}
         </aside>
       </div>
+      )}
     </OSShell>
   );
 }
