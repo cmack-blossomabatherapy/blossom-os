@@ -782,11 +782,10 @@ export function classifyStateDirectorModule(
     hasScreenshot && screenshots.every((s) => s.resourceStatus !== "available");
   const sopName = SD_SOPS_BY_WEEK[week]?.[day]?.[0];
   const isVideoModule = /^video$/i.test((training as { type?: string }).type ?? "");
-  // Welcome modules (Phase 0) are explicitly non-SOP — never count against
-  // State Director SOP upload coverage.
-  const isWelcome =
-    training.id.startsWith("welcome-") ||
-    /welcome[- ](video|to[- ]blossom|letter|mission|values|team|how[- ]blossom)/i.test(training.id);
+  // Phase 0 Welcome modules (ids like "welcome-*") are explicitly non-SOP
+  // and never count against State Director SOP upload coverage. Curated
+  // SD-prefixed modules (e.g. sd-w1d1-welcome-*) keep their normal status.
+  const isWelcome = !training.id.startsWith("sd-") && training.id.startsWith("welcome-");
 
   let status: SDModuleCompleteness;
   if (isWelcome) {
