@@ -725,6 +725,24 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                         <div className="sm:col-span-2"><dt className="inline font-semibold text-amber-700">Escalate when: </dt><dd className="inline">{s.escalation}</dd></div>
                       )}
                     </dl>
+                    {(() => {
+                      const shots: SDScreenshotAsset[] = [];
+                      if (s.screenshotId) {
+                        const a = getStateDirectorScreenshotById(s.screenshotId);
+                        if (a) shots.push(a);
+                      }
+                      for (const a of stepScreenshots) {
+                        if (a.stepIndex === i && !shots.includes(a)) shots.push(a);
+                      }
+                      if (shots.length === 0) return null;
+                      return (
+                        <div className="mt-3 space-y-2 pl-7">
+                          {shots.map((shot) => (
+                            <SDScreenshotCard key={shot.id} asset={shot} />
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </li>
                 ))}
               </ol>
