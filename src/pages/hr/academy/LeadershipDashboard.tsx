@@ -10,6 +10,12 @@ import {
   CircleDashed,
   Sparkles,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  UserPlus, MapPin, ExternalLink, MessageSquarePlus,
+  Eye, Award, FileCheck,
+} from "lucide-react";
 import {
   listEnrollments,
   loadCurriculum,
@@ -17,6 +23,9 @@ import {
   listShadowSessions,
   listCheckins,
   computeReadiness,
+  logShadowSession,
+  logCheckin,
+  upsertProgress,
 } from "@/lib/academy/api";
 import type { AcademyCurriculum } from "@/lib/academy/api";
 import { Skeleton } from "@/components/ui/skeleton";
