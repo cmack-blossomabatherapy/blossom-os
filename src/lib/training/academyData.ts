@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { SD_W1_TRAINING_SPECS } from "./sdWeek1Content";
 import { SD_W23_TRAINING_SPECS } from "./sdWeek23Content";
+import { SD_W45_TRAINING_SPECS } from "./sdWeek45Content";
 
 export type TrainingType =
   | "SOP"
@@ -1023,6 +1024,32 @@ function specForModule(weekNum: number, dayNum: number, position: number, title:
     return {
       type: "SOP",
       minutes: 20,
+      sopName,
+      description: override.description ?? `${title} — Week ${weekNum} module.`,
+      whyItMatters: override.whyItMatters,
+      whatToDo: override.whatToDo,
+      completionEvidence: override.completionEvidence,
+      reflectionPrompt: override.reflectionPrompt,
+    };
+  }
+
+  // Week 4 & Week 5 curated overrides — preserve special types (Shadowing,
+  // Meeting, Quiz, Reflection, Task) while injecting curated copy.
+  if ((weekNum === 4 || weekNum === 5) && SD_W45_TRAINING_SPECS[title]) {
+    const override = SD_W45_TRAINING_SPECS[title];
+    const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
+    const specialType = SD_SPECIAL_TYPES[title];
+    const typeMinutes: Record<string, { type: TrainingType; minutes: number }> = {
+      Shadowing: { type: "Shadowing", minutes: 90 },
+      Meeting: { type: "Meeting", minutes: 45 },
+      Quiz: { type: "Quiz", minutes: 60 },
+      Reflection: { type: "Reflection", minutes: 30 },
+      Task: { type: "Task", minutes: 20 },
+    };
+    const tm = specialType ? typeMinutes[specialType] : { type: "SOP" as TrainingType, minutes: 20 };
+    return {
+      type: tm.type,
+      minutes: tm.minutes,
       sopName,
       description: override.description ?? `${title} — Week ${weekNum} module.`,
       whyItMatters: override.whyItMatters,
