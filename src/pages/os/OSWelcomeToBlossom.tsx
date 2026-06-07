@@ -2,7 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
   ArrowRight, PlayCircle, Sparkles, Heart, Compass, Users, ArrowLeft,
-  BookOpen, MessageSquare, Quote, Video,
+  BookOpen, MessageSquare, Quote, Video, Target, ListChecks, CheckCircle2,
+  Building2, Workflow, Flag,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
@@ -67,16 +68,94 @@ export default function OSWelcomeToBlossom() {
       name: "Chad Kaufman",
       role: "Chief Executive Officer",
       initial: "C",
-      letter:
-        "Welcome to Blossom. The reason this company exists is simple — we believe families deserve calm, structured, deeply caring ABA therapy, and the people delivering it deserve a real operational system behind them. You're not joining a startup figuring it out. You're joining a team that has done this work before, in multiple states, and that takes the responsibility seriously. Take your first week slow. Ask anything. We're glad you're here.",
+      title: "A Welcome From Chad Kaufman",
+      paragraphs: [
+        "Welcome to Blossom.",
+        "I want you to know from the beginning that this company was built with a very real responsibility in mind. Families come to us at important moments in their lives. They are looking for care, clarity, and trust. They are often trying to understand insurance, schedules, assessments, staffing, and clinical recommendations all at once. Our job is to make that experience feel more supported, not more confusing.",
+        "That is why operations matter so much here.",
+        "Great ABA therapy does not happen through good intentions alone. It happens when families are communicated with, when authorizations are watched, when schedules are clean, when staff are supported, when clinical teams have what they need, and when leaders follow through. Blossom is building the systems to make that possible at scale.",
+        "As a State Director, you are stepping into one of the most important leadership seats in the company. You will not personally do every task in the state, but you will be responsible for knowing whether the state is healthy. You will learn to see where the flow is stuck, where families are waiting, where staff need support, and where leadership needs to step in.",
+        "Do not pressure yourself to know everything on day one. That is not the expectation.",
+        "The expectation is that you learn the system, ask good questions, communicate clearly, and build trust through follow-through. If you do those things consistently, you will become the kind of leader this role requires.",
+        "We are glad you are here. Take the training seriously, lean on your mentor, and remember that this work matters because the families matter.",
+        "Welcome to Blossom.",
+      ],
+      signoff: "Chad Kaufman, Chief Executive Officer",
     },
     {
       name: "Shira Lasry",
       role: "Director of Operations",
       initial: "S",
-      letter:
-        "My job — and your mentor's job — is to make sure you never feel lost. Blossom OS, our SOPs, your training path, and your weekly check-ins exist so the operational work is clear. Your first job isn't to know everything. It's to get grounded. Follow the launch path, lean on your mentor, and tell us where the system is unclear so we can fix it for the next person.",
+      title: "A Note From Shira Lasry",
+      paragraphs: [
+        "Welcome.",
+        "If you are reading this on your first day, I want you to take a breath. You are going to learn a lot, but you are not expected to absorb it all at once.",
+        "The State Director role is built around rhythm, ownership, and communication. You will learn the dashboards, the SOPs, the meetings, the departments, and the escalation paths. Those tools matter. But the deeper skill is learning how to keep a state moving without creating panic.",
+        "When something is stuck, we name it. When ownership is unclear, we assign it. When a family is waiting, we follow up. When a process breaks, we fix the system. When a team member needs support, we do not leave them guessing.",
+        "That is the kind of operational leadership Blossom needs.",
+        "Your training path is designed to give you structure. Start with Welcome to Blossom. Then move through the State Director journey one day at a time. Read the SOPs. Ask your mentor what the work looks like in real life. Pay attention to the handoffs between departments, because that is where many operational issues begin.",
+        "You do not have to become perfect. You do have to become clear, consistent, and accountable.",
+        "My hope is that by the end of this journey, you understand not only what a State Director does, but why the role matters. A healthy state creates better experiences for families, clinicians, staff, and leaders. That is the work.",
+        "Welcome to the team. We are going to build this with you.",
+      ],
+      signoff: "Shira Lasry, Director of Operations",
     },
+  ];
+
+  const values = [
+    { title: "Family-Centered Care", body: "Families should not have to chase us for clarity. We communicate, follow through, and treat every family interaction as part of care." },
+    { title: "Clinical Excellence", body: "ABA services must be clinically sound, ethical, and individualized. Operations exist to support quality, not replace it." },
+    { title: "Operational Accountability", body: "If something is stuck, unclear, overdue, or at risk, we name it and assign ownership. Calm accountability prevents crisis." },
+    { title: "Clear Communication", body: "We say what is happening, who owns the next step, and when follow-up will happen. We do not let silence become the system." },
+    { title: "Team Support", body: "People do better work when they know where to go, what is expected, and who will help them solve problems." },
+    { title: "Continuous Improvement", body: "If the same problem happens more than once, we look at the system. Blossom OS, SOPs, training, and dashboards are tools for making the work better." },
+  ];
+
+  const leadershipRoles = [
+    { role: "Chief Executive Officer", body: "Sets company direction, growth strategy, and organizational standards." },
+    { role: "Director of Operations", body: "Leads operational consistency, department accountability, escalation standards, and state execution." },
+    { role: "Operations Leadership", body: "Supports department performance, cross-state consistency, and state-level issue resolution." },
+    { role: "State Directors", body: "Own state-level operations, health, follow-through, and cross-department coordination." },
+    { role: "Clinical Leadership", body: "Protects clinical quality, supervision, treatment planning, and BCBA/RBT support." },
+    { role: "HR / Recruiting / Training", body: "Supports hiring, onboarding, employee readiness, training, and people operations." },
+    { role: "Billing / Finance / Authorizations", body: "Protects revenue continuity, payer requirements, authorization health, billing accuracy, and reimbursement." },
+  ];
+
+  const blossomFlow = [
+    "A family reaches out or is referred.",
+    "Intake captures the lead and confirms basic fit.",
+    "Benefits are verified.",
+    "Assessment is scheduled.",
+    "Clinical team completes assessment and treatment planning.",
+    "Authorization is requested and approved.",
+    "Scheduling and staffing build the service plan.",
+    "The client becomes active.",
+    "Utilization is monitored.",
+    "Progress reports and reauthorizations keep treatment moving.",
+    "The State Director watches the health of the whole flow.",
+  ];
+
+  const watchPoints = [
+    "Leads aging without next steps.",
+    "VOB or intake delays.",
+    "Assessment scheduling gaps.",
+    "Authorizations close to expiration.",
+    "Missing progress reports.",
+    "Scheduling gaps.",
+    "Staffing capacity issues.",
+    "Utilization below target.",
+    "Families or staff waiting too long for answers.",
+  ];
+
+  const relationshipMap = [
+    "Intake and leads — to understand how families enter the system.",
+    "Authorizations — to protect treatment continuity and revenue.",
+    "Scheduling — to protect service delivery and utilization.",
+    "Staffing and recruiting — to ensure the state can actually serve the families it accepts.",
+    "Clinical leadership — to ensure quality and supervision stay strong.",
+    "QA and compliance — to prevent documentation and authorization gaps.",
+    "HR and training — to support new hires and role readiness.",
+    "Executive and operations leadership — to remove structural blockers.",
   ];
 
   return (
@@ -92,15 +171,25 @@ export default function OSWelcomeToBlossom() {
         <header>
           <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             <Sparkles className="h-3 w-3 text-primary" />
-            <span>Day 1 · Welcome to Blossom</span>
+            <span>Day 1 — Welcome to Blossom</span>
           </div>
           <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground md:text-[34px]">
-            Welcome, <span className="capitalize">{firstName}</span>.
+            Welcome to Blossom<span className="text-muted-foreground">, {firstName}.</span>
           </h1>
-          <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
-            Today is just about getting grounded — who we are, what we believe, and the people you're
-            joining. Read the notes from leadership below, then continue into your State Director Journey.
+          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+            Before you learn the systems, dashboards, SOPs, and weekly rhythms, start here. This is the
+            part of training that explains who we are, why the work matters, and how we show up for
+            families and for each other. You do not need to know everything today. You only need to get
+            grounded, meet the company, and take the next step.
           </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button size="sm" className="rounded-full" onClick={markReviewed}>
+              Start Welcome to Blossom <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training")}>
+              Continue to State Director Journey
+            </Button>
+          </div>
         </header>
 
         {/* WELCOME VIDEO */}
@@ -123,10 +212,10 @@ export default function OSWelcomeToBlossom() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background/90 shadow-lg backdrop-blur">
                   <Video className="h-8 w-8 text-primary" />
                 </div>
-                <p className="text-base font-semibold text-foreground">Welcome video coming soon</p>
+                <p className="text-base font-semibold text-foreground">Welcome Video from Blossom</p>
                 <p className="max-w-md text-[13px] leading-relaxed text-muted-foreground">
-                  The written Welcome to Blossom guidance is ready now. The video can be added later
-                  without blocking your training.
+                  The welcome video is being prepared. You can continue with the written Welcome to
+                  Blossom guidance now and revisit the video later.
                 </p>
                 <Badge variant="outline" className="mt-1 gap-1 text-[10px] backdrop-blur">
                   <Sparkles className="h-3 w-3 text-primary" /> Pending upload
@@ -140,7 +229,7 @@ export default function OSWelcomeToBlossom() {
                 <PlayCircle className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">A note from Blossom</p>
+                <p className="text-[13px] font-semibold text-foreground">Welcome Video from Blossom</p>
                 <p className="text-[12px] text-muted-foreground">
                   {hasVideo ? "~3 min · Watch all the way through" : "Read the leadership notes below while the video is prepared"}
                 </p>
@@ -165,6 +254,23 @@ export default function OSWelcomeToBlossom() {
               </Button>
             </div>
           </div>
+          {/* Learner study guide for the welcome video */}
+          <div className="grid gap-4 border-t border-border/60 bg-card px-5 py-5 sm:grid-cols-2">
+            <GuideBlock icon={Target} label="Learning objective"
+              body="Understand the tone, purpose, and leadership expectations behind Blossom ABA Therapy." />
+            <GuideBlock icon={Heart} label="Why this matters"
+              body="The State Director role is not just a management role. You are responsible for how a state feels, functions, communicates, and recovers when things get hard. This welcome sets the tone for the kind of leader Blossom expects you to become." />
+            <GuideBlock icon={ListChecks} label="What to do" items={[
+              "Watch the video when available.",
+              "If the video is pending, read the leadership letters below.",
+              "Write down one sentence that captures what Blossom is here to do.",
+              "Bring that sentence to your first mentor check-in.",
+            ]} />
+            <GuideBlock icon={CheckCircle2} label="Completion evidence"
+              body="Mark the welcome reviewed and capture one takeaway for your mentor." />
+            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+              body="What kind of leader will families and staff need you to be in your first 30 days?" />
+          </div>
         </section>
 
         {/* WHO WE ARE */}
@@ -180,13 +286,167 @@ export default function OSWelcomeToBlossom() {
           ))}
         </section>
 
+        {/* MISSION & VISION */}
+        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+          <SectionHeader icon={Flag} eyebrow="Mission & Vision" title="What we're here to do"
+            description="Blossom exists to help children and families access high-quality ABA therapy with a system behind it that is organized, responsive, and human." />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Mission</p>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground">
+                Blossom ABA Therapy provides compassionate, high-quality ABA services to children and
+                families while building the operational structure needed for care to be consistent,
+                timely, and sustainable.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Vision</p>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground">
+                Our vision is to build a multi-state ABA organization where families feel supported,
+                clinicians feel equipped, and operations are clear enough that great care can happen
+                without chaos.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-primary">In plain language</p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-foreground">
+              We help families get care that works, and we build the systems that make that care reliable.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <GuideBlock icon={Heart} label="Why this matters for a State Director"
+              body="Your job is to protect the bridge between care and operations. Families experience Blossom through scheduling, communication, authorization continuity, staffing, clinical quality, and follow-through. If the state is disorganized, the family feels it. If the state is calm and accountable, the family feels that too." />
+            <GuideBlock icon={ListChecks} label="What to do" items={[
+              "Read the mission and vision.",
+              "Rewrite them in your own words.",
+              "Connect them to one operational metric you will watch as a State Director.",
+            ]} />
+            <GuideBlock icon={CheckCircle2} label="Completion evidence"
+              body="Bring your one-sentence version to your mentor check-in." />
+            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+              body="Which part of the mission will be hardest to protect when the state is busy?" />
+          </div>
+        </section>
+
+        {/* CORE VALUES */}
+        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+          <SectionHeader icon={Sparkles} eyebrow="Core Values" title="Standards we use when the day gets complicated"
+            description="Values are not slogans. They are the standards we use when the day gets complicated." />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {values.map((v) => (
+              <div key={v.title} className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <p className="text-[13.5px] font-semibold text-foreground">{v.title}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{v.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <GuideBlock icon={Heart} label="Why this matters for a State Director"
+              body="Your team will learn the values by watching your decisions. If you tolerate unclear ownership, the state will become unclear. If you model calm follow-up, the state will become calmer. Values become real through the way you run meetings, escalations, and daily priorities." />
+            <GuideBlock icon={ListChecks} label="What to do" items={[
+              "Read each value.",
+              "Pick one value that feels natural to you.",
+              "Pick one value that will require discipline.",
+              "Write one action you can take this week to model that value.",
+            ]} />
+            <GuideBlock icon={CheckCircle2} label="Completion evidence"
+              body="Share one chosen value and one action with your mentor." />
+            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+              body="Which value will your team most need from you during your first month?" />
+          </div>
+        </section>
+
+        {/* MEET THE TEAM */}
+        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+          <SectionHeader icon={Building2} eyebrow="Meet the Team" title="Who owns what at Blossom"
+            description="You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them." />
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {leadershipRoles.map((r) => (
+              <div key={r.role} className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+                <p className="text-[13.5px] font-semibold text-foreground">{r.role}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{r.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 rounded-2xl border border-border/60 bg-muted/40 p-5">
+            <p className="text-[13.5px] font-semibold text-foreground">State Director relationship map</p>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">As a State Director, you will work most closely with:</p>
+            <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              {relationshipMap.map((line) => (
+                <li key={line} className="flex gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <GuideBlock icon={Heart} label="Why this matters"
+              body="Knowing who owns what prevents delay. If the wrong person is holding the problem, the problem grows. A strong State Director routes issues quickly and respectfully." />
+            <GuideBlock icon={ListChecks} label="What to do" items={[
+              "Review the leadership and department map.",
+              "Identify your primary mentor.",
+              "Identify the department leaders you will need during week one.",
+              "Schedule or confirm your first check-in.",
+            ]} />
+            <GuideBlock icon={CheckCircle2} label="Completion evidence"
+              body="Write down your mentor, your first three department partners, and one question for each." />
+          </div>
+        </section>
+
+        {/* HOW BLOSSOM WORKS */}
+        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+          <SectionHeader icon={Workflow} eyebrow="How Blossom Works" title="The Blossom flow, at a glance"
+            description="Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal." />
+          <ol className="mt-5 space-y-2.5">
+            {blossomFlow.map((step, idx) => (
+              <li key={step} className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                  {idx + 1}
+                </span>
+                <span className="text-[13.5px] leading-relaxed text-foreground">{step}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-primary">State Director lens</p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-foreground">
+              You are not the owner of every task. You are the owner of the flow. Your job is to know
+              where the flow is healthy, where it is stuck, who owns the next action, and what needs
+              escalation.
+            </p>
+          </div>
+          <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-5">
+            <p className="text-[13.5px] font-semibold text-foreground">What to watch</p>
+            <ul className="mt-3 grid gap-1.5 text-[13px] leading-relaxed text-muted-foreground sm:grid-cols-2">
+              {watchPoints.map((point) => (
+                <li key={point} className="flex gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <GuideBlock icon={ListChecks} label="What to do" items={[
+              "Read the flow once.",
+              "Draw it from memory.",
+              "Mark the three places where you think a state is most likely to get stuck.",
+              "Bring those three risk points to your mentor.",
+            ]} />
+            <GuideBlock icon={CheckCircle2} label="Completion evidence"
+              body="Share your drawn flow and three risk points with your mentor." />
+          </div>
+        </section>
+
         {/* LEADERSHIP LETTERS */}
         <section className="space-y-3">
           <div>
             <h2 className="text-[18px] font-semibold tracking-tight text-foreground">A note from leadership</h2>
             <p className="mt-0.5 text-[13px] text-muted-foreground">Two short letters worth reading once.</p>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             {leaders.map((l) => (
               <article key={l.name} className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
                 <Quote className="absolute right-5 top-5 h-5 w-5 text-primary/30" aria-hidden />
@@ -195,29 +455,34 @@ export default function OSWelcomeToBlossom() {
                     {l.initial}
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-foreground">{l.name}</p>
+                    <p className="text-[14px] font-semibold text-foreground">{l.title}</p>
                     <p className="text-[12px] text-muted-foreground">{l.role}</p>
                   </div>
                 </div>
-                <p className="mt-4 text-[13.5px] leading-relaxed text-muted-foreground">{l.letter}</p>
+                <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">
+                  {l.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                </div>
+                <p className="mt-4 text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
               </article>
             ))}
           </div>
         </section>
 
-        {/* CONTINUE — clean bottom: Training Academy + Resource Library */}
+        {/* COMPLETION CARD */}
         <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary)/0.10),hsl(var(--accent)/0.06))] p-6 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl space-y-1.5">
+            <div className="max-w-xl space-y-2">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 <Sparkles className="h-3 w-3 text-primary" /> Next up
               </div>
               <h3 className="text-[20px] font-semibold tracking-tight text-foreground">
-                Continue to your State Director Journey
+                You are ready for the State Director Journey.
               </h3>
               <p className="text-[13.5px] leading-relaxed text-muted-foreground">
-                Your 5-week launch path is waiting — guided day-by-day, grounded in real Blossom
-                operations. You can revisit Welcome to Blossom anytime from Training Academy.
+                You have met the company, read the leadership notes, reviewed the mission and values,
+                and walked the high-level Blossom flow. Now move into the State Director launch journey.
+                You will go one day at a time, with SOPs, walkthroughs, mentor check-ins, shadowing, and
+                readiness sign-off. Nothing here has to be solved alone.
               </p>
             </div>
             <div className="flex flex-col gap-2 self-start sm:self-auto">
@@ -246,5 +511,50 @@ export default function OSWelcomeToBlossom() {
         </p>
       </div>
     </OSShell>
+  );
+}
+
+/* -------- helpers -------- */
+
+function SectionHeader({
+  icon: Icon, eyebrow, title, description,
+}: { icon: React.ComponentType<{ className?: string }>; eyebrow: string; title: string; description?: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
+        <h2 className="mt-0.5 text-[20px] font-semibold tracking-tight text-foreground">{title}</h2>
+        {description && (
+          <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GuideBlock({
+  icon: Icon, label, body, items,
+}: { icon: React.ComponentType<{ className?: string }>; label: string; body?: string; items?: string[] }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+      <div className="flex items-center gap-2">
+        <Icon className="h-3.5 w-3.5 text-primary" />
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      </div>
+      {body && <p className="mt-2 text-[13px] leading-relaxed text-foreground">{body}</p>}
+      {items && (
+        <ul className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-foreground">
+          {items.map((it) => (
+            <li key={it} className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
+              <span>{it}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

@@ -14,9 +14,9 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/WELCOME_VIDEO_URL\s*=\s*""/);
   });
 
-  it("renders 'Welcome video coming soon' pending panel copy", () => {
-    expect(WELCOME).toContain("Welcome video coming soon");
-    expect(WELCOME).toMatch(/can be added later[\s\S]*without blocking your training/);
+  it("renders Welcome Video from Blossom pending panel copy", () => {
+    expect(WELCOME).toContain("Welcome Video from Blossom");
+    expect(WELCOME).toMatch(/welcome video is being prepared[\s\S]*continue with the written/);
   });
 
   it("does not render a <video> element when URL is empty", () => {
@@ -45,8 +45,9 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toContain("Shira Lasry");
   });
 
-  it("includes revisit note", () => {
-    expect(WELCOME).toMatch(/revisit Welcome to Blossom anytime/);
+  it("includes completion handoff copy to the State Director Journey", () => {
+    expect(WELCOME).toMatch(/You are ready for the State Director Journey/);
+    expect(WELCOME).toMatch(/one day at a time/);
   });
 
   it("/training/welcome renders OSWelcomeToBlossom directly (no redirect to /onboarding)", () => {
