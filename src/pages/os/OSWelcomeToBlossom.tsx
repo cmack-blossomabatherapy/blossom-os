@@ -77,8 +77,9 @@ export default function OSWelcomeToBlossom() {
   }));
 
   const values = WELCOME_CORE_VALUES;
-  const welcomeModules = WELCOME_TO_BLOSSOM_MODULES;
-  const videoModule = welcomeModules[0];
+  void WELCOME_TO_BLOSSOM_HERO;
+  void WELCOME_TO_BLOSSOM_MODULES;
+  void WELCOME_COMPLETION;
 
   const leadershipRoles = [
     { role: "Chief Executive Officer", body: "Sets company direction, growth strategy, and organizational standards." },
@@ -90,9 +91,6 @@ export default function OSWelcomeToBlossom() {
     { role: "Billing / Finance / Authorizations", body: "Protects revenue continuity, payer requirements, authorization health, billing accuracy, and reimbursement." },
   ];
 
-  const blossomFlow = [
-  ] as const;
-  void blossomFlow;
   const flowSteps = WELCOME_BLOSSOM_FLOW;
 
   const watchPoints = [
