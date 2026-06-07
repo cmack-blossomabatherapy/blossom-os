@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
+import {
+  SD_SOP_MANIFEST,
+  computeSdSopCoverage,
+} from "@/lib/resources/stateDirectorSopManifest";
+import {
+  SD_PRIORITY_SCREENSHOT_MODULES,
+  getStateDirectorScreenshots,
+} from "@/lib/training/stateDirectorFullTraining";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -463,7 +471,12 @@ export default function TrainingManagementCenter() {
           </header>
 
           {/* Content by nav */}
-          {nav === "control-room" && <TrainingControlRoom />}
+          {nav === "control-room" && (
+            <div className="space-y-6">
+              <SDLaunchCoveragePanel />
+              <TrainingControlRoom />
+            </div>
+          )}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
               journeys={allJourneys}
