@@ -10,6 +10,12 @@ import {
   CircleDashed,
   Sparkles,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  UserPlus, MapPin, ExternalLink, MessageSquarePlus,
+  Eye, Award, FileCheck,
+} from "lucide-react";
 import {
   listEnrollments,
   loadCurriculum,
@@ -17,6 +23,9 @@ import {
   listShadowSessions,
   listCheckins,
   computeReadiness,
+  logShadowSession,
+  logCheckin,
+  upsertProgress,
 } from "@/lib/academy/api";
 import type { AcademyCurriculum } from "@/lib/academy/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +57,7 @@ interface Row {
   enrollment: any;
   readiness: number;
   weekNumber: number;
+  dayNumber: number;
   phaseName: string;
   phaseColor: string;
   modulesCompleted: number;
@@ -62,6 +72,15 @@ interface Row {
   mentorCheckinStatus: ReadinessStatus;
   signoffStatus: ReadinessStatus;
   certificationStatus: ReadinessStatus;
+  shadowHours: number;
+  checkinCount: number;
+  quizAvg: number | null;
+  quizCount: number;
+  sopCompleted: number;
+  sopTotal: number;
+  videosWatched: number;
+  videosTotal: number;
+  certificationModuleId: string | null;
   cats: ReadinessCategory[];
   checklist: LaunchChecklistItem[];
   risks: RiskSignal[];
@@ -128,10 +147,32 @@ export default function LeadershipDashboard() {
         (m) => m.is_required && !completedSet.has(m.id),
       );
       const employee = (e as any).employee ?? {};
+      // Derive day number: weeks * 5 + completed required in current week (cap 5)
+      const completedInWeek = currentWeek.modules.filter(
+        (m) => m.is_required && completedSet.has(m.id),
+      ).length;
+      const dayNumber = Math.min(
+        25,
+        Math.max(1, (currentWeek.week_number - 1) * 5 + Math.min(5, completedInWeek + 1)),
+      );
+      // Quiz / SOP / Video metrics
+      const quizMods = allModules.filter((m) => m.module_type === "quiz");
+      const quizScores = p
+        .filter((x) => quizMods.some((q) => q.id === x.module_id))
+        .map((x) => x.score)
+        .filter((x): x is number => typeof x === "number");
+      const quizAvg = quizScores.length === 0 ? null : Math.round(quizScores.reduce((a, b) => a + b, 0) / quizScores.length);
+      const sopMods = allModules.filter((m) => m.module_type === "sop");
+      const sopCompleted = sopMods.filter((m) => completedSet.has(m.id)).length;
+      const videoMods = allModules.filter((m) => m.module_type === "video");
+      const videosWatched = videoMods.filter((m) => completedSet.has(m.id)).length;
+      const certificationModule =
+        allModules.find((m) => /certif/i.test(m.title)) ?? null;
       built.push({
         enrollment: e,
         readiness: r.overall,
         weekNumber: currentWeek.week_number,
+        dayNumber,
         phaseName: phase.name,
         phaseColor: phase.color_token,
         modulesCompleted: p.filter((x) => x.status === "completed").length,
@@ -145,6 +186,15 @@ export default function LeadershipDashboard() {
         mentorCheckinStatus: cats.find((x) => x.key === "mentor_checkins")?.status ?? "not_started",
         signoffStatus: cats.find((x) => x.key === "final_signoff")?.status ?? "not_started",
         certificationStatus: checklist.find((x) => x.key === "certification")?.status ?? "not_started",
+        shadowHours: Math.round(totalShadowHrs * 10) / 10,
+        checkinCount: c.length,
+        quizAvg,
+        quizCount: quizScores.length,
+        sopCompleted,
+        sopTotal: sopMods.length,
+        videosWatched,
+        videosTotal: videoMods.length,
+        certificationModuleId: certificationModule?.id ?? null,
         cats,
         checklist,
         risks,
@@ -191,7 +241,7 @@ export default function LeadershipDashboard() {
       ) : (
         <div className="space-y-4">
           {rows.map((r) => (
-            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} />
+            <TraineeCard key={r.enrollment.id} row={r} curriculum={curriculum} onMutate={load} />
           ))}
         </div>
       )}
@@ -277,7 +327,31 @@ function ReadinessBar({ value }: { value: number }) {
   );
 }
 
-function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurriculum | null }) {
+function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border bg-muted/30 p-2.5">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums">{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function ActionButton({
+  icon: Icon, label, onClick,
+}: { icon: any; label: string; onClick: () => void | Promise<void> }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 h-8 text-[12px] font-medium hover:bg-muted transition"
+    >
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </button>
+  );
+}
+
+function TraineeCard({ row, curriculum, onMutate }: { row: Row; curriculum: AcademyCurriculum | null; onMutate: () => void }) {
   const launchSetup = computeLaunchSetup({
     enrollment: row.enrollment,
     curriculum,
@@ -285,6 +359,9 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
   });
   const welcomeAssets = computeWelcomeAssetStatus(curriculum);
   const pendingSops = computePendingSops(curriculum);
+  const setupGapLabels = launchSetup
+    .filter((c) => c.status !== "ready")
+    .map((c) => c.label);
 
   function copySummary() {
     const text = buildReadinessSummaryText({
@@ -295,11 +372,91 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
       checklist: row.checklist,
       risks: row.risks,
       nextAction: row.nextAction,
+      weekNumber: row.weekNumber,
+      dayNumber: row.dayNumber,
+      shadowHours: row.shadowHours,
+      checkinCount: row.checkinCount,
+      certificationStatus: row.certificationStatus,
+      setupGaps: setupGapLabels,
     });
     navigator.clipboard.writeText(text).then(
       () => toast.success("Readiness summary copied"),
       () => toast.error("Could not copy summary"),
     );
+  }
+
+  async function assignMentor() {
+    const id = window.prompt("Mentor employee ID (UUID):", row.enrollment.mentor_employee_id ?? "");
+    if (!id) return;
+    const { error } = await supabase.from("academy_enrollments")
+      .update({ mentor_employee_id: id }).eq("id", row.enrollment.id);
+    if (error) toast.error("Could not assign mentor");
+    else { toast.success("Mentor assigned"); onMutate(); }
+  }
+  async function assignState() {
+    const state = window.prompt("Assigned state code (e.g. NC):", row.enrollment.assigned_state ?? "");
+    if (!state) return;
+    const { error } = await supabase.from("academy_enrollments")
+      .update({ assigned_state: state.toUpperCase() }).eq("id", row.enrollment.id);
+    if (error) toast.error("Could not assign state");
+    else { toast.success("State assigned"); onMutate(); }
+  }
+  async function logShadow() {
+    const hoursStr = window.prompt("Shadow hours logged:", "1");
+    if (!hoursStr) return;
+    const hours = Number(hoursStr);
+    if (!Number.isFinite(hours) || hours <= 0) return;
+    const { error } = await logShadowSession({
+      enrollment_id: row.enrollment.id,
+      session_date: new Date().toISOString().slice(0, 10),
+      hours,
+      department: null,
+      shadowed_name: null,
+      mentor_signoff: false,
+      notes: null,
+    } as any);
+    if (error) toast.error("Could not log shadow session");
+    else { toast.success("Shadow session logged"); onMutate(); }
+  }
+  async function logCheckinAction() {
+    const notes = window.prompt("Check-in notes (optional):", "");
+    const { error } = await logCheckin({
+      enrollment_id: row.enrollment.id,
+      meeting_date: new Date().toISOString().slice(0, 10),
+      agenda: null,
+      notes: notes ?? null,
+      action_items: null,
+      leader_rating: null,
+    } as any);
+    if (error) toast.error("Could not log check-in");
+    else { toast.success("Check-in logged"); onMutate(); }
+  }
+  async function requestSignoff() {
+    const { error } = await logShadowSession({
+      enrollment_id: row.enrollment.id,
+      session_date: new Date().toISOString().slice(0, 10),
+      hours: 0,
+      mentor_signoff: true,
+      signoff_by_name: "Leadership",
+      signoff_at: new Date().toISOString(),
+      notes: "Leadership sign-off recorded",
+    } as any);
+    if (error) toast.error("Could not record sign-off");
+    else { toast.success("Sign-off recorded"); onMutate(); }
+  }
+  async function markCertification() {
+    if (!row.certificationModuleId) {
+      toast.error("No certification module found in curriculum");
+      return;
+    }
+    const now = new Date().toISOString();
+    const { error } = await upsertProgress(row.enrollment.id, row.certificationModuleId, {
+      status: "completed",
+      started_at: now,
+      completed_at: now,
+    });
+    if (error) toast.error("Could not mark certification complete");
+    else { toast.success("Certification marked complete"); onMutate(); }
   }
 
   return (
@@ -310,7 +467,7 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{row.traineeName}</h2>
             <PhaseBadge name={row.phaseName} colorToken={row.phaseColor} />
-            <span className="text-xs text-muted-foreground">Wk {row.weekNumber}</span>
+            <span className="text-xs text-muted-foreground">Wk {row.weekNumber} · Day {row.dayNumber}</span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             State: <span className="text-foreground">{row.state || "TBD"}</span> ·
@@ -353,6 +510,34 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
         <span className="text-muted-foreground">Mentor check-ins:</span><StatusChip status={row.mentorCheckinStatus} />
         <span className="text-muted-foreground">Final sign-off:</span><StatusChip status={row.signoffStatus} />
         <span className="text-muted-foreground">Certification:</span><StatusChip status={row.certificationStatus} />
+      </div>
+
+      {/* Evidence row */}
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        <Metric label="Quiz avg" value={row.quizAvg == null ? "—" : `${row.quizAvg}%`} sub={`${row.quizCount} taken`} />
+        <Metric label="SOPs done" value={`${row.sopCompleted}/${row.sopTotal}`} />
+        <Metric label="Videos watched" value={`${row.videosWatched}/${row.videosTotal}`} />
+        <Metric label="Shadow hours" value={`${row.shadowHours}h`} sub="target 8h" />
+        <Metric label="Check-ins" value={`${row.checkinCount}`} sub="target 3" />
+      </div>
+
+      {/* Management actions */}
+      <div
+        className="flex flex-wrap items-center gap-2"
+        data-testid="sd-management-actions"
+      >
+        <ActionButton icon={UserPlus} label="Assign mentor" onClick={assignMentor} />
+        <ActionButton icon={MapPin} label="Assign state" onClick={assignState} />
+        <Link
+          to={`/hr/employees/${row.enrollment.employee_id}`}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 h-8 text-[12px] font-medium hover:bg-muted transition"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Open learner profile
+        </Link>
+        <ActionButton icon={MessageSquarePlus} label="Log check-in" onClick={logCheckinAction} />
+        <ActionButton icon={Eye} label="Log shadow session" onClick={logShadow} />
+        <ActionButton icon={FileCheck} label="Request sign-off" onClick={requestSignoff} />
+        <ActionButton icon={Award} label="Mark certification complete" onClick={markCertification} />
       </div>
 
       {/* Risk signals */}
