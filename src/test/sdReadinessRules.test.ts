@@ -220,14 +220,14 @@ describe("Leadership dashboard wiring", () => {
   });
   it("passes strict gating fields into computeLaunchChecklist", () => {
     for (const field of [
-      "quizScores:",
-      "quizPassThreshold:",
-      "requiredCheckinCount:",
-      "shadowSignoffComplete:",
-      "finalKnowledgeReviewComplete:",
-      "readinessAssessmentComplete:",
-      "leadershipSignoffComplete:",
-      "certificationModuleComplete:",
+      "quizScores",
+      "quizPassThreshold",
+      "requiredCheckinCount",
+      "shadowSignoffComplete",
+      "finalKnowledgeReviewComplete",
+      "readinessAssessmentComplete",
+      "leadershipSignoffComplete",
+      "certificationModuleComplete",
     ]) {
       expect(dashboardSrc, `missing ${field}`).toContain(field);
     }
