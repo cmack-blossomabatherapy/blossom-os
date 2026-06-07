@@ -983,7 +983,35 @@ const SD_SPECIAL_TYPES: Record<string, TrainingType> = {
 
 function specForModule(weekNum: number, dayNum: number, position: number, title: string): SdModuleSpec {
   if (weekNum === 1 && dayNum === 1 && SD_W1D1_SPECS[title]) {
-    return SD_W1D1_SPECS[title];
+    const base = SD_W1D1_SPECS[title];
+    const override = SD_W1_TRAINING_SPECS[title];
+    if (override) {
+      return {
+        ...base,
+        description: override.description ?? base.description,
+        whyItMatters: override.whyItMatters,
+        whatToDo: override.whatToDo,
+        completionEvidence: override.completionEvidence,
+        reflectionPrompt: override.reflectionPrompt,
+      };
+    }
+    return base;
+  }
+
+  // Week 1 Day 2-5 curated overrides
+  if (weekNum === 1 && dayNum >= 2 && SD_W1_TRAINING_SPECS[title]) {
+    const override = SD_W1_TRAINING_SPECS[title];
+    const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
+    return {
+      type: "SOP",
+      minutes: 20,
+      sopName,
+      description: override.description ?? `${title} — Week 1 foundations module.`,
+      whyItMatters: override.whyItMatters,
+      whatToDo: override.whatToDo,
+      completionEvidence: override.completionEvidence,
+      reflectionPrompt: override.reflectionPrompt,
+    };
   }
 
   const sopName = SD_SOPS_BY_WEEK[weekNum]?.[dayNum]?.[position] ?? `${title} SOP`;
