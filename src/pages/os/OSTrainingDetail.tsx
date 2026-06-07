@@ -32,6 +32,12 @@ import {
   getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
   type SDScreenshotAsset,
 } from "@/lib/training/stateDirectorFullTraining";
+import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
+import { useLibraryResources } from "@/hooks/useLibraryResources";
+import {
+  findResourceForSopTitle,
+  normalizeSopTitle,
+} from "@/lib/resources/sdSopCoverage";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
