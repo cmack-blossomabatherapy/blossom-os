@@ -739,3 +739,64 @@ export function getStateDirectorFullContent(training: Training): SDFullContent |
 
 /** Exposed for tests — list of curated module ids. */
 export const SD_CURATED_MODULE_IDS = Object.keys(CURATED);
+
+/* ---------------- completeness classifier ---------------- */
+
+export type SDModuleCompleteness =
+  | "curated"
+  | "derived"
+  | "needs_sop_link"
+  | "needs_screenshot"
+  | "needs_video"
+  | "missing";
+
+export interface SDModuleReadiness {
+  moduleId: string;
+  title: string;
+  week: number;
+  day: number;
+  status: SDModuleCompleteness;
+  hasCuratedContent: boolean;
+  hasScreenshot: boolean;
+  screenshotPending: boolean;
+  sopName?: string;
+  isVideoModule: boolean;
+}
+
+/**
+ * Admin-only readiness classifier for a State Director module. Learners must
+ * never see this language — surface it only inside Training Management.
+ */
+export function classifyStateDirectorModule(
+  training: Pick<Training, "id" | "title" | "type" | "department">,
+): SDModuleReadiness | null {
+  if (!isStateDirectorModule(training)) return null;
+  const parsed = parseSdId(training.id);
+  const week = parsed?.week ?? 1;
+  const day = parsed?.day ?? 1;
+  const hasCurated = !!CURATED[training.id];
+  const screenshots = getStateDirectorScreenshots(training.id);
+  const hasScreenshot = screenshots.length > 0;
+  const screenshotPending =
+    hasScreenshot && screenshots.every((s) => s.resourceStatus !== "available");
+  const sopName = SD_SOPS_BY_WEEK[week]?.[day]?.[0];
+  const isVideoModule = /^video$/i.test((training as { type?: string }).type ?? "");
+
+  let status: SDModuleCompleteness = hasCurated ? "curated" : "derived";
+  if (!sopName) status = "needs_sop_link";
+  if (hasScreenshot && screenshotPending && status !== "needs_sop_link") status = "needs_screenshot";
+  if (isVideoModule && !hasCurated) status = "needs_video";
+
+  return {
+    moduleId: training.id,
+    title: training.title,
+    week,
+    day,
+    status,
+    hasCuratedContent: hasCurated,
+    hasScreenshot,
+    screenshotPending,
+    sopName,
+    isVideoModule,
+  };
+}
