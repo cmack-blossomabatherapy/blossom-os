@@ -35,6 +35,8 @@ import {
   computeLaunchChecklist,
   computeRiskSignals,
   buildReadinessSummaryText,
+  computeReadinessBlockers,
+  isCertificationReady,
   RISK_LABEL,
   type ReadinessCategory,
   type LaunchChecklistItem,
@@ -128,10 +130,60 @@ export default function LeadershipDashboard() {
       const welcomeComplete = welcomeModule
         ? completedSet.has(welcomeModule.id)
         : false;
+      // Strict gating signals
+      const requiredShadowMods = allModules.filter(
+        (m) => m.module_type === "shadowing" && m.is_required,
+      );
+      const shadowSignoffComplete =
+        requiredShadowMods.length > 0 &&
+        requiredShadowMods.every((m) => {
+          const prog = p.find((x) => x.module_id === m.id);
+          if (prog?.verified_at) return true;
+          // fall back: any shadow session with mentor_signoff covering required count
+          return s.some((sess) => sess.mentor_signoff);
+        });
+
+      const finalReviewModule = allModules.find((m) =>
+        /final knowledge (review|assessment)/i.test(m.title),
+      );
+      const readinessAssessmentModule = allModules.find((m) =>
+        /readiness assessment|readiness evaluation/i.test(m.title),
+      );
+      const leadershipSignoffModule = allModules.find((m) =>
+        /leadership sign[- ]?off/i.test(m.title),
+      );
+      const certificationModule = allModules.find((m) =>
+        /state director certification|^certification$/i.test(m.title),
+      );
+
+      const quizModsAll = allModules.filter((m) => m.module_type === "quiz");
+      const requiredQuizMods = quizModsAll.filter((m) => m.is_required);
+      const quizScoresAll = p
+        .filter((x) => quizModsAll.some((q) => q.id === x.module_id))
+        .map((x) => x.score)
+        .filter((x): x is number => typeof x === "number");
+
       const checklist = computeLaunchChecklist(cats, {
         welcomeComplete,
         readinessPct: r.overall,
         checkinCount: c.length,
+        quizScores: quizScoresAll,
+        requiredQuizCount: requiredQuizMods.length || quizScoresAll.length,
+        quizPassThreshold: 80,
+        requiredCheckinCount: 3,
+        shadowSignoffComplete,
+        finalKnowledgeReviewComplete: finalReviewModule
+          ? completedSet.has(finalReviewModule.id)
+          : undefined,
+        readinessAssessmentComplete: readinessAssessmentModule
+          ? completedSet.has(readinessAssessmentModule.id)
+          : undefined,
+        leadershipSignoffComplete: leadershipSignoffModule
+          ? completedSet.has(leadershipSignoffModule.id)
+          : s.some((sess) => sess.mentor_signoff),
+        certificationModuleComplete: certificationModule
+          ? completedSet.has(certificationModule.id)
+          : false,
       });
       const risks = computeRiskSignals({
         progress: p,
@@ -166,8 +218,6 @@ export default function LeadershipDashboard() {
       const sopCompleted = sopMods.filter((m) => completedSet.has(m.id)).length;
       const videoMods = allModules.filter((m) => m.module_type === "video");
       const videosWatched = videoMods.filter((m) => completedSet.has(m.id)).length;
-      const certificationModule =
-        allModules.find((m) => /certif/i.test(m.title)) ?? null;
       built.push({
         enrollment: e,
         readiness: r.overall,
