@@ -29,6 +29,8 @@ import { upsertProgress } from "@/lib/academy/api";
 import {
   getStateDirectorFullContent, isStateDirectorModule,
   type SDFullContent, type SDKnowledgeQ,
+  getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
+  type SDScreenshotAsset,
 } from "@/lib/training/stateDirectorFullTraining";
 
 /** A resource is "pending" when it has no usable destination yet. */
@@ -496,6 +498,62 @@ function defaultKnowledgeCheck(t: Training): KCheckQ[] {
   ];
 }
 
+function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
+  const pending = asset.resourceStatus === "pending_upload";
+  const heldForRedaction =
+    asset.resourceStatus === "needs_redaction" || asset.sensitivity === "needs_redaction";
+  const safeToShow =
+    !pending && !heldForRedaction && !!asset.imageUrl && isScreenshotPiiSafe(asset);
+  return (
+    <div
+      data-testid="sd-screenshot"
+      data-screenshot-id={asset.id}
+      data-screenshot-status={asset.resourceStatus}
+      className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[12.5px]"
+    >
+      <div className="font-semibold text-foreground">{asset.title}</div>
+      <p className="mt-0.5 text-muted-foreground">{asset.description}</p>
+      {safeToShow ? (
+        <img
+          src={asset.imageUrl}
+          alt={asset.alt}
+          loading="lazy"
+          className="mt-2 max-h-72 w-full rounded-lg border border-border/60 object-contain bg-background"
+        />
+      ) : pending ? (
+        <p
+          data-testid="sd-screenshot-pending"
+          className="mt-2 rounded-md border border-dashed border-border bg-background px-3 py-2 text-muted-foreground"
+        >
+          Screenshot pending — this visual will appear once the training asset is uploaded.
+        </p>
+      ) : heldForRedaction ? (
+        <p
+          data-testid="sd-screenshot-held"
+          className="mt-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-amber-800"
+        >
+          Screenshot held for redaction — not visible to learners yet.
+        </p>
+      ) : null}
+      {asset.callouts && asset.callouts.length > 0 && (
+        <ol className="mt-2 space-y-1 text-muted-foreground">
+          {asset.callouts.map((c, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                {idx + 1}
+              </span>
+              <span>
+                <span className="font-semibold text-foreground/80">{c.label}: </span>
+                {c.description}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function SDModuleDetailPanel({ training }: { training: Training }) {
   const { user } = useAuth();
   const [learnerHome, setLearnerHome] = useState<LearnerHome>(() => emptyLearnerHome());
@@ -507,6 +565,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
   const fullContent: SDFullContent | null = useMemo(
     () => getStateDirectorFullContent(training),
+    [training.id],
+  );
+
+  const stepScreenshots: SDScreenshotAsset[] = useMemo(
+    () => getStateDirectorScreenshots(training.id),
     [training.id],
   );
 
@@ -718,6 +781,24 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                         <div className="sm:col-span-2"><dt className="inline font-semibold text-amber-700">Escalate when: </dt><dd className="inline">{s.escalation}</dd></div>
                       )}
                     </dl>
+                    {(() => {
+                      const shots: SDScreenshotAsset[] = [];
+                      if (s.screenshotId) {
+                        const a = getStateDirectorScreenshotById(s.screenshotId);
+                        if (a) shots.push(a);
+                      }
+                      for (const a of stepScreenshots) {
+                        if (a.stepIndex === i && !shots.includes(a)) shots.push(a);
+                      }
+                      if (shots.length === 0) return null;
+                      return (
+                        <div className="mt-3 space-y-2 pl-7">
+                          {shots.map((shot) => (
+                            <SDScreenshotCard key={shot.id} asset={shot} />
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </li>
                 ))}
               </ol>
