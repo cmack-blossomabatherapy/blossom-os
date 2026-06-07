@@ -18,15 +18,15 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
     expect(APP).toMatch(/path="\/resource-library"/);
   });
 
-  it("Welcome to Blossom canonical route still resolves to OSWelcomeToBlossom", () => {
+  it("Welcome to Blossom canonical route renders OSWelcomeToBlossom in the OS shell", () => {
     expect(APP).toMatch(
-      /path="\/onboarding\/phase\/welcome"\s+element={<OSWelcomeToBlossom/,
+      /path="\/training\/welcome"\s+element={<OSWelcomeToBlossom/,
     );
   });
 
-  it("/training/welcome alias is registered and redirects", () => {
+  it("/onboarding/phase/welcome redirects to /training/welcome (canonical OS route)", () => {
     expect(APP).toMatch(
-      /path="\/training\/welcome"\s+element={<Navigate to="\/onboarding\/phase\/welcome"/,
+      /path="\/onboarding\/phase\/welcome"\s+element={<Navigate to="\/training\/welcome"/,
     );
   });
 
