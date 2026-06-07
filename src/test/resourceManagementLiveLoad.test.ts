@@ -35,7 +35,7 @@ describe("Training Management SD coverage uses live data", () => {
     expect(TMC).toMatch(/computeSdSopCoverageFromResources/);
     expect(TMC).toMatch(/data-testid="sd-coverage-needs-upload"/);
     expect(TMC).toMatch(/data-testid="sd-coverage-published"/);
-    expect(TMC).toMatch(/Learners only see published resources/);
+    expect(TMC).toMatch(/Resource Upload Center shows all company resources/);
   });
 });
 

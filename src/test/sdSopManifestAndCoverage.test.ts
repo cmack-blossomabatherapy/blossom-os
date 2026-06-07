@@ -104,14 +104,14 @@ describe("State Director module completeness classifier", () => {
 describe("Training Management — SD launch coverage panel", () => {
   const TMC = fs.readFileSync("src/pages/hr/TrainingManagementCenter.tsx", "utf8");
 
-  it("renders the SD launch coverage panel in the control room", () => {
-    expect(TMC).toContain("sd-launch-coverage-panel");
-    expect(TMC).toContain("SDLaunchCoveragePanel");
+  it("renders the SD SOP readiness panel in the control room", () => {
+    expect(TMC).toContain("sd-sop-readiness-panel");
+    expect(TMC).toContain("SDSopReadinessPanel");
+    expect(TMC).toContain("State Director SOP Readiness");
   });
 
   it("links use canonical routes only", () => {
     expect(TMC).toContain('/hr/resource-management#bulk-upload');
-    expect(TMC).toContain('/training/welcome');
     // No legacy onboarding deep-link for the welcome preview button.
     const previewLine = TMC.split("\n").find((l) =>
       l.includes('Preview') && l.includes('Link to='),

@@ -13,18 +13,137 @@ import {
 import { resources as seedResources } from "@/lib/resources/resourceData";
 import type { Resource, ResourceUploadStatus } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
+import { useAdminResources } from "@/hooks/useAdminResources";
+import {
+  computeSdSopCoverageFromResources,
+  normalizeSopTitle,
+  sopTitleSimilarity,
+} from "@/lib/resources/sdSopCoverage";
+import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import { cn } from "@/lib/utils";
+
+type SdMatchLabel = "matched" | "unmatched" | "needs_title_cleanup" | "not_sd";
+type FilterTab =
+  | "all"
+  | "published"
+  | "sd_sops"
+  | "unmatched"
+  | "privacy_review"
+  | "vault_excluded"
+  | "needs_file_repair";
+
+function classifySdMatch(
+  resource: Resource,
+  manifestKeys: Set<string>,
+  manifestTitles: string[],
+): SdMatchLabel {
+  const k = normalizeSopTitle(resource.title);
+  if (manifestKeys.has(k)) return "matched";
+  for (const t of manifestTitles) {
+    if (sopTitleSimilarity(t, resource.title) >= 0.6) return "needs_title_cleanup";
+  }
+  const roles = resource.roles ?? [];
+  if (roles.includes("state_director" as any)) return "unmatched";
+  return "not_sd";
+}
+
+const SD_MATCH_TONE: Record<SdMatchLabel, string> = {
+  matched: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
+  unmatched: "bg-rose-500/10 text-rose-700 border-rose-500/30",
+  needs_title_cleanup: "bg-amber-500/10 text-amber-700 border-amber-500/30",
+  not_sd: "bg-muted text-muted-foreground border-border/60",
+};
+const SD_MATCH_LABEL: Record<SdMatchLabel, string> = {
+  matched: "Matched",
+  unmatched: "Unmatched",
+  needs_title_cleanup: "Needs title cleanup",
+  not_sd: "Not State Director",
+};
 
 export default function ResourceUploadCenter() {
   const uploadRef = useRef<HTMLDivElement | null>(null);
   const { resources: persistedResources } = useLibraryResources();
+  const { resources: adminResources, loading: adminLoading } = useAdminResources();
   const [publishedThisSession, setPublishedThisSession] = useState<Resource[]>([]);
   const [queueCounts, setQueueCounts] = useState<Record<ResourceUploadStatus, number> | null>(null);
   const [failedUploads, setFailedUploads] = useState(0);
+  const [filter, setFilter] = useState<FilterTab>("all");
 
   const existingResources = useMemo(() => {
     const base = persistedResources.length > 0 ? persistedResources : seedResources;
     return [...publishedThisSession, ...base];
   }, [persistedResources, publishedThisSession]);
+
+  const adminAll = useMemo(
+    () => [...publishedThisSession, ...adminResources],
+    [adminResources, publishedThisSession],
+  );
+
+  const manifestKeys = useMemo(
+    () => new Set(SD_SOP_MANIFEST.map((e) => normalizeSopTitle(e.title))),
+    [],
+  );
+  const manifestTitles = useMemo(() => SD_SOP_MANIFEST.map((e) => e.title), []);
+
+  const rows = useMemo(
+    () =>
+      adminAll.map((r) => ({
+        resource: r,
+        sdMatch: classifySdMatch(r, manifestKeys, manifestTitles),
+      })),
+    [adminAll, manifestKeys, manifestTitles],
+  );
+
+  const coverage = useMemo(
+    () => computeSdSopCoverageFromResources(adminAll),
+    [adminAll],
+  );
+
+  const publishedLearnerVisible = adminAll.filter(
+    (r) => r.uploadStatus === "published" && r.status !== "Archived",
+  ).length;
+  const heldCount = adminAll.filter(
+    (r) =>
+      r.uploadStatus === "privacy_review" ||
+      r.uploadStatus === "business_review" ||
+      r.uploadStatus === "needs_conversion",
+  ).length;
+  const unmatchedCount = rows.filter((x) => x.sdMatch === "unmatched").length;
+
+  const filtered = useMemo(() => {
+    return rows.filter(({ resource: r, sdMatch }) => {
+      switch (filter) {
+        case "all":
+          return true;
+        case "published":
+          return r.uploadStatus === "published" && r.status !== "Archived";
+        case "sd_sops":
+          return sdMatch === "matched" || sdMatch === "needs_title_cleanup";
+        case "unmatched":
+          return sdMatch === "unmatched";
+        case "privacy_review":
+          return (
+            r.uploadStatus === "privacy_review" ||
+            r.uploadStatus === "business_review" ||
+            r.uploadStatus === "needs_conversion"
+          );
+        case "vault_excluded":
+          return (
+            r.uploadStatus === "vault_only" ||
+            r.uploadStatus === "excluded" ||
+            r.sensitivity === "excluded"
+          );
+        case "needs_file_repair":
+          return (
+            r.uploadStatus === "published" &&
+            r.status !== "Archived" &&
+            !r.url &&
+            !r.fileUrl &&
+            !r.storagePath
+          );
+      }
+    });
+  }, [rows, filter]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -45,9 +164,19 @@ export default function ResourceUploadCenter() {
     return () => window.removeEventListener("hashchange", scrollIfRequested);
   }, []);
 
+  const tabs: [FilterTab, string][] = [
+    ["all", `All (${adminAll.length})`],
+    ["published", `Published (${publishedLearnerVisible})`],
+    ["sd_sops", `State Director SOPs (${coverage.published + coverage.needsFileRepair})`],
+    ["unmatched", `Unmatched uploads (${unmatchedCount})`],
+    ["privacy_review", `Privacy review (${heldCount})`],
+    ["vault_excluded", `Vault / excluded`],
+    ["needs_file_repair", `Needs file repair (${coverage.needsFileRepair})`],
+  ];
+
   return (
     <OSShell>
-      <main className="mx-auto max-w-[1180px] space-y-6" data-testid="resource-upload-center">
+      <main className="mx-auto max-w-[1400px] space-y-6" data-testid="resource-upload-center">
         <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
@@ -57,7 +186,11 @@ export default function ResourceUploadCenter() {
               Resource Upload Center
             </h1>
             <p className="mt-2 max-w-3xl text-[14px] text-muted-foreground">
-              Upload SOPs, handbooks, policies, templates, videos, guides, checklists, and workflows.
+              Uploads here power Resource Library and Training Academy.
+            </p>
+            <p className="mt-2 max-w-3xl text-[12.5px] text-muted-foreground">
+              A resource must be published, visible to State Director, and matched to a required
+              SOP title before it counts as connected in Training Management.
             </p>
           </div>
           <Button variant="outline" className="rounded-xl" asChild>
@@ -66,6 +199,92 @@ export default function ResourceUploadCenter() {
             </Link>
           </Button>
         </header>
+
+        <section
+          data-testid="resource-upload-status-summary"
+          className="grid grid-cols-2 gap-3 md:grid-cols-5"
+        >
+          <SummaryTile label="Total uploaded" value={adminAll.length} />
+          <SummaryTile label="Published & learner-visible" value={publishedLearnerVisible} tone="emerald" />
+          <SummaryTile label="State Director matches" value={coverage.published} tone="emerald" />
+          <SummaryTile label="Unmatched uploads" value={unmatchedCount} tone="rose" />
+          <SummaryTile label="Held / review" value={heldCount} tone="amber" />
+        </section>
+
+        <section
+          data-testid="resource-upload-filters"
+          className="rounded-2xl border border-border/60 bg-card p-2"
+        >
+          <div className="flex flex-wrap gap-1">
+            {tabs.map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setFilter(id)}
+                data-testid={`resource-filter-${id}`}
+                className={cn(
+                  "rounded-xl px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+                  filter === id
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground/70 hover:bg-muted",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section
+          data-testid="resource-upload-admin-table"
+          className="overflow-hidden rounded-2xl border border-border/60 bg-card"
+        >
+          <div className="overflow-auto">
+            <table className="w-full min-w-[820px] text-[12.5px]">
+              <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2.5 text-left font-medium">Title</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Upload status</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Type</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Roles</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Category</th>
+                  <th className="px-3 py-2.5 text-left font-medium">State Director match</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                      {adminLoading ? "Loading resources…" : "No resources match this filter."}
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.slice(0, 200).map(({ resource: r, sdMatch }) => (
+                    <tr key={r.id} className="border-t border-border/40">
+                      <td className="px-3 py-2 text-foreground">{r.title}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{r.uploadStatus ?? "published"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{r.resourceType ?? r.type}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {r.roles.length ? r.roles.join(", ") : "All roles"}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{r.category}</td>
+                      <td className="px-3 py-2">
+                        <span
+                          data-testid={`sd-match-chip-${sdMatch}`}
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wider",
+                            SD_MATCH_TONE[sdMatch],
+                          )}
+                        >
+                          {SD_MATCH_LABEL[sdMatch]}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section
           id="bulk-upload"
@@ -109,5 +328,30 @@ export default function ResourceUploadCenter() {
         </section>
       </main>
     </OSShell>
+  );
+}
+
+function SummaryTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: "emerald" | "amber" | "rose";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "text-emerald-600"
+      : tone === "amber"
+      ? "text-amber-600"
+      : tone === "rose"
+      ? "text-rose-600"
+      : "text-foreground";
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-3">
+      <p className={cn("text-[20px] font-semibold tracking-tight", toneClass)}>{value}</p>
+      <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    </div>
   );
 }
