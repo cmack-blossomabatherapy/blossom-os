@@ -9,7 +9,7 @@ import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 export function WelcomeToBlossomCard() {
   return (
     <Link
-      to="/onboarding/phase/welcome"
+      to="/training/welcome"
       className="group relative block overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-6"
     >
       <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />

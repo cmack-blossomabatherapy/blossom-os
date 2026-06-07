@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
+import {
+  SD_SOP_MANIFEST,
+  computeSdSopCoverage,
+} from "@/lib/resources/stateDirectorSopManifest";
+import {
+  SD_PRIORITY_SCREENSHOT_MODULES,
+  getStateDirectorScreenshots,
+} from "@/lib/training/stateDirectorFullTraining";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -463,7 +471,12 @@ export default function TrainingManagementCenter() {
           </header>
 
           {/* Content by nav */}
-          {nav === "control-room" && <TrainingControlRoom />}
+          {nav === "control-room" && (
+            <div className="space-y-6">
+              <SDLaunchCoveragePanel />
+              <TrainingControlRoom />
+            </div>
+          )}
           {nav === "journeys" && !selectedJourney && (
             <JourneysView
               journeys={allJourneys}
@@ -1103,7 +1116,7 @@ function OnboardingView() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <Link to="/onboarding/phase/welcome" target="_blank">
+              <Link to="/training/welcome" target="_blank">
                 <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Preview
               </Link>
             </Button>
@@ -1907,5 +1920,98 @@ function ResourceLibraryView() {
         })}
       </div>
     </div>
+  );
+}
+function SDLaunchCoveragePanel() {
+  const navigate = useNavigate();
+  const coverage = computeSdSopCoverage();
+  const screenshotsAll = SD_PRIORITY_SCREENSHOT_MODULES.flatMap((id) =>
+    getStateDirectorScreenshots(id),
+  );
+  const screenshotUploaded = screenshotsAll.filter(
+    (s) => s.resourceStatus === "available",
+  ).length;
+  const screenshotPending = screenshotsAll.filter(
+    (s) => s.resourceStatus === "pending_upload",
+  ).length;
+  const moduleCount = SD_SOP_MANIFEST.reduce(
+    (set, e) => {
+      for (const id of e.moduleIds) set.add(id);
+      return set;
+    },
+    new Set<string>(),
+  ).size;
+
+  const tiles: { label: string; value: string; tone?: string }[] = [
+    { label: "Launch modules", value: String(moduleCount) },
+    { label: "SD SOPs", value: String(coverage.total) },
+    { label: "Uploaded", value: String(coverage.uploaded), tone: "text-emerald-600" },
+    { label: "Pending", value: String(coverage.pending), tone: "text-amber-600" },
+    { label: "Screenshots", value: String(screenshotsAll.length) },
+    { label: "SS uploaded", value: String(screenshotUploaded), tone: "text-emerald-600" },
+    { label: "SS pending", value: String(screenshotPending), tone: "text-amber-600" },
+    { label: "Welcome video", value: "Pending", tone: "text-amber-600" },
+  ];
+
+  return (
+    <section
+      data-testid="sd-launch-coverage-panel"
+      className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            State Director Academy · Launch readiness
+          </p>
+          <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+            SOP & screenshot coverage
+          </h2>
+          <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
+            Source of truth for the State Director launch. Pending items are surfaced calmly to
+            learners and never render as broken links.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            className="rounded-xl"
+            onClick={() => navigate("/hr/resource-management#bulk-upload")}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" /> Open Resource Management
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => navigate("/training")}
+          >
+            <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Review SD SOP gaps
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => navigate("/training/welcome")}
+          >
+            <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Open Welcome
+          </Button>
+        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        {tiles.map((t) => (
+          <div
+            key={t.label}
+            className="rounded-xl border border-border/60 bg-background p-3 text-center"
+          >
+            <p className={cn("text-[18px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
+              {t.value}
+            </p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              {t.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

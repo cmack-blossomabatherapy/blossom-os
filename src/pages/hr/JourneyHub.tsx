@@ -200,7 +200,7 @@ export default function JourneyHub() {
             title={`Welcome to Blossom${displayName ? `, ${displayName.split(" ")[0]}` : ""}`}
             description="The full Training Hub is tailored to RBTs and BCBAs. In the meantime, every Blossom teammate starts here — meet the team, learn our mission, and watch the welcome video."
             ctaLabel="Open Welcome to Blossom"
-            ctaTo="/onboarding/phase/welcome"
+            ctaTo="/training/welcome"
           />
           <WelcomeToBlossomCard />
           <div className="rounded-2xl border border-border/60 bg-card p-5 text-sm text-muted-foreground shadow-sm flex items-start gap-3">
