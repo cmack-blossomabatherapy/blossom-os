@@ -327,7 +327,7 @@ function ReadinessBar({ value }: { value: number }) {
   );
 }
 
-function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurriculum | null }) {
+function TraineeCard({ row, curriculum, onMutate }: { row: Row; curriculum: AcademyCurriculum | null; onMutate: () => void }) {
   const launchSetup = computeLaunchSetup({
     enrollment: row.enrollment,
     curriculum,
@@ -335,6 +335,9 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
   });
   const welcomeAssets = computeWelcomeAssetStatus(curriculum);
   const pendingSops = computePendingSops(curriculum);
+  const setupGapLabels = launchSetup
+    .filter((c) => c.status !== "ready")
+    .map((c) => c.label);
 
   function copySummary() {
     const text = buildReadinessSummaryText({
@@ -345,11 +348,91 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
       checklist: row.checklist,
       risks: row.risks,
       nextAction: row.nextAction,
+      weekNumber: row.weekNumber,
+      dayNumber: row.dayNumber,
+      shadowHours: row.shadowHours,
+      checkinCount: row.checkinCount,
+      certificationStatus: row.certificationStatus,
+      setupGaps: setupGapLabels,
     });
     navigator.clipboard.writeText(text).then(
       () => toast.success("Readiness summary copied"),
       () => toast.error("Could not copy summary"),
     );
+  }
+
+  async function assignMentor() {
+    const id = window.prompt("Mentor employee ID (UUID):", row.enrollment.mentor_employee_id ?? "");
+    if (!id) return;
+    const { error } = await supabase.from("academy_enrollments")
+      .update({ mentor_employee_id: id }).eq("id", row.enrollment.id);
+    if (error) toast.error("Could not assign mentor");
+    else { toast.success("Mentor assigned"); onMutate(); }
+  }
+  async function assignState() {
+    const state = window.prompt("Assigned state code (e.g. NC):", row.enrollment.assigned_state ?? "");
+    if (!state) return;
+    const { error } = await supabase.from("academy_enrollments")
+      .update({ assigned_state: state.toUpperCase() }).eq("id", row.enrollment.id);
+    if (error) toast.error("Could not assign state");
+    else { toast.success("State assigned"); onMutate(); }
+  }
+  async function logShadow() {
+    const hoursStr = window.prompt("Shadow hours logged:", "1");
+    if (!hoursStr) return;
+    const hours = Number(hoursStr);
+    if (!Number.isFinite(hours) || hours <= 0) return;
+    const { error } = await logShadowSession({
+      enrollment_id: row.enrollment.id,
+      session_date: new Date().toISOString().slice(0, 10),
+      hours,
+      department: null,
+      shadowed_name: null,
+      mentor_signoff: false,
+      notes: null,
+    } as any);
+    if (error) toast.error("Could not log shadow session");
+    else { toast.success("Shadow session logged"); onMutate(); }
+  }
+  async function logCheckinAction() {
+    const notes = window.prompt("Check-in notes (optional):", "");
+    const { error } = await logCheckin({
+      enrollment_id: row.enrollment.id,
+      meeting_date: new Date().toISOString().slice(0, 10),
+      agenda: null,
+      notes: notes ?? null,
+      action_items: null,
+      leader_rating: null,
+    } as any);
+    if (error) toast.error("Could not log check-in");
+    else { toast.success("Check-in logged"); onMutate(); }
+  }
+  async function requestSignoff() {
+    const { error } = await logShadowSession({
+      enrollment_id: row.enrollment.id,
+      session_date: new Date().toISOString().slice(0, 10),
+      hours: 0,
+      mentor_signoff: true,
+      signoff_by_name: "Leadership",
+      signoff_at: new Date().toISOString(),
+      notes: "Leadership sign-off recorded",
+    } as any);
+    if (error) toast.error("Could not record sign-off");
+    else { toast.success("Sign-off recorded"); onMutate(); }
+  }
+  async function markCertification() {
+    if (!row.certificationModuleId) {
+      toast.error("No certification module found in curriculum");
+      return;
+    }
+    const now = new Date().toISOString();
+    const { error } = await upsertProgress(row.enrollment.id, row.certificationModuleId, {
+      status: "completed",
+      started_at: now,
+      completed_at: now,
+    });
+    if (error) toast.error("Could not mark certification complete");
+    else { toast.success("Certification marked complete"); onMutate(); }
   }
 
   return (
@@ -360,7 +443,7 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{row.traineeName}</h2>
             <PhaseBadge name={row.phaseName} colorToken={row.phaseColor} />
-            <span className="text-xs text-muted-foreground">Wk {row.weekNumber}</span>
+            <span className="text-xs text-muted-foreground">Wk {row.weekNumber} · Day {row.dayNumber}</span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             State: <span className="text-foreground">{row.state || "TBD"}</span> ·
@@ -403,6 +486,34 @@ function TraineeCard({ row, curriculum }: { row: Row; curriculum: AcademyCurricu
         <span className="text-muted-foreground">Mentor check-ins:</span><StatusChip status={row.mentorCheckinStatus} />
         <span className="text-muted-foreground">Final sign-off:</span><StatusChip status={row.signoffStatus} />
         <span className="text-muted-foreground">Certification:</span><StatusChip status={row.certificationStatus} />
+      </div>
+
+      {/* Evidence row */}
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        <Metric label="Quiz avg" value={row.quizAvg == null ? "—" : `${row.quizAvg}%`} sub={`${row.quizCount} taken`} />
+        <Metric label="SOPs done" value={`${row.sopCompleted}/${row.sopTotal}`} />
+        <Metric label="Videos watched" value={`${row.videosWatched}/${row.videosTotal}`} />
+        <Metric label="Shadow hours" value={`${row.shadowHours}h`} sub="target 8h" />
+        <Metric label="Check-ins" value={`${row.checkinCount}`} sub="target 3" />
+      </div>
+
+      {/* Management actions */}
+      <div
+        className="flex flex-wrap items-center gap-2"
+        data-testid="sd-management-actions"
+      >
+        <ActionButton icon={UserPlus} label="Assign mentor" onClick={assignMentor} />
+        <ActionButton icon={MapPin} label="Assign state" onClick={assignState} />
+        <Link
+          to={`/hr/employees/${row.enrollment.employee_id}`}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 h-8 text-[12px] font-medium hover:bg-muted transition"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Open learner profile
+        </Link>
+        <ActionButton icon={MessageSquarePlus} label="Log check-in" onClick={logCheckinAction} />
+        <ActionButton icon={Eye} label="Log shadow session" onClick={logShadow} />
+        <ActionButton icon={FileCheck} label="Request sign-off" onClick={requestSignoff} />
+        <ActionButton icon={Award} label="Mark certification complete" onClick={markCertification} />
       </div>
 
       {/* Risk signals */}
