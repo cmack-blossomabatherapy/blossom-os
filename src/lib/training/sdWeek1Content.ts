@@ -31,6 +31,12 @@ export interface SDTrainingSpecOverride {
 
 export const SD_W1_TRAINING_SPECS: Record<string, SDTrainingSpecOverride> = {
   /* ---------- Day 1 reflection prompts (description/why/what already set) ---------- */
+  "Mission & Vision": {
+    whyItMatters: "Every operational decision you make should ladder up to this. Mission and vision are tiebreakers when the playbook runs out.",
+    whatToDo: "Read the mission & vision. Rewrite both in your own words. Connect each value to one operational metric you will watch.",
+    completionEvidence: "Bring your one-sentence restatement and one mapped metric to your mentor check-in.",
+    reflectionPrompt: "Which part of the mission will be hardest to protect when the state is busy?",
+  },
   "Welcome Video from Blossom": {
     whyItMatters: "Sets the tone for everything you'll learn. You'll hear our purpose in our own words.",
     whatToDo: "Watch the welcome video end-to-end. Capture one thing that stood out and one question you want to bring back to your mentor.",
