@@ -26,6 +26,10 @@ import {
   emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
 import { upsertProgress } from "@/lib/academy/api";
+import {
+  getStateDirectorFullContent, isStateDirectorModule,
+  type SDFullContent, type SDKnowledgeQ,
+} from "@/lib/training/stateDirectorFullTraining";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -499,6 +503,12 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const [notes, setNotes] = useState("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [showExpected, setShowExpected] = useState(false);
+
+  const fullContent: SDFullContent | null = useMemo(
+    () => getStateDirectorFullContent(training),
+    [training.id],
+  );
 
   async function refresh() {
     if (!user?.id) return;
@@ -589,7 +599,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   })();
 
   const flow = pickModuleFlow(training.title);
-  const quizQs: KCheckQ[] = (dbMatch?.module?.quiz?.questions as KCheckQ[] | undefined) ?? defaultKnowledgeCheck(training);
+  // Prefer DB quiz, then full-content module-specific questions, then generic.
+  const quizQs: KCheckQ[] =
+    (dbMatch?.module?.quiz?.questions as KCheckQ[] | undefined)
+    ?? (fullContent?.knowledgeCheck as SDKnowledgeQ[] | undefined)
+    ?? defaultKnowledgeCheck(training);
 
   return (
     <section data-testid="sd-module-detail-panel" className="mt-6 space-y-6">
@@ -667,6 +681,49 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
             </ul>
           </div>
 
+          {/* State Director Lens */}
+          {fullContent && (
+            <div data-testid="sd-state-director-lens" className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-5">
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-primary">State Director lens</h3>
+              </div>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/90">
+                {fullContent.stateDirectorLens}
+              </p>
+              <p className="mt-2 text-[12px] text-muted-foreground">
+                <span className="font-semibold text-foreground/80">Objective:</span> {fullContent.learningObjective}
+              </p>
+            </div>
+          )}
+
+          {/* Step-by-step walkthrough */}
+          {fullContent && (
+            <div data-testid="sd-walkthrough" className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Workflow className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Step-by-step walkthrough</h3>
+              </div>
+              <ol className="mt-3 space-y-3 text-[13px]">
+                {fullContent.stepByStep.map((s, i) => (
+                  <li key={i} className="rounded-xl border border-border/60 bg-background p-3">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">{i + 1}</span>
+                      <p className="font-medium text-foreground">{s.action}</p>
+                    </div>
+                    <dl className="mt-2 grid grid-cols-1 gap-1.5 pl-7 text-[12px] text-muted-foreground sm:grid-cols-2">
+                      <div><dt className="inline font-semibold text-foreground/70">Look for: </dt><dd className="inline">{s.lookFor}</dd></div>
+                      <div><dt className="inline font-semibold text-foreground/70">Owner: </dt><dd className="inline">{s.owner}</dd></div>
+                      {s.escalation && (
+                        <div className="sm:col-span-2"><dt className="inline font-semibold text-amber-700">Escalate when: </dt><dd className="inline">{s.escalation}</dd></div>
+                      )}
+                    </dl>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
           {/* Workflow content */}
           {flow && (
             <div data-testid="sd-workflow-content" className="rounded-2xl border border-border/70 bg-card p-5">
@@ -684,6 +741,87 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                     {idx < flow.steps.length - 1 && <ChevronRight className="mx-1.5 h-4 w-4 shrink-0 text-muted-foreground/70" />}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* SOP detail */}
+          {fullContent && (
+            <div data-testid="sd-sop" className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">SOP</h3>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-2">
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Purpose</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.sop.purpose}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Owner</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.sop.owner}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3 sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Inputs</p>
+                  <ul className="mt-1 list-disc pl-5 text-foreground/90">
+                    {fullContent.sop.inputs.map((x, i) => <li key={i}>{x}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3 sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Process</p>
+                  <ol className="mt-1 list-decimal pl-5 text-foreground/90 space-y-0.5">
+                    {fullContent.sop.process.map((x, i) => <li key={i}>{x}</li>)}
+                  </ol>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3 sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Escalation triggers</p>
+                  <ul className="mt-1 list-disc pl-5 text-foreground/90">
+                    {fullContent.sop.escalationTriggers.map((x, i) => <li key={i}>{x}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quality standard</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.sop.qualityStandard}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">State Director review rhythm</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.sop.reviewRhythm}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Scenario practice */}
+          {fullContent && (
+            <div data-testid="sd-scenario" className="rounded-2xl border border-border/70 bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">Scenario practice</h3>
+              </div>
+              <div className="mt-3 space-y-3 text-[13px]">
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Situation</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.scenario.situation}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your prompt</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.scenario.prompt}</p>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Expected response</p>
+                    <Button size="sm" variant="ghost" onClick={() => setShowExpected((v) => !v)} data-testid="sd-scenario-toggle">
+                      {showExpected ? "Hide" : "Reveal"}
+                    </Button>
+                  </div>
+                  {showExpected && (
+                    <p data-testid="sd-scenario-expected" className="mt-2 text-foreground/90">{fullContent.scenario.expectedResponse}</p>
+                  )}
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Escalation path</p>
+                  <p className="mt-1 text-foreground/90">{fullContent.scenario.escalationPath}</p>
+                </div>
               </div>
             </div>
           )}
