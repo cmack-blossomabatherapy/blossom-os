@@ -13,6 +13,7 @@ import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
   MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, GraduationCap,
+  PlayCircle, Heart, Users as UsersIcon, Lightbulb,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
@@ -68,6 +69,8 @@ export default function OSTraining() {
   const [query, setQuery] = useState("");
   const { trainings } = useAcademy(); // subscribe to store
 
+  const isSD = role === "state_director";
+
   const journey = useMemo(() => getJourneyForRole(role), [role, trainings]);
   const journeyModules = useMemo(() => getJourneyModules(journey), [journey, trainings]);
   // Continue Learning = next-up modules from the user's role journey that aren't completed.
@@ -118,6 +121,18 @@ export default function OSTraining() {
     };
   }, [trainings]);
 
+  // Launch-scoped progress for State Director: only the journey modules count,
+  // never the global "133 required" pile that anxiety-builds new hires.
+  const launch = useMemo(() => {
+    if (!journeyModules.length) return { done: 0, total: 0, pct: 0 };
+    const done = journeyModules.filter((m) => getProgress(m.id).status === "completed").length;
+    return {
+      done,
+      total: journeyModules.length,
+      pct: Math.round((done / journeyModules.length) * 100),
+    };
+  }, [journeyModules]);
+
   const nextModule = mastery.nextId ? journeyModules.find((m) => m.id === mastery.nextId) : undefined;
 
   return (
@@ -125,22 +140,42 @@ export default function OSTraining() {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
         <div className="min-w-0 space-y-12">
           {/* HERO */}
-          <header>
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              <span>Training Academy</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-              <span className="capitalize">{role.replace(/_/g, " ")}</span>
+          <header className={cn(
+            "relative overflow-hidden",
+            isSD && "rounded-3xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card p-6 md:p-8 shadow-sm",
+          )}>
+            {isSD && (
+              <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+            )}
+            <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                  <span>Training Academy</span>
+                  <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                  <span className="capitalize">{role.replace(/_/g, " ")}</span>
+                </div>
+                <h1 className="mt-2 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
+                  {isSD ? "Welcome back" : greeting}, <span className="capitalize">{firstName}</span>.
+                </h1>
+                <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
+                  {isSD
+                    ? "Your first job is to get grounded. Start with Welcome to Blossom, then follow the launch path one step at a time. Your mentor and leadership can see your progress — you're not doing this alone."
+                    : overall.avg >= 80
+                    ? "You're nearly there — finish your remaining modules to complete your role journey."
+                    : overall.avg > 0
+                    ? `You're ${overall.avg}% through your training. Let's keep moving.`
+                    : "Welcome to the Blossom Academy. Start with your role journey below."}
+                </p>
+              </div>
+              {isSD && (
+                <div className="grid grid-cols-3 gap-2 md:w-[320px] shrink-0">
+                  <HeroStat label="Week" value={SDWeekLabel(launch.done, launch.total)} />
+                  <HeroStat label="Launch" value={`${launch.pct}%`} />
+                  <HeroStat label="Mentor" value="Assigned" />
+                </div>
+              )}
             </div>
-            <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight text-foreground md:text-[30px]">
-              {greeting}, <span className="capitalize">{firstName}</span>.
-            </h1>
-            <p className="mt-1 text-[14px] text-muted-foreground">
-              {overall.avg >= 80
-                ? "You're nearly there — finish your remaining modules to complete your role journey."
-                : overall.avg > 0
-                ? `You're ${overall.avg}% through your training. Let's keep moving.`
-                : "Welcome to the Blossom Academy. Start with your role journey below."}
-            </p>
 
             <div className="relative mt-5 max-w-xl">
               <Search className="pointer-events-none absolute z-10 left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -194,7 +229,7 @@ export default function OSTraining() {
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resources")}>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resource-library")}>
                 <BookMarked className="mr-1.5 h-3.5 w-3.5" /> Resource Library
               </Button>
               {role === "super_admin" && (
@@ -204,6 +239,9 @@ export default function OSTraining() {
               )}
             </div>
           </header>
+
+          {/* WELCOME TO BLOSSOM — first emotional anchor */}
+          {isSD && <WelcomeAnchor onOpen={() => navigate("/onboarding/phase/welcome")} />}
 
           {/* CONTINUE LEARNING */}
           {cont.length > 0 && (
