@@ -442,18 +442,23 @@ function OsPrefixRedirect() {
   return <Navigate to={`${stripped}${search}${hash}`} replace />;
 }
 
-const RESOURCE_UPLOAD_ALLOWED_ROLES = new Set([
+const RESOURCE_UPLOAD_ALLOWED_APP_ROLES = new Set([
   ...TRAINING_ADMIN_ROLES,
-  "super_admin",
-  "hr_team",
   "ops_manager",
-  "operations_leadership",
   "exec",
+]);
+
+const RESOURCE_UPLOAD_ALLOWED_OS_ROLES = new Set([
+  "super_admin",
+  "admin",
+  "hr_team",
+  "operations_leadership",
   "executive_leadership",
 ]);
 
 function ResourceUploadAdminRoute() {
   const { user, loading, roles, isAdmin } = useAuth();
+  const { role: osRole } = useOSRole();
   if (loading) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
@@ -462,7 +467,10 @@ function ResourceUploadAdminRoute() {
     );
   }
   if (!user) return <Navigate to="/auth" replace />;
-  const canOpen = isAdmin || roles.some((role) => RESOURCE_UPLOAD_ALLOWED_ROLES.has(role));
+  const canOpen =
+    isAdmin ||
+    RESOURCE_UPLOAD_ALLOWED_OS_ROLES.has(osRole) ||
+    roles.some((role) => RESOURCE_UPLOAD_ALLOWED_APP_ROLES.has(role));
   if (!canOpen) return <Unauthorized area="Resource Upload Center" />;
   return <ResourceUploadCenter />;
 }
@@ -675,6 +683,10 @@ const App = () => (
                   <Route path="/ai/workflows" element={<OSPlaceholder title="AI Workflows" description="AI-assisted operational flows." icon={Wand2} />} />
                   <Route path="/hr" element={<HRSuiteHome />} />
                   <Route path="/hr/training-center" element={<TrainingManagementCenter />} />
+                  <Route path="/hr/resources" element={<Navigate to="/hr/resource-management" replace />} />
+                  <Route path="/hr/resource-management" element={<ResourceUploadAdminRoute />} />
+                  <Route path="/resource-management" element={<Navigate to="/hr/resource-management" replace />} />
+                  <Route path="/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/user-management" element={<UsersHome />} />
                   <Route path="/user-management/admin" element={<OSUserManagement />} />
                   <Route path="/user-management/:employeeId" element={<EmployeeProfilePage />} />
@@ -809,7 +821,6 @@ const App = () => (
                   <Route path="/training/department/:slug" element={<TrainingDepartment />} />
                   <Route path="/training/course/:courseId" element={<TrainingCourse />} />
                   <Route path="/training/course/:courseId/lesson/:lessonId" element={<TrainingCourse />} />
-                  <Route path="/resources" element={<Navigate to="/resource-library" replace />} />
                   <Route path="/team" element={<PermissionRoute><Team /></PermissionRoute>} />
                   <Route path="/admin/training-dashboard" element={<Navigate to="/hr/training-center" replace />} />
                   <Route path="/admin/training-statistics" element={<PermissionRoute permission="hr.training.view" allowedRoles={TRAINING_ADMIN_ROLES}><TrainingStatistics /></PermissionRoute>} />
@@ -846,13 +857,6 @@ const App = () => (
                   <Route path="/admin/track-analytics" element={<Navigate to="/hr/track-analytics" replace />} />
                   <Route path="/hr/payroll" element={<PermissionRoute permission="hr.payroll.runs.view"><Payroll /></PermissionRoute>} />
                   <Route path="/hr/announcements" element={<PermissionRoute permission="hr.announcements.view"><Announcements /></PermissionRoute>} />
-                  <Route path="/hr/resources" element={<Navigate to="/hr/resource-management" replace />} />
-                  <Route
-                    path="/hr/resource-management"
-                    element={<ResourceUploadAdminRoute />}
-                  />
-                  {/* Legacy aliases — always land on the canonical admin workspace */}
-                  <Route path="/resource-management" element={<Navigate to="/hr/resource-management" replace />} />
                   <Route path="/hr/assistant" element={<HRAssistant />} />
                   <Route path="/hr/welcome" element={<Welcome />} />
                   <Route path="/hr/recognition" element={<Recognition />} />
