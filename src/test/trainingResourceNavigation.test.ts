@@ -62,13 +62,14 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
     expect(TRAINING).not.toContain("Open SOP Library");
   });
 
-  it("Welcome to Blossom page includes Mission, Values, Team, Mentor/HR, and Start CTA", () => {
-    expect(WELCOME).toMatch(/Mission/);
-    expect(WELCOME).toMatch(/Values|Core Values/);
-    expect(WELCOME).toMatch(/Meet the Team|Your team/);
+  it("Welcome to Blossom page keeps leadership content + mentor/HR note + journey CTA", () => {
+    expect(WELCOME).toMatch(/Who we are|Your team/);
+    expect(WELCOME).toMatch(/Chad Kaufman/);
+    expect(WELCOME).toMatch(/Shira Lasry/);
     expect(WELCOME).toMatch(/HR partner|mentor/i);
-    expect(WELCOME).toMatch(/Start Week 1/);
+    expect(WELCOME).toMatch(/Continue to State Director Journey/);
   });
+
 
   it("Welcome video remains non-blocking (no required gate)", () => {
     // The page must not block progression on video completion.
