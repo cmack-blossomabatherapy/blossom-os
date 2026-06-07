@@ -39,7 +39,8 @@ describe("SdMappedSopCard open behavior", () => {
   });
 
   it("renders an onClick button for openable SOPs — not a static anchor", () => {
-    expect(DETAIL).toMatch(/data-testid="sd-mapped-sop-open"[\s\S]*?onClick=\{handleOpen\}/);
+    expect(DETAIL).toMatch(/onClick=\{handleOpen\}/);
+    expect(DETAIL).toMatch(/<button[\s\S]*?data-testid="sd-mapped-sop-open"/);
     expect(DETAIL).not.toMatch(/href=\{resource!\.url \|\| resource!\.fileUrl\}/);
   });
 
