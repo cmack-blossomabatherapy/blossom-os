@@ -25,7 +25,7 @@ import {
  * Welcome video configuration.
  *
  * Replace these constants when the real Blossom welcome video (Chad / Shira)
- * is uploaded. While empty, the page renders a calm "coming soon" panel
+ * is uploaded. While empty, the page renders a calm "being prepared" panel
  * instead of a broken video element.
  *
  * - WELCOME_VIDEO_URL: path or full URL to the welcome MP4
