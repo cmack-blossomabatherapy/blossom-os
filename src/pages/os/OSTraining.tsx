@@ -284,7 +284,7 @@ export default function OSTraining() {
                   <Library className="mr-1.5 h-3.5 w-3.5" /> Open Resource Library
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/onboarding/phase/welcome")}>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training/welcome")}>
                 <GraduationCap className="mr-1.5 h-3.5 w-3.5" /> Welcome to Blossom
               </Button>
               <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/resource-library")}>
@@ -299,7 +299,7 @@ export default function OSTraining() {
           </header>
 
           {/* WELCOME TO BLOSSOM — first emotional anchor */}
-          {isSD && <WelcomeAnchor onOpen={() => navigate("/onboarding/phase/welcome")} />}
+          {isSD && <WelcomeAnchor onOpen={() => navigate("/training/welcome")} />}
 
           {/* DB-BACKED LAUNCH TRACKER — only when a real enrollment exists.
               Source of truth shared with Training Management / Leadership Dashboard. */}

@@ -177,7 +177,7 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
                 </div>
               </div>
               <Button
-                onClick={() => navigate("/onboarding/phase/welcome")}
+                onClick={() => navigate("/training/welcome")}
                 className="rounded-full"
                 data-testid="sd-welcome-cta"
               >
