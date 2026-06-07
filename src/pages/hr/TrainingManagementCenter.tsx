@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { OSShell } from "@/pages/os/OSShell";
-import {
-  SD_SOP_MANIFEST,
-  computeSdSopCoverage,
-} from "@/lib/resources/stateDirectorSopManifest";
+import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import {
