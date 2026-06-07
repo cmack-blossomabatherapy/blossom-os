@@ -57,7 +57,7 @@ describe("Training + Resource UX Rescue — Pass 1", () => {
 
   it("Training Academy hero links to Welcome to Blossom and Resource Library", () => {
     expect(TRAINING).toContain("Welcome to Blossom");
-    expect(TRAINING).toContain("/onboarding/phase/welcome");
+    expect(TRAINING).toContain("/training/welcome");
     expect(TRAINING).toContain("Open Resource Library");
     expect(TRAINING).not.toContain("Open SOP Library");
   });
