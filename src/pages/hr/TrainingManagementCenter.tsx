@@ -1103,7 +1103,7 @@ function OnboardingView() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="rounded-xl">
-              <Link to="/onboarding/phase/welcome" target="_blank">
+              <Link to="/training/welcome" target="_blank">
                 <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Preview
               </Link>
             </Button>
