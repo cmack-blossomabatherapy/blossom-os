@@ -26,6 +26,10 @@ import {
   emptyLearnerHome, type LearnerHome,
 } from "@/lib/academy/learnerHome";
 import { upsertProgress } from "@/lib/academy/api";
+import {
+  getStateDirectorFullContent, isStateDirectorModule,
+  type SDFullContent, type SDKnowledgeQ,
+} from "@/lib/training/stateDirectorFullTraining";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -499,6 +503,12 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const [notes, setNotes] = useState("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [showExpected, setShowExpected] = useState(false);
+
+  const fullContent: SDFullContent | null = useMemo(
+    () => getStateDirectorFullContent(training),
+    [training.id],
+  );
 
   async function refresh() {
     if (!user?.id) return;
@@ -589,7 +599,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   })();
 
   const flow = pickModuleFlow(training.title);
-  const quizQs: KCheckQ[] = (dbMatch?.module?.quiz?.questions as KCheckQ[] | undefined) ?? defaultKnowledgeCheck(training);
+  // Prefer DB quiz, then full-content module-specific questions, then generic.
+  const quizQs: KCheckQ[] =
+    (dbMatch?.module?.quiz?.questions as KCheckQ[] | undefined)
+    ?? (fullContent?.knowledgeCheck as SDKnowledgeQ[] | undefined)
+    ?? defaultKnowledgeCheck(training);
 
   return (
     <section data-testid="sd-module-detail-panel" className="mt-6 space-y-6">
