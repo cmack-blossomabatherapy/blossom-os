@@ -57,6 +57,7 @@ interface Row {
   enrollment: any;
   readiness: number;
   weekNumber: number;
+  dayNumber: number;
   phaseName: string;
   phaseColor: string;
   modulesCompleted: number;
@@ -71,6 +72,15 @@ interface Row {
   mentorCheckinStatus: ReadinessStatus;
   signoffStatus: ReadinessStatus;
   certificationStatus: ReadinessStatus;
+  shadowHours: number;
+  checkinCount: number;
+  quizAvg: number | null;
+  quizCount: number;
+  sopCompleted: number;
+  sopTotal: number;
+  videosWatched: number;
+  videosTotal: number;
+  certificationModuleId: string | null;
   cats: ReadinessCategory[];
   checklist: LaunchChecklistItem[];
   risks: RiskSignal[];
