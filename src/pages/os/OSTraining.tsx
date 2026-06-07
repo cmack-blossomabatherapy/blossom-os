@@ -519,23 +519,59 @@ export default function OSTraining() {
           <div className="rounded-2xl border border-border/70 bg-card p-5">
             <div className="flex items-center gap-2">
               <BookMarked className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Progress</h3>
+              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {isSD ? "Your launch progress" : "Progress"}
+              </h3>
             </div>
             <div className="mt-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-[11px] text-muted-foreground">Overall</span>
-                <span className="text-[22px] font-semibold tabular-nums">{overall.avg}%</span>
+                <span className="text-[11px] text-muted-foreground">{isSD ? "Launch path" : "Overall"}</span>
+                <span className="text-[22px] font-semibold tabular-nums">{isSD ? launch.pct : overall.avg}%</span>
               </div>
-              <Progress value={overall.avg} className="mt-2 h-1.5" />
+              <Progress value={isSD ? launch.pct : overall.avg} className="mt-2 h-1.5" />
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
-              <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Required" value={`${overall.requiredDone}/${overall.requiredTotal}`} />
-              <Stat icon={<AlertCircle className="h-3.5 w-3.5 text-red-500" />} label="Overdue" value={overall.overdue} />
-            </div>
+            {isSD ? (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
+                <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Launch" value={`${launch.done}/${launch.total}`} />
+                <Stat icon={<Sparkles className="h-3.5 w-3.5 text-primary" />} label="Welcome" value={"In progress"} />
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[11.5px]">
+                <Stat icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} label="Required" value={`${overall.requiredDone}/${overall.requiredTotal}`} />
+                <Stat icon={<AlertCircle className="h-3.5 w-3.5 text-red-500" />} label="Overdue" value={overall.overdue} />
+              </div>
+            )}
           </div>
 
-          {/* Required Due */}
-          {required.length > 0 && (
+          {/* Need help? — SD-specific calm panel replaces anxiety-heavy Required Due */}
+          {isSD ? (
+            <div className="rounded-2xl border border-border/70 bg-card p-5">
+              <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Need help?</h3>
+              <p className="mt-1 text-[11.5px] text-muted-foreground">
+                Nothing here has to be solved alone.
+              </p>
+              <div className="mt-3 space-y-1 text-[12.5px]">
+                {[
+                  { label: "Ask my mentor", icon: UsersIcon, to: "/messages" },
+                  { label: "HR partner", icon: Heart, to: "/messages" },
+                  { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
+                  { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
+                ].map(({ label, icon: Icon, to }) => (
+                  <Link
+                    key={label}
+                    to={to}
+                    className="flex items-center justify-between rounded-lg px-2 py-1.5 text-foreground hover:bg-muted/50"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      {label}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : required.length > 0 ? (
             <div className="rounded-2xl border border-border/70 bg-card p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Required Due</h3>
@@ -561,7 +597,7 @@ export default function OSTraining() {
                 })}
               </div>
             </div>
-          )}
+          ) : null}
 
           {/* Quick Access */}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
@@ -569,7 +605,7 @@ export default function OSTraining() {
             <div className="mt-3 space-y-0.5 text-[12.5px]">
               {[
                 { label: "Ask Blossom AI", to: "/ai/assistant" },
-                { label: "Resource Library", to: "/resources" },
+                { label: "Resource Library", to: "/resource-library" },
               ].map((q) => (
                 <Link
                   key={q.label}
