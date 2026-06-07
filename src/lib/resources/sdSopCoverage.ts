@@ -25,6 +25,16 @@ export function normalizeSopTitle(title: string): string {
     .replace(/\s+/g, " ");
 }
 
+/** Token-level Jaccard similarity over normalized titles. 0..1. */
+export function sopTitleSimilarity(a: string, b: string): number {
+  const ta = new Set(normalizeSopTitle(a).split(" ").filter(Boolean));
+  const tb = new Set(normalizeSopTitle(b).split(" ").filter(Boolean));
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let inter = 0;
+  for (const t of ta) if (tb.has(t)) inter += 1;
+  return inter / (ta.size + tb.size - inter);
+}
+
 export type SdSopRealStatus =
   | "published"
   | "pending"
@@ -51,6 +61,16 @@ export interface SdSopCoverageReport {
   publishedEntries: SdSopCoverageEntry[];
   missingEntries: SdSopCoverageEntry[];
   needsFileRepairEntries: SdSopCoverageEntry[];
+  /** SD manifest entries with no exact match but a close-by uploaded title. */
+  needsTitleCleanupEntries: SdSopCoverageCleanupEntry[];
+  /** Uploaded hr_resources rows that don't match any manifest title. */
+  unmatchedResources: Resource[];
+}
+
+export interface SdSopCoverageCleanupEntry {
+  entry: SDSopManifestEntry;
+  candidate: Resource;
+  similarity: number;
 }
 
 function classify(resource: Resource | null): SdSopRealStatus {
@@ -106,6 +126,33 @@ export function computeSdSopCoverageFromResources(
       number
     >,
   );
+  // Resources that don't exact-match any manifest title.
+  const manifestKeys = new Set(manifest.map((e) => normalizeSopTitle(e.title)));
+  const unmatchedResources = resources.filter((r) => {
+    if (manifestKeys.has(normalizeSopTitle(r.title))) return false;
+    // Hide excluded/vault to keep admin attention on actionable rows.
+    if (r.sensitivity === "excluded") return false;
+    if (r.uploadStatus === "excluded" || r.uploadStatus === "vault_only") return false;
+    if (r.status === "Archived") return false;
+    return true;
+  });
+  // Close-but-not-exact matches for missing entries (admin can rename).
+  const needsTitleCleanupEntries: SdSopCoverageCleanupEntry[] = [];
+  for (const e of entries) {
+    if (e.status !== "missing") continue;
+    let best: { r: Resource; s: number } | null = null;
+    for (const r of unmatchedResources) {
+      const s = sopTitleSimilarity(e.entry.title, r.title);
+      if (s >= 0.6 && (!best || s > best.s)) best = { r, s };
+    }
+    if (best) {
+      needsTitleCleanupEntries.push({
+        entry: e.entry,
+        candidate: best.r,
+        similarity: best.s,
+      });
+    }
+  }
   return {
     total: manifest.length,
     published: counts.published,
@@ -118,6 +165,8 @@ export function computeSdSopCoverageFromResources(
     publishedEntries: entries.filter((e) => e.status === "published"),
     missingEntries: entries.filter((e) => e.status === "missing"),
     needsFileRepairEntries: entries.filter((e) => e.status === "needs_file_repair"),
+    needsTitleCleanupEntries,
+    unmatchedResources,
   };
 }
 
