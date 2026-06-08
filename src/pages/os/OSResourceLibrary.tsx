@@ -29,6 +29,9 @@ import {
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
+import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
+import { ChevronDown } from "lucide-react";
+import { useState as useReactState } from "react";
 import {
   collectSmartCollections,
   countAdminHiddenResources,
@@ -46,6 +49,35 @@ const TONE_BG: Record<string, string> = {
   slate:   "bg-slate-100 text-slate-700",
   indigo:  "bg-[hsl(235_70%_96%)] text-[hsl(235_70%_50%)]",
 };
+
+/**
+ * System tags that should never reach learners: scaffolding from the
+ * upload pipeline (week_1, day_1, status:*, raw roles, etc).
+ */
+const SYSTEM_TAG_RE = /^(week_?\d+|day_?\d+|state_director|rbt|bcba|hr|admin|published|pending|held|vault.*|excluded|upload.*|status:.*|w\d+d\d+)$/i;
+function learnerTags(tags: string[]): string[] {
+  return (tags ?? []).filter((t) => !SYSTEM_TAG_RE.test(t.trim()));
+}
+
+function whenToUse(r: Resource): string {
+  switch (r.type) {
+    case "SOP":   return "Follow this when you run the workflow it covers.";
+    case "Form":  return "Use this whenever you need to capture or submit the information it asks for.";
+    case "Video":
+    case "Tango": return "Watch this before you do the workflow for the first time, or as a refresher.";
+    case "Workflow": return "Open this when you need the end-to-end steps for the workflow.";
+    case "Link":  return "Open this to jump straight into the tool or page it links to.";
+    case "PDF":
+    default:      return "Reference this when you need the details written out.";
+  }
+}
+
+function whoThisHelps(r: Resource): string {
+  if (r.tags?.some((t) => /state_director/i.test(t)))
+    return "Part of your State Director launch resources.";
+  if (r.roles?.length) return "Available for your role.";
+  return "Available to everyone on your team.";
+}
 
 export default function OSResourceLibrary() {
   const { role, activeState } = useOSRole();
@@ -293,8 +325,8 @@ export default function OSResourceLibrary() {
                         <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TYPE_TONE[r.type])}>
                           <Icon className="h-3.5 w-3.5" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-[12.5px] font-medium text-foreground">{r.title}</div>
+                       <div className="min-w-0">
+                          <div className="truncate text-[12.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
                           <div className="truncate text-[10.5px] text-muted-foreground">{r.type}</div>
                         </div>
                       </button>
@@ -539,7 +571,7 @@ export default function OSResourceLibrary() {
                       <div className="flex min-w-0 items-center gap-3">
                         <TypeChip type={r.type} />
                         <div className="min-w-0">
-                          <div className="truncate text-[13.5px] font-medium text-foreground">{r.title}</div>
+                         <div className="truncate text-[13.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
                           <div className="text-[11.5px] text-muted-foreground">
                             {categoryById(r.category).name} · Updated {formatRelative(r.updatedAt)}
                           </div>
@@ -566,7 +598,7 @@ export default function OSResourceLibrary() {
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-muted/50"
                     >
                       <TypeChip type={r.type} sm />
-                      <span className="truncate">{r.title}</span>
+                      <span className="truncate">{cleanSdTitle(r.title)}</span>
                     </button>
                   ))}
                 </div>
