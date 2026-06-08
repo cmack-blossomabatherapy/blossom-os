@@ -18,6 +18,11 @@ import {
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "./SDJourneyView";
 import type { LearnerHome } from "@/lib/academy/learnerHome";
+import { useAdminResources } from "@/hooks/useAdminResources";
+import {
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
+import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
@@ -82,6 +87,12 @@ interface Props {
 export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const navigate = useNavigate();
   const byId = useMemo(() => new Map(trainings.map((t) => [t.id, t])), [trainings]);
+  const { resources } = useAdminResources();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+  const sopCoverage = useMemo(
+    () => computeSdSopCoverageFromResources(resources),
+    [resources],
+  );
 
   // Use SD_JOURNEY_STRUCTURE for current-week/day computation against local progress.
   const dayStates = useMemo(() =>
@@ -122,6 +133,35 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const welcomeComplete = hasDb ? learnerHome.welcomeComplete : false;
 
   const flow = pickFlow(currentDayDef.title, currentWeekDef.title);
+
+  // Small launch checklist — calm, operational, no clutter.
+  const launchChecklist = [
+    {
+      label: "Welcome",
+      done: welcomeComplete,
+      hint: welcomeVideo.ok ? "Video ready" : "Written guidance ready",
+    },
+    {
+      label: "Today's modules",
+      done: currentDayState.completed === currentDayState.total && currentDayState.total > 0,
+      hint: `${currentDayState.completed}/${currentDayState.total} done`,
+    },
+    {
+      label: "SOPs connected",
+      done: sopCoverage.total > 0 && sopCoverage.published === sopCoverage.total,
+      hint: `${sopCoverage.published}/${sopCoverage.total} live`,
+    },
+    {
+      label: "Mentor check-in",
+      done: learnerHome.checkinCount > 0,
+      hint: learnerHome.mentor ? "Mentor assigned" : "Pending mentor",
+    },
+    {
+      label: "Reflection",
+      done: currentDayState.completed > 0,
+      hint: currentDayState.completed > 0 ? "Captured today" : "Add one tonight",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
@@ -237,6 +277,49 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
 
         {/* 3 · Today's Launch Plan */}
         <section data-testid="sd-today-launch-plan" className="space-y-4">
+          {/* Launch checklist — small calm operational card */}
+          <div
+            data-testid="sd-launch-checklist-card"
+            className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  Launch checklist
+                </p>
+                <h3 className="mt-0.5 text-[14.5px] font-semibold tracking-tight text-foreground">
+                  Five quiet signals you are on track
+                </h3>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {launchChecklist.filter((c) => c.done).length}/{launchChecklist.length}
+              </span>
+            </div>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-5">
+              {launchChecklist.map((c) => (
+                <li
+                  key={c.label}
+                  className={cn(
+                    "rounded-xl border bg-background/60 px-3 py-2 text-[12px]",
+                    c.done
+                      ? "border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-950/10"
+                      : "border-border/60",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {c.done ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />
+                    )}
+                    <span className="font-medium text-foreground">{c.label}</span>
+                  </div>
+                  <p className="mt-0.5 pl-5 text-[11px] text-muted-foreground">{c.hint}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">

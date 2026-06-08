@@ -17,9 +17,18 @@ import {
   ClipboardCheck,
   GraduationCap,
   UserCheck,
+  Image as ImageIcon,
+  Video as VideoIcon,
 } from "lucide-react";
 import { useAdminResources } from "@/hooks/useAdminResources";
+import { cn } from "@/lib/utils";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import {
+  computeSdContentReadiness,
+  computeSdScreenshotReadiness,
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
+import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 
 type CheckState = "ok" | "manual" | "warn";
 
@@ -74,16 +83,21 @@ function CheckList({ group }: { group: CheckGroup }) {
 export function SDLaunchReadinessPanel() {
   const { resources } = useAdminResources();
   const coverage = computeSdSopCoverageFromResources(resources);
+  const content = computeSdContentReadiness();
+  const screenshots = computeSdScreenshotReadiness();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+  const allManifestPublished =
+    coverage.total === SD_SOP_MANIFEST.length && coverage.published === coverage.total;
 
   // Resource state: derived from live coverage.
   const resourceItems: CheckItem[] = [
     {
       label: `${coverage.total} required State Director SOPs counted`,
-      state: coverage.total === 97 ? "ok" : "warn",
+      state: coverage.total === SD_SOP_MANIFEST.length ? "ok" : "warn",
     },
     {
-      label: `${coverage.published} published + connected SOPs`,
-      state: coverage.published > 0 ? "ok" : "manual",
+      label: `${coverage.published} of ${coverage.total} SOPs published + openable`,
+      state: allManifestPublished ? "ok" : coverage.published > 0 ? "warn" : "manual",
       note: "Mapped SOPs that open from State Director module pages.",
     },
     {
@@ -125,12 +139,43 @@ export function SDLaunchReadinessPanel() {
 
   const contentItems: CheckItem[] = [
     { label: "Welcome to Blossom ready", state: "ok" },
-    { label: "Week 1 content complete", state: "ok" },
-    { label: "Weeks 2–5 content complete", state: "ok" },
-    { label: "Knowledge checks present", state: "ok" },
+    {
+      label: `Week 1 content complete (${content.complete}/${content.total} SD modules verified)`,
+      state: content.ok ? "ok" : "warn",
+      note: content.ok
+        ? undefined
+        : `${content.missing.length} module(s) missing required fields.`,
+    },
+    {
+      label: "Weeks 2–5 content complete",
+      state: content.ok ? "ok" : "warn",
+    },
+    {
+      label: "Knowledge checks present on every SD module",
+      state: content.ok ? "ok" : "warn",
+    },
     { label: "Reflection prompts present", state: "ok" },
     { label: "Shadowing modules present", state: "ok" },
     { label: "Final readiness modules present", state: "ok" },
+    {
+      label: welcomeVideo.ok ? "Welcome video resource linked" : "Welcome video pending upload",
+      state: welcomeVideo.ok ? "ok" : "manual",
+      note: welcomeVideo.ok
+        ? undefined
+        : "Upload an MP4 titled 'Welcome Video from Blossom' in Resource Upload Center.",
+    },
+    {
+      label: `Screenshot assets available (${screenshots.available}/${screenshots.totalRegistered})`,
+      state: screenshots.ok
+        ? "ok"
+        : screenshots.needsRedaction > 0
+          ? "warn"
+          : "manual",
+      note:
+        screenshots.pending > 0 || screenshots.needsRedaction > 0
+          ? `${screenshots.pending} pending · ${screenshots.needsRedaction} held for redaction.`
+          : undefined,
+    },
   ];
 
   const trackingItems: CheckItem[] = [
@@ -187,6 +232,90 @@ export function SDLaunchReadinessPanel() {
           <CheckList key={g.title} group={g} />
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Screenshot + welcome-video asset visibility for Training Management.
+ * Shows how many priority SD screenshots are actually available vs pending,
+ * and whether the welcome video is wired to a published resource.
+ */
+export function SDScreenshotReadinessPanel() {
+  const { resources } = useAdminResources();
+  const screenshots = computeSdScreenshotReadiness();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+
+  const tiles = [
+    { label: "Registered screenshots", value: String(screenshots.totalRegistered) },
+    {
+      label: "Available",
+      value: String(screenshots.available),
+      tone: screenshots.available > 0 ? "text-emerald-600" : "text-muted-foreground",
+    },
+    {
+      label: "Pending upload",
+      value: String(screenshots.pending),
+      tone: screenshots.pending === 0 ? "text-muted-foreground" : "text-amber-600",
+    },
+    {
+      label: "Needs redaction",
+      value: String(screenshots.needsRedaction),
+      tone: screenshots.needsRedaction === 0 ? "text-muted-foreground" : "text-rose-600",
+    },
+    {
+      label: "Welcome video",
+      value: welcomeVideo.ok ? "Linked" : "Pending",
+      tone: welcomeVideo.ok ? "text-emerald-600" : "text-amber-600",
+    },
+  ];
+
+  return (
+    <section
+      data-testid="sd-screenshot-readiness-panel"
+      className="rounded-2xl border border-border/70 bg-card p-6"
+    >
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <ImageIcon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            Training Management · Visual assets
+          </p>
+          <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+            Screenshots &amp; Welcome Video
+          </h2>
+          <p className="mt-1.5 max-w-3xl text-[13px] text-muted-foreground">
+            The walkthroughs render calm pending callouts while real screenshots are uploaded.
+            PII safety checks block training-safe screenshots from showing identifiers.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {tiles.map((t) => (
+          <div
+            key={t.label}
+            className="rounded-xl border border-border/60 bg-background p-3"
+          >
+            <p className={cn("text-[20px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
+              {t.value}
+            </p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              {t.label}
+            </p>
+          </div>
+        ))}
+      </div>
+      {!welcomeVideo.ok && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[12px] text-amber-900">
+          <VideoIcon className="mt-0.5 h-3.5 w-3.5" />
+          <span>
+            Upload an MP4 titled <strong>Welcome Video from Blossom</strong> in Resource Upload Center
+            to wire the welcome page automatically. No code change required.
+          </span>
+        </div>
+      )}
     </section>
   );
 }
