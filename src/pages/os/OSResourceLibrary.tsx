@@ -96,16 +96,32 @@ export default function OSResourceLibrary() {
 
   // State Director Launch smart collection — only published / openable /
   // role-visible items whose normalized title exactly matches the manifest.
-  const sdLaunchVisible = useMemo(() => {
-    if (!isSdSopVisibleToRole(role)) return [];
-    const keys = new Set(SD_SOP_MANIFEST.map((e) => normalizeSopTitle(e.title)));
-    return scope.filter((r) => {
-      if (!keys.has(normalizeSopTitle(r.title))) return false;
-      const hasOpenable = !!(r.url || r.fileUrl || r.storagePath);
-      return hasOpenable;
-    });
-  }, [scope, role]);
-  const showSdLaunchCollection = isSdSopVisibleToRole(role) && !query && !activeCategory;
+  const smartCollections: SmartCollectionResult[] = useMemo(
+    () => collectSmartCollections(libraryResources, role, activeState),
+    [libraryResources, role, activeState],
+  );
+  const collectionsToShow = useMemo(
+    () => smartCollections.filter((c) => c.items.length > 0),
+    [smartCollections],
+  );
+  const sdLaunchVisible = useMemo(
+    () =>
+      smartCollections.find((c) => c.collection.id === "state-director-launch")?.items ?? [],
+    [smartCollections],
+  );
+  const adminHiddenCount = useMemo(
+    () => (canManage ? countAdminHiddenResources(libraryResources) : 0),
+    [canManage, libraryResources],
+  );
+  const activeCollectionResult = useMemo(
+    () =>
+      activeCollection
+        ? smartCollections.find((c) => c.collection.id === activeCollection) ?? null
+        : null,
+    [activeCollection, smartCollections],
+  );
+  const showSdLaunchCollection =
+    isSdSopVisibleToRole(role) && !query && !activeCategory && !activeCollection;
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
