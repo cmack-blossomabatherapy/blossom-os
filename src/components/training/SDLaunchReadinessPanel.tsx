@@ -17,6 +17,8 @@ import {
   ClipboardCheck,
   GraduationCap,
   UserCheck,
+  Image as ImageIcon,
+  Video as VideoIcon,
 } from "lucide-react";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
