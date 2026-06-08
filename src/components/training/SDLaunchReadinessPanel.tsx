@@ -254,13 +254,19 @@ export function SDLaunchReadinessPanel() {
     },
     {
       label: "Chad Kaufman welcome letter present",
-      state: chadLetter && chadLetter.body ? "ok" : "warn",
-      note: chadLetter && chadLetter.body ? undefined : "Letter copy missing from welcome content.",
+      state: chadLetter && chadLetter.paragraphs.length > 0 ? "ok" : "warn",
+      note:
+        chadLetter && chadLetter.paragraphs.length > 0
+          ? undefined
+          : "Letter copy missing from welcome content.",
     },
     {
       label: "Shira Lasry welcome letter present",
-      state: shiraLetter && shiraLetter.body ? "ok" : "warn",
-      note: shiraLetter && shiraLetter.body ? undefined : "Letter copy missing from welcome content.",
+      state: shiraLetter && shiraLetter.paragraphs.length > 0 ? "ok" : "warn",
+      note:
+        shiraLetter && shiraLetter.paragraphs.length > 0
+          ? undefined
+          : "Letter copy missing from welcome content.",
     },
     {
       label: "Welcome CTA routes back to /training",
