@@ -29,7 +29,6 @@ type Category =
   | "Payer & Insurance Guidance"
   | "Authorization Risk Management"
   | "Communication Templates"
-  | "Tango Walkthroughs"
   | "Systems & Tools";
 
 interface Resource {
