@@ -41,6 +41,7 @@ import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -87,6 +88,22 @@ export default function OSTrainingDetail() {
 
   const isSD = training.id.startsWith("sd-") || training.department === "state_director";
 
+  if (isSD) {
+    return (
+      <OSShell>
+        <div className="os-rise">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back
+          </button>
+        </div>
+        <SDModuleDetailPanel training={training} />
+      </OSShell>
+    );
+  }
+
   return (
     <OSShell>
       <div className="os-rise">
@@ -130,8 +147,6 @@ export default function OSTrainingDetail() {
           </div>
         </header>
       </div>
-
-      {isSD && <SDModuleDetailPanel training={training} />}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr_300px]">
         {/* Left nav */}
