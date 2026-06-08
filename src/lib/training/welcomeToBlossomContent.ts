@@ -80,6 +80,103 @@ export interface WelcomeCompletion {
   cta: string;
 }
 
+export interface WelcomeHipaaQuizQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+  /** Index into options[] of the correct answer. */
+  correctIndex: number;
+  /** Short plain-language explanation shown after the learner answers. */
+  explanation: string;
+}
+
+export interface WelcomeHipaaQuiz {
+  /** Module key persisted in onboarding storage when the learner passes. */
+  moduleKey: string;
+  /** Minimum correct answers required to pass. */
+  passingScore: number;
+  questions: WelcomeHipaaQuizQuestion[];
+}
+
+/**
+ * HIPAA knowledge check used to gate progress past the Welcome to Blossom
+ * HIPAA module. Threshold is 4 of 5 (80%). Questions are written against
+ * the WELCOME_HIPAA_CONTENT shown directly above the quiz in the UI.
+ */
+export const WELCOME_HIPAA_QUIZ: WelcomeHipaaQuiz = {
+  moduleKey: "welcome-hipaa-quiz-passed",
+  passingScore: 4,
+  questions: [
+    {
+      id: "phi-definition",
+      prompt: "Which of the following is NOT considered Protected Health Information (PHI)?",
+      options: [
+        "A client's first name combined with their appointment time",
+        "A de-identified, aggregated count of total sessions delivered company-wide last month",
+        "A photo of a client taken during a session",
+        "A client's insurance authorization number",
+      ],
+      correctIndex: 1,
+      explanation:
+        "PHI is information that can identify a client and is tied to their care, billing, or services. A fully de-identified, aggregated company-wide number is not PHI. Names + appointment times, client photos, and authorization numbers are all PHI.",
+    },
+    {
+      id: "minimum-necessary",
+      prompt: "What does the Minimum Necessary Rule mean for your everyday work?",
+      options: [
+        "Only access, use, or share the smallest amount of PHI needed for the task in front of you",
+        "You can view any client record as long as you do not share it externally",
+        "It only applies to clinical staff, not operations or administrative staff",
+        "It only applies to written records, not conversations",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Minimum Necessary applies to every Blossom employee and to every form of PHI - written, electronic, and spoken. If you do not need it to do your job, do not open, copy, or share it.",
+    },
+    {
+      id: "if-mistake",
+      prompt:
+        "You accidentally email a client's progress report to the wrong family. What is the right first step?",
+      options: [
+        "Delete the sent email and hope they do not open it",
+        "Wait a few days to see if anything happens before saying anything",
+        "Tell your direct supervisor immediately - the same day - and notify HR",
+        "Ask the recipient family to delete it and keep it between you and them",
+      ],
+      correctIndex: 2,
+      explanation:
+        "Tell your supervisor the same day and notify HR (HR@blossomabatherapy.com). Early reporting almost always reduces the consequences and often prevents a mistake from becoming a reportable breach.",
+    },
+    {
+      id: "personal-devices",
+      prompt:
+        "A coworker asks you to text a client's name and appointment time to them from your personal phone because it is faster. What should you do?",
+      options: [
+        "Send it - they are a coworker, so it is internal",
+        "Send it but delete the text right after",
+        "Decline and use an approved Blossom system instead - personal phones and texts are not allowed for PHI",
+        "Send only the appointment time without the name",
+      ],
+      correctIndex: 2,
+      explanation:
+        "PHI may not be sent through personal email, personal text messages, personal cloud storage, or unapproved chat tools - even between coworkers. Use Blossom email and Blossom-approved systems only.",
+    },
+    {
+      id: "three-rules",
+      prompt: "Which of these is one of the three main HIPAA rules?",
+      options: [
+        "The Marketing Rule",
+        "The Breach Notification Rule",
+        "The Reimbursement Rule",
+        "The Documentation Rule",
+      ],
+      correctIndex: 1,
+      explanation:
+        "The three main HIPAA rules are the Privacy Rule, the Security Rule, and the Breach Notification Rule. If PHI is exposed, Blossom is legally required to investigate and, in many cases, notify the affected client and HHS.",
+    },
+  ],
+};
+
 export const WELCOME_TO_BLOSSOM_HERO: WelcomeHero = {
   eyebrow: "Day 1 — Welcome to Blossom",
   headline: "Welcome to Blossom.",
