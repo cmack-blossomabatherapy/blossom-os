@@ -5,6 +5,8 @@ import {
 import type { LearnerHome } from "@/lib/academy/learnerHome";
 
 const HR_EMAIL = "HR@blossomabatherapy.com";
+const HR_MAILTO = (subject: string) =>
+  `mailto:${HR_EMAIL}?subject=${encodeURIComponent(subject)}`;
 
 interface NeedHelpPanelProps {
   learnerHome: LearnerHome;
@@ -52,15 +54,17 @@ export function NeedHelpPanel({ learnerHome, learnerName }: NeedHelpPanelProps) 
       return {
         label: "Ask my mentor",
         icon: UsersIcon,
-        to: "/user-management",
-        hint: `${mentorName || "Mentor assigned"} · email missing, ask HR to update`,
+        href: HR_MAILTO("Mentor email missing"),
+        external: true,
+        hint: "Mentor email missing - HR can update it",
       };
     }
     return {
       label: "Mentor not assigned yet",
       icon: UsersIcon,
-      to: "/user-management",
-      hint: "Assign a mentor in User Management",
+      href: HR_MAILTO("Mentor assignment needed"),
+      external: true,
+      hint: "HR can assign your mentor",
     };
   })();
 
