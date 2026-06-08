@@ -28,6 +28,8 @@ import {
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import { SD_SOP_MANIFEST, isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
+import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -83,6 +85,19 @@ export default function OSResourceLibrary() {
     if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
   }, [query, activeCategory, searchResults, filteredScope]);
+
+  // State Director Launch smart collection — only published / openable /
+  // role-visible items whose normalized title exactly matches the manifest.
+  const sdLaunchVisible = useMemo(() => {
+    if (!isSdSopVisibleToRole(role)) return [];
+    const keys = new Set(SD_SOP_MANIFEST.map((e) => normalizeSopTitle(e.title)));
+    return scope.filter((r) => {
+      if (!keys.has(normalizeSopTitle(r.title))) return false;
+      const hasOpenable = !!(r.url || r.fileUrl || r.storagePath);
+      return hasOpenable;
+    });
+  }, [scope, role]);
+  const showSdLaunchCollection = isSdSopVisibleToRole(role) && !query && !activeCategory;
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
