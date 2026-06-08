@@ -198,6 +198,7 @@ export default function ResourceUploadCenter() {
       r.sensitivity === "excluded",
   ).length;
   const titleCleanupCount = coverage.needsTitleCleanupEntries.length;
+  const week1Screenshots = computeSdScreenshotCoverage(adminAll).week1;
 
   const tabs: [FilterTab, string][] = [
     ["all", `All (${adminAll.length})`],
