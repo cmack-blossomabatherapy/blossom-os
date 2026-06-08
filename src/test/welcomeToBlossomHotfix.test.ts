@@ -19,10 +19,15 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/welcome video is being prepared[\s\S]*continue with the written/);
   });
 
-  it("does not render a <video> element when URL is empty", () => {
+  it("does not render a <video> element when no welcome video resource is found", () => {
     // <video> only appears inside the hasVideo branch
     expect(WELCOME).toMatch(/hasVideo \? \(/);
-    expect(WELCOME).toMatch(/const hasVideo = Boolean\(WELCOME_VIDEO_URL\)/);
+    expect(WELCOME).toMatch(/const hasVideo = Boolean\(resolvedVideoUrl\)/);
+  });
+
+  it("looks up the welcome video from Resource Library at runtime", () => {
+    expect(WELCOME).toMatch(/computeSdWelcomeVideoState/);
+    expect(WELCOME).toMatch(/useAdminResources/);
   });
 
   it("offers Mark welcome reviewed + Continue to State Director Journey", () => {
