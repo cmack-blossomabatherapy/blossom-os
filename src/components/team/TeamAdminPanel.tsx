@@ -762,6 +762,34 @@ function MemberRow({
                     className="text-sm"
                   />
                 </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    Mentor
+                  </Label>
+                  {member.employee_id ? (
+                    <Select
+                      value={draftMentor ?? "none"}
+                      onValueChange={(v) => setDraftMentor(v === "none" ? null : v)}
+                    >
+                      <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select mentor" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No mentor</SelectItem>
+                        {mentorOptions.map((o) => (
+                          <SelectItem key={o.employee_id} value={o.employee_id}>
+                            {o.label}{o.job_title ? ` — ${o.job_title}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Save the member's info first to link an HR record before assigning a mentor.
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    The assigned mentor is shown in this person's Training Academy and is used for shadowing sign-offs and mentor check-ins.
+                  </p>
+                </div>
               </div>
             ) : (
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
@@ -774,6 +802,14 @@ function MemberRow({
                 <InfoLine label="Dashboard Access" value={member.dashboard_access || "Department-specific"} />
                 <InfoLine label="New State employee" value={member.new_state_employee ? "Yes" : "No"} />
                 <InfoLine label="Status" value={member.active ? "Active" : "Inactive"} />
+                <InfoLine
+                  label="Mentor"
+                  value={
+                    member.mentor_employee_id
+                      ? mentorOptions.find((o) => o.employee_id === member.mentor_employee_id)?.label ?? "Assigned"
+                      : "Not assigned"
+                  }
+                />
                 <div className="sm:col-span-2">
                   <InfoLine
                     label="Responsibilities"
