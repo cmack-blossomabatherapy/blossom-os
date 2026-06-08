@@ -727,7 +727,8 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const requiresMentorSignoff = /shadow|signoff|sign-off|mentor|certification/i.test(training.title)
     || /^Shadowing$|^Meeting$/.test(training.type);
   const hasSignoff = !!dbProgress?.verified_at;
-  const completed = dbProgress?.status === "completed";
+  const localProgress = getProgress(training.id);
+  const completed = dbProgress?.status === "completed" || localProgress.status === "completed";
 
   async function handleStart() {
     if (!hasDb) {
@@ -809,7 +810,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           {training.required && <span className="text-primary">· Required</span>}
           {requiresMentorSignoff && <span>· Mentor signoff required</span>}
           <span>·</span>
-          <span>{completed ? "Complete" : dbProgress?.status === "in_progress" ? "In progress" : "Not started"}</span>
+          <span>{completed ? "Complete" : dbProgress?.status === "in_progress" || localProgress.status === "in_progress" ? "In progress" : "Not started"}</span>
         </div>
       </div>
 
@@ -861,8 +862,8 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
               <Button size="sm" variant="outline" className="h-8 rounded-full" onClick={handleStart} disabled={busy !== null}>
                 <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
               </Button>
-              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
-                <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
+              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null || completed} data-testid="sd-mark-complete">
+                <CheckCircle2 className="mr-1 h-3 w-3" /> {completed ? "Complete" : "Mark complete"}
               </Button>
             </div>
             {!hasDb && (
