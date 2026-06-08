@@ -237,6 +237,9 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
           </ol>
         </section>
 
+        {/* 1.6 · Day-One readiness — local evidence panel */}
+        <SDDayOneReadinessPanel welcomeReviewedFromAcademy={welcomeComplete} />
+
         {/* 2 · Welcome to Blossom anchor */}
         <section data-testid="sd-welcome-anchor">
           <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card p-6 sm:p-7">
