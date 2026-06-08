@@ -91,12 +91,19 @@ export function computeSdScreenshotReadiness(): SDScreenshotReadiness {
 const WELCOME_VIDEO_TITLES = [
   "Welcome Video from Blossom",
   "Welcome to Blossom Video",
+  "Blossom Welcome Video",
+  "Welcome from Chad and Shira",
   "Welcome from Chad Kaufman",
   "Welcome from Chad",
   "A Note from Shira Lasry",
 ];
 
 const WELCOME_KEYS = new Set(WELCOME_VIDEO_TITLES.map((t) => normalizeSopTitle(t)));
+
+/** Returns every resource whose title matches the welcome-video naming set. */
+export function findWelcomeVideoCandidates(resources: Resource[]): Resource[] {
+  return resources.filter((r) => WELCOME_KEYS.has(normalizeSopTitle(r.title)));
+}
 
 /** Returns the first published+openable resource that represents the welcome video. */
 export function findWelcomeVideoResource(resources: Resource[]): Resource | null {
@@ -131,6 +138,39 @@ export function computeSdWelcomeVideoState(
   const url = r.fileUrl || r.url || null;
   // Storage-path-only resources resolve at click-time; treat as ok for the panel.
   return { ok: true, resource: r, url };
+}
+
+/** Readiness-panel friendly status for the Welcome video row. */
+export interface SDWelcomeVideoCheck {
+  state: "ok" | "warn" | "manual";
+  label: string;
+  note: string;
+}
+
+export function computeSdWelcomeVideoCheck(
+  resources: Resource[],
+): SDWelcomeVideoCheck {
+  const openable = findWelcomeVideoResource(resources);
+  if (openable) {
+    return {
+      state: "ok",
+      label: "Welcome video linked",
+      note: `Published resource "${openable.title}" is openable from the Welcome page.`,
+    };
+  }
+  const candidates = findWelcomeVideoCandidates(resources);
+  if (candidates.length > 0) {
+    return {
+      state: "warn",
+      label: "Welcome video linked",
+      note: "A matching resource exists but is not openable — finish publishing or attach a file.",
+    };
+  }
+  return {
+    state: "manual",
+    label: "Welcome video linked",
+    note: "Publish a Welcome video resource (e.g. 'Welcome Video from Blossom') in Resource Upload Center.",
+  };
 }
 
 // Helper re-export for tests.
