@@ -152,7 +152,6 @@ export default function OSAuthorizationResources() {
   }, [query, activeCategory, activeWorkflow]);
 
   const featured = useMemo(() => resources.filter((r) => r.featured), []);
-  const tangos = useMemo(() => resources.filter((r) => r.type === "Tango"), []);
   const recentResources = useMemo(
     () => recent.map((id) => resources.find((r) => r.id === id)).filter(Boolean) as Resource[],
     [recent],
@@ -445,33 +444,6 @@ function ResourceRow({ r, saved, onToggleSave }: { r: Resource; saved: boolean; 
     </div>
   );
   return r.href ? <Link to={r.href} className="block">{inner}</Link> : <div>{inner}</div>;
-}
-
-function TangoCard({ r, saved, onToggleSave }: { r: Resource; saved: boolean; onToggleSave: () => void }) {
-  return (
-    <div className="group rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-[0_8px_24px_-12px_oklch(0.2_0.02_260/0.12)]">
-      <div className="flex items-start justify-between">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-muted/60 text-muted-foreground group-hover:text-foreground">
-          <PlayCircle className="h-4 w-4" />
-        </div>
-        <button
-          onClick={onToggleSave}
-          className={cn("grid h-7 w-7 place-items-center rounded-full border transition-colors",
-            saved ? "border-primary/40 bg-primary/10 text-primary" : "border-border/60 bg-card text-muted-foreground hover:text-foreground")}
-        >
-          <Bookmark className={cn("h-3.5 w-3.5", saved && "fill-current")} />
-        </button>
-      </div>
-      <p className="mt-3 text-sm font-medium text-foreground">{r.title}</p>
-      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.description}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-        {r.system && <Badge variant="outline" className="rounded-full text-[10px]">{r.system}</Badge>}
-        {r.difficulty && <Badge variant="secondary" className="rounded-full text-[10px]">{r.difficulty}</Badge>}
-        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {r.minutes} min</span>
-        <span>· Updated {formatDate(r.updated)}</span>
-      </div>
-    </div>
-  );
 }
 
 function QuickAction({ icon: Icon, label }: { icon: typeof ArrowRight; label: string }) {
