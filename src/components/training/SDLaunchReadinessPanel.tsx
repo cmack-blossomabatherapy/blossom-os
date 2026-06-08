@@ -35,6 +35,7 @@ import {
   getStateDirectorScreenshots,
   isScreenshotPiiSafe,
 } from "@/lib/training/stateDirectorFullTraining";
+import { WELCOME_LEADERSHIP_LETTERS } from "@/lib/training/welcomeToBlossomContent";
 
 type CheckState = "ok" | "manual" | "warn";
 
@@ -153,17 +154,33 @@ export function SDLaunchReadinessPanel() {
           : "Published record exists but the file/url is empty.",
     },
     {
+      label: `${coverage.needsTitleCleanupEntries.length} need title cleanup`,
+      state: coverage.needsTitleCleanupEntries.length === 0 ? "ok" : "warn",
+      note:
+        coverage.needsTitleCleanupEntries.length === 0
+          ? undefined
+          : "Close-match uploads exist — rename to the exact manifest title.",
+    },
+    {
+      label: `${coverage.held} held in privacy / business review`,
+      state: coverage.held === 0 ? "ok" : "warn",
+      note:
+        coverage.held === 0
+          ? undefined
+          : "Not learner-visible until review is cleared.",
+    },
+    {
+      label: `${coverage.excluded} vault / excluded (never learner-visible)`,
+      state: "manual",
+      note: "Vault/excluded SOPs are kept admin-only and never leak to the learner library.",
+    },
+    {
       label: `${coverage.unmatchedResources.length} unmatched uploads`,
       state: coverage.unmatchedResources.length === 0 ? "ok" : "manual",
       note:
         coverage.unmatchedResources.length === 0
           ? undefined
           : "Uploaded resources that do not match the SD SOP manifest.",
-    },
-    {
-      label: "Privacy / vault items excluded from learner view",
-      state: "ok",
-      note: "Learner Resource Library only renders published, non-excluded items.",
     },
   ];
 
@@ -223,6 +240,38 @@ export function SDLaunchReadinessPanel() {
             ? "ok"
             : "warn",
       note: `${screenshotAudit.pending} pending upload · ${screenshotAudit.needsRedaction} need redaction.`,
+    },
+  ];
+
+  // Welcome setup — leadership letters + CTA route checks.
+  const chadLetter = WELCOME_LEADERSHIP_LETTERS.find((l) => /chad/i.test(l.name));
+  const shiraLetter = WELCOME_LEADERSHIP_LETTERS.find((l) => /shira/i.test(l.name));
+  const welcomeItems: CheckItem[] = [
+    {
+      label: welcomeVideoCheck.label,
+      state: welcomeVideoCheck.state,
+      note: welcomeVideoCheck.note,
+    },
+    {
+      label: "Chad Kaufman welcome letter present",
+      state: chadLetter && chadLetter.paragraphs.length > 0 ? "ok" : "warn",
+      note:
+        chadLetter && chadLetter.paragraphs.length > 0
+          ? undefined
+          : "Letter copy missing from welcome content.",
+    },
+    {
+      label: "Shira Lasry welcome letter present",
+      state: shiraLetter && shiraLetter.paragraphs.length > 0 ? "ok" : "warn",
+      note:
+        shiraLetter && shiraLetter.paragraphs.length > 0
+          ? undefined
+          : "Letter copy missing from welcome content.",
+    },
+    {
+      label: "Welcome CTA routes back to /training",
+      state: "ok",
+      note: "Continue button on /training/welcome navigates to the State Director Journey.",
     },
   ];
 
@@ -294,12 +343,45 @@ export function SDLaunchReadinessPanel() {
 
   const groups: CheckGroup[] = [
     { title: "Learner setup", testid: "sd-launch-learner", items: learnerItems },
+    { title: "Welcome setup", testid: "sd-launch-welcome", items: welcomeItems },
     { title: "Content setup", testid: "sd-launch-content", items: contentItems },
-    { title: "Resource setup", testid: "sd-launch-resources", items: resourceItems },
-    { title: "Asset setup", testid: "sd-launch-assets", items: assetItems },
+    { title: "State Director SOP setup", testid: "sd-launch-resources", items: resourceItems },
+    { title: "Walkthrough / screenshot setup", testid: "sd-launch-assets", items: assetItems },
     { title: "Tracking setup", testid: "sd-launch-tracking", items: trackingItems },
-    { title: "Design setup", testid: "sd-launch-design", items: designItems },
+    { title: "Design QA", testid: "sd-launch-design", items: designItems },
   ];
+
+  // Overall launch status — data-driven, never hard-coded green.
+  const blocker =
+    welcomeVideoCheck.state === "manual" || welcomeVideoCheck.state === "warn"
+      ? "Welcome video is not linked yet."
+      : coverage.published === 0
+        ? "Zero State Director SOPs are connected."
+        : null;
+  const hasGaps =
+    coverage.missing > 0 ||
+    coverage.needsFileRepair > 0 ||
+    coverage.needsTitleCleanupEntries.length > 0 ||
+    coverage.held > 0 ||
+    screenshotAudit.pending > 0 ||
+    screenshotAudit.needsRedaction > 0;
+  const overall: { tone: string; label: string; note: string } = blocker
+    ? {
+        tone: "border-rose-300/60 bg-rose-50/60 text-rose-900",
+        label: "Not ready",
+        note: blocker,
+      }
+    : hasGaps
+      ? {
+          tone: "border-amber-300/60 bg-amber-50/60 text-amber-900",
+          label: "Ready to start with known gaps",
+          note: "Core path is live. Outstanding SOPs, screenshots, or repairs are tracked above.",
+        }
+      : {
+          tone: "border-emerald-300/60 bg-emerald-50/60 text-emerald-900",
+          label: "Ready",
+          note: "Welcome video, SOPs, and walkthrough assets are all connected.",
+        };
 
   return (
     <section
@@ -328,6 +410,20 @@ export function SDLaunchReadinessPanel() {
         {groups.map((g) => (
           <CheckList key={g.title} group={g} />
         ))}
+      </div>
+
+      <div
+        data-testid="sd-launch-overall-status"
+        className={cn(
+          "mt-5 rounded-2xl border px-4 py-3 text-[12.5px]",
+          overall.tone,
+        )}
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+          Overall launch status
+        </p>
+        <p className="mt-1 text-[14px] font-semibold tracking-tight">{overall.label}</p>
+        <p className="mt-0.5 opacity-80">{overall.note}</p>
       </div>
     </section>
   );

@@ -42,7 +42,7 @@ describe("SD Launch Readiness Panel", () => {
     expect(within(resources).getByText(/required SOPs still missing/i)).toBeInTheDocument();
     expect(within(resources).getByText(/unmatched uploads/i)).toBeInTheDocument();
     expect(within(resources).getByText(/file repair/i)).toBeInTheDocument();
-    expect(within(resources).getByText(/Privacy \/ vault items excluded/i)).toBeInTheDocument();
+    expect(within(resources).getByText(/vault \/ excluded/i)).toBeInTheDocument();
   });
 
   it("learner setup group lists the six manual confirmation items", () => {

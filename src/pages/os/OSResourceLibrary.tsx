@@ -258,10 +258,11 @@ export default function OSResourceLibrary() {
                   <BookOpen className="h-5 w-5" />
                 </div>
                 <h3 className="mt-3 text-[15px] font-semibold text-foreground">
-                  Your resource library is empty
+                  No published resources assigned to your role yet
                 </h3>
                 <p className="mx-auto mt-1 max-w-md text-[12.5px] text-muted-foreground">
-                  No published resources yet.{" "}
+                  Other teams may have resources available, but none have been published or
+                  assigned to your role yet.{" "}
                   {canManage
                     ? "Add SOPs, workflows, and quick links from Resource Management to get started."
                     : "Check back soon — HR is preparing the operational library."}
