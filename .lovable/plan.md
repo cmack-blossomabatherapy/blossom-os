@@ -1,63 +1,41 @@
-## Training Academy Redesign Pass 2
+## Problem
 
-This is a large, multi-file redesign touching ~6k lines of existing code. Before I implement it, I want to confirm scope and a few decisions so we don't burn a long round only to redo it.
+On `/training/welcome`, the 7 Welcome to Blossom module cards (Welcome Video, Mission & Vision, Core Values, Meet the Team, How Blossom Works, Letter from Chad, Letter from Shira) are display-only chips. Tapping a card — and tapping any "Start"-style cue — goes nowhere. The full written content for every one of those 7 modules already exists further down the same page, but there is no link from the card rail to the section, and there is no per-module Mark Complete control.
 
-### What I'll build
+To hand this off today, every module needs a working Start button that lands the learner directly on its content, plus an explicit Mark Complete control so the existing onboarding progress (`status.modulesComplete` via `markModuleComplete(...)`) actually advances.
 
-**Part 1 — Shared learner academy model (`src/lib/academy/learnerHome.ts`)**
+## What to change (scoped to `src/pages/os/OSWelcomeToBlossom.tsx`)
 
-New helper that wraps the existing `src/lib/academy/api.ts` (Supabase-backed) and produces a single normalized view-model for both the learner page and Training Management:
+1. **Anchor every module section** by adding stable `id` attributes that match the 7 module ids:
+   - `welcome-video-from-blossom` → existing welcome video section
+   - `welcome-mission-vision` → Mission & Vision section
+   - `welcome-core-values` → Core Values section
+   - `welcome-meet-the-team` → Meet the Team section
+   - `welcome-how-blossom-works` → How Blossom Works section
+   - `welcome-letter-chad` and `welcome-letter-shira` → individual letter articles inside the Leadership Letters section (each `<article>` gets its own id; the two cards link to those)
 
-- employee link status
-- enrollment + track + path + state + mentor
-- current week + current focus block
-- welcome status (Phase 0 module)
-- next module / next action
-- launch-scoped required completed / total
-- readiness (reuses `computeReadiness`)
-- shadow + check-in + sign-off signals
-- setup gaps (no employee, no enrollment, no curriculum)
+2. **Make each of the 7 module cards in the rail a real Start control**, instead of a static `<li>`:
+   - Render as a `<button>` (or an `<a href="#id">`) that scrolls the matching section into view (`scrollIntoView({ behavior: "smooth", block: "start" })`) and sets focus on it for accessibility.
+   - Card shows: number, title, type chip, minutes, status (Complete vs Start/Continue), and an explicit `Start` / `Review` affordance with `ArrowRight`.
+   - Use `data-testid="welcome-module-start-{id}"` so this stays testable.
 
-Exposes `startModule()` / `completeModule()` that call `upsertProgress` so learner actions show up in Training Management instantly.
+3. **Add a per-module Mark Complete button** on each of the 7 sections (and keep the existing "Mark welcome reviewed" behavior for the video):
+   - Button calls `markModuleComplete(m.id)` from `useOnboardingStatus`.
+   - Disabled / swapped to "Completed" when `status.modulesComplete.includes(m.id)`.
+   - Test id: `welcome-module-complete-{id}`.
 
-**Part 2 — Count scope fix**
+4. **Keep the page's existing inline content as the source of truth** — no new routes, no new pages. The user explicitly asked for the Start button to "bring you to the page"; the content for all 7 modules already lives on this page, so the correct behavior is in-page navigation to each module's section.
 
-Audit the seeded SD journey in `src/lib/training/academyData.ts` (currently 104+ items) and the DB curriculum. Two-part fix:
+5. **No change to permissions / role gating.** Super Admin (and every authenticated learner) already reaches `/training/welcome`. The user does not need to be linked to a learner enrollment to read the modules — only the launch-tracker progress requires that, which is a separate surface and out of scope for this fix.
 
-- Learner counters always scope to the **active launch path** (SD new-state), never global required.
-- Replace "X / 133 required" with: Welcome complete · Launch modules complete · Current week · Shadowing · Next action.
+## Out of scope (call out so we don't expand the work)
 
-I will need your decision on the consolidation (see questions below) before trimming.
+- No changes to the SD launch tracker, the day checklist, `OSTrainingDetail`, or `academyData`. The welcome modules are not academy `Training` records and should not be — they are universal Day-0 content that lives on `/training/welcome`.
+- No DB schema changes. Per-module completion already writes through `useOnboardingStatus`.
 
-**Part 3 — `/training` visual redesign (`OSTraining.tsx` + `SDJourneyView.tsx`)**
+## Verification
 
-Warm header with eyebrow + greeting + supporting copy + small status group (week / readiness / mentor + state). Welcome to Blossom anchor panel near the top. "Today's next step" + "Current focus" panel replacing the Continue Learning strip. Roadmap with 5 weeks as segmented cards — only the current week expanded; future weeks are quiet summaries. Module rows feel like training, not tickets. Right rail = launch progress + help + shadowing/check-ins; overdue is demoted to a calm "Needs attention" lower down.
-
-**Part 4 — `OSWelcomeToBlossom` polish**
-
-Keep video first. Add leadership letter section (Chad Kaufman CEO, Shira Lasry DOO — placeholder copy you can edit). Mission / Values / Team tiles already exist; tighten. Add a "Continue to State Director Journey" CTA back into the active role journey.
-
-**Part 5 — Training Management connection**
-
-Wire `TrainingControlRoom` / `TrainingManagementCenter` to the same shared model so active trainees + launch readiness + setup gaps reflect what the learner just did. Minimal surgical changes — no redesign here.
-
-**Part 6 — Tests**
-
-Update / add tests covering: shared model wiring, `upsertProgress` called on learner actions, launch-scoped counts, no global `2/133` totals on SD page, welcome reachable + revisitable, future weeks collapsed, Resource Library links correct, no `href="#"`.
-
-### Files
-
-- **new**: `src/lib/academy/learnerHome.ts`, `src/components/training/LearnerHeader.tsx`, `src/components/training/WelcomeAnchor.tsx`, `src/components/training/TodayNextStep.tsx`, `src/components/training/LaunchRoadmap.tsx`, `src/components/training/LearnerSideRail.tsx`, `src/test/learnerAcademyHome.test.ts`, `src/test/trainingRedesignPass2.test.tsx`
-- **edited**: `src/pages/os/OSTraining.tsx` (rewritten), `src/components/training/SDJourneyView.tsx` (or replaced by new roadmap), `src/pages/os/OSWelcomeToBlossom.tsx`, `src/components/training/TrainingControlRoom.tsx`, `src/lib/training/academyData.ts` (count scope only — no destructive change without your call)
-
-### Decisions I need from you before I start
-
-1. **Module count — 51 vs current 104?** The spec says "Corey expects ~51 modules." Do you want me to:
-   - (a) Trim the seeded SD launch path to ~51 modules and move the rest to a "Continued Learning" bucket, or
-   - (b) Keep all 104 in the curriculum but only show the launch-scoped subset in the learner counter (and label the rest "Beyond launch")?
-
-2. **Leadership letters** — for the Welcome page, should I write placeholder copy under Chad's and Shira's names that you'll edit later, or leave the section as a styled empty state ("A note from Chad — coming soon")?
-
-3. **DB vs seeded data** — if a State Director has no DB enrollment, should `/training` keep using the local `academyData.ts` seed as a preview (current behavior), or show the warm "Your journey is being set up" empty state always?
-
-Once you answer these I'll implement in one pass.
+- Manually click each of the 7 cards → the page scrolls to that module's section.
+- Click Mark Complete on each section → the matching rail card flips to "Complete" and the existing onboarding progress increments.
+- Add/extend `src/test/welcomeToBlossomFinalize.test.ts` (or the closest existing welcome test) to assert: each module card has `data-testid="welcome-module-start-{id}"`, each section has the matching `id`, and a Mark Complete control exists per module.
+- Run the full vitest suite — must stay green.
