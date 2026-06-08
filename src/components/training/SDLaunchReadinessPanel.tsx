@@ -220,7 +220,7 @@ export function SDLaunchReadinessPanel() {
       state: countState(contentAudit.knowledge, totalModules),
     },
     {
-      label: `${contentAudit.reflection}/${totalModules} modules have reflection prompts`,
+      label: `${contentAudit.reflection}/${totalModules} modules have reflection questions`,
       state: countState(contentAudit.reflection, totalModules),
     },
   ];
