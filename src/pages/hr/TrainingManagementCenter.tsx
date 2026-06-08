@@ -51,6 +51,7 @@ import {
   ArrowDown,
   Trash2,
   Library,
+  Mail,
 } from "lucide-react";
 import {
   trainingSops,
