@@ -384,6 +384,48 @@ export function getStateDirectorScreenshotById(id: string): SDScreenshotAsset | 
 /** Exposed for tests. */
 export const SD_PRIORITY_SCREENSHOT_MODULES: string[] = Object.keys(SD_SCREENSHOTS_BY_MODULE);
 
+/** Every registered State Director screenshot asset (read-only). */
+export const SD_ALL_SCREENSHOTS: ReadonlyArray<SDScreenshotAsset> = SD_SCREENSHOTS_LIST;
+
+/**
+ * Resolve a published+openable Resource Library item that represents the
+ * given screenshot asset. Matching uses the human-readable resourceTitle
+ * (preferred) and falls back to the screenshot's display title.
+ */
+export interface SDScreenshotResourceMatch {
+  resource: Resource;
+  url: string | null;
+  needsRedaction: boolean;
+  openable: boolean;
+}
+
+export function findScreenshotResource(
+  asset: SDScreenshotAsset,
+  resources: Resource[],
+): SDScreenshotResourceMatch | null {
+  const keys = new Set(
+    [asset.resourceTitle, asset.title]
+      .filter((t): t is string => !!t)
+      .map((t) => normalizeSopTitle(t)),
+  );
+  for (const r of resources) {
+    if (!keys.has(normalizeSopTitle(r.title))) continue;
+    if (r.status === "Archived") continue;
+    if (r.uploadStatus && r.uploadStatus !== "published") continue;
+    if (r.sensitivity === "excluded") continue;
+    const url =
+      (r.url && /^https?:\/\//i.test(r.url) ? r.url : null) ||
+      r.fileUrl ||
+      null;
+    const hasStorage = !!(r as Resource & { storagePath?: string }).storagePath;
+    const needsRedaction = r.uploadStatus === ("needs_redaction" as never);
+    if (url || hasStorage) {
+      return { resource: r, url, needsRedaction, openable: true };
+    }
+  }
+  return null;
+}
+
 /* ---------------- helpers ---------------- */
 
 function parseSdId(id: string): { week: number; day: number } | null {
