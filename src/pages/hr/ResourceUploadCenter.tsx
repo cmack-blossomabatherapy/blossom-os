@@ -44,6 +44,8 @@ type FilterTab =
   | "privacy_review"
   | "vault_excluded"
   | "needs_file_repair"
+  | "missing_sd_sops"
+  | "needs_title_cleanup"
   | "training_screenshots"
   | "sd_launch_sops";
 
@@ -160,6 +162,11 @@ export default function ResourceUploadCenter() {
             !r.fileUrl &&
             !r.storagePath
           );
+        case "needs_title_cleanup":
+          return sdMatch === "needs_title_cleanup";
+        case "missing_sd_sops":
+          // Handled by dedicated panel; nothing in main table.
+          return false;
       }
     });
   }, [rows, filter]);
@@ -183,14 +190,24 @@ export default function ResourceUploadCenter() {
     return () => window.removeEventListener("hashchange", scrollIfRequested);
   }, []);
 
+  const vaultExcludedCount = adminAll.filter(
+    (r) =>
+      r.uploadStatus === "vault_only" ||
+      r.uploadStatus === "excluded" ||
+      r.sensitivity === "excluded",
+  ).length;
+  const titleCleanupCount = coverage.needsTitleCleanupEntries.length;
+
   const tabs: [FilterTab, string][] = [
     ["all", `All (${adminAll.length})`],
     ["published", `Published (${publishedLearnerVisible})`],
     ["sd_launch_sops", `SD Launch SOPs (${coverage.published}/${coverage.total})`],
     ["sd_sops", `State Director SOPs (${coverage.published + coverage.needsFileRepair})`],
+    ["missing_sd_sops", `Missing required SD SOPs (${coverage.missing})`],
+    ["needs_title_cleanup", `Needs title cleanup (${titleCleanupCount})`],
     ["unmatched", `Unmatched uploads (${unmatchedCount})`],
     ["privacy_review", `Privacy review (${heldCount})`],
-    ["vault_excluded", `Vault / excluded`],
+    ["vault_excluded", `Vault / excluded (${vaultExcludedCount})`],
     ["needs_file_repair", `Needs file repair (${coverage.needsFileRepair})`],
     ["training_screenshots", `Training screenshots (${SD_ALL_SCREENSHOTS.length})`],
   ];
@@ -210,8 +227,8 @@ export default function ResourceUploadCenter() {
               Uploads here power Resource Library and Training Academy.
             </p>
             <p className="mt-2 max-w-3xl text-[12.5px] text-muted-foreground">
-              A resource must be published, visible to State Director, and matched to a required
-              SOP title before it counts as connected in Training Management.
+              Training Management only counts a State Director SOP as connected when it is
+              published, matched to the required SOP title, and has a working URL or storage file.
             </p>
           </div>
           <Button variant="outline" className="rounded-xl" asChild>
@@ -223,13 +240,16 @@ export default function ResourceUploadCenter() {
 
         <section
           data-testid="resource-upload-status-summary"
-          className="grid grid-cols-2 gap-3 md:grid-cols-5"
+          className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8"
         >
           <SummaryTile label="Total uploaded" value={adminAll.length} />
           <SummaryTile label="Published & learner-visible" value={publishedLearnerVisible} tone="emerald" />
-          <SummaryTile label="State Director matches" value={coverage.published} tone="emerald" />
-          <SummaryTile label="Unmatched uploads" value={unmatchedCount} tone="rose" />
+          <SummaryTile label="SD SOPs connected" value={coverage.published} tone="emerald" />
+          <SummaryTile label="SD SOPs missing" value={coverage.missing} tone="rose" />
+          <SummaryTile label="Needs file repair" value={coverage.needsFileRepair} tone="amber" />
           <SummaryTile label="Held / review" value={heldCount} tone="amber" />
+          <SummaryTile label="Vault / excluded" value={vaultExcludedCount} />
+          <SummaryTile label="Unmatched uploads" value={unmatchedCount} tone="rose" />
         </section>
 
         <section
@@ -264,6 +284,8 @@ export default function ResourceUploadCenter() {
             <TrainingScreenshotsPanel resources={adminAll} />
           ) : filter === "sd_launch_sops" ? (
             <SDLaunchSopsPanel coverage={coverage} />
+          ) : filter === "missing_sd_sops" ? (
+            <MissingSDSopsPanel coverage={coverage} />
           ) : (
           <div className="overflow-auto">
             <table className="w-full min-w-[820px] text-[12.5px]">
