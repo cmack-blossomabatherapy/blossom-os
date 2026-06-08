@@ -88,15 +88,8 @@ export default function OSResourceLibrary() {
 
   const roleLabelText = roleLabel(role);
 
-  const visibleList: Resource[] = useMemo(() => {
-    if (query) return searchResults;
-    if (activeCollectionResult) return activeCollectionResult.items;
-    if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
-    return [];
-  }, [query, activeCategory, searchResults, filteredScope, activeCollectionResult]);
-
-  // State Director Launch smart collection — only published / openable /
-  // role-visible items whose normalized title exactly matches the manifest.
+  // Smart collections — computed off the live, learner-safe library so role,
+  // state, upload status, and sensitivity rules are honored everywhere.
   const smartCollections: SmartCollectionResult[] = useMemo(
     () => collectSmartCollections(libraryResources, role, activeState),
     [libraryResources, role, activeState],
@@ -123,6 +116,13 @@ export default function OSResourceLibrary() {
   );
   const showSdLaunchCollection =
     isSdSopVisibleToRole(role) && !query && !activeCategory && !activeCollection;
+
+  const visibleList: Resource[] = useMemo(() => {
+    if (query) return searchResults;
+    if (activeCollectionResult) return activeCollectionResult.items;
+    if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
+    return [];
+  }, [query, activeCategory, searchResults, filteredScope, activeCollectionResult]);
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
