@@ -26,6 +26,7 @@ import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage
 import {
   computeSdScreenshotReadiness,
   computeSdWelcomeVideoState,
+  computeSdWelcomeVideoCheck,
 } from "@/lib/training/sdRuntimeReadiness";
 import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 import { getTrainings, SD_JOURNEY_MODULE_IDS } from "@/lib/training/academyData";
@@ -94,6 +95,7 @@ export function SDLaunchReadinessPanel() {
   // Live content audit across the SD journey.
   const sdTrainings = getTrainings().filter((t) => SD_JOURNEY_MODULE_IDS.includes(t.id));
   const totalModules = sdTrainings.length;
+  const welcomeVideoCheck = computeSdWelcomeVideoCheck(resources);
   const contentAudit = sdTrainings.reduce(
     (acc, t) => {
       if (t.whyItMatters) acc.why += 1;
@@ -207,9 +209,9 @@ export function SDLaunchReadinessPanel() {
 
   const assetItems: CheckItem[] = [
     {
-      label: "Welcome video linked",
-      state: "manual",
-      note: "Confirm a published Welcome video resource or URL before launch.",
+      label: welcomeVideoCheck.label,
+      state: welcomeVideoCheck.state,
+      note: welcomeVideoCheck.note,
     },
     {
       label: `${screenshotAudit.available}/${screenshotAudit.total} walkthrough screenshots available`,
