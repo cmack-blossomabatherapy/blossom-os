@@ -442,6 +442,53 @@ function EmploymentTab({ m }: { m: DirectoryEmployee }) {
               </PopoverContent>
             </Popover>
           </div>
+          <div id="employment-mentor" data-testid="employment-mentor" className="scroll-mt-24">
+            <EditableLabel label="Mentor" source={sourceBadge(false)} />
+            <Popover open={mentorOpen} onOpenChange={setMentorOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  disabled={!canEditEmployment}
+                  data-testid="mentor-trigger"
+                  className="mt-1 h-9 w-full justify-between font-normal"
+                >
+                  <span className="truncate">{mentor ? mentor.name : "Select mentor…"}</span>
+                  <ChevronsUpDown className="ml-2 size-3.5 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search employee…" />
+                  <CommandList>
+                    <CommandEmpty>No employees found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="__none__" onSelect={() => void saveMentor(null)}>
+                        <Check className={cn("mr-2 size-3.5", !mentorId ? "opacity-100" : "opacity-0")} />
+                        <span className="text-muted-foreground">No mentor</span>
+                      </CommandItem>
+                      {managerCandidates.map((d) => (
+                        <CommandItem
+                          key={d.uuid}
+                          value={`${d.name} ${d.title ?? ""}`}
+                          onSelect={() => void saveMentor(d.uuid!)}
+                        >
+                          <Check className={cn("mr-2 size-3.5", mentorId === d.uuid ? "opacity-100" : "opacity-0")} />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm">{d.name}</p>
+                            <p className="truncate text-[11px] text-muted-foreground">{d.title}</p>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Used by Training Academy for mentor help, shadowing sign-offs, and check-ins.
+            </p>
+          </div>
           <div id="employment-email" className="scroll-mt-24">
             <EditableLabel label="Email" source={sourceBadge(false)} />
             <Input value={email} disabled={!canEditEmployment} onChange={(e) => setEmail(e.target.value)} placeholder="name@blossomabatherapy.com" type="email" className="mt-1 h-9" />
