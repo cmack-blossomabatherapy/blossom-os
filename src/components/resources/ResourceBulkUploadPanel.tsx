@@ -23,6 +23,7 @@ import {
   uploadAndPublishResource,
   isUploadable,
 } from "@/lib/resources/resourceStorage";
+import { cleanResourceTitle, inferResourceCategoryFromTitle } from "@/lib/resources/resourceDisplay";
 
 const QUEUES: { id: ResourceUploadStatus | "all"; label: string; icon: any }[] = [
   { id: "ready_to_upload",  label: "Ready to publish",  icon: CheckCircle2 },
@@ -35,26 +36,14 @@ const QUEUES: { id: ResourceUploadStatus | "all"; label: string; icon: any }[] =
 ];
 
 function titleFromFile(name: string): string {
-  return name
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_\-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
+  // Strip admin/order prefixes and file extension so candidates start with a
+  // clean, learner-facing title (no "34 W2D4 ..." leakage).
+  const cleaned = cleanResourceTitle(name);
+  return cleaned.replace(/\s+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
 }
 
 function guessCategory(name: string): ResourceCategoryId {
-  const n = name.toLowerCase();
-  if (/handbook|policy|policies|pto|benefit/.test(n)) return "hr";
-  if (/sop\b/.test(n)) return "sops";
-  if (/template|letter|form/.test(n)) return "templates";
-  if (/workflow|process|pipeline/.test(n)) return "workflows";
-  if (/payer|insurance|vob|eob/.test(n)) return "insurance";
-  if (/centralreach|central reach|retell|phone|portal|tango|system/.test(n)) return "systems";
-  if (/training|academy|module|onboarding/.test(n)) return "training";
-  if (/playbook|leadership|state director|okr/.test(n)) return "leadership";
-  if (/script|message|email|sms|comm/.test(n)) return "communication";
-  return "operational";
+  return inferResourceCategoryFromTitle(name);
 }
 
 /**
