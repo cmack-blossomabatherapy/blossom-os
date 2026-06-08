@@ -2031,6 +2031,29 @@ function SDSopReadinessPanel() {
         ))}
       </div>
 
+      <div
+        data-testid="sd-sop-batch-summary"
+        className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+      >
+        {live.batches.map((b) => (
+          <div
+            key={b.batch}
+            data-testid={`sd-sop-batch-${b.batch}`}
+            className="rounded-xl border border-border/60 bg-background p-3"
+          >
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Batch {String(b.batch).padStart(2, "0")} · SOPs {String(b.start).padStart(2, "0")}-{String(b.end).padStart(2, "0")}
+            </div>
+            <div className="mt-1 text-[16px] font-semibold tracking-tight text-foreground">
+              {b.connected}/{b.total} connected
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              {b.missing} missing · {b.needsFileRepair} repair · {b.held} held
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {/* Missing from upload center */}
         <div
