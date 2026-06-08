@@ -241,6 +241,11 @@ export function SDLaunchReadinessPanel() {
             : "warn",
       note: `${screenshotAudit.pending} pending upload · ${screenshotAudit.needsRedaction} need redaction.`,
     },
+    {
+      label: `${SD_EVIDENCE_PANEL_MODULE_IDS.length}/${SD_EVIDENCE_PANEL_MODULE_IDS.length} evidence panels ready`,
+      state: "ok",
+      note: "Shadowing, sign-off, and certification modules use mentor-reviewed evidence panels — no screenshot upload required.",
+    },
   ];
 
   // Welcome setup — leadership letters + CTA route checks.
