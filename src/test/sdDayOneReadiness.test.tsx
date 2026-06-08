@@ -104,14 +104,14 @@ describe("Welcome to Blossom shell + reflection handoff", () => {
     expect(WELCOME).toContain("data-testid=\"leadership-reflection-panel\"");
     expect(WELCOME).toMatch(/Day-One evidence/);
     expect(WELCOME).toContain("welcome-reflection-continue");
-    expect(WELCOME).toContain('navigate("/training")');
+    expect(WELCOME).toMatch(/getNextStateDirectorTrainingPath/);
   });
 
   it("pending welcome video is non-blocking (calm pending panel + continue still wired)", () => {
     // Calm "being prepared" copy still present.
     expect(WELCOME).toMatch(/being prepared/i);
     // Continue navigation does not require the video.
-    expect(WELCOME).toContain('navigate("/training")');
+    expect(WELCOME).toMatch(/continueToStateDirectorJourney/);
     expect(WELCOME).not.toMatch(/disabled.*until.*video/i);
   });
 
