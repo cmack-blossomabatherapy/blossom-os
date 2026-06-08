@@ -505,6 +505,7 @@ function MemberRow({
   const [draftDashboard, setDraftDashboard] = useState(member.dashboard_access);
   const [draftNewState, setDraftNewState] = useState(member.new_state_employee);
   const [draftActive, setDraftActive] = useState(member.active);
+  const [draftMentor, setDraftMentor] = useState<string | null>(member.mentor_employee_id);
 
   // Re-sync draft when member changes (e.g. after refresh)
   useEffect(() => {
@@ -519,7 +520,8 @@ function MemberRow({
     setDraftDashboard(member.dashboard_access);
     setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
-  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.new_state_employee, member.active]);
+    setDraftMentor(member.mentor_employee_id);
+  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.new_state_employee, member.active, member.mentor_employee_id]);
 
   const handleSave = async () => {
     const ok = await onSaveInfo({
@@ -534,6 +536,7 @@ function MemberRow({
       dashboard_access: draftDashboard,
       new_state_employee: draftNewState,
       active: draftActive,
+      mentor_employee_id: draftMentor,
     });
     if (ok) setEditing(false);
   };
