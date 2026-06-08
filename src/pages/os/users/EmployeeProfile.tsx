@@ -643,10 +643,12 @@ type AcademyTrackRow = {
   description: string | null;
 };
 
+type AcademyEnrollmentStatus = "active" | "paused" | "completed" | "not_started" | "withdrawn";
+
 type AcademyEnrollmentRow = {
   id: string;
   track_id: string;
-  status: "active" | "paused" | "completed" | "archived";
+  status: AcademyEnrollmentStatus;
   start_date: string;
   path: "new_hire" | "existing_state" | "expansion_state" | "internal_promotion" | string;
   assigned_state: string | null;
@@ -712,7 +714,7 @@ function AcademyJourneyPanel({ employee }: { employee: DirectoryEmployee }) {
     void load();
   }
 
-  async function setStatus(id: string, status: "active" | "paused" | "completed" | "archived") {
+  async function setStatus(id: string, status: AcademyEnrollmentStatus) {
     const { error } = await supabase.from("academy_enrollments").update({ status }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(`Journey ${status}`);
