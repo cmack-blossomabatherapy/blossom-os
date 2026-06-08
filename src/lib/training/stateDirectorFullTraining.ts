@@ -641,41 +641,128 @@ export function getStateDirectorNoScreenshotDecision(
 
 /**
  * Resolve a published+openable Resource Library item that represents the
- * given screenshot asset. Matching uses the human-readable resourceTitle
- * (preferred) and falls back to the screenshot's display title.
+ * given screenshot asset. Matching is tolerant: admins can upload using
+ * the exact resourceTitle, a slugified file name, the module id, or a
+ * storage path containing the asset/module id.
  */
+export type SDScreenshotMatchKind =
+  | "title"
+  | "filename"
+  | "module_id"
+  | "asset_id";
+
 export interface SDScreenshotResourceMatch {
   resource: Resource;
   url: string | null;
   needsRedaction: boolean;
   openable: boolean;
+  matchedBy: SDScreenshotMatchKind;
+}
+
+function shotSlugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/i, "") // strip extension
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function shotBasename(p: string): string {
+  return (p.split(/[\\/]/).pop() ?? p).trim();
 }
 
 export function findScreenshotResource(
   asset: SDScreenshotAsset,
   resources: Resource[],
 ): SDScreenshotResourceMatch | null {
-  const keys = new Set(
-    [asset.resourceTitle, asset.title]
-      .filter((t): t is string => !!t)
-      .map((t) => normalizeSopTitle(t)),
-  );
+  const titleKeys = new Set<string>();
+  for (const t of [asset.resourceTitle, asset.title]) {
+    if (!t) continue;
+    titleKeys.add(normalizeSopTitle(t));
+    const slug = shotSlugify(t);
+    if (slug) titleKeys.add(slug);
+  }
+  const idSet = new Set<string>([asset.id, asset.moduleId].filter(Boolean));
+
   for (const r of resources) {
-    if (!keys.has(normalizeSopTitle(r.title))) continue;
     if (r.status === "Archived") continue;
     if (r.uploadStatus && r.uploadStatus !== "published") continue;
     if (r.sensitivity === "excluded") continue;
+
+    const anyR = r as Resource & {
+      fileName?: string;
+      file_name?: string;
+      name?: string;
+      metadata?: { fileName?: string; file_name?: string; name?: string };
+    };
+
+    let matchedBy: SDScreenshotMatchKind | null = null;
+
+    // 1) Title match (normalized or slugified)
+    const rTitleNorm = normalizeSopTitle(r.title);
+    const rTitleSlug = shotSlugify(r.title);
+    if (titleKeys.has(rTitleNorm) || (rTitleSlug && titleKeys.has(rTitleSlug))) {
+      matchedBy = "title";
+    }
+
+    // 2) File name / metadata / basename match against asset id / module id / title slug
+    if (!matchedBy) {
+      const candidates: string[] = [];
+      const pushIf = (v: unknown) => { if (typeof v === "string" && v) candidates.push(v); };
+      pushIf(anyR.fileName); pushIf(anyR.file_name); pushIf(anyR.name);
+      if (anyR.metadata) {
+        pushIf(anyR.metadata.fileName);
+        pushIf(anyR.metadata.file_name);
+        pushIf(anyR.metadata.name);
+      }
+      for (const p of [r.url, r.fileUrl, r.storagePath]) {
+        if (typeof p === "string" && p) candidates.push(shotBasename(p));
+      }
+      for (const c of candidates) {
+        const s = shotSlugify(c);
+        if (!s) continue;
+        if (s === asset.id) { matchedBy = "asset_id"; break; }
+        if (s === asset.moduleId) { matchedBy = "module_id"; break; }
+        if (titleKeys.has(s)) { matchedBy = "filename"; break; }
+      }
+    }
+
+    // 3) Any path segment equal to asset id or module id
+    if (!matchedBy) {
+      for (const p of [r.storagePath, r.url, r.fileUrl]) {
+        if (typeof p !== "string" || !p) continue;
+        for (const seg of p.split(/[\\/]/)) {
+          const s = shotSlugify(seg);
+          if (!s) continue;
+          if (s === asset.id) { matchedBy = "asset_id"; break; }
+          if (s === asset.moduleId) { matchedBy = "module_id"; break; }
+        }
+        if (matchedBy) break;
+      }
+    }
+
+    if (!matchedBy) continue;
+
     const url =
       (r.url && /^https?:\/\//i.test(r.url) ? r.url : null) ||
       r.fileUrl ||
       null;
-    const hasStorage = !!(r as Resource & { storagePath?: string }).storagePath;
+    const hasStorage = !!r.storagePath;
     const needsRedaction = r.uploadStatus === ("needs_redaction" as never);
     if (url || hasStorage) {
-      return { resource: r, url, needsRedaction, openable: true };
+      return { resource: r, url, needsRedaction, openable: true, matchedBy };
     }
   }
   return null;
+}
+
+/** Module ids that have a registered Week 1 walkthrough screenshot. */
+export const SD_W1_SCREENSHOT_MODULE_IDS: ReadonlyArray<string> =
+  SD_SCREENSHOTS_LIST.filter((s) => s.moduleId.startsWith("sd-w1d")).map((s) => s.moduleId);
+
+/** Returns true when the asset/module belongs to Week 1. */
+export function isWeek1Screenshot(asset: SDScreenshotAsset): boolean {
+  return asset.moduleId.startsWith("sd-w1d");
 }
 
 /* ---------------- helpers ---------------- */
