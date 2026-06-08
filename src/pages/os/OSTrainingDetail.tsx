@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useAcademy, getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
-  trainingQuiz, type TrainingSection, type TrainingResource, type Training,
+  markTrainingStarted, trainingQuiz, type TrainingSection, type TrainingResource, type Training,
 } from "@/lib/training/academyData";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -42,6 +42,7 @@ import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
+import { completeWelcomeTrainingEverywhere } from "@/lib/training/welcomeProgressBridge";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -730,6 +731,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
   async function handleStart() {
     if (!hasDb) {
+      markTrainingStarted(training.id);
       toast.success("Started locally — connect an enrollment to sync with leadership.");
       return;
     }
@@ -737,7 +739,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     const res = await startLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
     setBusy(null);
     if ((res as any)?.error) toast.error("Could not start module");
-    else { toast.success("Started — visible in Training Management"); await refresh(); }
+    else { markTrainingStarted(training.id); toast.success("Started — visible in Training Management"); await refresh(); }
   }
 
   async function handleComplete() {
@@ -746,6 +748,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
       return;
     }
     if (!hasDb) {
+      completeWelcomeTrainingEverywhere(training.id);
       toast.success("Marked complete locally — connect an enrollment to sync.");
       return;
     }
@@ -753,7 +756,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     const res = await completeLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
     setBusy(null);
     if ((res as any)?.error) toast.error("Could not complete module");
-    else { toast.success("Complete — synced to Training Management"); await refresh(); }
+    else { completeWelcomeTrainingEverywhere(training.id); toast.success("Complete — synced to Training Management"); await refresh(); }
   }
 
   async function handleSaveNotes() {
