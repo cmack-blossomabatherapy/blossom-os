@@ -641,9 +641,21 @@ const SD_OWNER = "State Director Program";
 const SD_DATE = "2026-05-26";
 
 /**
- * State Director Training Journey — 5-week framework.
- * Day-by-day placeholder structure. SOP / video / quiz content is intentionally
- * empty — modules are scaffolds to be filled in later.
+ * State Director Training Journey — 5-week framework (stable).
+ *
+ * The week/day/module structure below is the canonical SD launch journey
+ * (5 weeks · 25 days · 104 modules). It is intentionally a thin scaffold —
+ * actual module-level learning content lives in dedicated content files:
+ *
+ *   - src/lib/training/stateDirectorFullTraining.ts   (full content registry + curated overrides)
+ *   - src/lib/training/sdWeek1Content.ts              (curated Week 1 modules)
+ *   - src/lib/training/sdWeek23Content.ts             (curated Weeks 2 & 3 modules)
+ *   - src/lib/training/sdWeek45Content.ts             (curated Weeks 4 & 5 modules)
+ *   - src/lib/training/welcomeToBlossomContent.ts +
+ *     src/pages/os/OSWelcomeToBlossom.tsx             (Day 1 Welcome to Blossom)
+ *
+ * This file is no longer a placeholder — it is the authoritative SD journey
+ * topology that the curated content registries map into.
  */
 export interface SDDay { day: number; title: string; modules: string[]; }
 export interface SDWeek { week: number; title: string; goal: string; days: SDDay[]; }

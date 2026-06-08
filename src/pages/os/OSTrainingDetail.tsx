@@ -31,6 +31,7 @@ import {
   type SDFullContent, type SDKnowledgeQ,
   getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
   type SDScreenshotAsset, findScreenshotResource,
+  getStateDirectorNoScreenshotDecision,
 } from "@/lib/training/stateDirectorFullTraining";
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
@@ -615,6 +616,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     [training.id],
   );
 
+  const noScreenshotDecision = useMemo(
+    () => getStateDirectorNoScreenshotDecision(training.id),
+    [training.id],
+  );
+
   async function refresh() {
     if (!user?.id) return;
     try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
@@ -880,6 +886,40 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                   </li>
                 ))}
               </ol>
+            </div>
+          )}
+
+          {/* Evidence instead of screenshot — for intentional no-screenshot modules */}
+          {noScreenshotDecision && stepScreenshots.length === 0 && (
+            <div
+              data-testid="sd-evidence-instead-of-screenshot"
+              className="rounded-2xl border border-border/70 bg-card p-5"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Evidence instead of a screenshot
+                </h3>
+              </div>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/90">
+                This module uses written guidance and mentor evidence instead of a screenshot.
+              </p>
+              <dl className="mt-3 grid grid-cols-1 gap-2 text-[12.5px] sm:grid-cols-2">
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Why no screenshot
+                  </dt>
+                  <dd className="mt-1 text-foreground/90">{noScreenshotDecision.reason}</dd>
+                </div>
+                <div className="rounded-xl border border-border/60 bg-background p-3">
+                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    What you'll produce instead
+                  </dt>
+                  <dd className="mt-1 text-foreground/90">
+                    {noScreenshotDecision.replacementEvidence}
+                  </dd>
+                </div>
+              </dl>
             </div>
           )}
 
