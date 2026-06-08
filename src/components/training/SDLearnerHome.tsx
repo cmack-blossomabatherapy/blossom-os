@@ -148,11 +148,6 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
       hint: `${currentDayState.completed}/${currentDayState.total} done`,
     },
     {
-      label: "SOPs connected",
-      done: sopCoverage.total > 0 && sopCoverage.published === sopCoverage.total,
-      hint: `${sopCoverage.published}/${sopCoverage.total} live`,
-    },
-    {
       label: "Mentor check-in",
       done: learnerHome.checkinCount > 0,
       hint: learnerHome.mentor ? "Mentor assigned" : "Pending mentor",
