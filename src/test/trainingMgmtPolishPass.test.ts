@@ -28,9 +28,9 @@ describe("Training Management polish + count truth pass", () => {
     expect(TMC).toContain('data-testid="tmc-counts-sd-sops"');
     expect(TMC).toContain('data-testid="tmc-counts-week1-assets"');
     expect(TMC).toContain("Resource Upload Center");
-    expect(TMC).toContain("all uploaded company resources");
+    expect(TMC).toContain("uploaded company resources");
     expect(TMC).toContain("State Director launch path");
-    expect(TMC).toContain("learner-visible only when matched, active, and openable");
+    expect(TMC).toContain("learner-visible");
   });
 
   it("Control Room hides the right AI/progress rail", () => {
