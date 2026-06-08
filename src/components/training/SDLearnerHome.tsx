@@ -23,6 +23,7 @@ import {
   computeSdWelcomeVideoState,
 } from "@/lib/training/sdRuntimeReadiness";
 import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
+import { NeedHelpPanel } from "./NeedHelpPanel";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
@@ -562,26 +563,7 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
           </div>
         </div>
 
-        <div data-testid="sd-need-help" className="rounded-2xl border border-border/70 bg-card p-5">
-          <h3 className="text-[12.5px] font-semibold uppercase tracking-wider text-muted-foreground">Need help?</h3>
-          <p className="mt-1 text-[11.5px] text-muted-foreground">Nothing here has to be solved alone.</p>
-          <div className="mt-3 space-y-1 text-[12.5px]">
-            {[
-              { label: "Ask my mentor", icon: UsersIcon, to: "/messages" },
-              { label: "HR partner", icon: Heart, to: "/messages" },
-              { label: "Resource Library", icon: BookMarked, to: "/resource-library" },
-              { label: "Ask Blossom AI", icon: Sparkles, to: "/ai/assistant" },
-            ].map(({ label, icon: Icon, to }) => (
-              <Link key={label} to={to} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-foreground hover:bg-muted/50">
-                <span className="inline-flex items-center gap-2">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  {label}
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-              </Link>
-            ))}
-          </div>
-        </div>
+        <NeedHelpPanel learnerHome={learnerHome} learnerName={firstName} />
       </aside>
     </div>
   );
