@@ -21,7 +21,7 @@ const APP = fs.readFileSync("src/App.tsx", "utf8");
 describe("Welcome to Blossom — content seed", () => {
   it("exports all six required content blocks", () => {
     expect(WELCOME_TO_BLOSSOM_HERO.headline).toBe("Welcome to Blossom.");
-    expect(WELCOME_TO_BLOSSOM_MODULES.length).toBe(7);
+    expect(WELCOME_TO_BLOSSOM_MODULES.length).toBe(8);
     expect(WELCOME_CORE_VALUES.length).toBe(6);
     expect(WELCOME_BLOSSOM_FLOW.length).toBe(11);
     expect(WELCOME_LEADERSHIP_LETTERS.length).toBe(2);
@@ -55,8 +55,8 @@ describe("Welcome to Blossom — content seed", () => {
     expect(doo.pullQuote).toBe("The deeper skill is learning how to keep a state moving without creating panic.");
   });
 
-  it("WELCOME_MODULE_IDS contains 7 non-SOP module ids", () => {
-    expect(WELCOME_MODULE_IDS.length).toBe(7);
+  it("WELCOME_MODULE_IDS contains 8 non-SOP module ids", () => {
+    expect(WELCOME_MODULE_IDS.length).toBe(8);
     for (const id of WELCOME_MODULE_IDS) {
       expect(isWelcomeNonSopModule(id)).toBe(true);
     }
