@@ -32,6 +32,7 @@ import {
   findScreenshotResource,
   isScreenshotPiiSafe,
 } from "@/lib/training/stateDirectorFullTraining";
+import { computeSdScreenshotCoverage } from "@/lib/training/sdRuntimeReadiness";
 import { getTraining } from "@/lib/training/academyData";
 import { cn } from "@/lib/utils";
 
@@ -197,6 +198,7 @@ export default function ResourceUploadCenter() {
       r.sensitivity === "excluded",
   ).length;
   const titleCleanupCount = coverage.needsTitleCleanupEntries.length;
+  const week1Screenshots = computeSdScreenshotCoverage(adminAll).week1;
 
   const tabs: [FilterTab, string][] = [
     ["all", `All (${adminAll.length})`],
@@ -242,14 +244,22 @@ export default function ResourceUploadCenter() {
           data-testid="resource-upload-status-summary"
           className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8"
         >
-          <SummaryTile label="Total uploaded" value={adminAll.length} />
-          <SummaryTile label="Published & learner-visible" value={publishedLearnerVisible} tone="emerald" />
-          <SummaryTile label="SD SOPs connected" value={coverage.published} tone="emerald" />
+          <SummaryTile label="All company resources" value={adminAll.length} />
+          <SummaryTile label="Learner-visible published" value={publishedLearnerVisible} tone="emerald" />
+          <SummaryTile label="State Director SOPs connected" value={`${coverage.published}/${coverage.total}`} tone="emerald" />
+          <SummaryTile
+            label="Week 1 screenshots matched"
+            value={`${week1Screenshots.matched}/${week1Screenshots.total}`}
+            tone={week1Screenshots.missing === 0 ? "emerald" : "amber"}
+          />
+          <SummaryTile
+            label="Needs action"
+            value={coverage.missing + coverage.needsFileRepair + heldCount + unmatchedCount}
+            tone="rose"
+          />
           <SummaryTile label="SD SOPs missing" value={coverage.missing} tone="rose" />
-          <SummaryTile label="Needs file repair" value={coverage.needsFileRepair} tone="amber" />
           <SummaryTile label="Held / review" value={heldCount} tone="amber" />
           <SummaryTile label="Vault / excluded" value={vaultExcludedCount} />
-          <SummaryTile label="Unmatched uploads" value={unmatchedCount} tone="rose" />
         </section>
 
         <section
@@ -387,7 +397,7 @@ function SummaryTile({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "emerald" | "amber" | "rose";
 }) {
   const toneClass =

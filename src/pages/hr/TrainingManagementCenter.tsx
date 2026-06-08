@@ -88,6 +88,10 @@ import { SDDayOneAdminPanel } from "@/components/training/SDDayOneAdminPanel";
 import { WelcomeReflectionsAdminPanel } from "@/components/training/WelcomeReflectionsAdminPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
+import {
+  computeSdScreenshotCoverage,
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
 
 /* ------- Local view-model adapters (Academy → Management Center) ------- */
 
@@ -490,6 +494,7 @@ export default function TrainingManagementCenter() {
           {/* Content by nav */}
           {nav === "control-room" && (
             <div className="space-y-6" data-testid="training-control-room-wide">
+              <TrainingManagementCountsPanel />
               <section
                 data-testid="sd-launch-command"
                 aria-label="State Director Launch Command"
@@ -2304,6 +2309,135 @@ function SDSopReadinessPanel() {
               </p>
             )}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Compact counts dashboard for Training Management Control Room.
+ * Source of truth: useAdminResources + shared coverage helpers.
+ * Makes the difference between Resource Upload Center (all company resources)
+ * and Training Management (State Director launch-required assets) explicit.
+ */
+function TrainingManagementCountsPanel() {
+  const { resources, loading, error } = useAdminResources();
+  const sop = computeSdSopCoverageFromResources(resources);
+  const screenshots = computeSdScreenshotCoverage(resources);
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+
+  const totalUploaded = resources.length;
+  const learnerVisible = resources.filter(
+    (r) => r.uploadStatus === "published" && r.status !== "Archived",
+  ).length;
+  const heldReview = resources.filter(
+    (r) =>
+      r.uploadStatus === "privacy_review" ||
+      r.uploadStatus === "business_review" ||
+      r.uploadStatus === "needs_conversion",
+  ).length;
+  const vaultExcluded = resources.filter(
+    (r) =>
+      r.uploadStatus === "vault_only" ||
+      r.uploadStatus === "excluded" ||
+      r.sensitivity === "excluded",
+  ).length;
+
+  const Tile = ({ label, value, tone }: { label: string; value: number | string; tone?: string }) => (
+    <div className="rounded-xl border border-border/60 bg-background p-3">
+      <p className={cn("text-[20px] font-semibold tracking-tight", tone ?? "text-foreground")}>
+        {value}
+      </p>
+      <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+    </div>
+  );
+
+  return (
+    <section
+      data-testid="tmc-counts-panel"
+      aria-label="Resource & Asset Coverage"
+      className="space-y-5 rounded-2xl border border-border/70 bg-card p-5 md:p-6"
+    >
+      <header>
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          Training Management · Counts
+        </p>
+        <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+          Resource &amp; Asset Coverage
+        </h2>
+        <div
+          data-testid="tmc-counts-explanation"
+          className="mt-3 space-y-1 rounded-xl border border-teal-500/20 bg-teal-500/5 p-3 text-[12.5px] text-foreground/80"
+        >
+          <p>
+            <span className="font-medium text-foreground">Resource Upload Center</span> = all
+            uploaded company resources.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Training Management</span> = only
+            resources required for the State Director launch path.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">Published</span> means learner-visible
+            only when matched, active, and openable.
+          </p>
+        </div>
+        {error && (
+          <p className="mt-2 text-[11.5px] text-amber-700">Live resource sync unavailable.</p>
+        )}
+        {loading && !error && (
+          <p className="mt-2 text-[11.5px] text-muted-foreground">Loading live counts…</p>
+        )}
+      </header>
+
+      <div className="space-y-2" data-testid="tmc-counts-company-library">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Company library (all uploads)
+        </p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Tile label="Total uploaded" value={totalUploaded} />
+          <Tile label="Published & learner-visible" value={learnerVisible} tone="text-emerald-600" />
+          <Tile label="Held / review" value={heldReview} tone="text-amber-600" />
+          <Tile label="Vault / excluded" value={vaultExcluded} tone="text-muted-foreground" />
+        </div>
+      </div>
+
+      <div className="space-y-2" data-testid="tmc-counts-sd-sops">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          State Director SOPs (launch-required)
+        </p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <Tile label="Required" value={sop.total} />
+          <Tile label="Connected" value={sop.published} tone="text-emerald-600" />
+          <Tile label="Missing" value={sop.missing} tone="text-rose-600" />
+          <Tile label="Needs file repair" value={sop.needsFileRepair} tone="text-amber-600" />
+          <Tile label="Held review" value={sop.held} tone="text-amber-600" />
+        </div>
+      </div>
+
+      <div className="space-y-2" data-testid="tmc-counts-week1-assets">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Week 1 training assets
+        </p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <Tile
+            label="Screenshots matched"
+            value={`${screenshots.week1.matched}/${screenshots.week1.total}`}
+            tone="text-emerald-600"
+          />
+          <Tile
+            label="Screenshots missing"
+            value={screenshots.week1.missing}
+            tone={screenshots.week1.missing > 0 ? "text-rose-600" : "text-foreground"}
+          />
+          <Tile
+            label="Welcome video"
+            value={welcomeVideo.ok ? "Linked" : "Pending"}
+            tone={welcomeVideo.ok ? "text-emerald-600" : "text-amber-600"}
+          />
         </div>
       </div>
     </section>
