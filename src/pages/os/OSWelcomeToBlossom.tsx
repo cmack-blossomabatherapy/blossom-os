@@ -434,7 +434,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
-          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} />
+          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* CORE VALUES */}
@@ -463,7 +463,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
-          <ModuleCompleteAction moduleId="welcome-core-values" status={status} />
+          <ModuleCompleteAction moduleId="welcome-core-values" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* MEET THE TEAM */}
@@ -502,7 +502,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Write down your mentor, your first three department partners, and one question for each." />
           </div>
-          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} />
+          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* HOW BLOSSOM WORKS */}
@@ -548,7 +548,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share your drawn flow and three risk points with your mentor." />
           </div>
-          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} />
+          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* LEADERSHIP LETTERS */}
@@ -610,7 +610,7 @@ export default function OSWelcomeToBlossom() {
                   <div className="mt-5 border-t border-border/60 pt-4">
                     <p className="text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
                   </div>
-                  <ModuleCompleteAction moduleId={l.id} status={status} />
+                  <ModuleCompleteAction moduleId={l.id} status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
                 </div>
               </article>
             ))}
