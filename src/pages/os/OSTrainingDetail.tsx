@@ -1293,7 +1293,7 @@ function SdMappedSopCard({ moduleId }: { moduleId: string }) {
           Mapped SOP
         </h3>
       </div>
-      <p className="mt-2 text-[13.5px] font-medium text-foreground">{sopTitle}</p>
+      <p className="mt-2 text-[13.5px] font-medium text-foreground">{cleanSdTitle(sopTitle)}</p>
       {isOpenable ? (
         <button
           type="button"
