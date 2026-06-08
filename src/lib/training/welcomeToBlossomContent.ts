@@ -309,6 +309,109 @@ export const WELCOME_BLOSSOM_FLOW: WelcomeFlowStep[] = [
   { step: 11, text: "The State Director watches the health of the whole flow." },
 ];
 
+export const WELCOME_HIPAA_CONTENT: WelcomeHipaaContent = {
+  whatIsHipaa:
+    "HIPAA stands for the Health Insurance Portability and Accountability Act. It is a federal law passed in 1996 that, among other things, sets national standards for how Protected Health Information (PHI) is used, stored, shared, and safeguarded. At Blossom, HIPAA applies to every employee - clinical, operational, administrative, and leadership - because almost every workflow touches client information in some way.",
+  whyItMattersAtBlossom:
+    "Blossom is a HIPAA-covered entity. That means the federal Office for Civil Rights (OCR) at HHS can investigate Blossom for privacy violations, and that families have a legal right to expect their information is handled correctly. Beyond the law, HIPAA reflects something simpler: families trust us with sensitive details about their child. Protecting that trust is part of the work.",
+  phiDefinition: {
+    intro:
+      "PHI is any individually identifiable health information created, received, stored, or transmitted by Blossom. If a piece of information could identify a client AND is connected to their care, billing, insurance, or services - it is PHI.",
+    examples: [
+      "Client first or last name combined with any health detail.",
+      "Date of birth, address, phone number, or email.",
+      "Insurance ID, authorization numbers, or member numbers.",
+      "Diagnosis, treatment plan, session notes, or clinical assessments.",
+      "Appointment times, scheduling details, and attendance records.",
+      "Photos, videos, or audio recordings that include a client.",
+      "Anything in CentralReach, EMR exports, scheduling boards, or progress reports.",
+    ],
+  },
+  threeMainRules: [
+    {
+      title: "Privacy Rule",
+      body:
+        "Limits who can see PHI and how it can be used or disclosed. PHI may only be used or shared for treatment, payment, or healthcare operations - or with the client's written authorization. Translation: do not share client information outside of work, and only share inside Blossom with people who need it for their job.",
+    },
+    {
+      title: "Security Rule",
+      body:
+        "Requires safeguards for electronic PHI (ePHI). That means strong passwords, MFA, locked screens, encrypted email, no PHI in personal accounts (Gmail, personal phone notes, personal cloud drives), and no screenshots stored on personal devices.",
+    },
+    {
+      title: "Breach Notification Rule",
+      body:
+        "If PHI is exposed, lost, or sent to the wrong person, Blossom is legally required to investigate and, in many cases, notify the affected client, HHS, and sometimes the media. Reporting a possible mistake quickly is always better than hiding it - early reporting often prevents a breach from becoming reportable at all.",
+    },
+  ],
+  minimumNecessary:
+    "The Minimum Necessary Rule: only access, use, request, or share the smallest amount of PHI needed to do the task in front of you. If you do not need a piece of information to do your job, do not open it, do not screenshot it, and do not forward it.",
+  dailyRules: [
+    { rule: "Lock your screen", detail: "Every time you step away. Even for a minute. Even at home." },
+    { rule: "Use Blossom email and Blossom systems only", detail: "Never send PHI from a personal email account, personal phone, personal text messages, or personal cloud storage." },
+    { rule: "No PHI in chat tools outside approved Blossom systems", detail: "No PHI in personal iMessage, WhatsApp, Snapchat, social media DMs, or unapproved channels." },
+    { rule: "Verify before you send", detail: "Double-check the recipient on every email or message that includes a client. Auto-complete picks the wrong person more often than you think." },
+    { rule: "Talk about clients in private", detail: "Not in coffee shops, elevators, ride-shares, family dinners, or anywhere a stranger can overhear. Use initials when possible." },
+    { rule: "No client photos or videos on personal devices", detail: "Ever. Even cute ones. Even with parent permission verbally given. Written authorization and approved devices only." },
+    { rule: "Strong passwords + MFA", detail: "Never share your login. Never let a coworker use your account. Never write passwords on sticky notes." },
+    { rule: "Shred and dispose securely", detail: "Any printed PHI goes into a secure shred bin, never the regular trash or recycling." },
+    { rule: "Ask before you share", detail: "If you are not sure whether something can be shared, the answer is: ask your supervisor first. There is no penalty for asking." },
+  ],
+  breachExamples: [
+    "Emailing a client report to the wrong family.",
+    "Texting a client's name and appointment time from your personal phone.",
+    "Leaving your laptop unlocked in a coffee shop with CentralReach open.",
+    "Sharing a screenshot of a scheduling board in a group chat.",
+    "Discussing a specific client by name in a public place.",
+    "Sending PHI to your personal Gmail to 'work on it later.'",
+    "Losing a printed schedule that includes client names and times.",
+  ],
+  whatToDoIfMistake: [
+    "Tell your direct supervisor immediately - the same day, even if you are not sure it qualifies as a breach.",
+    "Notify HR (HR@blossomabatherapy.com) so the privacy review can begin.",
+    "Do not try to hide, delete, or 'fix it quietly.' Early reporting almost always reduces consequences.",
+    "Write down what happened, when, who was involved, and what information was exposed.",
+    "Cooperate fully with any follow-up review. The goal is to protect the client, not to assign blame.",
+  ],
+  resourceLinks: [
+    {
+      label: "HHS - HIPAA Basics for Providers (official training)",
+      url: "https://www.youtube.com/results?search_query=HHS+HIPAA+basics+for+providers+training",
+      source: "U.S. Department of Health and Human Services",
+      kind: "video",
+      description: "Official HHS Office for Civil Rights training videos - the most accurate source for what HIPAA actually requires.",
+    },
+    {
+      label: "HIPAA Privacy Rule explained in plain English",
+      url: "https://www.youtube.com/results?search_query=HIPAA+privacy+rule+explained+plain+english",
+      source: "YouTube",
+      kind: "video",
+      description: "Short, plain-language explainers covering PHI, the Privacy Rule, and everyday examples.",
+    },
+    {
+      label: "HIPAA training for healthcare employees",
+      url: "https://www.youtube.com/results?search_query=HIPAA+training+for+healthcare+employees",
+      source: "YouTube",
+      kind: "video",
+      description: "Employee-level training videos covering minimum necessary, daily safeguards, and breach reporting.",
+    },
+    {
+      label: "HHS.gov - HIPAA for Professionals (official)",
+      url: "https://www.hhs.gov/hipaa/for-professionals/index.html",
+      source: "HHS.gov",
+      kind: "reference",
+      description: "The federal hub for HIPAA rules, FAQs, and the official text of the Privacy, Security, and Breach Notification Rules.",
+    },
+    {
+      label: "HHS.gov - Summary of the HIPAA Privacy Rule",
+      url: "https://www.hhs.gov/hipaa/for-professionals/privacy/laws-regulations/index.html",
+      source: "HHS.gov",
+      kind: "reference",
+      description: "Plain-language summary of what the Privacy Rule covers and how it protects clients.",
+    },
+  ],
+};
+
 export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
   {
     id: "welcome-letter-chad",
