@@ -181,12 +181,13 @@ export function TeamAdminPanel() {
         .from("profiles")
         .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, new_state_employee, active"),
       supabase.from("user_roles").select("user_id, role"),
-      supabase.from("employees").select("id, user_id").not("user_id", "is", null),
+      (supabase.from("employees").select("id, user_id, mentor_id") as any).not("user_id", "is", null),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
     const roles = (rolesRes.data ?? []) as RoleRow[];
     const employeeLinks = (employeeLinksRes.data ?? []) as EmployeeLinkRow[];
     const employeeIdByUser = new Map(employeeLinks.map((row) => [row.user_id, row.id]));
+    const mentorIdByEmployee = new Map(employeeLinks.map((row) => [row.id, row.mentor_id ?? null]));
     const byUser = new Map<string, AppRole[]>();
     roles.forEach((r) => {
       const list = byUser.get(r.user_id) ?? [];
@@ -209,6 +210,10 @@ export function TeamAdminPanel() {
       dashboard_access: p.dashboard_access ?? "department",
       new_state_employee: !!p.new_state_employee,
       active: p.active ?? true,
+      mentor_employee_id: (() => {
+        const empId = employeeIdByUser.get(p.user_id);
+        return empId ? mentorIdByEmployee.get(empId) ?? null : null;
+      })(),
     }));
     combined.sort((a, b) => a.display_name.localeCompare(b.display_name));
     setMembers(combined);
