@@ -97,7 +97,7 @@ describe("SD launch readiness panel — welcome video row is computed, not hard-
     const assets = screen.getByTestId("sd-launch-assets");
     expect(within(assets).getByText("Welcome video linked")).toBeInTheDocument();
     // manual state copy
-    expect(within(assets).getByText(/Publish a Welcome video resource/i)).toBeInTheDocument();
+    expect(within(assets).getByText(/Confirm a published Welcome video resource/i)).toBeInTheDocument();
   });
 });
 
