@@ -31,6 +31,27 @@ export interface WelcomeModule {
   videoPending?: string;
 }
 
+export interface WelcomeResourceLink {
+  label: string;
+  url: string;
+  source: string;
+  /** "video" links are YouTube/recorded; "reference" links are written/official. */
+  kind: "video" | "reference";
+  description?: string;
+}
+
+export interface WelcomeHipaaContent {
+  whatIsHipaa: string;
+  whyItMattersAtBlossom: string;
+  phiDefinition: { intro: string; examples: string[] };
+  threeMainRules: { title: string; body: string }[];
+  minimumNecessary: string;
+  dailyRules: { rule: string; detail: string }[];
+  breachExamples: string[];
+  whatToDoIfMistake: string[];
+  resourceLinks: WelcomeResourceLink[];
+}
+
 export interface WelcomeValue {
   title: string;
   body: string;
