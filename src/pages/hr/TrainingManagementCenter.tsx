@@ -1176,7 +1176,7 @@ function OnboardingView() {
         </div>
         {(() => {
           const videoLoaded = welcome.modules.some((m) => m.kind === "video" && !!m.video?.url);
-          const letters = welcome.modules.filter((m) => m.kind === "leader").length;
+          const letters = welcome.modules.filter((m) => m.kind === "leader" || m.kind === "letter").length;
           return (
             <div
               data-testid="welcome-admin-status"

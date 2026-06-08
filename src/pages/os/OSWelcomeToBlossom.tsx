@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight, PlayCircle, Sparkles, Heart, Compass, Users, ArrowLeft,
   BookOpen, MessageSquare, Quote, Video, Target, ListChecks, CheckCircle2,
-  Building2, Workflow, Flag, ShieldCheck, AlertTriangle, ExternalLink, Lock,
+  Building2, Workflow, Flag,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,10 @@ import {
   WELCOME_CORE_VALUES,
   WELCOME_BLOSSOM_FLOW,
   WELCOME_LEADERSHIP_LETTERS,
-  WELCOME_HIPAA_CONTENT,
   WELCOME_COMPLETION,
-  WELCOME_HIPAA_QUIZ,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
 import { WelcomeReflectionForm } from "@/components/training/WelcomeReflectionForm";
-import { WelcomeHipaaQuiz } from "@/components/training/WelcomeHipaaQuiz";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
@@ -89,7 +86,6 @@ export default function OSWelcomeToBlossom() {
 
   const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
-  const hipaaQuizPassed = status.modulesComplete.includes(WELCOME_HIPAA_QUIZ.moduleKey);
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("welcome-video-from-blossom");
@@ -480,183 +476,6 @@ export default function OSWelcomeToBlossom() {
           </div>
         </section>
 
-        {/* HIPAA & PRIVACY BASICS */}
-        <section
-          id="hipaa"
-          data-testid="welcome-hipaa-section"
-          className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8"
-        >
-          <SectionHeader
-            icon={ShieldCheck}
-            eyebrow="HIPAA & Privacy Basics"
-            title="How we protect every family that trusts Blossom"
-            description="HIPAA is the federal law that protects health information. At Blossom, almost every system you touch contains client information - so this is everyone's job, on day one."
-          />
-
-          {/* What is HIPAA */}
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">What HIPAA is</p>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground">{WELCOME_HIPAA_CONTENT.whatIsHipaa}</p>
-            </div>
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-primary">Why it matters at Blossom</p>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground">{WELCOME_HIPAA_CONTENT.whyItMattersAtBlossom}</p>
-            </div>
-          </div>
-
-          {/* PHI */}
-          <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-5">
-            <p className="text-[13.5px] font-semibold text-foreground">What counts as Protected Health Information (PHI)</p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{WELCOME_HIPAA_CONTENT.phiDefinition.intro}</p>
-            <ul className="mt-3 grid gap-1.5 text-[13px] leading-relaxed text-foreground sm:grid-cols-2">
-              {WELCOME_HIPAA_CONTENT.phiDefinition.examples.map((ex) => (
-                <li key={ex} className="flex gap-2">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/60" />
-                  <span>{ex}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Three Rules */}
-          <div className="mt-5">
-            <p className="text-[13.5px] font-semibold text-foreground">The three rules of HIPAA</p>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              {WELCOME_HIPAA_CONTENT.threeMainRules.map((r) => (
-                <div key={r.title} className="rounded-2xl border border-border/60 bg-muted/20 p-5">
-                  <p className="text-[13.5px] font-semibold text-foreground">{r.title}</p>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{r.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Minimum necessary */}
-          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-            <div className="flex items-start gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Lock className="h-4.5 w-4.5" />
-              </div>
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-primary">Minimum necessary</p>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-foreground">{WELCOME_HIPAA_CONTENT.minimumNecessary}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Daily Rules */}
-          <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-5">
-            <p className="text-[13.5px] font-semibold text-foreground">Your everyday HIPAA rules at Blossom</p>
-            <ul className="mt-3 space-y-2.5">
-              {WELCOME_HIPAA_CONTENT.dailyRules.map((r) => (
-                <li key={r.rule} className="flex items-start gap-3 rounded-xl border border-border/50 bg-card px-4 py-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">{r.rule}</p>
-                    <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted-foreground">{r.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Breach examples */}
-          <div className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
-            <div className="flex items-start gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/10 text-destructive">
-                <AlertTriangle className="h-4.5 w-4.5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[13.5px] font-semibold text-foreground">Real examples of HIPAA breaches</p>
-                <p className="mt-1 text-[12.5px] text-muted-foreground">Every one of these is a real situation that has resulted in federal fines or terminations across the healthcare industry.</p>
-                <ul className="mt-3 grid gap-1.5 text-[13px] leading-relaxed text-foreground sm:grid-cols-2">
-                  {WELCOME_HIPAA_CONTENT.breachExamples.map((ex) => (
-                    <li key={ex} className="flex gap-2">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-destructive/70" />
-                      <span>{ex}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* What to do if mistake */}
-          <div className="mt-5 rounded-2xl border border-border/60 bg-muted/30 p-5">
-            <p className="text-[13.5px] font-semibold text-foreground">If you make a mistake (or think you might have)</p>
-            <ol className="mt-3 space-y-2">
-              {WELCOME_HIPAA_CONTENT.whatToDoIfMistake.map((step, i) => (
-                <li key={step} className="flex items-start gap-3 rounded-xl border border-border/50 bg-card px-4 py-3">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">{i + 1}</span>
-                  <span className="text-[13px] leading-relaxed text-foreground">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Resource links */}
-          <div
-            data-testid="welcome-hipaa-resources"
-            className="mt-5 rounded-2xl border border-border/60 bg-card p-5"
-          >
-            <div className="flex items-start gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Video className="h-4.5 w-4.5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[13.5px] font-semibold text-foreground">HIPAA training videos and official resources</p>
-                <p className="mt-1 text-[12.5px] text-muted-foreground">Watch at least one. Bookmark the rest. The HHS links are the official source of truth.</p>
-              </div>
-            </div>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {WELCOME_HIPAA_CONTENT.resourceLinks.map((link) => (
-                <li key={link.url}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 transition hover:border-primary/40 hover:bg-primary/[0.04]"
-                  >
-                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-background text-primary">
-                      {link.kind === "video" ? <PlayCircle className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-                        <span className="truncate">{link.label}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      </p>
-                      <p className="mt-0.5 text-[11.5px] uppercase tracking-wider text-muted-foreground">{link.source}</p>
-                      {link.description && (
-                        <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">{link.description}</p>
-                      )}
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* HIPAA knowledge check — gates progress to launch path */}
-          <WelcomeHipaaQuiz passed={hipaaQuizPassed} />
-
-          {/* Guide blocks */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <GuideBlock icon={ListChecks} label="What to do" items={[
-              "Read every section above - do not skim.",
-              "Watch at least one HIPAA training video.",
-              "Write down two examples of PHI you will see in your role.",
-              "Confirm with your supervisor who to contact if you suspect a privacy mistake.",
-            ]} />
-            <GuideBlock icon={CheckCircle2} label="Completion evidence"
-              body="Tell your mentor in one sentence what HIPAA protects, name two examples of PHI you handle, and confirm you watched a HIPAA training video." />
-            <GuideBlock icon={MessageSquare} label="Reflection"
-              body="Walk through one routine task in your role and identify every place PHI shows up. Where is it easiest to make a mistake, and how will you prevent it?" />
-            <GuideBlock icon={Heart} label="The one rule that matters most"
-              body="If you're not sure whether to share something, ask first. There is no penalty for asking - only for guessing wrong." />
-          </div>
-        </section>
-
         {/* LEADERSHIP LETTERS */}
         <section className="space-y-4" data-testid="leadership-letters-section">
           <div>
@@ -750,8 +569,6 @@ export default function OSWelcomeToBlossom() {
                     className="rounded-full"
                     onClick={() => navigate("/training")}
                     data-testid="welcome-reflection-continue"
-                    disabled={!hipaaQuizPassed}
-                    title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check above to continue" : undefined}
                   >
                     Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
@@ -764,14 +581,6 @@ export default function OSWelcomeToBlossom() {
                     {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
                   </Button>
                 </div>
-                {!hipaaQuizPassed && (
-                  <p
-                    data-testid="welcome-hipaa-gate-note"
-                    className="mt-2 inline-flex items-center gap-1 text-[12px] text-rose-600"
-                  >
-                    <Lock className="h-3 w-3" /> Pass the HIPAA knowledge check above to unlock this step.
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -800,8 +609,6 @@ export default function OSWelcomeToBlossom() {
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={() => navigate("/training")}
                 data-testid="welcome-continue-launch-path"
-                disabled={!hipaaQuizPassed}
-                title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check to continue" : undefined}
               >
                 Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -814,11 +621,6 @@ export default function OSWelcomeToBlossom() {
               >
                 <BookOpen className="h-3.5 w-3.5" /> Open Resource Library
               </Button>
-              {!hipaaQuizPassed && (
-                <p className="text-[12px] text-rose-600">
-                  Pass the HIPAA knowledge check above to unlock the launch path.
-                </p>
-              )}
             </div>
           </div>
         </section>
