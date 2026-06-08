@@ -235,6 +235,90 @@ export function SDLaunchReadinessPanel() {
   );
 }
 
+/**
+ * Screenshot + welcome-video asset visibility for Training Management.
+ * Shows how many priority SD screenshots are actually available vs pending,
+ * and whether the welcome video is wired to a published resource.
+ */
+export function SDScreenshotReadinessPanel() {
+  const { resources } = useAdminResources();
+  const screenshots = computeSdScreenshotReadiness();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+
+  const tiles = [
+    { label: "Registered screenshots", value: String(screenshots.totalRegistered) },
+    {
+      label: "Available",
+      value: String(screenshots.available),
+      tone: screenshots.available > 0 ? "text-emerald-600" : "text-muted-foreground",
+    },
+    {
+      label: "Pending upload",
+      value: String(screenshots.pending),
+      tone: screenshots.pending === 0 ? "text-muted-foreground" : "text-amber-600",
+    },
+    {
+      label: "Needs redaction",
+      value: String(screenshots.needsRedaction),
+      tone: screenshots.needsRedaction === 0 ? "text-muted-foreground" : "text-rose-600",
+    },
+    {
+      label: "Welcome video",
+      value: welcomeVideo.ok ? "Linked" : "Pending",
+      tone: welcomeVideo.ok ? "text-emerald-600" : "text-amber-600",
+    },
+  ];
+
+  return (
+    <section
+      data-testid="sd-screenshot-readiness-panel"
+      className="rounded-2xl border border-border/70 bg-card p-6"
+    >
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <ImageIcon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            Training Management · Visual assets
+          </p>
+          <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+            Screenshots &amp; Welcome Video
+          </h2>
+          <p className="mt-1.5 max-w-3xl text-[13px] text-muted-foreground">
+            The walkthroughs render calm pending callouts while real screenshots are uploaded.
+            PII safety checks block training-safe screenshots from showing identifiers.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {tiles.map((t) => (
+          <div
+            key={t.label}
+            className="rounded-xl border border-border/60 bg-background p-3"
+          >
+            <p className={cn("text-[20px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
+              {t.value}
+            </p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              {t.label}
+            </p>
+          </div>
+        ))}
+      </div>
+      {!welcomeVideo.ok && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[12px] text-amber-900">
+          <VideoIcon className="mt-0.5 h-3.5 w-3.5" />
+          <span>
+            Upload an MP4 titled <strong>Welcome Video from Blossom</strong> in Resource Upload Center
+            to wire the welcome page automatically. No code change required.
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function SDDayOneAdminGuide() {
   const steps = [
     "Confirm employee + auth user record exists in HR.",
