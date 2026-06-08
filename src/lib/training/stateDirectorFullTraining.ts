@@ -19,6 +19,8 @@ import { SD_SOPS_BY_WEEK } from "./academyData";
 import { SD_W1_FULL_CONTENT } from "./sdWeek1Content";
 import { SD_W23_FULL_CONTENT } from "./sdWeek23Content";
 import { SD_W45_FULL_CONTENT } from "./sdWeek45Content";
+import type { Resource } from "@/lib/resources/resourceData";
+import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
 
 export interface SDWalkStep {
   action: string;
@@ -75,6 +77,10 @@ export interface SDScreenshotAsset {
   resourceStatus: "available" | "pending_upload" | "needs_redaction";
   sensitivity: "training_safe" | "internal_only" | "needs_redaction";
   callouts?: { label: string; description: string }[];
+  /** Human-readable resource title an admin would use when uploading the image. */
+  resourceTitle?: string;
+  /** Optional storage path for storage-backed images. */
+  storagePath?: string;
 }
 
 /**
@@ -126,6 +132,7 @@ function mkShot(
     resourceStatus: "pending_upload",
     sensitivity: "training_safe",
     callouts,
+    resourceTitle: `State Director Walkthrough — ${title}`,
   };
 }
 
