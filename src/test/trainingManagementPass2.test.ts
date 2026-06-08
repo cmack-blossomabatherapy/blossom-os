@@ -62,41 +62,31 @@ describe("Pass 2 — Control Room Assign action", () => {
   });
 });
 
-describe("Pass 2 — Assign modal contents", () => {
-  it("includes trainee input", () => {
-    expect(MODAL).toMatch(/Trainee/i);
-  });
-  it("includes training path selector backed by journeys", () => {
+describe("Pass 2 — Assign modal contents (real persistence)", () => {
+  it("sources training paths from academy_tracks", () => {
     expect(MODAL).toMatch(/Training path/);
-    expect(MODAL).toMatch(/journeys\.map/);
+    expect(MODAL).toMatch(/from\("academy_tracks"\)/);
   });
-  it("includes mentor and state fields", () => {
-    expect(MODAL).toMatch(/Mentor/);
-    expect(MODAL).toMatch(/State/);
+  it("exposes Employee / Department / State / Role scope chips", () => {
+    expect(MODAL).toMatch(/assign-scope-chips/);
+    expect(MODAL).toMatch(/assign-scope-\$\{c\.key\}/);
+    expect(MODAL).toMatch(/key: "employee"/);
+    expect(MODAL).toMatch(/key: "department"/);
+    expect(MODAL).toMatch(/key: "state"/);
+    expect(MODAL).toMatch(/key: "role"/);
   });
-  it("includes start date input", () => {
-    expect(MODAL).toMatch(/Start date/i);
-    expect(MODAL).toMatch(/type="date"/);
+  it("uses a searchable employee picker — no free-text trainee/mentor inputs", () => {
+    expect(MODAL).toMatch(/assign-employee-search/);
+    expect(MODAL).not.toMatch(/placeholder="Search or enter employee name"/);
+    expect(MODAL).not.toMatch(/placeholder="Mentor name"/);
   });
-  it("surfaces setup warnings before assignment", () => {
-    expect(MODAL).toMatch(/Setup warnings/);
-    expect(MODAL).toMatch(/data-testid="setup-warnings"/);
-    expect(MODAL).toMatch(/employee\/auth-user link missing/);
-    expect(MODAL).toMatch(/No mentor assigned/);
-    expect(MODAL).toMatch(/No state assigned/);
-    expect(MODAL).toMatch(/welcome asset/);
-    expect(MODAL).toMatch(/SOP\/resource link/);
+  it("persists to academy_enrollments on confirm", () => {
+    expect(MODAL).toMatch(/from\("academy_enrollments"\)/);
+    expect(MODAL).toMatch(/\.insert\(/);
+    expect(MODAL).toMatch(/data-testid="assign-confirm"/);
   });
-  it("renders a confirmation / next-step state", () => {
-    expect(MODAL).toMatch(/Confirm assignment/);
-    expect(MODAL).toMatch(/assign-confirmation/);
-    expect(MODAL).toMatch(/Next step/);
-  });
-  it("is mock-safe — pending integration label, no DB writes", () => {
-    expect(MODAL).toMatch(/Pending integration/i);
-    expect(MODAL).not.toMatch(/supabase\.from\(/);
-    expect(MODAL).not.toMatch(/\.insert\(/);
-    expect(MODAL).not.toMatch(/\.upsert\(/);
+  it("warns when targets are not linked to a Blossom login", () => {
+    expect(MODAL).toMatch(/not linked to a Blossom login/i);
   });
 });
 
