@@ -10205,6 +10205,39 @@ export type Database = {
           },
         ]
       }
+      training_reflections: {
+        Row: {
+          answer: string
+          context: string
+          created_at: string
+          id: string
+          question_key: string
+          question_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer?: string
+          context: string
+          created_at?: string
+          id?: string
+          question_key: string
+          question_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          context?: string
+          created_at?: string
+          id?: string
+          question_key?: string
+          question_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_track_courses: {
         Row: {
           course_id: string
