@@ -6,6 +6,7 @@ import {
   WELCOME_TO_BLOSSOM_PHASE_ID,
   WELCOME_LEADERSHIP_LETTERS,
   isWelcomeNonSopModule,
+  WELCOME_HIPAA_CONTENT,
 } from "@/lib/training/welcomeToBlossomContent";
 import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 
@@ -15,6 +16,7 @@ const REQUIRED_TITLES = [
   "Core Values",
   "Meet the Team",
   "How Blossom Works",
+  "HIPAA & Privacy Basics",
   "Welcome Letter from Chad",
   "Welcome Letter from Shira",
 ];
@@ -28,8 +30,8 @@ const TOUCHED_FILES = [
 ];
 
 describe("Welcome to Blossom - finalized 7 universal modules", () => {
-  it("has exactly 7 modules in the canonical order", () => {
-    expect(WELCOME_TO_BLOSSOM_MODULES.length).toBe(7);
+  it("has exactly 8 modules in the canonical order (HIPAA added before letters)", () => {
+    expect(WELCOME_TO_BLOSSOM_MODULES.length).toBe(8);
     expect(WELCOME_TO_BLOSSOM_MODULE_TITLES).toEqual(REQUIRED_TITLES);
   });
 
@@ -78,12 +80,12 @@ describe("Welcome to Blossom - finalized 7 universal modules", () => {
   });
 });
 
-describe("Onboarding journey - welcome phase mirrors the 7 universal modules", () => {
+describe("Onboarding journey - welcome phase mirrors the universal modules", () => {
   const welcome = ONBOARDING_PHASES.find((p) => p.id === "welcome")!;
 
-  it("welcome phase has exactly 7 modules", () => {
+  it("welcome phase has exactly 8 modules", () => {
     expect(welcome).toBeTruthy();
-    expect(welcome.modules.length).toBe(7);
+    expect(welcome.modules.length).toBe(8);
   });
 
   it("module keys align with canonical welcome ids", () => {
@@ -93,6 +95,7 @@ describe("Onboarding journey - welcome phase mirrors the 7 universal modules", (
       "welcome-core-values",
       "welcome-meet-the-team",
       "welcome-how-blossom-works",
+      "welcome-hipaa-basics",
       "welcome-letter-chad",
       "welcome-letter-shira",
     ];
@@ -123,8 +126,52 @@ describe("Onboarding journey - welcome phase mirrors the 7 universal modules", (
 
   it("removed HIPAA & Compliance and Employee Expectations from the welcome phase", () => {
     const titles = welcome.modules.map((m) => m.title);
+    // The old generic "HIPAA & Compliance" module is gone; replaced by the
+    // detailed "HIPAA & Privacy Basics" module placed before the letters.
     expect(titles).not.toContain("HIPAA & Compliance");
     expect(titles).not.toContain("Employee Expectations");
+    expect(titles).toContain("HIPAA & Privacy Basics");
+    const hipaaIdx = titles.indexOf("HIPAA & Privacy Basics");
+    const chadIdx = titles.indexOf("Welcome Letter from Chad");
+    expect(hipaaIdx).toBeGreaterThan(-1);
+    expect(chadIdx).toBeGreaterThan(hipaaIdx);
+  });
+});
+
+describe("HIPAA & Privacy Basics - content depth + resource links", () => {
+  it("has all the structured content fields filled in", () => {
+    expect(WELCOME_HIPAA_CONTENT.whatIsHipaa).toMatch(/Health Insurance Portability and Accountability Act/i);
+    expect(WELCOME_HIPAA_CONTENT.whyItMattersAtBlossom).toMatch(/HIPAA-covered entity/i);
+    expect(WELCOME_HIPAA_CONTENT.phiDefinition.examples.length).toBeGreaterThanOrEqual(5);
+    expect(WELCOME_HIPAA_CONTENT.threeMainRules.map((r) => r.title)).toEqual([
+      "Privacy Rule",
+      "Security Rule",
+      "Breach Notification Rule",
+    ]);
+    expect(WELCOME_HIPAA_CONTENT.minimumNecessary).toMatch(/Minimum Necessary/);
+    expect(WELCOME_HIPAA_CONTENT.dailyRules.length).toBeGreaterThanOrEqual(8);
+    expect(WELCOME_HIPAA_CONTENT.breachExamples.length).toBeGreaterThanOrEqual(5);
+    expect(WELCOME_HIPAA_CONTENT.whatToDoIfMistake.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("includes at least 3 video resource links and at least 1 official HHS reference", () => {
+    const videos = WELCOME_HIPAA_CONTENT.resourceLinks.filter((l) => l.kind === "video");
+    const refs = WELCOME_HIPAA_CONTENT.resourceLinks.filter((l) => l.kind === "reference");
+    expect(videos.length).toBeGreaterThanOrEqual(3);
+    expect(refs.length).toBeGreaterThanOrEqual(1);
+    for (const v of videos) {
+      expect(v.url).toMatch(/youtube\.com/);
+    }
+    for (const r of refs) {
+      expect(r.url).toMatch(/hhs\.gov/);
+    }
+  });
+
+  it("learner page renders the HIPAA section and resource block", () => {
+    const PAGE = require("node:fs").readFileSync("src/pages/os/OSWelcomeToBlossom.tsx", "utf8");
+    expect(PAGE).toMatch(/welcome-hipaa-section/);
+    expect(PAGE).toMatch(/welcome-hipaa-resources/);
+    expect(PAGE).toMatch(/WELCOME_HIPAA_CONTENT/);
   });
 });
 
