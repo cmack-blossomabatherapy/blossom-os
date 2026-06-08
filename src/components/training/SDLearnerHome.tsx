@@ -179,7 +179,7 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 md:w-[340px] shrink-0">
-              <HeaderStat label="Current" value={`W${currentDayState.week} · D${currentDayState.day}`} />
+              <HeaderStat label="Current" value={`Week ${currentDayState.week} · Day ${currentDayState.day}`} />
               <HeaderStat label="Launch" value={`${launchPct}%`} />
               <HeaderStat label="Readiness" value={readinessPct !== null ? `${readinessPct}%` : "Building"} />
               <HeaderStat label="Mentor" value={mentorLabel} />
@@ -324,7 +324,7 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
               </h2>
             </div>
             <span className="hidden text-[11px] text-muted-foreground sm:inline">
-              W{currentDayState.week} · D{currentDayState.day}
+              Week {currentDayState.week} · Day {currentDayState.day}
             </span>
           </div>
           <div data-testid="sd-today">

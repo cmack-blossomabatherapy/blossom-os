@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin,
+  Search, Plus, Upload, BookOpen, Star, ArrowRight, Pin, Download,
   X, Settings2, ExternalLink, GraduationCap, Filter, FileText, Workflow,
   FileType2, MessageSquare, Cpu, PlayCircle, Link2, ClipboardList,
 } from "lucide-react";
@@ -872,6 +872,29 @@ function ResourceDrawerBody({
               }}
             >
               <ExternalLink className="mr-2 h-4 w-4" /> Open resource
+            </Button>
+          )}
+          {!pending && (
+            <Button
+              variant="outline"
+              data-testid="resource-download-button"
+              onClick={async () => {
+                const url = await resolveResourceOpenUrl(resource);
+                if (!url) {
+                  toast.error("This resource could not be downloaded. Try again or contact an admin.");
+                  return;
+                }
+                const safeName = resource.title.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "");
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = safeName;
+                a.rel = "noopener noreferrer";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" /> Download resource
             </Button>
           )}
           <Button variant="outline" onClick={onFavorite}>

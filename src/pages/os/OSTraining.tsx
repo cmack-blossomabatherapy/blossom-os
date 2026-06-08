@@ -24,6 +24,7 @@ import {
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "@/components/training/SDJourneyView";
 import { SDLearnerHome } from "@/components/training/SDLearnerHome";
+import { cleanSdTitle, sdWeekDayChip } from "@/lib/training/sdDisplayTitle";
 import {
   loadLearnerHome,
   startLearnerModule,
@@ -406,7 +407,10 @@ export default function OSTraining() {
                           </span>
                         )}
                       </div>
-                      <h3 className="mt-3 truncate text-[14px] font-semibold leading-snug">{training.title}</h3>
+                      <h3 className="mt-3 truncate text-[14px] font-semibold leading-snug">{cleanSdTitle(training.title) || training.title}</h3>
+                      {sdWeekDayChip(training.id) && (
+                        <p className="mt-0.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">{sdWeekDayChip(training.id)}</p>
+                      )}
                       <p className="mt-0.5 text-[11.5px] text-muted-foreground capitalize">{training.department}</p>
                       <div className="mt-auto space-y-1.5 pt-3">
                         <Progress value={progress.progressPercent} className="h-1" />
@@ -448,7 +452,7 @@ export default function OSTraining() {
                 <Progress value={mastery.pct} className="h-1.5" />
                 <div className="mt-1.5 flex items-center justify-between text-[11.5px] text-muted-foreground">
                   <span>{mastery.done} of {mastery.total} modules complete</span>
-                  {nextModule && <span>Next up · <span className="text-foreground font-medium">{nextModule.title}</span></span>}
+                  {nextModule && <span>Next up · <span className="text-foreground font-medium">{cleanSdTitle(nextModule.title) || nextModule.title}</span></span>}
                 </div>
               </div>
 
@@ -496,7 +500,7 @@ export default function OSTraining() {
                         {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium">{m.title}</p>
+                        <p className="truncate text-[13px] font-medium">{cleanSdTitle(m.title) || m.title}</p>
                         <p className="truncate text-[11px] text-muted-foreground">{m.type} · {m.estimatedMinutes} min</p>
                       </div>
                       <span className="text-[11px] text-muted-foreground tabular-nums">
