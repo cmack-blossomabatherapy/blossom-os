@@ -257,6 +257,7 @@ export default function ResourceUploadCenter() {
 
         <section
           data-testid="resource-upload-admin-table"
+          id="sd-launch-sops"
           className="overflow-hidden rounded-2xl border border-border/60 bg-card"
         >
           {filter === "training_screenshots" ? (
