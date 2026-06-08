@@ -23,9 +23,11 @@ import {
   WELCOME_LEADERSHIP_LETTERS,
   WELCOME_HIPAA_CONTENT,
   WELCOME_COMPLETION,
+  WELCOME_HIPAA_QUIZ,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
 import { WelcomeReflectionForm } from "@/components/training/WelcomeReflectionForm";
+import { WelcomeHipaaQuiz } from "@/components/training/WelcomeHipaaQuiz";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
@@ -87,6 +89,7 @@ export default function OSWelcomeToBlossom() {
 
   const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
+  const hipaaQuizPassed = status.modulesComplete.includes(WELCOME_HIPAA_QUIZ.moduleKey);
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("welcome-video-from-blossom");
@@ -634,6 +637,9 @@ export default function OSWelcomeToBlossom() {
             </ul>
           </div>
 
+          {/* HIPAA knowledge check — gates progress to launch path */}
+          <WelcomeHipaaQuiz passed={hipaaQuizPassed} />
+
           {/* Guide blocks */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <GuideBlock icon={ListChecks} label="What to do" items={[
@@ -744,6 +750,8 @@ export default function OSWelcomeToBlossom() {
                     className="rounded-full"
                     onClick={() => navigate("/training")}
                     data-testid="welcome-reflection-continue"
+                    disabled={!hipaaQuizPassed}
+                    title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check above to continue" : undefined}
                   >
                     Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
@@ -756,6 +764,14 @@ export default function OSWelcomeToBlossom() {
                     {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
                   </Button>
                 </div>
+                {!hipaaQuizPassed && (
+                  <p
+                    data-testid="welcome-hipaa-gate-note"
+                    className="mt-2 inline-flex items-center gap-1 text-[12px] text-rose-600"
+                  >
+                    <Lock className="h-3 w-3" /> Pass the HIPAA knowledge check above to unlock this step.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -784,6 +800,8 @@ export default function OSWelcomeToBlossom() {
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={() => navigate("/training")}
                 data-testid="welcome-continue-launch-path"
+                disabled={!hipaaQuizPassed}
+                title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check to continue" : undefined}
               >
                 Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -796,6 +814,11 @@ export default function OSWelcomeToBlossom() {
               >
                 <BookOpen className="h-3.5 w-3.5" /> Open Resource Library
               </Button>
+              {!hipaaQuizPassed && (
+                <p className="text-[12px] text-rose-600">
+                  Pass the HIPAA knowledge check above to unlock the launch path.
+                </p>
+              )}
             </div>
           </div>
         </section>
