@@ -202,26 +202,38 @@ export default function OSWelcomeToBlossom() {
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
             {WELCOME_TO_BLOSSOM_MODULES.map((m, idx) => {
               const done = status.modulesComplete.includes(m.id);
+              const cta = done ? "Review" : "Start";
               return (
-                <li
-                  key={m.id}
-                  data-testid={`welcome-module-${m.id}`}
-                  data-module-type={m.moduleType}
-                  className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5"
-                >
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                    {idx + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-foreground">{m.title}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <Badge variant="outline" className="h-4 px-1.5 text-[10px] capitalize">
-                        {m.moduleType}
-                      </Badge>
-                      <span>~{m.estimatedMinutes} min</span>
-                      {done && <span className="text-primary">- Complete</span>}
-                    </p>
-                  </div>
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToWelcomeSection(m.id)}
+                    data-testid={`welcome-module-start-${m.id}`}
+                    data-module-id={m.id}
+                    data-module-type={m.moduleType}
+                    className="group flex w-full items-start gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40"
+                  >
+                    <span
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
+                        done ? "bg-emerald-100 text-emerald-700" : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-foreground">{m.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                        <Badge variant="outline" className="h-4 px-1.5 text-[10px] capitalize">
+                          {m.moduleType}
+                        </Badge>
+                        <span>~{m.estimatedMinutes} min</span>
+                        {done && <span className="text-emerald-700">· Complete</span>}
+                      </p>
+                    </div>
+                    <span className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                      {cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </button>
                 </li>
               );
             })}
