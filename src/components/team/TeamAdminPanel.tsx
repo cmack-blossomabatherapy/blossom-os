@@ -250,6 +250,17 @@ export function TeamAdminPanel() {
     return [...recent, ...remaining].slice(0, 3);
   }, [filtered, query, recentVisits, showFullList]);
 
+  const mentorOptions = useMemo(() => {
+    return members
+      .filter((m) => m.employee_id)
+      .map((m) => ({
+        employee_id: m.employee_id as string,
+        label: m.display_name,
+        job_title: m.job_title || "",
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [members]);
+
   const trackVisited = (userId: string) => {
     setRecentVisits((current) => {
       const next = [{ id: userId, visitedAt: new Date().toISOString() }, ...current.filter((visit) => visit.id !== userId)].slice(0, 12);
