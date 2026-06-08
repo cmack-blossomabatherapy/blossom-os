@@ -29,7 +29,7 @@ describe("SD Launch readiness panel — honest, data-driven states", () => {
   });
 
   it("includes Welcome setup group with letters and CTA route", () => {
-    expect(PANEL).toContain('data-testid="sd-launch-welcome"');
+    expect(PANEL).toMatch(/testid:\s*"sd-launch-welcome"/);
     expect(PANEL).toMatch(/Chad Kaufman welcome letter/);
     expect(PANEL).toMatch(/Shira Lasry welcome letter/);
     expect(PANEL).toMatch(/Welcome CTA routes back to \/training/);
@@ -43,7 +43,7 @@ describe("SD Launch readiness panel — honest, data-driven states", () => {
 
 describe("Training Management Control Room — launch command wrapper", () => {
   it("wraps the readiness panels in a State Director Launch Command section", () => {
-    expect(TMC).toContain('data-testid="sd-launch-command"');
+    expect(TMC).toMatch(/data-testid="sd-launch-command"/);
     expect(TMC).toMatch(/State Director Launch Command/);
   });
 });
