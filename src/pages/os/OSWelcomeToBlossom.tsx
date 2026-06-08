@@ -750,6 +750,8 @@ export default function OSWelcomeToBlossom() {
                     className="rounded-full"
                     onClick={() => navigate("/training")}
                     data-testid="welcome-reflection-continue"
+                    disabled={!hipaaQuizPassed}
+                    title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check above to continue" : undefined}
                   >
                     Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
@@ -762,6 +764,14 @@ export default function OSWelcomeToBlossom() {
                     {videoDone ? "Marked reviewed" : "Mark welcome reviewed"}
                   </Button>
                 </div>
+                {!hipaaQuizPassed && (
+                  <p
+                    data-testid="welcome-hipaa-gate-note"
+                    className="mt-2 inline-flex items-center gap-1 text-[12px] text-rose-600"
+                  >
+                    <Lock className="h-3 w-3" /> Pass the HIPAA knowledge check above to unlock this step.
+                  </p>
+                )}
               </div>
             </div>
           </div>
