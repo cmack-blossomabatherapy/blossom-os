@@ -24,11 +24,16 @@ import { useAdminResources } from "@/hooks/useAdminResources";
 import { cn } from "@/lib/utils";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 import {
-  computeSdContentReadiness,
   computeSdScreenshotReadiness,
   computeSdWelcomeVideoState,
 } from "@/lib/training/sdRuntimeReadiness";
 import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import { getTrainings, SD_JOURNEY_MODULE_IDS } from "@/lib/training/academyData";
+import {
+  getStateDirectorFullContent,
+  getStateDirectorScreenshots,
+  isScreenshotPiiSafe,
+} from "@/lib/training/stateDirectorFullTraining";
 
 type CheckState = "ok" | "manual" | "warn";
 
@@ -83,11 +88,43 @@ function CheckList({ group }: { group: CheckGroup }) {
 export function SDLaunchReadinessPanel() {
   const { resources } = useAdminResources();
   const coverage = computeSdSopCoverageFromResources(resources);
-  const content = computeSdContentReadiness();
-  const screenshots = computeSdScreenshotReadiness();
-  const welcomeVideo = computeSdWelcomeVideoState(resources);
   const allManifestPublished =
     coverage.total === SD_SOP_MANIFEST.length && coverage.published === coverage.total;
+
+  // Live content audit across the SD journey.
+  const sdTrainings = getTrainings().filter((t) => SD_JOURNEY_MODULE_IDS.includes(t.id));
+  const totalModules = sdTrainings.length;
+  const contentAudit = sdTrainings.reduce(
+    (acc, t) => {
+      if (t.whyItMatters) acc.why += 1;
+      if (t.whatToDo) acc.what += 1;
+      if (t.completionEvidence) acc.evidence += 1;
+      if (t.reflectionPrompt) acc.reflection += 1;
+      const full = getStateDirectorFullContent(t);
+      if (full) acc.full += 1;
+      if (full && full.knowledgeCheck && full.knowledgeCheck.length >= 2) acc.knowledge += 1;
+      return acc;
+    },
+    { why: 0, what: 0, evidence: 0, reflection: 0, full: 0, knowledge: 0 },
+  );
+
+  // Live screenshot audit across all SD modules (not just priority set).
+  const screenshotAudit = sdTrainings.reduce(
+    (acc, t) => {
+      for (const asset of getStateDirectorScreenshots(t.id)) {
+        acc.total += 1;
+        const piiSafe = isScreenshotPiiSafe(asset);
+        if (asset.resourceStatus === "available" && piiSafe) acc.available += 1;
+        else if (asset.resourceStatus === "needs_redaction" || !piiSafe) acc.needsRedaction += 1;
+        else acc.pending += 1;
+      }
+      return acc;
+    },
+    { total: 0, available: 0, pending: 0, needsRedaction: 0 },
+  );
+
+  const countState = (n: number, total: number): CheckState =>
+    total === 0 ? "manual" : n === total ? "ok" : "warn";
 
   // Resource state: derived from live coverage.
   const resourceItems: CheckItem[] = [
@@ -138,68 +175,126 @@ export function SDLaunchReadinessPanel() {
   ];
 
   const contentItems: CheckItem[] = [
-    { label: "Welcome to Blossom ready", state: "ok" },
     {
-      label: `Week 1 content complete (${content.complete}/${content.total} SD modules verified)`,
-      state: content.ok ? "ok" : "warn",
-      note: content.ok
-        ? undefined
-        : `${content.missing.length} module(s) missing required fields.`,
+      label: `${totalModules} State Director modules registered`,
+      state: totalModules > 0 ? "ok" : "manual",
     },
     {
-      label: "Weeks 2–5 content complete",
-      state: content.ok ? "ok" : "warn",
+      label: `${contentAudit.why}/${totalModules} modules have why-it-matters guidance`,
+      state: countState(contentAudit.why, totalModules),
     },
     {
-      label: "Knowledge checks present on every SD module",
-      state: content.ok ? "ok" : "warn",
-    },
-    { label: "Reflection prompts present", state: "ok" },
-    { label: "Shadowing modules present", state: "ok" },
-    { label: "Final readiness modules present", state: "ok" },
-    {
-      label: welcomeVideo.ok ? "Welcome video resource linked" : "Welcome video pending upload",
-      state: welcomeVideo.ok ? "ok" : "manual",
-      note: welcomeVideo.ok
-        ? undefined
-        : "Upload an MP4 titled 'Welcome Video from Blossom' in Resource Upload Center.",
+      label: `${contentAudit.what}/${totalModules} modules have what-to-do steps`,
+      state: countState(contentAudit.what, totalModules),
     },
     {
-      label: `Screenshot assets available (${screenshots.available}/${screenshots.totalRegistered})`,
-      state: screenshots.ok
-        ? "ok"
-        : screenshots.needsRedaction > 0
-          ? "warn"
-          : "manual",
-      note:
-        screenshots.pending > 0 || screenshots.needsRedaction > 0
-          ? `${screenshots.pending} pending · ${screenshots.needsRedaction} held for redaction.`
-          : undefined,
+      label: `${contentAudit.evidence}/${totalModules} modules have completion evidence`,
+      state: countState(contentAudit.evidence, totalModules),
+    },
+    {
+      label: `${contentAudit.full}/${totalModules} modules have full SD content`,
+      state: countState(contentAudit.full, totalModules),
+    },
+    {
+      label: `${contentAudit.knowledge}/${totalModules} modules have knowledge checks`,
+      state: countState(contentAudit.knowledge, totalModules),
+    },
+    {
+      label: `${contentAudit.reflection}/${totalModules} modules have reflection prompts`,
+      state: countState(contentAudit.reflection, totalModules),
+    },
+  ];
+
+  const assetItems: CheckItem[] = [
+    {
+      label: "Welcome video linked",
+      state: "manual",
+      note: "Confirm a published Welcome video resource or URL before launch.",
+    },
+    {
+      label: `${screenshotAudit.available}/${screenshotAudit.total} walkthrough screenshots available`,
+      state:
+        screenshotAudit.total === 0
+          ? "manual"
+          : screenshotAudit.available === screenshotAudit.total &&
+              screenshotAudit.needsRedaction === 0
+            ? "ok"
+            : "warn",
+      note: `${screenshotAudit.pending} pending upload · ${screenshotAudit.needsRedaction} need redaction.`,
     },
   ];
 
   const trackingItems: CheckItem[] = [
-    { label: "Start / complete sync working", state: "ok" },
-    { label: "Reflection sync working", state: "ok" },
-    { label: "Knowledge check score sync working", state: "ok" },
-    { label: "Mentor sign-off visible on shadow modules", state: "ok" },
-    { label: "Leadership dashboard visible", state: "ok" },
-    { label: "Progress appears in Training Management", state: "ok" },
+    {
+      label: "Start / complete sync working",
+      state: "manual",
+      note: "Verify with a test learner account — start one module and confirm progress in Training Management.",
+    },
+    {
+      label: "Reflection sync working",
+      state: "manual",
+      note: "Submit a reflection as a test learner and confirm it appears in admin.",
+    },
+    {
+      label: "Knowledge check score sync working",
+      state: "manual",
+      note: "Take one knowledge check and confirm the score is recorded.",
+    },
+    {
+      label: "Mentor sign-off visible on shadow modules",
+      state: "manual",
+      note: "Open a shadow module and confirm the mentor sign-off block renders.",
+    },
+    {
+      label: "Leadership dashboard visible",
+      state: "manual",
+      note: "Confirm leadership can see learner progress for their state.",
+    },
+    {
+      label: "Progress appears in Training Management",
+      state: "manual",
+      note: "Refresh Training Management after a learner action and confirm the count updates.",
+    },
   ];
 
   const designItems: CheckItem[] = [
-    { label: "Training home visually polished", state: "ok" },
-    { label: "Welcome page visually polished", state: "ok" },
-    { label: "Module detail visually polished", state: "ok" },
-    { label: "No legacy menu / placeholder feel", state: "ok" },
-    { label: "No broken links or broken image placeholders", state: "ok" },
-    { label: "No harsh ‘missing’ language for learners", state: "ok" },
+    {
+      label: "Training home visually polished",
+      state: "manual",
+      note: "Confirm desktop and mobile renders on /training.",
+    },
+    {
+      label: "Welcome page visually polished",
+      state: "manual",
+      note: "Open /training/welcome and walk every section.",
+    },
+    {
+      label: "Module detail visually polished",
+      state: "manual",
+      note: "Open one mapped SOP module and one screenshot card.",
+    },
+    {
+      label: "No legacy menu / placeholder feel",
+      state: "manual",
+      note: "Scan the learner pages for any old placeholder copy.",
+    },
+    {
+      label: "No broken links or broken image placeholders",
+      state: "manual",
+      note: "Click through Week 1 Day 1 modules end-to-end.",
+    },
+    {
+      label: "No harsh missing language for learners",
+      state: "manual",
+      note: "Pending states should read calm, not red.",
+    },
   ];
 
   const groups: CheckGroup[] = [
     { title: "Learner setup", testid: "sd-launch-learner", items: learnerItems },
     { title: "Content setup", testid: "sd-launch-content", items: contentItems },
     { title: "Resource setup", testid: "sd-launch-resources", items: resourceItems },
+    { title: "Asset setup", testid: "sd-launch-assets", items: assetItems },
     { title: "Tracking setup", testid: "sd-launch-tracking", items: trackingItems },
     { title: "Design setup", testid: "sd-launch-design", items: designItems },
   ];
