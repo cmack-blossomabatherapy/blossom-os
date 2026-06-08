@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 // possible (Auth workspace, Risk Center, Parent Training 97156, Training journey).
 // =============================================================================
 
-type ResourceType = "SOP" | "Workflow" | "Guide" | "Template" | "Tango" | "Video" | "Checklist" | "FAQ";
+type ResourceType = "SOP" | "Workflow" | "Guide" | "Template" | "Video" | "Checklist" | "FAQ";
 type Category =
   | "SOPs & Core Workflows"
   | "PR & Supervision Tracking"
