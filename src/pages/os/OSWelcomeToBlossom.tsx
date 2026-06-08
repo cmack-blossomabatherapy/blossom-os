@@ -510,7 +510,11 @@ export default function OSWelcomeToBlossom() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {leaders.map((l) => (
-              <article key={l.name} className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+              <article
+                key={l.name}
+                id={l.id}
+                className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm scroll-mt-24"
+              >
                 {/* Card header */}
                 <div className="border-b border-border/60 bg-muted/30 px-6 py-5">
                   <div className="flex items-center gap-3">
@@ -547,6 +551,7 @@ export default function OSWelcomeToBlossom() {
                   <div className="mt-5 border-t border-border/60 pt-4">
                     <p className="text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
                   </div>
+                  <ModuleCompleteAction moduleId={l.id} status={status} />
                 </div>
               </article>
             ))}
