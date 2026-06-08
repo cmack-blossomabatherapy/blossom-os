@@ -65,7 +65,10 @@ describe("Training Management Pass 1 — Control Room sections", () => {
   }
 
   it("Control Room is mounted in Training Management Center", () => {
-    expect(TMC).toContain("TrainingControlRoom");
+    expect(TMC).toContain("ControlRoomLaunchReadinessSection");
+    expect(TMC).toContain("ControlRoomResourceAssetCoverageSection");
+    expect(TMC).toContain("tmc-launch-readiness-section");
+    expect(TMC).toContain("tmc-resource-asset-coverage-section");
     expect(TMC).toMatch(/control-room/);
   });
 
