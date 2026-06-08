@@ -425,30 +425,88 @@ export default function OSWelcomeToBlossom() {
         </section>
 
         {/* LEADERSHIP LETTERS */}
-        <section className="space-y-3">
+        <section className="space-y-4" data-testid="leadership-letters-section">
           <div>
-            <h2 className="text-[18px] font-semibold tracking-tight text-foreground">A note from leadership</h2>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">Two short letters worth reading once.</p>
+            <h2 className="text-[18px] font-semibold tracking-tight text-foreground">A welcome from leadership</h2>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+              Start here before the systems and SOPs. These notes set the tone for how Blossom leads, communicates, and follows through.
+            </p>
           </div>
+
+          {/* Intro strip */}
+          <div className="rounded-2xl border border-border/60 bg-muted/30 p-5">
+            <p className="text-[13px] leading-relaxed text-foreground">
+              Before you begin the State Director launch path, take a moment to hear directly from leadership. The systems matter, but the standard behind the systems matters more: families deserve clarity, teams deserve support, and leaders are expected to follow through.
+            </p>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             {leaders.map((l) => (
-              <article key={l.name} className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-                <Quote className="absolute right-5 top-5 h-5 w-5 text-primary/30" aria-hidden />
-                <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-[14px] font-semibold text-primary">
-                    {l.initial}
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-foreground">{l.displayTitle}</p>
-                    <p className="text-[12px] text-muted-foreground">{l.subtitle}</p>
+              <article key={l.name} className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+                {/* Card header */}
+                <div className="border-b border-border/60 bg-muted/30 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-11 w-11 place-items-center rounded-full bg-primary/10 text-[15px] font-semibold text-primary">
+                      {l.initials}
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-foreground">{l.displayTitle}</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <p className="text-[12px] text-muted-foreground">{l.name} · {l.role}</p>
+                        <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary">
+                          Leadership note
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">
-                  {l.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+
+                {/* Body */}
+                <div className="px-6 py-5">
+                  <div className="space-y-3 text-[13.5px] leading-relaxed text-muted-foreground">
+                    {l.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                  </div>
+
+                  {/* Pull quote */}
+                  <div className="mt-5 rounded-xl border-l-2 border-primary/40 bg-primary/5 p-4">
+                    <Quote className="mb-2 h-4 w-4 text-primary/40" aria-hidden />
+                    <p className="text-[13.5px] font-medium italic leading-relaxed text-foreground">
+                      {l.pullQuote}
+                    </p>
+                  </div>
+
+                  {/* Signature */}
+                  <div className="mt-5 border-t border-border/60 pt-4">
+                    <p className="text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
+                  </div>
                 </div>
-                <p className="mt-4 text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
               </article>
             ))}
+          </div>
+
+          {/* Reflection panel */}
+          <div
+            data-testid="leadership-reflection-panel"
+            className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Before you continue</p>
+                <h3 className="mt-0.5 text-[16px] font-semibold tracking-tight text-foreground">Bring one sentence forward</h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                  Write one sentence from these letters that you want to carry into your first 30 days as a State Director.
+                </p>
+                <div className="mt-4 rounded-xl border border-border/60 bg-muted/30 p-4">
+                  <p className="text-[13px] leading-relaxed text-foreground">
+                    <span className="font-medium text-foreground">Completion evidence:</span>{' '}
+                    Bring that sentence to your first mentor check-in.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
