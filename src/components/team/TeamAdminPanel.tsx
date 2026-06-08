@@ -466,10 +466,11 @@ function MemberRow({
   roleActivity,
   saving,
   isCurrentUser,
+  mentorOptions,
 }: {
   member: Member;
   onToggleRole: (role: AppRole) => void;
-  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean }) => Promise<boolean>;
+  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean; mentor_employee_id: string | null }) => Promise<boolean>;
   onSendWelcome: () => void;
   onSendPasswordReset: () => void;
   onVisited: () => void;
@@ -477,6 +478,7 @@ function MemberRow({
   roleActivity: RoleActivity | null;
   saving: boolean;
   isCurrentUser: boolean;
+  mentorOptions: { employee_id: string; label: string; job_title: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
