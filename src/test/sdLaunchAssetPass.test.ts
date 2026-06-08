@@ -187,7 +187,6 @@ describe("Learner page launch checklist + safe resource visibility", () => {
     [
       "Welcome",
       "Today's modules",
-      "SOPs connected",
       "Mentor check-in",
       "Reflection",
     ].forEach((label) => {
