@@ -158,8 +158,8 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
     },
     {
       label: "Reflection",
-      done: learnerHome.reflectionCount > 0,
-      hint: learnerHome.reflectionCount > 0 ? "Captured" : "Add one tonight",
+      done: currentDayState.completed > 0,
+      hint: currentDayState.completed > 0 ? "Captured today" : "Add one tonight",
     },
   ];
 
