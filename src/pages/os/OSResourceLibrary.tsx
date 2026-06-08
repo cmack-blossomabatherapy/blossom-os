@@ -59,6 +59,8 @@ export default function OSResourceLibrary() {
   const [activeCategory, setActiveCategory] = useState<ResourceCategoryId | null>(null);
   const [selected, setSelected] = useState<Resource | null>(null);
   const [typeFilter, setTypeFilter] = useState<Resource["type"] | null>(null);
+  const [activeCollection, setActiveCollection] =
+    useState<SmartCollectionId | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [reqTitle, setReqTitle] = useState("");
   const [reqType, setReqType] = useState("");
