@@ -80,6 +80,31 @@ export interface ParsedCsv {
 }
 
 export async function parseReferralsCsv(file: File): Promise<ParsedCsv> {
+  const name = file.name.toLowerCase();
+  const isExcel =
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls") ||
+    file.type.includes("spreadsheetml") ||
+    file.type.includes("ms-excel");
+
+  if (isExcel) {
+    const XLSX = await import("xlsx");
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+      defval: "",
+      raw: false,
+    });
+    const headers = json.length ? Object.keys(json[0]) : [];
+    const rows = json.map((r) => {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(r)) out[k] = v == null ? "" : String(v);
+      return out;
+    });
+    return { headers, rows: rows.map((r, i) => mapHubspotRow(r, i + 2)) };
+  }
+
   const text = await file.text();
   const { headers, rows } = parseCSVText(text);
   return {

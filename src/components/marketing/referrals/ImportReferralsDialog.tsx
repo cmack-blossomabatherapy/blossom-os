@@ -68,11 +68,11 @@ export function ImportReferralsDialog({ open, onOpenChange, onComplete }: { open
           <div className="rounded-2xl border-2 border-dashed border-border p-10 text-center space-y-3">
             <FileSpreadsheet className="size-10 mx-auto text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Upload a HubSpot referral CSV</p>
-              <p className="text-xs text-muted-foreground mt-1">Columns are mapped automatically. Duplicates are skipped or merged.</p>
+              <p className="text-sm font-medium">Upload a referral CSV or Excel file</p>
+              <p className="text-xs text-muted-foreground mt-1">Columns are mapped automatically. New rows are added, existing contacts are updated.</p>
             </div>
-            <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-            <Button onClick={() => inputRef.current?.click()}><Upload className="size-4 mr-2" />Choose CSV</Button>
+            <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            <Button onClick={() => inputRef.current?.click()}><Upload className="size-4 mr-2" />Choose file</Button>
           </div>
         )}
 
