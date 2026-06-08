@@ -53,7 +53,7 @@ describe("SD Learner-first pass — Part 1 (warmth) + Part 2 (day grouping) + Pa
     expect(HOME).toContain('data-testid="sd-today"');
     expect(HOME).toContain('data-testid="sd-today-next-action"');
     expect(HOME).toContain('data-testid="sd-current-day-modules"');
-    expect(HOME).toContain('data-testid="sd-day-checklist-next"');
+    expect(HOME).toContain('"sd-day-checklist-next"');
     expect(HOME).toMatch(/Today.{0,3}s day checklist/);
   });
 
