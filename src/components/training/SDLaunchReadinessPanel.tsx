@@ -20,6 +20,12 @@ import {
 } from "lucide-react";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import {
+  computeSdContentReadiness,
+  computeSdScreenshotReadiness,
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
+import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 
 type CheckState = "ok" | "manual" | "warn";
 
@@ -74,16 +80,21 @@ function CheckList({ group }: { group: CheckGroup }) {
 export function SDLaunchReadinessPanel() {
   const { resources } = useAdminResources();
   const coverage = computeSdSopCoverageFromResources(resources);
+  const content = computeSdContentReadiness();
+  const screenshots = computeSdScreenshotReadiness();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+  const allManifestPublished =
+    coverage.total === SD_SOP_MANIFEST.length && coverage.published === coverage.total;
 
   // Resource state: derived from live coverage.
   const resourceItems: CheckItem[] = [
     {
       label: `${coverage.total} required State Director SOPs counted`,
-      state: coverage.total === 97 ? "ok" : "warn",
+      state: coverage.total === SD_SOP_MANIFEST.length ? "ok" : "warn",
     },
     {
-      label: `${coverage.published} published + connected SOPs`,
-      state: coverage.published > 0 ? "ok" : "manual",
+      label: `${coverage.published} of ${coverage.total} SOPs published + openable`,
+      state: allManifestPublished ? "ok" : coverage.published > 0 ? "warn" : "manual",
       note: "Mapped SOPs that open from State Director module pages.",
     },
     {
@@ -125,12 +136,43 @@ export function SDLaunchReadinessPanel() {
 
   const contentItems: CheckItem[] = [
     { label: "Welcome to Blossom ready", state: "ok" },
-    { label: "Week 1 content complete", state: "ok" },
-    { label: "Weeks 2–5 content complete", state: "ok" },
-    { label: "Knowledge checks present", state: "ok" },
+    {
+      label: `Week 1 content complete (${content.complete}/${content.total} SD modules verified)`,
+      state: content.ok ? "ok" : "warn",
+      note: content.ok
+        ? undefined
+        : `${content.missing.length} module(s) missing required fields.`,
+    },
+    {
+      label: "Weeks 2–5 content complete",
+      state: content.ok ? "ok" : "warn",
+    },
+    {
+      label: "Knowledge checks present on every SD module",
+      state: content.ok ? "ok" : "warn",
+    },
     { label: "Reflection prompts present", state: "ok" },
     { label: "Shadowing modules present", state: "ok" },
     { label: "Final readiness modules present", state: "ok" },
+    {
+      label: welcomeVideo.ok ? "Welcome video resource linked" : "Welcome video pending upload",
+      state: welcomeVideo.ok ? "ok" : "manual",
+      note: welcomeVideo.ok
+        ? undefined
+        : "Upload an MP4 titled 'Welcome Video from Blossom' in Resource Upload Center.",
+    },
+    {
+      label: `Screenshot assets available (${screenshots.available}/${screenshots.totalRegistered})`,
+      state: screenshots.ok
+        ? "ok"
+        : screenshots.needsRedaction > 0
+          ? "warn"
+          : "manual",
+      note:
+        screenshots.pending > 0 || screenshots.needsRedaction > 0
+          ? `${screenshots.pending} pending · ${screenshots.needsRedaction} held for redaction.`
+          : undefined,
+    },
   ];
 
   const trackingItems: CheckItem[] = [
