@@ -42,9 +42,9 @@ describe("SD Launch readiness panel — honest, data-driven states", () => {
 });
 
 describe("Training Management Control Room — launch command wrapper", () => {
-  it("wraps the readiness panels in a State Director Launch Command section", () => {
-    expect(TMC).toMatch(/data-testid="sd-launch-command"/);
-    expect(TMC).toMatch(/State Director Launch Command/);
+  it("wraps the readiness panels in the State Director Launch Readiness section", () => {
+    expect(TMC).toMatch(/data-testid="tmc-launch-readiness-section"/);
+    expect(TMC).toMatch(/State Director Launch Readiness/);
   });
 });
 
