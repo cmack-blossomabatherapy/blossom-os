@@ -445,6 +445,7 @@ export function TeamAdminPanel() {
             roleActivity={roleActivity.find((activity) => activity.id === m.user_id) ?? null}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
+            mentorOptions={mentorOptions.filter((o) => o.employee_id !== m.employee_id)}
           />
         ))}
         {visibleMembers.length === 0 && (
