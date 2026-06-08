@@ -24,6 +24,7 @@ import {
 } from "@/lib/training/sdRuntimeReadiness";
 import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
 import { NeedHelpPanel } from "./NeedHelpPanel";
+import { WELCOME_TO_SD_TRAINING_ID } from "@/lib/training/welcomeProgressBridge";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play, Letter: Mail,
@@ -114,9 +115,9 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
 
   // Prefer DB launch progress + week when present.
   const hasDb = !!learnerHome.enrollment;
-  const launchPct = hasDb ? learnerHome.launchProgress.pct : localPct;
-  const launchDone = hasDb ? learnerHome.launchProgress.requiredCompleted : totalDone;
-  const launchTotal = hasDb ? learnerHome.launchProgress.requiredTotal : allIds.length;
+  const launchDone = hasDb ? Math.max(learnerHome.launchProgress.requiredCompleted, totalDone) : totalDone;
+  const launchTotal = hasDb ? Math.max(learnerHome.launchProgress.requiredTotal, allIds.length) : allIds.length;
+  const launchPct = launchTotal === 0 ? 0 : Math.round((launchDone / launchTotal) * 100);
   const readinessPct = learnerHome.readiness ? Math.round(learnerHome.readiness.overall) : null;
   const mentorName = learnerHome.mentor
     ? [learnerHome.mentor.first_name, learnerHome.mentor.last_name].filter(Boolean).join(" ").trim()
@@ -127,7 +128,8 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
       ? `Mentor · ${learnerHome.employee.state}`
       : "Not assigned";
 
-  const welcomeComplete = hasDb ? learnerHome.welcomeComplete : false;
+  const localWelcomeComplete = getProgress(WELCOME_TO_SD_TRAINING_ID["welcome-video-from-blossom"]).status === "completed";
+  const welcomeComplete = learnerHome.welcomeComplete || localWelcomeComplete;
 
   const flow = pickFlow(currentDayDef.title, currentWeekDef.title);
 
