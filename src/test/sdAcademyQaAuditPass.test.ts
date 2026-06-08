@@ -128,8 +128,8 @@ describe("SD Academy QA Audit — SOP manifest", () => {
 
 describe("SD Academy QA Audit — Welcome to Blossom letters", () => {
   it("includes substantive Chad Kaufman and Shira Lasry letters", () => {
-    const chad = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "ceo");
-    const shira = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "doo");
+    const chad = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-chad");
+    const shira = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-shira");
     expect(chad?.name).toBe("Chad Kaufman");
     expect(shira?.name).toBe("Shira Lasry");
     expect(chad!.paragraphs.length).toBeGreaterThanOrEqual(5);

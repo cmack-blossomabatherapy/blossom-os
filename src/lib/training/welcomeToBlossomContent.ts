@@ -18,6 +18,10 @@ export interface WelcomeHero {
 export interface WelcomeModule {
   id: string;
   title: string;
+  /** Module kind for learner UI chips and Training Management. */
+  moduleType: "video" | "content" | "letter";
+  /** Estimated minutes for the learner to complete the module. */
+  estimatedMinutes: number;
   description: string;
   learningObjective: string;
   whyThisMatters: string;
@@ -38,7 +42,7 @@ export interface WelcomeFlowStep {
 }
 
 export interface WelcomeLeadershipLetter {
-  id: "ceo" | "doo";
+  id: "welcome-letter-chad" | "welcome-letter-shira";
   displayTitle: string;
   subtitle: string;
   name: string;
@@ -64,6 +68,9 @@ export const WELCOME_TO_BLOSSOM_HERO: WelcomeHero = {
   secondaryCta: "Continue to State Director Journey",
 };
 
+/** Canonical phase id used by Training Management overrides. */
+export const WELCOME_TO_BLOSSOM_PHASE_ID = "welcome" as const;
+
 /**
  * The seven Welcome to Blossom modules. These IDs are intentionally distinct
  * from State Director SOP module IDs and must be excluded from SOP coverage.
@@ -72,6 +79,8 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
   {
     id: "welcome-video-from-blossom",
     title: "Welcome Video from Blossom",
+    moduleType: "video",
+    estimatedMinutes: 4,
     description:
       "Start with a short welcome from Blossom leadership. This video should give you the tone of the company: calm, practical, family-centered, and serious about doing the work well.",
     videoPending:
@@ -94,6 +103,8 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
   {
     id: "welcome-mission-vision",
     title: "Mission & Vision",
+    moduleType: "content",
+    estimatedMinutes: 8,
     description:
       "Blossom exists to help children and families access high-quality ABA therapy with a system behind it that is organized, responsive, and human.",
     learningObjective:
@@ -112,6 +123,8 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
   {
     id: "welcome-core-values",
     title: "Core Values",
+    moduleType: "content",
+    estimatedMinutes: 8,
     description: "Values are not slogans. They are the standards we use when the day gets complicated.",
     learningObjective:
       "Identify the value that comes most naturally to you and the value that will require the most discipline.",
@@ -130,6 +143,8 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
   {
     id: "welcome-meet-the-team",
     title: "Meet the Team",
+    moduleType: "content",
+    estimatedMinutes: 8,
     description:
       "You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them.",
     learningObjective:
@@ -148,6 +163,8 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
   {
     id: "welcome-how-blossom-works",
     title: "How Blossom Works",
+    moduleType: "content",
+    estimatedMinutes: 10,
     description:
       "Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal.",
     learningObjective:
@@ -163,8 +180,10 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
     completionEvidence: "Share your drawn flow and three risk points with your mentor.",
   },
   {
-    id: "welcome-letter-ceo",
-    title: "A Welcome From Chad Kaufman",
+    id: "welcome-letter-chad",
+    title: "Welcome Letter from Chad",
+    moduleType: "letter",
+    estimatedMinutes: 5,
     description: "A letter from the Chief Executive Officer.",
     learningObjective:
       "Internalize the company-level expectations the CEO has for new State Directors.",
@@ -174,8 +193,10 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
     completionEvidence: "Capture one sentence that resonated and share it with your mentor.",
   },
   {
-    id: "welcome-letter-doo",
-    title: "A Note From Shira Lasry",
+    id: "welcome-letter-shira",
+    title: "Welcome Letter from Shira",
+    moduleType: "letter",
+    estimatedMinutes: 5,
     description: "A letter from the Director of Operations.",
     learningObjective:
       "Understand the operational leadership rhythm Blossom expects from State Directors.",
@@ -188,6 +209,10 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
 
 /** Stable IDs for the seven Welcome modules — referenced by SOP coverage. */
 export const WELCOME_MODULE_IDS: string[] = WELCOME_TO_BLOSSOM_MODULES.map((m) => m.id);
+
+/** Canonical titles, in order — used by tests and Training Management. */
+export const WELCOME_TO_BLOSSOM_MODULE_TITLES: string[] =
+  WELCOME_TO_BLOSSOM_MODULES.map((m) => m.title);
 
 export function isWelcomeNonSopModule(id: string): boolean {
   return WELCOME_MODULE_IDS.includes(id) || id.startsWith("welcome-");
@@ -242,8 +267,8 @@ export const WELCOME_BLOSSOM_FLOW: WelcomeFlowStep[] = [
 
 export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
   {
-    id: "ceo",
-    displayTitle: "A Welcome From Chad Kaufman",
+    id: "welcome-letter-chad",
+    displayTitle: "Welcome Letter from Chad",
     subtitle: "Chief Executive Officer",
     name: "Chad Kaufman",
     role: "Chief Executive Officer",
@@ -263,8 +288,8 @@ export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
     pullQuote: "Great ABA therapy does not happen through good intentions alone.",
   },
   {
-    id: "doo",
-    displayTitle: "A Note From Shira Lasry",
+    id: "welcome-letter-shira",
+    displayTitle: "Welcome Letter from Shira",
     subtitle: "Director of Operations",
     name: "Shira Lasry",
     role: "Director of Operations",

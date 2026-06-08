@@ -85,7 +85,7 @@ describe("State Director Week 1 — full content pass", () => {
 
 describe("Welcome to Blossom — leadership letters", () => {
   it("includes a full Chad Kaufman letter", () => {
-    const chad = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "ceo");
+    const chad = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-chad");
     expect(chad).toBeTruthy();
     expect(chad!.name).toMatch(/Chad Kaufman/);
     expect(chad!.paragraphs.length).toBeGreaterThanOrEqual(5);
@@ -93,7 +93,7 @@ describe("Welcome to Blossom — leadership letters", () => {
   });
 
   it("includes a full Shira Lasry letter", () => {
-    const shira = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "doo");
+    const shira = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-shira");
     expect(shira).toBeTruthy();
     expect(shira!.name).toMatch(/Shira Lasry/);
     expect(shira!.paragraphs.length).toBeGreaterThanOrEqual(5);
@@ -101,8 +101,8 @@ describe("Welcome to Blossom — leadership letters", () => {
   });
 
   it("welcome modules include CEO and DOO letter entries", () => {
-    const ceo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-ceo");
-    const doo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-doo");
+    const ceo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-chad");
+    const doo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-shira");
     expect(ceo).toBeTruthy();
     expect(doo).toBeTruthy();
   });

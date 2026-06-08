@@ -45,8 +45,8 @@ describe("Welcome to Blossom — content seed", () => {
   });
 
   it("CEO and DOO letters are full and signed with pull quotes", () => {
-    const ceo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "ceo")!;
-    const doo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "doo")!;
+    const ceo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-chad")!;
+    const doo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "welcome-letter-shira")!;
     expect(ceo.signoff).toBe("Chad Kaufman, Chief Executive Officer");
     expect(doo.signoff).toBe("Shira Lasry, Director of Operations");
     expect(ceo.paragraphs.length).toBeGreaterThanOrEqual(8);

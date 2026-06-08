@@ -1157,7 +1157,7 @@ function OnboardingView() {
               Welcome to <span className="text-primary">Blossom</span>
             </h2>
             <p className="mt-1.5 max-w-2xl text-[13px] text-muted-foreground">
-              Every new hire's first day at Blossom. Edit the steps below — what new hires read, watch, and acknowledge on day one.
+              Universal onboarding for every Blossom employee, separate from role-specific training journeys. Edit the seven steps below - what every new hire reads, watches, and reflects on during their first day.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1174,6 +1174,29 @@ function OnboardingView() {
           <Stat label="Est. time" value={`${welcome.modules.reduce((s, m) => s + (m.estMinutes || 0), 0)} min`} />
           <Stat label="Customized" value={String(customized)} />
         </div>
+        {(() => {
+          const videoLoaded = welcome.modules.some((m) => m.kind === "video" && !!m.video?.url);
+          const letters = welcome.modules.filter((m) => m.kind === "leader").length;
+          return (
+            <div
+              data-testid="welcome-admin-status"
+              className="mt-4 flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground"
+            >
+              <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5">
+                Universal onboarding
+              </span>
+              <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5">
+                Separate from role-specific journeys
+              </span>
+              <span className={`rounded-full border px-2 py-0.5 ${videoLoaded ? "border-primary/30 bg-primary/5 text-primary" : "border-border/60 bg-background/70"}`}>
+                Welcome video {videoLoaded ? "loaded" : "pending"}
+              </span>
+              <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5">
+                {letters} leadership letters present
+              </span>
+            </div>
+          );
+        })()}
       </section>
 
       {/* Steps list */}
