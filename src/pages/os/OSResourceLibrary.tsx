@@ -90,9 +90,10 @@ export default function OSResourceLibrary() {
 
   const visibleList: Resource[] = useMemo(() => {
     if (query) return searchResults;
+    if (activeCollectionResult) return activeCollectionResult.items;
     if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
-  }, [query, activeCategory, searchResults, filteredScope]);
+  }, [query, activeCategory, searchResults, filteredScope, activeCollectionResult]);
 
   // State Director Launch smart collection — only published / openable /
   // role-visible items whose normalized title exactly matches the manifest.
