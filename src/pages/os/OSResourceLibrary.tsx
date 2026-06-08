@@ -884,9 +884,7 @@ function ResourceDrawerBody({
                   toast.error("This resource could not be downloaded. Try again or contact an admin.");
                   return;
                 }
-                const safeName =
-                  (resource.fileName && resource.fileName.trim()) ||
-                  `${resource.title.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "")}`;
+                const safeName = resource.title.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "");
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = safeName;
