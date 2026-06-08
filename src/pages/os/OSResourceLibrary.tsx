@@ -30,6 +30,12 @@ import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { SD_SOP_MANIFEST, isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
 import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
+import {
+  collectSmartCollections,
+  countAdminHiddenResources,
+  type SmartCollectionId,
+  type SmartCollectionResult,
+} from "@/lib/resources/smartCollections";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
