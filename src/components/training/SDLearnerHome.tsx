@@ -277,6 +277,49 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
 
         {/* 3 · Today's Launch Plan */}
         <section data-testid="sd-today-launch-plan" className="space-y-4">
+          {/* Launch checklist — small calm operational card */}
+          <div
+            data-testid="sd-launch-checklist-card"
+            className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  Launch checklist
+                </p>
+                <h3 className="mt-0.5 text-[14.5px] font-semibold tracking-tight text-foreground">
+                  Five quiet signals you are on track
+                </h3>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {launchChecklist.filter((c) => c.done).length}/{launchChecklist.length}
+              </span>
+            </div>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-5">
+              {launchChecklist.map((c) => (
+                <li
+                  key={c.label}
+                  className={cn(
+                    "rounded-xl border bg-background/60 px-3 py-2 text-[12px]",
+                    c.done
+                      ? "border-emerald-200/60 bg-emerald-50/40 dark:bg-emerald-950/10"
+                      : "border-border/60",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {c.done ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />
+                    )}
+                    <span className="font-medium text-foreground">{c.label}</span>
+                  </div>
+                  <p className="mt-0.5 pl-5 text-[11px] text-muted-foreground">{c.hint}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
