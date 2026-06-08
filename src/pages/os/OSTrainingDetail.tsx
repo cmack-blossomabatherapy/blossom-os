@@ -563,6 +563,15 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
 
   const safeToShow = !heldForRedaction && piiSafe && !!resolvedUrl;
   const pending = !safeToShow && !heldForRedaction;
+  const isImageLikely = (() => {
+    if (!resolvedUrl) return false;
+    const u = resolvedUrl.toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|svg|avif|heic)(\?|#|$)/.test(u)) return true;
+    // Default: assume previewable when matched from Resource Library — the
+    // <img> will fall back to the "Open screenshot" action below if it fails.
+    return /image|screenshot|shot|capture/.test(u);
+  })();
+  const matchedBy = resourceMatch?.matchedBy ?? null;
   return (
     <div
       data-testid="sd-screenshot"
@@ -570,15 +579,49 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
       data-screenshot-status={asset.resourceStatus}
       className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[12.5px]"
     >
-      <div className="font-semibold text-foreground">{asset.title}</div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="font-semibold text-foreground">{asset.title}</div>
+        {matchedBy && (
+          <span
+            data-testid="sd-screenshot-matched-by"
+            data-matched-by={matchedBy}
+            className="inline-flex items-center rounded-full border border-emerald-300/60 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wider text-emerald-800"
+          >
+            {matchedBy === "title" ? "Matched by title"
+              : matchedBy === "filename" ? "Matched by filename"
+              : matchedBy === "asset_id" ? "Matched by asset id"
+              : "Matched by module id"}
+          </span>
+        )}
+      </div>
       <p className="mt-0.5 text-muted-foreground">{asset.description}</p>
-      {safeToShow ? (
+      {safeToShow && isImageLikely ? (
         <img
           src={resolvedUrl ?? undefined}
           alt={asset.alt}
           loading="lazy"
           className="mt-2 max-h-72 w-full rounded-lg border border-border/60 object-contain bg-background"
         />
+      ) : safeToShow ? (
+        <div
+          data-testid="sd-screenshot-open-action"
+          className="mt-2 flex items-start gap-2 rounded-md border border-emerald-300/60 bg-emerald-50/60 px-3 py-2"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-medium text-emerald-900">
+              Screenshot ready - open the file to view the full view.
+            </p>
+            <a
+              href={resolvedUrl ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-flex items-center gap-1 rounded-md border border-emerald-300/70 bg-white px-2 py-1 text-[12px] font-medium text-emerald-800 hover:bg-emerald-50"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open screenshot
+            </a>
+          </div>
+        </div>
       ) : pending ? (
         <div
           data-testid="sd-screenshot-pending"
@@ -588,7 +631,7 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
           <div className="min-w-0">
             <p className="font-medium text-foreground">{asset.resourceTitle ?? asset.title}</p>
             <p className="mt-0.5">
-              Screenshot pending — your mentor can walk this view live until it's uploaded.
+              Screenshot pending - your mentor can walk this screen live until the upload is connected.
             </p>
           </div>
         </div>
@@ -597,7 +640,7 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
           data-testid="sd-screenshot-held"
           className="mt-2 rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-amber-800"
         >
-          Screenshot held for redaction — not visible to learners yet.
+          Screenshot held for redaction - not visible to learners yet.
         </p>
       ) : null}
       {asset.callouts && asset.callouts.length > 0 && (

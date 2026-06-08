@@ -132,11 +132,191 @@ function mkShot(
     resourceStatus: "pending_upload",
     sensitivity: "training_safe",
     callouts,
-    resourceTitle: `State Director Walkthrough — ${title}`,
+    resourceTitle: `State Director Walkthrough - ${title}`,
   };
 }
 
 const SD_SCREENSHOTS_LIST: SDScreenshotAsset[] = [
+  /* ---- Week 1 - Foundations & Welcome to Blossom (operational/system views only) ---- */
+  mkShot("sd-w1d1-welcome-video-from-blossom", "w1d1-welcome-video-panel",
+    "Welcome to Blossom video panel",
+    "Welcome video player on the universal Welcome to Blossom page. Shows where the new SD lands first.",
+    "Welcome to Blossom video panel with module rail and continue CTA", [
+      { label: "Video area", description: "Plays Welcome video from Chad and Shira." },
+      { label: "Module rail", description: "7 universal modules shown in order, current step highlighted." },
+      { label: "Continue to launch path", description: "Calm CTA that hands off to Week 1 Day 1." },
+    ]),
+  mkShot("sd-w1d1-meet-the-team", "w1d1-team-leadership",
+    "Blossom team and leadership section",
+    "Team and leadership view inside Welcome to Blossom. Used to anchor a new SD to people, not just process.",
+    "Team and leadership cards with CEO, DOO, and department partners", [
+      { label: "Leadership cards", description: "CEO + Director of Operations with direct contact path." },
+      { label: "Department partners", description: "Intake, Authorizations, Scheduling, Recruiting, QA, Billing leads." },
+      { label: "Mentor connection", description: "Where to find your assigned launch mentor." },
+    ]),
+  mkShot("sd-w1d1-how-blossom-works", "w1d1-operating-flow",
+    "Blossom operating flow overview",
+    "How a lead becomes active care. The whole operating flow from intake to BCBA in one view.",
+    "Operating flow diagram from lead to active care with department handoffs", [
+      { label: "Lead to care flow", description: "Lead -> VOB -> Authorization -> Scheduling -> BCBA." },
+      { label: "Department handoffs", description: "Where ownership transfers and what is required." },
+      { label: "Risk points", description: "Stages most likely to stall without SD attention." },
+    ]),
+  mkShot("sd-w1d2-company-structure", "w1d2-org-chart",
+    "Blossom org chart",
+    "Blossom organization chart. Used to map decision rights and escalation paths.",
+    "Org chart with executive, operations, and state leadership rows", [
+      { label: "Executive leadership", description: "Owners and accountable decision-makers." },
+      { label: "Operations leadership", description: "DOO + functional department heads." },
+      { label: "State leadership", description: "State Directors and the people they support." },
+    ]),
+  mkShot("sd-w1d2-department-overview", "w1d2-department-nav",
+    "Blossom OS department navigation",
+    "Left-rail navigation inside Blossom OS, showing the operational workspaces a State Director uses.",
+    "Blossom OS sidebar showing intake, authorizations, scheduling, recruiting, QA, and billing", [
+      { label: "Intake", description: "Pipeline and VOB triage." },
+      { label: "Authorizations", description: "Auth lifecycle and risk." },
+      { label: "Scheduling", description: "Coverage, gaps, cancellations." },
+      { label: "Recruiting / QA / Billing", description: "Talent pipeline, quality, revenue cycle." },
+    ]),
+  mkShot("sd-w1d2-state-director-role-overview", "w1d2-sd-training-home",
+    "State Director training home",
+    "Training Academy home screen for a State Director on day one. Shows day, next action, and launch progress.",
+    "State Director training home with current day, next action, and mentor panel", [
+      { label: "Current day", description: "Today's day card with calm Day 1 framing." },
+      { label: "Next action", description: "Single highlighted next step for the SD to take now." },
+      { label: "Launch progress", description: "Percent complete across the 5-week launch path." },
+      { label: "Mentor / help panel", description: "Direct line to your assigned mentor." },
+    ]),
+  mkShot("sd-w1d2-leadership-expectations", "w1d2-launch-readiness",
+    "State Director launch readiness panel",
+    "Training Management readiness panel that shows whether a new SD launch is supported.",
+    "Launch readiness panel with readiness status, content coverage, and resource gaps", [
+      { label: "Readiness status", description: "Green / yellow / red signal for launch." },
+      { label: "Content coverage", description: "Modules with complete written content." },
+      { label: "Resource gaps", description: "SOPs and screenshots still missing or unmatched." },
+    ]),
+  mkShot("sd-w1d3-intake-department", "w1d3-intake-workspace",
+    "Intake workspace",
+    "Intake workspace inside Blossom OS. Anchors the SD to lead lifecycle and VOB stage.",
+    "Intake workspace showing leads, VOB stage, owner, and aging risk", [
+      { label: "Leads", description: "Active leads with stage and source." },
+      { label: "VOB stage", description: "Where a lead is in verification of benefits." },
+      { label: "Intake owner", description: "Who is accountable for moving the lead forward." },
+      { label: "Aging risk", description: "Stuck leads aging past SLA." },
+    ]),
+  mkShot("sd-w1d3-authorizations-department", "w1d3-auth-workspace",
+    "Authorizations workspace",
+    "Authorizations workspace. The single view SDs use to spot expiring auths and utilization risk.",
+    "Authorizations workspace with expiring auths, status buckets, and utilization risk", [
+      { label: "Expiring auths", description: "Auths expiring inside the SD attention window." },
+      { label: "Status buckets", description: "Active / pending / submitted / expired." },
+      { label: "Owner", description: "Who is driving the submission or follow-up." },
+      { label: "Utilization risk", description: "Clients under-utilizing or at risk of lapse." },
+    ]),
+  mkShot("sd-w1d3-scheduling-department", "w1d3-scheduling-workspace",
+    "Scheduling workspace",
+    "Scheduling workspace. Shows coverage health and conversion risk at a glance.",
+    "Scheduling workspace with coverage gaps, cancellations, and unconverted sessions", [
+      { label: "Coverage gaps", description: "Clients without enough scheduled hours." },
+      { label: "Cancellations", description: "Today + this week, by reason." },
+      { label: "Unconverted sessions", description: "Sessions scheduled but not converted." },
+      { label: "Schedule health", description: "Single signal for the SD." },
+    ]),
+  mkShot("sd-w1d3-recruiting-department", "w1d3-recruiting-workspace",
+    "Recruiting workspace",
+    "Recruiting workspace. The funnel that drives staffing capacity in the SD's state.",
+    "Recruiting workspace with candidate stages, interviews, and onboarding handoff", [
+      { label: "Candidate stages", description: "Applied -> screened -> interviewed -> offer." },
+      { label: "Interviews", description: "Scheduled interviews and outcomes." },
+      { label: "Offers", description: "Open offers and decline reasons." },
+      { label: "Onboarding handoff", description: "Hand-off into HR / Viventium." },
+    ]),
+  mkShot("sd-w1d3-qa-department", "w1d3-qa-workspace",
+    "QA workspace",
+    "QA workspace. Where progress report risk and escalation signals live.",
+    "QA workspace with QA queue, progress report risks, and escalation signals", [
+      { label: "QA queue", description: "Sessions / documents pending review." },
+      { label: "PR risk", description: "Progress reports trending late or thin." },
+      { label: "Escalation signals", description: "Compliance concerns the SD must know about." },
+    ]),
+  mkShot("sd-w1d3-billing-department", "w1d3-billing-workspace",
+    "Billing finance workspace",
+    "Billing and finance workspace. Where revenue cycle health and lost hours live.",
+    "Billing finance workspace with revenue cycle, billing issues, and lost hours", [
+      { label: "Revenue cycle", description: "Billed -> paid -> outstanding." },
+      { label: "Billing issues", description: "Holds and rejected claims." },
+      { label: "Lost hours", description: "Hours delivered but not billable." },
+      { label: "Payer visibility", description: "Who is paying, who is slow." },
+    ]),
+  mkShot("sd-w1d4-communication-standards", "w1d4-phone-workspace",
+    "Calls and communication workspace",
+    "Calls workspace. Used to model the communication standard a State Director expects.",
+    "Calls and communication workspace with call queue, scripts, escalation, and follow-up tracking", [
+      { label: "Call queue", description: "Inbound + outbound queue." },
+      { label: "Scripts", description: "Approved language for common situations." },
+      { label: "Escalation handoff", description: "When to bring a call to the SD." },
+      { label: "Follow-up tracking", description: "Promises made + when they are due." },
+    ]),
+  mkShot("sd-w1d4-escalation-structure", "w1d4-escalation-view",
+    "Operational escalation view",
+    "Operational escalation view showing the active risks the SD must work today.",
+    "Escalation view with risk owner, next action, and escalation status", [
+      { label: "Risk owner", description: "Who owns the open risk right now." },
+      { label: "Next action", description: "The one concrete next step." },
+      { label: "Escalation status", description: "Open / acknowledged / resolved." },
+    ]),
+  mkShot("sd-w1d4-accountability-expectations", "w1d4-reports-accountability",
+    "Reports accountability view",
+    "Reports view used to enforce accountability rhythm with department owners.",
+    "Reports accountability view with KPI owner, due date, and follow-up rhythm", [
+      { label: "KPI owner", description: "Who answers for this number." },
+      { label: "Due date", description: "When the next update is expected." },
+      { label: "Follow-up rhythm", description: "Weekly / bi-weekly cadence." },
+    ]),
+  mkShot("sd-w1d4-operational-ownership", "w1d4-sd-command",
+    "State Director command view",
+    "State Director command view. The single screen the SD opens at the start of a day.",
+    "State Director command view with launch progress, unresolved risks, and next action", [
+      { label: "Launch progress", description: "Where the SD is in their 5-week launch." },
+      { label: "Unresolved risks", description: "Risks across departments needing SD attention." },
+      { label: "Next action", description: "What to do next, not what to read next." },
+    ]),
+  mkShot("sd-w1d5-data-integrity", "w1d5-data-quality",
+    "Reports data quality view",
+    "Reports data quality view. Anchors the SD to data trust before relying on KPIs.",
+    "Data quality view with missing fields, data source, and data quality risk", [
+      { label: "Missing fields", description: "Records with incomplete data." },
+      { label: "Data source", description: "Where the number came from (CR, Viventium, manual)." },
+      { label: "Data quality risk", description: "Confidence signal on the underlying data." },
+    ]),
+  mkShot("sd-w1d5-utilization-mindset", "w1d5-utilization-dashboard",
+    "Utilization dashboard",
+    "Utilization dashboard. The view the SD uses to defend authorized hours every week.",
+    "Utilization dashboard with utilization percent, authorized hours, and remaining hours", [
+      { label: "Utilization percent", description: "How much of authorized hours are being used." },
+      { label: "Authorized hours", description: "Approved hours per client." },
+      { label: "Remaining hours", description: "Hours left in the auth window." },
+      { label: "Risk bucket", description: "Under-utilized / at-risk / healthy." },
+    ]),
+  mkShot("sd-w1d5-state-ownership", "w1d5-state-health",
+    "State health dashboard",
+    "State health dashboard. One screen that summarizes the SD's whole state.",
+    "State health dashboard with staffing, authorizations, utilization, and escalations", [
+      { label: "Staffing", description: "Capacity vs need." },
+      { label: "Authorizations", description: "Expiring / pending / submitted." },
+      { label: "Utilization", description: "Aggregate state utilization signal." },
+      { label: "Escalations", description: "Active SD-owned escalations." },
+    ]),
+  mkShot("sd-w1d5-operational-leadership-philosophy", "w1d5-leadership-rhythm",
+    "Leadership operating rhythm",
+    "Training Management or reports view that anchors the SD to a weekly leadership rhythm.",
+    "Leadership operating rhythm with weekly review, mentor sign-off, and readiness evidence", [
+      { label: "Weekly review", description: "Standing weekly review cadence." },
+      { label: "Mentor sign-off", description: "Where mentor sign-off is captured." },
+      { label: "Readiness evidence", description: "Evidence the SD is operationally ready." },
+    ]),
+
   /* ---- Week 2 — Systems & Client Flow ---- */
   mkShot("sd-w2d1-cr-overview", "cr-overview-home", "CentralReach home dashboard",
     "Top-level CR landing page. Use this to confirm a new State Director can see their state's clients and schedules at a glance.",
@@ -461,41 +641,128 @@ export function getStateDirectorNoScreenshotDecision(
 
 /**
  * Resolve a published+openable Resource Library item that represents the
- * given screenshot asset. Matching uses the human-readable resourceTitle
- * (preferred) and falls back to the screenshot's display title.
+ * given screenshot asset. Matching is tolerant: admins can upload using
+ * the exact resourceTitle, a slugified file name, the module id, or a
+ * storage path containing the asset/module id.
  */
+export type SDScreenshotMatchKind =
+  | "title"
+  | "filename"
+  | "module_id"
+  | "asset_id";
+
 export interface SDScreenshotResourceMatch {
   resource: Resource;
   url: string | null;
   needsRedaction: boolean;
   openable: boolean;
+  matchedBy: SDScreenshotMatchKind;
+}
+
+function shotSlugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/i, "") // strip extension
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function shotBasename(p: string): string {
+  return (p.split(/[\\/]/).pop() ?? p).trim();
 }
 
 export function findScreenshotResource(
   asset: SDScreenshotAsset,
   resources: Resource[],
 ): SDScreenshotResourceMatch | null {
-  const keys = new Set(
-    [asset.resourceTitle, asset.title]
-      .filter((t): t is string => !!t)
-      .map((t) => normalizeSopTitle(t)),
-  );
+  const titleKeys = new Set<string>();
+  for (const t of [asset.resourceTitle, asset.title]) {
+    if (!t) continue;
+    titleKeys.add(normalizeSopTitle(t));
+    const slug = shotSlugify(t);
+    if (slug) titleKeys.add(slug);
+  }
+  const idSet = new Set<string>([asset.id, asset.moduleId].filter(Boolean));
+
   for (const r of resources) {
-    if (!keys.has(normalizeSopTitle(r.title))) continue;
     if (r.status === "Archived") continue;
     if (r.uploadStatus && r.uploadStatus !== "published") continue;
     if (r.sensitivity === "excluded") continue;
+
+    const anyR = r as Resource & {
+      fileName?: string;
+      file_name?: string;
+      name?: string;
+      metadata?: { fileName?: string; file_name?: string; name?: string };
+    };
+
+    let matchedBy: SDScreenshotMatchKind | null = null;
+
+    // 1) Title match (normalized or slugified)
+    const rTitleNorm = normalizeSopTitle(r.title);
+    const rTitleSlug = shotSlugify(r.title);
+    if (titleKeys.has(rTitleNorm) || (rTitleSlug && titleKeys.has(rTitleSlug))) {
+      matchedBy = "title";
+    }
+
+    // 2) File name / metadata / basename match against asset id / module id / title slug
+    if (!matchedBy) {
+      const candidates: string[] = [];
+      const pushIf = (v: unknown) => { if (typeof v === "string" && v) candidates.push(v); };
+      pushIf(anyR.fileName); pushIf(anyR.file_name); pushIf(anyR.name);
+      if (anyR.metadata) {
+        pushIf(anyR.metadata.fileName);
+        pushIf(anyR.metadata.file_name);
+        pushIf(anyR.metadata.name);
+      }
+      for (const p of [r.url, r.fileUrl, r.storagePath]) {
+        if (typeof p === "string" && p) candidates.push(shotBasename(p));
+      }
+      for (const c of candidates) {
+        const s = shotSlugify(c);
+        if (!s) continue;
+        if (s === asset.id) { matchedBy = "asset_id"; break; }
+        if (s === asset.moduleId) { matchedBy = "module_id"; break; }
+        if (titleKeys.has(s)) { matchedBy = "filename"; break; }
+      }
+    }
+
+    // 3) Any path segment equal to asset id or module id
+    if (!matchedBy) {
+      for (const p of [r.storagePath, r.url, r.fileUrl]) {
+        if (typeof p !== "string" || !p) continue;
+        for (const seg of p.split(/[\\/]/)) {
+          const s = shotSlugify(seg);
+          if (!s) continue;
+          if (s === asset.id) { matchedBy = "asset_id"; break; }
+          if (s === asset.moduleId) { matchedBy = "module_id"; break; }
+        }
+        if (matchedBy) break;
+      }
+    }
+
+    if (!matchedBy) continue;
+
     const url =
       (r.url && /^https?:\/\//i.test(r.url) ? r.url : null) ||
       r.fileUrl ||
       null;
-    const hasStorage = !!(r as Resource & { storagePath?: string }).storagePath;
+    const hasStorage = !!r.storagePath;
     const needsRedaction = r.uploadStatus === ("needs_redaction" as never);
     if (url || hasStorage) {
-      return { resource: r, url, needsRedaction, openable: true };
+      return { resource: r, url, needsRedaction, openable: true, matchedBy };
     }
   }
   return null;
+}
+
+/** Module ids that have a registered Week 1 walkthrough screenshot. */
+export const SD_W1_SCREENSHOT_MODULE_IDS: ReadonlyArray<string> =
+  SD_SCREENSHOTS_LIST.filter((s) => s.moduleId.startsWith("sd-w1d")).map((s) => s.moduleId);
+
+/** Returns true when the asset/module belongs to Week 1. */
+export function isWeek1Screenshot(asset: SDScreenshotAsset): boolean {
+  return asset.moduleId.startsWith("sd-w1d");
 }
 
 /* ---------------- helpers ---------------- */
