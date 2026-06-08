@@ -81,8 +81,8 @@ describe("Welcome to Blossom — page integration", () => {
     expect(PAGE).not.toMatch(/href="#"/);
   });
 
-  it("video pending panel renders when WELCOME_VIDEO_URL is empty", () => {
-    expect(PAGE).toMatch(/WELCOME_VIDEO_URL\s*=\s*""/);
+  it("welcome video is wired to the bundled CDN asset", () => {
+    expect(PAGE).toMatch(/WELCOME_VIDEO_URL\s*=\s*introVideoAsset\.url/);
     expect(PAGE).toMatch(/welcome video is being prepared/i);
   });
 

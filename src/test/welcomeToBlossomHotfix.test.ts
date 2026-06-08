@@ -10,8 +10,9 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/WELCOME_VIDEO_POSTER_URL\s*=/);
   });
 
-  it("defaults video constants to empty so pending panel renders", () => {
-    expect(WELCOME).toMatch(/WELCOME_VIDEO_URL\s*=\s*""/);
+  it("welcome video URL is bound to the bundled CDN asset", () => {
+    expect(WELCOME).toMatch(/WELCOME_VIDEO_URL\s*=\s*introVideoAsset\.url/);
+    expect(WELCOME).toMatch(/intro-video-1\.1\.mp4\.asset\.json/);
   });
 
   it("renders Welcome Video from Blossom pending panel copy", () => {

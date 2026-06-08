@@ -130,7 +130,7 @@ export function computeSdWelcomeVideoState(
   resources: Resource[],
   externalUrl?: string,
 ): SDWelcomeVideoState {
-  if (externalUrl && /^https?:\/\//i.test(externalUrl)) {
+  if (externalUrl && (/^https?:\/\//i.test(externalUrl) || externalUrl.startsWith("/"))) {
     return { ok: true, resource: null, url: externalUrl };
   }
   const r = findWelcomeVideoResource(resources);
@@ -149,7 +149,15 @@ export interface SDWelcomeVideoCheck {
 
 export function computeSdWelcomeVideoCheck(
   resources: Resource[],
+  externalUrl?: string,
 ): SDWelcomeVideoCheck {
+  if (externalUrl && (/^https?:\/\//i.test(externalUrl) || externalUrl.startsWith("/"))) {
+    return {
+      state: "ok",
+      label: "Welcome video linked",
+      note: "Welcome video is bundled with the app and plays on the Welcome page.",
+    };
+  }
   const openable = findWelcomeVideoResource(resources);
   if (openable) {
     return {
