@@ -861,47 +861,111 @@ function ModulesGrid({
 function SopsList() {
   const navigate = useNavigate();
   const canUploadResources = useCanUploadResources();
+  const { resources, loading, error } = useAdminResources();
+  const [query, setQuery] = useState("");
+
+  const sops = useMemo(() => {
+    return resources.filter(
+      (r) =>
+        r.type === "SOP" ||
+        r.resourceType === "sop" ||
+        /\bsop\b/i.test(r.title),
+    );
+  }, [resources]);
+
+  const docs = useMemo(() => {
+    return resources.filter(
+      (r) =>
+        !(r.type === "SOP" || r.resourceType === "sop" || /\bsop\b/i.test(r.title)),
+    );
+  }, [resources]);
+
+  const q = query.trim().toLowerCase();
+  const filteredSops = q
+    ? sops.filter(
+        (s) =>
+          s.title.toLowerCase().includes(q) ||
+          (s.description ?? "").toLowerCase().includes(q) ||
+          s.tags.some((t) => t.toLowerCase().includes(q)),
+      )
+    : sops;
+
   return (
     <div className="rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <div>
-          <h2 className="text-[14.5px] font-semibold tracking-tight">SOPs</h2>
+          <h2 className="text-[14.5px] font-semibold tracking-tight">
+            SOPs <span className="text-muted-foreground font-normal">· {sops.length} live · {docs.length} other docs</span>
+          </h2>
           <p className="text-[12.5px] text-muted-foreground">
             The connective tissue between training and workflows.
           </p>
         </div>
-        {canUploadResources && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-xl"
-            onClick={() => navigate("/hr/resource-management#bulk-upload")}
-          >
-            <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search SOPs…"
+            className="h-8 w-56 rounded-lg text-[12.5px]"
+          />
+          {canUploadResources && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={() => navigate("/hr/resource-management#bulk-upload")}
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" /> Upload Resource
+            </Button>
+          )}
+        </div>
       </div>
-      <ul className="divide-y divide-border/60">
-        {trainingSops.map((s) => (
-          <li key={s.id} className="flex items-center justify-between px-5 py-4">
-            <div className="min-w-0">
-              <p className="text-[13.5px] font-medium text-foreground">{s.title}</p>
-              <p className="text-[12px] text-muted-foreground">
-                {s.department} · {s.owner} · {s.version} · Updated{" "}
-                {formatRelative(s.updatedAt)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[11.5px] text-muted-foreground">
-                {s.linkedModuleIds.length} linked
-              </span>
-              <Button variant="ghost" size="sm" className="rounded-lg text-[12.5px]">
-                Open
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {loading ? (
+        <div className="px-5 py-8 text-center text-[12.5px] text-muted-foreground">Loading SOPs…</div>
+      ) : error ? (
+        <div className="px-5 py-8 text-center text-[12.5px] text-destructive">{error}</div>
+      ) : filteredSops.length === 0 ? (
+        <div className="px-5 py-10 text-center text-[12.5px] text-muted-foreground">
+          {sops.length === 0
+            ? "No SOPs uploaded yet. Use Resource Management to upload."
+            : "No SOPs match that search."}
+        </div>
+      ) : (
+        <ul className="divide-y divide-border/60 max-h-[640px] overflow-auto">
+          {filteredSops.map((s) => (
+            <li key={s.id} className="flex items-center justify-between px-5 py-3">
+              <div className="min-w-0 pr-4">
+                <p className="truncate text-[13.5px] font-medium text-foreground">{s.title}</p>
+                <p className="truncate text-[12px] text-muted-foreground">
+                  {(s.departments?.[0] ?? s.category)} · {s.uploadedBy} · {s.status}
+                  {s.states.length > 0 ? ` · ${s.states.slice(0, 3).join(", ")}` : ""}
+                  {" · Updated "}
+                  {formatRelative(s.updatedAt)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11.5px] text-muted-foreground">
+                  {s.roles.length} role{s.roles.length === 1 ? "" : "s"}
+                </span>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    <Button variant="ghost" size="sm" className="rounded-lg text-[12.5px]">Open</Button>
+                  </a>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-lg text-[12.5px]"
+                    onClick={() => navigate("/hr/resource-management")}
+                  >
+                    Open
+                  </Button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
