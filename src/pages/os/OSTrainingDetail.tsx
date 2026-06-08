@@ -31,6 +31,7 @@ import {
   type SDFullContent, type SDKnowledgeQ,
   getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
   type SDScreenshotAsset, findScreenshotResource,
+  getStateDirectorNoScreenshotDecision,
 } from "@/lib/training/stateDirectorFullTraining";
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
