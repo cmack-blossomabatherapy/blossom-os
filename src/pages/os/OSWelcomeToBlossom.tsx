@@ -202,26 +202,38 @@ export default function OSWelcomeToBlossom() {
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
             {WELCOME_TO_BLOSSOM_MODULES.map((m, idx) => {
               const done = status.modulesComplete.includes(m.id);
+              const cta = done ? "Review" : "Start";
               return (
-                <li
-                  key={m.id}
-                  data-testid={`welcome-module-${m.id}`}
-                  data-module-type={m.moduleType}
-                  className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5"
-                >
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-                    {idx + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-foreground">{m.title}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <Badge variant="outline" className="h-4 px-1.5 text-[10px] capitalize">
-                        {m.moduleType}
-                      </Badge>
-                      <span>~{m.estimatedMinutes} min</span>
-                      {done && <span className="text-primary">- Complete</span>}
-                    </p>
-                  </div>
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onClick={() => scrollToWelcomeSection(m.id)}
+                    data-testid={`welcome-module-start-${m.id}`}
+                    data-module-id={m.id}
+                    data-module-type={m.moduleType}
+                    className="group flex w-full items-start gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40"
+                  >
+                    <span
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
+                        done ? "bg-emerald-100 text-emerald-700" : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-foreground">{m.title}</p>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                        <Badge variant="outline" className="h-4 px-1.5 text-[10px] capitalize">
+                          {m.moduleType}
+                        </Badge>
+                        <span>~{m.estimatedMinutes} min</span>
+                        {done && <span className="text-emerald-700">· Complete</span>}
+                      </p>
+                    </div>
+                    <span className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                      {cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </button>
                 </li>
               );
             })}
@@ -229,7 +241,7 @@ export default function OSWelcomeToBlossom() {
         </section>
 
         {/* WELCOME VIDEO */}
-        <section className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm">
+        <section id="welcome-video-from-blossom" className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm scroll-mt-24">
           {hasVideo ? (
             <video
               src={resolvedVideoUrl ?? undefined}
@@ -323,7 +335,7 @@ export default function OSWelcomeToBlossom() {
         </section>
 
         {/* MISSION & VISION */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-mission-vision" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Flag} eyebrow="Mission & Vision" title="What we're here to do"
             description="Blossom exists to help children and families access high-quality ABA therapy with a system behind it that is organized, responsive, and human." />
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -363,10 +375,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
+          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} />
         </section>
 
         {/* CORE VALUES */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-core-values" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Sparkles} eyebrow="Core Values" title="Standards we use when the day gets complicated"
             description="Values are not slogans. They are the standards we use when the day gets complicated." />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -391,10 +404,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
+          <ModuleCompleteAction moduleId="welcome-core-values" status={status} />
         </section>
 
         {/* MEET THE TEAM */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-meet-the-team" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Building2} eyebrow="Meet the Team" title="Who owns what at Blossom"
             description="You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them." />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -429,10 +443,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Write down your mentor, your first three department partners, and one question for each." />
           </div>
+          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} />
         </section>
 
         {/* HOW BLOSSOM WORKS */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-how-blossom-works" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Workflow} eyebrow="How Blossom Works" title="The Blossom flow, at a glance"
             description="Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal." />
           <ol className="mt-5 space-y-2.5">
@@ -474,6 +489,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share your drawn flow and three risk points with your mentor." />
           </div>
+          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} />
         </section>
 
         {/* LEADERSHIP LETTERS */}
@@ -494,7 +510,11 @@ export default function OSWelcomeToBlossom() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {leaders.map((l) => (
-              <article key={l.name} className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+              <article
+                key={l.name}
+                id={l.id}
+                className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm scroll-mt-24"
+              >
                 {/* Card header */}
                 <div className="border-b border-border/60 bg-muted/30 px-6 py-5">
                   <div className="flex items-center gap-3">
@@ -531,6 +551,7 @@ export default function OSWelcomeToBlossom() {
                   <div className="mt-5 border-t border-border/60 pt-4">
                     <p className="text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
                   </div>
+                  <ModuleCompleteAction moduleId={l.id} status={status} />
                 </div>
               </article>
             ))}
@@ -699,6 +720,60 @@ function GuideBlock({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Smooth-scroll to a module section on the same page and focus it. */
+function scrollToWelcomeSection(id: string) {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Make the section programmatically focusable so screen readers land there too.
+  const prev = el.getAttribute("tabindex");
+  if (prev === null) el.setAttribute("tabindex", "-1");
+  (el as HTMLElement).focus({ preventScroll: true });
+}
+
+/**
+ * Per-module "Mark complete" control. Writes through the same onboarding
+ * storage as the welcome video so progress, the rail status pills, and the
+ * Day-One readiness panel all stay in sync.
+ */
+function ModuleCompleteAction({
+  moduleId,
+  status,
+}: {
+  moduleId: string;
+  status: { modulesComplete: string[] };
+}) {
+  const done = status.modulesComplete.includes(moduleId);
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
+      <p className="text-[12.5px] text-muted-foreground">
+        {done
+          ? "You've marked this module complete. You can revisit it any time."
+          : "When you've read this module, mark it complete to track your progress."}
+      </p>
+      <Button
+        size="sm"
+        variant={done ? "outline" : "default"}
+        className="rounded-full"
+        onClick={() => {
+          if (!done) markModuleComplete(moduleId);
+        }}
+        disabled={done}
+        data-testid={`welcome-module-complete-${moduleId}`}
+      >
+        {done ? (
+          <>
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Completed
+          </>
+        ) : (
+          "Mark complete"
+        )}
+      </Button>
     </div>
   );
 }
