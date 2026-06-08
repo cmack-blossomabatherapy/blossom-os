@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight, PlayCircle, Sparkles, Heart, Compass, Users, ArrowLeft,
   BookOpen, MessageSquare, Quote, Video, Target, ListChecks, CheckCircle2,
-  Building2, Workflow, Flag,
+  Building2, Workflow, Flag, ShieldCheck, AlertTriangle, ExternalLink, Lock,
 } from "lucide-react";
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   WELCOME_CORE_VALUES,
   WELCOME_BLOSSOM_FLOW,
   WELCOME_LEADERSHIP_LETTERS,
+  WELCOME_HIPAA_CONTENT,
   WELCOME_COMPLETION,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
