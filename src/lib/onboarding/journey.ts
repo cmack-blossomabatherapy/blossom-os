@@ -110,6 +110,13 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
           { id: "read", label: "Read the Blossom flow", icon: BookOpen, href: "/training/welcome" },
           { id: "draw", label: "Draw the flow from memory and mark three risk points", icon: FileText, prompt: true, promptPlaceholder: "List the three places a state is most likely to get stuck." },
         ] },
+      { key: "welcome-hipaa-basics", title: "HIPAA & Privacy Basics", blurb: "What HIPAA is, what counts as Protected Health Information, and the everyday rules every Blossom employee follows to keep client information safe. Includes federal training videos.", icon: ShieldCheck, estMinutes: 15, kind: "content",
+        actions: [
+          { id: "read", label: "Read the HIPAA overview on the Welcome page", icon: BookOpen, href: "/training/welcome" },
+          { id: "watch", label: "Watch at least one of the linked HIPAA training videos", icon: PlayCircle, href: "/training/welcome" },
+          { id: "examples", label: "Write down two examples of PHI you will see in your role", icon: FileText, prompt: true, promptPlaceholder: "Two examples is enough." },
+          { id: "ack", label: "Acknowledge: if I'm not sure whether to share something, I will ask first", icon: ClipboardCheck },
+        ] },
       { key: "welcome-letter-chad", title: "Welcome Letter from Chad", blurb: "A personal letter from our CEO — read it, do not skim. Capture one sentence that resonated.", icon: UserCheck, estMinutes: 5, kind: "leader",
         leader: {
           ...LEADERS.chad,
