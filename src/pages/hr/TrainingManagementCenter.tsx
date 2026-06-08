@@ -54,8 +54,6 @@ import {
   Mail,
 } from "lucide-react";
 import {
-  trainingSops,
-  trainingTangos,
   trainingAssignments,
   trainingCategories,
   trainingTemplates,
@@ -201,7 +199,6 @@ type NavId =
   | "modules"
   | "onboarding"
   | "sops"
-  | "tangos"
   | "resources"
   | "assignments"
   | "categories"
@@ -215,7 +212,6 @@ const NAV: { id: NavId; label: string; icon: typeof FileText }[] = [
   { id: "modules", label: "Modules", icon: Layers },
   { id: "onboarding", label: "Welcome to Blossom", icon: Heart },
   { id: "sops", label: "SOPs", icon: FileText },
-  { id: "tangos", label: "Tango Walkthroughs", icon: PlayCircle },
   { id: "resources", label: "Resource Library", icon: Library },
   { id: "assignments", label: "Assignments", icon: Users },
   { id: "categories", label: "Categories", icon: FolderOpen },
@@ -513,7 +509,6 @@ export default function TrainingManagementCenter() {
           {nav === "modules" && <ModulesGrid modules={filteredModules} />}
           {nav === "onboarding" && <OnboardingView />}
           {nav === "sops" && <SopsList />}
-          {nav === "tangos" && <TangosGrid />}
           {nav === "resources" && <ResourceLibraryView />}
           {nav === "assignments" && <AssignmentsTable />}
           {nav === "categories" && <CategoriesGrid modules={allModules} />}
@@ -966,35 +961,6 @@ function SopsList() {
           ))}
         </ul>
       )}
-    </div>
-  );
-}
-
-function TangosGrid() {
-  return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {trainingTangos.map((t) => (
-        <a
-          key={t.id}
-          href={t.url}
-          target="_blank"
-          rel="noreferrer"
-          className="group rounded-2xl border border-border/70 bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40"
-        >
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
-            <PlayCircle className="h-5 w-5" />
-          </span>
-          <h3 className="mt-3 text-[14.5px] font-semibold tracking-tight text-foreground">
-            {t.title}
-          </h3>
-          <p className="mt-1 flex items-center gap-1 text-[12px] text-muted-foreground">
-            <Clock className="h-3 w-3" /> {t.durationMinutes} min walkthrough
-          </p>
-          <p className="mt-3 text-[12px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-            Open in Tango →
-          </p>
-        </a>
-      ))}
     </div>
   );
 }
