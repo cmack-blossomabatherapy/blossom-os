@@ -30,7 +30,7 @@ export interface JourneyModule {
   icon: LucideIcon;
   estMinutes: number;
   /** Module kind drives the rendered card variant. */
-  kind: "content" | "leader" | "shadowing" | "system" | "checkin" | "outcome" | "department" | "video";
+  kind: "content" | "leader" | "letter" | "shadowing" | "system" | "checkin" | "outcome" | "department" | "video";
   /** For video kind — optional URL; leave empty to render the branded "coming soon" placeholder. */
   video?: { url?: string; poster?: string; duration?: string; presenter?: string };
   /** Optional details by kind */
