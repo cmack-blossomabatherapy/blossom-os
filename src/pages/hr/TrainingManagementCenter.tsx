@@ -88,6 +88,10 @@ import { SDDayOneAdminPanel } from "@/components/training/SDDayOneAdminPanel";
 import { WelcomeReflectionsAdminPanel } from "@/components/training/WelcomeReflectionsAdminPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
+import {
+  computeSdScreenshotCoverage,
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
 
 /* ------- Local view-model adapters (Academy → Management Center) ------- */
 
