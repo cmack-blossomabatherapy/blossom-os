@@ -100,13 +100,17 @@ describe("Part 6 — SD generated titles are clean at source", () => {
     expect(getTraining("sd-w1d1-mission-vision")?.title).toBe("Mission & Vision");
   });
   it("no generated SD Training.title starts with W#", async () => {
-    const mod = await import("@/lib/training/academyData");
-    const list = (mod as any).searchTrainings?.("") ?? [];
-    const sd = list.filter((t: any) => t.id?.startsWith?.("sd-"));
-    expect(sd.length).toBeGreaterThan(0);
-    for (const t of sd) {
+    const { getTraining } = await import("@/lib/training/academyData");
+    const { SD_MODULE_SOP_LINKS } = await import("@/lib/training/stateDirectorModuleSopMap");
+    expect(SD_MODULE_SOP_LINKS.length).toBeGreaterThan(0);
+    let checked = 0;
+    for (const link of SD_MODULE_SOP_LINKS) {
+      const t = getTraining(link.moduleId);
+      if (!t) continue;
+      checked++;
       expect(t.title, `bad title: ${t.title}`).not.toMatch(/^W\d/);
     }
+    expect(checked).toBeGreaterThan(0);
   });
   it("OSTraining.tsx uses cleanSdTitle for learner-facing renders", () => {
     const t = fs.readFileSync(path.join(process.cwd(), "src/pages/os/OSTraining.tsx"), "utf8");
