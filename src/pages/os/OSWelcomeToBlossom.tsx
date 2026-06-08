@@ -89,6 +89,7 @@ export default function OSWelcomeToBlossom() {
 
   const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
+  const hipaaQuizPassed = status.modulesComplete.includes(WELCOME_HIPAA_QUIZ.moduleKey);
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("welcome-video-from-blossom");
