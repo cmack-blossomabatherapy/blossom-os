@@ -67,6 +67,7 @@ interface RoleRow {
 interface EmployeeLinkRow {
   id: string;
   user_id: string | null;
+  mentor_id?: string | null;
 }
 interface Member {
   user_id: string;
@@ -84,6 +85,7 @@ interface Member {
   dashboard_access: string;
   new_state_employee: boolean;
   active: boolean;
+  mentor_employee_id: string | null;
 }
 
 interface RecentVisit {
@@ -99,7 +101,7 @@ interface RoleActivity {
 
 async function syncEmployeeFromTeamMember(
   member: Member,
-  next: { display_name: string; email: string; job_title: string; department: string; state: string; clinic: string; active: boolean },
+  next: { display_name: string; email: string; job_title: string; department: string; state: string; clinic: string; active: boolean; mentor_employee_id: string | null },
 ) {
   const email = next.email.trim().toLowerCase();
   const displayName = next.display_name.trim() || member.display_name;
@@ -122,7 +124,8 @@ async function syncEmployeeFromTeamMember(
     state: HR_STATES.includes(state as (typeof HR_STATES)[number]) ? state : "GA",
     clinic: next.clinic.trim() || null,
     status: employeeStatus,
-  };
+    mentor_id: next.mentor_employee_id ?? null,
+  } as any;
 
   if (existing?.id) {
     const { error } = await supabase.from("employees").update(employeePayload).eq("id", existing.id);
@@ -178,12 +181,13 @@ export function TeamAdminPanel() {
         .from("profiles")
         .select("user_id, display_name, email, job_title, responsibilities, welcome_sent_at, department, state, clinic, part_of_leadership, dashboard_access, new_state_employee, active"),
       supabase.from("user_roles").select("user_id, role"),
-      supabase.from("employees").select("id, user_id").not("user_id", "is", null),
+      (supabase.from("employees").select("id, user_id, mentor_id") as any).not("user_id", "is", null),
     ]);
     const profiles = (profilesRes.data ?? []) as ProfileRow[];
     const roles = (rolesRes.data ?? []) as RoleRow[];
     const employeeLinks = (employeeLinksRes.data ?? []) as EmployeeLinkRow[];
     const employeeIdByUser = new Map(employeeLinks.map((row) => [row.user_id, row.id]));
+    const mentorIdByEmployee = new Map(employeeLinks.map((row) => [row.id, row.mentor_id ?? null]));
     const byUser = new Map<string, AppRole[]>();
     roles.forEach((r) => {
       const list = byUser.get(r.user_id) ?? [];
@@ -206,6 +210,10 @@ export function TeamAdminPanel() {
       dashboard_access: p.dashboard_access ?? "department",
       new_state_employee: !!p.new_state_employee,
       active: p.active ?? true,
+      mentor_employee_id: (() => {
+        const empId = employeeIdByUser.get(p.user_id);
+        return empId ? mentorIdByEmployee.get(empId) ?? null : null;
+      })(),
     }));
     combined.sort((a, b) => a.display_name.localeCompare(b.display_name));
     setMembers(combined);
@@ -241,6 +249,17 @@ export function TeamAdminPanel() {
     const remaining = filtered.filter((member) => !recentIds.includes(member.user_id));
     return [...recent, ...remaining].slice(0, 3);
   }, [filtered, query, recentVisits, showFullList]);
+
+  const mentorOptions = useMemo(() => {
+    return members
+      .filter((m) => m.employee_id)
+      .map((m) => ({
+        employee_id: m.employee_id as string,
+        label: m.display_name,
+        job_title: m.job_title || "",
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [members]);
 
   const trackVisited = (userId: string) => {
     setRecentVisits((current) => {
@@ -302,7 +321,7 @@ export function TeamAdminPanel() {
 
   const saveInfo = async (
     member: Member,
-    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean },
+    next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean; mentor_employee_id: string | null },
   ) => {
     setSavingId(member.user_id);
     const { error } = await supabase
@@ -340,6 +359,7 @@ export function TeamAdminPanel() {
       dashboard_access: next.dashboard_access,
       new_state_employee: next.new_state_employee,
       active: next.active,
+      mentor_employee_id: next.mentor_employee_id,
     });
     toast.success(syncedEmployeeId ? "Saved and HR record linked" : "Saved");
     return true;
@@ -436,6 +456,7 @@ export function TeamAdminPanel() {
             roleActivity={roleActivity.find((activity) => activity.id === m.user_id) ?? null}
             saving={savingId === m.user_id}
             isCurrentUser={m.user_id === currentUser?.id}
+            mentorOptions={mentorOptions.filter((o) => o.employee_id !== m.employee_id)}
           />
         ))}
         {visibleMembers.length === 0 && (
@@ -457,10 +478,11 @@ function MemberRow({
   roleActivity,
   saving,
   isCurrentUser,
+  mentorOptions,
 }: {
   member: Member;
   onToggleRole: (role: AppRole) => void;
-  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean }) => Promise<boolean>;
+  onSaveInfo: (next: { display_name: string; email: string; job_title: string; responsibilities: string; department: string; state: string; clinic: string; part_of_leadership: boolean; dashboard_access: string; new_state_employee: boolean; active: boolean; mentor_employee_id: string | null }) => Promise<boolean>;
   onSendWelcome: () => void;
   onSendPasswordReset: () => void;
   onVisited: () => void;
@@ -468,6 +490,7 @@ function MemberRow({
   roleActivity: RoleActivity | null;
   saving: boolean;
   isCurrentUser: boolean;
+  mentorOptions: { employee_id: string; label: string; job_title: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -482,6 +505,7 @@ function MemberRow({
   const [draftDashboard, setDraftDashboard] = useState(member.dashboard_access);
   const [draftNewState, setDraftNewState] = useState(member.new_state_employee);
   const [draftActive, setDraftActive] = useState(member.active);
+  const [draftMentor, setDraftMentor] = useState<string | null>(member.mentor_employee_id);
 
   // Re-sync draft when member changes (e.g. after refresh)
   useEffect(() => {
@@ -496,7 +520,8 @@ function MemberRow({
     setDraftDashboard(member.dashboard_access);
     setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
-  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.new_state_employee, member.active]);
+    setDraftMentor(member.mentor_employee_id);
+  }, [member.display_name, member.email, member.job_title, member.responsibilities, member.department, member.state, member.clinic, member.part_of_leadership, member.dashboard_access, member.new_state_employee, member.active, member.mentor_employee_id]);
 
   const handleSave = async () => {
     const ok = await onSaveInfo({
@@ -511,6 +536,7 @@ function MemberRow({
       dashboard_access: draftDashboard,
       new_state_employee: draftNewState,
       active: draftActive,
+      mentor_employee_id: draftMentor,
     });
     if (ok) setEditing(false);
   };
@@ -527,6 +553,7 @@ function MemberRow({
     setDraftDashboard(member.dashboard_access);
     setDraftNewState(member.new_state_employee);
     setDraftActive(member.active);
+    setDraftMentor(member.mentor_employee_id);
     setEditing(false);
   };
 
@@ -735,6 +762,34 @@ function MemberRow({
                     className="text-sm"
                   />
                 </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">
+                    Mentor
+                  </Label>
+                  {member.employee_id ? (
+                    <Select
+                      value={draftMentor ?? "none"}
+                      onValueChange={(v) => setDraftMentor(v === "none" ? null : v)}
+                    >
+                      <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select mentor" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No mentor</SelectItem>
+                        {mentorOptions.map((o) => (
+                          <SelectItem key={o.employee_id} value={o.employee_id}>
+                            {o.label}{o.job_title ? ` — ${o.job_title}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Save the member's info first to link an HR record before assigning a mentor.
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    The assigned mentor is shown in this person's Training Academy and is used for shadowing sign-offs and mentor check-ins.
+                  </p>
+                </div>
               </div>
             ) : (
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
@@ -747,6 +802,14 @@ function MemberRow({
                 <InfoLine label="Dashboard Access" value={member.dashboard_access || "Department-specific"} />
                 <InfoLine label="New State employee" value={member.new_state_employee ? "Yes" : "No"} />
                 <InfoLine label="Status" value={member.active ? "Active" : "Inactive"} />
+                <InfoLine
+                  label="Mentor"
+                  value={
+                    member.mentor_employee_id
+                      ? mentorOptions.find((o) => o.employee_id === member.mentor_employee_id)?.label ?? "Assigned"
+                      : "Not assigned"
+                  }
+                />
                 <div className="sm:col-span-2">
                   <InfoLine
                     label="Responsibilities"

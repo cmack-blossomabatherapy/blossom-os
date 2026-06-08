@@ -3776,6 +3776,7 @@ export type Database = {
           linkedin_url: string | null
           manager_id: string | null
           meeting_link: string | null
+          mentor_id: string | null
           next_review_date: string | null
           nfc_settings: Json
           notes: string | null
@@ -3841,6 +3842,7 @@ export type Database = {
           linkedin_url?: string | null
           manager_id?: string | null
           meeting_link?: string | null
+          mentor_id?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
           notes?: string | null
@@ -3906,6 +3908,7 @@ export type Database = {
           linkedin_url?: string | null
           manager_id?: string | null
           meeting_link?: string | null
+          mentor_id?: string | null
           next_review_date?: string | null
           nfc_settings?: Json
           notes?: string | null
@@ -3966,6 +3969,27 @@ export type Database = {
           {
             foreignKeyName: "employees_manager_id_fkey"
             columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "v_employee_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profile_completion"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "employees_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_mentor_id_fkey"
+            columns: ["mentor_id"]
             isOneToOne: false
             referencedRelation: "v_employee_directory"
             referencedColumns: ["id"]

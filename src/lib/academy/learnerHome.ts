@@ -29,6 +29,14 @@ export interface LearnerEmployee {
   state: string | null;
 }
 
+export interface LearnerMentor {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  job_title: string | null;
+  email: string | null;
+}
+
 export interface LearnerWeek {
   id: string;
   week_number: number;
@@ -60,6 +68,7 @@ export interface LearnerHome {
   loading: boolean;
   setupGaps: LearnerSetupGap[];
   employee: LearnerEmployee | null;
+  mentor: LearnerMentor | null;
   curriculum: AcademyCurriculum | null;
   enrollment: AcademyEnrollment | null;
   path: Exclude<AcademyPath, "either">;
@@ -82,6 +91,7 @@ export const emptyLearnerHome = (gaps: LearnerSetupGap[] = []): LearnerHome => (
   loading: false,
   setupGaps: gaps,
   employee: null,
+  mentor: null,
   curriculum: null,
   enrollment: null,
   path: "new_state",
@@ -108,6 +118,7 @@ function isWelcomeModule(m: AcademyModule): boolean {
 /** Build a normalized learner home from raw academy data. Pure, easy to test. */
 export function buildLearnerHome(input: {
   employee: LearnerEmployee | null;
+  mentor?: LearnerMentor | null;
   curriculum: AcademyCurriculum | null;
   enrollment: AcademyEnrollment | null;
   progress: AcademyProgress[];
@@ -115,6 +126,7 @@ export function buildLearnerHome(input: {
   checkins: AcademyCheckin[];
 }): LearnerHome {
   const { employee, curriculum, enrollment, progress, shadows, checkins } = input;
+  const mentor = input.mentor ?? null;
   const gaps: LearnerSetupGap[] = [];
   if (!employee) gaps.push("no_employee_link");
   if (!curriculum) gaps.push("no_curriculum");
@@ -218,6 +230,7 @@ export function buildLearnerHome(input: {
     loading: false,
     setupGaps: gaps,
     employee,
+    mentor,
     curriculum,
     enrollment,
     path,
@@ -241,17 +254,29 @@ export function buildLearnerHome(input: {
 export async function loadLearnerHome(userId: string | null | undefined): Promise<LearnerHome> {
   if (!userId) return emptyLearnerHome(["no_employee_link"]);
   const curriculum = await loadCurriculum();
-  const { data: emp } = await supabase
+  const { data: emp } = await (supabase
     .from("employees")
-    .select("id, first_name, last_name, job_title, state")
+    .select("id, first_name, last_name, job_title, state, mentor_id") as any)
     .eq("user_id", userId)
     .maybeSingle();
-  const employee = (emp as LearnerEmployee | null) ?? null;
+  const employeeRow = emp as (LearnerEmployee & { mentor_id?: string | null }) | null;
+  const employee: LearnerEmployee | null = employeeRow
+    ? { id: employeeRow.id, first_name: employeeRow.first_name, last_name: employeeRow.last_name, job_title: employeeRow.job_title, state: employeeRow.state }
+    : null;
   if (!employee) return emptyLearnerHome(curriculum ? ["no_employee_link"] : ["no_employee_link", "no_curriculum"]);
+  let mentor: LearnerMentor | null = null;
+  if (employeeRow?.mentor_id) {
+    const { data: mentorRow } = await supabase
+      .from("employees")
+      .select("id, first_name, last_name, job_title, email")
+      .eq("id", employeeRow.mentor_id)
+      .maybeSingle();
+    if (mentorRow) mentor = mentorRow as LearnerMentor;
+  }
   const enrollment = await getMyEnrollment(employee.id);
   if (!enrollment) {
     return buildLearnerHome({
-      employee, curriculum, enrollment: null,
+      employee, mentor, curriculum, enrollment: null,
       progress: [], shadows: [], checkins: [],
     });
   }
@@ -260,7 +285,7 @@ export async function loadLearnerHome(userId: string | null | undefined): Promis
     listShadowSessions(enrollment.id),
     listCheckins(enrollment.id),
   ]);
-  return buildLearnerHome({ employee, curriculum, enrollment, progress, shadows, checkins });
+  return buildLearnerHome({ employee, mentor, curriculum, enrollment, progress, shadows, checkins });
 }
 
 /** Mark a module as started; visible immediately in Training Management. */
