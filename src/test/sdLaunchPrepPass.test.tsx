@@ -23,12 +23,13 @@ function renderWithRouter(ui: React.ReactNode) {
 }
 
 describe("SD Launch Readiness Panel", () => {
-  it("renders all five checklist groups", () => {
+  it("renders all six checklist groups", () => {
     renderWithRouter(<SDLaunchReadinessPanel />);
     expect(screen.getByTestId("sd-launch-readiness-panel")).toBeInTheDocument();
     expect(screen.getByTestId("sd-launch-learner")).toBeInTheDocument();
     expect(screen.getByTestId("sd-launch-content")).toBeInTheDocument();
     expect(screen.getByTestId("sd-launch-resources")).toBeInTheDocument();
+    expect(screen.getByTestId("sd-launch-assets")).toBeInTheDocument();
     expect(screen.getByTestId("sd-launch-tracking")).toBeInTheDocument();
     expect(screen.getByTestId("sd-launch-design")).toBeInTheDocument();
   });
@@ -59,20 +60,30 @@ describe("SD Launch Readiness Panel", () => {
     });
   });
 
-  it("content setup confirms every required curriculum element", () => {
+  it("content setup shows data-driven curriculum counts", () => {
     renderWithRouter(<SDLaunchReadinessPanel />);
     const content = screen.getByTestId("sd-launch-content");
     [
-      "Welcome to Blossom ready",
-      /Week 1 content complete/,
-      /Weeks 2.{1,2}5 content complete/,
-      /Knowledge checks present/,
-      "Reflection prompts present",
-      "Shadowing modules present",
-      "Final readiness modules present",
-    ].forEach((label) => {
-      expect(within(content).getByText(label)).toBeInTheDocument();
+      /State Director modules registered/i,
+      /modules have why-it-matters guidance/i,
+      /modules have what-to-do steps/i,
+      /modules have completion evidence/i,
+      /modules have full SD content/i,
+      /modules have knowledge checks/i,
+      /modules have reflection prompts/i,
+    ].forEach((re) => {
+      expect(within(content).getByText(re)).toBeInTheDocument();
     });
+  });
+
+  it("asset setup does not hard-code video and screenshot readiness as green", () => {
+    renderWithRouter(<SDLaunchReadinessPanel />);
+    const assets = screen.getByTestId("sd-launch-assets");
+    expect(within(assets).getByText("Welcome video linked")).toBeInTheDocument();
+    expect(
+      within(assets).getByText(/Confirm a published Welcome video resource/i),
+    ).toBeInTheDocument();
+    expect(within(assets).getByText(/walkthrough screenshots available/i)).toBeInTheDocument();
   });
 });
 
