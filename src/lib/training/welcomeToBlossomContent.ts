@@ -267,8 +267,8 @@ export const WELCOME_BLOSSOM_FLOW: WelcomeFlowStep[] = [
 
 export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
   {
-    id: "ceo",
-    displayTitle: "A Welcome From Chad Kaufman",
+    id: "welcome-letter-chad",
+    displayTitle: "Welcome Letter from Chad",
     subtitle: "Chief Executive Officer",
     name: "Chad Kaufman",
     role: "Chief Executive Officer",
@@ -288,8 +288,8 @@ export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
     pullQuote: "Great ABA therapy does not happen through good intentions alone.",
   },
   {
-    id: "doo",
-    displayTitle: "A Note From Shira Lasry",
+    id: "welcome-letter-shira",
+    displayTitle: "Welcome Letter from Shira",
     subtitle: "Director of Operations",
     name: "Shira Lasry",
     role: "Director of Operations",
