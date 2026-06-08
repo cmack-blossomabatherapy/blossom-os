@@ -68,10 +68,12 @@ describe("Pass 2 — Assign modal contents (real persistence)", () => {
     expect(MODAL).toMatch(/from\("academy_tracks"\)/);
   });
   it("exposes Employee / Department / State / Role scope chips", () => {
-    expect(MODAL).toMatch(/assign-scope-employee/);
-    expect(MODAL).toMatch(/assign-scope-department/);
-    expect(MODAL).toMatch(/assign-scope-state/);
-    expect(MODAL).toMatch(/assign-scope-role/);
+    expect(MODAL).toMatch(/assign-scope-chips/);
+    expect(MODAL).toMatch(/assign-scope-\$\{c\.key\}/);
+    expect(MODAL).toMatch(/key: "employee"/);
+    expect(MODAL).toMatch(/key: "department"/);
+    expect(MODAL).toMatch(/key: "state"/);
+    expect(MODAL).toMatch(/key: "role"/);
   });
   it("uses a searchable employee picker — no free-text trainee/mentor inputs", () => {
     expect(MODAL).toMatch(/assign-employee-search/);
