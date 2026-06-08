@@ -493,39 +493,8 @@ export default function TrainingManagementCenter() {
           {/* Content by nav */}
           {nav === "control-room" && (
             <div className="space-y-6" data-testid="training-control-room-wide">
-              <TrainingManagementCountsPanel />
-              <section
-                data-testid="sd-launch-command"
-                aria-label="State Director Launch Command"
-                className="space-y-5 rounded-3xl border border-border/70 bg-gradient-to-br from-card to-muted/20 p-5 md:p-6"
-              >
-                <header className="flex flex-wrap items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                      Training Management
-                    </p>
-                    <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-foreground">
-                      State Director Launch Command
-                    </h2>
-                    <p className="mt-1 max-w-3xl text-[12.5px] text-muted-foreground">
-                      One operational view: launch status, SOP health, walkthrough assets, and the
-                      Resource Upload Center — so a new State Director can start training safely.
-                    </p>
-                  </div>
-                </header>
-                <SDLaunchReadinessPanel />
-                <SDDayOneAdminPanel />
-                <WelcomeReflectionsAdminPanel />
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <SDSopReadinessPanel />
-                  <SDScreenshotReadinessPanel />
-                </div>
-              </section>
-              <div className="grid gap-6 xl:grid-cols-2">
-                <SDDayOneAdminGuide />
-                <SDMentorCheckInGuide />
-              </div>
-              <TrainingControlRoom />
+              <ControlRoomLaunchReadinessSection />
+              <ControlRoomResourceAssetCoverageSection />
             </div>
           )}
           {nav === "journeys" && !selectedJourney && (
