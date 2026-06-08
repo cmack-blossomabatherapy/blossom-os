@@ -2411,3 +2411,102 @@ function TrainingManagementCountsPanel() {
     </section>
   );
 }
+
+/* ---- Control Room sections (final polish pass) ---- */
+
+function ControlRoomLaunchStatusRow() {
+  const { resources } = useAdminResources();
+  const sop = computeSdSopCoverageFromResources(resources);
+  const screenshots = computeSdScreenshotCoverage(resources);
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+
+  const cards: { label: string; value: string; tone: string }[] = [
+    { label: "Week 1 modules", value: "25", tone: "text-foreground" },
+    {
+      label: "SOPs connected",
+      value: `${sop.published}/${sop.total}`,
+      tone: sop.published === sop.total ? "text-emerald-600" : "text-amber-600",
+    },
+    {
+      label: "Screenshots matched",
+      value: `${screenshots.week1.matched}/${screenshots.week1.total}`,
+      tone:
+        screenshots.week1.matched === screenshots.week1.total
+          ? "text-emerald-600"
+          : "text-amber-600",
+    },
+    {
+      label: "Welcome video",
+      value: welcomeVideo.ok ? "Linked" : "Pending",
+      tone: welcomeVideo.ok ? "text-emerald-600" : "text-amber-600",
+    },
+  ];
+
+  return (
+    <div
+      data-testid="tmc-launch-status-row"
+      className="grid grid-cols-2 gap-3 md:grid-cols-4"
+    >
+      {cards.map((c) => (
+        <div
+          key={c.label}
+          className="rounded-xl border border-border/60 bg-background p-3"
+        >
+          <p className={cn("text-[20px] font-semibold tracking-tight", c.tone)}>
+            {c.value}
+          </p>
+          <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+            {c.label}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ControlRoomLaunchReadinessSection() {
+  return (
+    <section
+      data-testid="tmc-launch-readiness-section"
+      aria-label="State Director Launch Readiness"
+      className="space-y-5 rounded-2xl border border-teal-500/20 bg-card p-5 md:p-6"
+    >
+      <header>
+        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          Training Management
+        </p>
+        <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+          State Director Launch Readiness
+        </h2>
+        <p className="mt-1 max-w-3xl text-[12.5px] text-muted-foreground">
+          Honest, per-signal launch status for the State Director journey. Nothing is marked
+          ready unless the system can verify it.
+        </p>
+      </header>
+      <ControlRoomLaunchStatusRow />
+      <SDLaunchReadinessPanel />
+      <SDDayOneAdminPanel />
+      <WelcomeReflectionsAdminPanel />
+      <div className="grid gap-5 xl:grid-cols-2">
+        <SDSopReadinessPanel />
+        <SDScreenshotReadinessPanel />
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <SDDayOneAdminGuide />
+        <SDMentorCheckInGuide />
+      </div>
+    </section>
+  );
+}
+
+function ControlRoomResourceAssetCoverageSection() {
+  return (
+    <section
+      data-testid="tmc-resource-asset-coverage-section"
+      aria-label="Resource & Asset Coverage"
+      className="space-y-4"
+    >
+      <TrainingManagementCountsPanel />
+    </section>
+  );
+}
