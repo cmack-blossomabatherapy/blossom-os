@@ -30,7 +30,7 @@ import {
   getStateDirectorFullContent, isStateDirectorModule,
   type SDFullContent, type SDKnowledgeQ,
   getStateDirectorScreenshots, getStateDirectorScreenshotById, isScreenshotPiiSafe,
-  type SDScreenshotAsset,
+  type SDScreenshotAsset, findScreenshotResource,
 } from "@/lib/training/stateDirectorFullTraining";
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
@@ -503,11 +503,43 @@ function defaultKnowledgeCheck(t: Training): KCheckQ[] {
 }
 
 function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
-  const pending = asset.resourceStatus === "pending_upload";
+  const { resources } = useLibraryResources();
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(
+    asset.imageUrl ?? null,
+  );
   const heldForRedaction =
     asset.resourceStatus === "needs_redaction" || asset.sensitivity === "needs_redaction";
-  const safeToShow =
-    !pending && !heldForRedaction && !!asset.imageUrl && isScreenshotPiiSafe(asset);
+  const piiSafe = isScreenshotPiiSafe(asset);
+
+  const resourceMatch = useMemo(
+    () => findScreenshotResource(asset, resources),
+    [asset, resources],
+  );
+
+  useEffect(() => {
+    if (asset.imageUrl) {
+      setResolvedUrl(asset.imageUrl);
+      return;
+    }
+    if (!resourceMatch || heldForRedaction || !piiSafe) {
+      setResolvedUrl(null);
+      return;
+    }
+    if (resourceMatch.url) {
+      setResolvedUrl(resourceMatch.url);
+      return;
+    }
+    let cancelled = false;
+    void resolveResourceOpenUrl(resourceMatch.resource).then((u) => {
+      if (!cancelled) setResolvedUrl(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [asset, resourceMatch, heldForRedaction, piiSafe]);
+
+  const safeToShow = !heldForRedaction && piiSafe && !!resolvedUrl;
+  const pending = !safeToShow && !heldForRedaction;
   return (
     <div
       data-testid="sd-screenshot"
@@ -519,18 +551,24 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
       <p className="mt-0.5 text-muted-foreground">{asset.description}</p>
       {safeToShow ? (
         <img
-          src={asset.imageUrl}
+          src={resolvedUrl ?? undefined}
           alt={asset.alt}
           loading="lazy"
           className="mt-2 max-h-72 w-full rounded-lg border border-border/60 object-contain bg-background"
         />
       ) : pending ? (
-        <p
+        <div
           data-testid="sd-screenshot-pending"
-          className="mt-2 rounded-md border border-dashed border-border bg-background px-3 py-2 text-muted-foreground"
+          className="mt-2 flex items-start gap-2 rounded-md border border-dashed border-border bg-background/70 px-3 py-2 text-[12px] text-muted-foreground"
         >
-          Screenshot pending — this visual will appear once the training asset is uploaded.
-        </p>
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/70" />
+          <div className="min-w-0">
+            <p className="font-medium text-foreground">{asset.resourceTitle ?? asset.title}</p>
+            <p className="mt-0.5">
+              Visual pending — {asset.description.toLowerCase()} Your mentor can walk this live until it's uploaded.
+            </p>
+          </div>
+        </div>
       ) : heldForRedaction ? (
         <p
           data-testid="sd-screenshot-held"
