@@ -101,8 +101,8 @@ describe("Welcome to Blossom — leadership letters", () => {
   });
 
   it("welcome modules include CEO and DOO letter entries", () => {
-    const ceo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-ceo");
-    const doo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-doo");
+    const ceo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-chad");
+    const doo = WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === "welcome-letter-shira");
     expect(ceo).toBeTruthy();
     expect(doo).toBeTruthy();
   });
