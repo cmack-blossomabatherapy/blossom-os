@@ -11,11 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { markModuleComplete } from "@/lib/onboarding/storage";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import { computeSdWelcomeVideoState } from "@/lib/training/sdRuntimeReadiness";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import {
+  completeWelcomeModuleEverywhere,
+  getNextStateDirectorTrainingPath,
+  isWelcomeModuleComplete,
+} from "@/lib/training/welcomeProgressBridge";
 import {
   WELCOME_TO_BLOSSOM_HERO,
   WELCOME_TO_BLOSSOM_MODULES,
@@ -85,12 +89,12 @@ export default function OSWelcomeToBlossom() {
     (displayName || (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "there")
       .split(" ")[0];
 
-  const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
+  const videoDone = isWelcomeModuleComplete("welcome-video-from-blossom", status.modulesComplete);
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
 
   // Welcome-to-Blossom overall progress across the 7 modules.
   const welcomeDoneCount = WELCOME_TO_BLOSSOM_MODULES.filter((m) =>
-    status.modulesComplete.includes(m.id),
+    isWelcomeModuleComplete(m.id, status.modulesComplete),
   ).length;
   const welcomeTotal = WELCOME_TO_BLOSSOM_MODULES.length;
   const welcomePercent =
@@ -98,7 +102,11 @@ export default function OSWelcomeToBlossom() {
   const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
   const markReviewed = () => {
-    if (!videoDone) markModuleComplete("welcome-video-from-blossom");
+    if (!videoDone) completeWelcomeModuleEverywhere("welcome-video-from-blossom");
+  };
+
+  const continueToStateDirectorJourney = () => {
+    navigate(getNextStateDirectorTrainingPath());
   };
 
   const pillars = [
@@ -181,7 +189,7 @@ export default function OSWelcomeToBlossom() {
             <Button size="sm" className="rounded-full" onClick={markReviewed}>
               Start Welcome to Blossom <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
-            <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training")}>
+            <Button size="sm" variant="outline" className="rounded-full" onClick={continueToStateDirectorJourney}>
               Continue to State Director Journey
             </Button>
           </div>
@@ -237,7 +245,7 @@ export default function OSWelcomeToBlossom() {
           </div>
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
             {WELCOME_TO_BLOSSOM_MODULES.map((m, idx) => {
-              const done = status.modulesComplete.includes(m.id);
+              const done = isWelcomeModuleComplete(m.id, status.modulesComplete);
               const cta = done ? "Review" : "Start";
               return (
                 <li key={m.id}>
