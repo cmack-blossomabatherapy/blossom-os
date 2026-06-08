@@ -775,37 +775,80 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
         </div>
       </div>
 
-      {/* Start here intro */}
-      <div data-testid="sd-start-here" className="rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.06] via-card to-card p-5 sm:p-6">
-        <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-primary">
-          <Sparkles className="h-3 w-3" /> Start here
+      {/* SD module hero — one warm header, no duplicate intro card */}
+      <div
+        data-testid="sd-module-hero"
+        className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] via-card to-card p-6 sm:p-7"
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="text-primary">State Director Training</span>
+                <span aria-hidden>·</span>
+                <span>{weekDay}</span>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
+                {training.required && <><span aria-hidden>·</span><span className="text-amber-700">Required</span></>}
+              </div>
+              <h1 data-testid="sd-module-hero-title" className="mt-1.5 text-[22px] font-semibold tracking-tight text-foreground md:text-[26px]">
+                {displayTitle}
+              </h1>
+              <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-muted-foreground">
+                {training.description}
+              </p>
+              <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-foreground/70">
+                Read the &ldquo;Why this matters&rdquo; below, walk the steps, then capture a short reflection.
+                Your mentor is here for any question.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <Badge variant="outline" className="text-[10px]">{training.type}</Badge>
+                {requiresMentorSignoff && (
+                  <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
+                    <ShieldCheck className="mr-1 h-3 w-3" /> Mentor signoff required
+                  </Badge>
+                )}
+                {completed && (
+                  <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">Complete</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-start gap-2 md:items-end">
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="h-8 rounded-full" onClick={handleStart} disabled={busy !== null}>
+                <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
+              </Button>
+              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null}>
+                <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
+              </Button>
+            </div>
+            {!hasDb && (
+              <span className="text-[10.5px] text-muted-foreground">
+                Progress will sync once enrollment is linked.
+              </span>
+            )}
+          </div>
         </div>
-        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">{displayTitle}</h3>
-        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-          Take this one calmly. Read the &quot;Why this matters&quot; below, walk the steps, then capture
-          a short reflection before you mark it complete. Your mentor is here for any question.
-        </p>
-      </div>
 
-      {/* SD module header summary (info-only; actions live in the sticky strip) */}
-      <div className="rounded-3xl border border-border/70 bg-card p-6">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{weekDay}</p>
-        <h2 className="mt-1 text-[18px] font-semibold tracking-tight">{displayTitle}</h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">{training.description}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-          <Badge variant="outline" className="text-[10px]">{training.type}</Badge>
-          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
-          {requiresMentorSignoff && (
-            <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
-              <ShieldCheck className="mr-1 h-3 w-3" /> Mentor signoff required
-            </Badge>
-          )}
-          {completed && (
-            <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">Complete</Badge>
-          )}
-          {!hasDb && (
-            <span className="text-[10.5px] text-muted-foreground">Local-only progress (no enrollment linked)</span>
-          )}
+        {/* Today's focus rail — warm, calming */}
+        <div className="relative mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: "Learn", icon: BookOpen, tone: "bg-primary/10 text-primary" },
+            { label: "Practice", icon: Workflow, tone: "bg-amber-500/10 text-amber-700" },
+            { label: "Reflect", icon: Pencil, tone: "bg-rose-500/10 text-rose-700" },
+            { label: "Ask mentor", icon: Compass, tone: "bg-emerald-500/10 text-emerald-700" },
+          ].map(({ label, icon: Icon, tone }) => (
+            <div key={label} className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-[12px]">
+              <span className={cn("grid h-6 w-6 place-items-center rounded-md", tone)}><Icon className="h-3.5 w-3.5" /></span>
+              <span className="font-medium text-foreground">{label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
