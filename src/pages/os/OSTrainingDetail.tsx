@@ -33,6 +33,10 @@ import {
   type SDScreenshotAsset, findScreenshotResource,
   getStateDirectorNoScreenshotDecision,
 } from "@/lib/training/stateDirectorFullTraining";
+import {
+  getStateDirectorEvidencePanel,
+  type SDEvidencePanel,
+} from "@/lib/training/stateDirectorEvidencePanels";
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
