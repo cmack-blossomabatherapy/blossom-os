@@ -6,7 +6,7 @@
  */
 import {
   SD_JOURNEY_MODULE_IDS,
-  getTrainingById,
+  getTraining,
   type Training,
 } from "./academyData";
 import {
@@ -37,7 +37,7 @@ export function computeSdContentReadiness(): SDContentReadiness {
   const missing: { id: string; title: string; reason: string }[] = [];
   let complete = 0;
   for (const id of SD_JOURNEY_MODULE_IDS) {
-    const t = getTrainingById(id);
+    const t = getTraining(id);
     if (!t) {
       missing.push({ id, title: id, reason: "Module not found in academy data." });
       continue;
@@ -136,6 +136,6 @@ export function computeSdWelcomeVideoState(
 // Helper re-export for tests.
 export function _onlySdTrainings(): Training[] {
   return SD_JOURNEY_MODULE_IDS
-    .map((id) => getTrainingById(id))
+    .map((id) => getTraining(id))
     .filter((t): t is Training => !!t);
 }
