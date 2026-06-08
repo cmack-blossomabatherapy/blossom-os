@@ -177,6 +177,57 @@ export default function OSWelcomeToBlossom() {
           </div>
         </header>
 
+        {/* MODULE SEQUENCE — visible 7-step rail */}
+        <section
+          aria-label="Welcome to Blossom modules"
+          data-testid="welcome-module-sequence"
+          className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm sm:p-6"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Universal onboarding - Phase 0
+              </p>
+              <h2 className="mt-1 text-[16px] font-semibold tracking-tight text-foreground">
+                Your 7 Welcome to Blossom modules
+              </h2>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">
+                Every employee starts here. Each step is tracked separately - you can revisit any of them anytime.
+              </p>
+            </div>
+            <span className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+              {WELCOME_TO_BLOSSOM_MODULES.length} modules
+            </span>
+          </div>
+          <ol className="mt-4 grid gap-2 sm:grid-cols-2">
+            {WELCOME_TO_BLOSSOM_MODULES.map((m, idx) => {
+              const done = status.modulesComplete.includes(m.id);
+              return (
+                <li
+                  key={m.id}
+                  data-testid={`welcome-module-${m.id}`}
+                  data-module-type={m.moduleType}
+                  className="flex items-start gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5"
+                >
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-semibold text-foreground">{m.title}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                      <Badge variant="outline" className="h-4 px-1.5 text-[10px] capitalize">
+                        {m.moduleType}
+                      </Badge>
+                      <span>~{m.estimatedMinutes} min</span>
+                      {done && <span className="text-primary">- Complete</span>}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
         {/* WELCOME VIDEO */}
         <section className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm">
           {hasVideo ? (
