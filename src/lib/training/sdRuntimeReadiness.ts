@@ -169,7 +169,7 @@ export function computeSdWelcomeVideoCheck(
   return {
     state: "manual",
     label: "Welcome video linked",
-    note: "Publish a Welcome video resource (e.g. 'Welcome Video from Blossom') in Resource Upload Center.",
+    note: "Confirm a published Welcome video resource (e.g. 'Welcome Video from Blossom') exists before launch.",
   };
 }
 
