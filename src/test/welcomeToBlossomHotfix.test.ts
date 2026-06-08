@@ -62,8 +62,13 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
   });
 
   it("renders both pull quotes from Chad and Shira", () => {
-    expect(WELCOME).toMatch(/Great ABA therapy does not happen through good intentions alone/);
-    expect(WELCOME).toMatch(/The deeper skill is learning how to keep a state moving without creating panic/);
+    const CONTENT = fs.readFileSync(
+      "src/lib/training/welcomeToBlossomContent.ts",
+      "utf8",
+    );
+    expect(CONTENT).toMatch(/Great ABA therapy does not happen through good intentions alone/);
+    expect(CONTENT).toMatch(/The deeper skill is learning how to keep a state moving without creating panic/);
+    expect(WELCOME).toMatch(/\{l\.pullQuote\}/);
   });
 
   it("renders the reflection panel after letters", () => {
