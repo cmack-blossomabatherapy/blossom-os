@@ -340,7 +340,7 @@ export default function OSWelcomeToBlossom() {
                 size="sm"
                 variant="ghost"
                 className="rounded-full"
-                onClick={() => navigate("/training")}
+                onClick={continueToStateDirectorJourney}
               >
                 Continue to State Director Journey <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
@@ -632,7 +632,7 @@ export default function OSWelcomeToBlossom() {
                   <Button
                     size="sm"
                     className="rounded-full"
-                    onClick={() => navigate("/training")}
+                    onClick={continueToStateDirectorJourney}
                     data-testid="welcome-reflection-continue"
                   >
                     Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -672,7 +672,7 @@ export default function OSWelcomeToBlossom() {
               <Button
                 size="lg"
                 className="rounded-2xl shadow-md shadow-primary/20"
-                onClick={() => navigate("/training")}
+                onClick={continueToStateDirectorJourney}
                 data-testid="welcome-continue-launch-path"
               >
                 Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
@@ -792,7 +792,7 @@ function ModuleCompleteAction({
   moduleId: string;
   status: { modulesComplete: string[] };
 }) {
-  const done = status.modulesComplete.includes(moduleId);
+  const done = isWelcomeModuleComplete(moduleId, status.modulesComplete);
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
       <p className="text-[12.5px] text-muted-foreground">
@@ -805,7 +805,7 @@ function ModuleCompleteAction({
         variant={done ? "outline" : "default"}
         className="rounded-full"
         onClick={() => {
-          if (!done) markModuleComplete(moduleId);
+          if (!done) completeWelcomeModuleEverywhere(moduleId);
         }}
         disabled={done}
         data-testid={`welcome-module-complete-${moduleId}`}
