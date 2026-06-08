@@ -84,11 +84,11 @@ export default function OSWelcomeToBlossom() {
     (displayName || (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "there")
       .split(" ")[0];
 
-  const videoDone = status.modulesComplete.includes("p0.intro-video");
+  const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
 
   const markReviewed = () => {
-    if (!videoDone) markModuleComplete("p0.intro-video");
+    if (!videoDone) markModuleComplete("welcome-video-from-blossom");
   };
 
   const pillars = [
