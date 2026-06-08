@@ -368,3 +368,89 @@ function SummaryTile({
     </div>
   );
 }
+
+function TrainingScreenshotsPanel({
+  resources,
+}: {
+  resources: Resource[];
+}) {
+  const rows = SD_ALL_SCREENSHOTS.map((asset) => {
+    const match = findScreenshotResource(asset, resources);
+    const training = getTraining(asset.moduleId);
+    const piiSafe = isScreenshotPiiSafe(asset);
+    const needsRedaction =
+      asset.resourceStatus === "needs_redaction" ||
+      asset.sensitivity === "needs_redaction" ||
+      !piiSafe;
+    return { asset, match, training, needsRedaction };
+  });
+  const available = rows.filter((r) => r.match && !r.needsRedaction).length;
+  const pending = rows.filter((r) => !r.match && !r.needsRedaction).length;
+  const redaction = rows.filter((r) => r.needsRedaction).length;
+  return (
+    <div
+      data-testid="training-screenshots-panel"
+      className="overflow-auto"
+    >
+      <div className="flex flex-wrap items-center gap-3 border-b border-border/40 px-4 py-3 text-[12px] text-muted-foreground">
+        <span><span className="font-semibold text-foreground">{SD_ALL_SCREENSHOTS.length}</span> registered screenshots</span>
+        <span className="text-emerald-700"><span className="font-semibold">{available}</span> available</span>
+        <span className="text-amber-700"><span className="font-semibold">{pending}</span> pending upload</span>
+        <span className="text-rose-700"><span className="font-semibold">{redaction}</span> need redaction</span>
+      </div>
+      <table className="w-full min-w-[820px] text-[12.5px]">
+        <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2.5 text-left font-medium">Expected title</th>
+            <th className="px-3 py-2.5 text-left font-medium">Module / day</th>
+            <th className="px-3 py-2.5 text-left font-medium">Matched upload</th>
+            <th className="px-3 py-2.5 text-left font-medium">Upload status</th>
+            <th className="px-3 py-2.5 text-left font-medium">Openable</th>
+            <th className="px-3 py-2.5 text-left font-medium">Needs redaction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ asset, match, training, needsRedaction }) => (
+            <tr
+              key={asset.id}
+              data-testid={`screenshot-row-${asset.id}`}
+              className="border-t border-border/40"
+            >
+              <td className="px-3 py-2 text-foreground">
+                <div className="font-medium">{asset.resourceTitle ?? asset.title}</div>
+                <div className="text-[11px] text-muted-foreground">{asset.title}</div>
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {training?.title ?? asset.moduleId}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {match ? (
+                  <span className="font-medium text-foreground">{match.resource.title}</span>
+                ) : (
+                  <span className="text-amber-700">Not matched</span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {match?.resource.uploadStatus ?? (match ? "published" : "—")}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {match?.openable ? (
+                  <span className="text-emerald-700">Yes</span>
+                ) : (
+                  <span className="text-muted-foreground">No</span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {needsRedaction ? (
+                  <span className="text-rose-700">Yes</span>
+                ) : (
+                  <span className="text-muted-foreground">No</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
