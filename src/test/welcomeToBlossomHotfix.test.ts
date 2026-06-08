@@ -36,9 +36,10 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toContain("Continue to State Director Journey");
   });
 
-  it("bottom CTA navigates to /training, not legacy onboarding/week/1", () => {
+  it("bottom CTA routes to the next State Director module, not legacy onboarding/week/1", () => {
     expect(WELCOME).not.toMatch(/\/onboarding\/week\/1/);
-    expect(WELCOME).toMatch(/navigate\("\/training"\)/);
+    expect(WELCOME).toMatch(/getNextStateDirectorTrainingPath/);
+    expect(WELCOME).toMatch(/navigate\(getNextStateDirectorTrainingPath\(\)\)/);
   });
 
   it("secondary CTA opens Resource Library", () => {
