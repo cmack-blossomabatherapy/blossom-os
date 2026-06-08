@@ -655,10 +655,15 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [user?.id]);
 
   const dbMatch = useMemo(() => {
-    const title = training.title.trim().toLowerCase();
+    const raw = training.title.trim().toLowerCase();
+    const clean = cleanSdTitle(training.title).trim().toLowerCase();
     for (const w of learnerHome.weeks) {
       for (const m of w.modules) {
-        if (m.title.trim().toLowerCase() === title) return { module: m, week: w };
+        const mRaw = m.title.trim().toLowerCase();
+        const mClean = cleanSdTitle(m.title).trim().toLowerCase();
+        if (mRaw === raw || mClean === clean || mRaw === clean || mClean === raw) {
+          return { module: m, week: w };
+        }
       }
     }
     return null;
