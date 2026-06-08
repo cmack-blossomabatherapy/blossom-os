@@ -667,7 +667,7 @@ function MissingSDSopsPanel({ coverage }: { coverage: SdSopCoverageReport }) {
                 <th className="px-3 py-2.5 text-left font-medium">Wk / Day</th>
                 <th className="px-3 py-2.5 text-left font-medium">Module</th>
                 <th className="px-3 py-2.5 text-left font-medium">Expected SOP title</th>
-                <th className="px-3 py-2.5 text-left font-medium">Business area</th>
+                <th className="px-3 py-2.5 text-left font-medium">Departments</th>
               </tr>
             </thead>
             <tbody>
@@ -688,7 +688,7 @@ function MissingSDSopsPanel({ coverage }: { coverage: SdSopCoverageReport }) {
                   </td>
                   <td className="px-3 py-2 text-foreground">{e.entry.title}</td>
                   <td className="px-3 py-2 text-muted-foreground">
-                    {e.entry.businessArea ?? "—"}
+                    {e.entry.departments.join(", ") || "—"}
                   </td>
                 </tr>
               ))}
