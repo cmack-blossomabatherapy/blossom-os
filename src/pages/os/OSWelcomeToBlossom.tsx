@@ -102,10 +102,11 @@ export default function OSWelcomeToBlossom() {
   const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
   const markReviewed = () => {
-    if (!videoDone) completeWelcomeModuleEverywhere("welcome-video-from-blossom");
+    completeWelcomeModuleEverywhere("welcome-video-from-blossom");
   };
 
   const continueToStateDirectorJourney = () => {
+    markReviewed();
     navigate(getNextStateDirectorTrainingPath());
   };
 
