@@ -25,7 +25,47 @@ describe("Training polish pass — Need Help mentor/HR routing", () => {
 
   it("Missing-mentor calm state is wired", () => {
     expect(needHelp).toMatch(/Mentor not assigned yet/);
-    expect(needHelp).toMatch(/Assign a mentor in User Management/);
+    expect(needHelp).toMatch(/HR can assign your mentor/);
+    expect(needHelp).toMatch(/Mentor email missing - HR can update it/);
+    expect(needHelp).toMatch(/Mentor email missing/);
+    expect(needHelp).toMatch(/Mentor assignment needed/);
+    // No learner-facing fallback should route into User Management.
+    expect(needHelp).not.toMatch(/to:\s*"\/user-management"/);
+  });
+});
+
+describe("Training polish pass — resource title cleanup robustness", () => {
+  it("handles real uploaded-doc shapes", async () => {
+    const { cleanResourceTitle } = await import("@/lib/resources/resourceDisplay");
+    expect(cleanResourceTitle("34 W2D4 Operational Prioritization SOP.pdf"))
+      .toBe("Operational Prioritization SOP");
+    expect(cleanResourceTitle("W1D1 Mission & Vision.docx")).toBe("Mission & Vision");
+    expect(cleanResourceTitle("07_W3-D2 Treatment Authorization Workflow.pdf"))
+      .toBe("Treatment Authorization Workflow");
+    expect(cleanResourceTitle("W4 D5 Shadowing & Field Training"))
+      .toBe("Shadowing & Field Training");
+  });
+});
+
+describe("Training polish pass — SD module detail action focus", () => {
+  const file = read("src/pages/os/OSTrainingDetail.tsx");
+  it("only one primary Mark complete action in the SD detail (hero)", () => {
+    const matches = file.match(/data-testid="sd-mark-complete"/g) ?? [];
+    expect(matches.length).toBe(1);
+  });
+  it("sticky strip is passive — no Start/Mark complete buttons inside it", () => {
+    const strip = file.split('data-testid="sd-progress-strip"')[1]?.split("</div>")[0] ?? "";
+    expect(strip).not.toMatch(/<Button/);
+  });
+  it("hero has no decorative blur orbs", () => {
+    const hero = file.split('data-testid="sd-module-hero"')[1]?.split('data-testid="sd-why-matters"')[0] ?? "";
+    expect(hero).not.toMatch(/blur-3xl/);
+  });
+  it("retains the warm structural sections", () => {
+    for (const id of ["sd-module-hero", "sd-why-matters", "sd-what-to-do"]) {
+      expect(file).toMatch(new RegExp(`data-testid="${id}"`));
+    }
+    expect(file).toMatch(/Step-by-step walkthrough|Walkthrough|sd-workflow-content/);
   });
 });
 

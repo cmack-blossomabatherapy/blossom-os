@@ -751,7 +751,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
   return (
     <section data-testid="sd-module-detail-panel" className="mt-6 space-y-6">
-      {/* Sticky progress strip */}
+      {/* Sticky progress strip — passive context only (actions live in the hero) */}
       <div
         data-testid="sd-progress-strip"
         className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-2.5 backdrop-blur"
@@ -765,23 +765,14 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           <span>·</span>
           <span>{completed ? "Complete" : dbProgress?.status === "in_progress" ? "In progress" : "Not started"}</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={handleStart} disabled={busy !== null}>
-            <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
-          </Button>
-          <Button size="sm" className="h-7 rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
-            <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
-          </Button>
-        </div>
       </div>
 
-      {/* SD module hero — one warm header, no duplicate intro card */}
+      {/* SD module hero — single warm header with the only primary actions */}
       <div
         data-testid="sd-module-hero"
-        className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/[0.07] via-card to-card p-6 sm:p-7"
+        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-6 sm:p-7"
       >
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-        <div className="pointer-events-none absolute -left-20 bottom-0 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/40 via-primary/15 to-transparent" aria-hidden />
         <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="flex items-start gap-4 min-w-0">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
@@ -824,7 +815,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
               <Button size="sm" variant="outline" className="h-8 rounded-full" onClick={handleStart} disabled={busy !== null}>
                 <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
               </Button>
-              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null}>
+              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
                 <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
               </Button>
             </div>
