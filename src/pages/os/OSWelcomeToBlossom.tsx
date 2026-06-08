@@ -723,3 +723,57 @@ function GuideBlock({
     </div>
   );
 }
+
+/** Smooth-scroll to a module section on the same page and focus it. */
+function scrollToWelcomeSection(id: string) {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Make the section programmatically focusable so screen readers land there too.
+  const prev = el.getAttribute("tabindex");
+  if (prev === null) el.setAttribute("tabindex", "-1");
+  (el as HTMLElement).focus({ preventScroll: true });
+}
+
+/**
+ * Per-module "Mark complete" control. Writes through the same onboarding
+ * storage as the welcome video so progress, the rail status pills, and the
+ * Day-One readiness panel all stay in sync.
+ */
+function ModuleCompleteAction({
+  moduleId,
+  status,
+}: {
+  moduleId: string;
+  status: { modulesComplete: string[] };
+}) {
+  const done = status.modulesComplete.includes(moduleId);
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
+      <p className="text-[12.5px] text-muted-foreground">
+        {done
+          ? "You've marked this module complete. You can revisit it any time."
+          : "When you've read this module, mark it complete to track your progress."}
+      </p>
+      <Button
+        size="sm"
+        variant={done ? "outline" : "default"}
+        className="rounded-full"
+        onClick={() => {
+          if (!done) markModuleComplete(moduleId);
+        }}
+        disabled={done}
+        data-testid={`welcome-module-complete-${moduleId}`}
+      >
+        {done ? (
+          <>
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Completed
+          </>
+        ) : (
+          "Mark complete"
+        )}
+      </Button>
+    </div>
+  );
+}
