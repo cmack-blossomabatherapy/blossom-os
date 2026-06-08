@@ -1426,7 +1426,22 @@ export function reorderJourneyModule(journeyId: string, fromIndex: number, toInd
 
 /* ---------------- Mock progress ---------------- */
 
-export const trainingProgress: Record<string, TrainingProgress> = {
+const PROGRESS_STORAGE_KEY = "blossom.training.progress.v1";
+
+function loadStoredProgress(): Record<string, TrainingProgress> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) as Record<string, TrainingProgress> : {};
+  } catch { return {}; }
+}
+
+function persistTrainingProgress() {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(trainingProgress)); } catch { /* ignore */ }
+}
+
+const seededTrainingProgress: Record<string, TrainingProgress> = {
   "intake-foundations": { trainingId: "intake-foundations", status: "completed", progressPercent: 100 },
   "phone-leads": { trainingId: "phone-leads", status: "completed", progressPercent: 100 },
   "intake-workflow": { trainingId: "intake-workflow", status: "in_progress", progressPercent: 60 },
@@ -1434,8 +1449,34 @@ export const trainingProgress: Record<string, TrainingProgress> = {
   "vob-basics": { trainingId: "vob-basics", status: "overdue", progressPercent: 10, dueDate: "2026-05-18" },
 };
 
+export const trainingProgress: Record<string, TrainingProgress> = {
+  ...seededTrainingProgress,
+  ...loadStoredProgress(),
+};
+
 export function getProgress(id: string): TrainingProgress {
   return trainingProgress[id] ?? { trainingId: id, status: "not_started", progressPercent: 0 };
+}
+
+export function setTrainingProgress(id: string, patch: Partial<TrainingProgress>) {
+  trainingProgress[id] = {
+    ...getProgress(id),
+    trainingId: id,
+    ...patch,
+  };
+  persistTrainingProgress();
+  state = { ...state };
+  emit();
+}
+
+export function markTrainingStarted(id: string) {
+  const current = getProgress(id);
+  if (current.status === "completed") return;
+  setTrainingProgress(id, { status: "in_progress", progressPercent: Math.max(current.progressPercent, 10) });
+}
+
+export function markTrainingComplete(id: string) {
+  setTrainingProgress(id, { status: "completed", progressPercent: 100 });
 }
 
 /* ---------------- Lookups (read live state) ---------------- */

@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   useAcademy, getTraining, getSectionsFor, getChecklistFor, getResourcesFor, getProgress,
-  trainingQuiz, type TrainingSection, type TrainingResource, type Training,
+  markTrainingStarted, trainingQuiz, type TrainingSection, type TrainingResource, type Training,
 } from "@/lib/training/academyData";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -42,6 +42,7 @@ import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
+import { completeWelcomeTrainingEverywhere } from "@/lib/training/welcomeProgressBridge";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -726,10 +727,12 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const requiresMentorSignoff = /shadow|signoff|sign-off|mentor|certification/i.test(training.title)
     || /^Shadowing$|^Meeting$/.test(training.type);
   const hasSignoff = !!dbProgress?.verified_at;
-  const completed = dbProgress?.status === "completed";
+  const localProgress = getProgress(training.id);
+  const completed = dbProgress?.status === "completed" || localProgress.status === "completed";
 
   async function handleStart() {
     if (!hasDb) {
+      markTrainingStarted(training.id);
       toast.success("Started locally — connect an enrollment to sync with leadership.");
       return;
     }
@@ -737,7 +740,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     const res = await startLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
     setBusy(null);
     if ((res as any)?.error) toast.error("Could not start module");
-    else { toast.success("Started — visible in Training Management"); await refresh(); }
+    else { markTrainingStarted(training.id); toast.success("Started — visible in Training Management"); await refresh(); }
   }
 
   async function handleComplete() {
@@ -746,6 +749,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
       return;
     }
     if (!hasDb) {
+      completeWelcomeTrainingEverywhere(training.id);
       toast.success("Marked complete locally — connect an enrollment to sync.");
       return;
     }
@@ -753,7 +757,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     const res = await completeLearnerModule(learnerHome.enrollment!.id, dbMatch!.module.id);
     setBusy(null);
     if ((res as any)?.error) toast.error("Could not complete module");
-    else { toast.success("Complete — synced to Training Management"); await refresh(); }
+    else { completeWelcomeTrainingEverywhere(training.id); toast.success("Complete — synced to Training Management"); await refresh(); }
   }
 
   async function handleSaveNotes() {
@@ -806,7 +810,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           {training.required && <span className="text-primary">· Required</span>}
           {requiresMentorSignoff && <span>· Mentor signoff required</span>}
           <span>·</span>
-          <span>{completed ? "Complete" : dbProgress?.status === "in_progress" ? "In progress" : "Not started"}</span>
+          <span>{completed ? "Complete" : dbProgress?.status === "in_progress" || localProgress.status === "in_progress" ? "In progress" : "Not started"}</span>
         </div>
       </div>
 
@@ -858,8 +862,8 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
               <Button size="sm" variant="outline" className="h-8 rounded-full" onClick={handleStart} disabled={busy !== null}>
                 <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
               </Button>
-              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
-                <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
+              <Button size="sm" className="h-8 rounded-full" onClick={handleComplete} disabled={busy !== null || completed} data-testid="sd-mark-complete">
+                <CheckCircle2 className="mr-1 h-3 w-3" /> {completed ? "Complete" : "Mark complete"}
               </Button>
             </div>
             {!hasDb && (

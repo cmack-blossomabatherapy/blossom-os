@@ -11,11 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { markModuleComplete } from "@/lib/onboarding/storage";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useAdminResources } from "@/hooks/useAdminResources";
 import { computeSdWelcomeVideoState } from "@/lib/training/sdRuntimeReadiness";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import {
+  completeWelcomeModuleEverywhere,
+  getNextStateDirectorTrainingPath,
+  isWelcomeModuleComplete,
+  WELCOME_TO_SD_TRAINING_ID,
+} from "@/lib/training/welcomeProgressBridge";
+import { completeLearnerModule, loadLearnerHome, type LearnerHome } from "@/lib/academy/learnerHome";
 import {
   WELCOME_TO_BLOSSOM_HERO,
   WELCOME_TO_BLOSSOM_MODULES,
@@ -85,20 +91,37 @@ export default function OSWelcomeToBlossom() {
     (displayName || (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "there")
       .split(" ")[0];
 
-  const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
+  const videoDone = isWelcomeModuleComplete("welcome-video-from-blossom", status.modulesComplete);
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
 
   // Welcome-to-Blossom overall progress across the 7 modules.
   const welcomeDoneCount = WELCOME_TO_BLOSSOM_MODULES.filter((m) =>
-    status.modulesComplete.includes(m.id),
+    isWelcomeModuleComplete(m.id, status.modulesComplete),
   ).length;
   const welcomeTotal = WELCOME_TO_BLOSSOM_MODULES.length;
   const welcomePercent =
     welcomeTotal === 0 ? 0 : Math.round((welcomeDoneCount / welcomeTotal) * 100);
   const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
+  const syncWelcomeToAcademy = async (welcomeModuleId: string) => {
+    if (!user?.id) return;
+    try {
+      const home = await loadLearnerHome(user.id);
+      const academyModule = findAcademyWelcomeModule(home, welcomeModuleId);
+      if (home.enrollment && academyModule) {
+        await completeLearnerModule(home.enrollment.id, academyModule.id);
+      }
+    } catch { /* local completion is still valid if live sync is unavailable */ }
+  };
+
   const markReviewed = () => {
-    if (!videoDone) markModuleComplete("welcome-video-from-blossom");
+    completeWelcomeModuleEverywhere("welcome-video-from-blossom");
+    void syncWelcomeToAcademy("welcome-video-from-blossom");
+  };
+
+  const continueToStateDirectorJourney = () => {
+    markReviewed();
+    navigate(getNextStateDirectorTrainingPath());
   };
 
   const pillars = [
@@ -181,7 +204,7 @@ export default function OSWelcomeToBlossom() {
             <Button size="sm" className="rounded-full" onClick={markReviewed}>
               Start Welcome to Blossom <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
-            <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/training")}>
+            <Button size="sm" variant="outline" className="rounded-full" onClick={continueToStateDirectorJourney}>
               Continue to State Director Journey
             </Button>
           </div>
@@ -237,7 +260,7 @@ export default function OSWelcomeToBlossom() {
           </div>
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
             {WELCOME_TO_BLOSSOM_MODULES.map((m, idx) => {
-              const done = status.modulesComplete.includes(m.id);
+              const done = isWelcomeModuleComplete(m.id, status.modulesComplete);
               const cta = done ? "Review" : "Start";
               return (
                 <li key={m.id}>
@@ -332,7 +355,7 @@ export default function OSWelcomeToBlossom() {
                 size="sm"
                 variant="ghost"
                 className="rounded-full"
-                onClick={() => navigate("/training")}
+                onClick={continueToStateDirectorJourney}
               >
                 Continue to State Director Journey <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
@@ -411,7 +434,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
-          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} />
+          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* CORE VALUES */}
@@ -440,7 +463,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
-          <ModuleCompleteAction moduleId="welcome-core-values" status={status} />
+          <ModuleCompleteAction moduleId="welcome-core-values" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* MEET THE TEAM */}
@@ -479,7 +502,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Write down your mentor, your first three department partners, and one question for each." />
           </div>
-          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} />
+          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* HOW BLOSSOM WORKS */}
@@ -525,7 +548,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share your drawn flow and three risk points with your mentor." />
           </div>
-          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} />
+          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
         </section>
 
         {/* LEADERSHIP LETTERS */}
@@ -587,7 +610,7 @@ export default function OSWelcomeToBlossom() {
                   <div className="mt-5 border-t border-border/60 pt-4">
                     <p className="text-[12.5px] font-medium text-foreground">— {l.signoff}</p>
                   </div>
-                  <ModuleCompleteAction moduleId={l.id} status={status} />
+                  <ModuleCompleteAction moduleId={l.id} status={status} syncWelcomeToAcademy={syncWelcomeToAcademy} />
                 </div>
               </article>
             ))}
@@ -624,7 +647,7 @@ export default function OSWelcomeToBlossom() {
                   <Button
                     size="sm"
                     className="rounded-full"
-                    onClick={() => navigate("/training")}
+                    onClick={continueToStateDirectorJourney}
                     data-testid="welcome-reflection-continue"
                   >
                     Continue to my launch path <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -664,7 +687,7 @@ export default function OSWelcomeToBlossom() {
               <Button
                 size="lg"
                 className="rounded-2xl shadow-md shadow-primary/20"
-                onClick={() => navigate("/training")}
+                onClick={continueToStateDirectorJourney}
                 data-testid="welcome-continue-launch-path"
               >
                 Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
@@ -736,6 +759,26 @@ function SectionHeader({
   );
 }
 
+function findAcademyWelcomeModule(home: LearnerHome, welcomeModuleId: string) {
+  const modules = home.weeks.flatMap((week) => week.modules);
+  const expectedTrainingId = WELCOME_TO_SD_TRAINING_ID[welcomeModuleId];
+  const normalizedTitle = (WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === welcomeModuleId)?.title ?? "")
+    .toLowerCase();
+
+  return modules.find((module) => {
+    const title = (module.title ?? "").toLowerCase();
+    if (module.id === expectedTrainingId || title === normalizedTitle) return true;
+    if (welcomeModuleId === "welcome-video-from-blossom") return title.includes("welcome to blossom") || title.startsWith("welcome video");
+    if (welcomeModuleId === "welcome-mission-vision") return title.includes("mission") && title.includes("vision");
+    if (welcomeModuleId === "welcome-core-values") return title.includes("core values");
+    if (welcomeModuleId === "welcome-meet-the-team") return title.includes("meet the team");
+    if (welcomeModuleId === "welcome-how-blossom-works") return title.includes("how blossom works");
+    if (welcomeModuleId === "welcome-letter-chad") return title.includes("chad");
+    if (welcomeModuleId === "welcome-letter-shira") return title.includes("shira");
+    return false;
+  }) ?? null;
+}
+
 function GuideBlock({
   icon: Icon, label, body, items,
 }: { icon: React.ComponentType<{ className?: string }>; label: string; body?: string; items?: string[] }) {
@@ -780,11 +823,13 @@ function scrollToWelcomeSection(id: string) {
 function ModuleCompleteAction({
   moduleId,
   status,
+  syncWelcomeToAcademy,
 }: {
   moduleId: string;
   status: { modulesComplete: string[] };
+  syncWelcomeToAcademy: (welcomeModuleId: string) => void | Promise<void>;
 }) {
-  const done = status.modulesComplete.includes(moduleId);
+  const done = isWelcomeModuleComplete(moduleId, status.modulesComplete);
   return (
     <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3">
       <p className="text-[12.5px] text-muted-foreground">
@@ -797,7 +842,10 @@ function ModuleCompleteAction({
         variant={done ? "outline" : "default"}
         className="rounded-full"
         onClick={() => {
-          if (!done) markModuleComplete(moduleId);
+          if (!done) {
+            completeWelcomeModuleEverywhere(moduleId);
+            void syncWelcomeToAcademy(moduleId);
+          }
         }}
         disabled={done}
         data-testid={`welcome-module-complete-${moduleId}`}
