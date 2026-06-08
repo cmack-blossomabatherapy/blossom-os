@@ -16,6 +16,53 @@ import {
 } from "./stateDirectorSopManifest";
 import type { Resource } from "./resourceData";
 
+/**
+ * Human-readable, copy-pasteable definition of what "connected" means for a
+ * State Director launch SOP. Surfaced as helper text in Resource Upload
+ * Center and Training Management so admins read the same rule everywhere.
+ */
+export const SD_SOP_CONNECTED_DEFINITION =
+  "A State Director SOP counts as connected only when a Resource record exists, " +
+  "is published (not archived, not vault/excluded, not in privacy/business review " +
+  "or needs_conversion), is not pending upload, has an openable URL or storage file, " +
+  "and its normalized title exactly matches the State Director SOP manifest title.";
+
+/** Static batch layout (SOPs 01-20, 21-40, 41-60, 61-80, 81-97). */
+export const SD_SOP_BATCHES: { batch: number; start: number; end: number }[] = [
+  { batch: 1, start: 1, end: 20 },
+  { batch: 2, start: 21, end: 40 },
+  { batch: 3, start: 41, end: 60 },
+  { batch: 4, start: 61, end: 80 },
+  { batch: 5, start: 81, end: 97 },
+];
+
+/** Sort the manifest into the canonical week → day → position order. */
+function sortedManifest(
+  manifest: SDSopManifestEntry[] = SD_SOP_MANIFEST,
+): SDSopManifestEntry[] {
+  return [...manifest].sort(
+    (a, b) =>
+      a.week - b.week || a.day - b.day || a.position - b.position ||
+      a.title.localeCompare(b.title),
+  );
+}
+
+/** Compute the 1-indexed global sequence for each manifest entry. */
+export function getSdSopSequenceMap(
+  manifest: SDSopManifestEntry[] = SD_SOP_MANIFEST,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  sortedManifest(manifest).forEach((e, idx) => map.set(e.id, idx + 1));
+  return map;
+}
+
+export function getSdSopBatchFor(sequence: number): number {
+  for (const b of SD_SOP_BATCHES) {
+    if (sequence >= b.start && sequence <= b.end) return b.batch;
+  }
+  return SD_SOP_BATCHES.length;
+}
+
 export function normalizeSopTitle(title: string): string {
   return title
     .toLowerCase()
@@ -47,6 +94,8 @@ export interface SdSopCoverageEntry {
   entry: SDSopManifestEntry;
   status: SdSopRealStatus;
   resource: Resource | null;
+  sequence: number;
+  batch: number;
 }
 
 export interface SdSopCoverageReport {
@@ -65,6 +114,20 @@ export interface SdSopCoverageReport {
   needsTitleCleanupEntries: SdSopCoverageCleanupEntry[];
   /** Uploaded hr_resources rows that don't match any manifest title. */
   unmatchedResources: Resource[];
+  /** Per-batch breakdown for the SD Launch upload tracker. */
+  batches: SdSopBatchSummary[];
+}
+
+export interface SdSopBatchSummary {
+  batch: number;
+  start: number;
+  end: number;
+  total: number;
+  connected: number;
+  missing: number;
+  needsFileRepair: number;
+  held: number;
+  needsTitleCleanup: number;
 }
 
 export interface SdSopCoverageCleanupEntry {
@@ -112,9 +175,11 @@ export function computeSdSopCoverageFromResources(
     // Earliest wins; admin can dedupe in Resource Management.
     if (!byNorm.has(k)) byNorm.set(k, r);
   }
+  const sequenceMap = getSdSopSequenceMap(manifest);
   const entries: SdSopCoverageEntry[] = manifest.map((e) => {
     const r = byNorm.get(normalizeSopTitle(e.title)) ?? null;
-    return { entry: e, status: classify(r), resource: r };
+    const sequence = sequenceMap.get(e.id) ?? 0;
+    return { entry: e, status: classify(r), resource: r, sequence, batch: getSdSopBatchFor(sequence) };
   });
   const counts = entries.reduce(
     (acc, e) => {
@@ -153,6 +218,24 @@ export function computeSdSopCoverageFromResources(
       });
     }
   }
+
+  // Per-batch summary.
+  const titleCleanupIds = new Set(needsTitleCleanupEntries.map((c) => c.entry.id));
+  const batches: SdSopBatchSummary[] = SD_SOP_BATCHES.map((b) => {
+    const inBatch = entries.filter((e) => e.batch === b.batch);
+    return {
+      batch: b.batch,
+      start: b.start,
+      end: b.end,
+      total: inBatch.length,
+      connected: inBatch.filter((e) => e.status === "published").length,
+      missing: inBatch.filter((e) => e.status === "missing").length,
+      needsFileRepair: inBatch.filter((e) => e.status === "needs_file_repair").length,
+      held: inBatch.filter((e) => e.status === "held").length,
+      needsTitleCleanup: inBatch.filter((e) => titleCleanupIds.has(e.entry.id)).length,
+    };
+  });
+
   return {
     total: manifest.length,
     published: counts.published,
@@ -167,6 +250,7 @@ export function computeSdSopCoverageFromResources(
     needsFileRepairEntries: entries.filter((e) => e.status === "needs_file_repair"),
     needsTitleCleanupEntries,
     unmatchedResources,
+    batches,
   };
 }
 

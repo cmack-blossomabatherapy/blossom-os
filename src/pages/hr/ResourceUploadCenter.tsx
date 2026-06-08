@@ -18,8 +18,15 @@ import {
   computeSdSopCoverageFromResources,
   normalizeSopTitle,
   sopTitleSimilarity,
+  SD_SOP_CONNECTED_DEFINITION,
+  SD_SOP_BATCHES,
+  type SdSopCoverageReport,
+  type SdSopCoverageEntry,
 } from "@/lib/resources/sdSopCoverage";
-import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import {
+  SD_SOP_MANIFEST,
+  SD_SOP_FORBIDDEN_ROLES,
+} from "@/lib/resources/stateDirectorSopManifest";
 import {
   SD_ALL_SCREENSHOTS,
   findScreenshotResource,
@@ -37,7 +44,8 @@ type FilterTab =
   | "privacy_review"
   | "vault_excluded"
   | "needs_file_repair"
-  | "training_screenshots";
+  | "training_screenshots"
+  | "sd_launch_sops";
 
 function classifySdMatch(
   resource: Resource,
@@ -74,7 +82,11 @@ export default function ResourceUploadCenter() {
   const [publishedThisSession, setPublishedThisSession] = useState<Resource[]>([]);
   const [queueCounts, setQueueCounts] = useState<Record<ResourceUploadStatus, number> | null>(null);
   const [failedUploads, setFailedUploads] = useState(0);
-  const [filter, setFilter] = useState<FilterTab>("all");
+  const initialFilter: FilterTab =
+    typeof window !== "undefined" && window.location.hash === "#sd-launch-sops"
+      ? "sd_launch_sops"
+      : "all";
+  const [filter, setFilter] = useState<FilterTab>(initialFilter);
 
   const existingResources = useMemo(() => {
     const base = persistedResources.length > 0 ? persistedResources : seedResources;
@@ -174,6 +186,7 @@ export default function ResourceUploadCenter() {
   const tabs: [FilterTab, string][] = [
     ["all", `All (${adminAll.length})`],
     ["published", `Published (${publishedLearnerVisible})`],
+    ["sd_launch_sops", `SD Launch SOPs (${coverage.published}/${coverage.total})`],
     ["sd_sops", `State Director SOPs (${coverage.published + coverage.needsFileRepair})`],
     ["unmatched", `Unmatched uploads (${unmatchedCount})`],
     ["privacy_review", `Privacy review (${heldCount})`],
@@ -244,10 +257,13 @@ export default function ResourceUploadCenter() {
 
         <section
           data-testid="resource-upload-admin-table"
+          id="sd-launch-sops"
           className="overflow-hidden rounded-2xl border border-border/60 bg-card"
         >
           {filter === "training_screenshots" ? (
             <TrainingScreenshotsPanel resources={adminAll} />
+          ) : filter === "sd_launch_sops" ? (
+            <SDLaunchSopsPanel coverage={coverage} />
           ) : (
           <div className="overflow-auto">
             <table className="w-full min-w-[820px] text-[12.5px]">
@@ -364,6 +380,160 @@ function SummaryTile({
     <div className="rounded-2xl border border-border/60 bg-card p-3">
       <p className={cn("text-[20px] font-semibold tracking-tight", toneClass)}>{value}</p>
       <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function statusLabel(e: SdSopCoverageEntry): { label: string; tone: string } {
+  switch (e.status) {
+    case "published":
+      return { label: "Connected", tone: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" };
+    case "needs_file_repair":
+      return { label: "Needs file repair", tone: "bg-amber-500/10 text-amber-700 border-amber-500/30" };
+    case "held":
+      return { label: "Held review", tone: "bg-amber-500/10 text-amber-700 border-amber-500/30" };
+    case "excluded":
+      return { label: "Excluded", tone: "bg-muted text-muted-foreground border-border/60" };
+    case "pending":
+      return { label: "Pending publish", tone: "bg-muted text-muted-foreground border-border/60" };
+    case "missing":
+    default:
+      return { label: "Missing", tone: "bg-rose-500/10 text-rose-700 border-rose-500/30" };
+  }
+}
+
+function actionGuidance(e: SdSopCoverageEntry, isCleanup: boolean): string {
+  if (isCleanup) return `Rename upload to exactly "${e.entry.title}".`;
+  switch (e.status) {
+    case "published":
+      return "Open resource — also visible in learner library.";
+    case "needs_file_repair":
+      return "Re-upload file in Resource Upload Center.";
+    case "held":
+      return "Review before publishing.";
+    case "excluded":
+      return "Excluded from learner library — review classification.";
+    case "pending":
+      return "Finish publishing this draft.";
+    case "missing":
+    default:
+      return `Upload this SOP as "${e.entry.title}".`;
+  }
+}
+
+function SDLaunchSopsPanel({ coverage }: { coverage: SdSopCoverageReport }) {
+  const cleanupIds = new Set(
+    coverage.needsTitleCleanupEntries.map((c) => c.entry.id),
+  );
+  const cleanupByEntry = new Map(
+    coverage.needsTitleCleanupEntries.map((c) => [c.entry.id, c]),
+  );
+  const ordered = [...coverage.entries].sort((a, b) => a.sequence - b.sequence);
+  const forbidden = SD_SOP_FORBIDDEN_ROLES.join(", ");
+  return (
+    <div data-testid="sd-launch-sops-panel" className="space-y-4 p-4">
+      <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[12px] text-muted-foreground">
+        <p>
+          <span className="font-semibold text-foreground">Connected definition:</span>{" "}
+          {SD_SOP_CONNECTED_DEFINITION}
+        </p>
+        <p className="mt-1">
+          Visible to <span className="font-medium text-foreground">State Director, Operations Leadership, Executive, Super Admin</span>.
+          Never visible to <span className="font-medium text-foreground">{forbidden}</span>.
+        </p>
+      </div>
+
+      <div
+        data-testid="sd-launch-batches"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        {coverage.batches.map((b) => (
+          <div
+            key={b.batch}
+            data-testid={`sd-launch-batch-${b.batch}`}
+            className="rounded-xl border border-border/60 bg-card p-3"
+          >
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Batch {String(b.batch).padStart(2, "0")} · SOPs {String(b.start).padStart(2, "0")}-{String(b.end).padStart(2, "0")}
+            </div>
+            <div className="mt-1 text-[18px] font-semibold tracking-tight text-foreground">
+              {b.connected}/{b.total}
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              <span className="text-rose-700">{b.missing} missing</span> ·{" "}
+              <span className="text-amber-700">{b.needsFileRepair} repair</span> ·{" "}
+              <span className="text-amber-700">{b.held} held</span> ·{" "}
+              <span className="text-amber-700">{b.needsTitleCleanup} cleanup</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-auto rounded-xl border border-border/60">
+        <table className="w-full min-w-[1000px] text-[12.5px]">
+          <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2.5 text-left font-medium">#</th>
+              <th className="px-3 py-2.5 text-left font-medium">Wk / Day</th>
+              <th className="px-3 py-2.5 text-left font-medium">Module</th>
+              <th className="px-3 py-2.5 text-left font-medium">Required SOP title</th>
+              <th className="px-3 py-2.5 text-left font-medium">Matched resource</th>
+              <th className="px-3 py-2.5 text-left font-medium">Status</th>
+              <th className="px-3 py-2.5 text-left font-medium">Openable</th>
+              <th className="px-3 py-2.5 text-left font-medium">Roles</th>
+              <th className="px-3 py-2.5 text-left font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ordered.map((e) => {
+              const isCleanup = cleanupIds.has(e.entry.id);
+              const cleanup = cleanupByEntry.get(e.entry.id);
+              const status = statusLabel(e);
+              const openable =
+                !!(e.resource && (e.resource.url || e.resource.fileUrl || e.resource.storagePath)) &&
+                e.status === "published";
+              return (
+                <tr
+                  key={e.entry.id}
+                  data-testid={`sd-launch-row-${e.sequence}`}
+                  data-batch={e.batch}
+                  data-status={e.status}
+                  className="border-t border-border/40 align-top"
+                >
+                  <td className="px-3 py-2 text-muted-foreground">{String(e.sequence).padStart(2, "0")}</td>
+                  <td className="px-3 py-2 text-muted-foreground">W{e.entry.week} · D{e.entry.day}</td>
+                  <td className="px-3 py-2 text-foreground">
+                    {e.entry.matchedTrainingTitles[0] ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 text-foreground">{e.entry.title}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {e.resource
+                      ? e.resource.title
+                      : cleanup
+                        ? <span className="text-amber-700">{cleanup.candidate.title}</span>
+                        : <span>—</span>}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wider",
+                        isCleanup
+                          ? "bg-amber-500/10 text-amber-700 border-amber-500/30"
+                          : status.tone,
+                      )}
+                    >
+                      {isCleanup ? "Needs title cleanup" : status.label}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{openable ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{e.entry.roles.join(", ")}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{actionGuidance(e, isCleanup)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -1989,6 +1989,15 @@ function SDSopReadinessPanel() {
             size="sm"
             variant="outline"
             className="rounded-xl"
+            data-testid="sd-sop-upload-tracker-button"
+            onClick={() => navigate("/hr/resource-management#sd-launch-sops")}
+          >
+            <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Open SD SOP upload tracker
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl"
             onClick={() => navigate("/training")}
           >
             <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Review SD journey
@@ -2018,6 +2027,29 @@ function SDSopReadinessPanel() {
             <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
               {t.label}
             </p>
+          </div>
+        ))}
+      </div>
+
+      <div
+        data-testid="sd-sop-batch-summary"
+        className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+      >
+        {live.batches.map((b) => (
+          <div
+            key={b.batch}
+            data-testid={`sd-sop-batch-${b.batch}`}
+            className="rounded-xl border border-border/60 bg-background p-3"
+          >
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Batch {String(b.batch).padStart(2, "0")} · SOPs {String(b.start).padStart(2, "0")}-{String(b.end).padStart(2, "0")}
+            </div>
+            <div className="mt-1 text-[16px] font-semibold tracking-tight text-foreground">
+              {b.connected}/{b.total} connected
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              {b.missing} missing · {b.needsFileRepair} repair · {b.held} held
+            </div>
           </div>
         ))}
       </div>

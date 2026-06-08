@@ -28,6 +28,8 @@ import {
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import { SD_SOP_MANIFEST, isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
+import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
 
 const TONE_BG: Record<string, string> = {
   purple:  "bg-[hsl(265_70%_96%)] text-[hsl(265_70%_45%)]",
@@ -83,6 +85,19 @@ export default function OSResourceLibrary() {
     if (activeCategory) return resourcesByCategory(activeCategory, filteredScope);
     return [];
   }, [query, activeCategory, searchResults, filteredScope]);
+
+  // State Director Launch smart collection — only published / openable /
+  // role-visible items whose normalized title exactly matches the manifest.
+  const sdLaunchVisible = useMemo(() => {
+    if (!isSdSopVisibleToRole(role)) return [];
+    const keys = new Set(SD_SOP_MANIFEST.map((e) => normalizeSopTitle(e.title)));
+    return scope.filter((r) => {
+      if (!keys.has(normalizeSopTitle(r.title))) return false;
+      const hasOpenable = !!(r.url || r.fileUrl || r.storagePath);
+      return hasOpenable;
+    });
+  }, [scope, role]);
+  const showSdLaunchCollection = isSdSopVisibleToRole(role) && !query && !activeCategory;
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) => {
@@ -263,6 +278,38 @@ export default function OSResourceLibrary() {
                     />
                   ))}
                 </div>
+              </section>
+            )}
+
+            {/* STATE DIRECTOR LAUNCH SMART COLLECTION */}
+            {showSdLaunchCollection && (
+              <section data-testid="sd-launch-collection">
+                <SectionHeader
+                  title="State Director Launch"
+                  subtitle="Published SOPs powering the 5-week State Director journey"
+                  icon={GraduationCap}
+                />
+                {sdLaunchVisible.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-card p-5 text-[12.5px] text-muted-foreground">
+                    Your State Director launch resources are being connected. Training guidance is still available in the Academy.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {sdLaunchVisible.slice(0, 9).map((r) => (
+                      <ResourceCard
+                        key={r.id} r={r}
+                        onOpen={openResource}
+                        onFavorite={toggleFavorite}
+                        isFavorite={favorites.has(r.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {sdLaunchVisible.length > 9 && (
+                  <p className="mt-2 text-[11.5px] text-muted-foreground">
+                    + {sdLaunchVisible.length - 9} more in the State Director launch collection.
+                  </p>
+                )}
               </section>
             )}
 
