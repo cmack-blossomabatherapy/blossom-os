@@ -22,7 +22,6 @@ import { useAdminResources } from "@/hooks/useAdminResources";
 import {
   computeSdWelcomeVideoState,
 } from "@/lib/training/sdRuntimeReadiness";
-import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
@@ -90,10 +89,6 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const byId = useMemo(() => new Map(trainings.map((t) => [t.id, t])), [trainings]);
   const { resources } = useAdminResources();
   const welcomeVideo = computeSdWelcomeVideoState(resources);
-  const sopCoverage = useMemo(
-    () => computeSdSopCoverageFromResources(resources),
-    [resources],
-  );
 
   // Use SD_JOURNEY_STRUCTURE for current-week/day computation against local progress.
   const dayStates = useMemo(() =>
@@ -146,11 +141,6 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
       label: "Today's modules",
       done: currentDayState.completed === currentDayState.total && currentDayState.total > 0,
       hint: `${currentDayState.completed}/${currentDayState.total} done`,
-    },
-    {
-      label: "SOPs connected",
-      done: sopCoverage.total > 0 && sopCoverage.published === sopCoverage.total,
-      hint: `${sopCoverage.published}/${sopCoverage.total} live`,
     },
     {
       label: "Mentor check-in",
