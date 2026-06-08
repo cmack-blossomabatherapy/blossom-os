@@ -252,54 +252,8 @@ export function AssignTrainingModal({
     { key: "state", label: "State" },
     { key: "role", label: "Role" },
   ];
-  const { journeys } = useAcademy();
-  const [trainee, setTrainee] = useState("");
-  const [journeyId, setJourneyId] = useState<string>("");
-  const [mentor, setMentor] = useState("");
-  const [state, setState] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-
-  const warnings = useMemo(() => {
-    const list: { key: string; label: string }[] = [];
-    if (!trainee.trim())
-      list.push({ key: "trainee", label: "Trainee not selected — employee/auth-user link missing." });
-    if (!mentor.trim())
-      list.push({ key: "mentor", label: "No mentor assigned — pair before week 1." });
-    if (!state.trim())
-      list.push({ key: "state", label: "No state assigned — required for State Director path." });
-    const pendingWelcome = welcomeAssets.filter((a) => a.status !== "linked");
-    if (pendingWelcome.length > 0)
-      list.push({
-        key: "welcome",
-        label: `${pendingWelcome.length} welcome asset${pendingWelcome.length === 1 ? "" : "s"} pending — non-blocking, written guidance still works.`,
-      });
-    if (pendingSops.length > 0)
-      list.push({
-        key: "sops",
-        label: `${pendingSops.length} SOP/resource link${pendingSops.length === 1 ? "" : "s"} pending — non-blocking admin action item.`,
-      });
-    return list;
-  }, [trainee, mentor, state, welcomeAssets, pendingSops]);
-
-  const canConfirm = !!journeyId;
-
-  function reset() {
-    setTrainee("");
-    setJourneyId("");
-    setMentor("");
-    setState("");
-    setStartDate("");
-    setConfirmed(false);
-  }
-
-  function handleClose() {
-    reset();
-    onClose();
-  }
-
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl" data-testid="assign-training-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-[15px]">
