@@ -565,7 +565,10 @@ function TrainingScreenshotsPanel({
 }: {
   resources: Resource[];
 }) {
-  const rows = SD_ALL_SCREENSHOTS.map((asset) => {
+  const [shotFilter, setShotFilter] = useState<
+    "all" | "matched" | "unmatched" | "needs_redaction" | "openable" | "not_openable" | "needs_title_cleanup"
+  >("all");
+  const allRows = SD_ALL_SCREENSHOTS.map((asset) => {
     const match = findScreenshotResource(asset, resources);
     const training = getTraining(asset.moduleId);
     const piiSafe = isScreenshotPiiSafe(asset);
@@ -573,26 +576,95 @@ function TrainingScreenshotsPanel({
       asset.resourceStatus === "needs_redaction" ||
       asset.sensitivity === "needs_redaction" ||
       !piiSafe;
-    return { asset, match, training, needsRedaction };
+    const expected = asset.resourceTitle ?? asset.title;
+    const cleanupCandidate = !match
+      ? resources.find((r) => {
+          if (r.status === "Archived") return false;
+          if (r.uploadStatus && r.uploadStatus !== "published") return false;
+          if (r.sensitivity === "excluded") return false;
+          const sim = sopTitleSimilarity(expected, r.title);
+          return sim >= 0.6 && sim < 1;
+        }) ?? null
+      : null;
+    return { asset, match, training, needsRedaction, cleanupCandidate };
   });
-  const available = rows.filter((r) => r.match && !r.needsRedaction).length;
-  const pending = rows.filter((r) => !r.match && !r.needsRedaction).length;
-  const redaction = rows.filter((r) => r.needsRedaction).length;
+  const rows = allRows.filter(({ match, needsRedaction, cleanupCandidate }) => {
+    switch (shotFilter) {
+      case "all": return true;
+      case "matched": return !!match;
+      case "unmatched": return !match && !needsRedaction;
+      case "needs_redaction": return needsRedaction;
+      case "openable": return !!match && !!match.openable;
+      case "not_openable": return !!match && !match.openable;
+      case "needs_title_cleanup": return !!cleanupCandidate;
+    }
+  });
+  const available = allRows.filter((r) => r.match && !r.needsRedaction).length;
+  const pending = allRows.filter((r) => !r.match && !r.needsRedaction).length;
+  const redaction = allRows.filter((r) => r.needsRedaction).length;
+  const week1Rows = allRows.filter((r) => r.asset.moduleId.startsWith("sd-w1d"));
+  const week1Matched = week1Rows.filter((r) => !!r.match).length;
+  const cleanupCount = allRows.filter((r) => !!r.cleanupCandidate).length;
+
+  const shotTabs: [typeof shotFilter, string][] = [
+    ["all", `All (${allRows.length})`],
+    ["matched", `Matched (${available})`],
+    ["unmatched", `Unmatched (${pending})`],
+    ["needs_title_cleanup", `Needs title cleanup (${cleanupCount})`],
+    ["needs_redaction", `Needs redaction (${redaction})`],
+    ["openable", `Openable (${allRows.filter((r) => r.match?.openable).length})`],
+    ["not_openable", `Not openable (${allRows.filter((r) => r.match && !r.match.openable).length})`],
+  ];
+
+  const wkDay = (mid: string): string | null => {
+    const m = /^sd-w(\d+)d(\d+)-/.exec(mid);
+    return m ? `Week ${m[1]} - Day ${m[2]}` : null;
+  };
+  const acceptedFilenames = (asset: typeof SD_ALL_SCREENSHOTS[number]) => {
+    const expected = asset.resourceTitle ?? asset.title;
+    const slug = expected.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return [`${expected}.png`, `${slug}.png`, `${asset.moduleId}.png`];
+  };
   return (
     <div
       data-testid="training-screenshots-panel"
       className="overflow-auto"
     >
-      <div className="flex flex-wrap items-center gap-3 border-b border-border/40 px-4 py-3 text-[12px] text-muted-foreground">
+      <div
+        data-testid="training-screenshots-summary"
+        className="flex flex-wrap items-center gap-3 border-b border-border/40 px-4 py-3 text-[12px] text-muted-foreground"
+      >
         <span><span className="font-semibold text-foreground">{SD_ALL_SCREENSHOTS.length}</span> registered screenshots</span>
-        <span className="text-emerald-700"><span className="font-semibold">{available}</span> available</span>
-        <span className="text-amber-700"><span className="font-semibold">{pending}</span> pending upload</span>
+        <span className="text-emerald-700"><span className="font-semibold">{available}</span> matched</span>
+        <span className="text-amber-700"><span className="font-semibold">{pending}</span> unmatched</span>
+        <span className="text-amber-700"><span className="font-semibold">{cleanupCount}</span> needs title cleanup</span>
         <span className="text-rose-700"><span className="font-semibold">{redaction}</span> need redaction</span>
+        <span className="text-foreground"><span className="font-semibold">{week1Matched}/{week1Rows.length}</span> Week 1 matched</span>
+      </div>
+      <div
+        data-testid="training-screenshots-filters"
+        className="flex flex-wrap items-center gap-1 border-b border-border/40 px-2 py-2"
+      >
+        {shotTabs.map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setShotFilter(id)}
+            data-testid={`training-screenshots-filter-${id}`}
+            className={cn(
+              "rounded-xl px-2.5 py-1 text-[12px] font-medium transition-colors",
+              shotFilter === id
+                ? "bg-primary/10 text-primary"
+                : "text-foreground/70 hover:bg-muted",
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
       <table className="w-full min-w-[820px] text-[12.5px]">
         <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
           <tr>
-            <th className="px-3 py-2.5 text-left font-medium">Expected title</th>
+            <th className="px-3 py-2.5 text-left font-medium">Expected title &amp; accepted filenames</th>
             <th className="px-3 py-2.5 text-left font-medium">Module / day</th>
             <th className="px-3 py-2.5 text-left font-medium">Matched upload</th>
             <th className="px-3 py-2.5 text-left font-medium">Upload status</th>
@@ -601,7 +673,7 @@ function TrainingScreenshotsPanel({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ asset, match, training, needsRedaction }) => (
+          {rows.map(({ asset, match, training, needsRedaction, cleanupCandidate }) => (
             <tr
               key={asset.id}
               data-testid={`screenshot-row-${asset.id}`}
@@ -610,13 +682,46 @@ function TrainingScreenshotsPanel({
               <td className="px-3 py-2 text-foreground">
                 <div className="font-medium">{asset.resourceTitle ?? asset.title}</div>
                 <div className="text-[11px] text-muted-foreground">{asset.title}</div>
+                <details className="mt-1 text-[11px] text-muted-foreground">
+                  <summary className="cursor-pointer select-none">Accepted filenames</summary>
+                  <ul className="mt-1 list-disc pl-4">
+                    {acceptedFilenames(asset).map((f) => (
+                      <li key={f} className="font-mono text-[11px]">{f}</li>
+                    ))}
+                  </ul>
+                </details>
               </td>
               <td className="px-3 py-2 text-muted-foreground">
-                {training?.title ?? asset.moduleId}
+                <div>{training?.title ?? asset.moduleId}</div>
+                {wkDay(asset.moduleId) && (
+                  <div className="mt-0.5 inline-flex items-center rounded-full border border-border/60 bg-background px-2 py-0.5 text-[10.5px] font-medium text-foreground/80">
+                    {wkDay(asset.moduleId)}
+                  </div>
+                )}
+                <div className="mt-1 font-mono text-[10.5px] text-muted-foreground">{asset.moduleId}</div>
               </td>
               <td className="px-3 py-2 text-muted-foreground">
                 {match ? (
-                  <span className="font-medium text-foreground">{match.resource.title}</span>
+                  <div className="space-y-1">
+                    <div className="font-medium text-foreground">{match.resource.title}</div>
+                    <span
+                      data-testid={`screenshot-matched-by-${asset.id}`}
+                      data-matched-by={match.matchedBy}
+                      className="inline-flex items-center rounded-full border border-emerald-300/60 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-medium uppercase tracking-wider text-emerald-800"
+                    >
+                      {match.matchedBy === "title" ? "Matched by title"
+                        : match.matchedBy === "filename" ? "Matched by filename"
+                        : match.matchedBy === "asset_id" ? "Matched by asset id"
+                        : "Matched by module id"}
+                    </span>
+                  </div>
+                ) : cleanupCandidate ? (
+                  <div>
+                    <span className="text-amber-700">Needs title cleanup</span>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      Close match: <span className="text-foreground">{cleanupCandidate.title}</span>
+                    </div>
+                  </div>
                 ) : (
                   <span className="text-amber-700">Not matched</span>
                 )}
