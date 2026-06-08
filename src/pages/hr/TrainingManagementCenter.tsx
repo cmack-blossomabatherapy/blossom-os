@@ -83,6 +83,7 @@ import {
   SDMentorCheckInGuide,
   SDScreenshotReadinessPanel,
 } from "@/components/training/SDLaunchReadinessPanel";
+import { SDDayOneAdminPanel } from "@/components/training/SDDayOneAdminPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AppRole } from "@/lib/roles";
 
@@ -505,6 +506,7 @@ export default function TrainingManagementCenter() {
                   </div>
                 </header>
                 <SDLaunchReadinessPanel />
+                <SDDayOneAdminPanel />
                 <div className="grid gap-5 xl:grid-cols-2">
                   <SDSopReadinessPanel />
                   <SDScreenshotReadinessPanel />

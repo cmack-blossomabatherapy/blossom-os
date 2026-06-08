@@ -23,6 +23,7 @@ import {
   computeSdWelcomeVideoState,
 } from "@/lib/training/sdRuntimeReadiness";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
@@ -235,6 +236,9 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
             ))}
           </ol>
         </section>
+
+        {/* 1.6 · Day-One readiness — local evidence panel */}
+        <SDDayOneReadinessPanel welcomeReviewedFromAcademy={welcomeComplete} />
 
         {/* 2 · Welcome to Blossom anchor */}
         <section data-testid="sd-welcome-anchor">
