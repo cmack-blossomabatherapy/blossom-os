@@ -278,7 +278,7 @@ export default function OSResourceLibrary() {
             )}
 
             {/* QUICK LINKS STRIP */}
-            {!query && !activeCategory && !typeFilter && quickLinks.length > 0 && (
+            {!query && !activeCategory && !activeCollection && !typeFilter && quickLinks.length > 0 && (
               <section>
                 <SectionHeader title="Quick links & walkthroughs" subtitle="Jump straight into the tools you use daily" icon={Link2} />
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
