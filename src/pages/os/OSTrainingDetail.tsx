@@ -43,6 +43,7 @@ import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 import { completeWelcomeTrainingEverywhere } from "@/lib/training/welcomeProgressBridge";
+import MissionVisionContent from "@/components/training/MissionVisionContent";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
