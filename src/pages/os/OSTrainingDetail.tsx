@@ -893,6 +893,8 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-6 min-w-0">
+          {/* Mission, Vision & Values — canonical content for the mission-vision module */}
+          {training.id === "sd-w1d1-mission-vision" && <MissionVisionContent />}
           {/* Why this matters */}
           <div data-testid="sd-why-matters" className="rounded-2xl border border-border/70 bg-card p-5">
             <div className="flex items-center gap-2">
