@@ -396,7 +396,7 @@ function SummaryTile({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "emerald" | "amber" | "rose";
 }) {
   const toneClass =
