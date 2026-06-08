@@ -4,7 +4,7 @@ import {
   Sparkles, ArrowRight, Play, CheckCircle2, Clock, ChevronRight, BookMarked,
   Library, Users as UsersIcon, Heart, Compass, GraduationCap, MessageSquare,
   FileText, BookOpen, Workflow as WorkflowIcon, ShieldCheck, Award, ListChecks,
-  Calendar,
+  Calendar, Mail,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
 import { NeedHelpPanel } from "./NeedHelpPanel";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
-  SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
+  SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play, Letter: Mail,
   Checklist: CheckCircle2, "Quick Guide": BookOpen, Training: GraduationCap,
   Task: CheckCircle2, Meeting: MessageSquare, Shadowing: Compass,
   Quiz: BookMarked, Reflection: BookOpen,

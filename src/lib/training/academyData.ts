@@ -968,18 +968,18 @@ const SD_W1D1_SPECS: Record<string, SdModuleSpec> = {
     completionEvidence: "Sketch the flow from memory and share with your mentor.",
   },
   "Welcome from Chad Kaufman": {
-    type: "Video", minutes: 6,
+    type: "Letter", minutes: 6,
     description: "Personal welcome from Chad Kaufman — Blossom's origin story and what we expect from leaders.",
     whyItMatters: "Hearing directly from leadership grounds you in the why.",
-    whatToDo: "Watch the message. No notes required — just listen.",
-    completionEvidence: "Mark as watched.",
+    whatToDo: "Read the letter. No notes required — just take it in.",
+    completionEvidence: "Mark as read.",
   },
   "A Note from Shira Lasry": {
-    type: "Video", minutes: 5,
+    type: "Letter", minutes: 5,
     description: "Personal note from Shira Lasry on operational leadership and what makes a strong State Director at Blossom.",
     whyItMatters: "Shira's lens on operations is the bar you'll be measured against.",
-    whatToDo: "Watch and write down one expectation that surprised you.",
-    completionEvidence: "Mark as watched and bring your note to your first mentor check-in.",
+    whatToDo: "Read the note and write down one expectation that surprised you.",
+    completionEvidence: "Mark as read and bring your note to your first mentor check-in.",
   },
 };
 
