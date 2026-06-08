@@ -882,6 +882,21 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           {requiresMentorSignoff && <span>· Mentor signoff required</span>}
           <span>·</span>
           <span>{completed ? "Complete" : dbProgress?.status === "in_progress" || localProgress.status === "in_progress" ? "In progress" : "Not started"}</span>
+          {timer.startedAt && (
+            <>
+              <span>·</span>
+              <span
+                data-testid="sd-module-timer"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+                  completed ? "bg-emerald-50 text-emerald-700" : "bg-primary/10 text-primary",
+                )}
+              >
+                <Clock className="h-3 w-3" />
+                {completed ? "Time on module" : "Timer"}: {formatElapsed(timer.elapsedSeconds)}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
