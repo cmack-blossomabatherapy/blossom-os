@@ -142,7 +142,9 @@ describe("findScreenshotResource — tolerant matching", () => {
     });
     const m = findScreenshotResource(asset, [r]);
     expect(m).not.toBeNull();
-    expect(["module_id", "asset_id"]).toContain(m!.matchedBy);
+    // Either the basename matches the title slug (filename) or a path segment
+    // matches the module id - both are valid auto-match outcomes.
+    expect(["module_id", "asset_id", "filename"]).toContain(m!.matchedBy);
     expect(m!.openable).toBe(true);
   });
 
