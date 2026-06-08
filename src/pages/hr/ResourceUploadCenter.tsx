@@ -20,6 +20,13 @@ import {
   sopTitleSimilarity,
 } from "@/lib/resources/sdSopCoverage";
 import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import {
+  SD_ALL_SCREENSHOTS,
+  findScreenshotResource,
+  isScreenshotPiiSafe,
+  type SDScreenshotAsset,
+} from "@/lib/training/stateDirectorFullTraining";
+import { getTraining } from "@/lib/training/academyData";
 import { cn } from "@/lib/utils";
 
 type SdMatchLabel = "matched" | "unmatched" | "needs_title_cleanup" | "not_sd";
@@ -30,7 +37,8 @@ type FilterTab =
   | "unmatched"
   | "privacy_review"
   | "vault_excluded"
-  | "needs_file_repair";
+  | "needs_file_repair"
+  | "training_screenshots";
 
 function classifySdMatch(
   resource: Resource,
@@ -172,6 +180,7 @@ export default function ResourceUploadCenter() {
     ["privacy_review", `Privacy review (${heldCount})`],
     ["vault_excluded", `Vault / excluded`],
     ["needs_file_repair", `Needs file repair (${coverage.needsFileRepair})`],
+    ["training_screenshots", `Training screenshots (${SD_ALL_SCREENSHOTS.length})`],
   ];
 
   return (
@@ -238,6 +247,9 @@ export default function ResourceUploadCenter() {
           data-testid="resource-upload-admin-table"
           className="overflow-hidden rounded-2xl border border-border/60 bg-card"
         >
+          {filter === "training_screenshots" ? (
+            <TrainingScreenshotsPanel resources={adminAll} />
+          ) : (
           <div className="overflow-auto">
             <table className="w-full min-w-[820px] text-[12.5px]">
               <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -284,6 +296,7 @@ export default function ResourceUploadCenter() {
               </tbody>
             </table>
           </div>
+          )}
         </section>
 
         <section
