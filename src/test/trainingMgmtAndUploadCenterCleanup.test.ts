@@ -132,7 +132,7 @@ describe("Resource Upload Center — filters, summary, SD match column", () => {
   it("shows the connected-resource definition copy", () => {
     expect(RUC).toContain("Uploads here power Resource Library and Training Academy.");
     expect(RUC).toContain(
-      "A resource must be published, visible to State Director, and matched to a required",
+      "Training Management only counts a State Director SOP as connected",
     );
   });
 });
