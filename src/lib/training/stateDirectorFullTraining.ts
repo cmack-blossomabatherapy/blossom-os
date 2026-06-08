@@ -387,6 +387,78 @@ export const SD_PRIORITY_SCREENSHOT_MODULES: string[] = Object.keys(SD_SCREENSHO
 /** Every registered State Director screenshot asset (read-only). */
 export const SD_ALL_SCREENSHOTS: ReadonlyArray<SDScreenshotAsset> = SD_SCREENSHOTS_LIST;
 
+/* ---------------- no-screenshot decisions ---------------- */
+
+/**
+ * Intentional decision that a State Director module does NOT need a
+ * walkthrough screenshot. Used for reflective, sign-off, certification,
+ * and shadowing modules where a screenshot would either be fake, unsafe
+ * (PHI), or actively misleading. The replacementEvidence describes what
+ * the learner produces instead, so admins can verify completion without a
+ * fabricated image.
+ */
+export interface SDNoScreenshotDecision {
+  moduleId: string;
+  reason: string;
+  replacementEvidence: string;
+}
+
+export const SD_NO_SCREENSHOT_DECISIONS: SDNoScreenshotDecision[] = [
+  {
+    moduleId: "sd-w4d5-scheduling-shadow",
+    reason: "Shadow session is live — a screenshot would not represent the learning.",
+    replacementEvidence: "Mentor sign-off and a short written summary of what was observed.",
+  },
+  {
+    moduleId: "sd-w4d5-recruiting-shadow",
+    reason: "Shadow session is live — a screenshot would not represent the learning.",
+    replacementEvidence: "Mentor sign-off and notes from the recruiting walkthrough.",
+  },
+  {
+    moduleId: "sd-w4d5-bcba-shadow",
+    reason: "Shadow session is live and may include PHI — screenshots are not appropriate.",
+    replacementEvidence: "Mentor sign-off plus written reflection on what BCBA oversight requires.",
+  },
+  {
+    moduleId: "sd-w4d5-state-director-shadow",
+    reason: "Peer-to-peer shadow — operational judgment is the learning, not a UI view.",
+    replacementEvidence: "Mentor sign-off and a written summary of the State Director's day.",
+  },
+  {
+    moduleId: "sd-w5d5-final-knowledge-review",
+    reason: "Knowledge check is the evidence — no UI screenshot is required.",
+    replacementEvidence: "Passing score on the final knowledge review.",
+  },
+  {
+    moduleId: "sd-w5d5-readiness-assessment",
+    reason: "Reflective leadership assessment — written response is the evidence.",
+    replacementEvidence: "Submitted readiness reflection reviewed by your mentor.",
+  },
+  {
+    moduleId: "sd-w5d5-leadership-sign-off",
+    reason: "Sign-off happens in a live conversation — no UI screenshot exists.",
+    replacementEvidence: "Recorded leadership sign-off in your training record.",
+  },
+  {
+    moduleId: "sd-w5d5-state-director-certification",
+    reason: "Certification is the outcome of the journey — there is no UI to screenshot.",
+    replacementEvidence: "Issued State Director certification recorded in HR.",
+  },
+];
+
+const SD_NO_SCREENSHOT_BY_ID: Record<string, SDNoScreenshotDecision> = (() => {
+  const map: Record<string, SDNoScreenshotDecision> = {};
+  for (const d of SD_NO_SCREENSHOT_DECISIONS) map[d.moduleId] = d;
+  return map;
+})();
+
+/** Lookup an explicit no-screenshot decision for a State Director module. */
+export function getStateDirectorNoScreenshotDecision(
+  moduleId: string,
+): SDNoScreenshotDecision | null {
+  return SD_NO_SCREENSHOT_BY_ID[moduleId] ?? null;
+}
+
 /**
  * Resolve a published+openable Resource Library item that represents the
  * given screenshot asset. Matching uses the human-readable resourceTitle
@@ -814,6 +886,7 @@ export type SDModuleCompleteness =
   | "needs_screenshot"
   | "needs_video"
   | "welcome_non_sop"
+  | "no_screenshot_decision"
   | "missing";
 
 export interface SDModuleReadiness {
@@ -848,6 +921,7 @@ export function classifyStateDirectorModule(
   const hasScreenshot = screenshots.length > 0;
   const screenshotPending =
     hasScreenshot && screenshots.every((s) => s.resourceStatus !== "available");
+  const noScreenshotDecision = !!SD_NO_SCREENSHOT_BY_ID[training.id];
   const sopName = SD_SOPS_BY_WEEK[week]?.[day]?.[0];
   const isVideoModule = /^video$/i.test((training as { type?: string }).type ?? "");
   // Phase 0 Welcome modules (ids like "welcome-*") are explicitly non-SOP
@@ -860,6 +934,8 @@ export function classifyStateDirectorModule(
     status = "welcome_non_sop";
   } else if (hasCurated || hasWeek1Full || hasWeek23Full || hasWeek45Full) {
     status = "curated";
+  } else if (noScreenshotDecision) {
+    status = "no_screenshot_decision";
   } else if (isVideoModule) {
     status = "needs_video";
   } else if (!sopName) {
