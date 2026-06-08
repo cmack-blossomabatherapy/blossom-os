@@ -23,6 +23,7 @@ import {
   computeSdWelcomeVideoState,
 } from "@/lib/training/sdRuntimeReadiness";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
+import { SDDayOneReadinessPanel } from "./SDDayOneReadinessPanel";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
