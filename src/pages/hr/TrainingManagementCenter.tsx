@@ -76,7 +76,6 @@ import { ONBOARDING_PHASES } from "@/lib/onboarding/journey";
 import { useJourneyOverrides, applyOverridesToPhase } from "@/hooks/useJourneyOverrides";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import TrainingControlRoom from "@/components/training/TrainingControlRoom";
 import { LayoutDashboard } from "lucide-react";
 import {
   SDLaunchReadinessPanel,
