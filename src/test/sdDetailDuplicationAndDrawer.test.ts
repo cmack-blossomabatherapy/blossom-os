@@ -93,3 +93,56 @@ describe("Part 5 — W1D1 modules do not create uploaded SOP/resource records", 
     expect(manifest).not.toMatch(/sd-w1d1-/);
   });
 });
+
+describe("Part 6 — SD generated titles are clean at source", () => {
+  it("getTraining('sd-w1d1-mission-vision') returns a clean title", async () => {
+    const { getTraining } = await import("@/lib/training/academyData");
+    expect(getTraining("sd-w1d1-mission-vision")?.title).toBe("Mission & Vision");
+  });
+  it("no generated SD Training.title starts with W#", async () => {
+    const mod = await import("@/lib/training/academyData");
+    const list = (mod as any).searchTrainings?.("") ?? [];
+    const sd = list.filter((t: any) => t.id?.startsWith?.("sd-"));
+    expect(sd.length).toBeGreaterThan(0);
+    for (const t of sd) {
+      expect(t.title, `bad title: ${t.title}`).not.toMatch(/^W\d/);
+    }
+  });
+  it("OSTraining.tsx uses cleanSdTitle for learner-facing renders", () => {
+    const t = fs.readFileSync(path.join(process.cwd(), "src/pages/os/OSTraining.tsx"), "utf8");
+    expect(t).toMatch(/cleanSdTitle\(training\.title\)/);
+    expect(t).toMatch(/cleanSdTitle\(nextModule\.title\)/);
+    expect(t).toMatch(/cleanSdTitle\(m\.title\)/);
+  });
+  it("SDLearnerHome does not render the W#·D# token shape", () => {
+    const t = fs.readFileSync(path.join(process.cwd(), "src/components/training/SDLearnerHome.tsx"), "utf8");
+    expect(t).not.toMatch(/`W\$\{[^}]+\}\s*·\s*D\$\{/);
+    expect(t).not.toMatch(/>\s*W\{[^}]+\}\s*·\s*D\{/);
+  });
+});
+
+describe("Part 7 — Resource drawer has Open + Download for available resources", () => {
+  it("renders both buttons (Download gated on !pending)", () => {
+    expect(LIB).toMatch(/data-testid="resource-open-button"/);
+    expect(LIB).toMatch(/data-testid="resource-download-button"/);
+    expect(LIB).toMatch(/!pending &&/);
+  });
+});
+
+describe("Part 8 — strict literal mojibake scan", () => {
+  const files = [
+    "src/pages/os/OSTrainingDetail.tsx",
+    "src/pages/os/OSTraining.tsx",
+    "src/pages/os/OSResourceLibrary.tsx",
+    "src/components/training/SDLearnerHome.tsx",
+    "src/lib/training/sdDisplayTitle.ts",
+    "src/lib/training/academyData.ts",
+    "src/lib/resources/stateDirectorSopManifest.ts",
+  ];
+  it.each(files)("%s has no literal mojibake bytes", (rel) => {
+    const t = fs.readFileSync(path.join(process.cwd(), rel), "utf8");
+    for (const bad of ["Â", "â€”", "â€“", "â€¦", "â†’", "â‰¥"]) {
+      expect(t.includes(bad), `${rel} contains ${bad}`).toBe(false);
+    }
+  });
+});
