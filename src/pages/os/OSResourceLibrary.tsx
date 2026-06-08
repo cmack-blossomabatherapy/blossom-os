@@ -28,8 +28,7 @@ import {
 } from "@/lib/resources/resourceData";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
-import { SD_SOP_MANIFEST, isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
-import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
+import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
 import {
   collectSmartCollections,
   countAdminHiddenResources,
