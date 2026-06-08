@@ -27,6 +27,8 @@ import {
   computeSdScreenshotReadiness,
   computeSdWelcomeVideoState,
   computeSdWelcomeVideoCheck,
+  computeSdScreenshotCoverage,
+  computeSdWeek1LaunchStatus,
 } from "@/lib/training/sdRuntimeReadiness";
 import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 import { getTrainings, SD_JOURNEY_MODULE_IDS } from "@/lib/training/academyData";
@@ -444,6 +446,8 @@ export function SDScreenshotReadinessPanel() {
   const { resources } = useAdminResources();
   const screenshots = computeSdScreenshotReadiness();
   const welcomeVideo = computeSdWelcomeVideoState(resources);
+  const coverage = computeSdScreenshotCoverage(resources);
+  const week1Status = computeSdWeek1LaunchStatus(resources);
 
   const tiles = [
     { label: "Registered screenshots", value: String(screenshots.totalRegistered) },
@@ -466,6 +470,31 @@ export function SDScreenshotReadinessPanel() {
       label: "Welcome video",
       value: welcomeVideo.ok ? "Linked" : "Pending",
       tone: welcomeVideo.ok ? "text-emerald-600" : "text-amber-600",
+    },
+  ];
+
+  const weekTiles = [
+    {
+      label: "Week 1 matched",
+      value: `${coverage.week1.matched}/${coverage.week1.total}`,
+      tone: coverage.week1.matched === coverage.week1.total
+        ? "text-emerald-600" : "text-amber-600",
+    },
+    {
+      label: "Week 1 missing",
+      value: String(coverage.week1.missing),
+      tone: coverage.week1.missing === 0 ? "text-muted-foreground" : "text-amber-600",
+    },
+    {
+      label: "All SD matched",
+      value: `${coverage.all.matched}/${coverage.all.total}`,
+      tone: coverage.all.matched === coverage.all.total
+        ? "text-emerald-600" : "text-muted-foreground",
+    },
+    {
+      label: "Needs file repair",
+      value: String(coverage.all.needsFileRepair),
+      tone: coverage.all.needsFileRepair === 0 ? "text-muted-foreground" : "text-rose-600",
     },
   ];
 
@@ -505,6 +534,48 @@ export function SDScreenshotReadinessPanel() {
             </p>
           </div>
         ))}
+      </div>
+      <div
+        data-testid="sd-week1-screenshot-tiles"
+        className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
+      >
+        {weekTiles.map((t) => (
+          <div
+            key={t.label}
+            className="rounded-xl border border-border/60 bg-background p-3"
+          >
+            <p className={cn("text-[18px] font-semibold tracking-tight", t.tone ?? "text-foreground")}>
+              {t.value}
+            </p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+              {t.label}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div
+        data-testid="sd-week1-launch-status"
+        data-week1-state={week1Status.state}
+        className={cn(
+          "mt-4 rounded-xl border px-3 py-2 text-[12.5px]",
+          week1Status.ready
+            ? "border-emerald-300/60 bg-emerald-50/60 text-emerald-900"
+            : "border-amber-300/60 bg-amber-50/60 text-amber-900",
+        )}
+      >
+        <p className="font-semibold">
+          Week 1 launch status: {week1Status.ready ? "Ready" : week1Status.state === "almost" ? "Almost ready" : "Blocked"}
+        </p>
+        {week1Status.reasons.length > 0 ? (
+          <ul className="mt-1 list-disc pl-5 text-[12px]">
+            {week1Status.reasons.map((r) => <li key={r}>{r}</li>)}
+          </ul>
+        ) : (
+          <p className="mt-0.5 text-[12px]">
+            Welcome covered, Week 1 screenshots matched or intentionally screenshot-free,
+            and the Welcome video is linked or marked pending-but-nonblocking.
+          </p>
+        )}
       </div>
       {!welcomeVideo.ok && (
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[12px] text-amber-900">
