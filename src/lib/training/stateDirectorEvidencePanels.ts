@@ -124,7 +124,7 @@ export const SD_EVIDENCE_PANELS: SDEvidencePanel[] = [
     purpose:
       "Pause and reflect on whether you feel ready to own a state — and where you still want support.",
     whatToObserve: [
-      "Your honest answers to the readiness prompts.",
+      "Your honest answers to the readiness questions.",
       "The themes that show up across your answers (operational, clinical, leadership, personal).",
     ],
     evidenceToCapture: [

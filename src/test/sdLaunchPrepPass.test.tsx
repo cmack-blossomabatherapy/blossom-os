@@ -70,7 +70,7 @@ describe("SD Launch Readiness Panel", () => {
       /modules have completion evidence/i,
       /modules have full SD content/i,
       /modules have knowledge checks/i,
-      /modules have reflection prompts/i,
+      /modules have reflection questions/i,
     ].forEach((re) => {
       expect(within(content).getByText(re)).toBeInTheDocument();
     });

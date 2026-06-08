@@ -24,6 +24,7 @@ import {
   WELCOME_COMPLETION,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
+import { WelcomeReflectionForm } from "@/components/training/WelcomeReflectionForm";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
@@ -252,7 +253,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Mark the welcome reviewed and capture one takeaway for your mentor." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="What kind of leader will families and staff need you to be in your first 30 days?" />
           </div>
         </section>
@@ -308,7 +309,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Bring your one-sentence version to your mentor check-in." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
         </section>
@@ -336,7 +337,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share one chosen value and one action with your mentor." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
         </section>
@@ -573,30 +574,28 @@ export default function OSWelcomeToBlossom() {
           </div>
         </section>
 
-        {/* REFLECTION PROMPT */}
+        {/* REFLECTION — written, saved to the learner's training record */}
         <section
           data-testid="welcome-reflection-prompt"
           className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8"
         >
           <SectionHeader
             icon={MessageSquare}
-            eyebrow="Reflection prompt"
+            eyebrow="Reflection"
             title="Before you move on, take five minutes."
-            description="Reflection is part of the work — not extra. Jot a few honest sentences and bring them to your first mentor check-in."
+            description="Reflection is part of the work — not extra. Write a few honest sentences for each question. Your answers save automatically and become part of your training record."
           />
-          <ul className="mt-5 grid gap-2 text-[13.5px] leading-relaxed text-foreground sm:grid-cols-2">
-            {[
-              "What does Blossom feel like to you so far, in one sentence?",
-              "Which of our core values will be easiest for you to model? Which one will take work?",
-              "What kind of leader will families and staff need you to be in your first 30 days?",
-              "What is one question you want to bring to your mentor this week?",
-            ].map((q) => (
-              <li key={q} className="flex gap-2 rounded-2xl border border-border/60 bg-muted/30 p-4">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-5">
+            <WelcomeReflectionForm
+              context="welcome-to-blossom"
+              questions={[
+                { key: "blossom-in-one-sentence", question: "What does Blossom feel like to you so far, in one sentence?" },
+                { key: "easiest-vs-hardest-value", question: "Which of our core values will be easiest for you to model? Which one will take work?" },
+                { key: "leader-in-first-30-days", question: "What kind of leader will families and staff need you to be in your first 30 days?" },
+                { key: "question-for-mentor", question: "What is one question you want to bring to your mentor this week?" },
+              ]}
+            />
+          </div>
         </section>
 
         <p className="text-center text-[12px] text-muted-foreground">

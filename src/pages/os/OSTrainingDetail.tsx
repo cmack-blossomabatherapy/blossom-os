@@ -1053,7 +1053,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                   <p className="mt-1 text-foreground/90">{fullContent.scenario.situation}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-background p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Your prompt</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">The question</p>
                   <p className="mt-1 text-foreground/90">{fullContent.scenario.prompt}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-background p-3">
