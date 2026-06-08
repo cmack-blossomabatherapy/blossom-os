@@ -33,6 +33,10 @@ import {
   type SDScreenshotAsset, findScreenshotResource,
   getStateDirectorNoScreenshotDecision,
 } from "@/lib/training/stateDirectorFullTraining";
+import {
+  getStateDirectorEvidencePanel,
+  type SDEvidencePanel,
+} from "@/lib/training/stateDirectorEvidencePanels";
 import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
@@ -621,6 +625,11 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     [training.id],
   );
 
+  const evidencePanel = useMemo<SDEvidencePanel | null>(
+    () => getStateDirectorEvidencePanel(training.id),
+    [training.id],
+  );
+
   async function refresh() {
     if (!user?.id) return;
     try { setLearnerHome(await loadLearnerHome(user.id)); } catch { /* non-fatal */ }
@@ -901,25 +910,66 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                   Evidence instead of a screenshot
                 </h3>
               </div>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/90">
-                This module uses written guidance and mentor evidence instead of a screenshot.
-              </p>
-              <dl className="mt-3 grid grid-cols-1 gap-2 text-[12.5px] sm:grid-cols-2">
-                <div className="rounded-xl border border-border/60 bg-background p-3">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Why no screenshot
-                  </dt>
-                  <dd className="mt-1 text-foreground/90">{noScreenshotDecision.reason}</dd>
+              {evidencePanel ? (
+                <div data-testid="sd-evidence-panel" className="mt-3 space-y-3">
+                  <p className="text-[13.5px] leading-relaxed text-foreground/90">
+                    <span className="font-medium text-foreground">{evidencePanel.title}.</span>{" "}
+                    {evidencePanel.purpose}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 text-[12.5px] sm:grid-cols-2">
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        What to observe
+                      </div>
+                      <ul className="mt-1 list-disc pl-4 text-foreground/90 space-y-1">
+                        {evidencePanel.whatToObserve.map((s) => <li key={s}>{s}</li>)}
+                      </ul>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Evidence to capture
+                      </div>
+                      <ul className="mt-1 list-disc pl-4 text-foreground/90 space-y-1">
+                        {evidencePanel.evidenceToCapture.map((s) => <li key={s}>{s}</li>)}
+                      </ul>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Mentor review
+                      </div>
+                      <p className="mt-1 text-foreground/90">{evidencePanel.mentorReview}</p>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Completion criteria
+                      </div>
+                      <p className="mt-1 text-foreground/90">{evidencePanel.completionCriteria}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-background p-3">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    What you'll produce instead
-                  </dt>
-                  <dd className="mt-1 text-foreground/90">
-                    {noScreenshotDecision.replacementEvidence}
-                  </dd>
-                </div>
-              </dl>
+              ) : (
+                <>
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-foreground/90">
+                    This module uses written guidance and mentor evidence instead of a screenshot.
+                  </p>
+                  <dl className="mt-3 grid grid-cols-1 gap-2 text-[12.5px] sm:grid-cols-2">
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Why no screenshot
+                      </dt>
+                      <dd className="mt-1 text-foreground/90">{noScreenshotDecision.reason}</dd>
+                    </div>
+                    <div className="rounded-xl border border-border/60 bg-background p-3">
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        What you'll produce instead
+                      </dt>
+                      <dd className="mt-1 text-foreground/90">
+                        {noScreenshotDecision.replacementEvidence}
+                      </dd>
+                    </div>
+                  </dl>
+                </>
+              )}
             </div>
           )}
 
