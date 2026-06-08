@@ -759,6 +759,26 @@ function SectionHeader({
   );
 }
 
+function findAcademyWelcomeModule(home: LearnerHome, welcomeModuleId: string) {
+  const modules = home.weeks.flatMap((week) => week.modules);
+  const expectedTrainingId = WELCOME_TO_SD_TRAINING_ID[welcomeModuleId];
+  const normalizedTitle = (WELCOME_TO_BLOSSOM_MODULES.find((m) => m.id === welcomeModuleId)?.title ?? "")
+    .toLowerCase();
+
+  return modules.find((module) => {
+    const title = (module.title ?? "").toLowerCase();
+    if (module.id === expectedTrainingId || title === normalizedTitle) return true;
+    if (welcomeModuleId === "welcome-video-from-blossom") return title.includes("welcome to blossom") || title.startsWith("welcome video");
+    if (welcomeModuleId === "welcome-mission-vision") return title.includes("mission") && title.includes("vision");
+    if (welcomeModuleId === "welcome-core-values") return title.includes("core values");
+    if (welcomeModuleId === "welcome-meet-the-team") return title.includes("meet the team");
+    if (welcomeModuleId === "welcome-how-blossom-works") return title.includes("how blossom works");
+    if (welcomeModuleId === "welcome-letter-chad") return title.includes("chad");
+    if (welcomeModuleId === "welcome-letter-shira") return title.includes("shira");
+    return false;
+  }) ?? null;
+}
+
 function GuideBlock({
   icon: Icon, label, body, items,
 }: { icon: React.ComponentType<{ className?: string }>; label: string; body?: string; items?: string[] }) {
@@ -803,9 +823,11 @@ function scrollToWelcomeSection(id: string) {
 function ModuleCompleteAction({
   moduleId,
   status,
+  syncWelcomeToAcademy,
 }: {
   moduleId: string;
   status: { modulesComplete: string[] };
+  syncWelcomeToAcademy: (welcomeModuleId: string) => void | Promise<void>;
 }) {
   const done = isWelcomeModuleComplete(moduleId, status.modulesComplete);
   return (
