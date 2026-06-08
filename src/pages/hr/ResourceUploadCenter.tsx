@@ -18,8 +18,15 @@ import {
   computeSdSopCoverageFromResources,
   normalizeSopTitle,
   sopTitleSimilarity,
+  SD_SOP_CONNECTED_DEFINITION,
+  SD_SOP_BATCHES,
+  type SdSopCoverageReport,
+  type SdSopCoverageEntry,
 } from "@/lib/resources/sdSopCoverage";
-import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
+import {
+  SD_SOP_MANIFEST,
+  SD_SOP_FORBIDDEN_ROLES,
+} from "@/lib/resources/stateDirectorSopManifest";
 import {
   SD_ALL_SCREENSHOTS,
   findScreenshotResource,
@@ -37,7 +44,8 @@ type FilterTab =
   | "privacy_review"
   | "vault_excluded"
   | "needs_file_repair"
-  | "training_screenshots";
+  | "training_screenshots"
+  | "sd_launch_sops";
 
 function classifySdMatch(
   resource: Resource,
@@ -74,7 +82,11 @@ export default function ResourceUploadCenter() {
   const [publishedThisSession, setPublishedThisSession] = useState<Resource[]>([]);
   const [queueCounts, setQueueCounts] = useState<Record<ResourceUploadStatus, number> | null>(null);
   const [failedUploads, setFailedUploads] = useState(0);
-  const [filter, setFilter] = useState<FilterTab>("all");
+  const initialFilter: FilterTab =
+    typeof window !== "undefined" && window.location.hash === "#sd-launch-sops"
+      ? "sd_launch_sops"
+      : "all";
+  const [filter, setFilter] = useState<FilterTab>(initialFilter);
 
   const existingResources = useMemo(() => {
     const base = persistedResources.length > 0 ? persistedResources : seedResources;
@@ -174,6 +186,7 @@ export default function ResourceUploadCenter() {
   const tabs: [FilterTab, string][] = [
     ["all", `All (${adminAll.length})`],
     ["published", `Published (${publishedLearnerVisible})`],
+    ["sd_launch_sops", `SD Launch SOPs (${coverage.published}/${coverage.total})`],
     ["sd_sops", `State Director SOPs (${coverage.published + coverage.needsFileRepair})`],
     ["unmatched", `Unmatched uploads (${unmatchedCount})`],
     ["privacy_review", `Privacy review (${heldCount})`],
@@ -248,6 +261,8 @@ export default function ResourceUploadCenter() {
         >
           {filter === "training_screenshots" ? (
             <TrainingScreenshotsPanel resources={adminAll} />
+          ) : filter === "sd_launch_sops" ? (
+            <SDLaunchSopsPanel coverage={coverage} />
           ) : (
           <div className="overflow-auto">
             <table className="w-full min-w-[820px] text-[12.5px]">
