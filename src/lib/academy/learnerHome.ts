@@ -254,9 +254,9 @@ export function buildLearnerHome(input: {
 export async function loadLearnerHome(userId: string | null | undefined): Promise<LearnerHome> {
   if (!userId) return emptyLearnerHome(["no_employee_link"]);
   const curriculum = await loadCurriculum();
-  const { data: emp } = await supabase
+  const { data: emp } = await (supabase
     .from("employees")
-    .select("id, first_name, last_name, job_title, state, mentor_id")
+    .select("id, first_name, last_name, job_title, state, mentor_id") as any)
     .eq("user_id", userId)
     .maybeSingle();
   const employeeRow = emp as (LearnerEmployee & { mentor_id?: string | null }) | null;
