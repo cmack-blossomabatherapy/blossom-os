@@ -800,6 +800,8 @@ export default function OSWelcomeToBlossom() {
                 className="rounded-2xl shadow-md shadow-primary/20"
                 onClick={() => navigate("/training")}
                 data-testid="welcome-continue-launch-path"
+                disabled={!hipaaQuizPassed}
+                title={!hipaaQuizPassed ? "Pass the HIPAA knowledge check to continue" : undefined}
               >
                 Continue to my State Director launch path <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -812,6 +814,11 @@ export default function OSWelcomeToBlossom() {
               >
                 <BookOpen className="h-3.5 w-3.5" /> Open Resource Library
               </Button>
+              {!hipaaQuizPassed && (
+                <p className="text-[12px] text-rose-600">
+                  Pass the HIPAA knowledge check above to unlock the launch path.
+                </p>
+              )}
             </div>
           </div>
         </section>
