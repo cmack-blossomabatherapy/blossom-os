@@ -46,6 +46,7 @@ export interface WelcomeLeadershipLetter {
   initials: string;
   paragraphs: string[];
   signoff: string;
+  pullQuote: string;
 }
 
 export interface WelcomeCompletion {
@@ -259,6 +260,7 @@ export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
       "Welcome to Blossom.",
     ],
     signoff: "Chad Kaufman, Chief Executive Officer",
+    pullQuote: "Great ABA therapy does not happen through good intentions alone.",
   },
   {
     id: "doo",
@@ -279,6 +281,7 @@ export const WELCOME_LEADERSHIP_LETTERS: WelcomeLeadershipLetter[] = [
       "Welcome to the team. We are going to build this with you.",
     ],
     signoff: "Shira Lasry, Director of Operations",
+    pullQuote: "The deeper skill is learning how to keep a state moving without creating panic.",
   },
 ];
 

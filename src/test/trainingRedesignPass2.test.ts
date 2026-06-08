@@ -65,13 +65,13 @@ describe("Training Academy Redesign Pass 2 — learner surface", () => {
     expect(content).toMatch(/Chad Kaufman/);
     expect(content).toMatch(/Shira Lasry/);
     expect(welcome).toMatch(/WELCOME_LEADERSHIP_LETTERS/);
-    expect(welcome).toMatch(/A note from leadership/);
+    expect(welcome).toMatch(/A welcome from leadership/);
     expect(welcome).toMatch(/Continue to State Director Journey/);
   });
 
   it("Welcome to Blossom keeps the video first and remains revisitable", () => {
     const videoIdx = welcome.indexOf("<video");
-    const lettersIdx = welcome.indexOf("A note from leadership");
+    const lettersIdx = welcome.indexOf("A welcome from leadership");
     expect(videoIdx).toBeGreaterThan(-1);
     expect(lettersIdx).toBeGreaterThan(videoIdx);
     // Revisit affordance — "Mark as watched" remains, video controls present

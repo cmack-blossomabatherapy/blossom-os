@@ -56,6 +56,33 @@ describe("Welcome to Blossom hotfix — video + bottom layout", () => {
     expect(WELCOME).toMatch(/WELCOME_LEADERSHIP_LETTERS/);
   });
 
+  it("uses the warm leadership heading and removes the casual phrase", () => {
+    expect(WELCOME).toMatch(/A welcome from leadership/);
+    expect(WELCOME).not.toMatch(/Two short letters worth reading once/);
+  });
+
+  it("renders both pull quotes from Chad and Shira", () => {
+    const CONTENT = fs.readFileSync(
+      "src/lib/training/welcomeToBlossomContent.ts",
+      "utf8",
+    );
+    expect(CONTENT).toMatch(/Great ABA therapy does not happen through good intentions alone/);
+    expect(CONTENT).toMatch(/The deeper skill is learning how to keep a state moving without creating panic/);
+    expect(WELCOME).toMatch(/\{l\.pullQuote\}/);
+  });
+
+  it("renders the reflection panel after letters", () => {
+    expect(WELCOME).toMatch(/leadership-reflection-panel/);
+    expect(WELCOME).toMatch(/Write one sentence from these letters/);
+    expect(WELCOME).toMatch(/Bring that sentence to your first mentor check-in/);
+  });
+
+  it("does not introduce any fake headshot URL", () => {
+    expect(WELCOME).not.toMatch(/headshot/i);
+    expect(WELCOME).not.toMatch(/avatar.*\.png/i);
+    expect(WELCOME).not.toMatch(/avatar.*\.jpg/i);
+  });
+
   it("includes completion handoff copy to the State Director Journey", () => {
     expect(WELCOME).toMatch(/You are ready for the State Director Journey/);
     expect(WELCOME).toMatch(/one day at a time/);
