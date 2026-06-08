@@ -86,8 +86,9 @@ describe("Runtime QA — Welcome to Blossom is exactly 7 modules and direct", ()
     expect(WELCOME).not.toMatch(/HIPAA|hipaa/);
   });
 
-  it("welcome page wires Mark complete via markModuleComplete", () => {
-    expect(WELCOME).toMatch(/markModuleComplete/);
+  it("welcome page wires Mark complete through the shared Welcome progress bridge", () => {
+    expect(WELCOME).toMatch(/completeWelcomeModuleEverywhere/);
+    expect(WELCOME).toMatch(/syncWelcomeToAcademy/);
   });
 
   it("welcome page has a calm video-pending fallback (no broken <video> when missing)", () => {
