@@ -691,6 +691,7 @@ function TrainingTab({ m, openAssign, setOpenAssign }: { m: DirectoryEmployee; o
 
   return (
     <div className="space-y-6">
+      <AcademyJourneyPanel employee={m} />
       <Dialog open={openAssign} onOpenChange={setOpenAssign}>
         <DialogContent>
           <DialogHeader>
