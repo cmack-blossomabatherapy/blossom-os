@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { markModuleComplete } from "@/lib/onboarding/storage";
@@ -86,6 +87,15 @@ export default function OSWelcomeToBlossom() {
 
   const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
+
+  // Welcome-to-Blossom overall progress across the 7 modules.
+  const welcomeDoneCount = WELCOME_TO_BLOSSOM_MODULES.filter((m) =>
+    status.modulesComplete.includes(m.id),
+  ).length;
+  const welcomeTotal = WELCOME_TO_BLOSSOM_MODULES.length;
+  const welcomePercent =
+    welcomeTotal === 0 ? 0 : Math.round((welcomeDoneCount / welcomeTotal) * 100);
+  const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("welcome-video-from-blossom");
@@ -175,6 +185,32 @@ export default function OSWelcomeToBlossom() {
               Continue to State Director Journey
             </Button>
           </div>
+
+          {/* Overall Welcome progress — updates the moment a module is marked complete */}
+          <div
+            data-testid="welcome-overall-progress"
+            className="mt-5 max-w-2xl rounded-2xl border border-border/60 bg-card/60 p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Welcome progress
+                </p>
+                <p className="mt-0.5 text-[13.5px] font-semibold text-foreground">
+                  {welcomeDoneCount} of {welcomeTotal} modules complete
+                  {allWelcomeDone && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> All done
+                    </span>
+                  )}
+                </p>
+              </div>
+              <span className="tabular-nums text-[15px] font-semibold text-foreground">
+                {welcomePercent}%
+              </span>
+            </div>
+            <Progress value={welcomePercent} className="mt-3 h-2" />
+          </div>
         </header>
 
         {/* MODULE SEQUENCE — visible 7-step rail */}
@@ -196,7 +232,7 @@ export default function OSWelcomeToBlossom() {
               </p>
             </div>
             <span className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] text-muted-foreground">
-              {WELCOME_TO_BLOSSOM_MODULES.length} modules
+              {welcomeDoneCount}/{welcomeTotal} complete · {welcomePercent}%
             </span>
           </div>
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
