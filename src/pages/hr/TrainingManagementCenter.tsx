@@ -4,6 +4,7 @@ import { OSShell } from "@/pages/os/OSShell";
 import { SD_SOP_MANIFEST } from "@/lib/resources/stateDirectorSopManifest";
 import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 import { useAdminResources } from "@/hooks/useAdminResources";
+import { ControlRoomActivityDashboard } from "@/components/training/ControlRoomActivityDashboard";
 import {
   SD_PRIORITY_SCREENSHOT_MODULES,
   getStateDirectorScreenshots,
@@ -489,6 +490,7 @@ export default function TrainingManagementCenter() {
           {/* Content by nav */}
           {nav === "control-room" && (
             <div className="space-y-6" data-testid="training-control-room-wide">
+              <ControlRoomActivityDashboard />
               <ControlRoomLaunchReadinessSection />
               <ControlRoomResourceAssetCoverageSection />
             </div>
