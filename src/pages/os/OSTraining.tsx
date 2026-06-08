@@ -13,7 +13,7 @@ import {
   Search, Clock, ArrowRight, Sparkles, Play, FileText, Workflow as WorkflowIcon,
   CheckCircle2, BookOpen, ChevronRight, BookMarked, Library, AlertCircle,
   MonitorCog, Compass, Settings2, Inbox, ShieldCheck, MessageSquare, GraduationCap,
-  PlayCircle, Heart, Users as UsersIcon, Lightbulb,
+  PlayCircle, Heart, Users as UsersIcon, Lightbulb, Mail,
 } from "lucide-react";
 import {
   useAcademy, getProgress, continueLearning, requiredDue,
@@ -40,6 +40,7 @@ const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   Workflow: WorkflowIcon,
   Tango: Play,
   Video: Play,
+  Letter: Mail,
   Checklist: CheckCircle2,
   "Quick Guide": BookOpen,
   Training: GraduationCap,

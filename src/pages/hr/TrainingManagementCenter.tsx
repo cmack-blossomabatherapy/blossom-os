@@ -51,6 +51,7 @@ import {
   ArrowDown,
   Trash2,
   Library,
+  Mail,
 } from "lucide-react";
 import {
   trainingSops,
@@ -154,6 +155,7 @@ function roleCategory(role: string): string {
 function toViewModule(t: Training): ViewModule {
   const type: ModuleType =
     t.type === "Quick Guide" || t.type === "Tango" || t.type === "Video" ||
+    t.type === "Letter" ||
     t.type === "SOP" || t.type === "Workflow" || t.type === "Checklist"
       ? t.type
       : "SOP";
@@ -224,6 +226,7 @@ const TYPE_ICON: Record<ModuleType, typeof FileText> = {
   Workflow: WorkflowIcon,
   Tango: Play,
   Video: Play,
+  Letter: Mail,
   Checklist: ListChecks,
   "Quick Guide": BookOpen,
   "Resource Collection": FolderOpen,
@@ -1685,7 +1688,7 @@ function CreateModuleDialog({
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {(["SOP", "Workflow", "Tango", "Video", "Checklist", "Quick Guide"] as ModuleType[]).map(
+            {(["SOP", "Workflow", "Tango", "Video", "Letter", "Checklist", "Quick Guide"] as ModuleType[]).map(
               (t) => (
                 <button
                   key={t}

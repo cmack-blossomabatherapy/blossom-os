@@ -9,6 +9,7 @@ export type ModuleType =
   | "Workflow"
   | "Tango"
   | "Video"
+  | "Letter"
   | "Quick Guide"
   | "Checklist"
   | "Resource Collection";
