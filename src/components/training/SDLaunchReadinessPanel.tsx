@@ -36,6 +36,7 @@ import {
   isScreenshotPiiSafe,
 } from "@/lib/training/stateDirectorFullTraining";
 import { WELCOME_LEADERSHIP_LETTERS } from "@/lib/training/welcomeToBlossomContent";
+import { SD_EVIDENCE_PANEL_MODULE_IDS } from "@/lib/training/stateDirectorEvidencePanels";
 
 type CheckState = "ok" | "manual" | "warn";
 
