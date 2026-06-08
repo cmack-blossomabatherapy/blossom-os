@@ -1989,6 +1989,15 @@ function SDSopReadinessPanel() {
             size="sm"
             variant="outline"
             className="rounded-xl"
+            data-testid="sd-sop-upload-tracker-button"
+            onClick={() => navigate("/hr/resource-management#sd-launch-sops")}
+          >
+            <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Open SD SOP upload tracker
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl"
             onClick={() => navigate("/training")}
           >
             <ArrowRight className="mr-1.5 h-3.5 w-3.5" /> Review SD journey
