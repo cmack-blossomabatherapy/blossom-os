@@ -281,6 +281,38 @@ export default function OSResourceLibrary() {
               </section>
             )}
 
+            {/* STATE DIRECTOR LAUNCH SMART COLLECTION */}
+            {showSdLaunchCollection && (
+              <section data-testid="sd-launch-collection">
+                <SectionHeader
+                  title="State Director Launch"
+                  subtitle="Published SOPs powering the 5-week State Director journey"
+                  icon={GraduationCap}
+                />
+                {sdLaunchVisible.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border/60 bg-card p-5 text-[12.5px] text-muted-foreground">
+                    Your State Director launch resources are being connected. Training guidance is still available in the Academy.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {sdLaunchVisible.slice(0, 9).map((r) => (
+                      <ResourceCard
+                        key={r.id} r={r}
+                        onOpen={openResource}
+                        onFavorite={toggleFavorite}
+                        isFavorite={favorites.has(r.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {sdLaunchVisible.length > 9 && (
+                  <p className="mt-2 text-[11.5px] text-muted-foreground">
+                    + {sdLaunchVisible.length - 9} more in the State Director launch collection.
+                  </p>
+                )}
+              </section>
+            )}
+
             {/* ROLE RESOURCES */}
             {!query && !activeCategory && (
               <section>
