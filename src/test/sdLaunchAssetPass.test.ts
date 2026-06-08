@@ -155,11 +155,11 @@ describe("SDLaunchReadinessPanel runtime checks (no hard-coded greens for assets
 
 describe("Welcome page does not render broken video when no URL exists", () => {
   it("only renders <video> inside the hasVideo branch", () => {
-    // Find the JSX block; ensure <video src= appears only after `hasVideo ? (`.
+    // Ensure the <video src=…> element only appears inside the hasVideo branch.
     const hasVideoIdx = WELCOME.indexOf("hasVideo ? (");
     expect(hasVideoIdx).toBeGreaterThan(-1);
-    const videoIdx = WELCOME.indexOf("<video");
-    expect(videoIdx).toBeGreaterThan(hasVideoIdx);
+    const videoSrcIdx = WELCOME.search(/<video\s+\n?\s*src=/m);
+    expect(videoSrcIdx).toBeGreaterThan(hasVideoIdx);
   });
 
   it("hasVideo is derived from the resolved URL, not the empty constant", () => {
