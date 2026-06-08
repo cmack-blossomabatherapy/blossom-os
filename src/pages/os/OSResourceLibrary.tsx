@@ -752,7 +752,7 @@ function ResourceCard({
         </button>
       </div>
       <button onClick={() => onOpen(r)} className="text-left">
-        <div className="line-clamp-1 text-[14px] font-semibold text-foreground">{r.title}</div>
+        <div className="line-clamp-1 text-[14px] font-semibold text-foreground">{cleanResourceTitle(r.title)}</div>
         <p className="mt-1 line-clamp-2 text-[12.5px] text-muted-foreground">{r.description}</p>
       </button>
       <div className="mt-auto flex items-center justify-between pt-1">
