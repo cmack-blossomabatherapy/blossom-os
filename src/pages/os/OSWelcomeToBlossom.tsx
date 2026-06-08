@@ -8,6 +8,7 @@ import {
 import { OSShell } from "./OSShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { markModuleComplete } from "@/lib/onboarding/storage";
@@ -86,6 +87,15 @@ export default function OSWelcomeToBlossom() {
 
   const videoDone = status.modulesComplete.includes("welcome-video-from-blossom");
   const hasVideo = Boolean(resolvedVideoUrl) && !videoBroken;
+
+  // Welcome-to-Blossom overall progress across the 7 modules.
+  const welcomeDoneCount = WELCOME_TO_BLOSSOM_MODULES.filter((m) =>
+    status.modulesComplete.includes(m.id),
+  ).length;
+  const welcomeTotal = WELCOME_TO_BLOSSOM_MODULES.length;
+  const welcomePercent =
+    welcomeTotal === 0 ? 0 : Math.round((welcomeDoneCount / welcomeTotal) * 100);
+  const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
   const markReviewed = () => {
     if (!videoDone) markModuleComplete("welcome-video-from-blossom");
