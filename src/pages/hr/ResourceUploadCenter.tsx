@@ -476,6 +476,53 @@ function SDLaunchSopsPanel({ coverage }: { coverage: SdSopCoverageReport }) {
       </div>
 
       <div
+        data-testid="sd-launch-sops-fix-next"
+        className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+      >
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-amber-800">
+          What to fix next
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-border/60 bg-background p-3">
+            <p className="text-[20px] font-semibold tracking-tight text-rose-600">
+              {coverage.missing}
+            </p>
+            <p className="mt-0.5 text-[12px] font-medium text-foreground">Missing titles</p>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">
+              Upload using exact manifest title.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background p-3">
+            <p className="text-[20px] font-semibold tracking-tight text-amber-600">
+              {coverage.needsFileRepair}
+            </p>
+            <p className="mt-0.5 text-[12px] font-medium text-foreground">File repairs</p>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">
+              Re-upload or attach a working URL/file.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background p-3">
+            <p className="text-[20px] font-semibold tracking-tight text-amber-600">
+              {coverage.needsTitleCleanupEntries.length}
+            </p>
+            <p className="mt-0.5 text-[12px] font-medium text-foreground">Title cleanup</p>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">
+              Rename to the accepted manifest title.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border/60 bg-background p-3">
+            <p className="text-[20px] font-semibold tracking-tight text-amber-600">
+              {coverage.held}
+            </p>
+            <p className="mt-0.5 text-[12px] font-medium text-foreground">Held review</p>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">
+              Clear privacy/business review before learner visibility.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
         data-testid="sd-launch-batches"
         className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5"
       >
