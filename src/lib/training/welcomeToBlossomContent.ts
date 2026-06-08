@@ -201,6 +201,29 @@ export const WELCOME_TO_BLOSSOM_MODULES: WelcomeModule[] = [
     completionEvidence: "Share your drawn flow and three risk points with your mentor.",
   },
   {
+    id: "welcome-hipaa-basics",
+    title: "HIPAA & Privacy Basics",
+    moduleType: "content",
+    estimatedMinutes: 15,
+    description:
+      "What HIPAA is, why it exists, what counts as Protected Health Information (PHI), and the everyday rules every Blossom employee follows to keep client information safe.",
+    learningObjective:
+      "Explain HIPAA in plain language, recognize PHI, follow the minimum-necessary rule, and know exactly what to do if a privacy mistake happens.",
+    whyThisMatters:
+      "Blossom serves children and families. Almost every system you touch - schedules, authorizations, clinical notes, reports, emails - contains Protected Health Information. HIPAA is not paperwork; it is how we keep families safe and how Blossom keeps its license to operate. One careless email, screenshot, or conversation in the wrong place can become a federal breach. Knowing this well on day one protects families, your teammates, and you.",
+    whatToDo: [
+      "Read the HIPAA overview below carefully - do not skim.",
+      "Watch at least one of the linked HIPAA training videos.",
+      "Write down two examples of PHI you will see in your role.",
+      "Memorize the rule: if you are not sure whether to share something, ask first.",
+      "Know who to contact at Blossom if you suspect a privacy mistake (your supervisor and HR).",
+    ],
+    completionEvidence:
+      "Tell your mentor in one sentence what HIPAA protects, name two examples of PHI you handle, and confirm you watched a HIPAA training video.",
+    reflectionPrompt:
+      "Walk through one routine task in your role and identify every place PHI shows up. Where is it easiest to make a mistake, and how will you prevent it?",
+  },
+  {
     id: "welcome-letter-chad",
     title: "Welcome Letter from Chad",
     moduleType: "letter",
