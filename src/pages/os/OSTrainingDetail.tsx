@@ -45,6 +45,62 @@ import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 import { completeWelcomeTrainingEverywhere } from "@/lib/training/welcomeProgressBridge";
 import MissionVisionContent from "@/components/training/MissionVisionContent";
 
+/** Local-only per-module session timer. Persists start time across reloads
+ *  in localStorage. Stops when the module is marked complete. */
+const TIMER_KEY = (id: string) => `bm:training-timer:${id}`;
+
+function readTimerStart(id: string): number | null {
+  try {
+    const raw = localStorage.getItem(TIMER_KEY(id));
+    if (!raw) return null;
+    const v = Number(raw);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTimerStart(id: string, value: number | null) {
+  try {
+    if (value == null) localStorage.removeItem(TIMER_KEY(id));
+    else localStorage.setItem(TIMER_KEY(id), String(value));
+  } catch { /* ignore */ }
+}
+
+function useModuleTimer(moduleId: string, completed: boolean) {
+  const [startedAt, setStartedAt] = useState<number | null>(() => readTimerStart(moduleId));
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    setStartedAt(readTimerStart(moduleId));
+  }, [moduleId]);
+
+  useEffect(() => {
+    if (!startedAt || completed) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [startedAt, completed]);
+
+  const start = () => {
+    if (startedAt) return;
+    const ts = Date.now();
+    writeTimerStart(moduleId, ts);
+    setStartedAt(ts);
+    setNow(ts);
+  };
+
+  const elapsedSeconds = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
+  return { startedAt, elapsedSeconds, start };
+}
+
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return `${m}m ${String(s).padStart(2, "0")}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${String(m % 60).padStart(2, "0")}m`;
+}
+
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
   const u = (r.url ?? "").trim();
