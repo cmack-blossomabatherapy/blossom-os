@@ -787,7 +787,21 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const localProgress = getProgress(training.id);
   const completed = dbProgress?.status === "completed" || localProgress.status === "completed";
 
+  const timer = useModuleTimer(training.id, completed);
+
+  // Auto-start the timer when the module is already in progress (e.g. user
+  // navigated here from the Welcome page after clicking "Start training").
+  useEffect(() => {
+    if (completed) return;
+    if (timer.startedAt) return;
+    const inProgress =
+      dbProgress?.status === "in_progress" || localProgress.status === "in_progress";
+    if (inProgress) timer.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbProgress?.status, localProgress.status, completed]);
+
   async function handleStart() {
+    timer.start();
     if (!hasDb) {
       markTrainingStarted(training.id);
       toast.success("Started locally — connect an enrollment to sync with leadership.");
