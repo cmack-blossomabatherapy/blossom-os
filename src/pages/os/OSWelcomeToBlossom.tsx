@@ -241,7 +241,7 @@ export default function OSWelcomeToBlossom() {
         </section>
 
         {/* WELCOME VIDEO */}
-        <section className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm">
+        <section id="welcome-video-from-blossom" className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm scroll-mt-24">
           {hasVideo ? (
             <video
               src={resolvedVideoUrl ?? undefined}
@@ -335,7 +335,7 @@ export default function OSWelcomeToBlossom() {
         </section>
 
         {/* MISSION & VISION */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-mission-vision" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Flag} eyebrow="Mission & Vision" title="What we're here to do"
             description="Blossom exists to help children and families access high-quality ABA therapy with a system behind it that is organized, responsive, and human." />
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -375,10 +375,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
+          <ModuleCompleteAction moduleId="welcome-mission-vision" status={status} />
         </section>
 
         {/* CORE VALUES */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-core-values" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Sparkles} eyebrow="Core Values" title="Standards we use when the day gets complicated"
             description="Values are not slogans. They are the standards we use when the day gets complicated." />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -403,10 +404,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
+          <ModuleCompleteAction moduleId="welcome-core-values" status={status} />
         </section>
 
         {/* MEET THE TEAM */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-meet-the-team" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Building2} eyebrow="Meet the Team" title="Who owns what at Blossom"
             description="You are not expected to solve everything alone. Blossom works because departments own their lanes and communicate across them." />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -441,10 +443,11 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Write down your mentor, your first three department partners, and one question for each." />
           </div>
+          <ModuleCompleteAction moduleId="welcome-meet-the-team" status={status} />
         </section>
 
         {/* HOW BLOSSOM WORKS */}
-        <section className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+        <section id="welcome-how-blossom-works" className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-8 scroll-mt-24">
           <SectionHeader icon={Workflow} eyebrow="How Blossom Works" title="The Blossom flow, at a glance"
             description="Blossom is an ABA care organization supported by an operational system. The work moves from family interest to verified benefits, assessment, authorization, scheduling, active treatment, utilization, progress reporting, and renewal." />
           <ol className="mt-5 space-y-2.5">
@@ -486,6 +489,7 @@ export default function OSWelcomeToBlossom() {
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share your drawn flow and three risk points with your mentor." />
           </div>
+          <ModuleCompleteAction moduleId="welcome-how-blossom-works" status={status} />
         </section>
 
         {/* LEADERSHIP LETTERS */}
