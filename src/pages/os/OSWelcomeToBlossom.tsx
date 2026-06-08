@@ -24,6 +24,7 @@ import {
   WELCOME_COMPLETION,
 } from "@/lib/training/welcomeToBlossomContent";
 import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
+import { WelcomeReflectionForm } from "@/components/training/WelcomeReflectionForm";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
@@ -252,7 +253,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Mark the welcome reviewed and capture one takeaway for your mentor." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="What kind of leader will families and staff need you to be in your first 30 days?" />
           </div>
         </section>
@@ -308,7 +309,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Bring your one-sentence version to your mentor check-in." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which part of the mission will be hardest to protect when the state is busy?" />
           </div>
         </section>
@@ -336,7 +337,7 @@ export default function OSWelcomeToBlossom() {
             ]} />
             <GuideBlock icon={CheckCircle2} label="Completion evidence"
               body="Share one chosen value and one action with your mentor." />
-            <GuideBlock icon={MessageSquare} label="Reflection prompt"
+            <GuideBlock icon={MessageSquare} label="Reflection"
               body="Which value will your team most need from you during your first month?" />
           </div>
         </section>
