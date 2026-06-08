@@ -81,14 +81,6 @@ const resources: Resource[] = [
   { id: "r40", title: "Authorization Reports Guide", description: "The 3 foundational reports: expiration, workflow bottleneck, operational performance.", category: "Authorization Risk Management", type: "Guide", minutes: 5, updated: "2026-05-16", href: "/reports/auth-expiration-risk" },
   { id: "r41", title: "Risk Center Daily Routine", description: "The exact morning routine for Red/Orange zones.", category: "Authorization Risk Management", type: "Checklist", minutes: 3, updated: "2026-05-17", href: "/auth-risk-center" },
 
-  // Tangos
-  { id: "t1", title: "CR — Locating an auth", description: "Find any client's active and expired authorizations in CentralReach.", category: "Tango Walkthroughs", type: "Tango", minutes: 4, updated: "2026-04-08", system: "CentralReach", difficulty: "Quick" },
-  { id: "t2", title: "CR — Auth actions", description: "Open, edit, and update authorization records in CR.", category: "Tango Walkthroughs", type: "Tango", minutes: 5, updated: "2026-04-09", system: "CentralReach", difficulty: "Standard" },
-  { id: "t3", title: "CR — Treatment plan workflow", description: "Find treatment plans tied to active auths.", category: "Tango Walkthroughs", type: "Tango", minutes: 6, updated: "2026-04-10", system: "CentralReach", difficulty: "Standard" },
-  { id: "t4", title: "CR — Contact exports", description: "Pull contact lists for parent outreach.", category: "Tango Walkthroughs", type: "Tango", minutes: 3, updated: "2026-04-11", system: "CentralReach", difficulty: "Quick" },
-  { id: "t5", title: "Blossom OS — Auth drawer tour", description: "Every field, every action, every link in the auth drawer.", category: "Tango Walkthroughs", type: "Tango", minutes: 5, updated: "2026-05-13", system: "Blossom OS", difficulty: "Quick" },
-  { id: "t6", title: "CR — User management", description: "Add and adjust coordinator access in CentralReach.", category: "Tango Walkthroughs", type: "Tango", minutes: 4, updated: "2026-03-29", system: "CentralReach", difficulty: "Quick" },
-
   // Systems & tools
   { id: "r50", title: "Systems & Tools Overview", description: "How Blossom OS, CentralReach, and legacy Monday fit together.", category: "Systems & Tools", type: "Guide", minutes: 5, updated: "2026-04-25" },
 ];
@@ -115,13 +107,12 @@ const categoryMeta: Record<Category, { icon: typeof FileText; blurb: string }> =
   "Payer & Insurance Guidance": { icon: ShieldCheck, blurb: "Per-payer cadence and denial patterns." },
   "Authorization Risk Management": { icon: Target, blurb: "Risk Center, zones, and prioritization." },
   "Communication Templates": { icon: MessageSquare, blurb: "Calm, specific outreach drafts." },
-  "Tango Walkthroughs": { icon: PlayCircle, blurb: "System walkthroughs for CR and Blossom OS." },
   "Systems & Tools": { icon: Wrench, blurb: "How the systems fit together." },
 };
 
 const typeIcon: Record<ResourceType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Guide: BookOpen, Template: MessageSquare,
-  Tango: PlayCircle, Video: PlayCircle, Checklist: ListChecks, FAQ: BookOpen,
+  Video: PlayCircle, Checklist: ListChecks, FAQ: BookOpen,
 };
 
 const aiPrompts = [
@@ -307,16 +298,7 @@ export default function OSAuthorizationResources() {
               </div>
             </Section>
 
-            {/* 5 — Tango walkthroughs */}
-            <Section title="Tango walkthroughs" subtitle="Step-by-step system guides for CentralReach and Blossom OS.">
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {tangos.map((r) => (
-                  <TangoCard key={r.id} r={r} saved={saved.has(r.id)} onToggleSave={() => toggleSave(r.id)} />
-                ))}
-              </div>
-            </Section>
-
-            {/* 6 — Ask Blossom AI */}
+            {/* 5 — Ask Blossom AI */}
             <Section title="Ask Blossom AI" subtitle="Need help finding workflows, SOPs, payer guidance, or escalation instructions?">
               <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <div className="flex flex-wrap gap-2">
