@@ -29,6 +29,8 @@ import {
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
+import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
+import { ChevronDown } from "lucide-react";
 import {
   collectSmartCollections,
   countAdminHiddenResources,
@@ -46,6 +48,35 @@ const TONE_BG: Record<string, string> = {
   slate:   "bg-slate-100 text-slate-700",
   indigo:  "bg-[hsl(235_70%_96%)] text-[hsl(235_70%_50%)]",
 };
+
+/**
+ * System tags that should never reach learners: scaffolding from the
+ * upload pipeline (week_1, day_1, status:*, raw roles, etc).
+ */
+const SYSTEM_TAG_RE = /^(week_?\d+|day_?\d+|state_director|rbt|bcba|hr|admin|published|pending|held|vault.*|excluded|upload.*|status:.*|w\d+d\d+)$/i;
+function learnerTags(tags: string[]): string[] {
+  return (tags ?? []).filter((t) => !SYSTEM_TAG_RE.test(t.trim()));
+}
+
+function whenToUse(r: Resource): string {
+  switch (r.type) {
+    case "SOP":   return "Follow this when you run the workflow it covers.";
+    case "Form":  return "Use this whenever you need to capture or submit the information it asks for.";
+    case "Video":
+    case "Tango": return "Watch this before you do the workflow for the first time, or as a refresher.";
+    case "Workflow": return "Open this when you need the end-to-end steps for the workflow.";
+    case "Link":  return "Open this to jump straight into the tool or page it links to.";
+    case "PDF":
+    default:      return "Reference this when you need the details written out.";
+  }
+}
+
+function whoThisHelps(r: Resource): string {
+  if (r.tags?.some((t) => /state_director/i.test(t)))
+    return "Part of your State Director launch resources.";
+  if (r.roles?.length) return "Available for your role.";
+  return "Available to everyone on your team.";
+}
 
 export default function OSResourceLibrary() {
   const { role, activeState } = useOSRole();
@@ -293,8 +324,8 @@ export default function OSResourceLibrary() {
                         <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", TYPE_TONE[r.type])}>
                           <Icon className="h-3.5 w-3.5" />
                         </div>
-                        <div className="min-w-0">
-                          <div className="truncate text-[12.5px] font-medium text-foreground">{r.title}</div>
+                       <div className="min-w-0">
+                          <div className="truncate text-[12.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
                           <div className="truncate text-[10.5px] text-muted-foreground">{r.type}</div>
                         </div>
                       </button>
@@ -539,7 +570,7 @@ export default function OSResourceLibrary() {
                       <div className="flex min-w-0 items-center gap-3">
                         <TypeChip type={r.type} />
                         <div className="min-w-0">
-                          <div className="truncate text-[13.5px] font-medium text-foreground">{r.title}</div>
+                         <div className="truncate text-[13.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
                           <div className="text-[11.5px] text-muted-foreground">
                             {categoryById(r.category).name} · Updated {formatRelative(r.updatedAt)}
                           </div>
@@ -566,7 +597,7 @@ export default function OSResourceLibrary() {
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-muted/50"
                     >
                       <TypeChip type={r.type} sm />
-                      <span className="truncate">{r.title}</span>
+                      <span className="truncate">{cleanSdTitle(r.title)}</span>
                     </button>
                   ))}
                 </div>
@@ -672,76 +703,12 @@ export default function OSResourceLibrary() {
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto bg-card">
           {selected && (
-            <>
-              <SheetHeader>
-                <div className="flex items-start gap-3">
-                  <TypeChip type={selected.type} />
-                  <div className="min-w-0 flex-1">
-                    <SheetTitle className="text-[18px]">{selected.title}</SheetTitle>
-                    <SheetDescription className="mt-1 text-[13px]">
-                      {categoryById(selected.category).name} · Updated {formatRelative(selected.updatedAt)}
-                    </SheetDescription>
-                  </div>
-                </div>
-              </SheetHeader>
-              <div className="mt-6 space-y-5">
-                <p className="text-[13.5px] text-foreground">{selected.description}</p>
-
-                <MetaRow label="Type" value={selected.type} />
-                <MetaRow label="Status" value={selected.status} />
-                <MetaRow label="Uploaded by" value={selected.uploadedBy} />
-                <MetaRow label="Departments" value={selected.departments.join(", ") || "All"} />
-                <MetaRow label="States" value={selected.states.join(", ") || "All states"} />
-                <MetaRow label="Roles" value={selected.roles.length ? selected.roles.map(roleLabel).join(", ") : "All roles"} />
-
-                {selected.tags.length > 0 && (
-                  <div>
-                    <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Tags</div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {selected.tags.map((t) => (
-                        <Badge key={t} variant="secondary" className="rounded-full text-[11px] font-normal">{t}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {(() => {
-                    const href = selected.url || selected.fileUrl;
-                    const hasStorage = Boolean((selected as any).storagePath);
-                    const pending =
-                      (!href && !hasStorage) || selected.attachmentStatus === "pending_upload";
-                    if (pending) {
-                      return (
-                        <div
-                          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 h-10 text-xs text-muted-foreground"
-                          data-testid="resource-attachment-pending"
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                          Attachment pending — file will be linked once it's added to the Resource Library.
-                        </div>
-                      );
-                    }
-                    return (
-                      <Button
-                        data-testid="resource-open-button"
-                        onClick={async () => {
-                          const url = await resolveResourceOpenUrl(selected);
-                          if (url) window.open(url, "_blank", "noopener,noreferrer");
-                          else toast.error("This resource could not be opened. Try again or contact an admin.");
-                        }}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" /> Open resource
-                      </Button>
-                    );
-                  })()}
-                  <Button variant="outline" onClick={() => toggleFavorite(selected.id)}>
-                    <Star className={cn("mr-2 h-4 w-4", favorites.has(selected.id) && "fill-current text-amber-500")} />
-                    {favorites.has(selected.id) ? "Favorited" : "Favorite"}
-                  </Button>
-                </div>
-              </div>
-            </>
+            <ResourceDrawerBody
+              resource={selected}
+              canManage={canManage}
+              isFavorite={favorites.has(selected.id)}
+              onFavorite={() => toggleFavorite(selected.id)}
+            />
           )}
         </SheetContent>
       </Sheet>
@@ -822,6 +789,134 @@ function MetaRow({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right font-medium text-foreground">{value}</span>
     </div>
+  );
+}
+
+function ResourceDrawerBody({
+  resource,
+  canManage,
+  isFavorite,
+  onFavorite,
+}: {
+  resource: Resource;
+  canManage: boolean;
+  isFavorite: boolean;
+  onFavorite: () => void;
+}) {
+  const [showAdmin, setShowAdmin] = useState(false);
+  const cleanTitle = cleanSdTitle(resource.title);
+  const tags = learnerTags(resource.tags ?? []);
+  const href = resource.url || resource.fileUrl;
+  const hasStorage = Boolean((resource as any).storagePath);
+  const pending =
+    (!href && !hasStorage) || resource.attachmentStatus === "pending_upload";
+  return (
+    <>
+      <SheetHeader>
+        <div className="flex items-start gap-3">
+          <TypeChip type={resource.type} />
+          <div className="min-w-0 flex-1">
+            <SheetTitle className="text-[18px]">{cleanTitle}</SheetTitle>
+            <SheetDescription className="mt-1 text-[13px]">
+              {categoryById(resource.category).name} · Updated {formatRelative(resource.updatedAt)}
+            </SheetDescription>
+          </div>
+        </div>
+      </SheetHeader>
+
+      <div className="mt-6 space-y-5" data-testid="resource-drawer-learner">
+        <section>
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">What this is</div>
+          <p className="mt-1 text-[13.5px] text-foreground">
+            {resource.description || "A reference from your Blossom OS library."}
+          </p>
+        </section>
+
+        <section>
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">When to use it</div>
+          <p className="mt-1 text-[13.5px] text-foreground/90">{whenToUse(resource)}</p>
+        </section>
+
+        <section>
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Who this helps</div>
+          <p className="mt-1 text-[13.5px] text-foreground/90">{whoThisHelps(resource)}</p>
+        </section>
+
+        {tags.length > 0 && (
+          <section>
+            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Topics</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <Badge key={t} variant="secondary" className="rounded-full text-[11px] font-normal">{t}</Badge>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div className="flex flex-wrap gap-2 pt-2">
+          {pending ? (
+            <div
+              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/40 px-3 h-10 text-xs text-muted-foreground"
+              data-testid="resource-attachment-pending"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Attachment pending — file will be linked once it's added to the Resource Library.
+            </div>
+          ) : (
+            <Button
+              data-testid="resource-open-button"
+              onClick={async () => {
+                const url = await resolveResourceOpenUrl(resource);
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+                else toast.error("This resource could not be opened. Try again or contact an admin.");
+              }}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" /> Open resource
+            </Button>
+          )}
+          <Button variant="outline" onClick={onFavorite}>
+            <Star className={cn("mr-2 h-4 w-4", isFavorite && "fill-current text-amber-500")} />
+            {isFavorite ? "Favorited" : "Favorite"}
+          </Button>
+        </div>
+
+        {canManage && (
+          <section
+            data-testid="resource-drawer-admin"
+            className="mt-4 rounded-xl border border-border/50 bg-muted/20 p-3"
+          >
+            <button
+              type="button"
+              onClick={() => setShowAdmin((v) => !v)}
+              className="flex w-full items-center justify-between text-[12px] font-medium text-foreground"
+            >
+              <span>Admin details</span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", showAdmin && "rotate-180")} />
+            </button>
+            {showAdmin && (
+              <div className="mt-3 space-y-2">
+                <MetaRow label="Type" value={resource.type} />
+                <MetaRow label="Status" value={resource.status} />
+                <MetaRow label="Uploaded by" value={resource.uploadedBy} />
+                <MetaRow label="Departments" value={resource.departments.join(", ") || "All"} />
+                <MetaRow label="States" value={resource.states.join(", ") || "All states"} />
+                <MetaRow label="Roles" value={resource.roles.length ? resource.roles.map(roleLabel).join(", ") : "All roles"} />
+                {resource.tags.length > 0 && (
+                  <div>
+                    <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">All tags</div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {resource.tags.map((t) => (
+                        <Badge key={t} variant="outline" className="rounded-full text-[10.5px] font-normal">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -8,9 +8,12 @@ const src = fs.readFileSync(
 );
 
 describe("State Director module detail panel", () => {
-  it("renders SD panel only for SD modules", () => {
+  it("renders SD panel only for SD modules (via early-return branch)", () => {
     expect(src).toMatch(/data-testid="sd-module-detail-panel"/);
-    expect(src).toMatch(/isSD\s*&&\s*<SDModuleDetailPanel/);
+    // The SD experience is rendered via an early `if (isSD)` return —
+    // not stacked alongside the generic layout.
+    expect(src).toMatch(/if \(isSD\) \{\s*return \(/);
+    expect(src).toMatch(/<SDModuleDetailPanel training=\{training\} \/>/);
     expect(src).toMatch(/training\.id\.startsWith\("sd-"\)/);
   });
 

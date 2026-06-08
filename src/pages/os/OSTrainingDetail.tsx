@@ -41,6 +41,7 @@ import { getSopTitleForModule } from "@/lib/training/stateDirectorModuleSopMap";
 import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { findResourceForSopTitle } from "@/lib/resources/sdSopCoverage";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
+import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
@@ -87,6 +88,22 @@ export default function OSTrainingDetail() {
 
   const isSD = training.id.startsWith("sd-") || training.department === "state_director";
 
+  if (isSD) {
+    return (
+      <OSShell>
+        <div className="os-rise">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back
+          </button>
+        </div>
+        <SDModuleDetailPanel training={training} />
+      </OSShell>
+    );
+  }
+
   return (
     <OSShell>
       <div className="os-rise">
@@ -130,8 +147,6 @@ export default function OSTrainingDetail() {
           </div>
         </header>
       </div>
-
-      {isSD && <SDModuleDetailPanel training={training} />}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr_300px]">
         {/* Left nav */}
@@ -717,6 +732,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
     const m = /^sd-w(\d+)d(\d+)-/.exec(training.id);
     return m ? `Week ${m[1]} · Day ${m[2]}` : "State Director Academy";
   })();
+  const displayTitle = cleanSdTitle(training.title);
 
   const flow = pickModuleFlow(training.title);
   // Prefer DB quiz, then full-content module-specific questions, then generic.
@@ -745,7 +761,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={handleStart} disabled={busy !== null}>
             <Play className="mr-1 h-3 w-3" /> {busy === "start" ? "Starting…" : completed ? "Review" : "Start"}
           </Button>
-          <Button size="sm" className="h-7 rounded-full" onClick={handleComplete} disabled={busy !== null}>
+          <Button size="sm" className="h-7 rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
             <CheckCircle2 className="mr-1 h-3 w-3" /> Mark complete
           </Button>
         </div>
@@ -756,45 +772,32 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
         <div className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-primary">
           <Sparkles className="h-3 w-3" /> Start here
         </div>
-        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">{training.title}</h3>
+        <h3 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">{displayTitle}</h3>
         <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
           Take this one calmly. Read the &quot;Why this matters&quot; below, walk the steps, then capture
           a short reflection before you mark it complete. Your mentor is here for any question.
         </p>
       </div>
 
-      {/* SD module header summary */}
+      {/* SD module header summary (info-only; actions live in the sticky strip) */}
       <div className="rounded-3xl border border-border/70 bg-card p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{weekDay}</p>
-            <h2 className="mt-1 text-[18px] font-semibold tracking-tight">{training.title}</h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              <Badge variant="outline" className="text-[10px]">{training.type}</Badge>
-              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
-              {requiresMentorSignoff && (
-                <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
-                  <ShieldCheck className="mr-1 h-3 w-3" /> Mentor signoff required
-                </Badge>
-              )}
-              {completed && (
-                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">Complete</Badge>
-              )}
-              {!hasDb && (
-                <span className="text-[10.5px] text-muted-foreground">Local-only progress (no enrollment linked)</span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="rounded-full" onClick={handleStart} disabled={busy !== null}>
-              <Play className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "start" ? "Starting…" : "Mark started"}
-            </Button>
-            <Button size="sm" className="rounded-full" onClick={handleComplete} disabled={busy !== null} data-testid="sd-mark-complete">
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-              {busy === "complete" ? "Saving…" : "Mark complete"}
-            </Button>
-          </div>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{weekDay}</p>
+        <h2 className="mt-1 text-[18px] font-semibold tracking-tight">{displayTitle}</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">{training.description}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Badge variant="outline" className="text-[10px]">{training.type}</Badge>
+          <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {training.estimatedMinutes} min</span>
+          {requiresMentorSignoff && (
+            <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] text-primary">
+              <ShieldCheck className="mr-1 h-3 w-3" /> Mentor signoff required
+            </Badge>
+          )}
+          {completed && (
+            <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">Complete</Badge>
+          )}
+          {!hasDb && (
+            <span className="text-[10.5px] text-muted-foreground">Local-only progress (no enrollment linked)</span>
+          )}
         </div>
       </div>
 
@@ -1161,7 +1164,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
               {(training.resources ?? []).map((r) =>
                 isPendingResource(r) ? (
                   <div key={r.id} data-testid="resource-pending" className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-muted-foreground">
-                    <p className="font-medium text-foreground/80">{r.title}</p>
+                    <p className="font-medium text-foreground/80">{cleanSdTitle(r.title)}</p>
                     <p className="text-[11px]">Attachment pending — this resource will appear once published.</p>
                   </div>
                 ) : (
@@ -1172,7 +1175,7 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
                   >
                     <span className="inline-flex items-center gap-2">
                       {r.type === "PDF" ? <Download className="h-3.5 w-3.5" /> : <ExternalLink className="h-3.5 w-3.5" />}
-                      {r.title}
+                      {cleanSdTitle(r.title)}
                     </span>
                     <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
                   </a>
@@ -1290,7 +1293,7 @@ function SdMappedSopCard({ moduleId }: { moduleId: string }) {
           Mapped SOP
         </h3>
       </div>
-      <p className="mt-2 text-[13.5px] font-medium text-foreground">{sopTitle}</p>
+      <p className="mt-2 text-[13.5px] font-medium text-foreground">{cleanSdTitle(sopTitle)}</p>
       {isOpenable ? (
         <button
           type="button"
