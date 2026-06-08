@@ -90,10 +90,6 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const byId = useMemo(() => new Map(trainings.map((t) => [t.id, t])), [trainings]);
   const { resources } = useAdminResources();
   const welcomeVideo = computeSdWelcomeVideoState(resources);
-  const sopCoverage = useMemo(
-    () => computeSdSopCoverageFromResources(resources),
-    [resources],
-  );
 
   // Use SD_JOURNEY_STRUCTURE for current-week/day computation against local progress.
   const dayStates = useMemo(() =>
