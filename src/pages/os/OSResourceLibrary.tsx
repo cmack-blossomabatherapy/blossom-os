@@ -326,7 +326,7 @@ export default function OSResourceLibrary() {
                           <Icon className="h-3.5 w-3.5" />
                         </div>
                        <div className="min-w-0">
-                          <div className="truncate text-[12.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
+                          <div className="truncate text-[12.5px] font-medium text-foreground">{cleanResourceTitle(r.title)}</div>
                           <div className="truncate text-[10.5px] text-muted-foreground">{r.type}</div>
                         </div>
                       </button>
@@ -571,7 +571,7 @@ export default function OSResourceLibrary() {
                       <div className="flex min-w-0 items-center gap-3">
                         <TypeChip type={r.type} />
                         <div className="min-w-0">
-                         <div className="truncate text-[13.5px] font-medium text-foreground">{cleanSdTitle(r.title)}</div>
+                         <div className="truncate text-[13.5px] font-medium text-foreground">{cleanResourceTitle(r.title)}</div>
                           <div className="text-[11.5px] text-muted-foreground">
                             {categoryById(r.category).name} · Updated {formatRelative(r.updatedAt)}
                           </div>
@@ -598,7 +598,7 @@ export default function OSResourceLibrary() {
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-foreground hover:bg-muted/50"
                     >
                       <TypeChip type={r.type} sm />
-                      <span className="truncate">{cleanSdTitle(r.title)}</span>
+                      <span className="truncate">{cleanResourceTitle(r.title)}</span>
                     </button>
                   ))}
                 </div>
@@ -805,7 +805,7 @@ function ResourceDrawerBody({
   onFavorite: () => void;
 }) {
   const [showAdmin, setShowAdmin] = useState(false);
-  const cleanTitle = cleanSdTitle(resource.title);
+  const cleanTitle = cleanResourceTitle(resource.title);
   const tags = learnerTags(resource.tags ?? []);
   const href = resource.url || resource.fileUrl;
   const hasStorage = Boolean((resource as any).storagePath);
