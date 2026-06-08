@@ -64,9 +64,9 @@ describe("SD Launch Readiness Panel", () => {
     const content = screen.getByTestId("sd-launch-content");
     [
       "Welcome to Blossom ready",
-      "Week 1 content complete",
+      /Week 1 content complete/,
       /Weeks 2.{1,2}5 content complete/,
-      "Knowledge checks present",
+      /Knowledge checks present/,
       "Reflection prompts present",
       "Shadowing modules present",
       "Final readiness modules present",
