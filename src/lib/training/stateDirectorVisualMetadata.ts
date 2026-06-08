@@ -36,7 +36,7 @@ export const SD_VISUAL_RESOURCE_METADATA: SDVisualResourceMetadata[] = (() => {
   );
   return candidates.slice(0, 71).map((moduleId) => ({
     moduleId,
-    expectedResourceTitle: `State Director Walkthrough — ${moduleId}`,
+    expectedResourceTitle: `State Director Walkthrough - ${moduleId}`,
     storageBucket: "resource-library" as const,
     expectedStoragePathPrefix: `state-director/visual/${moduleId}/`,
   }));
