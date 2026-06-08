@@ -1107,7 +1107,7 @@ function specForModule(weekNum: number, dayNum: number, position: number, title:
       type: "Reflection", minutes: 20, sopName,
       description: "Written readiness reflection — strengths, gaps, and what you'll own first.",
       whyItMatters: "Self-awareness is the difference between a manager and a leader.",
-      whatToDo: "Submit a written readiness reflection answering the prompts in the template.",
+      whatToDo: "Submit a written readiness reflection answering the questions in the template.",
       completionEvidence: "Reflection submitted and reviewed in mentor check-in.",
       reflectionPrompt: "What's the first operational call you'll make in your state in week 1, and why?",
     };
@@ -1192,7 +1192,7 @@ function buildSdModule(weekNum: number, dayNum: number, position: number, title:
     `**What to do:** ${spec.whatToDo}`,
     "",
     `**How to complete:** ${spec.completionEvidence}`,
-    spec.reflectionPrompt ? `\n**Reflection prompt:** ${spec.reflectionPrompt}` : "",
+    spec.reflectionPrompt ? `\n**Reflection:** ${spec.reflectionPrompt}` : "",
   ].filter(Boolean).join("\n");
 
   const sopMarkdown = spec.sopName
