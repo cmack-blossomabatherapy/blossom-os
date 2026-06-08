@@ -15,6 +15,10 @@ const PANEL = fs.readFileSync(
   "src/components/training/SDLaunchReadinessPanel.tsx",
   "utf8",
 );
+const WELCOME_CHECK_LIB = fs.readFileSync(
+  "src/lib/training/sdRuntimeReadiness.ts",
+  "utf8",
+);
 const WELCOME = fs.readFileSync("src/pages/os/OSWelcomeToBlossom.tsx", "utf8");
 const LEARNER = fs.readFileSync(
   "src/components/training/SDLearnerHome.tsx",
@@ -140,9 +144,11 @@ describe("SDLaunchReadinessPanel runtime checks (no hard-coded greens for assets
 
   it("welcome-video and screenshot rows are not hard-coded ok", () => {
     // Asset row labels must remain data-driven, never green-by-default.
-    expect(PANEL).toMatch(/Welcome video linked/);
+    expect(PANEL).toMatch(/computeSdWelcomeVideoCheck/);
     expect(PANEL).toMatch(/walkthrough screenshots available/);
-    expect(PANEL).toMatch(/Confirm a published Welcome video resource/);
+    // Helper provides the manual-state note copy used by the panel.
+    expect(WELCOME_CHECK_LIB).toMatch(/Welcome video linked/);
+    expect(WELCOME_CHECK_LIB).toMatch(/Confirm a published Welcome video resource/);
   });
 
   it("resource publish count compares to manifest length, not a magic number", () => {
