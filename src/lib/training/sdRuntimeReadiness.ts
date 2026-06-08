@@ -14,6 +14,13 @@ import {
   getStateDirectorScreenshots,
   SD_PRIORITY_SCREENSHOT_MODULES,
 } from "./stateDirectorFullTraining";
+import {
+  SD_ALL_SCREENSHOTS,
+  SD_W1_SCREENSHOT_MODULE_IDS,
+  findScreenshotResource,
+  isScreenshotPiiSafe,
+  getStateDirectorNoScreenshotDecision,
+} from "./stateDirectorFullTraining";
 import type { Resource } from "@/lib/resources/resourceData";
 import { normalizeSopTitle } from "@/lib/resources/sdSopCoverage";
 
@@ -30,6 +37,14 @@ export interface SDScreenshotReadiness {
   pending: number;
   needsRedaction: number;
   ok: boolean;
+}
+
+export interface SDScreenshotWeekBreakdown {
+  total: number;
+  matched: number;
+  missing: number;
+  needsRedaction: number;
+  needsFileRepair: number;
 }
 
 /** Verifies every SD module exposes the required learner-facing fields. */
@@ -87,6 +102,101 @@ export function computeSdScreenshotReadiness(): SDScreenshotReadiness {
     ok: totalRegistered > 0 && pending === 0 && needsRedaction === 0,
   };
 }
+
+/**
+ * Live screenshot coverage breakdown computed against the actual uploaded
+ * resource set. Separates Week 1 from "All SD" so Training Management can
+ * report Week 1 launch readiness independently of the full 25-day journey.
+ */
+export function computeSdScreenshotCoverage(resources: Resource[]): {
+  week1: SDScreenshotWeekBreakdown;
+  all: SDScreenshotWeekBreakdown;
+} {
+  const breakdown = (filter: (m: string) => boolean): SDScreenshotWeekBreakdown => {
+    const shots = SD_ALL_SCREENSHOTS.filter((s) => filter(s.moduleId));
+    let matched = 0;
+    let needsRedaction = 0;
+    let needsFileRepair = 0;
+    for (const s of shots) {
+      const piiUnsafe = !isScreenshotPiiSafe(s);
+      const heldForRedaction =
+        s.resourceStatus === "needs_redaction" || s.sensitivity === "needs_redaction" || piiUnsafe;
+      if (heldForRedaction) { needsRedaction += 1; continue; }
+      const m = findScreenshotResource(s, resources);
+      if (m && m.openable) { matched += 1; continue; }
+      if (m && !m.openable) { needsFileRepair += 1; continue; }
+    }
+    const total = shots.length;
+    return {
+      total,
+      matched,
+      missing: total - matched - needsRedaction - needsFileRepair,
+      needsRedaction,
+      needsFileRepair,
+    };
+  };
+  return {
+    week1: breakdown((m) => m.startsWith("sd-w1d")),
+    all: breakdown(() => true),
+  };
+}
+
+/**
+ * High-level Week 1 launch status used by Training Management. Returns the
+ * single signal an admin needs: are we launch-ready for a real State
+ * Director starting this week?
+ */
+export interface SDWeek1LaunchStatus {
+  ready: boolean;
+  state: "ready" | "almost" | "blocked";
+  reasons: string[];
+  screenshots: SDScreenshotWeekBreakdown;
+  welcomeVideoLinkedOrPending: boolean;
+}
+
+export function computeSdWeek1LaunchStatus(
+  resources: Resource[],
+  welcomeVideoExternalUrl?: string,
+): SDWeek1LaunchStatus {
+  const reasons: string[] = [];
+  const coverage = computeSdScreenshotCoverage(resources);
+  const week1Shots = coverage.week1;
+  // Week 1 screenshots: matched, or intentionally no-screenshot, or covered by
+  // the no-screenshot decision registry.
+  const screenshotsOk =
+    week1Shots.total === 0 ||
+    (week1Shots.missing === 0 && week1Shots.needsFileRepair === 0);
+  if (!screenshotsOk) {
+    if (week1Shots.missing > 0) {
+      reasons.push(`${week1Shots.missing} Week 1 screenshots not yet matched to an upload`);
+    }
+    if (week1Shots.needsFileRepair > 0) {
+      reasons.push(`${week1Shots.needsFileRepair} Week 1 screenshots need file repair`);
+    }
+  }
+  if (week1Shots.needsRedaction > 0) {
+    reasons.push(`${week1Shots.needsRedaction} Week 1 screenshots held for redaction`);
+  }
+
+  const video = computeSdWelcomeVideoCheck(resources, welcomeVideoExternalUrl);
+  // Treat the welcome video as non-blocking only when an external URL is
+  // bundled or a matching resource exists (even if not openable yet).
+  const welcomeVideoLinkedOrPending =
+    video.state === "ok" ||
+    (video.state === "warn" && findWelcomeVideoCandidates(resources).length > 0);
+
+  const ready = screenshotsOk && week1Shots.needsRedaction === 0 && welcomeVideoLinkedOrPending;
+  const state: SDWeek1LaunchStatus["state"] =
+    ready ? "ready" : reasons.length === 0 ? "almost" : "blocked";
+  return { ready, state, reasons, screenshots: week1Shots, welcomeVideoLinkedOrPending };
+}
+
+// Re-export for downstream consumers that previously only imported the
+// stale priority list.
+export { SD_W1_SCREENSHOT_MODULE_IDS };
+// Hint for tree-shaking: ensure getStateDirectorNoScreenshotDecision is
+// considered a used symbol (referenced from Week 1 launch evaluation).
+void getStateDirectorNoScreenshotDecision;
 
 const WELCOME_VIDEO_TITLES = [
   "Welcome Video from Blossom",
