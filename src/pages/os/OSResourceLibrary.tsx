@@ -30,6 +30,7 @@ import { useLibraryResources } from "@/hooks/useLibraryResources";
 import { resolveResourceOpenUrl } from "@/lib/resources/resourceStorage";
 import { isSdSopVisibleToRole } from "@/lib/resources/stateDirectorSopManifest";
 import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
+import { cleanResourceTitle } from "@/lib/resources/resourceDisplay";
 import { ChevronDown } from "lucide-react";
 import {
   collectSmartCollections,
