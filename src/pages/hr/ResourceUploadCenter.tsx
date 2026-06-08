@@ -24,7 +24,6 @@ import {
   SD_ALL_SCREENSHOTS,
   findScreenshotResource,
   isScreenshotPiiSafe,
-  type SDScreenshotAsset,
 } from "@/lib/training/stateDirectorFullTraining";
 import { getTraining } from "@/lib/training/academyData";
 import { cn } from "@/lib/utils";
