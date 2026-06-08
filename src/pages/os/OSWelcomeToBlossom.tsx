@@ -232,7 +232,7 @@ export default function OSWelcomeToBlossom() {
               </p>
             </div>
             <span className="rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[11px] text-muted-foreground">
-              {WELCOME_TO_BLOSSOM_MODULES.length} modules
+              {welcomeDoneCount}/{welcomeTotal} complete · {welcomePercent}%
             </span>
           </div>
           <ol className="mt-4 grid gap-2 sm:grid-cols-2">
