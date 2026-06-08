@@ -18,6 +18,11 @@ import {
 } from "@/lib/training/academyData";
 import { SDJourneyView } from "./SDJourneyView";
 import type { LearnerHome } from "@/lib/academy/learnerHome";
+import { useAdminResources } from "@/hooks/useAdminResources";
+import {
+  computeSdWelcomeVideoState,
+} from "@/lib/training/sdRuntimeReadiness";
+import { computeSdSopCoverageFromResources } from "@/lib/resources/sdSopCoverage";
 
 const TYPE_ICON: Record<TrainingType, typeof FileText> = {
   SOP: FileText, Workflow: WorkflowIcon, Tango: Play, Video: Play,
@@ -82,6 +87,12 @@ interface Props {
 export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const navigate = useNavigate();
   const byId = useMemo(() => new Map(trainings.map((t) => [t.id, t])), [trainings]);
+  const { resources } = useAdminResources();
+  const welcomeVideo = computeSdWelcomeVideoState(resources);
+  const sopCoverage = useMemo(
+    () => computeSdSopCoverageFromResources(resources),
+    [resources],
+  );
 
   // Use SD_JOURNEY_STRUCTURE for current-week/day computation against local progress.
   const dayStates = useMemo(() =>
@@ -122,6 +133,35 @@ export function SDLearnerHome({ firstName, trainings, learnerHome }: Props) {
   const welcomeComplete = hasDb ? learnerHome.welcomeComplete : false;
 
   const flow = pickFlow(currentDayDef.title, currentWeekDef.title);
+
+  // Small launch checklist — calm, operational, no clutter.
+  const launchChecklist = [
+    {
+      label: "Welcome",
+      done: welcomeComplete,
+      hint: welcomeVideo.ok ? "Video ready" : "Written guidance ready",
+    },
+    {
+      label: "Today's modules",
+      done: currentDayState.completed === currentDayState.total && currentDayState.total > 0,
+      hint: `${currentDayState.completed}/${currentDayState.total} done`,
+    },
+    {
+      label: "SOPs connected",
+      done: sopCoverage.total > 0 && sopCoverage.published === sopCoverage.total,
+      hint: `${sopCoverage.published}/${sopCoverage.total} live`,
+    },
+    {
+      label: "Mentor check-in",
+      done: learnerHome.checkinCount > 0,
+      hint: learnerHome.mentor ? "Mentor assigned" : "Pending mentor",
+    },
+    {
+      label: "Reflection",
+      done: learnerHome.reflectionCount > 0,
+      hint: learnerHome.reflectionCount > 0 ? "Captured" : "Add one tonight",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_300px]">
