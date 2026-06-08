@@ -645,3 +645,57 @@ function TrainingScreenshotsPanel({
     </div>
   );
 }
+
+function MissingSDSopsPanel({ coverage }: { coverage: SdSopCoverageReport }) {
+  const missing = coverage.missingEntries;
+  return (
+    <div data-testid="missing-sd-sops-panel" className="space-y-3 p-4">
+      <p className="text-[12.5px] text-muted-foreground">
+        {missing.length} required State Director SOPs have no matching upload yet. Upload each
+        file using the exact manifest title so it auto-connects in Training Management.
+      </p>
+      {missing.length === 0 ? (
+        <p className="rounded-xl border border-emerald-300/60 bg-emerald-50/60 px-3 py-2 text-[12.5px] text-emerald-900">
+          All required State Director SOPs are accounted for.
+        </p>
+      ) : (
+        <div className="overflow-auto rounded-xl border border-border/60">
+          <table className="w-full min-w-[720px] text-[12.5px]">
+            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2.5 text-left font-medium">#</th>
+                <th className="px-3 py-2.5 text-left font-medium">Wk / Day</th>
+                <th className="px-3 py-2.5 text-left font-medium">Module</th>
+                <th className="px-3 py-2.5 text-left font-medium">Expected SOP title</th>
+                <th className="px-3 py-2.5 text-left font-medium">Business area</th>
+              </tr>
+            </thead>
+            <tbody>
+              {missing.map((e) => (
+                <tr
+                  key={e.entry.id}
+                  data-testid={`missing-sop-row-${e.sequence}`}
+                  className="border-t border-border/40"
+                >
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {String(e.sequence).padStart(2, "0")}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    W{e.entry.week} · D{e.entry.day}
+                  </td>
+                  <td className="px-3 py-2 text-foreground">
+                    {e.entry.matchedTrainingTitles[0] ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 text-foreground">{e.entry.title}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {e.entry.businessArea ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
