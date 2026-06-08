@@ -160,7 +160,7 @@ export function PhasePage({ phaseId }: Props) {
                     onComplete={onComplete}
                   />
                 )}
-                {m.kind === "leader" && m.leader && (
+                {(m.kind === "leader" || m.kind === "letter") && m.leader && (
                   <LeaderCard {...m.leader} done={done} onComplete={onComplete} />
                 )}
                 {m.kind === "system" && m.system && (
