@@ -130,14 +130,18 @@ export function computeSdWelcomeVideoState(
   resources: Resource[],
   externalUrl?: string,
 ): SDWelcomeVideoState {
+  // Prefer a published, openable Resource Library entry — this is the source of
+  // truth admins manage. Fall back to a bundled external URL only when no
+  // resource exists yet, so the page is never broken in either state.
+  const r = findWelcomeVideoResource(resources);
+  if (r) {
+    const url = r.fileUrl || r.url || null;
+    return { ok: true, resource: r, url };
+  }
   if (externalUrl && (/^https?:\/\//i.test(externalUrl) || externalUrl.startsWith("/"))) {
     return { ok: true, resource: null, url: externalUrl };
   }
-  const r = findWelcomeVideoResource(resources);
-  if (!r) return { ok: false, resource: null, url: null };
-  const url = r.fileUrl || r.url || null;
-  // Storage-path-only resources resolve at click-time; treat as ok for the panel.
-  return { ok: true, resource: r, url };
+  return { ok: false, resource: null, url: null };
 }
 
 /** Readiness-panel friendly status for the Welcome video row. */

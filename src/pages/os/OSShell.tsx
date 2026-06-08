@@ -140,7 +140,13 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/user-management", label: "User Management", icon: Users2, module: "user_management" },
       { to: "/admin/device-inventory", label: "Device Inventory", icon: MonitorSmartphone, module: "user_management" },
       { to: "/hr", label: "HR Suite", icon: Building2, module: "hr", end: true },
-      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "hr" },
+    ],
+  },
+  {
+    id: "training", label: "Training", items: [
+      { to: "/training", label: "Training Academy", icon: GraduationCap, module: "training" },
+      { to: "/hr/training-center", label: "Training Management", icon: GraduationCap, module: "training" },
+      { to: "/resource-library", label: "Resource Library", icon: BookOpen, module: "sop" },
     ],
   },
   {
