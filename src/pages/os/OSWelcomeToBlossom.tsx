@@ -185,6 +185,32 @@ export default function OSWelcomeToBlossom() {
               Continue to State Director Journey
             </Button>
           </div>
+
+          {/* Overall Welcome progress — updates the moment a module is marked complete */}
+          <div
+            data-testid="welcome-overall-progress"
+            className="mt-5 max-w-2xl rounded-2xl border border-border/60 bg-card/60 p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Welcome progress
+                </p>
+                <p className="mt-0.5 text-[13.5px] font-semibold text-foreground">
+                  {welcomeDoneCount} of {welcomeTotal} modules complete
+                  {allWelcomeDone && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> All done
+                    </span>
+                  )}
+                </p>
+              </div>
+              <span className="tabular-nums text-[15px] font-semibold text-foreground">
+                {welcomePercent}%
+              </span>
+            </div>
+            <Progress value={welcomePercent} className="mt-3 h-2" />
+          </div>
         </header>
 
         {/* MODULE SEQUENCE — visible 7-step rail */}
