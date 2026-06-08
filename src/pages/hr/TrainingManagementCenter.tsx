@@ -506,6 +506,7 @@ export default function TrainingManagementCenter() {
                   </div>
                 </header>
                 <SDLaunchReadinessPanel />
+                <SDDayOneAdminPanel />
                 <div className="grid gap-5 xl:grid-cols-2">
                   <SDSopReadinessPanel />
                   <SDScreenshotReadinessPanel />
