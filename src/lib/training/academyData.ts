@@ -18,6 +18,7 @@ export type TrainingType =
   | "Workflow"
   | "Tango"
   | "Video"
+  | "Letter"
   | "Checklist"
   | "Quick Guide"
   | "Training"
