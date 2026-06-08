@@ -45,6 +45,62 @@ import { cleanSdTitle } from "@/lib/training/sdDisplayTitle";
 import { completeWelcomeTrainingEverywhere } from "@/lib/training/welcomeProgressBridge";
 import MissionVisionContent from "@/components/training/MissionVisionContent";
 
+/** Local-only per-module session timer. Persists start time across reloads
+ *  in localStorage. Stops when the module is marked complete. */
+const TIMER_KEY = (id: string) => `bm:training-timer:${id}`;
+
+function readTimerStart(id: string): number | null {
+  try {
+    const raw = localStorage.getItem(TIMER_KEY(id));
+    if (!raw) return null;
+    const v = Number(raw);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTimerStart(id: string, value: number | null) {
+  try {
+    if (value == null) localStorage.removeItem(TIMER_KEY(id));
+    else localStorage.setItem(TIMER_KEY(id), String(value));
+  } catch { /* ignore */ }
+}
+
+function useModuleTimer(moduleId: string, completed: boolean) {
+  const [startedAt, setStartedAt] = useState<number | null>(() => readTimerStart(moduleId));
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    setStartedAt(readTimerStart(moduleId));
+  }, [moduleId]);
+
+  useEffect(() => {
+    if (!startedAt || completed) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [startedAt, completed]);
+
+  const start = () => {
+    if (startedAt) return;
+    const ts = Date.now();
+    writeTimerStart(moduleId, ts);
+    setStartedAt(ts);
+    setNow(ts);
+  };
+
+  const elapsedSeconds = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
+  return { startedAt, elapsedSeconds, start };
+}
+
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return `${m}m ${String(s).padStart(2, "0")}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${String(m % 60).padStart(2, "0")}m`;
+}
+
 /** A resource is "pending" when it has no usable destination yet. */
 function isPendingResource(r: TrainingResource): boolean {
   const u = (r.url ?? "").trim();
@@ -731,7 +787,21 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
   const localProgress = getProgress(training.id);
   const completed = dbProgress?.status === "completed" || localProgress.status === "completed";
 
+  const timer = useModuleTimer(training.id, completed);
+
+  // Auto-start the timer when the module is already in progress (e.g. user
+  // navigated here from the Welcome page after clicking "Start training").
+  useEffect(() => {
+    if (completed) return;
+    if (timer.startedAt) return;
+    const inProgress =
+      dbProgress?.status === "in_progress" || localProgress.status === "in_progress";
+    if (inProgress) timer.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbProgress?.status, localProgress.status, completed]);
+
   async function handleStart() {
+    timer.start();
     if (!hasDb) {
       markTrainingStarted(training.id);
       toast.success("Started locally — connect an enrollment to sync with leadership.");
@@ -812,6 +882,21 @@ function SDModuleDetailPanel({ training }: { training: Training }) {
           {requiresMentorSignoff && <span>· Mentor signoff required</span>}
           <span>·</span>
           <span>{completed ? "Complete" : dbProgress?.status === "in_progress" || localProgress.status === "in_progress" ? "In progress" : "Not started"}</span>
+          {timer.startedAt && (
+            <>
+              <span>·</span>
+              <span
+                data-testid="sd-module-timer"
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+                  completed ? "bg-emerald-50 text-emerald-700" : "bg-primary/10 text-primary",
+                )}
+              >
+                <Clock className="h-3 w-3" />
+                {completed ? "Time on module" : "Timer"}: {formatElapsed(timer.elapsedSeconds)}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
