@@ -46,6 +46,7 @@ export interface WelcomeLeadershipLetter {
   initials: string;
   paragraphs: string[];
   signoff: string;
+  pullQuote: string;
 }
 
 export interface WelcomeCompletion {
