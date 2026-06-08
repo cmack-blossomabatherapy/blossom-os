@@ -19,7 +19,9 @@ import {
   completeWelcomeModuleEverywhere,
   getNextStateDirectorTrainingPath,
   isWelcomeModuleComplete,
+  WELCOME_TO_SD_TRAINING_ID,
 } from "@/lib/training/welcomeProgressBridge";
+import { completeLearnerModule, loadLearnerHome, type LearnerHome } from "@/lib/academy/learnerHome";
 import {
   WELCOME_TO_BLOSSOM_HERO,
   WELCOME_TO_BLOSSOM_MODULES,
@@ -101,8 +103,20 @@ export default function OSWelcomeToBlossom() {
     welcomeTotal === 0 ? 0 : Math.round((welcomeDoneCount / welcomeTotal) * 100);
   const allWelcomeDone = welcomeDoneCount === welcomeTotal;
 
+  const syncWelcomeToAcademy = async (welcomeModuleId: string) => {
+    if (!user?.id) return;
+    try {
+      const home = await loadLearnerHome(user.id);
+      const academyModule = findAcademyWelcomeModule(home, welcomeModuleId);
+      if (home.enrollment && academyModule) {
+        await completeLearnerModule(home.enrollment.id, academyModule.id);
+      }
+    } catch { /* local completion is still valid if live sync is unavailable */ }
+  };
+
   const markReviewed = () => {
     completeWelcomeModuleEverywhere("welcome-video-from-blossom");
+    void syncWelcomeToAcademy("welcome-video-from-blossom");
   };
 
   const continueToStateDirectorJourney = () => {
@@ -806,7 +820,10 @@ function ModuleCompleteAction({
         variant={done ? "outline" : "default"}
         className="rounded-full"
         onClick={() => {
-          if (!done) completeWelcomeModuleEverywhere(moduleId);
+          if (!done) {
+            completeWelcomeModuleEverywhere(moduleId);
+            void syncWelcomeToAcademy(moduleId);
+          }
         }}
         disabled={done}
         data-testid={`welcome-module-complete-${moduleId}`}
