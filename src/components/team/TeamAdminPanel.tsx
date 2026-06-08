@@ -67,6 +67,7 @@ interface RoleRow {
 interface EmployeeLinkRow {
   id: string;
   user_id: string | null;
+  mentor_id?: string | null;
 }
 interface Member {
   user_id: string;
@@ -84,6 +85,7 @@ interface Member {
   dashboard_access: string;
   new_state_employee: boolean;
   active: boolean;
+  mentor_employee_id: string | null;
 }
 
 interface RecentVisit {
@@ -99,7 +101,7 @@ interface RoleActivity {
 
 async function syncEmployeeFromTeamMember(
   member: Member,
-  next: { display_name: string; email: string; job_title: string; department: string; state: string; clinic: string; active: boolean },
+  next: { display_name: string; email: string; job_title: string; department: string; state: string; clinic: string; active: boolean; mentor_employee_id: string | null },
 ) {
   const email = next.email.trim().toLowerCase();
   const displayName = next.display_name.trim() || member.display_name;
@@ -122,7 +124,8 @@ async function syncEmployeeFromTeamMember(
     state: HR_STATES.includes(state as (typeof HR_STATES)[number]) ? state : "GA",
     clinic: next.clinic.trim() || null,
     status: employeeStatus,
-  };
+    mentor_id: next.mentor_employee_id ?? null,
+  } as any;
 
   if (existing?.id) {
     const { error } = await supabase.from("employees").update(employeePayload).eq("id", existing.id);
