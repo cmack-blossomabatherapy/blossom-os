@@ -4,6 +4,7 @@ import {
   CalendarDays, BarChart3, MessageSquare, Target, Rocket, Trophy, FileText, PlayCircle, Wand2,
   Network, Phone, Building, ListChecks, Mail, Inbox, Folder, Headphones, type LucideIcon,
 } from "lucide-react";
+import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
 
 export type OnboardingPath = "existing_state" | "new_state";
 
@@ -79,46 +80,37 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
     index: 0,
     weekLabel: "Phase 0",
     title: "Welcome to Blossom",
-    objective: "Get grounded in who we are, what we believe, and what to expect over your first four weeks as an HR Admin Assistant.",
+    objective: "Universal onboarding for every new Blossom employee. Get grounded in who we are, what we believe, and how the company actually works — before your role-specific training begins.",
     icon: Sparkles,
     path: "/onboarding/phase/welcome",
     modules: [
-      { key: "p0.intro-video", title: "Welcome to Blossom", blurb: "A quick personal intro to Blossom — what we do, how we work, and why you're going to love it here.", icon: PlayCircle, estMinutes: 4, kind: "video",
-        video: { url: "/videos/intro-welcome.mp4", poster: "/videos/intro-welcome-poster.jpg", presenter: "Blossom", duration: "~3 min" },
+      { key: "welcome-video-from-blossom", title: "Welcome Video from Blossom", blurb: "A short welcome from Blossom leadership. Sets the tone: calm, practical, family-centered, and serious about doing the work well.", icon: PlayCircle, estMinutes: 4, kind: "video",
+        video: { url: introVideoAsset.url, presenter: "Blossom", duration: "~3 min" },
         actions: [
           { id: "watch", label: "Watch the welcome video", icon: PlayCircle },
           { id: "reflect", label: "What's one thing that stood out to you?", prompt: true, promptPlaceholder: "Share a sentence or two — there are no wrong answers.", icon: MessageSquare },
         ] },
-      { key: "p0.mission", title: "Mission & Values", blurb: "Why we exist, where we're going, and the values that guide every decision.", icon: Heart, estMinutes: 8, kind: "content",
+      { key: "welcome-mission-vision", title: "Mission & Vision", blurb: "Why Blossom exists and where we're going. Read it, rewrite it in your own words, and connect it to one operational metric you'll watch.", icon: Heart, estMinutes: 8, kind: "content",
         actions: [
-          { id: "read", label: "Read the Mission & Vision page", icon: BookOpen, href: "/onboarding/mission" },
-          { id: "values", label: "Open the Core Values page", icon: Compass, href: "/onboarding/values" },
-          { id: "pick", label: "Pick a value you'd like to live this week", icon: Target, prompt: true, promptPlaceholder: "Which value, and how will you live it?" },
+          { id: "read", label: "Read the Mission & Vision section", icon: BookOpen, href: "/training/welcome" },
+          { id: "rewrite", label: "Rewrite the mission in your own words", icon: FileText, prompt: true, promptPlaceholder: "One sentence is plenty." },
         ] },
-      { key: "p0.org-structure", title: "Organizational Structure", blurb: "How Blossom is organized — leadership, departments, and the people you'll work with.", icon: Network, estMinutes: 6, kind: "content",
+      { key: "welcome-core-values", title: "Core Values", blurb: "The standards we use when the day gets complicated. Pick one that comes naturally and one that will take discipline.", icon: Compass, estMinutes: 8, kind: "content",
         actions: [
-          { id: "org-chart", label: "Browse the Org Chart", icon: Network, href: "/onboarding/org-chart" },
-          { id: "team-page", label: "Open the Team directory", icon: Users, href: "/onboarding/team" },
-          { id: "leaders", label: "Read the Meet the Team page", icon: BookOpen, href: "/onboarding/meet-the-team" },
+          { id: "read", label: "Read each core value", icon: BookOpen, href: "/training/welcome" },
+          { id: "pick", label: "Pick a value that comes naturally and one that will take discipline", icon: Target, prompt: true, promptPlaceholder: "Which two values, and why?" },
         ] },
-      { key: "p0.systems", title: "Systems Overview", blurb: "A quick tour of the systems Blossom runs on — and how they fit together.", icon: MonitorPlay, estMinutes: 6, kind: "content",
+      { key: "welcome-meet-the-team", title: "Meet the Team", blurb: "Who owns what at Blossom — leadership, departments, and the partners you'll lean on most. Identify your mentor and first three department partners.", icon: Users, estMinutes: 8, kind: "content",
         actions: [
-          { id: "how", label: "Read How Blossom Works", icon: BookOpen, href: "/onboarding/how-it-works" },
-          { id: "academy", label: "Peek at the Operations Academy", icon: GraduationCap, href: "/onboarding/academy-preview" },
+          { id: "read", label: "Review the leadership and department map", icon: Network, href: "/training/welcome" },
+          { id: "mentor", label: "Identify your mentor and first three department partners", icon: Users, prompt: true, promptPlaceholder: "Mentor + 3 partners + one question for each." },
         ] },
-      { key: "p0.hipaa", title: "HIPAA & Compliance", blurb: "What HIPAA means at Blossom and the basics every employee must understand from day one.", icon: ShieldCheck, estMinutes: 10, kind: "content",
+      { key: "welcome-how-blossom-works", title: "How Blossom Works", blurb: "The 11-step Blossom flow from family interest to active care. Read it, draw it from memory, and mark the three places a state is most likely to get stuck.", icon: Workflow, estMinutes: 10, kind: "content",
         actions: [
-          { id: "read", label: "Read the HIPAA basics overview", icon: BookOpen },
-          { id: "acknowledge", label: "Acknowledge you understand HIPAA expectations", icon: ClipboardCheck },
-          { id: "reflect", label: "Note one situation where HIPAA applies to your role", prompt: true, promptPlaceholder: "A sentence is plenty.", icon: MessageSquare },
+          { id: "read", label: "Read the Blossom flow", icon: BookOpen, href: "/training/welcome" },
+          { id: "draw", label: "Draw the flow from memory and mark three risk points", icon: FileText, prompt: true, promptPlaceholder: "List the three places a state is most likely to get stuck." },
         ] },
-      { key: "p0.expectations", title: "Employee Expectations", blurb: "How we communicate, collaborate, and show up for each other and for families.", icon: ListChecks, estMinutes: 8, kind: "content",
-        actions: [
-          { id: "read", label: "Read the Employee Expectations overview", icon: BookOpen },
-          { id: "comms", label: "Review communication standards", icon: MessageSquare },
-          { id: "acknowledge", label: "Acknowledge the expectations", icon: ClipboardCheck },
-        ] },
-      { key: "p0.chad", title: "Letter from Chad Kaufman - CEO", blurb: "A personal welcome from our CEO — leadership, vision, and what to expect.", icon: UserCheck, estMinutes: 4, kind: "leader",
+      { key: "welcome-letter-chad", title: "Welcome Letter from Chad", blurb: "A personal letter from our CEO — read it, do not skim. Capture one sentence that resonated.", icon: UserCheck, estMinutes: 5, kind: "leader",
         leader: {
           ...LEADERS.chad,
           message: "A personal letter from our CEO/COO — open it to read the full message.",
@@ -145,7 +137,7 @@ export const ONBOARDING_PHASES: JourneyPhase[] = [
           { id: "letter", label: "Open Chad's welcome letter", icon: BookOpen },
           { id: "note", label: "Jot down one expectation Chad mentioned", icon: FileText },
         ] },
-      { key: "p0.shira", title: "Letter from Shira Lasry - DOO", blurb: "A personal welcome from our Director of Operations — this onboarding journey was designed for you.", icon: UserCheck, estMinutes: 4, kind: "leader",
+      { key: "welcome-letter-shira", title: "Welcome Letter from Shira", blurb: "A personal letter from our Director of Operations — read it, do not skim. Bring one question for her team to your first mentor check-in.", icon: UserCheck, estMinutes: 5, kind: "leader",
         leader: {
           ...LEADERS.shira,
           message: "A personal letter from our Director of Operations & Company Experience — open it to read the full message.",
