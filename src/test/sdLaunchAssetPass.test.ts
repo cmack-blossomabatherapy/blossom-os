@@ -132,15 +132,17 @@ describe("SD SOP coverage uses manifest total", () => {
 
 describe("SDLaunchReadinessPanel runtime checks (no hard-coded greens for assets)", () => {
   it("uses computed readiness helpers", () => {
-    expect(PANEL).toMatch(/computeSdContentReadiness/);
-    expect(PANEL).toMatch(/computeSdScreenshotReadiness/);
-    expect(PANEL).toMatch(/computeSdWelcomeVideoState/);
+    expect(PANEL).toMatch(/computeSdSopCoverageFromResources/);
+    expect(PANEL).toMatch(/getStateDirectorFullContent/);
+    expect(PANEL).toMatch(/getStateDirectorScreenshots/);
+    expect(PANEL).toMatch(/isScreenshotPiiSafe/);
   });
 
   it("welcome-video and screenshot rows are not hard-coded ok", () => {
-    // The new content items should branch on welcomeVideo.ok and screenshots.ok.
-    expect(PANEL).toMatch(/welcomeVideo\.ok\s*\?/);
-    expect(PANEL).toMatch(/screenshots\.ok/);
+    // Asset row labels must remain data-driven, never green-by-default.
+    expect(PANEL).toMatch(/Welcome video linked/);
+    expect(PANEL).toMatch(/walkthrough screenshots available/);
+    expect(PANEL).toMatch(/Confirm a published Welcome video resource/);
   });
 
   it("resource publish count compares to manifest length, not a magic number", () => {
