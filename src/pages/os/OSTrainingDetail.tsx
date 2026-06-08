@@ -565,7 +565,7 @@ function SDScreenshotCard({ asset }: { asset: SDScreenshotAsset }) {
           <div className="min-w-0">
             <p className="font-medium text-foreground">{asset.resourceTitle ?? asset.title}</p>
             <p className="mt-0.5">
-              Visual pending — {asset.description.toLowerCase()} Your mentor can walk this live until it's uploaded.
+              Screenshot pending — your mentor can walk this view live until it's uploaded.
             </p>
           </div>
         </div>
