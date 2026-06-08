@@ -44,13 +44,15 @@ describe("Welcome to Blossom — content seed", () => {
     expect(video.videoPending).toMatch(/revisit the video later/i);
   });
 
-  it("CEO and DOO letters are full and signed", () => {
+  it("CEO and DOO letters are full and signed with pull quotes", () => {
     const ceo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "ceo")!;
     const doo = WELCOME_LEADERSHIP_LETTERS.find((l) => l.id === "doo")!;
     expect(ceo.signoff).toBe("Chad Kaufman, Chief Executive Officer");
     expect(doo.signoff).toBe("Shira Lasry, Director of Operations");
     expect(ceo.paragraphs.length).toBeGreaterThanOrEqual(8);
     expect(doo.paragraphs.length).toBeGreaterThanOrEqual(7);
+    expect(ceo.pullQuote).toBe("Great ABA therapy does not happen through good intentions alone.");
+    expect(doo.pullQuote).toBe("The deeper skill is learning how to keep a state moving without creating panic.");
   });
 
   it("WELCOME_MODULE_IDS contains 7 non-SOP module ids", () => {
@@ -75,6 +77,7 @@ describe("Welcome to Blossom — page integration", () => {
     expect(PAGE).toMatch(/Core Values/);
     expect(PAGE).toMatch(/How Blossom Works/);
     expect(PAGE).toMatch(/You are ready for the State Director Journey/);
+    expect(PAGE).toMatch(/A welcome from leadership/);
   });
 
   it("page does not use href=\"#\" or broken anchor placeholders", () => {
