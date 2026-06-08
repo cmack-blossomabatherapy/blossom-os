@@ -23,17 +23,18 @@ import {
   WELCOME_LEADERSHIP_LETTERS,
   WELCOME_COMPLETION,
 } from "@/lib/training/welcomeToBlossomContent";
+import introVideoAsset from "@/assets/intro-video-1.1.mp4.asset.json";
 
 /**
  * Welcome video configuration — resolved from Resource Library at runtime.
  *
- * The video is loaded by looking up a published Resource titled
- * "Welcome Video from Blossom" (or close variants). If none exists,
- * the page renders a calm "being prepared" panel instead of a broken
- * <video> element. WELCOME_VIDEO_URL is kept as an empty fallback so
- * the rest of the component logic stays simple.
+ * The video is loaded from a Lovable CDN asset by default. If a
+ * published Resource titled "Welcome Video from Blossom" (or close
+ * variants) exists in the Resource Library it will take precedence.
+ * If neither resolves, the page renders a calm "being prepared" panel
+ * instead of a broken <video> element.
  */
-const WELCOME_VIDEO_URL = "";
+const WELCOME_VIDEO_URL = introVideoAsset.url;
 const WELCOME_VIDEO_POSTER_URL = "";
 
 /**
